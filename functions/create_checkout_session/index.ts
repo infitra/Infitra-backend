@@ -1,10 +1,10 @@
 // Supabase Edge Function: create_checkout_session
-// Purpose:
-//   - Creates a Stripe Checkout Session (TEST mode).
-//   - With BUYER_ABSORBS_FEES toggle, you can switch between:
-//       false → buyer pays base + CHF 0.30 fixed fee
-//       true  → buyer pays base + 0.30 CHF + 3 % (grossed-up total)
-//   - Returns { checkout_url, session_id }
+// - Creates a Stripe Checkout Session.
+// - Toggle controls how buyer fees are presented:
+//     false → base product + separate CHF 0.30 line
+//     true  → THREE LINES (Base, Card processing 3%, Fixed CHF 0.30) with proper gross-up
+//
+// Response: { checkout_url, session_id }
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -14,10 +14,10 @@ const SERVICE_KEY    = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const STRIPE_KEY     = Deno.env.get("STRIPE_SECRET_KEY")!;
 const PROJECT_URL    = (Deno.env.get("PROJECT_URL") || "").replace(/\/+$/, "");
 
-// ---- Toggle: switch buyer fee behaviour here ----
-const BUYER_ABSORBS_FEES = false;          // <—— flip to true for 0.30 + 3 %
-const FIXED_FEE_CENTS     = 30;
-const PERCENT_FEE_RATE    = 0.03;          // 3 % safety rate when toggle = true
+// ---- Toggle ----
+const BUYER_ABSORBS_FEES = true;          // false = current; true = 3% + CHF 0.30 as separate lines
+const FIXED_FEE_CENTS     = 30;           // CHF 0.30
+const PERCENT_FEE_RATE    = 0.03;         // 3%
 
 // ---------- Helpers ----------
 const STRIPE_API = "https://api.stripe.com/v1";
@@ -41,7 +41,7 @@ const upper = (s?: string | null) => (s || "CHF").toUpperCase();
 
 // ---------- Types ----------
 type Kind = "session" | "challenge";
-type DbSession = { id:string; title:string; price_cents:number; currency:string; host_id:string; status:string };
+type DbSession   = { id:string; title:string; price_cents:number; currency:string; host_id:string;   status:string };
 type DbChallenge = { id:string; title:string; price_cents:number; currency:string; owner_id:string; status:string };
 
 const admin = createClient(SUPABASE_URL, SERVICE_KEY);
@@ -49,7 +49,7 @@ const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 // ---------- Handler ----------
 Deno.serve(async (req) => {
   try {
-    // 1) Auth
+    // 1) Auth (end user must be logged in)
     const authHeader = req.headers.get("Authorization") || "";
     const jwt = authHeader.replace("Bearer ", "");
     const caller = createClient(SUPABASE_URL, SERVICE_KEY, {
@@ -59,13 +59,13 @@ Deno.serve(async (req) => {
     if (uErr || !u?.user) return json({ error: "Unauthorized" }, 401);
     const buyerId = u.user.id;
 
-    // 2) Parse input
+    // 2) Input
     const { kind, target_id } = await req.json();
     if (!kind || !target_id) return json({ error: "Missing kind or target_id" }, 400);
     if (kind !== "session" && kind !== "challenge") return json({ error: "Invalid kind" }, 400);
 
-    // 3) Fetch product
-    let title = "", amountGrossCents = 0, currency = "CHF", creatorId = "";
+    // 3) Load product from DB
+    let title = "", baseCents = 0, currency = "CHF", creatorId = "";
     if (kind === "session") {
       const { data: s, error } = await admin
         .from("app_session")
@@ -74,7 +74,10 @@ Deno.serve(async (req) => {
         .single<DbSession>();
       if (error || !s) return json({ error: "Session not found" }, 404);
       if (s.status !== "published") return json({ error: "Session not published" }, 400);
-      ({ title, price_cents: amountGrossCents, currency, host_id: creatorId } = s);
+      title     = s.title || "Session";
+      baseCents = toInt(s.price_cents);
+      currency  = upper(s.currency);
+      creatorId = s.host_id;
     } else {
       const { data: c, error } = await admin
         .from("app_challenge")
@@ -83,14 +86,14 @@ Deno.serve(async (req) => {
         .single<DbChallenge>();
       if (error || !c) return json({ error: "Challenge not found" }, 404);
       if (c.status !== "published") return json({ error: "Challenge not published" }, 400);
-      ({ title, price_cents: amountGrossCents, currency, owner_id: creatorId } = c);
+      title     = c.title || "Challenge";
+      baseCents = toInt(c.price_cents);
+      currency  = upper(c.currency);
+      creatorId = c.owner_id;
     }
-
-    const baseCents = toInt(amountGrossCents);
     if (baseCents <= 0) return json({ error: "Invalid price" }, 400);
-    currency = upper(currency);
 
-    // 4) Success / cancel URLs
+    // 4) URLs
     const successUrl = PROJECT_URL
       ? `${PROJECT_URL}/checkout/success?sid={CHECKOUT_SESSION_ID}`
       : "https://example.com/checkout/success?sid={CHECKOUT_SESSION_ID}";
@@ -98,11 +101,11 @@ Deno.serve(async (req) => {
       ? `${PROJECT_URL}/checkout/cancel`
       : "https://example.com/checkout/cancel";
 
-    // 5) Metadata
+    // 5) Metadata (always includes sticker/base price)
     const md: Record<string,string> = {
       kind, target_id, buyer_id: buyerId, creator_id: creatorId,
       price_cents: String(baseCents), currency,
-      fee_model: BUYER_ABSORBS_FEES ? "buyer_absorbs" : "buyer_fixed30"
+      fee_model: BUYER_ABSORBS_FEES ? "buyer_absorbs_3pct_plus_030" : "buyer_fixed_030"
     };
 
     // 6) Stripe payload
@@ -111,42 +114,58 @@ Deno.serve(async (req) => {
       success_url: successUrl,
       cancel_url: cancelUrl,
       client_reference_id: `${kind}:${target_id}:${buyerId}`,
-      ...Object.fromEntries(Object.entries(md).map(([k,v]) => [`metadata[${k}]`, v]))
+      ...Object.fromEntries(Object.entries(md).map(([k,v]) => [`metadata[${k}]`, v])),
     });
 
-    // --------- Fee logic ----------
+    // ---------- Fee presentation ----------
     if (BUYER_ABSORBS_FEES) {
-      // Buyer pays base + fixed + percent
+      // We want three transparent lines: Base, 3% fee, CHF 0.30 fee
+      // But Stripe takes % on the WHOLE charge; compute percent line with gross-up:
+      // total = ceil((base + fixed) / (1 - r))
+      // percent_component = total - base - fixed
       const totalCents = Math.ceil((baseCents + FIXED_FEE_CENTS) / (1 - PERCENT_FEE_RATE));
-      const surchargeCents = totalCents - baseCents;
-      body.set("metadata[buyer_fee_cents_est]", String(surchargeCents));
+      let percentCents = totalCents - baseCents - FIXED_FEE_CENTS;
+      if (percentCents < 0) percentCents = 0;
 
+      // For transparency, store breakdown in metadata as well
+      body.set("metadata[buyer_fee_percent_cents]", String(percentCents));
+      body.set("metadata[buyer_fee_fixed_cents]",   String(FIXED_FEE_CENTS));
+      body.set("metadata[buyer_total_cents]",       String(totalCents));
+
+      // Line 1: Base product
       addLineItem(body, {
         name: kind === "session" ? `Session · ${title}` : `Challenge · ${title}`,
-        currency,
-        unit_amount: totalCents,
-        quantity: 1
+        currency, unit_amount: baseCents, quantity: 1,
       });
+      // Line 2: Percent fee (3%) — gross-up part
+      if (percentCents > 0) {
+        addLineItem(body, {
+          name: "Card processing (3%)",
+          currency, unit_amount: percentCents, quantity: 1,
+        });
+      }
+      // Line 3: Fixed fee CHF 0.30
+      addLineItem(body, {
+        name: "Fixed fee (CHF 0.30)",
+        currency, unit_amount: FIXED_FEE_CENTS, quantity: 1,
+      });
+
     } else {
-      // Buyer pays base + separate CHF 0.30 line item
+      // Current behavior: base + fixed fee (0.30) as separate fee line
       addLineItem(body, {
         name: kind === "session" ? `Session · ${title}` : `Challenge · ${title}`,
-        currency,
-        unit_amount: baseCents,
-        quantity: 1
+        currency, unit_amount: baseCents, quantity: 1,
       });
       addLineItem(body, {
         name: "Processing fee",
-        currency,
-        unit_amount: FIXED_FEE_CENTS,
-        quantity: 1
+        currency, unit_amount: FIXED_FEE_CENTS, quantity: 1,
       });
     }
 
     // 7) Create Checkout Session
     const sess = await stripe("/checkout/sessions", body);
-
     return json({ checkout_url: sess.url as string, session_id: sess.id as string });
+
   } catch (e) {
     return json({ error: String(e) }, 500);
   }
