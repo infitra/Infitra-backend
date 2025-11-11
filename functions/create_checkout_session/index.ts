@@ -6,16 +6,29 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+// ---------- Helpers (keep these ABOVE any uses) ----------
+const toInt = (v: unknown, def = 0) => {
+  const n = typeof v === "number" ? v : Number(v);
+  return Number.isFinite(n) ? Math.trunc(n) : def;
+};
+const upper = (s?: string | null) => (s || "CHF").toUpperCase();
+const pickIp = (req: Request) =>
+  req.headers.get("x-forwarded-for") ||
+  req.headers.get("x-real-ip") ||
+  req.headers.get("cf-connecting-ip") ||
+  req.headers.get("fly-client-ip") ||
+  null;
+
 // ---------- CONFIG ----------
-const SUPABASE_URL   = Deno.env.get("SUPABASE_URL")!;
-const SERVICE_KEY    = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const STRIPE_KEY     = Deno.env.get("STRIPE_SECRET_KEY")!;
-const PROJECT_URL    = (Deno.env.get("PROJECT_URL") || "").replace(/\/+$/, "");
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SERVICE_KEY  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const STRIPE_KEY   = Deno.env.get("STRIPE_SECRET_KEY")!;
+const PROJECT_URL  = (Deno.env.get("PROJECT_URL") || "").replace(/\/+$/, "");
 
 // ---- Buyer fee toggle ----
 const BUYER_ABSORBS_FEES = true;          // false = base+0.30; true = 3% + CHF0.30
-const FIXED_FEE_CENTS     = 30;
-const PERCENT_FEE_RATE    = 0.03;
+const FIXED_FEE_CENTS    = 30;
+const PERCENT_FEE_RATE   = 0.03;
 
 // ---- Rate limiting (env overrides optional) ----
 const RATE_LIMIT_ENABLED        = (Deno.env.get("RATE_LIMIT_ENABLED") ?? "true").toLowerCase() === "true";
@@ -23,7 +36,7 @@ const RATE_LIMIT_WINDOW_SECONDS = toInt(Deno.env.get("RATE_LIMIT_WINDOW_SECONDS"
 const RATE_LIMIT_PER_USER       = toInt(Deno.env.get("RATE_LIMIT_PER_USER") ?? "5", 5);
 const RATE_LIMIT_PER_IP         = toInt(Deno.env.get("RATE_LIMIT_PER_IP") ?? "20", 20);
 
-// ---------- Helpers ----------
+// ---------- Stripe minimal client ----------
 const STRIPE_API = "https://api.stripe.com/v1";
 const stripe = async (path: string, body: URLSearchParams) => {
   const res = await fetch(`${STRIPE_API}${path}`, {
@@ -37,17 +50,6 @@ const stripe = async (path: string, body: URLSearchParams) => {
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 };
-const toInt = (v: unknown, def = 0) => {
-  const n = typeof v === "number" ? v : Number(v);
-  return Number.isFinite(n) ? Math.trunc(n) : def;
-};
-const upper = (s?: string | null) => (s || "CHF").toUpperCase();
-const pickIp = (req: Request) =>
-  req.headers.get("x-forwarded-for") ||
-  req.headers.get("x-real-ip") ||
-  req.headers.get("cf-connecting-ip") ||
-  req.headers.get("fly-client-ip") ||
-  null;
 
 // ---------- Types ----------
 type Kind = "session" | "challenge";
@@ -160,6 +162,7 @@ Deno.serve(async (req) => {
     return json({ checkout_url: sess.url as string, session_id: sess.id as string });
 
   } catch (e) {
+    // Preserve your generic error shape
     return json({ error: String(e) }, 500);
   }
 });
