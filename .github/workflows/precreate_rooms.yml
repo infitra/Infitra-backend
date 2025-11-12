@@ -14,7 +14,7 @@ jobs:
       - name: Hit precreate_rooms Edge Function
         run: |
           curl -sS -X POST \
-            "${{ secrets.SUPABASE_FN_URL }}" \
+            "https://okcujzmlpwijjxwhuehe.supabase.co/functions/v1/precreate_rooms" \
             -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" \
             -H "Content-Type: application/json" \
             -d '{}'
