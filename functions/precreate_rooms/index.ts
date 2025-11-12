@@ -1,40 +1,40 @@
 // supabase/functions/precreate_rooms/index.ts
-// Schedules pre-creation of Daily rooms ~15 minutes before start_time.
-// Idempotent: skips sessions that already have a room.
-// Auth: service-only (cron), so we verify a shared secret header.
+// Pre-create Daily rooms ~15 minutes before start_time.
+// Idempotent: only fills live_room_id when it's still NULL.
+// Auth: service-only (cron) via x-cron-secret.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { provider, createRoom } from "../live_provider/index.ts";
 
-const SUPABASE_URL  = Deno.env.get("SUPABASE_URL")!;
-const SERVICE_ROLE  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const CRON_SECRET   = Deno.env.get("CRON_SECRET")!;
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const CRON_SECRET  = Deno.env.get("CRON_SECRET")!;
 
 const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
 Deno.serve(async (req) => {
   try {
-    // shared-secret check
+    // Shared-secret check
     const hdr = req.headers.get("x-cron-secret");
     if (!hdr || hdr !== CRON_SECRET) {
-      return new Response(JSON.stringify({ error: "forbidden" }), { status: 403 });
+      return new Response(JSON.stringify({ ok: false, error: "forbidden" }), { status: 403 });
     }
 
-    // pull sessions starting within 15 min and missing a room
     const nowIso = new Date().toISOString();
-    const soonIso = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+    const windowIso = new Date(Date.now() + 15 * 60 * 1000).toISOString();
 
-    const { data: sessions, error } = await admin
+    // NOTE: use start_time (not starts_at)
+    const { data: sessions, error: selErr } = await admin
       .from("app_session")
       .select("id, title, status, start_time, live_provider, live_room_id, host_id")
       .eq("status", "published")
       .is("live_room_id", null)
       .not("start_time", "is", null)
       .gte("start_time", nowIso)
-      .lte("start_time", soonIso);
+      .lte("start_time", windowIso);
 
-    if (error) {
-      return new Response(JSON.stringify({ ok: false, step: "select", detail: error.message }), { status: 500 });
+    if (selErr) {
+      return new Response(JSON.stringify({ ok: false, step: "select", detail: selErr.message }), { status: 500 });
     }
 
     const active = provider();
@@ -48,19 +48,25 @@ Deno.serve(async (req) => {
           ejectAtRoomExp: true,
         });
 
-        await admin
+        // idempotent fill
+        const { error: updErr } = await admin
           .from("app_session")
-          .update({ live_provider: active, live_room_id: room.name || room.id })
+          .update({ live_provider: active, live_room_id: room.name || (room as any).id })
           .eq("id", s.id)
-          .is("live_room_id", null); // idempotent
+          .is("live_room_id", null);
 
-        results.push({ id: s.id, created: room.name || room.id });
+        if (updErr) throw updErr;
+        results.push({ id: s.id, created: room.name || (room as any).id });
       } catch (e) {
         results.push({ id: s.id, error: String(e) });
       }
     }
 
-    return new Response(JSON.stringify({ ok: true, count: results.length, results }), { status: 200 });
+    // light debug info to see the window used
+    return new Response(
+      JSON.stringify({ ok: true, count: results.length, window: { from: nowIso, to: windowIso }, results }),
+      { status: 200 },
+    );
   } catch (e) {
     return new Response(JSON.stringify({ ok: false, error: String(e) }), { status: 500 });
   }
