@@ -1,0 +1,20 @@
+name: precreate_rooms
+
+on:
+  schedule:
+    # runs every 5 minutes (UTC). change as you like.
+    - cron: "*/5 * * * *"
+  # allows manual run from the Actions tab (handy for testing)
+  workflow_dispatch:
+
+jobs:
+  call-edge-fn:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Hit precreate_rooms Edge Function
+        run: |
+          curl -sS -X POST \
+            "${{ secrets.SUPABASE_FN_URL }}" \
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
+            -d '{}'
