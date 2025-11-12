@@ -2,9 +2,7 @@ name: precreate_rooms
 
 on:
   schedule:
-    # runs every 5 minutes (UTC). change as you like.
-    - cron: "*/5 * * * *"
-  # allows manual run from the Actions tab (handy for testing)
+    - cron: "*/5 * * * *"   # every 5 minutes UTC
   workflow_dispatch:
 
 jobs:
@@ -15,6 +13,8 @@ jobs:
         run: |
           curl -sS -X POST \
             "https://okcujzmlpwijjxwhuehe.supabase.co/functions/v1/precreate_rooms" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
             -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" \
             -H "Content-Type: application/json" \
             -d '{}'
