@@ -1,21 +1,24 @@
+# .github/workflows/monthly_badges.yml
 name: monthly_badges
 
 on:
   schedule:
-    # Run at 01:05 UTC on the 1st of every month
-    - cron: "5 1 1 * *"
+    # Run every day at 01:00 UTC – safe default; the function itself
+    # always targets the last full month unless you override.
+    - cron: "0 1 * * *"
   workflow_dispatch:
 
 jobs:
   call-edge-fn:
     runs-on: ubuntu-latest
+
     steps:
       - name: Hit monthly_badges Edge Function
         run: |
           curl -sS -X POST \
             "https://okcujzmlpwijjxwhuehe.supabase.co/functions/v1/monthly_badges" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
-            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "apikey: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
             -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" \
             -H "Content-Type: application/json" \
             -d '{}'
