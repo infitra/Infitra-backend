@@ -1,4 +1,4 @@
-// supabase/functions/stripe-webhook/index.ts
+// supabase/functions/stripe_webhook/index.ts
 // Edge (Deno) webhook for Stripe — signature verified, idempotent, and safe status transitions.
 // OPTION A (hardened in-place): keeps your economics & entitlement logic, adds stricter invariants.
 
