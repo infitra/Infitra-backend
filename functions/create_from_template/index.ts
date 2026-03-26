@@ -35,28 +35,43 @@ Deno.serve(async (req) => {
 
     if (tErr || !template) return json({ error: "Template not found" }, 404);
 
-    // 4) Apply overrides (optional)
+    // 4) Apply overrides
     const title = overrides?.title ?? template.title;
     const description = overrides?.description ?? template.description;
     const price_cents = overrides?.price_cents ?? template.price_cents;
     const capacity = overrides?.capacity ?? template.capacity;
+    const config = overrides?.config ?? template.config ?? {};
 
     // -----------------------------
     // SESSION TEMPLATE
     // -----------------------------
     if (template.kind === "session") {
+      const sessionConfig = config ?? {};
+      const durationMinutes =
+        typeof sessionConfig.duration_minutes === "number"
+          ? sessionConfig.duration_minutes
+          : 60;
+
+      const startTime =
+        typeof sessionConfig.start_time === "string"
+          ? sessionConfig.start_time
+          : new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
       const { data: session, error } = await admin
         .from("app_session")
         .insert({
           title,
+          description,
+          start_time: startTime,
+          duration_minutes: durationMinutes,
           price_cents,
           currency: template.currency,
           capacity,
           host_id: userId,
           status: "draft",
-          config: template.config
+          config: sessionConfig,
         })
-        .select()
+        .select("id")
         .single();
 
       if (error) return json({ error: error.message }, 500);
@@ -68,20 +83,34 @@ Deno.serve(async (req) => {
     // CHALLENGE TEMPLATE
     // -----------------------------
     if (template.kind === "challenge") {
+      const challengeConfig = config ?? {};
+
+      const startDate =
+        typeof challengeConfig.start_date === "string"
+          ? challengeConfig.start_date
+          : new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+      const endDate =
+        typeof challengeConfig.end_date === "string"
+          ? challengeConfig.end_date
+          : new Date(Date.now() + 8 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
       // 1) Create challenge
       const { data: challenge, error: cErr } = await admin
         .from("app_challenge")
         .insert({
           title,
           description,
+          start_date: startDate,
+          end_date: endDate,
           price_cents,
           currency: template.currency,
           capacity,
           owner_id: userId,
           status: "draft",
-          config: template.config
+          config: challengeConfig,
         })
-        .select()
+        .select("id")
         .single();
 
       if (cErr) return json({ error: cErr.message }, 500);
@@ -95,22 +124,79 @@ Deno.serve(async (req) => {
 
       if (iErr) return json({ error: iErr.message }, 500);
 
-      // 3) Create sessions
+      const createdSessionIds: string[] = [];
+
+      // 3) Create sessions + link through app_challenge_session
       for (const item of items || []) {
-        if (item.item_type === "session") {
-          await admin.from("app_session").insert({
-            title: item.config?.title ?? "Session",
-            price_cents: 0,
+        if (item.item_type !== "session") continue;
+
+        const itemConfig = item.config ?? {};
+
+        const sessionTitle =
+          typeof itemConfig.title === "string" && itemConfig.title.trim() !== ""
+            ? itemConfig.title
+            : "Session";
+
+        const sessionDescription =
+          typeof itemConfig.description === "string"
+            ? itemConfig.description
+            : null;
+
+        const sessionDuration =
+          typeof itemConfig.duration_minutes === "number"
+            ? itemConfig.duration_minutes
+            : 60;
+
+        const sessionStartTime =
+          typeof itemConfig.start_time === "string"
+            ? itemConfig.start_time
+            : new Date(Date.now() + (item.position || 1) * 24 * 60 * 60 * 1000).toISOString();
+
+        const sessionPrice =
+          typeof itemConfig.price_cents === "number"
+            ? itemConfig.price_cents
+            : 0;
+
+        const sessionCapacity =
+          typeof itemConfig.capacity === "number"
+            ? itemConfig.capacity
+            : null;
+
+        const { data: session, error: sErr } = await admin
+          .from("app_session")
+          .insert({
+            title: sessionTitle,
+            description: sessionDescription,
+            start_time: sessionStartTime,
+            duration_minutes: sessionDuration,
+            price_cents: sessionPrice,
             currency: template.currency,
+            capacity: sessionCapacity,
             host_id: userId,
-            challenge_id: challenge.id,
             status: "draft",
-            config: item.config
+            config: itemConfig,
+          })
+          .select("id")
+          .single();
+
+        if (sErr) return json({ error: sErr.message }, 500);
+
+        const { error: linkErr } = await admin
+          .from("app_challenge_session")
+          .insert({
+            challenge_id: challenge.id,
+            session_id: session.id,
           });
-        }
+
+        if (linkErr) return json({ error: linkErr.message }, 500);
+
+        createdSessionIds.push(session.id);
       }
 
-      return json({ challenge_id: challenge.id });
+      return json({
+        challenge_id: challenge.id,
+        session_ids: createdSessionIds,
+      });
     }
 
     return json({ error: "Invalid template kind" }, 400);
