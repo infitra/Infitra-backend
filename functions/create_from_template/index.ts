@@ -7,9 +7,31 @@ const SERVICE_KEY  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
+function json(data: unknown, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+function addDays(dateStr: string, days: number): string {
+  const d = new Date(`${dateStr}T00:00:00.000Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+function combineDateAndTime(dateStr: string, timeOfDay: string): string {
+  const safeTime =
+    typeof timeOfDay === "string" && /^\d{2}:\d{2}(:\d{2})?$/.test(timeOfDay)
+      ? timeOfDay
+      : "18:00:00";
+
+  const normalizedTime = safeTime.length === 5 ? `${safeTime}:00` : safeTime;
+  return `${dateStr}T${normalizedTime}.000Z`;
+}
+
 Deno.serve(async (req) => {
   try {
-    // 1) Auth
     const authHeader = req.headers.get("Authorization") || "";
     const jwt = authHeader.replace("Bearer ", "");
 
@@ -22,11 +44,9 @@ Deno.serve(async (req) => {
 
     const userId = u.user.id;
 
-    // 2) Input
     const { template_id, overrides } = await req.json();
     if (!template_id) return json({ error: "Missing template_id" }, 400);
 
-    // 3) Load template
     const { data: template, error: tErr } = await admin
       .from("app_template")
       .select("*")
@@ -35,7 +55,6 @@ Deno.serve(async (req) => {
 
     if (tErr || !template) return json({ error: "Template not found" }, 404);
 
-    // 4) Apply overrides
     const title = overrides?.title ?? template.title;
     const description = overrides?.description ?? template.description;
     const price_cents = overrides?.price_cents ?? template.price_cents;
@@ -47,15 +66,18 @@ Deno.serve(async (req) => {
     // -----------------------------
     if (template.kind === "session") {
       const sessionConfig = config ?? {};
+
       const durationMinutes =
         typeof sessionConfig.duration_minutes === "number"
           ? sessionConfig.duration_minutes
           : 60;
 
       const startTime =
-        typeof sessionConfig.start_time === "string"
-          ? sessionConfig.start_time
-          : new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+        typeof overrides?.start_time === "string"
+          ? overrides.start_time
+          : typeof sessionConfig.start_time === "string"
+            ? sessionConfig.start_time
+            : new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
       const { data: session, error } = await admin
         .from("app_session")
@@ -86,16 +108,19 @@ Deno.serve(async (req) => {
       const challengeConfig = config ?? {};
 
       const startDate =
-        typeof challengeConfig.start_date === "string"
-          ? challengeConfig.start_date
-          : new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+        typeof overrides?.start_date === "string"
+          ? overrides.start_date
+          : typeof challengeConfig.start_date === "string"
+            ? challengeConfig.start_date
+            : new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
       const endDate =
-        typeof challengeConfig.end_date === "string"
-          ? challengeConfig.end_date
-          : new Date(Date.now() + 8 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+        typeof overrides?.end_date === "string"
+          ? overrides.end_date
+          : typeof challengeConfig.end_date === "string"
+            ? challengeConfig.end_date
+            : addDays(startDate, 7);
 
-      // 1) Create challenge
       const { data: challenge, error: cErr } = await admin
         .from("app_challenge")
         .insert({
@@ -115,7 +140,6 @@ Deno.serve(async (req) => {
 
       if (cErr) return json({ error: cErr.message }, 500);
 
-      // 2) Load template items
       const { data: items, error: iErr } = await admin
         .from("app_template_item")
         .select("*")
@@ -126,7 +150,6 @@ Deno.serve(async (req) => {
 
       const createdSessionIds: string[] = [];
 
-      // 3) Create sessions + link through app_challenge_session
       for (const item of items || []) {
         if (item.item_type !== "session") continue;
 
@@ -147,10 +170,18 @@ Deno.serve(async (req) => {
             ? itemConfig.duration_minutes
             : 60;
 
-        const sessionStartTime =
-          typeof itemConfig.start_time === "string"
-            ? itemConfig.start_time
-            : new Date(Date.now() + (item.position || 1) * 24 * 60 * 60 * 1000).toISOString();
+        const dayOffset =
+          typeof itemConfig.day_offset === "number"
+            ? itemConfig.day_offset
+            : 0;
+
+        const timeOfDay =
+          typeof itemConfig.time_of_day === "string"
+            ? itemConfig.time_of_day
+            : "18:00:00";
+
+        const sessionStartDate = addDays(startDate, dayOffset);
+        const sessionStartTime = combineDateAndTime(sessionStartDate, timeOfDay);
 
         const sessionPrice =
           typeof itemConfig.price_cents === "number"
@@ -181,12 +212,10 @@ Deno.serve(async (req) => {
 
         if (sErr) return json({ error: sErr.message }, 500);
 
-        const { error: linkErr } = await admin
-          .from("app_challenge_session")
-          .insert({
-            challenge_id: challenge.id,
-            session_id: session.id,
-          });
+        const { error: linkErr } = await admin.rpc("challenge_add_session", {
+          p_challenge: challenge.id,
+          p_session: session.id,
+        });
 
         if (linkErr) return json({ error: linkErr.message }, 500);
 
@@ -200,15 +229,7 @@ Deno.serve(async (req) => {
     }
 
     return json({ error: "Invalid template kind" }, 400);
-
   } catch (e) {
     return json({ error: String(e) }, 500);
   }
 });
-
-function json(data: unknown, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { "Content-Type": "application/json" }
-  });
-}
