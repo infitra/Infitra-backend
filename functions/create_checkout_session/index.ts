@@ -117,6 +117,31 @@ Deno.serve(async (req) => {
     }
     if (baseCents <= 0) return json({ error: "Invalid price" }, 400);
 
+    // capacity guard (lean, pre-checkout)
+
+    if (kind === "session") {
+    const { data: spotsLeft, error } = await admin.rpc("session_spots_left", {
+      p_session: target_id,
+    });
+
+    if (error) return json({ error: "Capacity check failed", detail: error.message }, 500);
+
+    if (spotsLeft !== null && spotsLeft <= 0) {
+      return json({ error: "SESSION_FULL" }, 400);
+    }
+
+    } else if (kind === "challenge") {
+    const { data: spotsLeft, error } = await admin.rpc("challenge_spots_left", {
+      p_challenge: target_id,
+    });
+
+    if (error) return json({ error: "Capacity check failed", detail: error.message }, 500);
+
+    if (spotsLeft !== null && spotsLeft <= 0) {
+      return json({ error: "CHALLENGE_FULL" }, 400);
+    }
+    }
+
     // 4) URLs
     const successUrl = PROJECT_URL
       ? `${PROJECT_URL}/checkout/success?sid={CHECKOUT_SESSION_ID}`
