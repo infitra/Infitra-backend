@@ -8,3 +8,4 @@ build/
 .supabase/
 supabase/.temp/
 .vscode/
+.claude/worktrees/
