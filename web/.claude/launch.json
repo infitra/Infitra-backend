@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "web",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["--cache", "/tmp/npm-cache", "next", "dev"],
+      "port": 3000
+    }
+  ]
+}
