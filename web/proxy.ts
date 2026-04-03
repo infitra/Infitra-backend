@@ -12,6 +12,16 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Skip auth token refresh for prefetch requests.
+  // Prefetch can consume the refresh token before the real navigation,
+  // and browsers may not apply Set-Cookie headers from prefetch responses.
+  if (
+    request.headers.get("purpose") === "prefetch" ||
+    request.headers.get("next-router-prefetch") !== null
+  ) {
+    return NextResponse.next();
+  }
+
   // ── BETA GATE ─────────────────────────────────────────────────
   // Every route except public ones requires the beta access cookie.
   const betaCookie = request.cookies.get("x-beta-access")?.value;
