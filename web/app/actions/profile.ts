@@ -12,12 +12,7 @@ export async function completeOnboarding(prevState: unknown, formData: FormData)
 
   if (!user) return { error: "Not authenticated." };
 
-  const role = formData.get("role") as string;
   const displayName = (formData.get("display_name") as string)?.trim();
-
-  if (!["participant", "creator"].includes(role)) {
-    return { error: "Please select a valid role." };
-  }
 
   if (!displayName || displayName.length < 2) {
     return { error: "Display name must be at least 2 characters." };
@@ -27,10 +22,11 @@ export async function completeOnboarding(prevState: unknown, formData: FormData)
     return { error: "Display name must be under 50 characters." };
   }
 
+  // Only update display_name — role is immutable after account creation
+  // and was set correctly by the trigger from signup metadata.
   const { error } = await supabase
     .from("app_profile")
     .update({
-      role,
       display_name: displayName,
       updated_at: new Date().toISOString(),
     })
@@ -38,7 +34,13 @@ export async function completeOnboarding(prevState: unknown, formData: FormData)
 
   if (error) return { error: error.message };
 
-  // Set onboarded cookie so proxy skips DB check
+  // Read role from profile to redirect correctly
+  const { data: profile } = await supabase
+    .from("app_profile")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
   const cookieStore = await cookies();
   cookieStore.set("x-onboarded", "1", {
     httpOnly: true,
@@ -47,5 +49,5 @@ export async function completeOnboarding(prevState: unknown, formData: FormData)
     maxAge: 60 * 60 * 24 * 30,
   });
 
-  redirect(role === "creator" ? "/dashboard" : "/discover");
+  redirect(profile?.role === "creator" ? "/dashboard" : "/discover");
 }
