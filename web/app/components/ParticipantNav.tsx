@@ -1,0 +1,42 @@
+import Link from "next/link";
+import Image from "next/image";
+
+export function ParticipantNav({
+  displayName,
+}: {
+  displayName: string | null;
+}) {
+  return (
+    <nav className="fixed top-0 w-full z-50 bg-[#071318]/80 backdrop-blur-xl border-b border-[#9CF0FF]/10">
+      <div className="max-w-7xl mx-auto px-6 py-3.5 flex items-center justify-between">
+        <Link href="/discover" className="flex items-center gap-3">
+          <div className="rounded-xl overflow-hidden">
+            <Image
+              src="/logo-mark.png"
+              alt="INFITRA"
+              width={36}
+              height={36}
+              className="block"
+            />
+          </div>
+          <span className="text-lg font-black text-[#FF6130] tracking-tighter font-headline italic">
+            INFITRA
+          </span>
+        </Link>
+        <div className="flex items-center gap-4">
+          {displayName && (
+            <span className="text-sm text-[#9CF0FF]/50 font-headline hidden md:block">
+              {displayName}
+            </span>
+          )}
+          <Link
+            href="/signout"
+            className="px-4 py-2 text-xs font-bold text-[#9CF0FF]/40 hover:text-[#9CF0FF] border border-[#9CF0FF]/10 hover:border-[#9CF0FF]/25 rounded-full transition-all font-headline"
+          >
+            Sign Out
+          </Link>
+        </div>
+      </div>
+    </nav>
+  );
+}

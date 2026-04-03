@@ -30,7 +30,10 @@ export async function proxy(request: NextRequest) {
   // Unauthenticated users trying to access protected app routes
   if (
     !user &&
-    (pathname.startsWith("/dashboard") || pathname.startsWith("/onboarding"))
+    (pathname.startsWith("/dashboard") ||
+      pathname.startsWith("/onboarding") ||
+      pathname.startsWith("/discover") ||
+      pathname.startsWith("/sessions"))
   ) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
