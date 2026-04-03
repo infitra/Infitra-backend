@@ -5,12 +5,16 @@ import { useRouter } from "next/navigation";
 import {
   updateChallenge,
   deleteChallenge,
-  addSessionToChallenge,
-  removeSessionFromChallenge,
+  createChallengeSession,
+  updateChallengeSession,
+  removeChallengeSession,
 } from "@/app/actions/challenge";
 
 const INPUT =
   "w-full px-4 py-3 rounded-xl bg-[#071318] border border-[#9CF0FF]/15 text-white placeholder-[#9CF0FF]/25 focus:outline-none focus:border-[#9CF0FF]/40 transition-colors text-sm";
+
+const INPUT_SM =
+  "w-full px-3 py-2 rounded-lg bg-[#071318] border border-[#9CF0FF]/15 text-white placeholder-[#9CF0FF]/25 focus:outline-none focus:border-[#9CF0FF]/40 transition-colors text-sm";
 
 const LABEL =
   "block text-xs font-bold text-[#9CF0FF]/50 uppercase tracking-wider mb-2 font-headline";
@@ -35,23 +39,31 @@ interface SessionSummary {
 export function ChallengeEditForm({
   challenge,
   linkedSessions: initialLinked,
-  availableSessions: initialAvailable,
 }: {
   challenge: Challenge;
   linkedSessions: SessionSummary[];
-  availableSessions: SessionSummary[];
 }) {
   const router = useRouter();
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [sessionError, setSessionError] = useState<string | null>(null);
-  const [showPicker, setShowPicker] = useState(false);
-  const [linkPending, startLinkTransition] = useTransition();
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [sessionPending, startSessionTransition] = useTransition();
 
-  // Optimistic session lists
   const [linked, setLinked] = useState<SessionSummary[]>(initialLinked);
-  const [available, setAvailable] =
-    useState<SessionSummary[]>(initialAvailable);
+
+  // Add session form state
+  const [newTitle, setNewTitle] = useState("");
+  const [newDate, setNewDate] = useState("");
+  const [newTime, setNewTime] = useState("10:00");
+  const [newDuration, setNewDuration] = useState("60");
+
+  // Edit session form state
+  const [editTitle, setEditTitle] = useState("");
+  const [editDate, setEditDate] = useState("");
+  const [editTime, setEditTime] = useState("");
+  const [editDuration, setEditDuration] = useState("");
 
   const [state, action, pending] = useActionState(
     async (prev: unknown, fd: FormData) => {
@@ -67,7 +79,8 @@ export function ChallengeEditForm({
   const priceCHF = challenge.price_cents / 100;
 
   async function handleDelete() {
-    if (!confirm("Delete this draft? This cannot be undone.")) return;
+    if (!confirm("Delete this draft and all its sessions? This cannot be undone."))
+      return;
     setDeleting(true);
     setDeleteError(null);
     const result = await deleteChallenge(challenge.id);
@@ -77,57 +90,126 @@ export function ChallengeEditForm({
     }
   }
 
-  function handleLinkSession(session: SessionSummary) {
+  function handleAddSession() {
     setSessionError(null);
-    // Optimistic update
-    setLinked((prev) => [...prev, session]);
-    setAvailable((prev) => prev.filter((s) => s.id !== session.id));
-    setShowPicker(false);
+    if (!newTitle.trim() || newTitle.trim().length < 3) {
+      setSessionError("Session title must be at least 3 characters.");
+      return;
+    }
+    if (!newDate || !newTime) {
+      setSessionError("Session date and time are required.");
+      return;
+    }
+    const dur = parseInt(newDuration);
+    if (!dur || dur < 5 || dur > 480) {
+      setSessionError("Duration must be between 5 and 480 minutes.");
+      return;
+    }
 
-    startLinkTransition(async () => {
-      const result = await addSessionToChallenge(challenge.id, session.id);
+    const startTime = new Date(`${newDate}T${newTime}`).toISOString();
+
+    startSessionTransition(async () => {
+      const result = await createChallengeSession(
+        challenge.id,
+        newTitle.trim(),
+        startTime,
+        dur
+      );
       if (result?.error) {
         setSessionError(result.error);
-        // Revert
-        setLinked((prev) => prev.filter((s) => s.id !== session.id));
-        setAvailable((prev) => [...prev, session]);
+      } else if (result?.sessionId) {
+        setLinked((prev) => [
+          ...prev,
+          {
+            id: result.sessionId,
+            title: newTitle.trim(),
+            start_time: startTime,
+            duration_minutes: dur,
+          },
+        ]);
+        setNewTitle("");
+        setNewDate("");
+        setNewTime("10:00");
+        setNewDuration("60");
+        setShowAddForm(false);
       }
     });
   }
 
-  function handleUnlinkSession(session: SessionSummary) {
-    setSessionError(null);
-    // Optimistic update
-    setLinked((prev) => prev.filter((s) => s.id !== session.id));
-    setAvailable((prev) =>
-      [...prev, session].sort(
-        (a, b) =>
-          new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
-      )
-    );
+  function startEditing(sess: SessionSummary) {
+    setEditingId(sess.id);
+    setEditTitle(sess.title);
+    const d = new Date(sess.start_time);
+    setEditDate(d.toISOString().split("T")[0]);
+    setEditTime(d.toTimeString().slice(0, 5));
+    setEditDuration(String(sess.duration_minutes));
+  }
 
-    startLinkTransition(async () => {
-      const result = await removeSessionFromChallenge(
-        challenge.id,
-        session.id
+  function handleSaveEdit(sessionId: string) {
+    setSessionError(null);
+    const dur = parseInt(editDuration);
+    const startTime = new Date(`${editDate}T${editTime}`).toISOString();
+
+    startSessionTransition(async () => {
+      const result = await updateChallengeSession(
+        sessionId,
+        editTitle.trim(),
+        startTime,
+        dur
       );
       if (result?.error) {
         setSessionError(result.error);
-        // Revert
-        setAvailable((prev) => prev.filter((s) => s.id !== session.id));
+      } else {
         setLinked((prev) =>
-          [...prev, session].sort(
-            (a, b) =>
-              new Date(a.start_time).getTime() -
-              new Date(b.start_time).getTime()
+          prev.map((s) =>
+            s.id === sessionId
+              ? {
+                  ...s,
+                  title: editTitle.trim(),
+                  start_time: startTime,
+                  duration_minutes: dur,
+                }
+              : s
           )
         );
+        setEditingId(null);
       }
+    });
+  }
+
+  function handleRemoveSession(session: SessionSummary) {
+    setSessionError(null);
+    setLinked((prev) => prev.filter((s) => s.id !== session.id));
+
+    startSessionTransition(async () => {
+      const result = await removeChallengeSession(challenge.id, session.id);
+      if (result?.error) {
+        setSessionError(result.error);
+        setLinked((prev) => [...prev, session]);
+      }
+    });
+  }
+
+  function formatSessionDate(dateStr: string) {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString("en-GB", {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+    });
+  }
+
+  function formatSessionTime(dateStr: string) {
+    const d = new Date(dateStr);
+    return d.toLocaleTimeString("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
     });
   }
 
   return (
     <div className="space-y-8">
+      {/* ── Challenge Details Form ─────────────────────────────── */}
       <form action={action} className="space-y-6">
         <input type="hidden" name="challenge_id" value={challenge.id} />
 
@@ -263,7 +345,7 @@ export function ChallengeEditForm({
         </div>
       </form>
 
-      {/* ── Session Linking ────────────────────────────────────── */}
+      {/* ── Sessions ───────────────────────────────────────────── */}
       <div className="pt-6 border-t border-[#9CF0FF]/10">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
@@ -272,14 +354,14 @@ export function ChallengeEditForm({
               {linked.length}
             </span>
           </div>
-          {available.length > 0 && (
+          {!showAddForm && (
             <button
               type="button"
-              onClick={() => setShowPicker(!showPicker)}
-              disabled={linkPending}
+              onClick={() => setShowAddForm(true)}
+              disabled={sessionPending}
               className="text-xs font-bold text-[#FF6130] hover:text-[#FF6130]/80 transition-colors font-headline disabled:opacity-50"
             >
-              {showPicker ? "Cancel" : "+ Link Session"}
+              + Add Session
             </button>
           )}
         </div>
@@ -291,100 +373,198 @@ export function ChallengeEditForm({
         )}
 
         <p className="text-[10px] text-[#9CF0FF]/25 mb-4">
-          Minimum 3 draft sessions required. They will be published together
-          with the challenge.
+          Minimum 3 sessions required to publish. Sessions are published
+          together with the challenge.
         </p>
 
-        {/* Picker: available draft sessions */}
-        {showPicker && (
-          <div className="mb-4 p-4 rounded-xl bg-[#071318] border border-[#9CF0FF]/15">
-            <p className="text-xs font-bold text-[#9CF0FF]/50 mb-3 font-headline">
-              Your draft sessions
+        {/* Add session inline form */}
+        {showAddForm && (
+          <div className="mb-4 p-4 rounded-xl bg-[#071318] border border-[#9CF0FF]/15 space-y-3">
+            <p className="text-xs font-bold text-[#9CF0FF]/50 font-headline">
+              New Session
             </p>
-            {available.length === 0 ? (
-              <p className="text-xs text-[#9CF0FF]/30">
-                No unlinked draft sessions available. Create new sessions from
-                the Sessions page first.
-              </p>
-            ) : (
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                {available.map((sess) => (
-                  <button
-                    key={sess.id}
-                    type="button"
-                    onClick={() => handleLinkSession(sess)}
-                    disabled={linkPending}
-                    className="w-full text-left p-3 rounded-lg bg-[#0F2229] border border-[#9CF0FF]/10 hover:border-[#FF6130]/25 transition-colors group disabled:opacity-50"
-                  >
-                    <p className="text-sm font-bold text-white font-headline group-hover:text-[#FF6130] transition-colors">
-                      {sess.title}
-                    </p>
-                    <p className="text-[10px] text-[#9CF0FF]/40 mt-0.5">
-                      {new Date(sess.start_time).toLocaleDateString("en-GB", {
-                        weekday: "short",
-                        day: "numeric",
-                        month: "short",
-                      })}{" "}
-                      &middot; {sess.duration_minutes} min
-                    </p>
-                  </button>
-                ))}
+            <input
+              type="text"
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+              placeholder="Session title"
+              minLength={3}
+              maxLength={120}
+              className={INPUT_SM}
+            />
+            <div className="grid grid-cols-3 gap-3">
+              <input
+                type="date"
+                value={newDate}
+                onChange={(e) => setNewDate(e.target.value)}
+                className={INPUT_SM}
+              />
+              <input
+                type="time"
+                value={newTime}
+                onChange={(e) => setNewTime(e.target.value)}
+                className={INPUT_SM}
+              />
+              <div className="relative">
+                <input
+                  type="number"
+                  value={newDuration}
+                  onChange={(e) => setNewDuration(e.target.value)}
+                  min={5}
+                  max={480}
+                  placeholder="60"
+                  className={INPUT_SM}
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-[#9CF0FF]/25">
+                  min
+                </span>
               </div>
-            )}
+            </div>
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={handleAddSession}
+                disabled={sessionPending}
+                className="px-4 py-2 rounded-lg bg-[#FF6130] text-white text-xs font-bold font-headline hover:scale-[1.02] transition-transform disabled:opacity-50"
+              >
+                {sessionPending ? "Adding..." : "Add"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAddForm(false);
+                  setSessionError(null);
+                }}
+                className="px-4 py-2 text-xs text-[#9CF0FF]/40 hover:text-[#9CF0FF] font-headline transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         )}
 
-        {/* Linked sessions */}
+        {/* Session list */}
         {linked.length > 0 ? (
           <div className="space-y-2">
-            {linked.map((sess) => (
-              <div
-                key={sess.id}
-                className="flex items-center justify-between p-3 rounded-xl bg-[#0F2229] border border-[#9CF0FF]/10"
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-bold text-white font-headline truncate">
-                    {sess.title}
-                  </p>
-                  <p className="text-[10px] text-[#9CF0FF]/40 mt-0.5">
-                    {new Date(sess.start_time).toLocaleDateString("en-GB", {
-                      weekday: "short",
-                      day: "numeric",
-                      month: "short",
-                    })}{" "}
-                    &middot; {sess.duration_minutes} min
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => handleUnlinkSession(sess)}
-                  disabled={linkPending}
-                  className="ml-3 p-1.5 rounded-lg text-[#9CF0FF]/30 hover:text-red-400 hover:bg-red-400/10 transition-all disabled:opacity-50"
-                  title="Remove session"
-                >
-                  <svg
-                    width="14"
-                    height="14"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                    viewBox="0 0 24 24"
+            {linked
+              .sort(
+                (a, b) =>
+                  new Date(a.start_time).getTime() -
+                  new Date(b.start_time).getTime()
+              )
+              .map((sess) =>
+                editingId === sess.id ? (
+                  /* Editing mode */
+                  <div
+                    key={sess.id}
+                    className="p-3 rounded-xl bg-[#071318] border border-[#9CF0FF]/25 space-y-3"
                   >
-                    <path
-                      d="M18 6L6 18M6 6l12 12"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
+                    <input
+                      type="text"
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      className={INPUT_SM}
                     />
-                  </svg>
-                </button>
-              </div>
-            ))}
+                    <div className="grid grid-cols-3 gap-3">
+                      <input
+                        type="date"
+                        value={editDate}
+                        onChange={(e) => setEditDate(e.target.value)}
+                        className={INPUT_SM}
+                      />
+                      <input
+                        type="time"
+                        value={editTime}
+                        onChange={(e) => setEditTime(e.target.value)}
+                        className={INPUT_SM}
+                      />
+                      <input
+                        type="number"
+                        value={editDuration}
+                        onChange={(e) => setEditDuration(e.target.value)}
+                        min={5}
+                        max={480}
+                        className={INPUT_SM}
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleSaveEdit(sess.id)}
+                        disabled={sessionPending}
+                        className="px-3 py-1.5 rounded-lg bg-[#FF6130] text-white text-xs font-bold font-headline disabled:opacity-50"
+                      >
+                        {sessionPending ? "Saving..." : "Save"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditingId(null)}
+                        className="px-3 py-1.5 text-xs text-[#9CF0FF]/40 hover:text-[#9CF0FF] font-headline"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  /* Display mode */
+                  <div
+                    key={sess.id}
+                    className="flex items-center justify-between p-3 rounded-xl bg-[#0F2229] border border-[#9CF0FF]/10 group/item"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => startEditing(sess)}
+                      className="min-w-0 flex-1 text-left"
+                    >
+                      <p className="text-sm font-bold text-white font-headline truncate group-hover/item:text-[#FF6130] transition-colors">
+                        {sess.title}
+                      </p>
+                      <p className="text-[10px] text-[#9CF0FF]/40 mt-0.5">
+                        {formatSessionDate(sess.start_time)} at{" "}
+                        {formatSessionTime(sess.start_time)} &middot;{" "}
+                        {sess.duration_minutes} min
+                      </p>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveSession(sess)}
+                      disabled={sessionPending}
+                      className="ml-3 p-1.5 rounded-lg text-[#9CF0FF]/20 hover:text-red-400 hover:bg-red-400/10 transition-all disabled:opacity-50 opacity-0 group-hover/item:opacity-100"
+                      title="Remove session"
+                    >
+                      <svg
+                        width="14"
+                        height="14"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          d="M18 6L6 18M6 6l12 12"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                )
+              )}
           </div>
         ) : (
           <div className="text-center py-8 rounded-xl border border-dashed border-[#9CF0FF]/10">
-            <p className="text-xs text-[#9CF0FF]/30">
-              No sessions linked yet.
+            <p className="text-xs text-[#9CF0FF]/30 mb-2">
+              No sessions yet.
             </p>
+            {!showAddForm && (
+              <button
+                type="button"
+                onClick={() => setShowAddForm(true)}
+                className="text-xs font-bold text-[#FF6130] font-headline"
+              >
+                + Add your first session
+              </button>
+            )}
           </div>
         )}
       </div>

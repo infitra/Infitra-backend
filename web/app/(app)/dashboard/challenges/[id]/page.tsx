@@ -72,22 +72,11 @@ export default async function ChallengeDetailPage({
     (r: any) => r.app_session
   ).filter(Boolean);
 
-  // For draft: fetch user's unlinked draft sessions for the picker
-  let availableSessions: any[] = [];
-  if (isDraft) {
-    const linkedIds = linkedSessions.map((s: any) => s.id);
-    const query = supabase
-      .from("app_session")
-      .select("id, title, start_time, duration_minutes")
-      .eq("host_id", user.id)
-      .eq("status", "draft")
-      .order("start_time", { ascending: true });
-
-    const { data: allDrafts } = await query;
-    availableSessions = (allDrafts ?? []).filter(
-      (s: any) => !linkedIds.includes(s.id)
-    );
-  }
+  // Sort linked sessions by start_time
+  linkedSessions.sort(
+    (a: any, b: any) =>
+      new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
+  );
 
   return (
     <div className="py-10 max-w-2xl mx-auto">
@@ -127,7 +116,6 @@ export default async function ChallengeDetailPage({
           <ChallengeEditForm
             challenge={challenge}
             linkedSessions={linkedSessions}
-            availableSessions={availableSessions}
           />
         </>
       ) : (

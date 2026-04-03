@@ -1,6 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
-import { createDraftSession } from "@/app/actions/session";
 
 export const metadata = {
   title: "Sessions — INFITRA",
@@ -46,14 +45,12 @@ export default async function SessionsPage() {
             Create, manage, and publish live sessions.
           </p>
         </div>
-        <form action={createDraftSession}>
-          <button
-            type="submit"
-            className="px-5 py-2.5 rounded-full bg-[#FF6130] text-white text-sm font-black font-headline hover:scale-[1.03] transition-transform shadow-[0_0_20px_rgba(255,97,48,0.25)]"
-          >
-            New Session
-          </button>
-        </form>
+        <Link
+          href="/dashboard/sessions/new"
+          className="px-5 py-2.5 rounded-full bg-[#FF6130] text-white text-sm font-black font-headline hover:scale-[1.03] transition-transform shadow-[0_0_20px_rgba(255,97,48,0.25)]"
+        >
+          New Session
+        </Link>
       </div>
 
       {!hasSessions ? (
@@ -69,14 +66,12 @@ export default async function SessionsPage() {
           <p className="text-sm text-[#9CF0FF]/40 mb-6 max-w-xs mx-auto">
             Create your first session to start building your schedule.
           </p>
-          <form action={createDraftSession} className="inline-block">
-            <button
-              type="submit"
-              className="px-6 py-3 rounded-full bg-[#FF6130] text-white text-sm font-black font-headline hover:scale-[1.03] transition-transform shadow-[0_0_20px_rgba(255,97,48,0.25)]"
-            >
-              Create Session
-            </button>
-          </form>
+          <Link
+            href="/dashboard/sessions/new"
+            className="inline-block px-6 py-3 rounded-full bg-[#FF6130] text-white text-sm font-black font-headline hover:scale-[1.03] transition-transform shadow-[0_0_20px_rgba(255,97,48,0.25)]"
+          >
+            Create Session
+          </Link>
         </div>
       ) : (
         <div className="space-y-3">

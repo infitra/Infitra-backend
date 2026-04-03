@@ -94,10 +94,12 @@ export async function updateChallenge(prevState: unknown, formData: FormData) {
   return { success: true, challengeId };
 }
 
-/** Links a draft session to a draft challenge via RPC. */
-export async function addSessionToChallenge(
+/** Creates a session inline within a challenge via create_challenge_session RPC. */
+export async function createChallengeSession(
   challengeId: string,
-  sessionId: string
+  title: string,
+  startTime: string,
+  durationMinutes: number
 ) {
   const supabase = await createClient();
   const {
@@ -106,17 +108,65 @@ export async function addSessionToChallenge(
 
   if (!user) return { error: "Not authenticated." };
 
-  const { error } = await supabase.rpc("challenge_add_session", {
-    p_challenge: challengeId,
-    p_session: sessionId,
+  if (!title?.trim() || title.trim().length < 3) {
+    return { error: "Session title must be at least 3 characters." };
+  }
+  if (!startTime) {
+    return { error: "Session date and time are required." };
+  }
+  if (!durationMinutes || durationMinutes < 5 || durationMinutes > 480) {
+    return { error: "Duration must be between 5 and 480 minutes." };
+  }
+
+  const { data, error } = await supabase.rpc("create_challenge_session", {
+    p_challenge_id: challengeId,
+    p_title: title.trim(),
+    p_start_time: startTime,
+    p_duration_minutes: durationMinutes,
+    p_price_cents: 0,
+    p_currency: "CHF",
   });
+
+  if (error) return { error: error.message };
+
+  const row = Array.isArray(data) ? data[0] : data;
+  return { success: true, sessionId: row?.session_id };
+}
+
+/** Updates an inline challenge session (app_session row). RLS ensures only owner drafts. */
+export async function updateChallengeSession(
+  sessionId: string,
+  title: string,
+  startTime: string,
+  durationMinutes: number
+) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { error: "Not authenticated." };
+
+  if (!title?.trim() || title.trim().length < 3) {
+    return { error: "Session title must be at least 3 characters." };
+  }
+
+  const { error } = await supabase
+    .from("app_session")
+    .update({
+      title: title.trim(),
+      start_time: startTime,
+      duration_minutes: durationMinutes,
+    })
+    .eq("id", sessionId)
+    .eq("host_id", user.id);
 
   if (error) return { error: error.message };
   return { success: true };
 }
 
-/** Unlinks a session from a draft challenge via RPC. */
-export async function removeSessionFromChallenge(
+/** Removes a session from a challenge AND deletes the app_session row. */
+export async function removeChallengeSession(
   challengeId: string,
   sessionId: string
 ) {
@@ -127,12 +177,24 @@ export async function removeSessionFromChallenge(
 
   if (!user) return { error: "Not authenticated." };
 
-  const { error } = await supabase.rpc("challenge_remove_session", {
-    p_challenge: challengeId,
-    p_session: sessionId,
-  });
+  // Unlink from challenge
+  const { error: unlinkError } = await supabase.rpc(
+    "challenge_remove_session",
+    {
+      p_challenge: challengeId,
+      p_session: sessionId,
+    }
+  );
 
-  if (error) return { error: error.message };
+  if (unlinkError) return { error: unlinkError.message };
+
+  // Delete the session row (it was created for this challenge only)
+  await supabase
+    .from("app_session")
+    .delete()
+    .eq("id", sessionId)
+    .eq("host_id", user.id);
+
   return { success: true };
 }
 
@@ -171,6 +233,13 @@ export async function deleteChallenge(challengeId: string) {
 
   if (!user) return { error: "Not authenticated." };
 
+  // First delete all linked sessions (they were created for this challenge only)
+  const { data: linkedRows } = await supabase
+    .from("app_challenge_session")
+    .select("session_id")
+    .eq("challenge_id", challengeId);
+
+  // Delete the challenge (cascade removes app_challenge_session links)
   const { error } = await supabase
     .from("app_challenge")
     .delete()
@@ -178,6 +247,17 @@ export async function deleteChallenge(challengeId: string) {
     .eq("owner_id", user.id);
 
   if (error) return { error: error.message };
+
+  // Clean up orphaned session rows
+  if (linkedRows?.length) {
+    for (const row of linkedRows) {
+      await supabase
+        .from("app_session")
+        .delete()
+        .eq("id", row.session_id)
+        .eq("host_id", user.id);
+    }
+  }
 
   redirect("/dashboard/challenges");
 }
@@ -207,7 +287,6 @@ function humanizeBlockers(codes: string[]): string {
 
   return codes
     .map((c) => {
-      // Handle parameterized codes like "status_must_be_draft_current=published"
       const base = c.split("=")[0];
       return map[base] ?? c;
     })

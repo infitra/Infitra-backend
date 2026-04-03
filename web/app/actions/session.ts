@@ -3,39 +3,15 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
-/** Creates a blank draft session with sensible defaults and redirects to the edit page. */
-export async function createDraftSession() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) redirect("/login");
-
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  tomorrow.setHours(10, 0, 0, 0);
-
-  const { data, error } = await supabase
-    .from("app_session")
-    .insert({
-      title: "Untitled Session",
-      start_time: tomorrow.toISOString(),
-      duration_minutes: 60,
-      price_cents: 0,
-      currency: "CHF",
-      host_id: user.id,
-    })
-    .select("id")
-    .single();
-
-  if (error) throw new Error(error.message);
-
-  redirect(`/dashboard/sessions/${data.id}`);
-}
-
-/** Updates a draft session. Only works on drafts you own (RLS enforced). */
-export async function updateSession(prevState: unknown, formData: FormData) {
+/**
+ * Creates a standalone session and publishes it atomically.
+ * No persistent drafts — the session goes from form → published in one step.
+ * If publish validation fails, the draft is deleted and errors are returned.
+ */
+export async function createAndPublishSession(
+  prevState: unknown,
+  formData: FormData
+) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -43,9 +19,9 @@ export async function updateSession(prevState: unknown, formData: FormData) {
 
   if (!user) return { error: "Not authenticated." };
 
-  const sessionId = formData.get("session_id") as string;
   const title = (formData.get("title") as string)?.trim();
-  const description = (formData.get("description") as string)?.trim() || null;
+  const description =
+    (formData.get("description") as string)?.trim() || null;
   const date = formData.get("date") as string;
   const time = formData.get("time") as string;
   const durationMinutes = parseInt(formData.get("duration_minutes") as string);
@@ -54,6 +30,7 @@ export async function updateSession(prevState: unknown, formData: FormData) {
   const priceRaw = formData.get("price") as string;
   const priceCents = priceRaw ? Math.round(parseFloat(priceRaw) * 100) : 0;
 
+  // ── Validation ──────────────────────────────────────────
   if (!title || title.length < 3) {
     return { error: "Title must be at least 3 characters." };
   }
@@ -66,8 +43,8 @@ export async function updateSession(prevState: unknown, formData: FormData) {
   if (capacity !== null && (capacity < 1 || capacity > 10000)) {
     return { error: "Capacity must be between 1 and 10,000." };
   }
-  if (priceCents < 0) {
-    return { error: "Price cannot be negative." };
+  if (priceCents <= 0) {
+    return { error: "Price must be greater than zero to publish." };
   }
 
   const startTime = new Date(`${date}T${time}`);
@@ -78,25 +55,49 @@ export async function updateSession(prevState: unknown, formData: FormData) {
     return { error: "Start time must be in the future." };
   }
 
-  const { error } = await supabase
+  // ── Create draft ────────────────────────────────────────
+  const { data: session, error: insertError } = await supabase
     .from("app_session")
-    .update({
+    .insert({
       title,
       description,
       start_time: startTime.toISOString(),
       duration_minutes: durationMinutes,
       capacity,
       price_cents: priceCents,
+      currency: "CHF",
+      host_id: user.id,
     })
-    .eq("id", sessionId)
-    .eq("host_id", user.id);
+    .select("id")
+    .single();
 
-  if (error) return { error: error.message };
+  if (insertError) return { error: insertError.message };
 
-  return { success: true, sessionId };
+  // ── Publish immediately ─────────────────────────────────
+  const { data, error: rpcError } = await supabase.rpc("publish_session", {
+    p_session: session.id,
+    p_caller: user.id,
+  });
+
+  if (rpcError) {
+    // Clean up the draft
+    await supabase.from("app_session").delete().eq("id", session.id);
+    return { error: rpcError.message };
+  }
+
+  const result = data as { ok: boolean; errors?: string[] };
+  if (!result.ok) {
+    // Clean up the draft
+    await supabase.from("app_session").delete().eq("id", session.id);
+    return {
+      error: result.errors?.join(", ") ?? "Cannot publish session.",
+    };
+  }
+
+  redirect(`/dashboard/sessions/${session.id}`);
 }
 
-/** Publishes a draft session via the DB RPC (validates pricing, timing, etc.). */
+/** Publishes a draft session via the DB RPC. Used for challenge-linked sessions. */
 export async function publishSession(sessionId: string) {
   const supabase = await createClient();
   const {
@@ -120,7 +121,7 @@ export async function publishSession(sessionId: string) {
   redirect(`/dashboard/sessions/${sessionId}`);
 }
 
-/** Deletes a draft session. Only drafts can be deleted (RLS enforced). */
+/** Deletes a session. Only drafts can be deleted (RLS enforced). */
 export async function deleteSession(sessionId: string) {
   const supabase = await createClient();
   const {
