@@ -210,7 +210,7 @@ export function ChallengeEditForm({
   return (
     <div className="space-y-8">
       {/* ── Challenge Details Form ─────────────────────────────── */}
-      <form action={action} className="space-y-6">
+      <form action={action} className="space-y-6" data-challenge-form>
         <input type="hidden" name="challenge_id" value={challenge.id} />
 
         {(state?.error || deleteError) && (
@@ -326,23 +326,6 @@ export function ChallengeEditForm({
           </div>
         </div>
 
-        <div className="flex items-center gap-3 pt-4">
-          <button
-            type="submit"
-            disabled={pending}
-            className="flex-1 py-3.5 rounded-full bg-[#FF6130] text-white text-sm font-black font-headline hover:scale-[1.02] transition-transform shadow-[0_0_20px_rgba(255,97,48,0.25)] disabled:opacity-50 disabled:hover:scale-100"
-          >
-            {pending ? "Saving..." : "Save & Preview"}
-          </button>
-          <button
-            type="button"
-            onClick={handleDelete}
-            disabled={deleting}
-            className="px-5 py-3.5 rounded-full text-sm font-bold text-red-400/60 hover:text-red-400 border border-red-400/15 hover:border-red-400/30 transition-all font-headline disabled:opacity-50"
-          >
-            {deleting ? "..." : "Delete"}
-          </button>
-        </div>
       </form>
 
       {/* ── Sessions ───────────────────────────────────────────── */}
@@ -567,6 +550,32 @@ export function ChallengeEditForm({
             )}
           </div>
         )}
+      </div>
+
+      {/* ── Actions (at the very bottom) ─────────────────────── */}
+      <div className="flex items-center gap-3 pt-8">
+        <button
+          type="button"
+          onClick={() => {
+            // Programmatically submit the form
+            const form = document.querySelector(
+              'form[data-challenge-form]'
+            ) as HTMLFormElement;
+            if (form) form.requestSubmit();
+          }}
+          disabled={pending}
+          className="flex-1 py-3.5 rounded-full bg-[#FF6130] text-white text-sm font-black font-headline hover:scale-[1.02] transition-transform shadow-[0_0_20px_rgba(255,97,48,0.25)] disabled:opacity-50 disabled:hover:scale-100"
+        >
+          {pending ? "Saving..." : "Save & Preview"}
+        </button>
+        <button
+          type="button"
+          onClick={handleDelete}
+          disabled={deleting}
+          className="px-5 py-3.5 rounded-full text-sm font-bold text-red-400/60 hover:text-red-400 border border-red-400/15 hover:border-red-400/30 transition-all font-headline disabled:opacity-50"
+        >
+          {deleting ? "..." : "Delete"}
+        </button>
       </div>
     </div>
   );
