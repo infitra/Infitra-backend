@@ -3,7 +3,39 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
-export async function createSession(prevState: unknown, formData: FormData) {
+/** Creates a blank draft session with sensible defaults and redirects to the edit page. */
+export async function createDraftSession() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(10, 0, 0, 0);
+
+  const { data, error } = await supabase
+    .from("app_session")
+    .insert({
+      title: "Untitled Session",
+      start_time: tomorrow.toISOString(),
+      duration_minutes: 60,
+      price_cents: 0,
+      currency: "CHF",
+      host_id: user.id,
+    })
+    .select("id")
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  redirect(`/dashboard/sessions/${data.id}`);
+}
+
+/** Updates a draft session. Only works on drafts you own (RLS enforced). */
+export async function updateSession(prevState: unknown, formData: FormData) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -11,6 +43,7 @@ export async function createSession(prevState: unknown, formData: FormData) {
 
   if (!user) return { error: "Not authenticated." };
 
+  const sessionId = formData.get("session_id") as string;
   const title = (formData.get("title") as string)?.trim();
   const description = (formData.get("description") as string)?.trim() || null;
   const date = formData.get("date") as string;
@@ -45,26 +78,25 @@ export async function createSession(prevState: unknown, formData: FormData) {
     return { error: "Start time must be in the future." };
   }
 
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from("app_session")
-    .insert({
+    .update({
       title,
       description,
       start_time: startTime.toISOString(),
       duration_minutes: durationMinutes,
       capacity,
       price_cents: priceCents,
-      currency: "CHF",
-      host_id: user.id,
     })
-    .select("id")
-    .single();
+    .eq("id", sessionId)
+    .eq("host_id", user.id);
 
   if (error) return { error: error.message };
 
-  redirect(`/dashboard/sessions/${data.id}`);
+  return { success: true, sessionId };
 }
 
+/** Publishes a draft session via the DB RPC (validates pricing, timing, etc.). */
 export async function publishSession(sessionId: string) {
   const supabase = await createClient();
   const {
@@ -88,6 +120,7 @@ export async function publishSession(sessionId: string) {
   return { success: true };
 }
 
+/** Deletes a draft session. Only drafts can be deleted (RLS enforced). */
 export async function deleteSession(sessionId: string) {
   const supabase = await createClient();
   const {

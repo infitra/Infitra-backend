@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
+import { createDraftSession } from "@/app/actions/session";
 
 export const metadata = {
   title: "Sessions — INFITRA",
@@ -16,11 +17,7 @@ const STATUS_STYLES: Record<string, { label: string; color: string }> = {
 
 function formatDate(dateStr: string) {
   const d = new Date(dateStr);
-  return d.toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 }
 
 function formatTime(dateStr: string) {
@@ -49,27 +46,20 @@ export default async function SessionsPage() {
             Create, manage, and publish live sessions.
           </p>
         </div>
-        <Link
-          href="/dashboard/sessions/new"
-          className="px-5 py-2.5 rounded-full bg-[#FF6130] text-white text-sm font-black font-headline hover:scale-[1.03] transition-transform shadow-[0_0_20px_rgba(255,97,48,0.25)]"
-        >
-          New Session
-        </Link>
+        <form action={createDraftSession}>
+          <button
+            type="submit"
+            className="px-5 py-2.5 rounded-full bg-[#FF6130] text-white text-sm font-black font-headline hover:scale-[1.03] transition-transform shadow-[0_0_20px_rgba(255,97,48,0.25)]"
+          >
+            New Session
+          </button>
+        </form>
       </div>
 
       {!hasSessions ? (
         <div className="text-center py-20">
           <div className="w-16 h-16 rounded-full bg-[#FF6130]/10 border border-[#FF6130]/20 flex items-center justify-center mx-auto mb-6">
-            <svg
-              width="28"
-              height="28"
-              fill="none"
-              stroke="#FF6130"
-              strokeWidth={1.5}
-              viewBox="0 0 24 24"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
+            <svg width="28" height="28" fill="none" stroke="#FF6130" strokeWidth={1.5} viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 5v14M5 12h14" />
             </svg>
           </div>
@@ -79,12 +69,14 @@ export default async function SessionsPage() {
           <p className="text-sm text-[#9CF0FF]/40 mb-6 max-w-xs mx-auto">
             Create your first session to start building your schedule.
           </p>
-          <Link
-            href="/dashboard/sessions/new"
-            className="inline-block px-6 py-3 rounded-full bg-[#FF6130] text-white text-sm font-black font-headline hover:scale-[1.03] transition-transform shadow-[0_0_20px_rgba(255,97,48,0.25)]"
-          >
-            Create Session
-          </Link>
+          <form action={createDraftSession} className="inline-block">
+            <button
+              type="submit"
+              className="px-6 py-3 rounded-full bg-[#FF6130] text-white text-sm font-black font-headline hover:scale-[1.03] transition-transform shadow-[0_0_20px_rgba(255,97,48,0.25)]"
+            >
+              Create Session
+            </button>
+          </form>
         </div>
       ) : (
         <div className="space-y-3">
@@ -104,42 +96,20 @@ export default async function SessionsPage() {
                       <h3 className="text-lg font-black text-white font-headline tracking-tight truncate group-hover:text-[#FF6130] transition-colors">
                         {session.title}
                       </h3>
-                      <span
-                        className={`shrink-0 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest border font-headline ${s.color}`}
-                      >
+                      <span className={`shrink-0 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest border font-headline ${s.color}`}>
                         {s.label}
                       </span>
                     </div>
                     <div className="flex items-center gap-4 text-xs text-[#9CF0FF]/40">
-                      <span>
-                        {formatDate(session.start_time)} at{" "}
-                        {formatTime(session.start_time)}
-                      </span>
+                      <span>{formatDate(session.start_time)} at {formatTime(session.start_time)}</span>
                       {session.attendee_count > 0 && (
-                        <span>
-                          {session.attendee_count} attendee
-                          {session.attendee_count !== 1 ? "s" : ""}
-                        </span>
+                        <span>{session.attendee_count} attendee{session.attendee_count !== 1 ? "s" : ""}</span>
                       )}
-                      {revenueCHF > 0 && (
-                        <span>CHF {revenueCHF.toFixed(2)}</span>
-                      )}
+                      {revenueCHF > 0 && <span>CHF {revenueCHF.toFixed(2)}</span>}
                     </div>
                   </div>
-                  <svg
-                    width="16"
-                    height="16"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                    viewBox="0 0 24 24"
-                    className="text-[#9CF0FF]/20 group-hover:text-[#FF6130] transition-colors shrink-0 mt-1"
-                  >
-                    <path
-                      d="M9 18l6-6-6-6"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
+                  <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" className="text-[#9CF0FF]/20 group-hover:text-[#FF6130] transition-colors shrink-0 mt-1">
+                    <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </div>
               </Link>

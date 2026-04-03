@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
+import { createDraftSession } from "@/app/actions/session";
 
 export const metadata = {
   title: "Dashboard — INFITRA",
@@ -62,21 +63,23 @@ export default async function DashboardPage() {
 
       {/* Quick actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Link
-          href="/dashboard/sessions/new"
-          className="p-8 rounded-2xl bg-[#0F2229] border border-[#9CF0FF]/10 hover:border-[#FF6130]/25 transition-colors group block"
-        >
-          <h3 className="text-xl font-black text-white font-headline tracking-tight mb-2 group-hover:text-[#FF6130] transition-colors">
-            Create a Session
-          </h3>
-          <p className="text-sm text-[#9CF0FF]/40 mb-4">
-            Set up a live session, add collaborators, and publish it to your
-            audience.
-          </p>
-          <span className="text-xs font-bold text-[#FF6130] uppercase tracking-widest font-headline">
-            Get started &rarr;
-          </span>
-        </Link>
+        <form action={createDraftSession}>
+          <button
+            type="submit"
+            className="w-full text-left p-8 rounded-2xl bg-[#0F2229] border border-[#9CF0FF]/10 hover:border-[#FF6130]/25 transition-colors group"
+          >
+            <h3 className="text-xl font-black text-white font-headline tracking-tight mb-2 group-hover:text-[#FF6130] transition-colors">
+              Create a Session
+            </h3>
+            <p className="text-sm text-[#9CF0FF]/40 mb-4">
+              Set up a live session, add collaborators, and publish it to your
+              audience.
+            </p>
+            <span className="text-xs font-bold text-[#FF6130] uppercase tracking-widest font-headline">
+              Get started &rarr;
+            </span>
+          </button>
+        </form>
 
         <div className="p-8 rounded-2xl bg-[#0F2229] border border-[#9CF0FF]/10 hover:border-[#9CF0FF]/25 transition-colors group">
           <h3 className="text-xl font-black text-white font-headline tracking-tight mb-2 group-hover:text-[#9CF0FF] transition-colors">
