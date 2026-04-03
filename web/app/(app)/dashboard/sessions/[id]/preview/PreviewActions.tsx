@@ -1,12 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { publishSession } from "@/app/actions/session";
 import Link from "next/link";
 
 export function PreviewActions({ sessionId }: { sessionId: string }) {
-  const router = useRouter();
   const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -14,12 +12,10 @@ export function PreviewActions({ sessionId }: { sessionId: string }) {
     setPublishing(true);
     setError(null);
     const result = await publishSession(sessionId);
+    // publishSession redirects on success, so we only get here on error
     if (result?.error) {
       setError(result.error);
       setPublishing(false);
-    } else {
-      router.push(`/dashboard/sessions/${sessionId}`);
-      router.refresh();
     }
   }
 

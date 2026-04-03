@@ -117,7 +117,7 @@ export async function publishSession(sessionId: string) {
     return { error: result.errors?.join(", ") ?? "Cannot publish session." };
   }
 
-  return { success: true };
+  redirect(`/dashboard/sessions/${sessionId}`);
 }
 
 /** Deletes a draft session. Only drafts can be deleted (RLS enforced). */
