@@ -59,5 +59,11 @@ export async function signIn(prevState: unknown, formData: FormData) {
 export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();
+
+  // Clear the onboarded cookie so proxy re-checks on next login
+  const { cookies } = await import("next/headers");
+  const cookieStore = await cookies();
+  cookieStore.delete("x-onboarded");
+
   redirect("/login");
 }

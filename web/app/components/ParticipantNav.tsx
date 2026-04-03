@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { signOut } from "@/app/actions/auth";
 
 export function ParticipantNav({
   displayName,
@@ -29,12 +30,14 @@ export function ParticipantNav({
               {displayName}
             </span>
           )}
-          <Link
-            href="/signout"
-            className="px-4 py-2 text-xs font-bold text-[#9CF0FF]/40 hover:text-[#9CF0FF] border border-[#9CF0FF]/10 hover:border-[#9CF0FF]/25 rounded-full transition-all font-headline"
-          >
-            Sign Out
-          </Link>
+          <form action={signOut}>
+            <button
+              type="submit"
+              className="px-4 py-2 text-xs font-bold text-[#9CF0FF]/40 hover:text-[#9CF0FF] border border-[#9CF0FF]/10 hover:border-[#9CF0FF]/25 rounded-full transition-all font-headline cursor-pointer"
+            >
+              Sign Out
+            </button>
+          </form>
         </div>
       </div>
     </nav>
