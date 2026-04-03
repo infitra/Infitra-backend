@@ -16,11 +16,13 @@ export async function signUp(prevState: unknown, formData: FormData) {
     return { error: "Password must be at least 8 characters." };
   }
 
+  const origin = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.infitra.fit";
+
   const { error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_SUPABASE_URL ? "" : ""}${typeof window !== "undefined" ? window.location.origin : ""}/auth/callback`,
+      emailRedirectTo: `${origin}/auth/callback`,
     },
   });
 
