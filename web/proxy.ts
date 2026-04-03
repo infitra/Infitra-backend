@@ -1,14 +1,33 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { updateSession } from "@/lib/supabase/proxy";
 
+// Routes that are always public — no beta gate, no auth required
+const PUBLIC_ROUTES = ["/", "/beta-access", "/auth/callback"];
+
 export async function proxy(request: NextRequest) {
-  const { supabaseResponse, user, supabase } = await updateSession(request);
   const { pathname } = request.nextUrl;
 
-  // Skip for landing page and static assets
-  if (pathname === "/") return supabaseResponse;
+  // Always allow static assets and truly public routes
+  if (PUBLIC_ROUTES.includes(pathname)) {
+    return NextResponse.next();
+  }
 
-  // --- Unauthenticated users trying to access protected routes ---
+  // ── BETA GATE ─────────────────────────────────────────────────
+  // Every route except public ones requires the beta access cookie.
+  const betaCookie = request.cookies.get("x-beta-access")?.value;
+  const validCode = process.env.BETA_ACCESS_CODE;
+
+  if (!betaCookie || betaCookie !== validCode) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/beta-access";
+    url.searchParams.set("next", pathname);
+    return NextResponse.redirect(url);
+  }
+
+  // ── AUTH REFRESH + ROUTE PROTECTION ───────────────────────────
+  const { supabaseResponse, user, supabase } = await updateSession(request);
+
+  // Unauthenticated users trying to access protected app routes
   if (
     !user &&
     (pathname.startsWith("/dashboard") || pathname.startsWith("/onboarding"))
@@ -19,7 +38,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // --- Authenticated users on auth pages → redirect away ---
+  // Authenticated users landing on /login → redirect to their home
   if (user && pathname.startsWith("/login")) {
     const { data: profile } = await supabase
       .from("app_profile")
@@ -38,14 +57,13 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // --- Authenticated users who haven't onboarded ---
+  // Authenticated users who haven't completed onboarding
   if (
     user &&
     !pathname.startsWith("/onboarding") &&
     !pathname.startsWith("/login") &&
     !pathname.startsWith("/auth")
   ) {
-    // Check cookie first to avoid DB query on every request
     const onboarded = request.cookies.get("x-onboarded")?.value;
     if (!onboarded) {
       const { data: profile } = await supabase
@@ -60,12 +78,12 @@ export async function proxy(request: NextRequest) {
         return NextResponse.redirect(url);
       }
 
-      // Profile is complete — set cookie to skip future DB queries
+      // Mark as onboarded to skip future DB checks
       supabaseResponse.cookies.set("x-onboarded", "1", {
         httpOnly: true,
         secure: true,
         sameSite: "lax",
-        maxAge: 60 * 60 * 24 * 30, // 30 days
+        maxAge: 60 * 60 * 24 * 30,
       });
     }
   }
