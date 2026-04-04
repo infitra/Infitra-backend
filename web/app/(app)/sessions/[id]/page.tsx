@@ -83,7 +83,19 @@ export default async function SessionPage({
   const parentChallenge = (challengeLink as any)?.app_challenge ?? null;
   const isPartOfChallenge = !!parentChallenge;
 
-  const hasPurchased = !!attendance;
+  // For challenge sessions, also check challenge membership
+  let hasChallengeAccess = false;
+  if (isPartOfChallenge) {
+    const { data: membership } = await supabase
+      .from("app_challenge_member")
+      .select("challenge_id")
+      .eq("challenge_id", parentChallenge.id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    hasChallengeAccess = !!membership;
+  }
+
+  const hasPurchased = !!attendance || hasChallengeAccess;
   const priceCHF = isPartOfChallenge
     ? (parentChallenge.price_cents ?? 0) / 100
     : (session.price_cents ?? 0) / 100;
@@ -276,12 +288,13 @@ export default async function SessionPage({
                   <div>
                     <div className="w-full py-4 rounded-full bg-green-400/10 border border-green-400/20 text-center">
                       <span className="text-sm font-black text-green-400 font-headline">
-                        Ticket purchased
+                        {isPartOfChallenge ? "Enrolled" : "Ticket purchased"}
                       </span>
                     </div>
                     <p className="text-[10px] text-[#9CF0FF]/25 text-center mt-3">
-                      You have access to this session. Join link will be
-                      available when the session goes live.
+                      {isPartOfChallenge
+                        ? "You have access via your challenge enrolment. Join link will be available when the session goes live."
+                        : "You have access to this session. Join link will be available when the session goes live."}
                     </p>
                   </div>
                 )
