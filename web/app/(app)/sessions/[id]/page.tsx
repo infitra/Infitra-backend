@@ -73,8 +73,20 @@ export default async function SessionPage({
     .eq("user_id", user.id)
     .maybeSingle();
 
+  // Check if session belongs to a challenge
+  const { data: challengeLink } = await supabase
+    .from("app_challenge_session")
+    .select("challenge_id, app_challenge(id, title, price_cents)")
+    .eq("session_id", id)
+    .maybeSingle();
+
+  const parentChallenge = (challengeLink as any)?.app_challenge ?? null;
+  const isPartOfChallenge = !!parentChallenge;
+
   const hasPurchased = !!attendance;
-  const priceCHF = (session.price_cents ?? 0) / 100;
+  const priceCHF = isPartOfChallenge
+    ? (parentChallenge.price_cents ?? 0) / 100
+    : (session.price_cents ?? 0) / 100;
   const isFree = priceCHF === 0;
   const isHost = user.id === session.host_id;
 
@@ -118,6 +130,42 @@ export default async function SessionPage({
             <div className="h-1 bg-gradient-to-r from-[#FF6130] to-[#FF6130]/40" />
 
             <div className="p-8 md:p-10">
+              {/* Challenge banner */}
+              {isPartOfChallenge && (
+                <Link
+                  href={`/challenges/${parentChallenge.id}`}
+                  className="mb-6 flex items-center gap-3 p-4 rounded-xl bg-[#FF6130]/5 border border-[#FF6130]/15 hover:border-[#FF6130]/30 transition-colors group/ch"
+                >
+                  <span className="text-[10px] font-bold text-[#FF6130]/70 bg-[#FF6130]/10 px-2.5 py-1 rounded-full font-headline shrink-0">
+                    CHALLENGE
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-bold text-white font-headline truncate group-hover/ch:text-[#FF6130] transition-colors">
+                      {parentChallenge.title}
+                    </p>
+                    <p className="text-[10px] text-[#9CF0FF]/30">
+                      This session is part of a challenge &middot; CHF{" "}
+                      {(parentChallenge.price_cents / 100).toFixed(2)}
+                    </p>
+                  </div>
+                  <svg
+                    width="14"
+                    height="14"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    viewBox="0 0 24 24"
+                    className="text-[#9CF0FF]/20 group-hover/ch:text-[#FF6130] transition-colors shrink-0"
+                  >
+                    <path
+                      d="M9 18l6-6-6-6"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </Link>
+              )}
+
               {/* Title */}
               <h1 className="text-3xl md:text-4xl font-black text-white font-headline tracking-tight mb-4">
                 {session.title}
@@ -131,7 +179,7 @@ export default async function SessionPage({
               )}
 
               {/* Info grid */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+              <div className={`grid grid-cols-2 ${isPartOfChallenge ? "" : "md:grid-cols-4"} gap-4 mb-8`}>
                 <div>
                   <p className="text-[10px] font-bold text-[#9CF0FF]/30 uppercase tracking-widest font-headline mb-1">
                     When
@@ -148,24 +196,28 @@ export default async function SessionPage({
                     {formatDuration(session.duration_minutes)}
                   </p>
                 </div>
-                <div>
-                  <p className="text-[10px] font-bold text-[#9CF0FF]/30 uppercase tracking-widest font-headline mb-1">
-                    Spots
-                  </p>
-                  <p className="text-sm font-semibold text-white">
-                    {session.capacity
-                      ? `${session.capacity} available`
-                      : "Unlimited"}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold text-[#9CF0FF]/30 uppercase tracking-widest font-headline mb-1">
-                    Price
-                  </p>
-                  <p className="text-sm font-semibold text-white">
-                    {isFree ? "Free" : `CHF ${priceCHF.toFixed(2)}`}
-                  </p>
-                </div>
+                {!isPartOfChallenge && (
+                  <>
+                    <div>
+                      <p className="text-[10px] font-bold text-[#9CF0FF]/30 uppercase tracking-widest font-headline mb-1">
+                        Spots
+                      </p>
+                      <p className="text-sm font-semibold text-white">
+                        {session.capacity
+                          ? `${session.capacity} available`
+                          : "Unlimited"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-[#9CF0FF]/30 uppercase tracking-widest font-headline mb-1">
+                        Price
+                      </p>
+                      <p className="text-sm font-semibold text-white">
+                        {isFree ? "Free" : `CHF ${priceCHF.toFixed(2)}`}
+                      </p>
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Host */}
@@ -233,6 +285,13 @@ export default async function SessionPage({
                     </p>
                   </div>
                 )
+              ) : isPartOfChallenge ? (
+                <Link
+                  href={`/challenges/${parentChallenge.id}`}
+                  className="w-full py-4 rounded-full bg-[#FF6130] text-white text-sm font-black font-headline shadow-[0_0_25px_rgba(255,97,48,0.3)] hover:scale-[1.02] transition-transform text-center block"
+                >
+                  View Challenge — CHF {(parentChallenge.price_cents / 100).toFixed(2)}
+                </Link>
               ) : (
                 <PurchaseButton
                   kind="session"

@@ -79,14 +79,18 @@ export default async function DiscoverPage() {
   // Get challenge names for purchased sessions
   const mySessionIds = mySessionsRaw.map((s: any) => s.id);
   let myChallengeMap: Record<string, string> = {};
+  let myChallengeIdMap: Record<string, string> = {};
   if (mySessionIds.length > 0) {
     const { data: links } = await supabase
       .from("app_challenge_session")
-      .select("session_id, app_challenge(title)")
+      .select("session_id, challenge_id, app_challenge(title)")
       .in("session_id", mySessionIds);
     for (const link of links ?? []) {
       const ch = (link as any).app_challenge;
-      if (ch?.title) myChallengeMap[(link as any).session_id] = ch.title;
+      if (ch?.title) {
+        myChallengeMap[(link as any).session_id] = ch.title;
+        myChallengeIdMap[(link as any).session_id] = (link as any).challenge_id;
+      }
     }
   }
 
@@ -124,7 +128,10 @@ export default async function DiscoverPage() {
         !mySessionIds.includes(s.id)
       ) {
         challengeSessionsForMy.push(s);
-        if (ch?.title) myChallengeMap[s.id] = ch.title;
+        if (ch?.title) {
+          myChallengeMap[s.id] = ch.title;
+          myChallengeIdMap[s.id] = (link as any).challenge_id;
+        }
       }
     }
   }
@@ -214,6 +221,7 @@ export default async function DiscoverPage() {
                   const joinOpensAt = new Date(startTime.getTime() - 5 * 60 * 1000);
                   const canJoin = !!sess.live_room_id && now >= joinOpensAt;
                   const challengeName = myChallengeMap[sess.id];
+                  const challengeId = myChallengeIdMap[sess.id];
 
                   return (
                     <div
@@ -231,15 +239,10 @@ export default async function DiscoverPage() {
 
                       {/* Info */}
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-sm font-bold text-white font-headline truncate">
                             {sess.title}
                           </span>
-                          {challengeName && (
-                            <span className="shrink-0 text-[9px] font-bold text-[#FF6130]/50 bg-[#FF6130]/8 px-2 py-0.5 rounded-full font-headline truncate max-w-[140px]">
-                              {challengeName}
-                            </span>
-                          )}
                         </div>
                         <p className="text-xs text-[#9CF0FF]/40 mt-0.5">
                           {formatRelativeTime(sess.start_time)} &middot;{" "}
@@ -251,6 +254,17 @@ export default async function DiscoverPage() {
                             </>
                           )}
                         </p>
+                        {challengeName && challengeId && (
+                          <Link
+                            href={`/challenges/${challengeId}`}
+                            className="mt-1.5 inline-flex items-center gap-1.5 text-[10px] font-bold text-[#FF6130]/60 hover:text-[#FF6130] transition-colors font-headline"
+                          >
+                            <span className="bg-[#FF6130]/10 px-2 py-0.5 rounded-full">
+                              CHALLENGE
+                            </span>
+                            {challengeName} &rarr;
+                          </Link>
+                        )}
                       </div>
 
                       {/* Action */}
