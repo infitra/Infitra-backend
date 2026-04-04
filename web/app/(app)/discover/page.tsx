@@ -51,7 +51,6 @@ export default async function DiscoverPage() {
     .single();
 
   const now = new Date();
-  const joinThreshold = new Date(now.getTime() - 5 * 60 * 1000); // 5 min before
 
   // ── My purchased sessions (from app_attendance) ──────────
   const { data: myAttendance } = await supabase
@@ -169,7 +168,7 @@ export default async function DiscoverPage() {
     );
   }
   const sessions = (allSessions ?? []).filter(
-    (s: any) => !challengeLinkedIds.has(s.id)
+    (s: any) => !challengeLinkedIds.has(s.id) && !allMySessionIds.has(s.id)
   );
 
   // Discover: public challenges
@@ -182,8 +181,14 @@ export default async function DiscoverPage() {
     .gte("start_date", now.toISOString().split("T")[0])
     .order("start_date", { ascending: true });
 
+  // Filter out purchased challenges from discover
+  const purchasedChallengeIdSet = new Set(purchasedChallengeIds);
+  const discoverChallenges = (challenges ?? []).filter(
+    (c: any) => !purchasedChallengeIdSet.has(c.id)
+  );
+
   const hasSessions = sessions.length > 0;
-  const hasChallenges = challenges && challenges.length > 0;
+  const hasChallenges = discoverChallenges.length > 0;
   const hasDiscover = hasSessions || hasChallenges;
 
   return (
@@ -206,8 +211,8 @@ export default async function DiscoverPage() {
                 {mySessions.map((sess: any) => {
                   const host = sess.app_profile;
                   const startTime = new Date(sess.start_time);
-                  const canJoin =
-                    !!sess.live_room_id && now >= joinThreshold;
+                  const joinOpensAt = new Date(startTime.getTime() - 5 * 60 * 1000);
+                  const canJoin = !!sess.live_room_id && now >= joinOpensAt;
                   const challengeName = myChallengeMap[sess.id];
 
                   return (
@@ -322,7 +327,7 @@ export default async function DiscoverPage() {
                       Challenges
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {challenges!.map((challenge: any) => {
+                      {discoverChallenges.map((challenge: any) => {
                         const owner = challenge.app_profile;
                         const priceCHF =
                           (challenge.price_cents ?? 0) / 100;
