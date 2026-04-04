@@ -122,7 +122,7 @@ export default async function DashboardPage() {
       .in("session_id", monthIds);
     for (const link of monthLinks ?? []) {
       const ch = (link as any).app_challenge;
-      if (ch?.title && !(link as any).session_id in challengeMap) {
+      if (ch?.title && !((link as any).session_id in challengeMap)) {
         challengeMap[(link as any).session_id] = ch.title;
       }
     }
