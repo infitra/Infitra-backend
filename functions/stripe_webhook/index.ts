@@ -123,12 +123,21 @@ async function updateTx(id: string, row: Partial<TxRow>) {
 
 async function grantEntitlements(md: CheckoutMeta) {
   if (md.kind === "session") {
-    await admin.from("app_attendance").upsert(
-      { session_id: md.target_id, user_id: md.buyer_id, joined_at: null },
+    const { error } = await admin.from("app_attendance").upsert(
+      { session_id: md.target_id, user_id: md.buyer_id },
       { onConflict: "session_id,user_id" },
     );
+    if (error) throw error;
     return;
   }
+
+  // Challenge: create membership + attendance for all linked sessions
+  const { error: memErr } = await admin.from("app_challenge_member").upsert(
+    { challenge_id: md.target_id, user_id: md.buyer_id },
+    { onConflict: "challenge_id,user_id" },
+  );
+  if (memErr) throw memErr;
+
   const { data: sessLinks, error } = await admin
     .from("app_challenge_session")
     .select("session_id")
@@ -138,9 +147,9 @@ async function grantEntitlements(md: CheckoutMeta) {
     const rows = sessLinks.map(r => ({
       session_id: r.session_id,
       user_id: md.buyer_id,
-      joined_at: null,
     }));
-    await admin.from("app_attendance").upsert(rows, { onConflict: "session_id,user_id" });
+    const { error: attErr } = await admin.from("app_attendance").upsert(rows, { onConflict: "session_id,user_id" });
+    if (attErr) throw attErr;
   }
 }
 

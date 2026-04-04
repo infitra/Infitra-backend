@@ -40,7 +40,9 @@ export function PurchaseButton({ kind, targetId, label, className }: Props) {
             ? "This session is full."
             : data.error === "CHALLENGE_FULL"
               ? "This challenge is full."
-              : data.error;
+              : data.error === "ALREADY_PURCHASED"
+                ? "You already have a ticket for this."
+                : data.error;
         setError(msg);
         setLoading(false);
         return;

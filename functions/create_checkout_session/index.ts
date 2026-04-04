@@ -129,6 +129,25 @@ Deno.serve(async (req) => {
     }
     if (baseCents <= 0) return json({ error: "Invalid price" }, 400);
 
+    // duplicate purchase guard
+    if (kind === "session") {
+      const { data: existing } = await admin
+        .from("app_attendance")
+        .select("session_id")
+        .eq("session_id", target_id)
+        .eq("user_id", buyerId)
+        .maybeSingle();
+      if (existing) return json({ error: "ALREADY_PURCHASED" }, 400);
+    } else {
+      const { data: existing } = await admin
+        .from("app_challenge_member")
+        .select("challenge_id")
+        .eq("challenge_id", target_id)
+        .eq("user_id", buyerId)
+        .maybeSingle();
+      if (existing) return json({ error: "ALREADY_PURCHASED" }, 400);
+    }
+
     // capacity guard (lean, pre-checkout)
 
     if (kind === "session") {
