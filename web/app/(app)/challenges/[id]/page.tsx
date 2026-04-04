@@ -5,21 +5,31 @@ import { ParticipantNav } from "@/app/components/ParticipantNav";
 import { PurchaseButton } from "@/app/components/PurchaseButton";
 
 export const metadata = {
-  title: "Session — INFITRA",
+  title: "Challenge — INFITRA",
 };
 
-function formatDateTime(dateStr: string) {
+function formatDate(dateStr: string) {
+  const d = new Date(dateStr + "T00:00:00");
+  return d.toLocaleDateString("en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function formatSessionDate(dateStr: string) {
   const d = new Date(dateStr);
-  return (
-    d.toLocaleDateString("en-GB", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    }) +
-    " at " +
-    d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
-  );
+  return d.toLocaleDateString("en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  });
+}
+
+function formatSessionTime(dateStr: string) {
+  const d = new Date(dateStr);
+  return d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 }
 
 function formatDuration(minutes: number) {
@@ -29,7 +39,7 @@ function formatDuration(minutes: number) {
   return m > 0 ? `${h}h ${m}min` : `${h}h`;
 }
 
-export default async function SessionPage({
+export default async function ChallengePage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -48,35 +58,50 @@ export default async function SessionPage({
     .eq("id", user.id)
     .single();
 
-  // Fetch published session
-  const { data: session } = await supabase
-    .from("app_session")
+  // Fetch published challenge
+  const { data: challenge } = await supabase
+    .from("app_challenge")
     .select("*")
     .eq("id", id)
     .eq("status", "published")
     .single();
 
-  if (!session) notFound();
+  if (!challenge) notFound();
 
-  // Fetch host profile
-  const { data: host } = await supabase
+  // Fetch owner profile
+  const { data: owner } = await supabase
     .from("app_profile")
     .select("id, display_name, username, bio, avatar_url")
-    .eq("id", session.host_id)
+    .eq("id", challenge.owner_id)
     .single();
 
-  // Check if user already has an attendance record (already purchased)
-  const { data: attendance } = await supabase
-    .from("app_attendance")
+  // Fetch linked sessions (all published with the challenge)
+  const { data: linkedRows } = await supabase
+    .from("app_challenge_session")
+    .select(
+      "session_id, app_session(id, title, start_time, duration_minutes)"
+    )
+    .eq("challenge_id", id);
+
+  const linkedSessions = (linkedRows ?? [])
+    .map((r: any) => r.app_session)
+    .filter(Boolean)
+    .sort(
+      (a: any, b: any) =>
+        new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
+    );
+
+  // Check if user already has a membership (already purchased)
+  const { data: membership } = await supabase
+    .from("app_challenge_member")
     .select("id")
-    .eq("session_id", id)
+    .eq("challenge_id", id)
     .eq("user_id", user.id)
     .maybeSingle();
 
-  const hasPurchased = !!attendance;
-  const priceCHF = (session.price_cents ?? 0) / 100;
-  const isFree = priceCHF === 0;
-  const isHost = user.id === session.host_id;
+  const hasPurchased = !!membership;
+  const priceCHF = (challenge.price_cents ?? 0) / 100;
+  const isOwner = user.id === challenge.owner_id;
 
   return (
     <div className="min-h-screen bg-[#071318] flex flex-col">
@@ -106,21 +131,26 @@ export default async function SessionPage({
             Discover
           </Link>
 
-          {/* Session card */}
+          {/* Challenge card */}
           <div className="rounded-2xl bg-[#0F2229] border border-[#9CF0FF]/10 overflow-hidden">
             {/* Accent bar */}
             <div className="h-1 bg-gradient-to-r from-[#FF6130] to-[#FF6130]/40" />
 
             <div className="p-8 md:p-10">
+              {/* Badge */}
+              <span className="text-[10px] font-bold text-[#FF6130]/60 bg-[#FF6130]/10 px-2.5 py-1 rounded-full font-headline mb-4 inline-block">
+                CHALLENGE
+              </span>
+
               {/* Title */}
               <h1 className="text-3xl md:text-4xl font-black text-white font-headline tracking-tight mb-4">
-                {session.title}
+                {challenge.title}
               </h1>
 
               {/* Description */}
-              {session.description && (
+              {challenge.description && (
                 <p className="text-sm text-[#9CF0FF]/50 leading-relaxed mb-8 max-w-xl whitespace-pre-line">
-                  {session.description}
+                  {challenge.description}
                 </p>
               )}
 
@@ -128,28 +158,26 @@ export default async function SessionPage({
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                 <div>
                   <p className="text-[10px] font-bold text-[#9CF0FF]/30 uppercase tracking-widest font-headline mb-1">
-                    When
+                    Starts
                   </p>
                   <p className="text-sm font-semibold text-white">
-                    {formatDateTime(session.start_time)}
+                    {formatDate(challenge.start_date)}
                   </p>
                 </div>
                 <div>
                   <p className="text-[10px] font-bold text-[#9CF0FF]/30 uppercase tracking-widest font-headline mb-1">
-                    Duration
+                    Ends
                   </p>
                   <p className="text-sm font-semibold text-white">
-                    {formatDuration(session.duration_minutes)}
+                    {formatDate(challenge.end_date)}
                   </p>
                 </div>
                 <div>
                   <p className="text-[10px] font-bold text-[#9CF0FF]/30 uppercase tracking-widest font-headline mb-1">
-                    Spots
+                    Sessions
                   </p>
                   <p className="text-sm font-semibold text-white">
-                    {session.capacity
-                      ? `${session.capacity} available`
-                      : "Unlimited"}
+                    {linkedSessions.length}
                   </p>
                 </div>
                 <div>
@@ -157,34 +185,86 @@ export default async function SessionPage({
                     Price
                   </p>
                   <p className="text-sm font-semibold text-white">
-                    {isFree ? "Free" : `CHF ${priceCHF.toFixed(2)}`}
+                    CHF {priceCHF.toFixed(2)}
                   </p>
                 </div>
               </div>
 
-              {/* Host */}
+              {/* Session timeline */}
+              {linkedSessions.length > 0 && (
+                <div className="mb-8">
+                  <p className="text-[10px] font-bold text-[#9CF0FF]/30 uppercase tracking-widest font-headline mb-3">
+                    Included Sessions
+                  </p>
+                  <div className="space-y-2">
+                    {linkedSessions.map((sess: any) => (
+                      <div
+                        key={sess.id}
+                        className="flex items-center gap-3 p-3 rounded-lg bg-[#071318]/50 border border-[#9CF0FF]/8"
+                      >
+                        <div className="w-8 h-8 rounded-lg bg-[#FF6130]/10 border border-[#FF6130]/20 flex items-center justify-center shrink-0">
+                          <svg
+                            width="14"
+                            height="14"
+                            fill="none"
+                            stroke="#FF6130"
+                            strokeWidth={1.5}
+                            viewBox="0 0 24 24"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <rect
+                              x="3"
+                              y="4"
+                              width="18"
+                              height="18"
+                              rx="2"
+                              ry="2"
+                            />
+                            <line x1="16" y1="2" x2="16" y2="6" />
+                            <line x1="8" y1="2" x2="8" y2="6" />
+                            <line x1="3" y1="10" x2="21" y2="10" />
+                          </svg>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-bold text-white font-headline truncate">
+                            {sess.title}
+                          </p>
+                          <p className="text-[10px] text-[#9CF0FF]/40">
+                            {formatSessionDate(sess.start_time)} at{" "}
+                            {formatSessionTime(sess.start_time)} &middot;{" "}
+                            {formatDuration(sess.duration_minutes)}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Creator */}
               <div className="flex items-center gap-3 pt-6 border-t border-[#9CF0FF]/8 mb-8">
                 <div className="w-10 h-10 rounded-full bg-[#FF6130]/15 border border-[#FF6130]/30 flex items-center justify-center">
                   <span className="text-sm font-black text-[#FF6130] font-headline">
-                    {(host?.display_name ?? "?")[0].toUpperCase()}
+                    {(owner?.display_name ?? "?")[0].toUpperCase()}
                   </span>
                 </div>
                 <div>
                   <p className="text-sm font-bold text-white font-headline">
-                    {host?.display_name}
+                    {owner?.display_name}
                   </p>
-                  {host?.bio && (
+                  {owner?.bio && (
                     <p className="text-[10px] text-[#9CF0FF]/30 line-clamp-1 max-w-xs">
-                      {host.bio}
+                      {owner.bio}
                     </p>
                   )}
                 </div>
               </div>
 
               {/* CTA */}
-              {isHost ? (
+              {isOwner ? (
                 <Link
-                  href={`/dashboard/sessions/${session.id}`}
+                  href={`/dashboard/challenges/${challenge.id}`}
                   className="inline-block px-6 py-3.5 rounded-full bg-[#9CF0FF]/10 border border-[#9CF0FF]/20 text-sm font-bold text-[#9CF0FF] font-headline hover:bg-[#9CF0FF]/15 transition-colors"
                 >
                   View in Dashboard
@@ -193,23 +273,18 @@ export default async function SessionPage({
                 <div>
                   <div className="w-full py-4 rounded-full bg-green-400/10 border border-green-400/20 text-center">
                     <span className="text-sm font-black text-green-400 font-headline">
-                      Ticket purchased
+                      Challenge purchased
                     </span>
                   </div>
                   <p className="text-[10px] text-[#9CF0FF]/25 text-center mt-3">
-                    You have access to this session. Join link will be available
-                    when the session goes live.
+                    You have access to all sessions in this challenge.
                   </p>
                 </div>
               ) : (
                 <PurchaseButton
-                  kind="session"
-                  targetId={session.id}
-                  label={
-                    isFree
-                      ? "Join Session"
-                      : `Get Ticket — CHF ${priceCHF.toFixed(2)}`
-                  }
+                  kind="challenge"
+                  targetId={challenge.id}
+                  label={`Join Challenge — CHF ${priceCHF.toFixed(2)}`}
                 />
               )}
             </div>

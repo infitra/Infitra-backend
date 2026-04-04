@@ -45,7 +45,19 @@ export default async function DiscoverPage() {
     .gte("start_time", new Date().toISOString())
     .order("start_time", { ascending: true });
 
+  // Fetch published challenges with future start dates
+  const { data: challenges } = await supabase
+    .from("app_challenge")
+    .select(
+      "id, title, description, start_date, end_date, price_cents, capacity, owner_id, app_profile!app_challenge_owner_id_fkey(display_name, username)"
+    )
+    .eq("status", "published")
+    .gte("start_date", new Date().toISOString().split("T")[0])
+    .order("start_date", { ascending: true });
+
   const hasSessions = sessions && sessions.length > 0;
+  const hasChallenges = challenges && challenges.length > 0;
+  const hasContent = hasSessions || hasChallenges;
 
   return (
     <div className="min-h-screen bg-[#071318] flex flex-col">
@@ -58,11 +70,11 @@ export default async function DiscoverPage() {
               Discover
             </h1>
             <p className="text-sm text-[#9CF0FF]/40 mt-1">
-              Upcoming live sessions from creators on INFITRA.
+              Upcoming sessions and challenges from creators on INFITRA.
             </p>
           </div>
 
-          {!hasSessions ? (
+          {!hasContent ? (
             <div className="text-center py-20">
               <div className="w-16 h-16 rounded-full bg-[#9CF0FF]/8 border border-[#9CF0FF]/15 flex items-center justify-center mx-auto mb-6">
                 <svg
@@ -81,14 +93,87 @@ export default async function DiscoverPage() {
                 </svg>
               </div>
               <h2 className="text-xl font-black text-white font-headline tracking-tight mb-2">
-                No sessions yet
+                Nothing here yet
               </h2>
               <p className="text-sm text-[#9CF0FF]/40 max-w-xs mx-auto">
-                Creators are setting up. Check back soon for live sessions you
-                can join.
+                Creators are setting up. Check back soon for sessions and
+                challenges you can join.
               </p>
             </div>
           ) : (
+            <div className="space-y-12">
+
+          {/* Challenges section */}
+          {hasChallenges && (
+            <div>
+              <h2 className="text-lg font-black text-white font-headline tracking-tight mb-4">
+                Challenges
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {challenges!.map((challenge: any) => {
+                  const owner = challenge.app_profile;
+                  const priceCHF = (challenge.price_cents ?? 0) / 100;
+
+                  return (
+                    <Link
+                      key={challenge.id}
+                      href={`/challenges/${challenge.id}`}
+                      className="group block rounded-2xl bg-[#0F2229] border border-[#9CF0FF]/10 hover:border-[#FF6130]/25 transition-all overflow-hidden"
+                    >
+                      <div className="h-0.5 bg-gradient-to-r from-[#FF6130] to-[#FF6130]/60 opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                      <div className="p-6">
+                        <div className="flex items-center gap-2 mb-4">
+                          <span className="text-[10px] font-bold text-[#FF6130]/60 bg-[#FF6130]/10 px-2 py-0.5 rounded-full font-headline">
+                            CHALLENGE
+                          </span>
+                          <span className="text-[10px] text-[#9CF0FF]/25">
+                            {formatDate(challenge.start_date + "T00:00:00")} —{" "}
+                            {formatDate(challenge.end_date + "T00:00:00")}
+                          </span>
+                        </div>
+
+                        <h3 className="text-lg font-black text-white font-headline tracking-tight mb-2 group-hover:text-[#FF6130] transition-colors line-clamp-2">
+                          {challenge.title}
+                        </h3>
+
+                        {challenge.description && (
+                          <p className="text-xs text-[#9CF0FF]/35 leading-relaxed mb-5 line-clamp-2">
+                            {challenge.description}
+                          </p>
+                        )}
+
+                        <div className="flex items-center justify-between pt-4 border-t border-[#9CF0FF]/8">
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 rounded-full bg-[#FF6130]/15 border border-[#FF6130]/25 flex items-center justify-center">
+                              <span className="text-[10px] font-black text-[#FF6130] font-headline">
+                                {(owner?.display_name ?? "?")[0].toUpperCase()}
+                              </span>
+                            </div>
+                            <span className="text-xs text-[#9CF0FF]/40 font-headline">
+                              {owner?.display_name ?? "Creator"}
+                            </span>
+                          </div>
+                          <span className="text-sm font-black text-white font-headline">
+                            CHF {priceCHF.toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Sessions section */}
+          {hasSessions && (
+            <div>
+              {hasChallenges && (
+                <h2 className="text-lg font-black text-white font-headline tracking-tight mb-4">
+                  Sessions
+                </h2>
+              )}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {sessions.map((session: any) => {
                 const host = session.app_profile;
@@ -149,6 +234,10 @@ export default async function DiscoverPage() {
                   </Link>
                 );
               })}
+            </div>
+            </div>
+          )}
+
             </div>
           )}
         </div>
