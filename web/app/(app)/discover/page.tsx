@@ -36,7 +36,7 @@ export default async function DiscoverPage() {
     .single();
 
   // Fetch published sessions with future start times, join host profile
-  const { data: sessions } = await supabase
+  const { data: allSessions } = await supabase
     .from("app_session")
     .select(
       "id, title, description, start_time, duration_minutes, capacity, price_cents, currency, host_id, app_profile!app_session_host_id_fkey(display_name, username)"
@@ -44,6 +44,20 @@ export default async function DiscoverPage() {
     .eq("status", "published")
     .gte("start_time", new Date().toISOString())
     .order("start_time", { ascending: true });
+
+  // Filter out sessions that belong to a challenge (they're accessed via the challenge, not standalone)
+  const sessionIds = (allSessions ?? []).map((s: any) => s.id);
+  let challengeLinkedIds = new Set<string>();
+  if (sessionIds.length > 0) {
+    const { data: linked } = await supabase
+      .from("app_challenge_session")
+      .select("session_id")
+      .in("session_id", sessionIds);
+    challengeLinkedIds = new Set((linked ?? []).map((r: any) => r.session_id));
+  }
+  const sessions = (allSessions ?? []).filter(
+    (s: any) => !challengeLinkedIds.has(s.id)
+  );
 
   // Fetch published challenges with future start dates
   const { data: challenges } = await supabase
@@ -55,7 +69,7 @@ export default async function DiscoverPage() {
     .gte("start_date", new Date().toISOString().split("T")[0])
     .order("start_date", { ascending: true });
 
-  const hasSessions = sessions && sessions.length > 0;
+  const hasSessions = sessions.length > 0;
   const hasChallenges = challenges && challenges.length > 0;
   const hasContent = hasSessions || hasChallenges;
 

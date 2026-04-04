@@ -78,6 +78,12 @@ export default async function SessionPage({
   const isFree = priceCHF === 0;
   const isHost = user.id === session.host_id;
 
+  // Participants can join 5 min before start
+  const now = new Date();
+  const startTime = new Date(session.start_time);
+  const joinOpensAt = new Date(startTime.getTime() - 5 * 60 * 1000);
+  const canJoin = now >= joinOpensAt;
+
   return (
     <div className="min-h-screen bg-[#071318] flex flex-col">
       <ParticipantNav displayName={myProfile?.display_name ?? null} />
@@ -196,13 +202,24 @@ export default async function SessionPage({
                       Session has ended
                     </span>
                   </div>
-                ) : session.live_room_id ? (
+                ) : session.live_room_id && canJoin ? (
                   <Link
                     href={`/sessions/${session.id}/live`}
                     className="w-full py-4 rounded-full bg-[#FF6130] text-white text-sm font-black font-headline shadow-[0_0_25px_rgba(255,97,48,0.3)] hover:scale-[1.02] transition-transform text-center block"
                   >
                     Join Session
                   </Link>
+                ) : session.live_room_id && !canJoin ? (
+                  <div>
+                    <div className="w-full py-4 rounded-full bg-green-400/10 border border-green-400/20 text-center">
+                      <span className="text-sm font-black text-green-400 font-headline">
+                        Session opens soon
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-[#9CF0FF]/25 text-center mt-3">
+                      You can join 5 minutes before start.
+                    </p>
+                  </div>
                 ) : (
                   <div>
                     <div className="w-full py-4 rounded-full bg-green-400/10 border border-green-400/20 text-center">

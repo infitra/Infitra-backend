@@ -73,6 +73,12 @@ export default async function SessionDetailPage({
   const s = STATUS_STYLES[session.status] ?? STATUS_STYLES.draft;
   const priceCHF = (session.price_cents ?? 0) / 100;
 
+  // Time gating: host can go live 15 min before start
+  const now = new Date();
+  const startTime = new Date(session.start_time);
+  const goLiveOpensAt = new Date(startTime.getTime() - 15 * 60 * 1000);
+  const canGoLive = now >= goLiveOpensAt;
+
   // Check if this session belongs to a challenge
   const { data: challengeLink } = await supabase
     .from("app_challenge_session")
@@ -170,8 +176,19 @@ export default async function SessionDetailPage({
       )}
 
       {/* Live session controls */}
-      {session.status === "published" && !session.live_room_id && (
+      {session.status === "published" && !session.live_room_id && canGoLive && (
         <GoLiveButton sessionId={session.id} />
+      )}
+
+      {session.status === "published" && !session.live_room_id && !canGoLive && (
+        <div className="mt-4 p-4 rounded-2xl bg-[#0F2229] border border-[#9CF0FF]/10">
+          <p className="text-sm text-[#9CF0FF]/40 font-headline">
+            Go Live opens 15 minutes before start
+          </p>
+          <p className="text-xs text-[#9CF0FF]/25 mt-1">
+            {formatDateTime(session.start_time)}
+          </p>
+        </div>
       )}
 
       {session.status === "published" && session.live_room_id && (
