@@ -30,6 +30,7 @@ export default async function SessionsPage() {
   const { data: sessions } = await supabase
     .from("vw_my_sessions_overview")
     .select("*")
+    .neq("status", "draft")
     .order("start_time", { ascending: false });
 
   const hasSessions = sessions && sessions.length > 0;

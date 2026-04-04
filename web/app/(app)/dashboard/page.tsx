@@ -23,14 +23,21 @@ export default async function DashboardPage() {
     .select("*")
     .single();
 
-  const totalSessions = summary?.total_sessions ?? 0;
   const totalAttendees = summary?.total_attendees ?? 0;
   const earningsCHF = ((summary?.creator_cut_cents ?? 0) / 100).toFixed(2);
+
+  // Published sessions only (view includes drafts)
+  const { count: publishedSessionCount } = await supabase
+    .from("app_session")
+    .select("id", { count: "exact", head: true })
+    .eq("host_id", user!.id)
+    .neq("status", "draft");
 
   const { count: challengeCount } = await supabase
     .from("app_challenge")
     .select("id", { count: "exact", head: true })
-    .eq("owner_id", user!.id);
+    .eq("owner_id", user!.id)
+    .neq("status", "draft");
 
   return (
     <div className="py-10">
@@ -46,7 +53,7 @@ export default async function DashboardPage() {
       {/* Quick stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-10">
         {[
-          { label: "Sessions", value: String(totalSessions), sub: "Draft & published" },
+          { label: "Sessions", value: String(publishedSessionCount ?? 0), sub: "Published" },
           { label: "Challenges", value: String(challengeCount ?? 0), sub: "Active programmes" },
           { label: "Attendees", value: String(totalAttendees), sub: "Total across sessions" },
           { label: "Earnings", value: `CHF ${earningsCHF}`, sub: "Total revenue" },

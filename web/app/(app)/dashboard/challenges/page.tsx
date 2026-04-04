@@ -48,6 +48,7 @@ export default async function ChallengesPage() {
       "id, title, status, start_date, end_date, price_cents, capacity, created_at"
     )
     .eq("owner_id", user!.id)
+    .neq("status", "draft")
     .order("created_at", { ascending: false });
 
   // Get session counts per challenge
