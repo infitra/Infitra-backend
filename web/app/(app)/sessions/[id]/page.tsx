@@ -53,7 +53,7 @@ export default async function SessionPage({
     .from("app_session")
     .select("*")
     .eq("id", id)
-    .eq("status", "published")
+    .in("status", ["published", "ended"])
     .single();
 
   if (!session) notFound();
@@ -190,17 +190,32 @@ export default async function SessionPage({
                   View in Dashboard
                 </Link>
               ) : hasPurchased ? (
-                <div>
-                  <div className="w-full py-4 rounded-full bg-green-400/10 border border-green-400/20 text-center">
-                    <span className="text-sm font-black text-green-400 font-headline">
-                      Ticket purchased
+                session.status === "ended" ? (
+                  <div className="w-full py-4 rounded-full bg-[#9CF0FF]/8 border border-[#9CF0FF]/15 text-center">
+                    <span className="text-sm font-black text-[#9CF0FF]/50 font-headline">
+                      Session has ended
                     </span>
                   </div>
-                  <p className="text-[10px] text-[#9CF0FF]/25 text-center mt-3">
-                    You have access to this session. Join link will be available
-                    when the session goes live.
-                  </p>
-                </div>
+                ) : session.live_room_id ? (
+                  <Link
+                    href={`/sessions/${session.id}/live`}
+                    className="w-full py-4 rounded-full bg-[#FF6130] text-white text-sm font-black font-headline shadow-[0_0_25px_rgba(255,97,48,0.3)] hover:scale-[1.02] transition-transform text-center block"
+                  >
+                    Join Session
+                  </Link>
+                ) : (
+                  <div>
+                    <div className="w-full py-4 rounded-full bg-green-400/10 border border-green-400/20 text-center">
+                      <span className="text-sm font-black text-green-400 font-headline">
+                        Ticket purchased
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-[#9CF0FF]/25 text-center mt-3">
+                      You have access to this session. Join link will be
+                      available when the session goes live.
+                    </p>
+                  </div>
+                )
               ) : (
                 <PurchaseButton
                   kind="session"

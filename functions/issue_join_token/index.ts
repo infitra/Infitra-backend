@@ -15,7 +15,17 @@ const DAILY_DOMAIN     = Deno.env.get("DAILY_DOMAIN") ?? "infitra.daily.co";
 
 const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
 Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: CORS_HEADERS });
+  }
+
   try {
     // 1) Auth
     const authHeader = req.headers.get("Authorization") || "";
@@ -161,6 +171,6 @@ Deno.serve(async (req) => {
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...CORS_HEADERS },
   });
 }

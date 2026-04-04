@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
+import { GoLiveButton } from "@/app/components/GoLiveButton";
 
 export const metadata = {
   title: "Session — INFITRA",
@@ -168,12 +169,29 @@ export default async function SessionDetailPage({
         </Link>
       )}
 
-      {session.status === "published" && (
-        <div className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-green-400/8 border border-green-400/20 w-fit">
-          <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-          <span className="text-sm font-bold text-green-400 font-headline">
-            Live &mdash; visible to participants
-          </span>
+      {/* Live session controls */}
+      {session.status === "published" && !session.live_room_id && (
+        <GoLiveButton sessionId={session.id} />
+      )}
+
+      {session.status === "published" && session.live_room_id && (
+        <Link
+          href={`/dashboard/sessions/${session.id}/live`}
+          className="mt-4 inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-[#FF6130] text-white text-sm font-black font-headline hover:scale-[1.02] transition-transform shadow-[0_0_20px_rgba(255,97,48,0.25)]"
+        >
+          <span className="w-2.5 h-2.5 rounded-full bg-white animate-pulse" />
+          Enter Session
+        </Link>
+      )}
+
+      {session.status === "ended" && session.ended_at && (
+        <div className="mt-4 p-5 rounded-2xl bg-[#0F2229] border border-[#9CF0FF]/10">
+          <p className="text-sm font-bold text-[#9CF0FF]/50 font-headline">
+            Session ended
+          </p>
+          <p className="text-xs text-[#9CF0FF]/30 mt-1">
+            Ended {formatDateTime(session.ended_at)}
+          </p>
         </div>
       )}
 
