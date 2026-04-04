@@ -53,6 +53,7 @@ export default async function DashboardLayout({
               { label: "Dashboard", href: "/dashboard" },
               { label: "Sessions", href: "/dashboard/sessions" },
               { label: "Challenges", href: "/dashboard/challenges" },
+              { label: "Community", href: "/dashboard/community" },
               { label: "Earnings", href: "/dashboard/earnings" },
             ].map(({ label, href }) => (
               <Link

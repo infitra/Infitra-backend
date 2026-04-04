@@ -32,6 +32,12 @@ export function ParticipantNav({
             My Sessions
           </Link>
           <Link
+            href="/communities"
+            className="text-xs font-bold text-[#9CF0FF]/40 hover:text-[#9CF0FF] font-headline transition-colors hidden md:block"
+          >
+            Communities
+          </Link>
+          <Link
             href="/discover"
             className="text-xs font-bold text-[#9CF0FF]/40 hover:text-[#9CF0FF] font-headline transition-colors hidden md:block"
           >

@@ -45,7 +45,8 @@ export async function proxy(request: NextRequest) {
       pathname.startsWith("/discover") ||
       pathname.startsWith("/sessions") ||
       pathname.startsWith("/checkout") ||
-      pathname.startsWith("/challenges"))
+      pathname.startsWith("/challenges") ||
+      pathname.startsWith("/communities"))
   ) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
