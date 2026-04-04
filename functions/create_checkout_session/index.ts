@@ -58,8 +58,20 @@ type DbChallenge = { id:string; title:string; price_cents:number; currency:strin
 
 const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
+// ---------- CORS ----------
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
 // ---------- Handler ----------
 Deno.serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: CORS_HEADERS });
+  }
+
   try {
     // 1) Auth
     const authHeader = req.headers.get("Authorization") || "";
@@ -209,5 +221,8 @@ function nextIndex(params: URLSearchParams) {
   return max + 1;
 }
 function json(data: unknown, status = 200) {
-  return new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json" } });
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+  });
 }
