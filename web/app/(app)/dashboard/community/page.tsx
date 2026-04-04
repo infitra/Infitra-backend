@@ -11,10 +11,12 @@ export default async function DashboardCommunityPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Find creator's own community space
-  const { data: space } = await supabase.rpc("get_creator_space_by_creator", {
-    p_creator: user!.id,
-  });
+  // Find creator's own community space (query directly, not via RPC)
+  const { data: space } = await supabase
+    .from("app_creator_space")
+    .select("id, title, description, creator_id, created_at")
+    .eq("creator_id", user!.id)
+    .maybeSingle();
 
   // Member count
   let memberCount = 0;
