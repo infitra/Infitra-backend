@@ -25,6 +25,18 @@ export function ParticipantNav({
           </span>
         </Link>
         <div className="flex items-center gap-4">
+          <Link
+            href="/discover#my-sessions"
+            className="text-xs font-bold text-[#9CF0FF]/40 hover:text-[#9CF0FF] font-headline transition-colors hidden md:block"
+          >
+            My Sessions
+          </Link>
+          <Link
+            href="/discover"
+            className="text-xs font-bold text-[#9CF0FF]/40 hover:text-[#9CF0FF] font-headline transition-colors hidden md:block"
+          >
+            Discover
+          </Link>
           {displayName && (
             <span className="text-sm text-[#9CF0FF]/50 font-headline hidden md:block">
               {displayName}
