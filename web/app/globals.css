@@ -106,7 +106,26 @@ body {
   filter: drop-shadow(0 0 4px rgba(156,240,255,0.5));
 }
 
-/* Ambient glows are now inline Tailwind divs in (app)/layout.tsx */
+/* ── Depth Background Animations ───────────────────────── */
+
+@keyframes wave-drift {
+  0% { transform: translateX(0%); }
+  50% { transform: translateX(-25%); }
+  100% { transform: translateX(0%); }
+}
+
+@keyframes drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -20px) scale(1.05); }
+  66% { transform: translate(-20px, 15px) scale(0.95); }
+}
+
+@keyframes particle-float {
+  0%, 100% { opacity: 0; transform: translateY(0); }
+  25% { opacity: 0.4; }
+  50% { opacity: 0.15; transform: translateY(-20px); }
+  75% { opacity: 0.3; }
+}
 
 /* ── Glass Card System ─────────────────────────────────── */
 
