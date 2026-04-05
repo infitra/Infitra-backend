@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { LikeButton } from "./LikeButton";
 import { CommentSection } from "./CommentSection";
 
@@ -63,9 +64,12 @@ export function PostCard({
           </span>
         </div>
         <div>
-          <p className="text-sm font-bold text-white font-headline">
+          <Link
+            href={`/profile/${post.author_id}`}
+            className="text-sm font-bold text-white font-headline hover:text-[#FF6130] transition-colors"
+          >
             {authorName}
-          </p>
+          </Link>
           <p className="text-[10px] text-[#9CF0FF]/25">
             {timeAgo(post.created_at)}
           </p>

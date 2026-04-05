@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import Link from "next/link";
 
 export const metadata = {
   title: "Earnings — INFITRA",
@@ -224,9 +225,16 @@ export default async function EarningsPage() {
 
                     {/* Buyer */}
                     <div className="col-span-2 flex items-center">
-                      <p className="text-xs text-[#9CF0FF]/50 truncate">
-                        {tx.buyer_name ?? "—"}
-                      </p>
+                      {tx.buyer_id ? (
+                        <Link
+                          href={`/profile/${tx.buyer_id}`}
+                          className="text-xs text-[#9CF0FF]/50 hover:text-[#9CF0FF] truncate transition-colors"
+                        >
+                          {tx.buyer_name ?? "—"}
+                        </Link>
+                      ) : (
+                        <p className="text-xs text-[#9CF0FF]/50 truncate">—</p>
+                      )}
                     </div>
 
                     {/* Date */}

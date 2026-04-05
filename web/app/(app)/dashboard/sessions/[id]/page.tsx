@@ -105,6 +105,7 @@ export default async function SessionDetailPage({
   }
 
   const attendeeList = (attendees ?? []).map((a: any) => ({
+    userId: a.user_id,
     name: attendeeNameMap[a.user_id] ?? "User",
     joinedAt: a.joined_at,
   }));
@@ -215,16 +216,19 @@ export default async function SessionDetailPage({
             Attendees ({attendeeList.length})
           </h2>
           <div className="rounded-2xl bg-[#0F2229] border border-[#9CF0FF]/10 divide-y divide-[#9CF0FF]/5">
-            {attendeeList.map((a: any, i: number) => (
-              <div key={i} className="flex items-center justify-between px-5 py-3">
-                <div className="flex items-center gap-3">
+            {attendeeList.map((a: any) => (
+              <div key={a.userId} className="flex items-center justify-between px-5 py-3">
+                <Link
+                  href={`/profile/${a.userId}`}
+                  className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+                >
                   <div className="w-7 h-7 rounded-full bg-[#9CF0FF]/10 flex items-center justify-center">
                     <span className="text-[10px] font-black text-[#9CF0FF]/40 font-headline">
                       {a.name[0]?.toUpperCase()}
                     </span>
                   </div>
                   <span className="text-sm text-white font-headline">{a.name}</span>
-                </div>
+                </Link>
                 <span className="text-[10px] text-[#9CF0FF]/25">
                   {a.joinedAt ? "Joined" : "Purchased"}
                 </span>
