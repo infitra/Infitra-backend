@@ -61,12 +61,16 @@ export default async function ChallengeTribePage({
     .eq("id", space.owner_id)
     .single();
 
-  // User profile for nav
+  // User profile for nav + role for back link
   const { data: myProfile } = await supabase
     .from("app_profile")
-    .select("display_name")
+    .select("display_name, role")
     .eq("id", user.id)
     .single();
+
+  const backPath = myProfile?.role === "creator" || myProfile?.role === "admin"
+    ? "/dashboard"
+    : "/discover";
 
   // Challenge sessions
   let challengeSessions: any[] = [];
@@ -90,7 +94,7 @@ export default async function ChallengeTribePage({
         <div className="max-w-3xl mx-auto py-10">
           {/* Back */}
           <Link
-            href="/discover"
+            href={backPath}
             className="text-xs text-[#9CF0FF]/40 hover:text-[#9CF0FF] transition-colors mb-8 flex items-center gap-1.5 font-headline"
           >
             <svg

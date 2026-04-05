@@ -43,14 +43,17 @@ export default async function CreatorCommunityPage({
     .select("user_id", { count: "exact", head: true })
     .eq("space_id", spaceId);
 
-  // User profile for nav
+  // User profile for nav + role for back link
   const { data: myProfile } = await supabase
     .from("app_profile")
-    .select("display_name")
+    .select("display_name, role")
     .eq("id", user.id)
     .single();
 
   const canPost = user.id === space.creator_id;
+  const backPath = myProfile?.role === "creator" || myProfile?.role === "admin"
+    ? "/dashboard"
+    : "/discover";
 
   // Upcoming sessions from this creator
   const { data: upcomingSessions } = await supabase
@@ -72,7 +75,7 @@ export default async function CreatorCommunityPage({
         <div className="max-w-3xl mx-auto py-10">
           {/* Back */}
           <Link
-            href="/discover"
+            href={backPath}
             className="text-xs text-[#9CF0FF]/40 hover:text-[#9CF0FF] transition-colors mb-8 flex items-center gap-1.5 font-headline"
           >
             <svg
