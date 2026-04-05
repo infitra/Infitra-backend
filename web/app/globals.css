@@ -108,9 +108,15 @@ body {
 
 /* ── Depth Background Animations ───────────────────────── */
 
-@keyframes wave-drift {
+@keyframes wave-lr {
+  0% { transform: translateX(-50%); }
+  50% { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes wave-rl {
   0% { transform: translateX(0%); }
-  50% { transform: translateX(-25%); }
+  50% { transform: translateX(-50%); }
   100% { transform: translateX(0%); }
 }
 
