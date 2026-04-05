@@ -74,7 +74,7 @@ export default async function EarningsPage() {
 
       {/* ── Summary Cards ────────────────────────────────── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-10">
-        <div className="p-5 rounded-2xl glass-card">
+        <div className="p-5 rounded-2xl infitra-glass">
           <p className="text-[10px] font-bold text-[#9CF0FF]/40 uppercase tracking-widest font-headline mb-2">
             Total Revenue
           </p>
@@ -94,7 +94,7 @@ export default async function EarningsPage() {
             80% creator share
           </p>
         </div>
-        <div className="p-5 rounded-2xl glass-card">
+        <div className="p-5 rounded-2xl infitra-glass">
           <p className="text-[10px] font-bold text-[#9CF0FF]/40 uppercase tracking-widest font-headline mb-2">
             Platform Fee
           </p>
@@ -105,7 +105,7 @@ export default async function EarningsPage() {
             20% of gross
           </p>
         </div>
-        <div className="p-5 rounded-2xl glass-card">
+        <div className="p-5 rounded-2xl infitra-glass">
           <p className="text-[10px] font-bold text-[#9CF0FF]/40 uppercase tracking-widest font-headline mb-2">
             Buyers
           </p>
@@ -121,7 +121,7 @@ export default async function EarningsPage() {
       {/* ── Revenue Breakdown ────────────────────────────── */}
       {hasTransactions && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-10">
-          <div className="px-5 py-4 rounded-xl glass-card flex items-center justify-between">
+          <div className="px-5 py-4 rounded-xl infitra-glass flex items-center justify-between">
             <div>
               <p className="text-[10px] font-bold text-[#9CF0FF]/40 uppercase tracking-widest font-headline">
                 Sessions
@@ -134,7 +134,7 @@ export default async function EarningsPage() {
               {chf(sessionRevenue)}
             </p>
           </div>
-          <div className="px-5 py-4 rounded-xl glass-card flex items-center justify-between">
+          <div className="px-5 py-4 rounded-xl infitra-glass flex items-center justify-between">
             <div>
               <p className="text-[10px] font-bold text-[#9CF0FF]/40 uppercase tracking-widest font-headline">
                 Challenges
@@ -147,7 +147,7 @@ export default async function EarningsPage() {
               {chf(challengeRevenue)}
             </p>
           </div>
-          <div className="px-5 py-4 rounded-xl glass-card flex items-center justify-between">
+          <div className="px-5 py-4 rounded-xl infitra-glass flex items-center justify-between">
             <div>
               <p className="text-[10px] font-bold text-[#9CF0FF]/40 uppercase tracking-widest font-headline">
                 Processing
@@ -177,7 +177,7 @@ export default async function EarningsPage() {
             </p>
           </div>
         ) : (
-          <div className="rounded-2xl glass-card overflow-hidden">
+          <div className="rounded-2xl infitra-glass overflow-hidden">
             {/* Table header */}
             <div className="hidden md:grid grid-cols-12 gap-4 px-5 py-3 border-b border-[#9CF0FF]/8 text-[10px] font-bold text-[#9CF0FF]/30 uppercase tracking-widest font-headline">
               <div className="col-span-3">Item</div>

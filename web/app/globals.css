@@ -171,7 +171,7 @@ body {
 /* ── Glass Card System ─────────────────────────────────── */
 
 /* Glass card — semi-transparent with subtle backdrop blur */
-.glass-card {
+.infitra-glass {
   background: rgba(15, 34, 41, 0.55);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -179,13 +179,13 @@ body {
   transition: border-color 0.3s, background-color 0.3s;
 }
 
-.glass-card:hover {
+.infitra-glass:hover {
   border-color: rgba(156, 240, 255, 0.15);
   background: rgba(15, 34, 41, 0.65);
 }
 
 /* Glass card with orange hover (for interactive/action cards) */
-.glass-card-action {
+.infitra-glass-action {
   background: rgba(15, 34, 41, 0.55);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -193,7 +193,7 @@ body {
   transition: border-color 0.3s, background-color 0.3s, box-shadow 0.3s;
 }
 
-.glass-card-action:hover {
+.infitra-glass-action:hover {
   border-color: rgba(255, 97, 48, 0.2);
   background: rgba(15, 34, 41, 0.65);
   box-shadow: 0 0 30px rgba(255, 97, 48, 0.05);

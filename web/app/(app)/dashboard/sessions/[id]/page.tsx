@@ -144,21 +144,21 @@ export default async function SessionDetailPage({
 
       {/* Info grid */}
       <div className={`grid grid-cols-2 ${isPartOfChallenge ? "" : "md:grid-cols-4"} gap-4 mb-8`}>
-        <div className="p-5 rounded-2xl glass-card">
+        <div className="p-5 rounded-2xl infitra-glass">
           <p className="text-[10px] font-bold text-[#9CF0FF]/40 uppercase tracking-widest font-headline mb-2">When</p>
           <p className="text-sm font-semibold text-white">{formatDateTime(session.start_time)}</p>
         </div>
-        <div className="p-5 rounded-2xl glass-card">
+        <div className="p-5 rounded-2xl infitra-glass">
           <p className="text-[10px] font-bold text-[#9CF0FF]/40 uppercase tracking-widest font-headline mb-2">Duration</p>
           <p className="text-sm font-semibold text-white">{session.duration_minutes} min</p>
         </div>
         {!isPartOfChallenge && (
           <>
-            <div className="p-5 rounded-2xl glass-card">
+            <div className="p-5 rounded-2xl infitra-glass">
               <p className="text-[10px] font-bold text-[#9CF0FF]/40 uppercase tracking-widest font-headline mb-2">Capacity</p>
               <p className="text-sm font-semibold text-white">{session.capacity ?? "Unlimited"}</p>
             </div>
-            <div className="p-5 rounded-2xl glass-card">
+            <div className="p-5 rounded-2xl infitra-glass">
               <p className="text-[10px] font-bold text-[#9CF0FF]/40 uppercase tracking-widest font-headline mb-2">Price</p>
               <p className="text-sm font-semibold text-white">{priceCHF > 0 ? `CHF ${priceCHF.toFixed(2)}` : "Free"}</p>
             </div>
@@ -196,7 +196,7 @@ export default async function SessionDetailPage({
         </Link>
       )}
       {session.status === "ended" && session.ended_at && (
-        <div className="mt-4 p-5 rounded-2xl glass-card">
+        <div className="mt-4 p-5 rounded-2xl infitra-glass">
           <p className="text-sm font-bold text-[#9CF0FF]/50 font-headline">Session ended</p>
           <p className="text-xs text-[#9CF0FF]/30 mt-1">Ended {formatDateTime(session.ended_at)}</p>
         </div>
@@ -220,7 +220,7 @@ export default async function SessionDetailPage({
           <h2 className="text-sm font-bold text-[#9CF0FF]/50 uppercase tracking-wider font-headline mb-3">
             Attendees ({attendeeList.length})
           </h2>
-          <div className="rounded-2xl glass-card divide-y divide-[#9CF0FF]/5">
+          <div className="rounded-2xl infitra-glass divide-y divide-[#9CF0FF]/5">
             {attendeeList.map((a: any) => (
               <div key={a.userId} className="flex items-center justify-between px-5 py-3">
                 <Link

@@ -26,7 +26,7 @@ export function CommunityCard({
   return (
     <Link
       href={href}
-      className="group block rounded-2xl glass-card-action overflow-hidden"
+      className="group block rounded-2xl infitra-glass-action overflow-hidden"
     >
       <div
         className={`h-0.5 bg-gradient-to-r opacity-0 group-hover:opacity-100 transition-opacity ${

@@ -100,7 +100,7 @@ export default async function ProfilePage({
           </Link>
 
           {/* Profile header */}
-          <div className="rounded-2xl glass-card overflow-hidden mb-8">
+          <div className="rounded-2xl infitra-glass overflow-hidden mb-8">
             <div className="h-1 bg-gradient-to-r from-[#9CF0FF]/40 to-[#9CF0FF]/10" />
             <div className="p-8">
               <div className="flex items-center gap-5 mb-4">
@@ -180,7 +180,7 @@ export default async function ProfilePage({
                   if (!sess) return null;
                   const host = sess.app_profile;
                   return (
-                    <div key={a.session_id} className="flex items-center gap-3 p-3 rounded-xl glass-card">
+                    <div key={a.session_id} className="flex items-center gap-3 p-3 rounded-xl infitra-glass">
                       <span className="w-2 h-2 rounded-full bg-green-400/40 shrink-0" />
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-bold text-white font-headline truncate">{sess.title}</p>
@@ -210,7 +210,7 @@ export default async function ProfilePage({
                     <Link
                       key={m.challenge_id}
                       href={`/challenges/${m.challenge_id}`}
-                      className="flex items-center gap-3 p-3 rounded-xl glass-card hover:border-[#FF6130]/20 transition-colors"
+                      className="flex items-center gap-3 p-3 rounded-xl infitra-glass hover:border-[#FF6130]/20 transition-colors"
                     >
                       <span className="text-[9px] font-bold text-[#FF6130]/60 bg-[#FF6130]/10 px-2 py-0.5 rounded-full font-headline shrink-0">TRIBE</span>
                       <div className="min-w-0 flex-1">

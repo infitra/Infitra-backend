@@ -157,7 +157,7 @@ export default async function ChallengePage({
           </Link>
 
           {/* Challenge card */}
-          <div className="rounded-2xl glass-card overflow-hidden">
+          <div className="rounded-2xl infitra-glass overflow-hidden">
             {/* Accent bar */}
             <div className="h-1 bg-gradient-to-r from-[#FF6130] to-[#FF6130]/40" />
 

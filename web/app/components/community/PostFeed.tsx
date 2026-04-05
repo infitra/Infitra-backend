@@ -200,7 +200,7 @@ export function PostFeed({
     <div className="space-y-4">
       {/* Create post form */}
       {canPost && (
-        <div className="rounded-2xl glass-card p-5">
+        <div className="rounded-2xl infitra-glass p-5">
           <textarea
             value={newBody}
             onChange={(e) => setNewBody(e.target.value)}

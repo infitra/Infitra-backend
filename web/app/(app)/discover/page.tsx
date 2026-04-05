@@ -269,7 +269,7 @@ export default async function DiscoverPage() {
                     <Link
                       key={sp.id}
                       href={`/communities/creator/${sp.id}`}
-                      className="group block rounded-2xl glass-card-action overflow-hidden"
+                      className="group block rounded-2xl infitra-glass-action overflow-hidden"
                     >
                       <div className="h-0.5 bg-gradient-to-r from-[#9CF0FF]/40 to-[#9CF0FF]/10 opacity-0 group-hover:opacity-100 transition-opacity" />
                       <div className="p-5">
@@ -327,7 +327,7 @@ export default async function DiscoverPage() {
                     <Link
                       key={sp.id}
                       href={`/communities/challenge/${sp.id}`}
-                      className="group block rounded-2xl glass-card-action overflow-hidden"
+                      className="group block rounded-2xl infitra-glass-action overflow-hidden"
                     >
                       <div className="h-0.5 bg-gradient-to-r from-[#FF6130] to-[#FF6130]/20 opacity-0 group-hover:opacity-100 transition-opacity" />
                       <div className="p-5">
@@ -380,7 +380,7 @@ export default async function DiscoverPage() {
                   return (
                     <div
                       key={sess.id}
-                      className="flex items-center gap-3 p-3 rounded-xl glass-card"
+                      className="flex items-center gap-3 p-3 rounded-xl infitra-glass"
                     >
                       <span
                         className={`w-2.5 h-2.5 rounded-full shrink-0 ${
@@ -450,7 +450,7 @@ export default async function DiscoverPage() {
                           <Link
                             key={challenge.id}
                             href={`/challenges/${challenge.id}`}
-                            className="group block rounded-2xl glass-card-action overflow-hidden"
+                            className="group block rounded-2xl infitra-glass-action overflow-hidden"
                           >
                             <div className="h-0.5 bg-gradient-to-r from-[#FF6130] to-[#FF6130]/60 opacity-0 group-hover:opacity-100 transition-opacity" />
                             <div className="p-5">
@@ -491,7 +491,7 @@ export default async function DiscoverPage() {
                           <Link
                             key={session.id}
                             href={`/sessions/${session.id}`}
-                            className="group block rounded-2xl glass-card-action overflow-hidden"
+                            className="group block rounded-2xl infitra-glass-action overflow-hidden"
                           >
                             <div className="h-0.5 bg-gradient-to-r from-[#FF6130] to-[#FF6130]/20 opacity-0 group-hover:opacity-100 transition-opacity" />
                             <div className="p-5">

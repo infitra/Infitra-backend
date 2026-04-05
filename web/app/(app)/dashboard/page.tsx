@@ -147,7 +147,7 @@ export default async function DashboardPage() {
         ].map(({ label, value }) => (
           <div
             key={label}
-            className="px-4 py-3 rounded-xl glass-card flex items-center justify-between"
+            className="px-4 py-3 rounded-xl infitra-glass flex items-center justify-between"
           >
             <span className="text-[10px] font-bold text-[#9CF0FF]/40 uppercase tracking-widest font-headline">
               {label}
@@ -233,7 +233,7 @@ export default async function DashboardPage() {
                   return (
                     <div
                       key={sess.id}
-                      className="p-3 rounded-xl glass-card"
+                      className="p-3 rounded-xl infitra-glass"
                     >
                       <div className="flex items-center gap-2 mb-1">
                         <span

@@ -129,7 +129,7 @@ export default async function CreatorProfilePage({
           </Link>
 
           {/* Profile header */}
-          <div className="rounded-2xl glass-card overflow-hidden mb-8">
+          <div className="rounded-2xl infitra-glass overflow-hidden mb-8">
             <div className="h-1 bg-gradient-to-r from-[#FF6130] to-[#FF6130]/40" />
             <div className="p-8">
               <div className="flex items-center gap-5 mb-4">
@@ -178,7 +178,7 @@ export default async function CreatorProfilePage({
                     <Link
                       key={sess.id}
                       href={linked ? `/challenges/${linked.challengeId}` : `/sessions/${sess.id}`}
-                      className="flex items-center justify-between p-4 rounded-xl glass-card-action group"
+                      className="flex items-center justify-between p-4 rounded-xl infitra-glass-action group"
                     >
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 mb-1">
@@ -220,7 +220,7 @@ export default async function CreatorProfilePage({
                     <Link
                       key={ch.id}
                       href={`/challenges/${ch.id}`}
-                      className="flex items-center justify-between p-4 rounded-xl glass-card-action group"
+                      className="flex items-center justify-between p-4 rounded-xl infitra-glass-action group"
                     >
                       <div>
                         <div className="flex items-center gap-2 mb-1">
