@@ -4,12 +4,11 @@ import Link from "next/link";
 import { ParticipantNav } from "@/app/components/ParticipantNav";
 
 export const metadata = {
-  title: "Discover — INFITRA",
+  title: "Home — INFITRA",
 };
 
 function formatDate(dateStr: string) {
-  const d = new Date(dateStr);
-  return d.toLocaleDateString("en-GB", {
+  return new Date(dateStr).toLocaleDateString("en-GB", {
     weekday: "short",
     day: "numeric",
     month: "short",
@@ -17,8 +16,10 @@ function formatDate(dateStr: string) {
 }
 
 function formatTime(dateStr: string) {
-  const d = new Date(dateStr);
-  return d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  return new Date(dateStr).toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function formatRelativeTime(dateStr: string) {
@@ -28,12 +29,15 @@ function formatRelativeTime(dateStr: string) {
   const diffMin = Math.floor(diffMs / 60000);
   const diffH = Math.floor(diffMin / 60);
   const diffD = Math.floor(diffH / 24);
-
   if (diffMin < 0) return "Now";
   if (diffMin < 60) return `In ${diffMin} min`;
   if (diffH < 24) return `In ${diffH}h`;
   if (diffD === 1) return `Tomorrow ${formatTime(dateStr)}`;
-  return formatDate(dateStr) + " " + formatTime(dateStr);
+  return `${formatDate(dateStr)} ${formatTime(dateStr)}`;
+}
+
+function truncate(str: string, len: number) {
+  return str.length > len ? str.slice(0, len).trimEnd() + "..." : str;
 }
 
 export default async function DiscoverPage() {
@@ -41,7 +45,6 @@ export default async function DiscoverPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
   if (!user) redirect("/login");
 
   const { data: profile } = await supabase
@@ -52,117 +55,157 @@ export default async function DiscoverPage() {
 
   const now = new Date();
 
-  // ── My purchased sessions (from app_attendance) ──────────
-  const { data: myAttendance } = await supabase
-    .from("app_attendance")
-    .select(
-      "session_id, app_session(id, title, start_time, duration_minutes, status, live_room_id, host_id, app_profile!app_session_host_id_fkey(display_name))"
-    )
-    .eq("user_id", user.id);
-
-  // Filter to upcoming sessions only
-  const mySessionsRaw = (myAttendance ?? [])
-    .map((a: any) => a.app_session)
-    .filter(
-      (s: any) =>
-        s &&
-        s.start_time &&
-        new Date(s.start_time) >= now &&
-        s.status !== "ended" &&
-        s.host_id !== user.id // exclude sessions where user is host
-    )
-    .sort(
-      (a: any, b: any) =>
-        new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
-    );
-
-  // Get challenge names for purchased sessions
-  const mySessionIds = mySessionsRaw.map((s: any) => s.id);
-  let myChallengeMap: Record<string, string> = {};
-  let myChallengeIdMap: Record<string, string> = {};
-  if (mySessionIds.length > 0) {
-    const { data: links } = await supabase
-      .from("app_challenge_session")
-      .select("session_id, challenge_id, app_challenge(title)")
-      .in("session_id", mySessionIds);
-    for (const link of links ?? []) {
-      const ch = (link as any).app_challenge;
-      if (ch?.title) {
-        myChallengeMap[(link as any).session_id] = ch.title;
-        myChallengeIdMap[(link as any).session_id] = (link as any).challenge_id;
-      }
-    }
-  }
-
-  // ── My challenge memberships (sessions from purchased challenges) ──
+  // ── My Creator Communities ─────────────────────────────
   const { data: myMemberships } = await supabase
-    .from("app_challenge_member")
-    .select(
-      "challenge_id, app_challenge(id, title, start_date, end_date, status)"
-    )
+    .from("app_creator_space_member")
+    .select("space_id, app_creator_space(id, title, description, creator_id)")
     .eq("user_id", user.id);
 
-  // Get sessions from purchased challenges that aren't already in mySessionsRaw
-  const purchasedChallengeIds = (myMemberships ?? [])
-    .map((m: any) => m.app_challenge?.id)
+  const creatorSpaces = (myMemberships ?? [])
+    .map((m: any) => m.app_creator_space)
     .filter(Boolean);
 
-  let challengeSessionsForMy: any[] = [];
-  if (purchasedChallengeIds.length > 0) {
-    const { data: challengeLinks } = await supabase
-      .from("app_challenge_session")
-      .select(
-        "session_id, challenge_id, app_session(id, title, start_time, duration_minutes, status, live_room_id, host_id, app_profile!app_session_host_id_fkey(display_name)), app_challenge(title)"
-      )
-      .in("challenge_id", purchasedChallengeIds);
+  // Enrich: creator names + member counts + latest post + next session
+  const creatorIds = creatorSpaces.map((s: any) => s.creator_id);
+  const creatorNameMap: Record<string, string> = {};
+  const creatorMemberCounts: Record<string, number> = {};
+  const creatorLatestPost: Record<string, string> = {};
+  const creatorNextSession: Record<string, any> = {};
 
-    for (const link of challengeLinks ?? []) {
-      const s = (link as any).app_session;
-      const ch = (link as any).app_challenge;
-      if (
-        s &&
-        s.start_time &&
-        new Date(s.start_time) >= now &&
-        s.status !== "ended" &&
-        s.host_id !== user.id &&
-        !mySessionIds.includes(s.id)
-      ) {
-        challengeSessionsForMy.push(s);
-        if (ch?.title) {
-          myChallengeMap[s.id] = ch.title;
-          myChallengeIdMap[s.id] = (link as any).challenge_id;
-        }
+  if (creatorSpaces.length > 0) {
+    const spaceIds = creatorSpaces.map((s: any) => s.id);
+
+    // Names
+    if (creatorIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from("app_profile")
+        .select("id, display_name")
+        .in("id", creatorIds);
+      for (const p of profiles ?? []) creatorNameMap[p.id] = p.display_name ?? "Creator";
+    }
+
+    // Member counts
+    const { data: members } = await supabase
+      .from("app_creator_space_member")
+      .select("space_id")
+      .in("space_id", spaceIds);
+    for (const m of members ?? []) {
+      creatorMemberCounts[m.space_id] = (creatorMemberCounts[m.space_id] ?? 0) + 1;
+    }
+
+    // Latest post per space (1 per space)
+    for (const sp of creatorSpaces) {
+      const { data: posts } = await supabase
+        .from("app_creator_post")
+        .select("body")
+        .eq("space_id", sp.id)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (posts?.[0]?.body) creatorLatestPost[sp.id] = posts[0].body;
+    }
+
+    // Next session per creator
+    for (const sp of creatorSpaces) {
+      const { data: sess } = await supabase
+        .from("app_session")
+        .select("id, title, start_time")
+        .eq("host_id", sp.creator_id)
+        .eq("status", "published")
+        .gte("start_time", now.toISOString())
+        .order("start_time", { ascending: true })
+        .limit(1);
+      if (sess?.[0]) creatorNextSession[sp.id] = sess[0];
+    }
+  }
+
+  // ── My Challenge Tribes ────────────────────────────────
+  const { data: myChallengeMemberships } = await supabase
+    .from("app_challenge_member")
+    .select("challenge_id")
+    .eq("user_id", user.id);
+
+  const purchasedChallengeIds = (myChallengeMemberships ?? [])
+    .map((m: any) => m.challenge_id)
+    .filter(Boolean);
+
+  let challengeSpaces: any[] = [];
+  const tribeMemberCounts: Record<string, number> = {};
+  const tribeLatestPost: Record<string, string> = {};
+  const tribeNextSession: Record<string, any> = {};
+  const tribeChallengeTitle: Record<string, string> = {};
+
+  if (purchasedChallengeIds.length > 0) {
+    const { data: spaces } = await supabase
+      .from("app_challenge_space")
+      .select("id, title, description, source_challenge_id, owner_id")
+      .in("source_challenge_id", purchasedChallengeIds);
+    challengeSpaces = spaces ?? [];
+
+    if (challengeSpaces.length > 0) {
+      const spaceIds = challengeSpaces.map((s: any) => s.id);
+
+      // Member counts
+      const { data: members } = await supabase
+        .from("app_challenge_space_member")
+        .select("space_id")
+        .in("space_id", spaceIds);
+      for (const m of members ?? []) {
+        tribeMemberCounts[m.space_id] = (tribeMemberCounts[m.space_id] ?? 0) + 1;
+      }
+
+      // Latest post per tribe
+      for (const sp of challengeSpaces) {
+        const { data: posts } = await supabase
+          .from("app_challenge_post")
+          .select("body")
+          .eq("space_id", sp.id)
+          .order("created_at", { ascending: false })
+          .limit(1);
+        if (posts?.[0]?.body) tribeLatestPost[sp.id] = posts[0].body;
+      }
+
+      // Challenge titles + next session
+      const { data: challenges } = await supabase
+        .from("app_challenge")
+        .select("id, title")
+        .in("id", purchasedChallengeIds);
+      for (const c of challenges ?? []) tribeChallengeTitle[c.id] = c.title;
+
+      for (const sp of challengeSpaces) {
+        const { data: links } = await supabase
+          .from("app_challenge_session")
+          .select("session_id, app_session(id, title, start_time, status)")
+          .eq("challenge_id", sp.source_challenge_id);
+        const upcoming = (links ?? [])
+          .map((l: any) => l.app_session)
+          .filter((s: any) => s && new Date(s.start_time) >= now && s.status !== "ended")
+          .sort((a: any, b: any) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+        if (upcoming[0]) tribeNextSession[sp.id] = upcoming[0];
       }
     }
   }
 
-  // Combine and dedupe
-  const allMySessionIds = new Set(mySessionIds);
-  const mySessions = [...mySessionsRaw];
-  for (const s of challengeSessionsForMy) {
-    if (!allMySessionIds.has(s.id)) {
-      allMySessionIds.add(s.id);
-      mySessions.push(s);
-    }
-  }
-  mySessions.sort(
-    (a: any, b: any) =>
-      new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
-  );
+  // ── My Upcoming Sessions (flat operational list) ───────
+  const { data: myAttendance } = await supabase
+    .from("app_attendance")
+    .select("session_id, app_session(id, title, start_time, duration_minutes, status, live_room_id, host_id, app_profile!app_session_host_id_fkey(display_name))")
+    .eq("user_id", user.id);
 
-  const hasMyContent = mySessions.length > 0;
+  const mySessions = (myAttendance ?? [])
+    .map((a: any) => a.app_session)
+    .filter((s: any) => s && new Date(s.start_time) >= now && s.status !== "ended" && s.host_id !== user.id)
+    .sort((a: any, b: any) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
 
-  // ── Discover: public sessions ──────────────────────────
+  // ── Discover: public content ───────────────────────────
   const { data: allSessions } = await supabase
     .from("app_session")
-    .select(
-      "id, title, description, start_time, duration_minutes, capacity, price_cents, currency, host_id, app_profile!app_session_host_id_fkey(display_name, username)"
-    )
+    .select("id, title, description, start_time, duration_minutes, capacity, price_cents, currency, host_id, app_profile!app_session_host_id_fkey(display_name, username)")
     .eq("status", "published")
     .gte("start_time", now.toISOString())
     .order("start_time", { ascending: true });
 
-  // Filter out challenge-linked sessions
+  // Filter out challenge-linked + already purchased
+  const allMySessionIds = new Set(mySessions.map((s: any) => s.id));
   const discoverSessionIds = (allSessions ?? []).map((s: any) => s.id);
   let challengeLinkedIds = new Set<string>();
   if (discoverSessionIds.length > 0) {
@@ -170,33 +213,29 @@ export default async function DiscoverPage() {
       .from("app_challenge_session")
       .select("session_id")
       .in("session_id", discoverSessionIds);
-    challengeLinkedIds = new Set(
-      (linked ?? []).map((r: any) => r.session_id)
-    );
+    challengeLinkedIds = new Set((linked ?? []).map((r: any) => r.session_id));
   }
   const sessions = (allSessions ?? []).filter(
     (s: any) => !challengeLinkedIds.has(s.id) && !allMySessionIds.has(s.id)
   );
 
-  // Discover: public challenges
-  const { data: challenges } = await supabase
+  // Discover challenges (filter out purchased)
+  const { data: allChallenges } = await supabase
     .from("app_challenge")
-    .select(
-      "id, title, description, start_date, end_date, price_cents, capacity, owner_id, app_profile!app_challenge_owner_id_fkey(display_name, username)"
-    )
+    .select("id, title, description, start_date, end_date, price_cents, capacity, owner_id, app_profile!app_challenge_owner_id_fkey(display_name, username)")
     .eq("status", "published")
     .gte("start_date", now.toISOString().split("T")[0])
     .order("start_date", { ascending: true });
 
-  // Filter out purchased challenges from discover
   const purchasedChallengeIdSet = new Set(purchasedChallengeIds);
-  const discoverChallenges = (challenges ?? []).filter(
-    (c: any) => !purchasedChallengeIdSet.has(c.id)
-  );
+  const discoverChallenges = (allChallenges ?? []).filter((c: any) => !purchasedChallengeIdSet.has(c.id));
 
-  const hasSessions = sessions.length > 0;
-  const hasChallenges = discoverChallenges.length > 0;
-  const hasDiscover = hasSessions || hasChallenges;
+  const hasCommunities = creatorSpaces.length > 0;
+  const hasTribes = challengeSpaces.length > 0;
+  const hasMySessions = mySessions.length > 0;
+  const hasDiscoverSessions = sessions.length > 0;
+  const hasDiscoverChallenges = discoverChallenges.length > 0;
+  const hasDiscover = hasDiscoverSessions || hasDiscoverChallenges;
 
   return (
     <div className="min-h-screen bg-[#071318] flex flex-col">
@@ -204,92 +243,168 @@ export default async function DiscoverPage() {
 
       <div className="flex-1 pt-20 px-6">
         <div className="max-w-5xl mx-auto py-10">
-          {/* ── My Sessions ─────────────────────────────── */}
-          {hasMyContent && (
-            <div className="mb-12" id="my-sessions">
-              <h2 className="text-2xl font-black text-white font-headline tracking-tight mb-1">
-                My Sessions
-              </h2>
-              <p className="text-sm text-[#9CF0FF]/40 mb-5">
-                Your upcoming purchased sessions.
-              </p>
 
+          {/* ── My Communities ─────────────────────────────── */}
+          {hasCommunities && (
+            <div className="mb-10">
+              <h2 className="text-lg font-black text-white font-headline tracking-tight mb-4">
+                My Communities
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {creatorSpaces.map((sp: any) => {
+                  const creatorName = creatorNameMap[sp.creator_id] ?? "Creator";
+                  const latest = creatorLatestPost[sp.id];
+                  const nextSess = creatorNextSession[sp.id];
+                  const count = creatorMemberCounts[sp.id] ?? 0;
+
+                  return (
+                    <Link
+                      key={sp.id}
+                      href={`/communities/creator/${sp.id}`}
+                      className="group block rounded-2xl bg-[#0F2229] border border-[#9CF0FF]/10 hover:border-[#9CF0FF]/25 transition-all overflow-hidden"
+                    >
+                      <div className="h-0.5 bg-gradient-to-r from-[#9CF0FF]/40 to-[#9CF0FF]/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <div className="p-5">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="w-9 h-9 rounded-full bg-[#9CF0FF]/10 border border-[#9CF0FF]/20 flex items-center justify-center shrink-0">
+                            <span className="text-sm font-black text-[#9CF0FF]/60 font-headline">
+                              {creatorName[0]?.toUpperCase()}
+                            </span>
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-bold text-white font-headline truncate group-hover:text-[#9CF0FF] transition-colors">
+                              {creatorName}
+                            </p>
+                            <p className="text-[10px] text-[#9CF0FF]/25">
+                              {count} member{count !== 1 ? "s" : ""}
+                            </p>
+                          </div>
+                        </div>
+                        {latest && (
+                          <p className="text-xs text-[#9CF0FF]/35 mb-3 line-clamp-2">
+                            {truncate(latest, 120)}
+                          </p>
+                        )}
+                        {nextSess && (
+                          <div className="flex items-center gap-2 pt-3 border-t border-[#9CF0FF]/8">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#FF6130]/50 shrink-0" />
+                            <span className="text-[10px] text-[#9CF0FF]/30 truncate">
+                              {nextSess.title} &middot;{" "}
+                              {formatRelativeTime(nextSess.start_time)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ── My Tribes ──────────────────────────────────── */}
+          {hasTribes && (
+            <div className="mb-10">
+              <h2 className="text-lg font-black text-white font-headline tracking-tight mb-4">
+                My Tribes
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {challengeSpaces.map((sp: any) => {
+                  const chalTitle = tribeChallengeTitle[sp.source_challenge_id] ?? sp.title;
+                  const latest = tribeLatestPost[sp.id];
+                  const nextSess = tribeNextSession[sp.id];
+                  const count = tribeMemberCounts[sp.id] ?? 0;
+
+                  return (
+                    <Link
+                      key={sp.id}
+                      href={`/communities/challenge/${sp.id}`}
+                      className="group block rounded-2xl bg-[#0F2229] border border-[#9CF0FF]/10 hover:border-[#FF6130]/25 transition-all overflow-hidden"
+                    >
+                      <div className="h-0.5 bg-gradient-to-r from-[#FF6130] to-[#FF6130]/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <div className="p-5">
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-[9px] font-bold text-[#FF6130]/60 bg-[#FF6130]/10 px-2 py-0.5 rounded-full font-headline">
+                            TRIBE
+                          </span>
+                          <span className="text-[10px] text-[#9CF0FF]/20">
+                            {count} member{count !== 1 ? "s" : ""}
+                          </span>
+                        </div>
+                        <h3 className="text-sm font-bold text-white font-headline truncate mb-2 group-hover:text-[#FF6130] transition-colors">
+                          {chalTitle}
+                        </h3>
+                        {latest && (
+                          <p className="text-xs text-[#9CF0FF]/35 mb-3 line-clamp-2">
+                            {truncate(latest, 120)}
+                          </p>
+                        )}
+                        {nextSess && (
+                          <div className="flex items-center gap-2 pt-3 border-t border-[#9CF0FF]/8">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#FF6130]/50 shrink-0" />
+                            <span className="text-[10px] text-[#9CF0FF]/30 truncate">
+                              {nextSess.title} &middot;{" "}
+                              {formatRelativeTime(nextSess.start_time)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ── My Upcoming Sessions ───────────────────────── */}
+          {hasMySessions && (
+            <div className="mb-10">
+              <h2 className="text-lg font-black text-white font-headline tracking-tight mb-4">
+                Upcoming Sessions
+              </h2>
               <div className="space-y-2">
-                {mySessions.map((sess: any) => {
+                {mySessions.slice(0, 5).map((sess: any) => {
                   const host = sess.app_profile;
                   const startTime = new Date(sess.start_time);
                   const joinOpensAt = new Date(startTime.getTime() - 5 * 60 * 1000);
                   const canJoin = !!sess.live_room_id && now >= joinOpensAt;
-                  const challengeName = myChallengeMap[sess.id];
-                  const challengeId = myChallengeIdMap[sess.id];
 
                   return (
                     <div
                       key={sess.id}
-                      className="flex items-center gap-4 p-4 rounded-xl bg-[#0F2229] border border-[#9CF0FF]/10"
+                      className="flex items-center gap-3 p-3 rounded-xl bg-[#0F2229] border border-[#9CF0FF]/10"
                     >
-                      {/* Status dot */}
                       <span
-                        className={`w-3 h-3 rounded-full shrink-0 ${
-                          sess.live_room_id
-                            ? "bg-red-500 animate-pulse"
-                            : "bg-[#9CF0FF]/20"
+                        className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+                          sess.live_room_id ? "bg-red-500 animate-pulse" : "bg-[#9CF0FF]/20"
                         }`}
                       />
-
-                      {/* Info */}
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-sm font-bold text-white font-headline truncate">
-                            {sess.title}
-                          </span>
-                        </div>
-                        <p className="text-xs text-[#9CF0FF]/40 mt-0.5">
+                        <p className="text-sm font-bold text-white font-headline truncate">
+                          {sess.title}
+                        </p>
+                        <p className="text-[10px] text-[#9CF0FF]/30">
                           {formatRelativeTime(sess.start_time)} &middot;{" "}
                           {sess.duration_minutes} min
-                          {host?.display_name && (
-                            <>
-                              {" "}
-                              &middot; {host.display_name}
-                            </>
-                          )}
+                          {host?.display_name && <> &middot; {host.display_name}</>}
                         </p>
-                        {challengeName && challengeId && (
-                          <Link
-                            href={`/challenges/${challengeId}`}
-                            className="mt-1.5 inline-flex items-center gap-1.5 text-[10px] font-bold text-[#FF6130]/60 hover:text-[#FF6130] transition-colors font-headline"
-                          >
-                            <span className="bg-[#FF6130]/10 px-2 py-0.5 rounded-full">
-                              CHALLENGE
-                            </span>
-                            {challengeName} &rarr;
-                          </Link>
-                        )}
                       </div>
-
-                      {/* Action */}
-                      <div className="shrink-0">
-                        {canJoin ? (
-                          <Link
-                            href={`/sessions/${sess.id}/live`}
-                            className="px-4 py-2 rounded-full bg-[#FF6130] text-white text-xs font-bold font-headline hover:scale-[1.03] transition-transform inline-flex items-center gap-1.5"
-                          >
-                            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                            Join
-                          </Link>
-                        ) : sess.live_room_id ? (
-                          <span className="text-[10px] text-green-400 font-headline font-bold">
-                            Opening soon
-                          </span>
-                        ) : (
-                          <Link
-                            href={`/sessions/${sess.id}`}
-                            className="px-4 py-2 rounded-full bg-[#9CF0FF]/8 border border-[#9CF0FF]/15 text-xs font-bold text-[#9CF0FF]/50 font-headline hover:text-[#9CF0FF] transition-colors"
-                          >
-                            View
-                          </Link>
-                        )}
-                      </div>
+                      {canJoin ? (
+                        <Link
+                          href={`/sessions/${sess.id}/live`}
+                          className="px-3 py-1.5 rounded-full bg-[#FF6130] text-white text-[10px] font-bold font-headline shrink-0 inline-flex items-center gap-1"
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                          Join
+                        </Link>
+                      ) : (
+                        <Link
+                          href={`/sessions/${sess.id}`}
+                          className="px-3 py-1.5 rounded-full bg-[#9CF0FF]/8 border border-[#9CF0FF]/15 text-[10px] font-bold text-[#9CF0FF]/50 font-headline shrink-0"
+                        >
+                          View
+                        </Link>
+                      )}
                     </div>
                   );
                 })}
@@ -297,55 +412,32 @@ export default async function DiscoverPage() {
             </div>
           )}
 
-          {/* ── Discover ────────────────────────────────── */}
-          <div>
-            <h2 className="text-2xl font-black text-white font-headline tracking-tight mb-1">
+          {/* ── Discover ───────────────────────────────────── */}
+          <div id="discover">
+            <h2 className="text-lg font-black text-white font-headline tracking-tight mb-1">
               Discover
             </h2>
-            <p className="text-sm text-[#9CF0FF]/40 mb-5">
-              Upcoming sessions and challenges from creators on INFITRA.
+            <p className="text-xs text-[#9CF0FF]/30 mb-5">
+              New sessions and challenges from creators on INFITRA.
             </p>
 
             {!hasDiscover ? (
-              <div className="text-center py-16">
-                <div className="w-16 h-16 rounded-full bg-[#9CF0FF]/8 border border-[#9CF0FF]/15 flex items-center justify-center mx-auto mb-6">
-                  <svg
-                    width="28"
-                    height="28"
-                    fill="none"
-                    stroke="#9CF0FF"
-                    strokeWidth={1.5}
-                    viewBox="0 0 24 24"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="opacity-40"
-                  >
-                    <circle cx="11" cy="11" r="8" />
-                    <path d="M21 21l-4.35-4.35" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-black text-white font-headline tracking-tight mb-2">
-                  Nothing here yet
-                </h3>
-                <p className="text-sm text-[#9CF0FF]/40 max-w-xs mx-auto">
-                  Creators are setting up. Check back soon for sessions and
-                  challenges you can join.
+              <div className="text-center py-12">
+                <p className="text-sm text-[#9CF0FF]/25">
+                  Nothing new right now. Check back soon.
                 </p>
               </div>
             ) : (
-              <div className="space-y-10">
-                {/* Challenges */}
-                {hasChallenges && (
+              <div className="space-y-8">
+                {hasDiscoverChallenges && (
                   <div>
-                    <h3 className="text-sm font-bold text-[#9CF0FF]/50 uppercase tracking-wider font-headline mb-3">
+                    <h3 className="text-xs font-bold text-[#9CF0FF]/40 uppercase tracking-wider font-headline mb-3">
                       Challenges
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {discoverChallenges.map((challenge: any) => {
                         const owner = challenge.app_profile;
-                        const priceCHF =
-                          (challenge.price_cents ?? 0) / 100;
-
+                        const priceCHF = (challenge.price_cents ?? 0) / 100;
                         return (
                           <Link
                             key={challenge.id}
@@ -353,45 +445,22 @@ export default async function DiscoverPage() {
                             className="group block rounded-2xl bg-[#0F2229] border border-[#9CF0FF]/10 hover:border-[#FF6130]/25 transition-all overflow-hidden"
                           >
                             <div className="h-0.5 bg-gradient-to-r from-[#FF6130] to-[#FF6130]/60 opacity-0 group-hover:opacity-100 transition-opacity" />
-                            <div className="p-6">
-                              <div className="flex items-center gap-2 mb-4">
-                                <span className="text-[10px] font-bold text-[#FF6130]/60 bg-[#FF6130]/10 px-2 py-0.5 rounded-full font-headline">
-                                  CHALLENGE
-                                </span>
-                                <span className="text-[10px] text-[#9CF0FF]/25">
-                                  {formatDate(
-                                    challenge.start_date + "T00:00:00"
-                                  )}{" "}
-                                  —{" "}
-                                  {formatDate(
-                                    challenge.end_date + "T00:00:00"
-                                  )}
+                            <div className="p-5">
+                              <div className="flex items-center gap-2 mb-3">
+                                <span className="text-[9px] font-bold text-[#FF6130]/60 bg-[#FF6130]/10 px-2 py-0.5 rounded-full font-headline">CHALLENGE</span>
+                                <span className="text-[10px] text-[#9CF0FF]/20">
+                                  {formatDate(challenge.start_date + "T00:00:00")} — {formatDate(challenge.end_date + "T00:00:00")}
                                 </span>
                               </div>
-                              <h3 className="text-lg font-black text-white font-headline tracking-tight mb-2 group-hover:text-[#FF6130] transition-colors line-clamp-2">
+                              <h3 className="text-base font-black text-white font-headline tracking-tight mb-2 group-hover:text-[#FF6130] transition-colors line-clamp-2">
                                 {challenge.title}
                               </h3>
                               {challenge.description && (
-                                <p className="text-xs text-[#9CF0FF]/35 leading-relaxed mb-5 line-clamp-2">
-                                  {challenge.description}
-                                </p>
+                                <p className="text-xs text-[#9CF0FF]/30 line-clamp-2 mb-4">{challenge.description}</p>
                               )}
-                              <div className="flex items-center justify-between pt-4 border-t border-[#9CF0FF]/8">
-                                <div className="flex items-center gap-2">
-                                  <div className="w-6 h-6 rounded-full bg-[#FF6130]/15 border border-[#FF6130]/25 flex items-center justify-center">
-                                    <span className="text-[10px] font-black text-[#FF6130] font-headline">
-                                      {(
-                                        owner?.display_name ?? "?"
-                                      )[0].toUpperCase()}
-                                    </span>
-                                  </div>
-                                  <span className="text-xs text-[#9CF0FF]/40 font-headline">
-                                    {owner?.display_name ?? "Creator"}
-                                  </span>
-                                </div>
-                                <span className="text-sm font-black text-white font-headline">
-                                  CHF {priceCHF.toFixed(2)}
-                                </span>
+                              <div className="flex items-center justify-between pt-3 border-t border-[#9CF0FF]/8">
+                                <span className="text-xs text-[#9CF0FF]/35 font-headline">{owner?.display_name ?? "Creator"}</span>
+                                <span className="text-sm font-black text-white font-headline">CHF {priceCHF.toFixed(2)}</span>
                               </div>
                             </div>
                           </Link>
@@ -401,18 +470,15 @@ export default async function DiscoverPage() {
                   </div>
                 )}
 
-                {/* Sessions */}
-                {hasSessions && (
+                {hasDiscoverSessions && (
                   <div>
-                    <h3 className="text-sm font-bold text-[#9CF0FF]/50 uppercase tracking-wider font-headline mb-3">
+                    <h3 className="text-xs font-bold text-[#9CF0FF]/40 uppercase tracking-wider font-headline mb-3">
                       Sessions
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       {sessions.map((session: any) => {
                         const host = session.app_profile;
-                        const priceCHF =
-                          (session.price_cents ?? 0) / 100;
-
+                        const priceCHF = (session.price_cents ?? 0) / 100;
                         return (
                           <Link
                             key={session.id}
@@ -420,42 +486,23 @@ export default async function DiscoverPage() {
                             className="group block rounded-2xl bg-[#0F2229] border border-[#9CF0FF]/10 hover:border-[#9CF0FF]/25 transition-all overflow-hidden"
                           >
                             <div className="h-0.5 bg-gradient-to-r from-[#FF6130] to-[#FF6130]/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-                            <div className="p-6">
-                              <div className="flex items-center gap-2 mb-4">
-                                <span className="text-[10px] font-bold text-[#9CF0FF]/40 uppercase tracking-widest font-headline">
-                                  {formatDate(session.start_time)}{" "}
-                                  &middot;{" "}
-                                  {formatTime(session.start_time)}
+                            <div className="p-5">
+                              <div className="flex items-center gap-2 mb-3">
+                                <span className="text-[10px] font-bold text-[#9CF0FF]/35 uppercase tracking-widest font-headline">
+                                  {formatDate(session.start_time)} &middot; {formatTime(session.start_time)}
                                 </span>
-                                <span className="text-[10px] text-[#9CF0FF]/25">
-                                  {session.duration_minutes} min
-                                </span>
+                                <span className="text-[10px] text-[#9CF0FF]/20">{session.duration_minutes} min</span>
                               </div>
-                              <h3 className="text-lg font-black text-white font-headline tracking-tight mb-2 group-hover:text-[#FF6130] transition-colors line-clamp-2">
+                              <h3 className="text-base font-black text-white font-headline tracking-tight mb-2 group-hover:text-[#FF6130] transition-colors line-clamp-2">
                                 {session.title}
                               </h3>
                               {session.description && (
-                                <p className="text-xs text-[#9CF0FF]/35 leading-relaxed mb-5 line-clamp-2">
-                                  {session.description}
-                                </p>
+                                <p className="text-xs text-[#9CF0FF]/30 line-clamp-2 mb-4">{session.description}</p>
                               )}
-                              <div className="flex items-center justify-between pt-4 border-t border-[#9CF0FF]/8">
-                                <div className="flex items-center gap-2">
-                                  <div className="w-6 h-6 rounded-full bg-[#FF6130]/15 border border-[#FF6130]/25 flex items-center justify-center">
-                                    <span className="text-[10px] font-black text-[#FF6130] font-headline">
-                                      {(
-                                        host?.display_name ?? "?"
-                                      )[0].toUpperCase()}
-                                    </span>
-                                  </div>
-                                  <span className="text-xs text-[#9CF0FF]/40 font-headline">
-                                    {host?.display_name ?? "Creator"}
-                                  </span>
-                                </div>
+                              <div className="flex items-center justify-between pt-3 border-t border-[#9CF0FF]/8">
+                                <span className="text-xs text-[#9CF0FF]/35 font-headline">{host?.display_name ?? "Creator"}</span>
                                 <span className="text-sm font-black text-white font-headline">
-                                  {priceCHF > 0
-                                    ? `CHF ${priceCHF.toFixed(2)}`
-                                    : "Free"}
+                                  {priceCHF > 0 ? `CHF ${priceCHF.toFixed(2)}` : "Free"}
                                 </span>
                               </div>
                             </div>

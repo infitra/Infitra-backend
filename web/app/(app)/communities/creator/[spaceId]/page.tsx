@@ -52,6 +52,18 @@ export default async function CreatorCommunityPage({
 
   const canPost = user.id === space.creator_id;
 
+  // Upcoming sessions from this creator
+  const { data: upcomingSessions } = await supabase
+    .from("app_session")
+    .select("id, title, start_time, duration_minutes, live_room_id, status")
+    .eq("host_id", space.creator_id)
+    .eq("status", "published")
+    .gte("start_time", new Date().toISOString())
+    .order("start_time", { ascending: true })
+    .limit(3);
+
+  const now = new Date();
+
   return (
     <div className="min-h-screen bg-[#071318] flex flex-col">
       <ParticipantNav displayName={myProfile?.display_name ?? null} />
@@ -60,7 +72,7 @@ export default async function CreatorCommunityPage({
         <div className="max-w-3xl mx-auto py-10">
           {/* Back */}
           <Link
-            href="/communities"
+            href="/discover"
             className="text-xs text-[#9CF0FF]/40 hover:text-[#9CF0FF] transition-colors mb-8 flex items-center gap-1.5 font-headline"
           >
             <svg
@@ -114,6 +126,45 @@ export default async function CreatorCommunityPage({
               </p>
             )}
           </div>
+
+          {/* Upcoming sessions */}
+          {upcomingSessions && upcomingSessions.length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-xs font-bold text-[#9CF0FF]/40 uppercase tracking-wider font-headline mb-3">
+                Upcoming Sessions
+              </h3>
+              <div className="space-y-2">
+                {upcomingSessions.map((sess: any) => {
+                  const startTime = new Date(sess.start_time);
+                  const joinOpensAt = new Date(startTime.getTime() - 5 * 60 * 1000);
+                  const canJoin = !!sess.live_room_id && now >= joinOpensAt;
+                  const diffMin = Math.floor((startTime.getTime() - now.getTime()) / 60000);
+                  const timeLabel =
+                    diffMin < 0 ? "Now" :
+                    diffMin < 60 ? `In ${diffMin} min` :
+                    diffMin < 1440 ? `In ${Math.floor(diffMin / 60)}h` :
+                    startTime.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+
+                  return (
+                    <Link
+                      key={sess.id}
+                      href={canJoin ? `/sessions/${sess.id}/live` : `/sessions/${sess.id}`}
+                      className="flex items-center gap-3 p-3 rounded-xl bg-[#071318]/50 border border-[#9CF0FF]/8 hover:border-[#9CF0FF]/20 transition-colors"
+                    >
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${sess.live_room_id ? "bg-red-500 animate-pulse" : "bg-[#9CF0FF]/20"}`} />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-bold text-white font-headline truncate">{sess.title}</p>
+                        <p className="text-[10px] text-[#9CF0FF]/30">{timeLabel} &middot; {sess.duration_minutes} min</p>
+                      </div>
+                      {canJoin && (
+                        <span className="px-2.5 py-1 rounded-full bg-[#FF6130] text-white text-[9px] font-bold font-headline shrink-0">Join</span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           <PostFeed
             spaceId={spaceId}
