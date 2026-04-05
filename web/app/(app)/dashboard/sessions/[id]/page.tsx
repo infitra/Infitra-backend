@@ -88,11 +88,24 @@ export default async function SessionDetailPage({
   // Attendees (RLS allows host to see attendance for their sessions)
   const { data: attendees } = await supabase
     .from("app_attendance")
-    .select("user_id, joined_at, app_profile!app_attendance_user_id_fkey(display_name)")
+    .select("user_id, joined_at")
     .eq("session_id", id);
 
+  // Fetch attendee profiles
+  const attendeeUserIds = (attendees ?? []).map((a: any) => a.user_id);
+  let attendeeNameMap: Record<string, string> = {};
+  if (attendeeUserIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from("app_profile")
+      .select("id, display_name")
+      .in("id", attendeeUserIds);
+    for (const p of profiles ?? []) {
+      attendeeNameMap[p.id] = p.display_name ?? "User";
+    }
+  }
+
   const attendeeList = (attendees ?? []).map((a: any) => ({
-    name: a.app_profile?.display_name ?? "User",
+    name: attendeeNameMap[a.user_id] ?? "User",
     joinedAt: a.joined_at,
   }));
 

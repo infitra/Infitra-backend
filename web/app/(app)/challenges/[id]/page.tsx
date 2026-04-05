@@ -339,14 +339,17 @@ export default async function ChallengePage({
               )}
 
               {/* Creator */}
-              <div className="flex items-center gap-3 pt-6 border-t border-[#9CF0FF]/8 mb-8">
+              <Link
+                href={owner?.username ? `/creators/${owner.username}` : "#"}
+                className="flex items-center gap-3 pt-6 border-t border-[#9CF0FF]/8 mb-8 group/host"
+              >
                 <div className="w-10 h-10 rounded-full bg-[#FF6130]/15 border border-[#FF6130]/30 flex items-center justify-center">
                   <span className="text-sm font-black text-[#FF6130] font-headline">
                     {(owner?.display_name ?? "?")[0].toUpperCase()}
                   </span>
                 </div>
-                <div>
-                  <p className="text-sm font-bold text-white font-headline">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-white font-headline group-hover/host:text-[#FF6130] transition-colors">
                     {owner?.display_name}
                   </p>
                   {owner?.bio && (
@@ -355,7 +358,10 @@ export default async function ChallengePage({
                     </p>
                   )}
                 </div>
-              </div>
+                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" className="text-[#9CF0FF]/15 group-hover/host:text-[#FF6130] transition-colors shrink-0">
+                  <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </Link>
 
               {/* CTA */}
               {isOwner ? (
