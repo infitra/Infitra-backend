@@ -1,103 +1,154 @@
 "use client";
 
-export function DepthBackground() {
-  return (
-    <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden" aria-hidden="true">
-      {/* ── Color blobs — ambient light sources ──────────── */}
-      <div className="absolute -top-[200px] -right-[200px] w-[600px] h-[600px] rounded-full opacity-[0.07] animate-[drift_25s_ease-in-out_infinite]"
-        style={{ background: "radial-gradient(circle, #9CF0FF 0%, transparent 70%)" }} />
-      <div className="absolute bottom-[-100px] -left-[200px] w-[500px] h-[500px] rounded-full opacity-[0.05] animate-[drift_30s_ease-in-out_infinite_reverse]"
-        style={{ background: "radial-gradient(circle, #FF6130 0%, transparent 70%)" }} />
+function generateWavePath(
+  width: number,
+  baseY: number,
+  amplitude: number,
+  frequency: number,
+  phase: number
+): string {
+  const points: string[] = [];
+  const steps = 200;
+  for (let i = 0; i <= steps; i++) {
+    const x = (i / steps) * width;
+    const y =
+      baseY +
+      Math.sin((i / steps) * Math.PI * frequency + phase) * amplitude +
+      Math.sin((i / steps) * Math.PI * frequency * 0.5 + phase * 1.3) *
+        (amplitude * 0.4);
+    points.push(`${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`);
+  }
+  return points.join(" ");
+}
 
-      {/* ── SVG Wave Layers ──────────────────────────────── */}
-      {/* Background wave — slowest, blurred for depth */}
+export function DepthBackground() {
+  const width = 2880;
+
+  // Generate multiple wave lines per layer for the wireframe mesh effect
+  const bgLines = Array.from({ length: 5 }, (_, i) =>
+    generateWavePath(width, 300, 60 + i * 8, 4 + i * 0.3, i * 0.7)
+  );
+  const midLines = Array.from({ length: 6 }, (_, i) =>
+    generateWavePath(width, 280, 50 + i * 10, 3.5 + i * 0.4, i * 0.9 + 1)
+  );
+  const fgLines = Array.from({ length: 7 }, (_, i) =>
+    generateWavePath(width, 260, 40 + i * 12, 3 + i * 0.5, i * 0.6 + 2)
+  );
+
+  return (
+    <div
+      className="fixed inset-0 z-0 pointer-events-none overflow-hidden"
+      aria-hidden="true"
+    >
+      {/* ── Ambient color blobs ──────────────────────────── */}
+      <div
+        className="absolute -top-[200px] -right-[200px] w-[600px] h-[600px] rounded-full opacity-[0.07] animate-[drift_25s_ease-in-out_infinite]"
+        style={{
+          background: "radial-gradient(circle, #9CF0FF 0%, transparent 70%)",
+        }}
+      />
+      <div
+        className="absolute bottom-[-100px] -left-[200px] w-[500px] h-[500px] rounded-full opacity-[0.05] animate-[drift_30s_ease-in-out_infinite_reverse]"
+        style={{
+          background: "radial-gradient(circle, #FF6130 0%, transparent 70%)",
+        }}
+      />
+
+      {/* ── Background wave layer — deep, blurred, slow ─── */}
       <svg
-        className="absolute bottom-0 left-0 w-[200%] h-[45%] opacity-[0.25] animate-[wave-drift_35s_ease-in-out_infinite]"
-        style={{ filter: "blur(4px)" }}
-        viewBox="0 0 2880 560"
+        className="absolute bottom-0 left-0 w-[200%] h-[60%] animate-[wave-drift_40s_ease-in-out_infinite]"
+        style={{ filter: "blur(3px)" }}
+        viewBox={`0 0 ${width} 560`}
+        fill="none"
         preserveAspectRatio="none"
       >
-        <path
-          d="M0,320 Q360,200 720,280 Q1080,360 1440,240 Q1800,120 2160,280 Q2520,440 2880,320 L2880,560 L0,560 Z"
-          fill="url(#wave-bg)"
-          stroke="url(#wave-bg-stroke)"
-          strokeWidth="1.5"
-        />
         <defs>
-          <linearGradient id="wave-bg" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#9CF0FF" stopOpacity="0.5" />
-            <stop offset="50%" stopColor="#4AB8CC" stopOpacity="0.2" />
+          <linearGradient id="stroke-bg" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#9CF0FF" stopOpacity="0.6" />
+            <stop offset="50%" stopColor="#9CF0FF" stopOpacity="0.1" />
             <stop offset="100%" stopColor="#FF6130" stopOpacity="0.4" />
           </linearGradient>
-          <linearGradient id="wave-bg-stroke" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#9CF0FF" stopOpacity="0.8" />
-            <stop offset="100%" stopColor="#FF6130" stopOpacity="0.6" />
-          </linearGradient>
         </defs>
+        {bgLines.map((d, i) => (
+          <path
+            key={i}
+            d={d}
+            stroke="url(#stroke-bg)"
+            strokeWidth={1.2}
+            opacity={0.3 + i * 0.05}
+          />
+        ))}
       </svg>
 
-      {/* Middle wave — moderate speed */}
+      {/* ── Middle wave layer — moderate ────────────────── */}
       <svg
-        className="absolute bottom-0 left-0 w-[200%] h-[35%] opacity-[0.35] animate-[wave-drift_25s_ease-in-out_infinite_reverse]"
+        className="absolute bottom-0 left-0 w-[200%] h-[50%] animate-[wave-drift_28s_ease-in-out_infinite_reverse]"
         style={{ filter: "blur(1px)" }}
-        viewBox="0 0 2880 400"
+        viewBox={`0 0 ${width} 560`}
+        fill="none"
         preserveAspectRatio="none"
       >
-        <path
-          d="M0,200 Q360,120 720,220 Q1080,320 1440,180 Q1800,40 2160,200 Q2520,360 2880,200 L2880,400 L0,400 Z"
-          fill="url(#wave-mid)"
-          stroke="url(#wave-mid-stroke)"
-          strokeWidth="1"
-        />
         <defs>
-          <linearGradient id="wave-mid" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#9CF0FF" stopOpacity="0.6" />
-            <stop offset="50%" stopColor="#0F2229" stopOpacity="0.1" />
-            <stop offset="100%" stopColor="#FF6130" stopOpacity="0.5" />
-          </linearGradient>
-          <linearGradient id="wave-mid-stroke" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#9CF0FF" stopOpacity="1" />
-            <stop offset="50%" stopColor="#9CF0FF" stopOpacity="0.3" />
-            <stop offset="100%" stopColor="#FF6130" stopOpacity="0.8" />
+          <linearGradient id="stroke-mid" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#9CF0FF" stopOpacity="0.9" />
+            <stop offset="40%" stopColor="#9CF0FF" stopOpacity="0.2" />
+            <stop offset="60%" stopColor="#FF6130" stopOpacity="0.15" />
+            <stop offset="100%" stopColor="#FF6130" stopOpacity="0.7" />
           </linearGradient>
         </defs>
+        {midLines.map((d, i) => (
+          <path
+            key={i}
+            d={d}
+            stroke="url(#stroke-mid)"
+            strokeWidth={0.8}
+            opacity={0.4 + i * 0.06}
+          />
+        ))}
       </svg>
 
-      {/* Foreground wave — fastest, sharpest, most vivid */}
+      {/* ── Foreground wave layer — sharp, vivid ───────── */}
       <svg
-        className="absolute bottom-0 left-0 w-[200%] h-[25%] opacity-[0.5] animate-[wave-drift_18s_ease-in-out_infinite]"
-        viewBox="0 0 2880 280"
+        className="absolute bottom-0 left-0 w-[200%] h-[40%] animate-[wave-drift_20s_ease-in-out_infinite]"
+        viewBox={`0 0 ${width} 560`}
+        fill="none"
         preserveAspectRatio="none"
       >
-        <path
-          d="M0,140 Q360,60 720,160 Q1080,260 1440,120 Q1800,0 2160,140 Q2520,280 2880,140 L2880,280 L0,280 Z"
-          fill="url(#wave-fg)"
-          stroke="url(#wave-fg-stroke)"
-          strokeWidth="1"
-        />
         <defs>
-          <linearGradient id="wave-fg" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#9CF0FF" stopOpacity="0.7" />
-            <stop offset="35%" stopColor="#9CF0FF" stopOpacity="0.3" />
-            <stop offset="65%" stopColor="#FF6130" stopOpacity="0.2" />
-            <stop offset="100%" stopColor="#FF6130" stopOpacity="0.6" />
-          </linearGradient>
-          <linearGradient id="wave-fg-stroke" x1="0%" y1="0%" x2="100%" y2="0%">
+          <linearGradient id="stroke-fg" x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stopColor="#9CF0FF" stopOpacity="1" />
-            <stop offset="40%" stopColor="#9CF0FF" stopOpacity="0.6" />
-            <stop offset="60%" stopColor="#FF6130" stopOpacity="0.4" />
+            <stop offset="35%" stopColor="#9CF0FF" stopOpacity="0.5" />
+            <stop offset="65%" stopColor="#FF6130" stopOpacity="0.3" />
             <stop offset="100%" stopColor="#FF6130" stopOpacity="1" />
           </linearGradient>
+          {/* Glow filter for the brightest lines */}
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="2" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
         </defs>
+        {fgLines.map((d, i) => (
+          <path
+            key={i}
+            d={d}
+            stroke="url(#stroke-fg)"
+            strokeWidth={i < 2 ? 1.5 : 0.7}
+            opacity={0.5 + i * 0.05}
+            filter={i < 2 ? "url(#glow)" : undefined}
+          />
+        ))}
       </svg>
 
       {/* ── Floating particles ───────────────────────────── */}
-      {Array.from({ length: 20 }).map((_, i) => {
-        const size = 1 + Math.random() * 3;
+      {Array.from({ length: 15 }).map((_, i) => {
+        const size = 1 + Math.random() * 2.5;
         const left = Math.random() * 100;
-        const top = Math.random() * 100;
+        const top = 30 + Math.random() * 60;
         const delay = Math.random() * 15;
-        const duration = 10 + Math.random() * 15;
+        const duration = 12 + Math.random() * 15;
         const isCyan = Math.random() > 0.3;
         return (
           <div
