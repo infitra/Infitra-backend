@@ -14,7 +14,7 @@ export default function AppLayout({
           backgroundSize: "cover",
           backgroundPosition: "center 30%",
           backgroundRepeat: "no-repeat",
-          opacity: 0.4,
+          opacity: 0.7,
         }}
       />
 
