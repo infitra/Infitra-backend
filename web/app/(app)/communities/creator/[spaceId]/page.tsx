@@ -68,7 +68,7 @@ export default async function CreatorCommunityPage({
   const now = new Date();
 
   return (
-    <div className="min-h-screen bg-[#071318] flex flex-col">
+    <div className="min-h-screen flex flex-col">
       <ParticipantNav displayName={myProfile?.display_name ?? null} />
 
       <div className="flex-1 pt-20 px-6">

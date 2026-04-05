@@ -11,7 +11,7 @@ export function OnboardingForm() {
   const [state, action, pending] = useActionState(completeOnboarding, null);
 
   return (
-    <div className="min-h-screen bg-[#071318] flex flex-col items-center justify-center px-6 relative">
+    <div className="min-h-screen flex flex-col items-center justify-center px-6 relative">
       {/* Atmospheric glow */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-[#9CF0FF]/4 blur-[150px]" />

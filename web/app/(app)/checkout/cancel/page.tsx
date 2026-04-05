@@ -22,7 +22,7 @@ export default async function CheckoutCancelPage() {
     .single();
 
   return (
-    <div className="min-h-screen bg-[#071318] flex flex-col">
+    <div className="min-h-screen flex flex-col">
       <ParticipantNav displayName={profile?.display_name ?? null} />
 
       <div className="flex-1 pt-20 px-6 flex items-center justify-center">

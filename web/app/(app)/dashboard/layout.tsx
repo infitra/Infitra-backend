@@ -28,7 +28,7 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-[#071318]">
+    <div className="min-h-screen">
       {/* Top nav */}
       <nav className="fixed top-0 w-full z-50 bg-[#071318]/80 backdrop-blur-xl border-b border-[#9CF0FF]/10">
         <div className="max-w-7xl mx-auto px-6 py-3.5 flex items-center justify-between">
