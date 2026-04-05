@@ -122,9 +122,14 @@ body {
 
 @keyframes particle-float {
   0%, 100% { opacity: 0; transform: translateY(0); }
-  25% { opacity: 0.4; }
-  50% { opacity: 0.15; transform: translateY(-20px); }
-  75% { opacity: 0.3; }
+  25% { opacity: 0.5; }
+  50% { opacity: 0.2; transform: translateY(-25px); }
+  75% { opacity: 0.4; }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { opacity: var(--glow-base, 0.15); transform: scale(1) translateX(0); }
+  50% { opacity: calc(var(--glow-base, 0.15) * 1.6); transform: scale(1.1) translateX(10px); }
 }
 
 /* ── Glass Card System ─────────────────────────────────── */
