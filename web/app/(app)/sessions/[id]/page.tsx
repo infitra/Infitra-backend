@@ -137,7 +137,7 @@ export default async function SessionPage({
           </Link>
 
           {/* Session card */}
-          <div className="rounded-2xl bg-[#0F2229] border border-[#9CF0FF]/10 overflow-hidden">
+          <div className="rounded-2xl glass-card overflow-hidden">
             {/* Accent bar */}
             <div className="h-1 bg-gradient-to-r from-[#FF6130] to-[#FF6130]/40" />
 

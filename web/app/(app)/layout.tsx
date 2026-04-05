@@ -3,9 +3,15 @@ export default function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Auth is enforced by the proxy — no redundant getUser() call here
-  // to avoid consuming refresh tokens or conflicting with proxy token refresh.
   return (
-    <div className="min-h-screen bg-[#071318]">{children}</div>
+    <div className="min-h-screen bg-[#071318] relative">
+      {/* Ambient depth — nebula-like glow zones */}
+      <div className="ambient-glow" />
+      <div className="ambient-glow-deep" />
+      <div className="noise-overlay" />
+
+      {/* Content above the glow layers */}
+      <div className="relative z-10">{children}</div>
+    </div>
   );
 }

@@ -105,3 +105,123 @@ body {
   animation: alive-pulse 6s ease-in-out infinite;
   filter: drop-shadow(0 0 4px rgba(156,240,255,0.5));
 }
+
+/* ── Ambient Depth System ──────────────────────────────── */
+
+/* Background glow layer — creates nebula-like depth on dark pages */
+.ambient-glow {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.ambient-glow::before,
+.ambient-glow::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(120px);
+  opacity: 0.15;
+}
+
+/* Cyan glow — top-right, persistent calm */
+.ambient-glow::before {
+  width: 600px;
+  height: 600px;
+  top: -100px;
+  right: -100px;
+  background: radial-gradient(circle, #9CF0FF 0%, transparent 70%);
+  animation: glow-drift 20s ease-in-out infinite;
+}
+
+/* Orange glow — bottom-left, warm energy */
+.ambient-glow::after {
+  width: 500px;
+  height: 500px;
+  bottom: 10%;
+  left: -150px;
+  background: radial-gradient(circle, #FF6130 0%, transparent 70%);
+  opacity: 0.08;
+  animation: glow-drift 25s ease-in-out infinite reverse;
+}
+
+/* Third glow — center-bottom, deep teal */
+.ambient-glow-deep {
+  position: fixed;
+  bottom: -200px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 800px;
+  height: 400px;
+  background: radial-gradient(ellipse, #0F2229 0%, transparent 70%);
+  filter: blur(80px);
+  opacity: 0.4;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes glow-drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -20px) scale(1.05); }
+  66% { transform: translate(-20px, 15px) scale(0.95); }
+}
+
+/* ── Glass Card System ─────────────────────────────────── */
+
+/* Glass card — semi-transparent with subtle backdrop blur */
+.glass-card {
+  background: rgba(15, 34, 41, 0.55);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(156, 240, 255, 0.08);
+  transition: border-color 0.3s, background-color 0.3s;
+}
+
+.glass-card:hover {
+  border-color: rgba(156, 240, 255, 0.15);
+  background: rgba(15, 34, 41, 0.65);
+}
+
+/* Glass card with orange hover (for interactive/action cards) */
+.glass-card-action {
+  background: rgba(15, 34, 41, 0.55);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(156, 240, 255, 0.08);
+  transition: border-color 0.3s, background-color 0.3s, box-shadow 0.3s;
+}
+
+.glass-card-action:hover {
+  border-color: rgba(255, 97, 48, 0.2);
+  background: rgba(15, 34, 41, 0.65);
+  box-shadow: 0 0 30px rgba(255, 97, 48, 0.05);
+}
+
+/* ── Noise Texture Overlay ─────────────────────────────── */
+.noise-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+}
+
+/* ── Glow Accents ──────────────────────────────────────── */
+
+/* Subtle glow behind status indicators */
+.glow-live {
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.4), 0 0 4px rgba(239, 68, 68, 0.6);
+}
+
+.glow-cyan {
+  box-shadow: 0 0 15px rgba(156, 240, 255, 0.15);
+}
+
+.glow-orange {
+  box-shadow: 0 0 15px rgba(255, 97, 48, 0.15);
+}

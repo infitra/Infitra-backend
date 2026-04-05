@@ -38,7 +38,7 @@ export default async function CheckoutSuccessPage({
       <div className="flex-1 pt-20 px-6 flex items-center justify-center">
         <div className="max-w-md w-full text-center">
           {/* Success icon */}
-          <div className="w-20 h-20 rounded-full bg-green-400/10 border border-green-400/20 flex items-center justify-center mx-auto mb-8">
+          <div className="w-20 h-20 rounded-full bg-green-400/10 border border-green-400/20 backdrop-blur-xl flex items-center justify-center mx-auto mb-8">
             <svg
               width="40"
               height="40"

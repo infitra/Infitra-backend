@@ -43,7 +43,7 @@ export function PostCard({
   currentUserId: string;
 }) {
   return (
-    <div className="rounded-2xl bg-[#0F2229] border border-[#9CF0FF]/10 p-5">
+    <div className="rounded-2xl glass-card p-5">
       {/* Author row */}
       <div className="flex items-center gap-3 mb-3">
         <div
