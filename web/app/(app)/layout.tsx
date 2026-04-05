@@ -4,13 +4,20 @@ export default function AppLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen relative overflow-hidden" style={{
-      background: `
-        radial-gradient(ellipse 80% 50% at 80% 10%, rgba(156, 240, 255, 0.08) 0%, transparent 70%),
-        radial-gradient(ellipse 50% 60% at 10% 90%, rgba(255, 97, 48, 0.04) 0%, transparent 60%),
-        #071318
-      `
-    }}>
+    <div className="min-h-screen bg-[#071318] relative overflow-hidden">
+      {/* Depth background — flowing energy wave */}
+      <div
+        className="fixed inset-0 z-0 pointer-events-none"
+        aria-hidden="true"
+        style={{
+          backgroundImage: "url('/bg-depth.png')",
+          backgroundSize: "cover",
+          backgroundPosition: "center 30%",
+          backgroundRepeat: "no-repeat",
+          opacity: 0.4,
+        }}
+      />
+
       {/* Content */}
       <div className="relative z-10">{children}</div>
     </div>
