@@ -105,19 +105,24 @@ export default async function DashboardPage() {
     .select("id, title, description, source_challenge_id")
     .eq("owner_id", user!.id);
 
+  // Use app_challenge_member (entitlement) for tribe counts, not app_challenge_space_member
   const tribeMemberCounts: Record<string, number> = {};
-  if (challengeSpaces?.length) {
-    const spaceIds = challengeSpaces.map((s: any) => s.id);
+  const challengeIds = (challengeSpaces ?? []).map((s: any) => s.source_challenge_id).filter(Boolean);
+  if (challengeIds.length > 0) {
     const { data: members } = await supabase
-      .from("app_challenge_space_member")
-      .select("space_id")
-      .in("space_id", spaceIds);
+      .from("app_challenge_member")
+      .select("challenge_id")
+      .in("challenge_id", challengeIds);
+    // Map challenge_id → space_id for counts
+    const challengeToSpace: Record<string, string> = {};
+    for (const cs of challengeSpaces ?? []) {
+      if (cs.source_challenge_id) challengeToSpace[cs.source_challenge_id] = cs.id;
+    }
     for (const m of members ?? []) {
-      tribeMemberCounts[m.space_id] = (tribeMemberCounts[m.space_id] ?? 0) + 1;
+      const spaceId = challengeToSpace[m.challenge_id];
+      if (spaceId) tribeMemberCounts[spaceId] = (tribeMemberCounts[spaceId] ?? 0) + 1;
     }
   }
-
-  const challengeIds = (challengeSpaces ?? []).map((s: any) => s.source_challenge_id).filter(Boolean);
   const challengeTitleMap: Record<string, string> = {};
   if (challengeIds.length > 0) {
     const { data: challenges } = await supabase

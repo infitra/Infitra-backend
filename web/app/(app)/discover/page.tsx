@@ -144,13 +144,21 @@ export default async function DiscoverPage() {
     if (challengeSpaces.length > 0) {
       const spaceIds = challengeSpaces.map((s: any) => s.id);
 
-      // Member counts
-      const { data: members } = await supabase
-        .from("app_challenge_space_member")
-        .select("space_id")
-        .in("space_id", spaceIds);
-      for (const m of members ?? []) {
-        tribeMemberCounts[m.space_id] = (tribeMemberCounts[m.space_id] ?? 0) + 1;
+      // Member counts (use app_challenge_member entitlements, not space_member)
+      const chalIds = challengeSpaces.map((s: any) => s.source_challenge_id).filter(Boolean);
+      if (chalIds.length > 0) {
+        const { data: members } = await supabase
+          .from("app_challenge_member")
+          .select("challenge_id")
+          .in("challenge_id", chalIds);
+        const chalToSpace: Record<string, string> = {};
+        for (const cs of challengeSpaces) {
+          if (cs.source_challenge_id) chalToSpace[cs.source_challenge_id] = cs.id;
+        }
+        for (const m of members ?? []) {
+          const sid = chalToSpace[m.challenge_id];
+          if (sid) tribeMemberCounts[sid] = (tribeMemberCounts[sid] ?? 0) + 1;
+        }
       }
 
       // Latest post per tribe

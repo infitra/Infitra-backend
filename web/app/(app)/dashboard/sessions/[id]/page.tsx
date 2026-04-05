@@ -111,6 +111,7 @@ export default async function SessionDetailPage({
   }));
 
   const isPublished = session.status === "published";
+  const isPartOfChallenge = !!challengeLink;
 
   return (
     <div className="py-10 max-w-2xl mx-auto">
@@ -142,7 +143,7 @@ export default async function SessionDetailPage({
       </div>
 
       {/* Info grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <div className={`grid grid-cols-2 ${isPartOfChallenge ? "" : "md:grid-cols-4"} gap-4 mb-8`}>
         <div className="p-5 rounded-2xl bg-[#0F2229] border border-[#9CF0FF]/10">
           <p className="text-[10px] font-bold text-[#9CF0FF]/40 uppercase tracking-widest font-headline mb-2">When</p>
           <p className="text-sm font-semibold text-white">{formatDateTime(session.start_time)}</p>
@@ -151,14 +152,18 @@ export default async function SessionDetailPage({
           <p className="text-[10px] font-bold text-[#9CF0FF]/40 uppercase tracking-widest font-headline mb-2">Duration</p>
           <p className="text-sm font-semibold text-white">{session.duration_minutes} min</p>
         </div>
-        <div className="p-5 rounded-2xl bg-[#0F2229] border border-[#9CF0FF]/10">
-          <p className="text-[10px] font-bold text-[#9CF0FF]/40 uppercase tracking-widest font-headline mb-2">Capacity</p>
-          <p className="text-sm font-semibold text-white">{session.capacity ?? "Unlimited"}</p>
-        </div>
-        <div className="p-5 rounded-2xl bg-[#0F2229] border border-[#9CF0FF]/10">
-          <p className="text-[10px] font-bold text-[#9CF0FF]/40 uppercase tracking-widest font-headline mb-2">Price</p>
-          <p className="text-sm font-semibold text-white">{priceCHF > 0 ? `CHF ${priceCHF.toFixed(2)}` : "Free"}</p>
-        </div>
+        {!isPartOfChallenge && (
+          <>
+            <div className="p-5 rounded-2xl bg-[#0F2229] border border-[#9CF0FF]/10">
+              <p className="text-[10px] font-bold text-[#9CF0FF]/40 uppercase tracking-widest font-headline mb-2">Capacity</p>
+              <p className="text-sm font-semibold text-white">{session.capacity ?? "Unlimited"}</p>
+            </div>
+            <div className="p-5 rounded-2xl bg-[#0F2229] border border-[#9CF0FF]/10">
+              <p className="text-[10px] font-bold text-[#9CF0FF]/40 uppercase tracking-widest font-headline mb-2">Price</p>
+              <p className="text-sm font-semibold text-white">{priceCHF > 0 ? `CHF ${priceCHF.toFixed(2)}` : "Free"}</p>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Challenge link */}
