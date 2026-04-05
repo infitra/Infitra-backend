@@ -41,55 +41,55 @@ export function DepthBackground() {
     >
       {/* ── Bottom waves — sit on the very bottom, drift left/right ── */}
 
-      {/* Wave 1 — back, slow, blurred, cyan-heavy */}
+      {/* Wave 1 — back, slow, blurred, cyan-heavy, tallest */}
       <div
-        className="absolute bottom-0 left-0 w-[200vw] h-[120px] animate-[wave-lr_30s_ease-in-out_infinite]"
+        className="absolute bottom-0 left-0 w-[200vw] h-[280px] animate-[wave-lr_30s_ease-in-out_infinite]"
         style={{ filter: "blur(3px)" }}
+      >
+        <svg viewBox="0 0 2880 280" preserveAspectRatio="none" className="w-full h-full">
+          <defs>
+            <linearGradient id="w1" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#9CF0FF" stopOpacity="0.5" />
+              <stop offset="50%" stopColor="#9CF0FF" stopOpacity="0.05" />
+              <stop offset="100%" stopColor="#FF6130" stopOpacity="0.3" />
+            </linearGradient>
+          </defs>
+          <path d="M0,140 Q360,60 720,120 Q1080,180 1440,80 Q1800,20 2160,120 Q2520,200 2880,100 L2880,280 L0,280 Z" fill="url(#w1)" />
+        </svg>
+      </div>
+
+      {/* Wave 2 — mid, opposite direction */}
+      <div
+        className="absolute bottom-0 left-0 w-[200vw] h-[200px] animate-[wave-rl_22s_ease-in-out_infinite]"
+        style={{ filter: "blur(1px)" }}
+      >
+        <svg viewBox="0 0 2880 200" preserveAspectRatio="none" className="w-full h-full">
+          <defs>
+            <linearGradient id="w2" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#9CF0FF" stopOpacity="0.7" />
+              <stop offset="40%" stopColor="#9CF0FF" stopOpacity="0.1" />
+              <stop offset="60%" stopColor="#FF6130" stopOpacity="0.08" />
+              <stop offset="100%" stopColor="#FF6130" stopOpacity="0.5" />
+            </linearGradient>
+          </defs>
+          <path d="M0,90 Q360,150 720,80 Q1080,30 1440,100 Q1800,160 2160,70 Q2520,20 2880,90 L2880,200 L0,200 Z" fill="url(#w2)" />
+        </svg>
+      </div>
+
+      {/* Wave 3 — front, sharp, vivid, shortest */}
+      <div
+        className="absolute bottom-0 left-0 w-[200vw] h-[120px] animate-[wave-lr_16s_ease-in-out_infinite]"
       >
         <svg viewBox="0 0 2880 120" preserveAspectRatio="none" className="w-full h-full">
           <defs>
-            <linearGradient id="w1" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#9CF0FF" stopOpacity="0.6" />
-              <stop offset="50%" stopColor="#9CF0FF" stopOpacity="0.1" />
-              <stop offset="100%" stopColor="#FF6130" stopOpacity="0.4" />
-            </linearGradient>
-          </defs>
-          <path d="M0,60 Q360,20 720,50 Q1080,80 1440,40 Q1800,10 2160,55 Q2520,90 2880,50 L2880,120 L0,120 Z" fill="url(#w1)" />
-        </svg>
-      </div>
-
-      {/* Wave 2 — mid, opposite direction, cyan-orange mix */}
-      <div
-        className="absolute bottom-0 left-0 w-[200vw] h-[90px] animate-[wave-rl_22s_ease-in-out_infinite]"
-        style={{ filter: "blur(1px)" }}
-      >
-        <svg viewBox="0 0 2880 90" preserveAspectRatio="none" className="w-full h-full">
-          <defs>
-            <linearGradient id="w2" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#9CF0FF" stopOpacity="0.8" />
-              <stop offset="40%" stopColor="#9CF0FF" stopOpacity="0.15" />
-              <stop offset="60%" stopColor="#FF6130" stopOpacity="0.1" />
-              <stop offset="100%" stopColor="#FF6130" stopOpacity="0.6" />
-            </linearGradient>
-          </defs>
-          <path d="M0,40 Q360,70 720,35 Q1080,10 1440,45 Q1800,75 2160,30 Q2520,5 2880,40 L2880,90 L0,90 Z" fill="url(#w2)" />
-        </svg>
-      </div>
-
-      {/* Wave 3 — front, sharp, vivid, orange-heavy */}
-      <div
-        className="absolute bottom-0 left-0 w-[200vw] h-[60px] animate-[wave-lr_16s_ease-in-out_infinite]"
-      >
-        <svg viewBox="0 0 2880 60" preserveAspectRatio="none" className="w-full h-full">
-          <defs>
             <linearGradient id="w3" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#9CF0FF" stopOpacity="1" />
-              <stop offset="35%" stopColor="#9CF0FF" stopOpacity="0.3" />
-              <stop offset="65%" stopColor="#FF6130" stopOpacity="0.2" />
-              <stop offset="100%" stopColor="#FF6130" stopOpacity="0.9" />
+              <stop offset="0%" stopColor="#9CF0FF" stopOpacity="0.9" />
+              <stop offset="35%" stopColor="#9CF0FF" stopOpacity="0.25" />
+              <stop offset="65%" stopColor="#FF6130" stopOpacity="0.15" />
+              <stop offset="100%" stopColor="#FF6130" stopOpacity="0.8" />
             </linearGradient>
           </defs>
-          <path d="M0,30 Q360,50 720,25 Q1080,5 1440,35 Q1800,55 2160,20 Q2520,0 2880,30 L2880,60 L0,60 Z" fill="url(#w3)" />
+          <path d="M0,60 Q360,100 720,50 Q1080,10 1440,65 Q1800,110 2160,40 Q2520,0 2880,55 L2880,120 L0,120 Z" fill="url(#w3)" />
         </svg>
       </div>
 
