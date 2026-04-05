@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { signOut } from "@/app/actions/auth";
+import { MobileMenu } from "@/app/components/MobileMenu";
 
 export function ParticipantNav({
   displayName,
@@ -25,6 +26,12 @@ export function ParticipantNav({
           </span>
         </Link>
         <div className="flex items-center gap-4">
+          <MobileMenu
+            links={[
+              { label: "Home", href: "/discover" },
+              { label: "Discover", href: "/discover#discover" },
+            ]}
+          />
           <Link
             href="/discover"
             className="text-xs font-bold text-[#9CF0FF]/40 hover:text-[#9CF0FF] font-headline transition-colors hidden md:block"

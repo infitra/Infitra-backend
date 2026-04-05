@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import Image from "next/image";
 import { signOut } from "@/app/actions/auth";
+import { MobileMenu } from "@/app/components/MobileMenu";
 
 export default async function DashboardLayout({
   children,
@@ -66,6 +67,14 @@ export default async function DashboardLayout({
           </div>
 
           <div className="flex items-center gap-4">
+            <MobileMenu
+              links={[
+                { label: "Home", href: "/dashboard" },
+                { label: "Sessions", href: "/dashboard/sessions" },
+                { label: "Challenges", href: "/dashboard/challenges" },
+                { label: "Earnings", href: "/dashboard/earnings" },
+              ]}
+            />
             <span className="text-sm text-[#9CF0FF]/50 font-headline hidden md:block">
               {profile?.display_name}
             </span>
