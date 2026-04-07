@@ -123,6 +123,26 @@ body {
   100% { left: 115%; opacity: 0; }
 }
 
+/* ── DepthBackgroundWaves animations (alternate background, /design-lab) ──
+   Used by web/app/components/DepthBackgroundWaves.tsx — kept here so the
+   wave variant survives in the design lab gallery for comparison. */
+@keyframes wave-lr {
+  0%   { transform: translateX(-50%); }
+  50%  { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}
+@keyframes wave-rl {
+  0%   { transform: translateX(0%); }
+  50%  { transform: translateX(-50%); }
+  100% { transform: translateX(0%); }
+}
+@keyframes particle-float {
+  0%, 100% { opacity: 0; transform: translateY(0); }
+  25%      { opacity: 0.5; }
+  50%      { opacity: 0.2; transform: translateY(-25px); }
+  75%      { opacity: 0.4; }
+}
+
 /* ── Beam vocabulary (interactive states) ───────────────
    Apply .beam-hover-cyan to any container with rounded corners. The
    inset shadow follows the border-radius automatically. Inline styles
