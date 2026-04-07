@@ -1,11 +1,37 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
+import type { CSSProperties } from "react";
 import { createDraftChallenge } from "@/app/actions/challenge";
 
 export const metadata = {
   title: "Challenges — INFITRA",
 };
 
+// ── Beam vocabulary tokens ──────────────────────────────────────
+// Inset bottom line follows any rounded radius automatically; outer
+// shadows provide the downward-biased halo. Cyan = featured / structural,
+// Orange = primary action.
+const cardBeamCyan: CSSProperties = {
+  boxShadow: [
+    "inset 0 -3px 0 #9CF0FF",
+    "0 0 18px rgba(156,240,255,0.45)",
+    "0 0 48px rgba(156,240,255,0.20)",
+    "0 6px 30px rgba(156,240,255,0.32)",
+    "0 14px 50px rgba(156,240,255,0.16)",
+  ].join(", "),
+};
+
+const buttonBeamOrange: CSSProperties = {
+  boxShadow: [
+    "inset 0 -3px 0 #FF6130",
+    "0 0 14px rgba(255,97,48,0.55)",
+    "0 0 36px rgba(255,97,48,0.28)",
+    "0 5px 22px rgba(255,97,48,0.40)",
+  ].join(", "),
+};
+
+// Status badges — kept inside the cyan family so they don't compete
+// with the beam vocabulary.
 const STATUS_STYLES: Record<string, { label: string; color: string }> = {
   draft: {
     label: "Draft",
@@ -13,15 +39,15 @@ const STATUS_STYLES: Record<string, { label: string; color: string }> = {
   },
   published: {
     label: "Published",
-    color: "text-green-400 bg-green-400/8 border-green-400/20",
+    color: "text-[#9CF0FF] bg-[#9CF0FF]/10 border-[#9CF0FF]/25",
   },
   completed: {
     label: "Completed",
-    color: "text-[#9CF0FF]/30 bg-[#9CF0FF]/5 border-[#9CF0FF]/10",
+    color: "text-[#9CF0FF]/30 bg-[#9CF0FF]/4 border-[#9CF0FF]/10",
   },
   canceled: {
     label: "Canceled",
-    color: "text-red-400/60 bg-red-400/8 border-red-400/15",
+    color: "text-white/30 bg-white/4 border-white/10",
   },
 };
 
@@ -67,6 +93,31 @@ export default async function ChallengesPage() {
 
   const hasChallenges = challenges && challenges.length > 0;
 
+  // Identify the Featured challenge — the only row that gets the cyan beam.
+  // Priority: currently-running published challenge → otherwise the next
+  // upcoming published challenge.
+  const today = new Date().toISOString().split("T")[0];
+  const publishedChallenges = (challenges ?? []).filter(
+    (c: any) => c.status === "published",
+  );
+  const runningChallenge = publishedChallenges.find(
+    (c: any) => c.start_date <= today && c.end_date >= today,
+  );
+  const upcomingChallenge = publishedChallenges
+    .filter((c: any) => c.start_date > today)
+    .sort((a: any, b: any) => a.start_date.localeCompare(b.start_date))[0];
+  const featuredChallenge = runningChallenge ?? upcomingChallenge;
+  const featuredLabel = runningChallenge ? "Active" : "Next up";
+
+  // Reorder so the featured challenge is always first in the list —
+  // otherwise the cyan beam can hide far down a long history.
+  const orderedChallenges = (() => {
+    if (!challenges) return [];
+    if (!featuredChallenge) return challenges;
+    const rest = challenges.filter((c: any) => c.id !== featuredChallenge.id);
+    return [featuredChallenge, ...rest];
+  })();
+
   return (
     <div className="py-10">
       <div className="flex items-center justify-between mb-10">
@@ -81,7 +132,8 @@ export default async function ChallengesPage() {
         <form action={createDraftChallenge}>
           <button
             type="submit"
-            className="px-5 py-2.5 rounded-full bg-[#FF6130] text-white text-sm font-black font-headline hover:scale-[1.03] transition-transform shadow-[0_0_20px_rgba(255,97,48,0.25)]"
+            className="px-7 py-3 rounded-md bg-[#0F2229] text-[#FF6130] text-xs font-black font-headline uppercase tracking-[0.15em] hover:scale-[1.02] transition-transform"
+            style={buttonBeamOrange}
           >
             New Challenge
           </button>
@@ -113,7 +165,8 @@ export default async function ChallengesPage() {
           <form action={createDraftChallenge} className="inline-block">
             <button
               type="submit"
-              className="px-6 py-3 rounded-full bg-[#FF6130] text-white text-sm font-black font-headline hover:scale-[1.03] transition-transform shadow-[0_0_20px_rgba(255,97,48,0.25)]"
+              className="px-7 py-3 rounded-md bg-[#0F2229] text-[#FF6130] text-xs font-black font-headline uppercase tracking-[0.15em] hover:scale-[1.02] transition-transform"
+              style={buttonBeamOrange}
             >
               Create Challenge
             </button>
@@ -121,22 +174,28 @@ export default async function ChallengesPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {challenges.map((challenge: any) => {
-            const s =
-              STATUS_STYLES[challenge.status] ?? STATUS_STYLES.draft;
+          {orderedChallenges.map((challenge: any) => {
+            const s = STATUS_STYLES[challenge.status] ?? STATUS_STYLES.draft;
             const priceCHF = (challenge.price_cents ?? 0) / 100;
             const sessionCount = countMap[challenge.id] ?? 0;
+            const isFeatured = challenge.id === featuredChallenge?.id;
 
             return (
               <Link
                 key={challenge.id}
                 href={`/dashboard/challenges/${challenge.id}`}
-                className="block p-5 rounded-2xl bg-[#0F2229] border border-[#9CF0FF]/10 hover:border-[#FF6130]/25 transition-colors group"
+                className="beam-hover-cyan block p-5 rounded-xl bg-[rgba(15,34,41,0.55)] backdrop-blur-xl border border-[rgba(156,240,255,0.10)] hover:bg-[rgba(15,34,41,0.85)] hover:border-[rgba(156,240,255,0.28)] group"
+                style={isFeatured ? cardBeamCyan : undefined}
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-lg font-black text-white font-headline tracking-tight truncate group-hover:text-[#FF6130] transition-colors">
+                      {isFeatured && (
+                        <span className="font-headline text-[10px] font-bold uppercase tracking-[0.2em] text-[#9CF0FF] shrink-0">
+                          {featuredLabel}
+                        </span>
+                      )}
+                      <h3 className="text-lg font-black text-white font-headline tracking-tight truncate">
                         {challenge.title}
                       </h3>
                       <span
@@ -154,9 +213,7 @@ export default async function ChallengesPage() {
                         {sessionCount} session
                         {sessionCount !== 1 ? "s" : ""}
                       </span>
-                      {priceCHF > 0 && (
-                        <span>CHF {priceCHF.toFixed(2)}</span>
-                      )}
+                      {priceCHF > 0 && <span>CHF {priceCHF.toFixed(2)}</span>}
                     </div>
                   </div>
                   <svg
@@ -166,7 +223,7 @@ export default async function ChallengesPage() {
                     stroke="currentColor"
                     strokeWidth={2}
                     viewBox="0 0 24 24"
-                    className="text-[#9CF0FF]/20 group-hover:text-[#FF6130] transition-colors shrink-0 mt-1"
+                    className="text-[#9CF0FF]/30 group-hover:text-[#9CF0FF]/60 transition-colors shrink-0 mt-1"
                   >
                     <path
                       d="M9 18l6-6-6-6"

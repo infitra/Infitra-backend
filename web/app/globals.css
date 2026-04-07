@@ -108,34 +108,34 @@ body {
 
 /* ── Depth Background Animations ───────────────────────── */
 
-@keyframes wave-lr {
-  0% { transform: translateX(-50%); }
-  50% { transform: translateX(0%); }
-  100% { transform: translateX(-50%); }
+/* Slow breath on the hero bottom line — never fully dims */
+@keyframes line-breath {
+  0%, 100% { opacity: 0.92; }
+  50%      { opacity: 1; }
 }
 
-@keyframes wave-rl {
-  0% { transform: translateX(0%); }
-  50% { transform: translateX(-50%); }
-  100% { transform: translateX(0%); }
+/* Running light — a bright hot spot travels horizontally along the
+   bottom line, suggesting energy moving through the light source */
+@keyframes running-light {
+  0%   { left: -15%; opacity: 0; }
+  6%   { opacity: 1; }
+  94%  { opacity: 1; }
+  100% { left: 115%; opacity: 0; }
 }
 
-@keyframes drift {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33% { transform: translate(30px, -20px) scale(1.05); }
-  66% { transform: translate(-20px, 15px) scale(0.95); }
+/* ── Beam vocabulary (interactive states) ───────────────
+   Apply .beam-hover-cyan to any container with rounded corners. The
+   inset shadow follows the border-radius automatically. Inline styles
+   on featured/active cards override the :hover via CSS specificity,
+   so an active card stays in its active state on hover. */
+.beam-hover-cyan {
+  transition: background-color 200ms, border-color 200ms, box-shadow 200ms;
 }
-
-@keyframes particle-float {
-  0%, 100% { opacity: 0; transform: translateY(0); }
-  25% { opacity: 0.5; }
-  50% { opacity: 0.2; transform: translateY(-25px); }
-  75% { opacity: 0.4; }
-}
-
-@keyframes glow-pulse {
-  0%, 100% { opacity: var(--glow-base, 0.15); transform: scale(1) translateX(0); }
-  50% { opacity: calc(var(--glow-base, 0.15) * 1.6); transform: scale(1.1) translateX(10px); }
+.beam-hover-cyan:hover {
+  box-shadow:
+    inset 0 -3px 0 #9CF0FF,
+    0 0 8px rgba(156, 240, 255, 0.28),
+    0 3px 12px rgba(156, 240, 255, 0.14);
 }
 
 /* ── Glass Card System ─────────────────────────────────── */
