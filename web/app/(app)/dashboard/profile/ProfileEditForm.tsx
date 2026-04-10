@@ -1,7 +1,7 @@
 "use client";
 
-import { useActionState, useRef, useState } from "react";
-import { updateProfile } from "@/app/actions/profile";
+import { useRef, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 export function ProfileEditForm({
   displayName,
@@ -16,31 +16,147 @@ export function ProfileEditForm({
   avatarUrl: string | null;
   coverUrl: string | null;
 }) {
-  const [state, action, pending] = useActionState(updateProfile, null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(avatarUrl);
   const [coverPreview, setCoverPreview] = useState<string | null>(coverUrl);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
+  const avatarFileRef = useRef<File | null>(null);
+  const coverFileRef = useRef<File | null>(null);
 
   function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setError("Avatar must be under 5MB.");
+        return;
+      }
+      avatarFileRef.current = file;
       setAvatarPreview(URL.createObjectURL(file));
+      setError(null);
     }
   }
 
   function handleCoverChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setError("Cover image must be under 5MB.");
+        return;
+      }
+      coverFileRef.current = file;
       setCoverPreview(URL.createObjectURL(file));
+      setError(null);
     }
+  }
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setSaving(true);
+    setError(null);
+    setSuccess(false);
+
+    try {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        setError("Not authenticated.");
+        setSaving(false);
+        return;
+      }
+
+      const form = e.currentTarget;
+      const display_name = (
+        form.elements.namedItem("display_name") as HTMLInputElement
+      ).value.trim();
+      const taglineVal =
+        (form.elements.namedItem("tagline") as HTMLInputElement).value.trim() ||
+        null;
+      const bioVal =
+        (form.elements.namedItem("bio") as HTMLTextAreaElement).value.trim() ||
+        null;
+
+      if (!display_name || display_name.length < 2) {
+        setError("Display name must be at least 2 characters.");
+        setSaving(false);
+        return;
+      }
+
+      const updates: Record<string, any> = {
+        display_name,
+        tagline: taglineVal,
+        bio: bioVal,
+      };
+
+      // Upload avatar directly from client
+      if (avatarFileRef.current) {
+        const file = avatarFileRef.current;
+        const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+        const path = `${user.id}/avatar.${ext}`;
+        const { error: upErr } = await supabase.storage
+          .from("profile-images")
+          .upload(path, file, { upsert: true, contentType: file.type });
+        if (upErr) {
+          setError(`Avatar upload failed: ${upErr.message}`);
+          setSaving(false);
+          return;
+        }
+        const { data: urlData } = supabase.storage
+          .from("profile-images")
+          .getPublicUrl(path);
+        updates.avatar_url = urlData.publicUrl;
+      }
+
+      // Upload cover directly from client
+      if (coverFileRef.current) {
+        const file = coverFileRef.current;
+        const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+        const path = `${user.id}/cover.${ext}`;
+        const { error: upErr } = await supabase.storage
+          .from("profile-images")
+          .upload(path, file, { upsert: true, contentType: file.type });
+        if (upErr) {
+          setError(`Cover upload failed: ${upErr.message}`);
+          setSaving(false);
+          return;
+        }
+        const { data: urlData } = supabase.storage
+          .from("profile-images")
+          .getPublicUrl(path);
+        updates.cover_image_url = urlData.publicUrl;
+      }
+
+      // Update profile
+      const { error: updateError } = await supabase
+        .from("app_profile")
+        .update(updates)
+        .eq("id", user.id);
+
+      if (updateError) {
+        setError(updateError.message);
+        setSaving(false);
+        return;
+      }
+
+      setSuccess(true);
+      avatarFileRef.current = null;
+      coverFileRef.current = null;
+    } catch (err: any) {
+      setError(err?.message || "Something went wrong.");
+    }
+    setSaving(false);
   }
 
   const initials = (displayName || "?")[0].toUpperCase();
 
   return (
-    <form action={action} className="space-y-6">
-      {state?.error && (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {error && (
         <div
           className="p-4 rounded-2xl"
           style={{
@@ -48,11 +164,11 @@ export function ProfileEditForm({
             border: "1px solid rgba(255, 97, 48, 0.25)",
           }}
         >
-          <p className="text-sm text-[#FF6130]">{state.error}</p>
+          <p className="text-sm text-[#FF6130]">{error}</p>
         </div>
       )}
 
-      {state?.success && (
+      {success && (
         <div
           className="p-4 rounded-2xl"
           style={{
@@ -114,7 +230,6 @@ export function ProfileEditForm({
         <input
           ref={coverInputRef}
           type="file"
-          name="cover"
           accept="image/jpeg,image/png,image/webp"
           className="hidden"
           onChange={handleCoverChange}
@@ -189,7 +304,6 @@ export function ProfileEditForm({
         <input
           ref={avatarInputRef}
           type="file"
-          name="avatar"
           accept="image/jpeg,image/png,image/webp"
           className="hidden"
           onChange={handleAvatarChange}
@@ -272,14 +386,14 @@ export function ProfileEditForm({
       {/* Submit */}
       <button
         type="submit"
-        disabled={pending}
+        disabled={saving}
         className="w-full py-3.5 rounded-full text-white text-sm font-black font-headline disabled:opacity-50"
         style={{
           backgroundColor: "#FF6130",
           boxShadow: "0 4px 14px rgba(255,97,48,0.35)",
         }}
       >
-        {pending ? "Saving..." : "Save Profile"}
+        {saving ? "Saving..." : "Save Profile"}
       </button>
     </form>
   );
