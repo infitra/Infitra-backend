@@ -66,9 +66,6 @@ export function CommunityContainer({
         {challengeTitle && (
           <p className="text-xs text-[#64748b]">{challengeTitle}</p>
         )}
-        {creatorName && type === "creator" && (
-          <p className="text-xs text-[#64748b]">by {creatorName}</p>
-        )}
       </div>
 
       {/* Divider */}

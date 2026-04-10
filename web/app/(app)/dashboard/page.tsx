@@ -169,9 +169,17 @@ export default async function DashboardPage() {
               </span>
             </div>
             <div className="min-w-0">
-              <h1 className="text-xl font-black font-headline text-[#0F2229] tracking-tight truncate">
-                {profile?.display_name}
-              </h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-black font-headline text-[#0F2229] tracking-tight truncate">
+                  {profile?.display_name}
+                </h1>
+                <Link
+                  href="/dashboard/profile"
+                  className="text-[10px] font-bold font-headline text-[#94a3b8] hover:text-[#FF6130] shrink-0"
+                >
+                  Edit
+                </Link>
+              </div>
               {profile?.tagline && (
                 <p className="text-sm text-[#64748b] truncate">
                   {profile.tagline}
@@ -255,7 +263,58 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* ── Main content ──────────────────────────────────── */}
+      {/* ── Tribes (action layer — prominent) ─────────────── */}
+      {hasTribes && (
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-black font-headline text-[#0F2229] tracking-tight">
+              Your Tribes
+            </h2>
+            <Link
+              href="/dashboard/challenges"
+              className="text-xs font-bold font-headline text-[#94a3b8] hover:text-[#0F2229]"
+            >
+              All Challenges →
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {challengeSpaces!.map((cs: any) => {
+              const mCount = tribeMemberCounts[cs.id] ?? 0;
+              const cTitle = challengeTitleMap[cs.source_challenge_id] ?? "Challenge";
+              return (
+                <Link
+                  key={cs.id}
+                  href={`/communities/challenge/${cs.id}`}
+                  className="group block rounded-2xl infitra-card-link p-5"
+                >
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-[9px] font-bold px-2 py-0.5 rounded-full font-headline text-orange-700 bg-orange-100/80">
+                      TRIBE
+                    </span>
+                    <span className="text-[10px] text-[#94a3b8]">
+                      {mCount} member{mCount !== 1 ? "s" : ""}
+                    </span>
+                  </div>
+                  <h3 className="text-base font-black font-headline tracking-tight mb-1 truncate text-[#0F2229] group-hover:text-[#FF6130]">
+                    {cs.title}
+                  </h3>
+                  <p className="text-xs text-[#64748b] truncate">{cTitle}</p>
+                  <div
+                    className="flex items-center gap-2 mt-3 pt-3"
+                    style={{ borderTop: "1px solid rgba(0,0,0,0.05)" }}
+                  >
+                    <span className="text-[10px] font-bold font-headline text-[#FF6130]">
+                      Enter Tribe →
+                    </span>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ── Main content: Community + Sidebar ─────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Community (main column) */}
         <div className="lg:col-span-2">
@@ -263,7 +322,6 @@ export default async function DashboardPage() {
             <CommunityContainer
               type="creator"
               title={space.title}
-              creatorName={profile?.display_name ?? undefined}
               memberCount={memberCount}
               spaceId={space.id}
             >
@@ -293,155 +351,114 @@ export default async function DashboardPage() {
           )}
         </div>
 
-        {/* Sidebar */}
-        <div className="space-y-8">
-          {/* Next Up */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold uppercase tracking-wider font-headline text-[#94a3b8]">
-                Next Up
-              </h3>
+        {/* Sidebar: Next Up */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-bold uppercase tracking-wider font-headline text-[#94a3b8]">
+              Next Up
+            </h3>
+            <Link
+              href="/dashboard/sessions"
+              className="text-[10px] font-bold font-headline text-[#94a3b8] hover:text-[#0F2229]"
+            >
+              All →
+            </Link>
+          </div>
+
+          {!hasUpcoming ? (
+            <div
+              className="p-5 rounded-2xl border border-dashed text-center"
+              style={{
+                backgroundColor: "rgba(255, 255, 255, 0.55)",
+                borderColor: "rgba(15, 34, 41, 0.12)",
+              }}
+            >
+              <p className="text-xs mb-2 text-[#64748b]">
+                No upcoming sessions
+              </p>
               <Link
-                href="/dashboard/sessions"
-                className="text-[10px] font-bold font-headline text-[#94a3b8] hover:text-[#0F2229]"
+                href="/dashboard/sessions/new"
+                className="text-xs font-bold font-headline text-[#FF6130]"
               >
-                All →
+                + Create session
               </Link>
             </div>
+          ) : (
+            <div className="space-y-2">
+              {upcomingSessions!.map((sess: any) => {
+                const startTime = new Date(sess.start_time);
+                const goLiveOpensAt = new Date(
+                  startTime.getTime() - 15 * 60 * 1000
+                );
+                const canGoLive = now >= goLiveOpensAt;
+                const hasRoom = !!sess.live_room_id;
+                const challengeName = challengeMap[sess.id];
 
-            {!hasUpcoming ? (
-              <div
-                className="p-5 rounded-2xl border border-dashed text-center"
-                style={{
-                  backgroundColor: "rgba(255, 255, 255, 0.55)",
-                  borderColor: "rgba(15, 34, 41, 0.12)",
-                }}
-              >
-                <p className="text-xs mb-2 text-[#64748b]">
-                  No upcoming sessions
-                </p>
-                <Link
-                  href="/dashboard/sessions/new"
-                  className="text-xs font-bold font-headline text-[#FF6130]"
-                >
-                  + Create session
-                </Link>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {upcomingSessions!.map((sess: any) => {
-                  const startTime = new Date(sess.start_time);
-                  const goLiveOpensAt = new Date(
-                    startTime.getTime() - 15 * 60 * 1000
-                  );
-                  const canGoLive = now >= goLiveOpensAt;
-                  const hasRoom = !!sess.live_room_id;
-                  const challengeName = challengeMap[sess.id];
-
-                  return (
-                    <Link
-                      key={sess.id}
-                      href={`/dashboard/sessions/${sess.id}`}
-                      className="group block p-4 rounded-2xl infitra-card-link"
-                    >
-                      <div className="flex items-center gap-2 mb-1">
-                        <span
-                          className={`w-2 h-2 rounded-full shrink-0 ${
-                            hasRoom
-                              ? "bg-red-500 animate-pulse"
-                              : canGoLive
-                                ? "bg-[#FF6130]"
-                                : ""
-                          }`}
-                          style={
-                            !hasRoom && !canGoLive
-                              ? {
-                                  backgroundColor: "rgba(15, 34, 41, 0.20)",
-                                }
-                              : undefined
-                          }
-                        />
-                        <span className="text-sm font-bold font-headline truncate text-[#0F2229] group-hover:text-[#FF6130]">
-                          {sess.title}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between pl-4">
-                        <span className="text-[10px] text-[#64748b]">
-                          {formatRelativeTime(sess.start_time)}
-                          {challengeName && (
-                            <span className="ml-1 text-[#FF6130]/65">
-                              · {challengeName}
-                            </span>
-                          )}
-                        </span>
-                        {hasRoom ? (
-                          <span className="px-2.5 py-1 rounded-full bg-[#FF6130] text-white text-[9px] font-bold font-headline">
-                            Enter
+                return (
+                  <Link
+                    key={sess.id}
+                    href={`/dashboard/sessions/${sess.id}`}
+                    className="group block p-4 rounded-2xl infitra-card-link"
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <span
+                        className={`w-2 h-2 rounded-full shrink-0 ${
+                          hasRoom
+                            ? "bg-red-500 animate-pulse"
+                            : canGoLive
+                              ? "bg-[#FF6130]"
+                              : ""
+                        }`}
+                        style={
+                          !hasRoom && !canGoLive
+                            ? { backgroundColor: "rgba(15, 34, 41, 0.20)" }
+                            : undefined
+                        }
+                      />
+                      <span className="text-sm font-bold font-headline truncate text-[#0F2229] group-hover:text-[#FF6130]">
+                        {sess.title}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between pl-4">
+                      <span className="text-[10px] text-[#64748b]">
+                        {formatRelativeTime(sess.start_time)}
+                        {challengeName && (
+                          <span className="ml-1 text-[#FF6130]/65">
+                            · {challengeName}
                           </span>
-                        ) : canGoLive ? (
-                          <span className="px-2.5 py-1 rounded-full bg-[#FF6130] text-white text-[9px] font-bold font-headline">
-                            Go Live
-                          </span>
-                        ) : (
-                          <svg
-                            width="14"
-                            height="14"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth={2}
-                            viewBox="0 0 24 24"
-                            className="shrink-0 opacity-0 group-hover:opacity-50 text-[#0F2229]"
-                          >
-                            <path
-                              d="M9 18l6-6-6-6"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                          </svg>
                         )}
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* Active Tribes */}
-          <div>
-            <h3 className="text-sm font-bold uppercase tracking-wider font-headline mb-3 text-[#94a3b8]">
-              Your Tribes
-            </h3>
-
-            {!hasTribes ? (
-              <div
-                className="p-5 rounded-2xl border border-dashed text-center"
-                style={{
-                  backgroundColor: "rgba(255, 255, 255, 0.55)",
-                  borderColor: "rgba(15, 34, 41, 0.12)",
-                }}
-              >
-                <p className="text-xs text-[#64748b]">
-                  Tribes appear when you publish challenges.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {challengeSpaces!.map((cs: any) => (
-                  <CommunityCard
-                    key={cs.id}
-                    type="challenge"
-                    spaceId={cs.id}
-                    title={cs.title}
-                    subtitle={
-                      challengeTitleMap[cs.source_challenge_id] ?? "Challenge"
-                    }
-                    memberCount={tribeMemberCounts[cs.id] ?? 0}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
+                      </span>
+                      {hasRoom ? (
+                        <span className="px-2.5 py-1 rounded-full bg-[#FF6130] text-white text-[9px] font-bold font-headline">
+                          Enter
+                        </span>
+                      ) : canGoLive ? (
+                        <span className="px-2.5 py-1 rounded-full bg-[#FF6130] text-white text-[9px] font-bold font-headline">
+                          Go Live
+                        </span>
+                      ) : (
+                        <svg
+                          width="14"
+                          height="14"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                          viewBox="0 0 24 24"
+                          className="shrink-0 opacity-0 group-hover:opacity-50 text-[#0F2229]"
+                        >
+                          <path
+                            d="M9 18l6-6-6-6"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      )}
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     </div>
