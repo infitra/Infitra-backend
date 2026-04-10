@@ -7,22 +7,22 @@ export const metadata = {
   title: "Challenge — INFITRA",
 };
 
-const STATUS_STYLES: Record<string, { label: string; color: string }> = {
+const STATUS_STYLES: Record<string, { label: string; className: string }> = {
   draft: {
     label: "Draft",
-    color: "text-[#9CF0FF]/50 bg-[#9CF0FF]/8 border-[#9CF0FF]/15",
+    className: "text-slate-600 bg-slate-100/80 border-slate-200",
   },
   published: {
     label: "Published",
-    color: "text-green-400 bg-green-400/8 border-green-400/20",
+    className: "text-emerald-700 bg-emerald-100/80 border-emerald-200",
   },
   completed: {
     label: "Completed",
-    color: "text-[#9CF0FF]/30 bg-[#9CF0FF]/5 border-[#9CF0FF]/10",
+    className: "text-slate-500 bg-slate-100/60 border-slate-200",
   },
   canceled: {
     label: "Canceled",
-    color: "text-red-400/60 bg-red-400/8 border-red-400/15",
+    className: "text-rose-700 bg-rose-100/80 border-rose-200",
   },
 };
 
@@ -68,9 +68,9 @@ export default async function ChallengeDetailPage({
     .select("session_id, app_session(id, title, start_time, duration_minutes, status)")
     .eq("challenge_id", id);
 
-  const linkedSessions = (linkedRows ?? []).map(
-    (r: any) => r.app_session
-  ).filter(Boolean);
+  const linkedSessions = (linkedRows ?? [])
+    .map((r: any) => r.app_session)
+    .filter(Boolean);
 
   // Sort linked sessions by start_time
   linkedSessions.sort(
@@ -82,7 +82,8 @@ export default async function ChallengeDetailPage({
     <div className="py-10 max-w-2xl mx-auto">
       <Link
         href="/dashboard/challenges"
-        className="text-xs text-[#9CF0FF]/40 hover:text-[#9CF0FF] transition-colors mb-6 flex items-center gap-1.5 font-headline"
+        className="text-xs transition-colors mb-6 flex items-center gap-1.5 font-headline"
+        style={{ color: "#64748b" }}
       >
         <svg
           width="14"
@@ -104,11 +105,14 @@ export default async function ChallengeDetailPage({
       {isDraft ? (
         <>
           <div className="flex items-center gap-3 mb-8">
-            <h1 className="text-3xl md:text-4xl font-black text-white font-headline tracking-tight">
+            <h1
+              className="text-3xl md:text-4xl font-black font-headline tracking-tight"
+              style={{ color: "#0F2229" }}
+            >
               Edit Challenge
             </h1>
             <span
-              className={`shrink-0 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest border font-headline ${s.color}`}
+              className={`shrink-0 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest border font-headline ${s.className}`}
             >
               {s.label}
             </span>
@@ -123,17 +127,20 @@ export default async function ChallengeDetailPage({
           <div className="flex items-start justify-between gap-4 mb-8">
             <div>
               <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-3xl md:text-4xl font-black text-white font-headline tracking-tight">
+                <h1
+                  className="text-3xl md:text-4xl font-black font-headline tracking-tight"
+                  style={{ color: "#0F2229" }}
+                >
                   {challenge.title}
                 </h1>
                 <span
-                  className={`shrink-0 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest border font-headline ${s.color}`}
+                  className={`shrink-0 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest border font-headline ${s.className}`}
                 >
                   {s.label}
                 </span>
               </div>
               {challenge.description && (
-                <p className="text-sm text-[#9CF0FF]/40 max-w-xl">
+                <p className="text-sm max-w-xl" style={{ color: "#64748b" }}>
                   {challenge.description}
                 </p>
               )}
@@ -141,35 +148,59 @@ export default async function ChallengeDetailPage({
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <div className="p-5 rounded-2xl bg-[#0F2229] border border-[#9CF0FF]/10">
-              <p className="text-[10px] font-bold text-[#9CF0FF]/40 uppercase tracking-widest font-headline mb-2">
+            <div className="p-5 rounded-2xl infitra-glass">
+              <p
+                className="text-[10px] font-bold uppercase tracking-widest font-headline mb-2"
+                style={{ color: "rgba(15, 34, 41, 0.55)" }}
+              >
                 Starts
               </p>
-              <p className="text-sm font-semibold text-white">
+              <p
+                className="text-sm font-semibold"
+                style={{ color: "#0F2229" }}
+              >
                 {formatDate(challenge.start_date)}
               </p>
             </div>
-            <div className="p-5 rounded-2xl bg-[#0F2229] border border-[#9CF0FF]/10">
-              <p className="text-[10px] font-bold text-[#9CF0FF]/40 uppercase tracking-widest font-headline mb-2">
+            <div className="p-5 rounded-2xl infitra-glass">
+              <p
+                className="text-[10px] font-bold uppercase tracking-widest font-headline mb-2"
+                style={{ color: "rgba(15, 34, 41, 0.55)" }}
+              >
                 Ends
               </p>
-              <p className="text-sm font-semibold text-white">
+              <p
+                className="text-sm font-semibold"
+                style={{ color: "#0F2229" }}
+              >
                 {formatDate(challenge.end_date)}
               </p>
             </div>
-            <div className="p-5 rounded-2xl bg-[#0F2229] border border-[#9CF0FF]/10">
-              <p className="text-[10px] font-bold text-[#9CF0FF]/40 uppercase tracking-widest font-headline mb-2">
+            <div className="p-5 rounded-2xl infitra-glass">
+              <p
+                className="text-[10px] font-bold uppercase tracking-widest font-headline mb-2"
+                style={{ color: "rgba(15, 34, 41, 0.55)" }}
+              >
                 Sessions
               </p>
-              <p className="text-sm font-semibold text-white">
+              <p
+                className="text-sm font-semibold"
+                style={{ color: "#0F2229" }}
+              >
                 {linkedSessions.length}
               </p>
             </div>
-            <div className="p-5 rounded-2xl bg-[#0F2229] border border-[#9CF0FF]/10">
-              <p className="text-[10px] font-bold text-[#9CF0FF]/40 uppercase tracking-widest font-headline mb-2">
+            <div className="p-5 rounded-2xl infitra-glass">
+              <p
+                className="text-[10px] font-bold uppercase tracking-widest font-headline mb-2"
+                style={{ color: "rgba(15, 34, 41, 0.55)" }}
+              >
                 Price
               </p>
-              <p className="text-sm font-semibold text-white">
+              <p
+                className="text-sm font-semibold"
+                style={{ color: "#0F2229" }}
+              >
                 {priceCHF > 0 ? `CHF ${priceCHF.toFixed(2)}` : "Free"}
               </p>
             </div>
@@ -178,19 +209,22 @@ export default async function ChallengeDetailPage({
           {/* Linked sessions list */}
           {linkedSessions.length > 0 && (
             <div className="mb-8">
-              <h2 className="text-xs font-bold text-[#9CF0FF]/50 uppercase tracking-wider font-headline mb-3">
+              <h2
+                className="text-xs font-bold uppercase tracking-wider font-headline mb-3"
+                style={{ color: "rgba(15, 34, 41, 0.55)" }}
+              >
                 Sessions
               </h2>
               <div className="space-y-2">
                 {linkedSessions.map((sess: any) => (
-                  <div
-                    key={sess.id}
-                    className="p-4 rounded-xl bg-[#0F2229] border border-[#9CF0FF]/10"
-                  >
-                    <p className="text-sm font-bold text-white font-headline">
+                  <div key={sess.id} className="p-4 rounded-xl infitra-glass">
+                    <p
+                      className="text-sm font-bold font-headline"
+                      style={{ color: "#0F2229" }}
+                    >
                       {sess.title}
                     </p>
-                    <p className="text-xs text-[#9CF0FF]/40 mt-1">
+                    <p className="text-xs mt-1" style={{ color: "#64748b" }}>
                       {new Date(sess.start_time).toLocaleDateString("en-GB", {
                         weekday: "short",
                         day: "numeric",
@@ -205,9 +239,18 @@ export default async function ChallengeDetailPage({
           )}
 
           {challenge.status === "published" && (
-            <div className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-green-400/8 border border-green-400/20 w-fit">
-              <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-              <span className="text-sm font-bold text-green-400 font-headline">
+            <div
+              className="flex items-center gap-2 px-4 py-2.5 rounded-full w-fit"
+              style={{
+                backgroundColor: "rgba(16, 185, 129, 0.10)",
+                border: "1px solid rgba(16, 185, 129, 0.30)",
+              }}
+            >
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span
+                className="text-sm font-bold font-headline"
+                style={{ color: "#047857" }}
+              >
                 Live &mdash; visible to participants
               </span>
             </div>

@@ -65,7 +65,6 @@ export default async function DiscoverPage() {
     .map((m: any) => m.app_creator_space)
     .filter(Boolean);
 
-  // Enrich: creator names + member counts + latest post + next session
   const creatorIds = creatorSpaces.map((s: any) => s.creator_id);
   const creatorNameMap: Record<string, string> = {};
   const creatorMemberCounts: Record<string, number> = {};
@@ -75,7 +74,6 @@ export default async function DiscoverPage() {
   if (creatorSpaces.length > 0) {
     const spaceIds = creatorSpaces.map((s: any) => s.id);
 
-    // Names
     if (creatorIds.length > 0) {
       const { data: profiles } = await supabase
         .from("app_profile")
@@ -84,7 +82,6 @@ export default async function DiscoverPage() {
       for (const p of profiles ?? []) creatorNameMap[p.id] = p.display_name ?? "Creator";
     }
 
-    // Member counts
     const { data: members } = await supabase
       .from("app_creator_space_member")
       .select("space_id")
@@ -93,7 +90,6 @@ export default async function DiscoverPage() {
       creatorMemberCounts[m.space_id] = (creatorMemberCounts[m.space_id] ?? 0) + 1;
     }
 
-    // Latest post per space (1 per space)
     for (const sp of creatorSpaces) {
       const { data: posts } = await supabase
         .from("app_creator_post")
@@ -104,7 +100,6 @@ export default async function DiscoverPage() {
       if (posts?.[0]?.body) creatorLatestPost[sp.id] = posts[0].body;
     }
 
-    // Next session per creator
     for (const sp of creatorSpaces) {
       const { data: sess } = await supabase
         .from("app_session")
@@ -142,9 +137,6 @@ export default async function DiscoverPage() {
     challengeSpaces = spaces ?? [];
 
     if (challengeSpaces.length > 0) {
-      const spaceIds = challengeSpaces.map((s: any) => s.id);
-
-      // Member counts (use app_challenge_member entitlements, not space_member)
       const chalIds = challengeSpaces.map((s: any) => s.source_challenge_id).filter(Boolean);
       if (chalIds.length > 0) {
         const { data: members } = await supabase
@@ -161,7 +153,6 @@ export default async function DiscoverPage() {
         }
       }
 
-      // Latest post per tribe
       for (const sp of challengeSpaces) {
         const { data: posts } = await supabase
           .from("app_challenge_post")
@@ -172,7 +163,6 @@ export default async function DiscoverPage() {
         if (posts?.[0]?.body) tribeLatestPost[sp.id] = posts[0].body;
       }
 
-      // Challenge titles + next session
       const { data: challenges } = await supabase
         .from("app_challenge")
         .select("id, title")
@@ -193,7 +183,7 @@ export default async function DiscoverPage() {
     }
   }
 
-  // ── My Upcoming Sessions (flat operational list) ───────
+  // ── My Upcoming Sessions ───────
   const { data: myAttendance } = await supabase
     .from("app_attendance")
     .select("session_id, app_session(id, title, start_time, duration_minutes, status, live_room_id, host_id, app_profile!app_session_host_id_fkey(display_name))")
@@ -212,7 +202,6 @@ export default async function DiscoverPage() {
     .gte("start_time", now.toISOString())
     .order("start_time", { ascending: true });
 
-  // Filter out challenge-linked + already purchased
   const allMySessionIds = new Set(mySessions.map((s: any) => s.id));
   const discoverSessionIds = (allSessions ?? []).map((s: any) => s.id);
   let challengeLinkedIds = new Set<string>();
@@ -227,7 +216,6 @@ export default async function DiscoverPage() {
     (s: any) => !challengeLinkedIds.has(s.id) && !allMySessionIds.has(s.id)
   );
 
-  // Discover challenges (filter out purchased)
   const { data: allChallenges } = await supabase
     .from("app_challenge")
     .select("id, title, description, start_date, end_date, price_cents, capacity, owner_id, app_profile!app_challenge_owner_id_fkey(display_name, username)")
@@ -255,7 +243,10 @@ export default async function DiscoverPage() {
           {/* ── My Communities ─────────────────────────────── */}
           {hasCommunities && (
             <div className="mb-10">
-              <h2 className="text-lg font-black text-white font-headline tracking-tight mb-4">
+              <h2
+                className="text-lg font-black font-headline tracking-tight mb-4"
+                style={{ color: "#0F2229" }}
+              >
                 My Communities
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -269,34 +260,38 @@ export default async function DiscoverPage() {
                     <Link
                       key={sp.id}
                       href={`/communities/creator/${sp.id}`}
-                      className="group block rounded-2xl infitra-glass-action overflow-hidden"
+                      className="group block rounded-2xl infitra-card-link"
                     >
-                      <div className="h-0.5 bg-gradient-to-r from-[#9CF0FF]/40 to-[#9CF0FF]/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-                      <div className="p-5">
+                                            <div className="p-5">
                         <div className="flex items-center gap-3 mb-3">
-                          <div className="w-9 h-9 rounded-full bg-[#9CF0FF]/10 border border-[#9CF0FF]/20 flex items-center justify-center shrink-0">
-                            <span className="text-sm font-black text-[#9CF0FF]/60 font-headline">
+                          <div className="w-9 h-9 rounded-full bg-cyan-100/80 border border-cyan-200 flex items-center justify-center shrink-0">
+                            <span className="text-sm font-black text-cyan-700 font-headline">
                               {creatorName[0]?.toUpperCase()}
                             </span>
                           </div>
                           <div className="min-w-0">
-                            <p className="text-sm font-bold text-white font-headline truncate group-hover:text-[#9CF0FF] transition-colors">
+                            <p
+                              className="text-sm font-bold font-headline truncate text-[#0F2229] group-hover:text-[#FF6130]"
+                            >
                               {creatorName}
                             </p>
-                            <p className="text-[10px] text-[#9CF0FF]/25">
+                            <p className="text-[10px]" style={{ color: "#94a3b8" }}>
                               {count} member{count !== 1 ? "s" : ""}
                             </p>
                           </div>
                         </div>
                         {latest && (
-                          <p className="text-xs text-[#9CF0FF]/35 mb-3 line-clamp-2">
+                          <p className="text-xs mb-3 line-clamp-2" style={{ color: "#64748b" }}>
                             {truncate(latest, 120)}
                           </p>
                         )}
                         {nextSess && (
-                          <div className="flex items-center gap-2 pt-3 border-t border-[#9CF0FF]/8">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#FF6130]/50 shrink-0" />
-                            <span className="text-[10px] text-[#9CF0FF]/30 truncate">
+                          <div
+                            className="flex items-center gap-2 pt-3 border-t"
+                            style={{ borderColor: "rgba(15, 34, 41, 0.08)" }}
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#FF6130] shrink-0" />
+                            <span className="text-[10px] truncate" style={{ color: "#64748b" }}>
                               {nextSess.title} &middot;{" "}
                               {formatRelativeTime(nextSess.start_time)}
                             </span>
@@ -313,7 +308,10 @@ export default async function DiscoverPage() {
           {/* ── My Tribes ──────────────────────────────────── */}
           {hasTribes && (
             <div className="mb-10">
-              <h2 className="text-lg font-black text-white font-headline tracking-tight mb-4">
+              <h2
+                className="text-lg font-black font-headline tracking-tight mb-4"
+                style={{ color: "#0F2229" }}
+              >
                 My Tribes
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -327,30 +325,34 @@ export default async function DiscoverPage() {
                     <Link
                       key={sp.id}
                       href={`/communities/challenge/${sp.id}`}
-                      className="group block rounded-2xl infitra-glass-action overflow-hidden"
+                      className="group block rounded-2xl infitra-card-link"
                     >
-                      <div className="h-0.5 bg-gradient-to-r from-[#FF6130] to-[#FF6130]/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-                      <div className="p-5">
+                                            <div className="p-5">
                         <div className="flex items-center gap-2 mb-3">
-                          <span className="text-[9px] font-bold text-[#FF6130]/60 bg-[#FF6130]/10 px-2 py-0.5 rounded-full font-headline">
+                          <span className="text-[9px] font-bold text-orange-700 bg-orange-100/80 border border-orange-200 px-2 py-0.5 rounded-full font-headline">
                             TRIBE
                           </span>
-                          <span className="text-[10px] text-[#9CF0FF]/20">
+                          <span className="text-[10px]" style={{ color: "#94a3b8" }}>
                             {count} member{count !== 1 ? "s" : ""}
                           </span>
                         </div>
-                        <h3 className="text-sm font-bold text-white font-headline truncate mb-2 group-hover:text-[#FF6130] transition-colors">
+                        <h3
+                          className="text-sm font-bold font-headline truncate mb-2 text-[#0F2229] group-hover:text-[#FF6130]"
+                        >
                           {chalTitle}
                         </h3>
                         {latest && (
-                          <p className="text-xs text-[#9CF0FF]/35 mb-3 line-clamp-2">
+                          <p className="text-xs mb-3 line-clamp-2" style={{ color: "#64748b" }}>
                             {truncate(latest, 120)}
                           </p>
                         )}
                         {nextSess && (
-                          <div className="flex items-center gap-2 pt-3 border-t border-[#9CF0FF]/8">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#FF6130]/50 shrink-0" />
-                            <span className="text-[10px] text-[#9CF0FF]/30 truncate">
+                          <div
+                            className="flex items-center gap-2 pt-3 border-t"
+                            style={{ borderColor: "rgba(15, 34, 41, 0.08)" }}
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#FF6130] shrink-0" />
+                            <span className="text-[10px] truncate" style={{ color: "#64748b" }}>
                               {nextSess.title} &middot;{" "}
                               {formatRelativeTime(nextSess.start_time)}
                             </span>
@@ -367,7 +369,10 @@ export default async function DiscoverPage() {
           {/* ── My Upcoming Sessions ───────────────────────── */}
           {hasMySessions && (
             <div className="mb-10">
-              <h2 className="text-lg font-black text-white font-headline tracking-tight mb-4">
+              <h2
+                className="text-lg font-black font-headline tracking-tight mb-4"
+                style={{ color: "#0F2229" }}
+              >
                 Upcoming Sessions
               </h2>
               <div className="space-y-2">
@@ -384,14 +389,22 @@ export default async function DiscoverPage() {
                     >
                       <span
                         className={`w-2.5 h-2.5 rounded-full shrink-0 ${
-                          sess.live_room_id ? "bg-red-500 animate-pulse" : "bg-[#9CF0FF]/20"
+                          sess.live_room_id ? "bg-red-500 animate-pulse" : ""
                         }`}
+                        style={
+                          !sess.live_room_id
+                            ? { backgroundColor: "rgba(15, 34, 41, 0.20)" }
+                            : undefined
+                        }
                       />
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-bold text-white font-headline truncate">
+                        <p
+                          className="text-sm font-bold font-headline truncate"
+                          style={{ color: "#0F2229" }}
+                        >
                           {sess.title}
                         </p>
-                        <p className="text-[10px] text-[#9CF0FF]/30">
+                        <p className="text-[10px]" style={{ color: "#64748b" }}>
                           {formatRelativeTime(sess.start_time)} &middot;{" "}
                           {sess.duration_minutes} min
                           {host?.display_name && <> &middot; {host.display_name}</>}
@@ -408,7 +421,12 @@ export default async function DiscoverPage() {
                       ) : (
                         <Link
                           href={`/sessions/${sess.id}`}
-                          className="px-3 py-1.5 rounded-full bg-[#9CF0FF]/8 border border-[#9CF0FF]/15 text-[10px] font-bold text-[#9CF0FF]/50 font-headline shrink-0"
+                          className="px-3 py-1.5 rounded-full text-[10px] font-bold font-headline shrink-0"
+                          style={{
+                            backgroundColor: "rgba(255, 255, 255, 0.78)",
+                            border: "1px solid rgba(15, 34, 41, 0.15)",
+                            color: "#475569",
+                          }}
                         >
                           View
                         </Link>
@@ -422,16 +440,19 @@ export default async function DiscoverPage() {
 
           {/* ── Discover ───────────────────────────────────── */}
           <div id="discover">
-            <h2 className="text-lg font-black text-white font-headline tracking-tight mb-1">
+            <h2
+              className="text-lg font-black font-headline tracking-tight mb-1"
+              style={{ color: "#0F2229" }}
+            >
               Discover
             </h2>
-            <p className="text-xs text-[#9CF0FF]/30 mb-5">
+            <p className="text-xs mb-5" style={{ color: "#64748b" }}>
               New sessions and challenges from creators on INFITRA.
             </p>
 
             {!hasDiscover ? (
               <div className="text-center py-12">
-                <p className="text-sm text-[#9CF0FF]/25">
+                <p className="text-sm" style={{ color: "#94a3b8" }}>
                   Nothing new right now. Check back soon.
                 </p>
               </div>
@@ -439,7 +460,10 @@ export default async function DiscoverPage() {
               <div className="space-y-8">
                 {hasDiscoverChallenges && (
                   <div>
-                    <h3 className="text-xs font-bold text-[#9CF0FF]/40 uppercase tracking-wider font-headline mb-3">
+                    <h3
+                      className="text-xs font-bold uppercase tracking-wider font-headline mb-3"
+                      style={{ color: "rgba(15, 34, 41, 0.55)" }}
+                    >
                       Challenges
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -450,25 +474,29 @@ export default async function DiscoverPage() {
                           <Link
                             key={challenge.id}
                             href={`/challenges/${challenge.id}`}
-                            className="group block rounded-2xl infitra-glass-action overflow-hidden"
+                            className="group block rounded-2xl infitra-card-link"
                           >
-                            <div className="h-0.5 bg-gradient-to-r from-[#FF6130] to-[#FF6130]/60 opacity-0 group-hover:opacity-100 transition-opacity" />
-                            <div className="p-5">
+                                                        <div className="p-5">
                               <div className="flex items-center gap-2 mb-3">
-                                <span className="text-[9px] font-bold text-[#FF6130]/60 bg-[#FF6130]/10 px-2 py-0.5 rounded-full font-headline">CHALLENGE</span>
-                                <span className="text-[10px] text-[#9CF0FF]/20">
+                                <span className="text-[9px] font-bold text-orange-700 bg-orange-100/80 border border-orange-200 px-2 py-0.5 rounded-full font-headline">CHALLENGE</span>
+                                <span className="text-[10px]" style={{ color: "#94a3b8" }}>
                                   {formatDate(challenge.start_date + "T00:00:00")} — {formatDate(challenge.end_date + "T00:00:00")}
                                 </span>
                               </div>
-                              <h3 className="text-base font-black text-white font-headline tracking-tight mb-2 group-hover:text-[#FF6130] transition-colors line-clamp-2">
+                              <h3
+                                className="text-base font-black font-headline tracking-tight mb-2 line-clamp-2 text-[#0F2229] group-hover:text-[#FF6130]"
+                              >
                                 {challenge.title}
                               </h3>
                               {challenge.description && (
-                                <p className="text-xs text-[#9CF0FF]/30 line-clamp-2 mb-4">{challenge.description}</p>
+                                <p className="text-xs line-clamp-2 mb-4" style={{ color: "#64748b" }}>{challenge.description}</p>
                               )}
-                              <div className="flex items-center justify-between pt-3 border-t border-[#9CF0FF]/8">
-                                <span className="text-xs text-[#9CF0FF]/35 font-headline">{owner?.display_name ?? "Creator"}</span>
-                                <span className="text-sm font-black text-white font-headline">CHF {priceCHF.toFixed(2)}</span>
+                              <div
+                                className="flex items-center justify-between pt-3 border-t"
+                                style={{ borderColor: "rgba(15, 34, 41, 0.08)" }}
+                              >
+                                <span className="text-xs font-headline" style={{ color: "#64748b" }}>{owner?.display_name ?? "Creator"}</span>
+                                <span className="text-sm font-black font-headline" style={{ color: "#0F2229" }}>CHF {priceCHF.toFixed(2)}</span>
                               </div>
                             </div>
                           </Link>
@@ -480,7 +508,10 @@ export default async function DiscoverPage() {
 
                 {hasDiscoverSessions && (
                   <div>
-                    <h3 className="text-xs font-bold text-[#9CF0FF]/40 uppercase tracking-wider font-headline mb-3">
+                    <h3
+                      className="text-xs font-bold uppercase tracking-wider font-headline mb-3"
+                      style={{ color: "rgba(15, 34, 41, 0.55)" }}
+                    >
                       Sessions
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -491,25 +522,32 @@ export default async function DiscoverPage() {
                           <Link
                             key={session.id}
                             href={`/sessions/${session.id}`}
-                            className="group block rounded-2xl infitra-glass-action overflow-hidden"
+                            className="group block rounded-2xl infitra-card-link"
                           >
-                            <div className="h-0.5 bg-gradient-to-r from-[#FF6130] to-[#FF6130]/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-                            <div className="p-5">
+                                                        <div className="p-5">
                               <div className="flex items-center gap-2 mb-3">
-                                <span className="text-[10px] font-bold text-[#9CF0FF]/35 uppercase tracking-widest font-headline">
+                                <span
+                                  className="text-[10px] font-bold uppercase tracking-widest font-headline"
+                                  style={{ color: "rgba(15, 34, 41, 0.55)" }}
+                                >
                                   {formatDate(session.start_time)} &middot; {formatTime(session.start_time)}
                                 </span>
-                                <span className="text-[10px] text-[#9CF0FF]/20">{session.duration_minutes} min</span>
+                                <span className="text-[10px]" style={{ color: "#94a3b8" }}>{session.duration_minutes} min</span>
                               </div>
-                              <h3 className="text-base font-black text-white font-headline tracking-tight mb-2 group-hover:text-[#FF6130] transition-colors line-clamp-2">
+                              <h3
+                                className="text-base font-black font-headline tracking-tight mb-2 line-clamp-2 text-[#0F2229] group-hover:text-[#FF6130]"
+                              >
                                 {session.title}
                               </h3>
                               {session.description && (
-                                <p className="text-xs text-[#9CF0FF]/30 line-clamp-2 mb-4">{session.description}</p>
+                                <p className="text-xs line-clamp-2 mb-4" style={{ color: "#64748b" }}>{session.description}</p>
                               )}
-                              <div className="flex items-center justify-between pt-3 border-t border-[#9CF0FF]/8">
-                                <span className="text-xs text-[#9CF0FF]/35 font-headline">{host?.display_name ?? "Creator"}</span>
-                                <span className="text-sm font-black text-white font-headline">
+                              <div
+                                className="flex items-center justify-between pt-3 border-t"
+                                style={{ borderColor: "rgba(15, 34, 41, 0.08)" }}
+                              >
+                                <span className="text-xs font-headline" style={{ color: "#64748b" }}>{host?.display_name ?? "Creator"}</span>
+                                <span className="text-sm font-black font-headline" style={{ color: "#0F2229" }}>
                                   {priceCHF > 0 ? `CHF ${priceCHF.toFixed(2)}` : "Free"}
                                 </span>
                               </div>

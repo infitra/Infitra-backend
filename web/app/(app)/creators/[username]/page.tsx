@@ -8,11 +8,18 @@ export const metadata = {
 };
 
 function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+  return new Date(dateStr).toLocaleDateString("en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  });
 }
 
 function formatTime(dateStr: string) {
-  return new Date(dateStr).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  return new Date(dateStr).toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function formatRelativeTime(dateStr: string) {
@@ -33,7 +40,9 @@ export default async function CreatorProfilePage({
 }) {
   const { username } = await params;
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
   const { data: creator } = await supabase
@@ -51,7 +60,10 @@ export default async function CreatorProfilePage({
     .eq("id", user.id)
     .single();
 
-  const backPath = myProfile?.role === "creator" || myProfile?.role === "admin" ? "/dashboard" : "/discover";
+  const backPath =
+    myProfile?.role === "creator" || myProfile?.role === "admin"
+      ? "/dashboard"
+      : "/discover";
   const now = new Date();
 
   // All upcoming published sessions
@@ -66,7 +78,10 @@ export default async function CreatorProfilePage({
 
   // Find which sessions are challenge-linked
   const sessionIds = (allSessions ?? []).map((s: any) => s.id);
-  const challengeLinkedMap: Record<string, { challengeId: string; challengeTitle: string }> = {};
+  const challengeLinkedMap: Record<
+    string,
+    { challengeId: string; challengeTitle: string }
+  > = {};
   if (sessionIds.length > 0) {
     const { data: links } = await supabase
       .from("app_challenge_session")
@@ -82,9 +97,6 @@ export default async function CreatorProfilePage({
       }
     }
   }
-
-  const standaloneSessions = (allSessions ?? []).filter((s: any) => !challengeLinkedMap[s.id]);
-  const challengeSessions = (allSessions ?? []).filter((s: any) => !!challengeLinkedMap[s.id]);
 
   // Published challenges
   const { data: challenges } = await supabase
@@ -112,7 +124,6 @@ export default async function CreatorProfilePage({
     memberCount = count ?? 0;
   }
 
-  const hasStandalone = standaloneSessions.length > 0;
   const hasChallenges = challenges && challenges.length > 0;
 
   return (
@@ -121,9 +132,24 @@ export default async function CreatorProfilePage({
 
       <div className="flex-1 pt-20 px-6">
         <div className="max-w-3xl mx-auto py-10">
-          <Link href={backPath} className="text-xs text-[#9CF0FF]/40 hover:text-[#9CF0FF] transition-colors mb-8 flex items-center gap-1.5 font-headline">
-            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-              <path d="M19 12H5M12 19l-7-7 7-7" strokeLinecap="round" strokeLinejoin="round" />
+          <Link
+            href={backPath}
+            className="text-xs transition-colors mb-8 flex items-center gap-1.5 font-headline"
+            style={{ color: "#64748b" }}
+          >
+            <svg
+              width="14"
+              height="14"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M19 12H5M12 19l-7-7 7-7"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             </svg>
             Back
           </Link>
@@ -133,30 +159,65 @@ export default async function CreatorProfilePage({
             <div className="h-1 bg-gradient-to-r from-[#FF6130] to-[#FF6130]/40" />
             <div className="p-8">
               <div className="flex items-center gap-5 mb-4">
-                <div className="w-16 h-16 rounded-full bg-[#FF6130]/15 border border-[#FF6130]/30 flex items-center justify-center">
-                  <span className="text-2xl font-black text-[#FF6130] font-headline">
+                <div
+                  className="w-16 h-16 rounded-full flex items-center justify-center"
+                  style={{
+                    backgroundColor: "rgba(255, 97, 48, 0.12)",
+                    border: "1px solid rgba(255, 97, 48, 0.30)",
+                  }}
+                >
+                  <span
+                    className="text-2xl font-black font-headline"
+                    style={{ color: "#FF6130" }}
+                  >
                     {(creator.display_name ?? "?")[0].toUpperCase()}
                   </span>
                 </div>
                 <div>
-                  <h1 className="text-2xl font-black text-white font-headline tracking-tight">
+                  <h1
+                    className="text-2xl font-black font-headline tracking-tight"
+                    style={{ color: "#0F2229" }}
+                  >
                     {creator.display_name}
                   </h1>
-                  {creator.tagline && <p className="text-sm text-[#9CF0FF]/40 mt-0.5">{creator.tagline}</p>}
+                  {creator.tagline && (
+                    <p
+                      className="text-sm mt-0.5"
+                      style={{ color: "#64748b" }}
+                    >
+                      {creator.tagline}
+                    </p>
+                  )}
                   <div className="flex items-center gap-3 mt-2">
                     {memberCount > 0 && (
-                      <span className="text-[10px] text-[#9CF0FF]/25 font-headline">
-                        {memberCount} community member{memberCount !== 1 ? "s" : ""}
+                      <span
+                        className="text-[10px] font-headline"
+                        style={{ color: "#94a3b8" }}
+                      >
+                        {memberCount} community member
+                        {memberCount !== 1 ? "s" : ""}
                       </span>
                     )}
                   </div>
                 </div>
               </div>
-              {creator.bio && <p className="text-sm text-[#9CF0FF]/50 leading-relaxed max-w-lg">{creator.bio}</p>}
+              {creator.bio && (
+                <p
+                  className="text-sm leading-relaxed max-w-lg"
+                  style={{ color: "#64748b" }}
+                >
+                  {creator.bio}
+                </p>
+              )}
               {space?.id && (
                 <Link
                   href={`/communities/creator/${space.id}`}
-                  className="mt-4 inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#9CF0FF]/8 border border-[#9CF0FF]/15 text-sm font-bold text-[#9CF0FF]/60 hover:text-[#9CF0FF] font-headline transition-colors"
+                  className="mt-4 inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-bold font-headline transition-colors hover:opacity-80"
+                  style={{
+                    backgroundColor: "rgba(8, 145, 178, 0.10)",
+                    border: "1px solid rgba(8, 145, 178, 0.25)",
+                    color: "#0e7490",
+                  }}
                 >
                   Enter Community &rarr;
                 </Link>
@@ -164,10 +225,13 @@ export default async function CreatorProfilePage({
             </div>
           </div>
 
-          {/* Upcoming sessions (next sessions — mixed standalone + challenge, clearly marked) */}
+          {/* Upcoming sessions */}
           {(allSessions ?? []).length > 0 && (
             <div className="mb-8">
-              <h2 className="text-sm font-bold text-[#9CF0FF]/50 uppercase tracking-wider font-headline mb-3">
+              <h2
+                className="text-sm font-bold uppercase tracking-wider font-headline mb-3"
+                style={{ color: "rgba(15, 34, 41, 0.55)" }}
+              >
                 Next Sessions
               </h2>
               <div className="space-y-2">
@@ -177,27 +241,49 @@ export default async function CreatorProfilePage({
                   return (
                     <Link
                       key={sess.id}
-                      href={linked ? `/challenges/${linked.challengeId}` : `/sessions/${sess.id}`}
-                      className="flex items-center justify-between p-4 rounded-xl infitra-glass-action group"
+                      href={
+                        linked
+                          ? `/challenges/${linked.challengeId}`
+                          : `/sessions/${sess.id}`
+                      }
+                      className="flex items-center justify-between p-4 rounded-xl infitra-glass-interactive group"
                     >
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <p className="text-sm font-bold text-white font-headline truncate group-hover:text-[#FF6130] transition-colors">
+                          <p
+                            className="text-sm font-bold font-headline truncate transition-colors"
+                            style={{ color: "#0F2229" }}
+                          >
                             {sess.title}
                           </p>
                           {linked && (
-                            <span className="shrink-0 text-[8px] font-bold text-[#FF6130]/50 bg-[#FF6130]/8 px-1.5 py-0.5 rounded-full font-headline">
+                            <span
+                              className="shrink-0 text-[8px] font-bold px-1.5 py-0.5 rounded-full font-headline"
+                              style={{
+                                color: "#FF6130",
+                                backgroundColor: "rgba(255, 97, 48, 0.10)",
+                              }}
+                            >
                               {linked.challengeTitle}
                             </span>
                           )}
                         </div>
-                        <p className="text-[10px] text-[#9CF0FF]/30">
-                          {formatRelativeTime(sess.start_time)} &middot; {sess.duration_minutes} min
+                        <p
+                          className="text-[10px]"
+                          style={{ color: "#64748b" }}
+                        >
+                          {formatRelativeTime(sess.start_time)} &middot;{" "}
+                          {sess.duration_minutes} min
                         </p>
                       </div>
                       {!linked && (
-                        <span className="text-sm font-black text-white font-headline shrink-0 ml-3">
-                          {priceCHF > 0 ? `CHF ${priceCHF.toFixed(2)}` : "Free"}
+                        <span
+                          className="text-sm font-black font-headline shrink-0 ml-3"
+                          style={{ color: "#0F2229" }}
+                        >
+                          {priceCHF > 0
+                            ? `CHF ${priceCHF.toFixed(2)}`
+                            : "Free"}
                         </span>
                       )}
                     </Link>
@@ -210,7 +296,10 @@ export default async function CreatorProfilePage({
           {/* Challenges */}
           {hasChallenges && (
             <div>
-              <h2 className="text-sm font-bold text-[#9CF0FF]/50 uppercase tracking-wider font-headline mb-3">
+              <h2
+                className="text-sm font-bold uppercase tracking-wider font-headline mb-3"
+                style={{ color: "rgba(15, 34, 41, 0.55)" }}
+              >
                 Challenges
               </h2>
               <div className="space-y-2">
@@ -220,18 +309,40 @@ export default async function CreatorProfilePage({
                     <Link
                       key={ch.id}
                       href={`/challenges/${ch.id}`}
-                      className="flex items-center justify-between p-4 rounded-xl infitra-glass-action group"
+                      className="flex items-center justify-between p-4 rounded-xl infitra-glass-interactive group"
                     >
                       <div>
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="text-[9px] font-bold text-[#FF6130]/60 bg-[#FF6130]/10 px-2 py-0.5 rounded-full font-headline">CHALLENGE</span>
+                          <span
+                            className="text-[9px] font-bold px-2 py-0.5 rounded-full font-headline"
+                            style={{
+                              color: "#FF6130",
+                              backgroundColor: "rgba(255, 97, 48, 0.10)",
+                            }}
+                          >
+                            CHALLENGE
+                          </span>
                         </div>
-                        <p className="text-sm font-bold text-white font-headline group-hover:text-[#FF6130] transition-colors">{ch.title}</p>
-                        <p className="text-[10px] text-[#9CF0FF]/30 mt-0.5">
-                          {formatDate(ch.start_date + "T00:00:00")} — {formatDate(ch.end_date + "T00:00:00")}
+                        <p
+                          className="text-sm font-bold font-headline transition-colors"
+                          style={{ color: "#0F2229" }}
+                        >
+                          {ch.title}
+                        </p>
+                        <p
+                          className="text-[10px] mt-0.5"
+                          style={{ color: "#64748b" }}
+                        >
+                          {formatDate(ch.start_date + "T00:00:00")} —{" "}
+                          {formatDate(ch.end_date + "T00:00:00")}
                         </p>
                       </div>
-                      <span className="text-sm font-black text-white font-headline shrink-0">CHF {priceCHF.toFixed(2)}</span>
+                      <span
+                        className="text-sm font-black font-headline shrink-0"
+                        style={{ color: "#0F2229" }}
+                      >
+                        CHF {priceCHF.toFixed(2)}
+                      </span>
                     </Link>
                   );
                 })}

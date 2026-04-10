@@ -22,30 +22,30 @@ function formatDateTime(dateStr: string) {
   );
 }
 
-const STATUS_STYLES: Record<string, { label: string; color: string }> = {
+const STATUS_STYLES: Record<string, { label: string; className: string }> = {
   draft: {
     label: "Draft",
-    color: "text-[#9CF0FF]/50 bg-[#9CF0FF]/8 border-[#9CF0FF]/15",
+    className: "text-slate-600 bg-slate-100/80 border-slate-200",
   },
   published: {
     label: "Published",
-    color: "text-green-400 bg-green-400/8 border-green-400/20",
+    className: "text-emerald-700 bg-emerald-100/80 border-emerald-200",
   },
   scheduled: {
     label: "Scheduled",
-    color: "text-blue-400 bg-blue-400/8 border-blue-400/20",
+    className: "text-sky-700 bg-sky-100/80 border-sky-200",
   },
   ended: {
     label: "Ended",
-    color: "text-[#9CF0FF]/30 bg-[#9CF0FF]/5 border-[#9CF0FF]/10",
+    className: "text-slate-500 bg-slate-100/60 border-slate-200",
   },
   completed: {
     label: "Completed",
-    color: "text-[#9CF0FF]/30 bg-[#9CF0FF]/5 border-[#9CF0FF]/10",
+    className: "text-slate-500 bg-slate-100/60 border-slate-200",
   },
   canceled: {
     label: "Canceled",
-    color: "text-red-400/60 bg-red-400/8 border-red-400/15",
+    className: "text-rose-700 bg-rose-100/80 border-rose-200",
   },
 };
 
@@ -117,10 +117,22 @@ export default async function SessionDetailPage({
     <div className="py-10 max-w-2xl mx-auto">
       <Link
         href="/dashboard/sessions"
-        className="text-xs text-[#9CF0FF]/40 hover:text-[#9CF0FF] transition-colors mb-6 flex items-center gap-1.5 font-headline"
+        className="text-xs transition-colors mb-6 flex items-center gap-1.5 font-headline"
+        style={{ color: "#64748b" }}
       >
-        <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-          <path d="M19 12H5M12 19l-7-7 7-7" strokeLinecap="round" strokeLinejoin="round" />
+        <svg
+          width="14"
+          height="14"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M19 12H5M12 19l-7-7 7-7"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </svg>
         All Sessions
       </Link>
@@ -129,38 +141,89 @@ export default async function SessionDetailPage({
       <div className="flex items-start justify-between gap-4 mb-8">
         <div>
           <div className="flex items-center gap-3 mb-2">
-            <h1 className="text-3xl md:text-4xl font-black text-white font-headline tracking-tight">
+            <h1
+              className="text-3xl md:text-4xl font-black font-headline tracking-tight"
+              style={{ color: "#0F2229" }}
+            >
               {session.title}
             </h1>
-            <span className={`shrink-0 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest border font-headline ${s.color}`}>
+            <span
+              className={`shrink-0 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest border font-headline ${s.className}`}
+            >
               {s.label}
             </span>
           </div>
           {session.description && (
-            <p className="text-sm text-[#9CF0FF]/40 max-w-xl">{session.description}</p>
+            <p className="text-sm max-w-xl" style={{ color: "#64748b" }}>
+              {session.description}
+            </p>
           )}
         </div>
       </div>
 
       {/* Info grid */}
-      <div className={`grid grid-cols-2 ${isPartOfChallenge ? "" : "md:grid-cols-4"} gap-4 mb-8`}>
+      <div
+        className={`grid grid-cols-2 ${
+          isPartOfChallenge ? "" : "md:grid-cols-4"
+        } gap-4 mb-8`}
+      >
         <div className="p-5 rounded-2xl infitra-glass">
-          <p className="text-[10px] font-bold text-[#9CF0FF]/40 uppercase tracking-widest font-headline mb-2">When</p>
-          <p className="text-sm font-semibold text-white">{formatDateTime(session.start_time)}</p>
+          <p
+            className="text-[10px] font-bold uppercase tracking-widest font-headline mb-2"
+            style={{ color: "rgba(15, 34, 41, 0.55)" }}
+          >
+            When
+          </p>
+          <p
+            className="text-sm font-semibold"
+            style={{ color: "#0F2229" }}
+          >
+            {formatDateTime(session.start_time)}
+          </p>
         </div>
         <div className="p-5 rounded-2xl infitra-glass">
-          <p className="text-[10px] font-bold text-[#9CF0FF]/40 uppercase tracking-widest font-headline mb-2">Duration</p>
-          <p className="text-sm font-semibold text-white">{session.duration_minutes} min</p>
+          <p
+            className="text-[10px] font-bold uppercase tracking-widest font-headline mb-2"
+            style={{ color: "rgba(15, 34, 41, 0.55)" }}
+          >
+            Duration
+          </p>
+          <p
+            className="text-sm font-semibold"
+            style={{ color: "#0F2229" }}
+          >
+            {session.duration_minutes} min
+          </p>
         </div>
         {!isPartOfChallenge && (
           <>
             <div className="p-5 rounded-2xl infitra-glass">
-              <p className="text-[10px] font-bold text-[#9CF0FF]/40 uppercase tracking-widest font-headline mb-2">Capacity</p>
-              <p className="text-sm font-semibold text-white">{session.capacity ?? "Unlimited"}</p>
+              <p
+                className="text-[10px] font-bold uppercase tracking-widest font-headline mb-2"
+                style={{ color: "rgba(15, 34, 41, 0.55)" }}
+              >
+                Capacity
+              </p>
+              <p
+                className="text-sm font-semibold"
+                style={{ color: "#0F2229" }}
+              >
+                {session.capacity ?? "Unlimited"}
+              </p>
             </div>
             <div className="p-5 rounded-2xl infitra-glass">
-              <p className="text-[10px] font-bold text-[#9CF0FF]/40 uppercase tracking-widest font-headline mb-2">Price</p>
-              <p className="text-sm font-semibold text-white">{priceCHF > 0 ? `CHF ${priceCHF.toFixed(2)}` : "Free"}</p>
+              <p
+                className="text-[10px] font-bold uppercase tracking-widest font-headline mb-2"
+                style={{ color: "rgba(15, 34, 41, 0.55)" }}
+              >
+                Price
+              </p>
+              <p
+                className="text-sm font-semibold"
+                style={{ color: "#0F2229" }}
+              >
+                {priceCHF > 0 ? `CHF ${priceCHF.toFixed(2)}` : "Free"}
+              </p>
             </div>
           </>
         )}
@@ -170,7 +233,12 @@ export default async function SessionDetailPage({
       {challengeLink && (
         <Link
           href={`/dashboard/challenges/${challengeLink.challenge_id}`}
-          className="mb-6 inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#9CF0FF]/8 border border-[#9CF0FF]/15 text-sm font-bold text-[#9CF0FF]/60 hover:text-[#9CF0FF] font-headline transition-colors"
+          className="mb-6 inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-bold font-headline transition-colors hover:opacity-80"
+          style={{
+            backgroundColor: "rgba(8, 145, 178, 0.10)",
+            border: "1px solid rgba(8, 145, 178, 0.25)",
+            color: "#0e7490",
+          }}
         >
           Part of a Challenge &rarr;
         </Link>
@@ -181,15 +249,27 @@ export default async function SessionDetailPage({
         <GoLiveButton sessionId={session.id} />
       )}
       {isPublished && !session.live_room_id && !canGoLive && (
-        <div className="mt-4 p-4 rounded-2xl bg-[#0F2229] border border-[#9CF0FF]/10">
-          <p className="text-sm text-[#9CF0FF]/40 font-headline">Go Live opens 15 minutes before start</p>
-          <p className="text-xs text-[#9CF0FF]/25 mt-1">{formatDateTime(session.start_time)}</p>
+        <div className="mt-4 p-4 rounded-2xl infitra-glass">
+          <p
+            className="text-sm font-headline"
+            style={{ color: "#0F2229" }}
+          >
+            Go Live opens 15 minutes before start
+          </p>
+          <p className="text-xs mt-1" style={{ color: "#64748b" }}>
+            {formatDateTime(session.start_time)}
+          </p>
         </div>
       )}
       {isPublished && session.live_room_id && (
         <Link
           href={`/dashboard/sessions/${session.id}/live`}
-          className="mt-4 inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-[#FF6130] text-white text-sm font-black font-headline hover:scale-[1.02] transition-transform shadow-[0_0_20px_rgba(255,97,48,0.25)]"
+          className="mt-4 inline-flex items-center gap-2 px-6 py-3.5 rounded-full text-white text-sm font-black font-headline hover:scale-[1.02] transition-transform"
+          style={{
+            backgroundColor: "#FF6130",
+            boxShadow:
+              "0 4px 14px rgba(255,97,48,0.35), 0 2px 6px rgba(255,97,48,0.20)",
+          }}
         >
           <span className="w-2.5 h-2.5 rounded-full bg-white animate-pulse" />
           Enter Session
@@ -197,44 +277,88 @@ export default async function SessionDetailPage({
       )}
       {session.status === "ended" && session.ended_at && (
         <div className="mt-4 p-5 rounded-2xl infitra-glass">
-          <p className="text-sm font-bold text-[#9CF0FF]/50 font-headline">Session ended</p>
-          <p className="text-xs text-[#9CF0FF]/30 mt-1">Ended {formatDateTime(session.ended_at)}</p>
+          <p
+            className="text-sm font-bold font-headline"
+            style={{ color: "#0F2229" }}
+          >
+            Session ended
+          </p>
+          <p className="text-xs mt-1" style={{ color: "#64748b" }}>
+            Ended {formatDateTime(session.ended_at)}
+          </p>
         </div>
       )}
       {session.status === "draft" && challengeLink && (
-        <div className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#9CF0FF]/8 border border-[#9CF0FF]/15 w-fit">
-          <span className="text-sm font-bold text-[#9CF0FF]/50 font-headline">Draft &mdash; managed from the challenge editor</span>
+        <div
+          className="flex items-center gap-2 px-4 py-2.5 rounded-full w-fit"
+          style={{
+            backgroundColor: "rgba(15, 34, 41, 0.06)",
+            border: "1px solid rgba(15, 34, 41, 0.15)",
+          }}
+        >
+          <span
+            className="text-sm font-bold font-headline"
+            style={{ color: "#475569" }}
+          >
+            Draft &mdash; managed from the challenge editor
+          </span>
         </div>
       )}
 
       {/* Reschedule (published sessions only) */}
       {isPublished && !session.live_room_id && (
         <div className="mt-8">
-          <RescheduleForm sessionId={session.id} currentStartTime={session.start_time} />
+          <RescheduleForm
+            sessionId={session.id}
+            currentStartTime={session.start_time}
+          />
         </div>
       )}
 
       {/* Attendees */}
       {attendeeList.length > 0 && (
         <div className="mt-8">
-          <h2 className="text-sm font-bold text-[#9CF0FF]/50 uppercase tracking-wider font-headline mb-3">
+          <h2
+            className="text-sm font-bold uppercase tracking-wider font-headline mb-3"
+            style={{ color: "rgba(15, 34, 41, 0.55)" }}
+          >
             Attendees ({attendeeList.length})
           </h2>
-          <div className="rounded-2xl infitra-glass divide-y divide-[#9CF0FF]/5">
+          <div
+            className="rounded-2xl infitra-glass divide-y"
+            style={{ borderColor: "rgba(15, 34, 41, 0.06)" }}
+          >
             {attendeeList.map((a: any) => (
-              <div key={a.userId} className="flex items-center justify-between px-5 py-3">
+              <div
+                key={a.userId}
+                className="flex items-center justify-between px-5 py-3"
+              >
                 <Link
                   href={`/profile/${a.userId}`}
                   className="flex items-center gap-3 hover:opacity-80 transition-opacity"
                 >
-                  <div className="w-7 h-7 rounded-full bg-[#9CF0FF]/10 flex items-center justify-center">
-                    <span className="text-[10px] font-black text-[#9CF0FF]/40 font-headline">
+                  <div
+                    className="w-7 h-7 rounded-full flex items-center justify-center"
+                    style={{
+                      backgroundColor: "rgba(8, 145, 178, 0.12)",
+                      border: "1px solid rgba(8, 145, 178, 0.30)",
+                    }}
+                  >
+                    <span
+                      className="text-[10px] font-black font-headline"
+                      style={{ color: "#0891b2" }}
+                    >
                       {a.name[0]?.toUpperCase()}
                     </span>
                   </div>
-                  <span className="text-sm text-white font-headline">{a.name}</span>
+                  <span
+                    className="text-sm font-headline"
+                    style={{ color: "#0F2229" }}
+                  >
+                    {a.name}
+                  </span>
                 </Link>
-                <span className="text-[10px] text-[#9CF0FF]/25">
+                <span className="text-[10px]" style={{ color: "#94a3b8" }}>
                   {a.joinedAt ? "Joined" : "Purchased"}
                 </span>
               </div>

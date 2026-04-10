@@ -38,12 +38,18 @@ export default async function CheckoutSuccessPage({
       <div className="flex-1 pt-20 px-6 flex items-center justify-center">
         <div className="max-w-md w-full text-center">
           {/* Success icon */}
-          <div className="w-20 h-20 rounded-full bg-green-400/10 border border-green-400/20 backdrop-blur-xl flex items-center justify-center mx-auto mb-8">
+          <div
+            className="w-20 h-20 rounded-full backdrop-blur-xl flex items-center justify-center mx-auto mb-8"
+            style={{
+              backgroundColor: "rgba(220, 252, 231, 0.85)",
+              border: "1px solid rgba(16, 185, 129, 0.35)",
+            }}
+          >
             <svg
               width="40"
               height="40"
               fill="none"
-              stroke="#4ade80"
+              stroke="#047857"
               strokeWidth={2}
               viewBox="0 0 24 24"
               strokeLinecap="round"
@@ -53,10 +59,16 @@ export default async function CheckoutSuccessPage({
             </svg>
           </div>
 
-          <h1 className="text-3xl md:text-4xl font-black text-white font-headline tracking-tight mb-3">
+          <h1
+            className="text-3xl md:text-4xl font-black font-headline tracking-tight mb-3"
+            style={{ color: "#0F2229" }}
+          >
             You&apos;re in!
           </h1>
-          <p className="text-sm text-[#9CF0FF]/50 leading-relaxed mb-8">
+          <p
+            className="text-sm leading-relaxed mb-8"
+            style={{ color: "#64748b" }}
+          >
             Your payment has been confirmed. You&apos;ll receive a confirmation
             email shortly. The join link will be available when the session goes
             live.
@@ -65,13 +77,23 @@ export default async function CheckoutSuccessPage({
           <div className="flex flex-col gap-3">
             <Link
               href="/discover"
-              className="w-full py-3.5 rounded-full bg-[#FF6130] text-white text-sm font-black font-headline hover:scale-[1.02] transition-transform shadow-[0_0_20px_rgba(255,97,48,0.25)] text-center"
+              className="w-full py-3.5 rounded-full text-white text-sm font-black font-headline hover:scale-[1.02] transition-transform text-center"
+              style={{
+                backgroundColor: "#FF6130",
+                boxShadow:
+                  "0 4px 14px rgba(255,97,48,0.35), 0 2px 6px rgba(255,97,48,0.20)",
+              }}
             >
               Back to Discover
             </Link>
             <Link
               href={homePath}
-              className="w-full py-3.5 rounded-full bg-[#9CF0FF]/8 border border-[#9CF0FF]/15 text-sm font-bold text-[#9CF0FF]/60 hover:text-[#9CF0FF] font-headline transition-colors text-center"
+              className="w-full py-3.5 rounded-full text-sm font-bold font-headline transition-colors text-center"
+              style={{
+                backgroundColor: "rgba(255, 255, 255, 0.78)",
+                border: "1px solid rgba(15, 34, 41, 0.15)",
+                color: "#475569",
+              }}
             >
               Go to Dashboard
             </Link>

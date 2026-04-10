@@ -10,14 +10,24 @@ import {
   removeChallengeSession,
 } from "@/app/actions/challenge";
 
-const INPUT =
-  "w-full px-4 py-3 rounded-xl bg-[#071318] border border-[#9CF0FF]/15 text-white placeholder-[#9CF0FF]/25 focus:outline-none focus:border-[#9CF0FF]/40 transition-colors text-sm";
+const INPUT_CLASS =
+  "w-full px-4 py-3 rounded-xl focus:outline-none transition-colors text-sm";
 
-const INPUT_SM =
-  "w-full px-3 py-2 rounded-lg bg-[#071318] border border-[#9CF0FF]/15 text-white placeholder-[#9CF0FF]/25 focus:outline-none focus:border-[#9CF0FF]/40 transition-colors text-sm";
+const INPUT_SM_CLASS =
+  "w-full px-3 py-2 rounded-lg focus:outline-none transition-colors text-sm";
+
+const INPUT_STYLE: React.CSSProperties = {
+  backgroundColor: "rgba(255, 255, 255, 0.78)",
+  border: "1px solid rgba(15, 34, 41, 0.15)",
+  color: "#0F2229",
+};
 
 const LABEL =
-  "block text-xs font-bold text-[#9CF0FF]/50 uppercase tracking-wider mb-2 font-headline";
+  "block text-xs font-bold uppercase tracking-wider mb-2 font-headline";
+
+const LABEL_STYLE: React.CSSProperties = {
+  color: "rgba(15, 34, 41, 0.55)",
+};
 
 interface Challenge {
   id: string;
@@ -79,7 +89,9 @@ export function ChallengeEditForm({
   const priceCHF = challenge.price_cents / 100;
 
   async function handleDelete() {
-    if (!confirm("Delete this draft and all its sessions? This cannot be undone."))
+    if (
+      !confirm("Delete this draft and all its sessions? This cannot be undone.")
+    )
       return;
     setDeleting(true);
     setDeleteError(null);
@@ -214,15 +226,21 @@ export function ChallengeEditForm({
         <input type="hidden" name="challenge_id" value={challenge.id} />
 
         {(state?.error || deleteError) && (
-          <div className="p-3 rounded-xl bg-[#FF6130]/10 border border-[#FF6130]/20">
-            <p className="text-sm text-[#FF6130]">
+          <div
+            className="p-3 rounded-xl"
+            style={{
+              backgroundColor: "rgba(255, 97, 48, 0.10)",
+              border: "1px solid rgba(255, 97, 48, 0.30)",
+            }}
+          >
+            <p className="text-sm" style={{ color: "#FF6130" }}>
               {state?.error || deleteError}
             </p>
           </div>
         )}
 
         <div>
-          <label htmlFor="title" className={LABEL}>
+          <label htmlFor="title" className={LABEL} style={LABEL_STYLE}>
             Title
           </label>
           <input
@@ -236,14 +254,18 @@ export function ChallengeEditForm({
               challenge.title === "Untitled Challenge" ? "" : challenge.title
             }
             placeholder="e.g. 30-Day HIIT Challenge"
-            className={INPUT}
+            className={INPUT_CLASS}
+            style={INPUT_STYLE}
           />
         </div>
 
         <div>
-          <label htmlFor="description" className={LABEL}>
+          <label htmlFor="description" className={LABEL} style={LABEL_STYLE}>
             Description
-            <span className="text-[#9CF0FF]/25 font-normal normal-case tracking-normal ml-2">
+            <span
+              className="font-normal normal-case tracking-normal ml-2"
+              style={{ color: "#94a3b8" }}
+            >
               optional
             </span>
           </label>
@@ -254,13 +276,14 @@ export function ChallengeEditForm({
             maxLength={2000}
             defaultValue={challenge.description ?? ""}
             placeholder="What will participants achieve by the end?"
-            className={`${INPUT} resize-none`}
+            className={`${INPUT_CLASS} resize-none`}
+            style={INPUT_STYLE}
           />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label htmlFor="start_date" className={LABEL}>
+            <label htmlFor="start_date" className={LABEL} style={LABEL_STYLE}>
               Start Date
             </label>
             <input
@@ -269,11 +292,12 @@ export function ChallengeEditForm({
               type="date"
               required
               defaultValue={challenge.start_date}
-              className={INPUT}
+              className={INPUT_CLASS}
+              style={INPUT_STYLE}
             />
           </div>
           <div>
-            <label htmlFor="end_date" className={LABEL}>
+            <label htmlFor="end_date" className={LABEL} style={LABEL_STYLE}>
               End Date
             </label>
             <input
@@ -282,14 +306,15 @@ export function ChallengeEditForm({
               type="date"
               required
               defaultValue={challenge.end_date}
-              className={INPUT}
+              className={INPUT_CLASS}
+              style={INPUT_STYLE}
             />
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label htmlFor="price" className={LABEL}>
+            <label htmlFor="price" className={LABEL} style={LABEL_STYLE}>
               Price (CHF)
             </label>
             <input
@@ -300,16 +325,20 @@ export function ChallengeEditForm({
               min={0}
               step={0.5}
               defaultValue={priceCHF}
-              className={INPUT}
+              className={INPUT_CLASS}
+              style={INPUT_STYLE}
             />
-            <p className="text-[10px] text-[#9CF0FF]/25 mt-1.5">
+            <p className="text-[10px] mt-1.5" style={{ color: "#94a3b8" }}>
               Must be &gt; 0 to publish.
             </p>
           </div>
           <div>
-            <label htmlFor="capacity" className={LABEL}>
+            <label htmlFor="capacity" className={LABEL} style={LABEL_STYLE}>
               Capacity
-              <span className="text-[#9CF0FF]/25 font-normal normal-case tracking-normal ml-2">
+              <span
+                className="font-normal normal-case tracking-normal ml-2"
+                style={{ color: "#94a3b8" }}
+              >
                 optional
               </span>
             </label>
@@ -321,19 +350,30 @@ export function ChallengeEditForm({
               max={10000}
               defaultValue={challenge.capacity ?? ""}
               placeholder="Unlimited"
-              className={INPUT}
+              className={INPUT_CLASS}
+              style={INPUT_STYLE}
             />
           </div>
         </div>
-
       </form>
 
       {/* ── Sessions ───────────────────────────────────────────── */}
-      <div className="pt-6 border-t border-[#9CF0FF]/10">
+      <div
+        className="pt-6 border-t"
+        style={{ borderColor: "rgba(15, 34, 41, 0.10)" }}
+      >
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <h2 className={LABEL}>Sessions</h2>
-            <span className="text-[10px] font-bold text-[#9CF0FF]/30 bg-[#9CF0FF]/8 px-2 py-0.5 rounded-full font-headline">
+            <h2 className={LABEL} style={LABEL_STYLE}>
+              Sessions
+            </h2>
+            <span
+              className="text-[10px] font-bold px-2 py-0.5 rounded-full font-headline"
+              style={{
+                color: "rgba(15, 34, 41, 0.55)",
+                backgroundColor: "rgba(15, 34, 41, 0.06)",
+              }}
+            >
               {linked.length}
             </span>
           </div>
@@ -342,7 +382,8 @@ export function ChallengeEditForm({
               type="button"
               onClick={() => setShowAddForm(true)}
               disabled={sessionPending}
-              className="text-xs font-bold text-[#FF6130] hover:text-[#FF6130]/80 transition-colors font-headline disabled:opacity-50"
+              className="text-xs font-bold transition-colors font-headline disabled:opacity-50 hover:opacity-80"
+              style={{ color: "#FF6130" }}
             >
               + Add Session
             </button>
@@ -350,20 +391,37 @@ export function ChallengeEditForm({
         </div>
 
         {sessionError && (
-          <div className="p-3 rounded-xl bg-[#FF6130]/10 border border-[#FF6130]/20 mb-3">
-            <p className="text-sm text-[#FF6130]">{sessionError}</p>
+          <div
+            className="p-3 rounded-xl mb-3"
+            style={{
+              backgroundColor: "rgba(255, 97, 48, 0.10)",
+              border: "1px solid rgba(255, 97, 48, 0.30)",
+            }}
+          >
+            <p className="text-sm" style={{ color: "#FF6130" }}>
+              {sessionError}
+            </p>
           </div>
         )}
 
-        <p className="text-[10px] text-[#9CF0FF]/25 mb-4">
+        <p className="text-[10px] mb-4" style={{ color: "#94a3b8" }}>
           Minimum 3 sessions required to publish. Sessions are published
           together with the challenge.
         </p>
 
         {/* Add session inline form */}
         {showAddForm && (
-          <div className="mb-4 p-4 rounded-xl bg-[#071318] border border-[#9CF0FF]/15 space-y-3">
-            <p className="text-xs font-bold text-[#9CF0FF]/50 font-headline">
+          <div
+            className="mb-4 p-4 rounded-xl space-y-3"
+            style={{
+              backgroundColor: "rgba(255, 255, 255, 0.55)",
+              border: "1px solid rgba(15, 34, 41, 0.10)",
+            }}
+          >
+            <p
+              className="text-xs font-bold font-headline"
+              style={{ color: "rgba(15, 34, 41, 0.55)" }}
+            >
               New Session
             </p>
             <input
@@ -373,20 +431,23 @@ export function ChallengeEditForm({
               placeholder="Session title"
               minLength={3}
               maxLength={120}
-              className={INPUT_SM}
+              className={INPUT_SM_CLASS}
+              style={INPUT_STYLE}
             />
             <div className="grid grid-cols-3 gap-3">
               <input
                 type="date"
                 value={newDate}
                 onChange={(e) => setNewDate(e.target.value)}
-                className={INPUT_SM}
+                className={INPUT_SM_CLASS}
+                style={INPUT_STYLE}
               />
               <input
                 type="time"
                 value={newTime}
                 onChange={(e) => setNewTime(e.target.value)}
-                className={INPUT_SM}
+                className={INPUT_SM_CLASS}
+                style={INPUT_STYLE}
               />
               <div className="relative">
                 <input
@@ -396,9 +457,13 @@ export function ChallengeEditForm({
                   min={5}
                   max={480}
                   placeholder="60"
-                  className={INPUT_SM}
+                  className={INPUT_SM_CLASS}
+                  style={INPUT_STYLE}
                 />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-[#9CF0FF]/25">
+                <span
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px]"
+                  style={{ color: "#94a3b8" }}
+                >
                   min
                 </span>
               </div>
@@ -408,7 +473,11 @@ export function ChallengeEditForm({
                 type="button"
                 onClick={handleAddSession}
                 disabled={sessionPending}
-                className="px-4 py-2 rounded-lg bg-[#FF6130] text-white text-xs font-bold font-headline hover:scale-[1.02] transition-transform disabled:opacity-50"
+                className="px-4 py-2 rounded-lg text-white text-xs font-bold font-headline hover:scale-[1.02] transition-transform disabled:opacity-50"
+                style={{
+                  backgroundColor: "#FF6130",
+                  boxShadow: "0 4px 14px rgba(255,97,48,0.30)",
+                }}
               >
                 {sessionPending ? "Adding..." : "Add"}
               </button>
@@ -418,7 +487,8 @@ export function ChallengeEditForm({
                   setShowAddForm(false);
                   setSessionError(null);
                 }}
-                className="px-4 py-2 text-xs text-[#9CF0FF]/40 hover:text-[#9CF0FF] font-headline transition-colors"
+                className="px-4 py-2 text-xs font-headline transition-colors hover:opacity-80"
+                style={{ color: "#64748b" }}
               >
                 Cancel
               </button>
@@ -440,26 +510,33 @@ export function ChallengeEditForm({
                   /* Editing mode */
                   <div
                     key={sess.id}
-                    className="p-3 rounded-xl bg-[#071318] border border-[#9CF0FF]/25 space-y-3"
+                    className="p-3 rounded-xl space-y-3"
+                    style={{
+                      backgroundColor: "rgba(255, 255, 255, 0.55)",
+                      border: "1px solid rgba(8, 145, 178, 0.30)",
+                    }}
                   >
                     <input
                       type="text"
                       value={editTitle}
                       onChange={(e) => setEditTitle(e.target.value)}
-                      className={INPUT_SM}
+                      className={INPUT_SM_CLASS}
+                      style={INPUT_STYLE}
                     />
                     <div className="grid grid-cols-3 gap-3">
                       <input
                         type="date"
                         value={editDate}
                         onChange={(e) => setEditDate(e.target.value)}
-                        className={INPUT_SM}
+                        className={INPUT_SM_CLASS}
+                        style={INPUT_STYLE}
                       />
                       <input
                         type="time"
                         value={editTime}
                         onChange={(e) => setEditTime(e.target.value)}
-                        className={INPUT_SM}
+                        className={INPUT_SM_CLASS}
+                        style={INPUT_STYLE}
                       />
                       <input
                         type="number"
@@ -467,7 +544,8 @@ export function ChallengeEditForm({
                         onChange={(e) => setEditDuration(e.target.value)}
                         min={5}
                         max={480}
-                        className={INPUT_SM}
+                        className={INPUT_SM_CLASS}
+                        style={INPUT_STYLE}
                       />
                     </div>
                     <div className="flex items-center gap-2">
@@ -475,14 +553,19 @@ export function ChallengeEditForm({
                         type="button"
                         onClick={() => handleSaveEdit(sess.id)}
                         disabled={sessionPending}
-                        className="px-3 py-1.5 rounded-lg bg-[#FF6130] text-white text-xs font-bold font-headline disabled:opacity-50"
+                        className="px-3 py-1.5 rounded-lg text-white text-xs font-bold font-headline disabled:opacity-50"
+                        style={{
+                          backgroundColor: "#FF6130",
+                          boxShadow: "0 4px 14px rgba(255,97,48,0.30)",
+                        }}
                       >
                         {sessionPending ? "Saving..." : "Save"}
                       </button>
                       <button
                         type="button"
                         onClick={() => setEditingId(null)}
-                        className="px-3 py-1.5 text-xs text-[#9CF0FF]/40 hover:text-[#9CF0FF] font-headline"
+                        className="px-3 py-1.5 text-xs font-headline transition-colors hover:opacity-80"
+                        style={{ color: "#64748b" }}
                       >
                         Cancel
                       </button>
@@ -492,17 +575,23 @@ export function ChallengeEditForm({
                   /* Display mode */
                   <div
                     key={sess.id}
-                    className="flex items-center justify-between p-3 rounded-xl bg-[#0F2229] border border-[#9CF0FF]/10 group/item"
+                    className="flex items-center justify-between p-3 rounded-xl infitra-glass group/item"
                   >
                     <button
                       type="button"
                       onClick={() => startEditing(sess)}
                       className="min-w-0 flex-1 text-left"
                     >
-                      <p className="text-sm font-bold text-white font-headline truncate group-hover/item:text-[#FF6130] transition-colors">
+                      <p
+                        className="text-sm font-bold font-headline truncate transition-colors"
+                        style={{ color: "#0F2229" }}
+                      >
                         {sess.title}
                       </p>
-                      <p className="text-[10px] text-[#9CF0FF]/40 mt-0.5">
+                      <p
+                        className="text-[10px] mt-0.5"
+                        style={{ color: "#64748b" }}
+                      >
                         {formatSessionDate(sess.start_time)} at{" "}
                         {formatSessionTime(sess.start_time)} &middot;{" "}
                         {sess.duration_minutes} min
@@ -512,7 +601,8 @@ export function ChallengeEditForm({
                       type="button"
                       onClick={() => handleRemoveSession(sess)}
                       disabled={sessionPending}
-                      className="ml-3 p-1.5 rounded-lg text-[#9CF0FF]/20 hover:text-red-400 hover:bg-red-400/10 transition-all disabled:opacity-50 opacity-0 group-hover/item:opacity-100"
+                      className="ml-3 p-1.5 rounded-lg transition-all disabled:opacity-50 opacity-0 group-hover/item:opacity-100 hover:bg-rose-100/60"
+                      style={{ color: "#94a3b8" }}
                       title="Remove session"
                     >
                       <svg
@@ -535,15 +625,19 @@ export function ChallengeEditForm({
               )}
           </div>
         ) : (
-          <div className="text-center py-8 rounded-xl border border-dashed border-[#9CF0FF]/10">
-            <p className="text-xs text-[#9CF0FF]/30 mb-2">
+          <div
+            className="text-center py-8 rounded-xl border border-dashed"
+            style={{ borderColor: "rgba(15, 34, 41, 0.15)" }}
+          >
+            <p className="text-xs mb-2" style={{ color: "#94a3b8" }}>
               No sessions yet.
             </p>
             {!showAddForm && (
               <button
                 type="button"
                 onClick={() => setShowAddForm(true)}
-                className="text-xs font-bold text-[#FF6130] font-headline"
+                className="text-xs font-bold font-headline"
+                style={{ color: "#FF6130" }}
               >
                 + Add your first session
               </button>
@@ -559,12 +653,17 @@ export function ChallengeEditForm({
           onClick={() => {
             // Programmatically submit the form
             const form = document.querySelector(
-              'form[data-challenge-form]'
+              "form[data-challenge-form]"
             ) as HTMLFormElement;
             if (form) form.requestSubmit();
           }}
           disabled={pending}
-          className="flex-1 py-3.5 rounded-full bg-[#FF6130] text-white text-sm font-black font-headline hover:scale-[1.02] transition-transform shadow-[0_0_20px_rgba(255,97,48,0.25)] disabled:opacity-50 disabled:hover:scale-100"
+          className="flex-1 py-3.5 rounded-full text-white text-sm font-black font-headline hover:scale-[1.02] transition-transform disabled:opacity-50 disabled:hover:scale-100"
+          style={{
+            backgroundColor: "#FF6130",
+            boxShadow:
+              "0 4px 14px rgba(255,97,48,0.35), 0 2px 6px rgba(255,97,48,0.20)",
+          }}
         >
           {pending ? "Saving..." : "Save & Preview"}
         </button>
@@ -572,7 +671,11 @@ export function ChallengeEditForm({
           type="button"
           onClick={handleDelete}
           disabled={deleting}
-          className="px-5 py-3.5 rounded-full text-sm font-bold text-red-400/60 hover:text-red-400 border border-red-400/15 hover:border-red-400/30 transition-all font-headline disabled:opacity-50"
+          className="px-5 py-3.5 rounded-full text-sm font-bold transition-all font-headline disabled:opacity-50 hover:opacity-80"
+          style={{
+            color: "#be123c",
+            border: "1px solid rgba(190, 18, 60, 0.25)",
+          }}
         >
           {deleting ? "..." : "Delete"}
         </button>

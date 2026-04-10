@@ -117,7 +117,8 @@ export default async function SessionPage({
           {/* Back link */}
           <Link
             href="/discover"
-            className="text-xs text-[#9CF0FF]/40 hover:text-[#9CF0FF] transition-colors mb-8 flex items-center gap-1.5 font-headline"
+            className="text-xs transition-colors mb-8 flex items-center gap-1.5 font-headline"
+            style={{ color: "#64748b" }}
           >
             <svg
               width="14"
@@ -146,16 +147,29 @@ export default async function SessionPage({
               {isPartOfChallenge && (
                 <Link
                   href={`/challenges/${parentChallenge.id}`}
-                  className="mb-6 flex items-center gap-3 p-4 rounded-xl bg-[#FF6130]/5 border border-[#FF6130]/15 hover:border-[#FF6130]/30 transition-colors group/ch"
+                  className="mb-6 flex items-center gap-3 p-4 rounded-xl transition-colors group/ch"
+                  style={{
+                    backgroundColor: "rgba(255, 97, 48, 0.08)",
+                    border: "1px solid rgba(255, 97, 48, 0.25)",
+                  }}
                 >
-                  <span className="text-[10px] font-bold text-[#FF6130]/70 bg-[#FF6130]/10 px-2.5 py-1 rounded-full font-headline shrink-0">
+                  <span
+                    className="text-[10px] font-bold px-2.5 py-1 rounded-full font-headline shrink-0"
+                    style={{
+                      color: "#FF6130",
+                      backgroundColor: "rgba(255, 97, 48, 0.12)",
+                    }}
+                  >
                     CHALLENGE
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-bold text-white font-headline truncate group-hover/ch:text-[#FF6130] transition-colors">
+                    <p
+                      className="text-sm font-bold font-headline truncate transition-colors"
+                      style={{ color: "#0F2229" }}
+                    >
                       {parentChallenge.title}
                     </p>
-                    <p className="text-[10px] text-[#9CF0FF]/30">
+                    <p className="text-[10px]" style={{ color: "#64748b" }}>
                       This session is part of a challenge &middot; CHF{" "}
                       {(parentChallenge.price_cents / 100).toFixed(2)}
                     </p>
@@ -167,7 +181,8 @@ export default async function SessionPage({
                     stroke="currentColor"
                     strokeWidth={2}
                     viewBox="0 0 24 24"
-                    className="text-[#9CF0FF]/20 group-hover/ch:text-[#FF6130] transition-colors shrink-0"
+                    className="shrink-0"
+                    style={{ color: "#FF6130" }}
                   >
                     <path
                       d="M9 18l6-6-6-6"
@@ -179,52 +194,86 @@ export default async function SessionPage({
               )}
 
               {/* Title */}
-              <h1 className="text-3xl md:text-4xl font-black text-white font-headline tracking-tight mb-4">
+              <h1
+                className="text-3xl md:text-4xl font-black font-headline tracking-tight mb-4"
+                style={{ color: "#0F2229" }}
+              >
                 {session.title}
               </h1>
 
               {/* Description */}
               {session.description && (
-                <p className="text-sm text-[#9CF0FF]/50 leading-relaxed mb-8 max-w-xl whitespace-pre-line">
+                <p
+                  className="text-sm leading-relaxed mb-8 max-w-xl whitespace-pre-line"
+                  style={{ color: "#64748b" }}
+                >
                   {session.description}
                 </p>
               )}
 
               {/* Info grid */}
-              <div className={`grid grid-cols-2 ${isPartOfChallenge ? "" : "md:grid-cols-4"} gap-4 mb-8`}>
+              <div
+                className={`grid grid-cols-2 ${
+                  isPartOfChallenge ? "" : "md:grid-cols-4"
+                } gap-4 mb-8`}
+              >
                 <div>
-                  <p className="text-[10px] font-bold text-[#9CF0FF]/30 uppercase tracking-widest font-headline mb-1">
+                  <p
+                    className="text-[10px] font-bold uppercase tracking-widest font-headline mb-1"
+                    style={{ color: "rgba(15, 34, 41, 0.55)" }}
+                  >
                     When
                   </p>
-                  <p className="text-sm font-semibold text-white">
+                  <p
+                    className="text-sm font-semibold"
+                    style={{ color: "#0F2229" }}
+                  >
                     {formatDateTime(session.start_time)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold text-[#9CF0FF]/30 uppercase tracking-widest font-headline mb-1">
+                  <p
+                    className="text-[10px] font-bold uppercase tracking-widest font-headline mb-1"
+                    style={{ color: "rgba(15, 34, 41, 0.55)" }}
+                  >
                     Duration
                   </p>
-                  <p className="text-sm font-semibold text-white">
+                  <p
+                    className="text-sm font-semibold"
+                    style={{ color: "#0F2229" }}
+                  >
                     {formatDuration(session.duration_minutes)}
                   </p>
                 </div>
                 {!isPartOfChallenge && (
                   <>
                     <div>
-                      <p className="text-[10px] font-bold text-[#9CF0FF]/30 uppercase tracking-widest font-headline mb-1">
+                      <p
+                        className="text-[10px] font-bold uppercase tracking-widest font-headline mb-1"
+                        style={{ color: "rgba(15, 34, 41, 0.55)" }}
+                      >
                         Spots
                       </p>
-                      <p className="text-sm font-semibold text-white">
+                      <p
+                        className="text-sm font-semibold"
+                        style={{ color: "#0F2229" }}
+                      >
                         {session.capacity
                           ? `${session.capacity} available`
                           : "Unlimited"}
                       </p>
                     </div>
                     <div>
-                      <p className="text-[10px] font-bold text-[#9CF0FF]/30 uppercase tracking-widest font-headline mb-1">
+                      <p
+                        className="text-[10px] font-bold uppercase tracking-widest font-headline mb-1"
+                        style={{ color: "rgba(15, 34, 41, 0.55)" }}
+                      >
                         Price
                       </p>
-                      <p className="text-sm font-semibold text-white">
+                      <p
+                        className="text-sm font-semibold"
+                        style={{ color: "#0F2229" }}
+                      >
                         {isFree ? "Free" : `CHF ${priceCHF.toFixed(2)}`}
                       </p>
                     </div>
@@ -235,25 +284,54 @@ export default async function SessionPage({
               {/* Host */}
               <Link
                 href={host?.username ? `/creators/${host.username}` : "#"}
-                className="flex items-center gap-3 pt-6 border-t border-[#9CF0FF]/8 mb-8 group/host"
+                className="flex items-center gap-3 pt-6 mb-8 group/host border-t"
+                style={{ borderColor: "rgba(15, 34, 41, 0.10)" }}
               >
-                <div className="w-10 h-10 rounded-full bg-[#FF6130]/15 border border-[#FF6130]/30 flex items-center justify-center">
-                  <span className="text-sm font-black text-[#FF6130] font-headline">
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center"
+                  style={{
+                    backgroundColor: "rgba(255, 97, 48, 0.12)",
+                    border: "1px solid rgba(255, 97, 48, 0.30)",
+                  }}
+                >
+                  <span
+                    className="text-sm font-black font-headline"
+                    style={{ color: "#FF6130" }}
+                  >
                     {(host?.display_name ?? "?")[0].toUpperCase()}
                   </span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-white font-headline group-hover/host:text-[#FF6130] transition-colors">
+                  <p
+                    className="text-sm font-bold font-headline transition-colors"
+                    style={{ color: "#0F2229" }}
+                  >
                     {host?.display_name}
                   </p>
                   {host?.bio && (
-                    <p className="text-[10px] text-[#9CF0FF]/30 line-clamp-1 max-w-xs">
+                    <p
+                      className="text-[10px] line-clamp-1 max-w-xs"
+                      style={{ color: "#94a3b8" }}
+                    >
                       {host.bio}
                     </p>
                   )}
                 </div>
-                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" className="text-[#9CF0FF]/15 group-hover/host:text-[#FF6130] transition-colors shrink-0">
-                  <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
+                <svg
+                  width="14"
+                  height="14"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  viewBox="0 0 24 24"
+                  className="shrink-0"
+                  style={{ color: "#94a3b8" }}
+                >
+                  <path
+                    d="M9 18l6-6-6-6"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
                 </svg>
               </Link>
 
@@ -261,43 +339,86 @@ export default async function SessionPage({
               {isHost ? (
                 <Link
                   href={`/dashboard/sessions/${session.id}`}
-                  className="inline-block px-6 py-3.5 rounded-full bg-[#9CF0FF]/10 border border-[#9CF0FF]/20 text-sm font-bold text-[#9CF0FF] font-headline hover:bg-[#9CF0FF]/15 transition-colors"
+                  className="inline-block px-6 py-3.5 rounded-full text-sm font-bold font-headline transition-colors hover:opacity-80"
+                  style={{
+                    backgroundColor: "rgba(8, 145, 178, 0.10)",
+                    border: "1px solid rgba(8, 145, 178, 0.25)",
+                    color: "#0e7490",
+                  }}
                 >
                   View in Dashboard
                 </Link>
               ) : hasPurchased ? (
                 session.status === "ended" ? (
-                  <div className="w-full py-4 rounded-full bg-[#9CF0FF]/8 border border-[#9CF0FF]/15 text-center">
-                    <span className="text-sm font-black text-[#9CF0FF]/50 font-headline">
+                  <div
+                    className="w-full py-4 rounded-full text-center"
+                    style={{
+                      backgroundColor: "rgba(15, 34, 41, 0.06)",
+                      border: "1px solid rgba(15, 34, 41, 0.15)",
+                    }}
+                  >
+                    <span
+                      className="text-sm font-black font-headline"
+                      style={{ color: "#475569" }}
+                    >
                       Session has ended
                     </span>
                   </div>
                 ) : session.live_room_id && canJoin ? (
                   <Link
                     href={`/sessions/${session.id}/live`}
-                    className="w-full py-4 rounded-full bg-[#FF6130] text-white text-sm font-black font-headline shadow-[0_0_25px_rgba(255,97,48,0.3)] hover:scale-[1.02] transition-transform text-center block"
+                    className="w-full py-4 rounded-full text-white text-sm font-black font-headline hover:scale-[1.02] transition-transform text-center block"
+                    style={{
+                      backgroundColor: "#FF6130",
+                      boxShadow:
+                        "0 4px 14px rgba(255,97,48,0.35), 0 2px 6px rgba(255,97,48,0.20)",
+                    }}
                   >
                     Join Session
                   </Link>
                 ) : session.live_room_id && !canJoin ? (
                   <div>
-                    <div className="w-full py-4 rounded-full bg-green-400/10 border border-green-400/20 text-center">
-                      <span className="text-sm font-black text-green-400 font-headline">
+                    <div
+                      className="w-full py-4 rounded-full text-center"
+                      style={{
+                        backgroundColor: "rgba(16, 185, 129, 0.10)",
+                        border: "1px solid rgba(16, 185, 129, 0.30)",
+                      }}
+                    >
+                      <span
+                        className="text-sm font-black font-headline"
+                        style={{ color: "#047857" }}
+                      >
                         Session opens soon
                       </span>
                     </div>
-                    <p className="text-[10px] text-[#9CF0FF]/25 text-center mt-3">
+                    <p
+                      className="text-[10px] text-center mt-3"
+                      style={{ color: "#94a3b8" }}
+                    >
                       You can join 5 minutes before start.
                     </p>
                   </div>
                 ) : (
                   <div>
-                    <div className="w-full py-4 rounded-full bg-green-400/10 border border-green-400/20 text-center">
-                      <span className="text-sm font-black text-green-400 font-headline">
+                    <div
+                      className="w-full py-4 rounded-full text-center"
+                      style={{
+                        backgroundColor: "rgba(16, 185, 129, 0.10)",
+                        border: "1px solid rgba(16, 185, 129, 0.30)",
+                      }}
+                    >
+                      <span
+                        className="text-sm font-black font-headline"
+                        style={{ color: "#047857" }}
+                      >
                         {isPartOfChallenge ? "Enrolled" : "Ticket purchased"}
                       </span>
                     </div>
-                    <p className="text-[10px] text-[#9CF0FF]/25 text-center mt-3">
+                    <p
+                      className="text-[10px] text-center mt-3"
+                      style={{ color: "#94a3b8" }}
+                    >
                       {isPartOfChallenge
                         ? "You have access via your challenge enrolment. Join link will be available when the session goes live."
                         : "You have access to this session. Join link will be available when the session goes live."}
@@ -307,9 +428,15 @@ export default async function SessionPage({
               ) : isPartOfChallenge ? (
                 <Link
                   href={`/challenges/${parentChallenge.id}`}
-                  className="w-full py-4 rounded-full bg-[#FF6130] text-white text-sm font-black font-headline shadow-[0_0_25px_rgba(255,97,48,0.3)] hover:scale-[1.02] transition-transform text-center block"
+                  className="w-full py-4 rounded-full text-white text-sm font-black font-headline hover:scale-[1.02] transition-transform text-center block"
+                  style={{
+                    backgroundColor: "#FF6130",
+                    boxShadow:
+                      "0 4px 14px rgba(255,97,48,0.35), 0 2px 6px rgba(255,97,48,0.20)",
+                  }}
                 >
-                  View Challenge — CHF {(parentChallenge.price_cents / 100).toFixed(2)}
+                  View Challenge — CHF{" "}
+                  {(parentChallenge.price_cents / 100).toFixed(2)}
                 </Link>
               ) : (
                 <PurchaseButton

@@ -190,8 +190,16 @@ export function PostFeed({
   if (loading) {
     return (
       <div className="py-12 text-center">
-        <div className="w-8 h-8 rounded-full border-2 border-[#9CF0FF]/20 border-t-[#9CF0FF]/50 animate-spin mx-auto mb-3" />
-        <p className="text-xs text-[#9CF0FF]/30">Loading posts...</p>
+        <div
+          className="w-8 h-8 rounded-full border-2 animate-spin mx-auto mb-3"
+          style={{
+            borderColor: "rgba(15, 34, 41, 0.10)",
+            borderTopColor: "rgba(15, 34, 41, 0.45)",
+          }}
+        />
+        <p className="text-xs" style={{ color: "#94a3b8" }}>
+          Loading posts...
+        </p>
       </div>
     );
   }
@@ -207,16 +215,28 @@ export function PostFeed({
             placeholder="Share something with the community..."
             maxLength={5000}
             rows={3}
-            className="w-full bg-transparent border border-[#9CF0FF]/10 rounded-xl p-4 text-sm text-white placeholder:text-[#9CF0FF]/20 focus:border-[#9CF0FF]/25 focus:outline-none resize-none"
+            className="w-full rounded-xl p-4 text-sm focus:outline-none resize-none"
+            style={{
+              backgroundColor: "rgba(255, 255, 255, 0.55)",
+              border: "1px solid rgba(15, 34, 41, 0.12)",
+              color: "#0F2229",
+            }}
           />
           {postError && (
-            <p className="text-xs text-[#FF6130] mt-2">{postError}</p>
+            <p className="text-xs mt-2" style={{ color: "#FF6130" }}>
+              {postError}
+            </p>
           )}
           <div className="flex justify-end mt-3">
             <button
               onClick={handleCreatePost}
               disabled={posting || !newBody.trim()}
-              className="px-5 py-2.5 rounded-full bg-[#FF6130] text-white text-sm font-black font-headline hover:scale-[1.02] transition-transform disabled:opacity-40 disabled:hover:scale-100"
+              className="px-5 py-2.5 rounded-full text-white text-sm font-black font-headline hover:scale-[1.02] transition-transform disabled:opacity-40 disabled:hover:scale-100"
+              style={{
+                backgroundColor: "#FF6130",
+                boxShadow:
+                  "0 4px 14px rgba(255,97,48,0.35), 0 2px 6px rgba(255,97,48,0.20)",
+              }}
             >
               {posting ? "Posting..." : "Post"}
             </button>
@@ -226,10 +246,15 @@ export function PostFeed({
 
       {/* Posts */}
       {posts.length === 0 ? (
-        <div className="py-12 text-center rounded-2xl border border-dashed border-[#9CF0FF]/10">
-          <p className="text-sm text-[#9CF0FF]/25">No posts yet.</p>
+        <div
+          className="py-12 text-center rounded-2xl border border-dashed"
+          style={{ borderColor: "rgba(15, 34, 41, 0.15)" }}
+        >
+          <p className="text-sm" style={{ color: "#64748b" }}>
+            No posts yet.
+          </p>
           {canPost && (
-            <p className="text-xs text-[#9CF0FF]/20 mt-1">
+            <p className="text-xs mt-1" style={{ color: "#94a3b8" }}>
               Be the first to share something.
             </p>
           )}
@@ -255,7 +280,8 @@ export function PostFeed({
           <button
             onClick={handleLoadMore}
             disabled={loadingMore}
-            className="text-xs font-bold text-[#9CF0FF]/40 hover:text-[#9CF0FF] font-headline transition-colors disabled:opacity-50"
+            className="text-xs font-bold font-headline transition-colors disabled:opacity-50"
+            style={{ color: "rgba(15, 34, 41, 0.55)" }}
           >
             {loadingMore ? "Loading..." : "Load more"}
           </button>
