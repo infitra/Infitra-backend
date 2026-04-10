@@ -52,6 +52,8 @@ export function ProfileEditForm({
     }
   }
 
+  const formRef = useRef<HTMLFormElement>(null);
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setSaving(true);
@@ -70,7 +72,12 @@ export function ProfileEditForm({
         return;
       }
 
-      const form = e.currentTarget;
+      const form = formRef.current;
+      if (!form) {
+        setError("Form not found.");
+        setSaving(false);
+        return;
+      }
       const display_name = (
         form.elements.namedItem("display_name") as HTMLInputElement
       ).value.trim();
@@ -155,7 +162,7 @@ export function ProfileEditForm({
   const initials = (displayName || "?")[0].toUpperCase();
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
       {error && (
         <div
           className="p-4 rounded-2xl"
