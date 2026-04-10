@@ -82,9 +82,10 @@ export async function updateProfile(prevState: unknown, formData: FormData) {
     if (updateError) return { error: updateError.message };
 
     revalidatePath("/dashboard");
-    revalidatePath("/dashboard/profile");
-    return { success: true };
+    redirect("/dashboard");
   } catch (err: any) {
+    // redirect() throws a special error — let it propagate
+    if (err?.digest?.includes("NEXT_REDIRECT")) throw err;
     return { error: err?.message || "Something went wrong. Please try again." };
   }
 }
