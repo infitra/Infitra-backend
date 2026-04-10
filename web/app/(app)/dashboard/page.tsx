@@ -2,8 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { createDraftChallenge } from "@/app/actions/challenge";
 import { PostFeed } from "@/app/components/community/PostFeed";
-import { CommunityContainer } from "@/app/components/community/CommunityContainer";
 import { CommunityCard } from "@/app/components/community/CommunityCard";
+import { DashboardTabs } from "./DashboardTabs";
 
 export const metadata = {
   title: "Home — INFITRA",
@@ -40,7 +40,7 @@ export default async function DashboardPage() {
 
   const { data: profile } = await supabase
     .from("app_profile")
-    .select("display_name, tagline, bio, avatar_url")
+    .select("display_name, tagline, bio, avatar_url, cover_image_url")
     .eq("id", user!.id)
     .single();
 
@@ -88,7 +88,6 @@ export default async function DashboardPage() {
     .order("start_time", { ascending: true })
     .limit(5);
 
-  // Challenge names for linked sessions
   const sessionIds = (upcomingSessions ?? []).map((s: any) => s.id);
   const challengeMap: Record<string, string> = {};
   if (sessionIds.length > 0) {
@@ -102,7 +101,6 @@ export default async function DashboardPage() {
     }
   }
 
-  // Check if any session is within go-live window
   const goLiveSession = (upcomingSessions ?? []).find((s: any) => {
     const st = new Date(s.start_time);
     return now >= new Date(st.getTime() - 15 * 60 * 1000) && !s.live_room_id;
@@ -148,216 +146,264 @@ export default async function DashboardPage() {
 
   const hasUpcoming = (upcomingSessions ?? []).length > 0;
   const hasTribes = (challengeSpaces ?? []).length > 0;
+  const tribeCount = challengeSpaces?.length ?? 0;
   const initials = (profile?.display_name ?? "?")[0].toUpperCase();
 
+  // ── Community content (for tab) ────────────────────────
+  const communityContent = space ? (
+    <PostFeed
+      spaceId={space.id}
+      communityType="creator"
+      currentUserId={user!.id}
+      canPost={true}
+    />
+  ) : (
+    <div
+      className="text-center py-20 rounded-2xl border border-dashed"
+      style={{
+        backgroundColor: "rgba(255, 255, 255, 0.55)",
+        borderColor: "rgba(15, 34, 41, 0.12)",
+      }}
+    >
+      <p className="text-base font-bold font-headline mb-2 text-[#0F2229]">
+        No community yet
+      </p>
+      <p className="text-sm max-w-sm mx-auto text-[#64748b]">
+        Your community space appears automatically when someone purchases a
+        session or challenge from you.
+      </p>
+    </div>
+  );
+
+  // ── Tribes content (for tab) ───────────────────────────
+  const tribesContent = hasTribes ? (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {challengeSpaces!.map((cs: any) => {
+        const mCount = tribeMemberCounts[cs.id] ?? 0;
+        const cTitle =
+          challengeTitleMap[cs.source_challenge_id] ?? "Challenge";
+        return (
+          <Link
+            key={cs.id}
+            href={`/communities/challenge/${cs.id}`}
+            className="group block rounded-2xl infitra-card-link p-5"
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-[9px] font-bold px-2 py-0.5 rounded-full font-headline text-orange-700 bg-orange-100/80">
+                TRIBE
+              </span>
+              <span className="text-[10px] text-[#94a3b8]">
+                {mCount} member{mCount !== 1 ? "s" : ""}
+              </span>
+            </div>
+            <h3 className="text-base font-black font-headline tracking-tight mb-1 truncate text-[#0F2229] group-hover:text-[#FF6130]">
+              {cs.title}
+            </h3>
+            <p className="text-xs text-[#64748b] truncate">{cTitle}</p>
+            <div
+              className="flex items-center gap-2 mt-3 pt-3"
+              style={{ borderTop: "1px solid rgba(0,0,0,0.05)" }}
+            >
+              <span className="text-[10px] font-bold font-headline text-[#FF6130]">
+                Enter Tribe →
+              </span>
+            </div>
+          </Link>
+        );
+      })}
+    </div>
+  ) : (
+    <div
+      className="text-center py-16 rounded-2xl border border-dashed"
+      style={{
+        backgroundColor: "rgba(255, 255, 255, 0.55)",
+        borderColor: "rgba(15, 34, 41, 0.12)",
+      }}
+    >
+      <p className="text-base font-bold font-headline mb-2 text-[#0F2229]">
+        No tribes yet
+      </p>
+      <p className="text-sm max-w-sm mx-auto text-[#64748b]">
+        Tribes appear when you publish challenges. Each challenge creates a
+        tribe where participants engage together.
+      </p>
+    </div>
+  );
+
   return (
-    <div className="py-8">
-      {/* ── Hero: YOUR STUDIO ─────────────────────────────── */}
-      <div className="rounded-2xl infitra-card p-6 md:p-8 mb-8">
-        <div className="flex flex-col md:flex-row md:items-center gap-5">
-          {/* Avatar + Identity */}
-          <div className="flex items-center gap-4 flex-1 min-w-0">
+    <div className="py-6">
+      {/* ── Profile Banner ────────────────────────────────── */}
+      <div className="rounded-2xl infitra-card overflow-hidden mb-8">
+        {/* Cover image */}
+        <div
+          className="h-44 md:h-56 relative"
+          style={{
+            backgroundColor: profile?.cover_image_url
+              ? undefined
+              : "rgba(0, 0, 0, 0.04)",
+          }}
+        >
+          {profile?.cover_image_url && (
+            <img
+              src={profile.cover_image_url}
+              alt=""
+              className="w-full h-full object-cover"
+            />
+          )}
+          {!profile?.cover_image_url && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Link
+                href="/dashboard/profile"
+                className="text-xs font-bold font-headline text-[#94a3b8] hover:text-[#FF6130]"
+              >
+                + Add cover image
+              </Link>
+            </div>
+          )}
+        </div>
+
+        {/* Profile info — avatar overlaps the cover */}
+        <div className="px-6 pb-6 relative">
+          {/* Avatar */}
+          <div className="-mt-10 mb-3">
             {profile?.avatar_url ? (
               <img
                 src={profile.avatar_url}
                 alt={profile.display_name ?? ""}
-                className="w-14 h-14 rounded-full object-cover shrink-0"
-                style={{ border: "2px solid rgba(255, 97, 48, 0.30)" }}
+                className="w-20 h-20 rounded-full object-cover bg-white"
+                style={{
+                  border: "4px solid #FEFEFF",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.10)",
+                }}
               />
             ) : (
               <div
-                className="w-14 h-14 rounded-full flex items-center justify-center shrink-0"
+                className="w-20 h-20 rounded-full flex items-center justify-center bg-white"
                 style={{
+                  border: "4px solid #FEFEFF",
                   backgroundColor: "rgba(255, 97, 48, 0.12)",
-                  border: "2px solid rgba(255, 97, 48, 0.30)",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.10)",
                 }}
               >
-                <span className="text-xl font-black font-headline text-[#FF6130]">
+                <span className="text-2xl font-black font-headline text-[#FF6130]">
                   {initials}
                 </span>
               </div>
             )}
+          </div>
+
+          {/* Name + tagline + actions */}
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
             <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl font-black font-headline text-[#0F2229] tracking-tight truncate">
-                  {profile?.display_name}
-                </h1>
-                <Link
-                  href="/dashboard/profile"
-                  className="text-[10px] font-bold font-headline text-[#94a3b8] hover:text-[#FF6130] shrink-0"
-                >
-                  Edit
-                </Link>
-              </div>
+              <h1 className="text-xl font-black font-headline text-[#0F2229] tracking-tight">
+                {profile?.display_name}
+              </h1>
               {profile?.tagline && (
-                <p className="text-sm text-[#64748b] truncate">
+                <p className="text-sm text-[#64748b] mt-0.5">
                   {profile.tagline}
                 </p>
               )}
+              {profile?.bio && (
+                <p className="text-sm text-[#64748b] mt-2 max-w-lg line-clamp-2">
+                  {profile.bio}
+                </p>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              {liveSession ? (
+                <Link
+                  href={`/dashboard/sessions/${liveSession.id}/live`}
+                  className="px-5 py-2.5 rounded-full text-white text-xs font-black font-headline inline-flex items-center gap-2"
+                  style={{
+                    backgroundColor: "#FF6130",
+                    boxShadow: "0 4px 14px rgba(255,97,48,0.35)",
+                  }}
+                >
+                  <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                  Enter Live
+                </Link>
+              ) : goLiveSession ? (
+                <Link
+                  href={`/dashboard/sessions/${goLiveSession.id}`}
+                  className="px-5 py-2.5 rounded-full text-white text-xs font-black font-headline inline-flex items-center gap-2"
+                  style={{
+                    backgroundColor: "#FF6130",
+                    boxShadow: "0 4px 14px rgba(255,97,48,0.35)",
+                  }}
+                >
+                  <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                  Go Live
+                </Link>
+              ) : null}
+              <Link
+                href="/dashboard/sessions/new"
+                className="px-4 py-2.5 rounded-full text-white text-xs font-bold font-headline"
+                style={{
+                  backgroundColor: "#FF6130",
+                  boxShadow: "0 2px 8px rgba(255,97,48,0.25)",
+                }}
+              >
+                + Session
+              </Link>
+              <form action={createDraftChallenge}>
+                <button
+                  type="submit"
+                  className="px-4 py-2.5 rounded-full text-xs font-bold font-headline text-[#FF6130]"
+                  style={{
+                    border: "1px solid rgba(255, 97, 48, 0.35)",
+                    backgroundColor: "rgba(255, 255, 255, 0.6)",
+                  }}
+                >
+                  + Challenge
+                </button>
+              </form>
+              <Link
+                href="/dashboard/profile"
+                className="px-3 py-2.5 rounded-full text-xs font-bold font-headline text-[#94a3b8] hover:text-[#0F2229]"
+                style={{
+                  border: "1px solid rgba(0, 0, 0, 0.08)",
+                }}
+              >
+                Edit
+              </Link>
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="flex items-center gap-2 shrink-0">
-            {liveSession ? (
-              <Link
-                href={`/dashboard/sessions/${liveSession.id}/live`}
-                className="px-5 py-2.5 rounded-full text-white text-xs font-black font-headline inline-flex items-center gap-2"
-                style={{
-                  backgroundColor: "#FF6130",
-                  boxShadow: "0 4px 14px rgba(255,97,48,0.35)",
-                }}
-              >
-                <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-                Enter Live
-              </Link>
-            ) : goLiveSession ? (
-              <Link
-                href={`/dashboard/sessions/${goLiveSession.id}`}
-                className="px-5 py-2.5 rounded-full text-white text-xs font-black font-headline inline-flex items-center gap-2"
-                style={{
-                  backgroundColor: "#FF6130",
-                  boxShadow: "0 4px 14px rgba(255,97,48,0.35)",
-                }}
-              >
-                <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-                Go Live
-              </Link>
-            ) : null}
-            <Link
-              href="/dashboard/sessions/new"
-              className="px-4 py-2.5 rounded-full text-white text-xs font-bold font-headline"
-              style={{
-                backgroundColor: "#FF6130",
-                boxShadow: "0 2px 8px rgba(255,97,48,0.25)",
-              }}
-            >
-              + Session
-            </Link>
-            <form action={createDraftChallenge}>
-              <button
-                type="submit"
-                className="px-4 py-2.5 rounded-full text-xs font-bold font-headline text-[#FF6130]"
-                style={{
-                  border: "1px solid rgba(255, 97, 48, 0.35)",
-                  backgroundColor: "rgba(255, 255, 255, 0.6)",
-                }}
-              >
-                + Challenge
-              </button>
-            </form>
+          {/* Stats */}
+          <div
+            className="flex items-center gap-6 mt-4 pt-4"
+            style={{ borderTop: "1px solid rgba(0, 0, 0, 0.06)" }}
+          >
+            {[
+              { label: "Sessions", value: String(publishedSessionCount ?? 0) },
+              { label: "Members", value: String(memberCount) },
+              { label: "Attendees", value: String(totalAttendees) },
+              { label: "Earnings", value: `CHF ${earningsCHF}` },
+            ].map(({ label, value }) => (
+              <div key={label} className="flex items-center gap-2">
+                <span className="text-lg font-black font-headline text-[#0F2229]">
+                  {value}
+                </span>
+                <span className="text-[10px] font-bold uppercase tracking-widest font-headline text-[#94a3b8]">
+                  {label}
+                </span>
+              </div>
+            ))}
           </div>
-        </div>
-
-        {/* Stats row */}
-        <div
-          className="flex items-center gap-6 mt-5 pt-5"
-          style={{ borderTop: "1px solid rgba(0, 0, 0, 0.06)" }}
-        >
-          {[
-            { label: "Sessions", value: String(publishedSessionCount ?? 0) },
-            { label: "Members", value: String(memberCount) },
-            { label: "Attendees", value: String(totalAttendees) },
-            { label: "Earnings", value: `CHF ${earningsCHF}` },
-          ].map(({ label, value }) => (
-            <div key={label} className="flex items-center gap-2">
-              <span className="text-lg font-black font-headline text-[#0F2229]">
-                {value}
-              </span>
-              <span className="text-[10px] font-bold uppercase tracking-widest font-headline text-[#94a3b8]">
-                {label}
-              </span>
-            </div>
-          ))}
         </div>
       </div>
 
-      {/* ── Tribes (action layer — prominent) ─────────────── */}
-      {hasTribes && (
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-black font-headline text-[#0F2229] tracking-tight">
-              Your Tribes
-            </h2>
-            <Link
-              href="/dashboard/challenges"
-              className="text-xs font-bold font-headline text-[#94a3b8] hover:text-[#0F2229]"
-            >
-              All Challenges →
-            </Link>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {challengeSpaces!.map((cs: any) => {
-              const mCount = tribeMemberCounts[cs.id] ?? 0;
-              const cTitle = challengeTitleMap[cs.source_challenge_id] ?? "Challenge";
-              return (
-                <Link
-                  key={cs.id}
-                  href={`/communities/challenge/${cs.id}`}
-                  className="group block rounded-2xl infitra-card-link p-5"
-                >
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-[9px] font-bold px-2 py-0.5 rounded-full font-headline text-orange-700 bg-orange-100/80">
-                      TRIBE
-                    </span>
-                    <span className="text-[10px] text-[#94a3b8]">
-                      {mCount} member{mCount !== 1 ? "s" : ""}
-                    </span>
-                  </div>
-                  <h3 className="text-base font-black font-headline tracking-tight mb-1 truncate text-[#0F2229] group-hover:text-[#FF6130]">
-                    {cs.title}
-                  </h3>
-                  <p className="text-xs text-[#64748b] truncate">{cTitle}</p>
-                  <div
-                    className="flex items-center gap-2 mt-3 pt-3"
-                    style={{ borderTop: "1px solid rgba(0,0,0,0.05)" }}
-                  >
-                    <span className="text-[10px] font-bold font-headline text-[#FF6130]">
-                      Enter Tribe →
-                    </span>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* ── Main content: Community + Sidebar ─────────────── */}
+      {/* ── Main content: Tabs + Sidebar ──────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Community (main column) */}
+        {/* Tabbed content (main column) */}
         <div className="lg:col-span-2">
-          {space ? (
-            <CommunityContainer
-              type="creator"
-              title={space.title}
-              memberCount={memberCount}
-              spaceId={space.id}
-            >
-              <PostFeed
-                spaceId={space.id}
-                communityType="creator"
-                currentUserId={user!.id}
-                canPost={true}
-              />
-            </CommunityContainer>
-          ) : (
-            <div
-              className="text-center py-20 rounded-2xl border border-dashed"
-              style={{
-                backgroundColor: "rgba(255, 255, 255, 0.55)",
-                borderColor: "rgba(15, 34, 41, 0.12)",
-              }}
-            >
-              <p className="text-base font-bold font-headline mb-2 text-[#0F2229]">
-                No community yet
-              </p>
-              <p className="text-sm max-w-sm mx-auto text-[#64748b]">
-                Your community space appears automatically when someone
-                purchases a session or challenge from you.
-              </p>
-            </div>
-          )}
+          <DashboardTabs
+            communityContent={communityContent}
+            tribesContent={tribesContent}
+            tribeCount={tribeCount}
+            memberCount={memberCount}
+          />
         </div>
 
         {/* Sidebar: Next Up */}
