@@ -12,13 +12,8 @@ export function OnboardingForm() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-6 relative">
-      {/* Atmospheric glow */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-[#9CF0FF]/4 blur-[150px]" />
-      </div>
-
       {/* Logo */}
-      <Link href="/" className="relative z-10 mb-10">
+      <Link href="/" className="relative z-10 mb-10 mt-10">
         <div className="flex items-center gap-3">
           <div className="rounded-xl overflow-hidden">
             <Image
@@ -35,27 +30,37 @@ export function OnboardingForm() {
         </div>
       </Link>
 
-      <div className="relative z-10 w-full max-w-lg">
+      <div className="relative z-10 w-full max-w-lg pb-12">
         {/* Progress dots */}
         <div className="flex justify-center gap-2 mb-8">
           <div
-            className={`w-2 h-2 rounded-full transition-colors ${
-              step === 1 ? "bg-[#9CF0FF]" : "bg-[#9CF0FF]/20"
-            }`}
+            className="w-2 h-2 rounded-full transition-colors"
+            style={{
+              backgroundColor:
+                step === 1 ? "#0891b2" : "rgba(15, 34, 41, 0.20)",
+            }}
           />
           <div
-            className={`w-2 h-2 rounded-full transition-colors ${
-              step === 2 ? "bg-[#9CF0FF]" : "bg-[#9CF0FF]/20"
-            }`}
+            className="w-2 h-2 rounded-full transition-colors"
+            style={{
+              backgroundColor:
+                step === 2 ? "#0891b2" : "rgba(15, 34, 41, 0.20)",
+            }}
           />
         </div>
 
         {step === 1 && (
           <div>
-            <h1 className="text-3xl md:text-4xl font-black text-white font-headline tracking-tight text-center mb-3">
+            <h1
+              className="text-3xl md:text-4xl font-black font-headline tracking-tight text-center mb-3"
+              style={{ color: "#0F2229" }}
+            >
               How will you use INFITRA?
             </h1>
-            <p className="text-sm text-[#9CF0FF]/40 text-center mb-10">
+            <p
+              className="text-sm text-center mb-10"
+              style={{ color: "#64748b" }}
+            >
               This choice is permanent and shapes your entire experience.
             </p>
 
@@ -67,13 +72,15 @@ export function OnboardingForm() {
                   setRole("creator");
                   setStep(2);
                 }}
-                className={`group relative p-8 rounded-2xl border text-left transition-all duration-300 hover:scale-[1.02] ${
-                  role === "creator"
-                    ? "border-[#FF6130]/50 bg-[#FF6130]/8"
-                    : "border-[#9CF0FF]/10 bg-[#0F2229] hover:border-[#FF6130]/30"
-                }`}
+                className="group relative p-8 rounded-2xl text-left transition-all duration-300 hover:scale-[1.02] infitra-glass-interactive"
               >
-                <div className="w-10 h-10 rounded-full bg-[#FF6130]/15 border border-[#FF6130]/30 flex items-center justify-center mb-5">
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center mb-5"
+                  style={{
+                    backgroundColor: "rgba(255, 97, 48, 0.12)",
+                    border: "1px solid rgba(255, 97, 48, 0.30)",
+                  }}
+                >
                   <svg
                     width="20"
                     height="20"
@@ -89,15 +96,21 @@ export function OnboardingForm() {
                     <path d="M2 12l10 5 10-5" />
                   </svg>
                 </div>
-                <h3 className="text-xl font-black text-white font-headline tracking-tight mb-2 group-hover:text-[#FF6130] transition-colors">
+                <h3
+                  className="text-xl font-black font-headline tracking-tight mb-2"
+                  style={{ color: "#0F2229" }}
+                >
                   I&apos;m a Creator
                 </h3>
-                <p className="text-xs text-[#9CF0FF]/40 leading-relaxed">
+                <p className="text-xs leading-relaxed" style={{ color: "#64748b" }}>
                   Build sessions, collaborate with other creators, and grow your
                   audience through live experiences.
                 </p>
-                <span className="block text-[10px] text-[#FF6130]/50 mt-4 uppercase tracking-widest font-bold font-headline">
-                  Creators, Studios & Gyms
+                <span
+                  className="block text-[10px] mt-4 uppercase tracking-widest font-bold font-headline"
+                  style={{ color: "#FF6130" }}
+                >
+                  Creators, Studios &amp; Gyms
                 </span>
               </button>
 
@@ -108,18 +121,20 @@ export function OnboardingForm() {
                   setRole("participant");
                   setStep(2);
                 }}
-                className={`group relative p-8 rounded-2xl border text-left transition-all duration-300 hover:scale-[1.02] ${
-                  role === "participant"
-                    ? "border-[#9CF0FF]/50 bg-[#9CF0FF]/8"
-                    : "border-[#9CF0FF]/10 bg-[#0F2229] hover:border-[#9CF0FF]/30"
-                }`}
+                className="group relative p-8 rounded-2xl text-left transition-all duration-300 hover:scale-[1.02] infitra-glass-interactive"
               >
-                <div className="w-10 h-10 rounded-full bg-[#9CF0FF]/15 border border-[#9CF0FF]/30 flex items-center justify-center mb-5">
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center mb-5"
+                  style={{
+                    backgroundColor: "rgba(8, 145, 178, 0.12)",
+                    border: "1px solid rgba(8, 145, 178, 0.30)",
+                  }}
+                >
                   <svg
                     width="20"
                     height="20"
                     fill="none"
-                    stroke="#9CF0FF"
+                    stroke="#0891b2"
                     strokeWidth={1.5}
                     viewBox="0 0 24 24"
                     strokeLinecap="round"
@@ -131,14 +146,20 @@ export function OnboardingForm() {
                     <path d="M16 3.13a4 4 0 0 1 0 7.75" />
                   </svg>
                 </div>
-                <h3 className="text-xl font-black text-white font-headline tracking-tight mb-2 group-hover:text-[#9CF0FF] transition-colors">
+                <h3
+                  className="text-xl font-black font-headline tracking-tight mb-2"
+                  style={{ color: "#0F2229" }}
+                >
                   I&apos;m a Participant
                 </h3>
-                <p className="text-xs text-[#9CF0FF]/40 leading-relaxed">
+                <p className="text-xs leading-relaxed" style={{ color: "#64748b" }}>
                   Join live fitness communities, train with real experts, and
                   grow with others who share your goals.
                 </p>
-                <span className="block text-[10px] text-[#9CF0FF]/50 mt-4 uppercase tracking-widest font-bold font-headline">
+                <span
+                  className="block text-[10px] mt-4 uppercase tracking-widest font-bold font-headline"
+                  style={{ color: "#0891b2" }}
+                >
                   Join communities
                 </span>
               </button>
@@ -147,11 +168,12 @@ export function OnboardingForm() {
         )}
 
         {step === 2 && role && (
-          <div className="bg-[#0F2229] rounded-2xl border border-[#9CF0FF]/10 p-8 md:p-10">
+          <div className="rounded-2xl p-8 md:p-10 infitra-glass">
             <button
               type="button"
               onClick={() => setStep(1)}
-              className="text-xs text-[#9CF0FF]/40 hover:text-[#9CF0FF] transition-colors mb-6 flex items-center gap-1.5 font-headline"
+              className="text-xs transition-colors mb-6 flex items-center gap-1.5 font-headline"
+              style={{ color: "#64748b" }}
             >
               <svg
                 width="14"
@@ -170,18 +192,29 @@ export function OnboardingForm() {
               Back
             </button>
 
-            <h1 className="text-2xl font-black text-white font-headline tracking-tight mb-2">
+            <h1
+              className="text-2xl font-black font-headline tracking-tight mb-2"
+              style={{ color: "#0F2229" }}
+            >
               Set up your profile.
             </h1>
-            <p className="text-sm text-[#9CF0FF]/40 mb-8">
+            <p className="text-sm mb-8" style={{ color: "#64748b" }}>
               {role === "creator"
                 ? "This is how collaborators and participants will see you."
                 : "This is how creators and other participants will see you."}
             </p>
 
             {state?.error && (
-              <div className="mb-6 p-3 rounded-xl bg-[#FF6130]/10 border border-[#FF6130]/20">
-                <p className="text-sm text-[#FF6130]">{state.error}</p>
+              <div
+                className="mb-6 p-3 rounded-xl"
+                style={{
+                  backgroundColor: "rgba(255, 97, 48, 0.10)",
+                  border: "1px solid rgba(255, 97, 48, 0.30)",
+                }}
+              >
+                <p className="text-sm" style={{ color: "#FF6130" }}>
+                  {state.error}
+                </p>
               </div>
             )}
 
@@ -191,7 +224,8 @@ export function OnboardingForm() {
               <div>
                 <label
                   htmlFor="display_name"
-                  className="block text-xs font-bold text-[#9CF0FF]/50 uppercase tracking-wider mb-2 font-headline"
+                  className="block text-xs font-bold uppercase tracking-wider mb-2 font-headline"
+                  style={{ color: "rgba(15, 34, 41, 0.55)" }}
                 >
                   Display Name
                 </label>
@@ -207,18 +241,27 @@ export function OnboardingForm() {
                       ? "Your name or studio name"
                       : "Your name"
                   }
-                  className="w-full px-4 py-3 rounded-xl bg-[#071318] border border-[#9CF0FF]/15 text-white placeholder-[#9CF0FF]/25 focus:outline-none focus:border-[#9CF0FF]/40 transition-colors text-sm"
+                  className="w-full px-4 py-3 rounded-xl focus:outline-none transition-colors text-sm"
+                  style={{
+                    backgroundColor: "rgba(255, 255, 255, 0.78)",
+                    border: "1px solid rgba(15, 34, 41, 0.15)",
+                    color: "#0F2229",
+                  }}
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={pending}
-                className={`w-full mt-4 py-3.5 rounded-full font-black text-sm hover:scale-[1.02] transition-transform font-headline disabled:opacity-50 disabled:hover:scale-100 ${
-                  role === "creator"
-                    ? "bg-[#FF6130] text-white shadow-[0_0_20px_rgba(255,97,48,0.3)]"
-                    : "bg-[#9CF0FF] text-[#071318] shadow-[0_0_20px_rgba(156,240,255,0.3)]"
-                }`}
+                className="w-full mt-4 py-3.5 rounded-full font-black text-sm hover:scale-[1.02] transition-transform font-headline disabled:opacity-50 disabled:hover:scale-100 text-white"
+                style={{
+                  backgroundColor:
+                    role === "creator" ? "#FF6130" : "#0891b2",
+                  boxShadow:
+                    role === "creator"
+                      ? "0 4px 14px rgba(255,97,48,0.35), 0 2px 6px rgba(255,97,48,0.20)"
+                      : "0 4px 14px rgba(8,145,178,0.35), 0 2px 6px rgba(8,145,178,0.20)",
+                }}
               >
                 {pending ? "..." : "Get Started"}
               </button>
@@ -227,11 +270,15 @@ export function OnboardingForm() {
             {/* Role indicator */}
             <div className="mt-6 flex items-center justify-center gap-2">
               <div
-                className={`w-1.5 h-1.5 rounded-full ${
-                  role === "creator" ? "bg-[#FF6130]" : "bg-[#9CF0FF]"
-                }`}
+                className="w-1.5 h-1.5 rounded-full"
+                style={{
+                  backgroundColor: role === "creator" ? "#FF6130" : "#0891b2",
+                }}
               />
-              <span className="text-[10px] uppercase tracking-widest font-bold text-[#9CF0FF]/30 font-headline">
+              <span
+                className="text-[10px] uppercase tracking-widest font-bold font-headline"
+                style={{ color: "#94a3b8" }}
+              >
                 {role === "creator"
                   ? "Creator Account"
                   : "Participant Account"}

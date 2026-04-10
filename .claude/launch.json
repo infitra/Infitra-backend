@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "web",
-      "runtimeExecutable": "npx",
-      "runtimeArgs": ["--cache", "/tmp/npm-cache", "next", "dev", "--port", "3001"],
+      "runtimeExecutable": "/bin/bash",
+      "runtimeArgs": ["-c", "export PATH=/usr/local/bin:$PATH && exec node node_modules/next/dist/bin/next dev --webpack --port 3001"],
       "port": 3001,
       "cwd": "web"
     }

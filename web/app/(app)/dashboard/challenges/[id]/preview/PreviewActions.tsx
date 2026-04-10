@@ -22,8 +22,16 @@ export function PreviewActions({ challengeId }: { challengeId: string }) {
   return (
     <div className="mt-8">
       {error && (
-        <div className="mb-4 p-3 rounded-xl bg-[#FF6130]/10 border border-[#FF6130]/20">
-          <p className="text-sm text-[#FF6130]">{error}</p>
+        <div
+          className="mb-4 p-3 rounded-xl"
+          style={{
+            backgroundColor: "rgba(255, 97, 48, 0.10)",
+            border: "1px solid rgba(255, 97, 48, 0.30)",
+          }}
+        >
+          <p className="text-sm" style={{ color: "#FF6130" }}>
+            {error}
+          </p>
         </div>
       )}
 
@@ -31,13 +39,23 @@ export function PreviewActions({ challengeId }: { challengeId: string }) {
         <button
           onClick={handlePublish}
           disabled={publishing}
-          className="flex-1 py-3.5 rounded-full bg-[#FF6130] text-white text-sm font-black font-headline hover:scale-[1.02] transition-transform shadow-[0_0_20px_rgba(255,97,48,0.25)] disabled:opacity-50 disabled:hover:scale-100"
+          className="flex-1 py-3.5 rounded-full text-white text-sm font-black font-headline hover:scale-[1.02] transition-transform disabled:opacity-50 disabled:hover:scale-100"
+          style={{
+            backgroundColor: "#FF6130",
+            boxShadow:
+              "0 4px 14px rgba(255,97,48,0.35), 0 2px 6px rgba(255,97,48,0.20)",
+          }}
         >
           {publishing ? "Publishing..." : "Publish Challenge"}
         </button>
         <Link
           href={`/dashboard/challenges/${challengeId}`}
-          className="px-6 py-3.5 rounded-full text-sm font-bold text-[#9CF0FF]/40 hover:text-[#9CF0FF] border border-[#9CF0FF]/10 hover:border-[#9CF0FF]/25 transition-all font-headline"
+          className="px-6 py-3.5 rounded-full text-sm font-bold transition-all font-headline hover:opacity-80"
+          style={{
+            color: "#475569",
+            backgroundColor: "rgba(255, 255, 255, 0.78)",
+            border: "1px solid rgba(15, 34, 41, 0.15)",
+          }}
         >
           Edit
         </Link>

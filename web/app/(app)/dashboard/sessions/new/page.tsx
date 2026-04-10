@@ -4,11 +4,21 @@ import { useActionState } from "react";
 import Link from "next/link";
 import { createAndPublishSession } from "@/app/actions/session";
 
-const INPUT =
-  "w-full px-4 py-3 rounded-xl bg-[#071318] border border-[#9CF0FF]/15 text-white placeholder-[#9CF0FF]/25 focus:outline-none focus:border-[#9CF0FF]/40 transition-colors text-sm";
+const INPUT_CLASS =
+  "w-full px-4 py-3 rounded-xl focus:outline-none transition-colors text-sm";
+
+const INPUT_STYLE: React.CSSProperties = {
+  backgroundColor: "rgba(255, 255, 255, 0.78)",
+  border: "1px solid rgba(15, 34, 41, 0.15)",
+  color: "#0F2229",
+};
 
 const LABEL =
-  "block text-xs font-bold text-[#9CF0FF]/50 uppercase tracking-wider mb-2 font-headline";
+  "block text-xs font-bold uppercase tracking-wider mb-2 font-headline";
+
+const LABEL_STYLE: React.CSSProperties = {
+  color: "rgba(15, 34, 41, 0.55)",
+};
 
 export default function NewSessionPage() {
   const [state, action, pending] = useActionState(
@@ -20,7 +30,8 @@ export default function NewSessionPage() {
     <div className="py-10 max-w-2xl mx-auto">
       <Link
         href="/dashboard/sessions"
-        className="text-xs text-[#9CF0FF]/40 hover:text-[#9CF0FF] transition-colors mb-6 flex items-center gap-1.5 font-headline"
+        className="text-xs transition-colors mb-6 flex items-center gap-1.5 font-headline"
+        style={{ color: "#64748b" }}
       >
         <svg
           width="14"
@@ -39,22 +50,33 @@ export default function NewSessionPage() {
         All Sessions
       </Link>
 
-      <h1 className="text-3xl md:text-4xl font-black text-white font-headline tracking-tight mb-2">
+      <h1
+        className="text-3xl md:text-4xl font-black font-headline tracking-tight mb-2"
+        style={{ color: "#0F2229" }}
+      >
         Create Session
       </h1>
-      <p className="text-sm text-[#9CF0FF]/40 mb-8">
+      <p className="text-sm mb-8" style={{ color: "#64748b" }}>
         Fill in the details and publish. Nothing is saved until you publish.
       </p>
 
       <form action={action} className="space-y-6">
         {state?.error && (
-          <div className="p-3 rounded-xl bg-[#FF6130]/10 border border-[#FF6130]/20">
-            <p className="text-sm text-[#FF6130]">{state.error}</p>
+          <div
+            className="p-3 rounded-xl"
+            style={{
+              backgroundColor: "rgba(255, 97, 48, 0.10)",
+              border: "1px solid rgba(255, 97, 48, 0.30)",
+            }}
+          >
+            <p className="text-sm" style={{ color: "#FF6130" }}>
+              {state.error}
+            </p>
           </div>
         )}
 
         <div>
-          <label htmlFor="title" className={LABEL}>
+          <label htmlFor="title" className={LABEL} style={LABEL_STYLE}>
             Title
           </label>
           <input
@@ -65,14 +87,18 @@ export default function NewSessionPage() {
             minLength={3}
             maxLength={120}
             placeholder="e.g. Morning HIIT with Alex"
-            className={INPUT}
+            className={INPUT_CLASS}
+            style={INPUT_STYLE}
           />
         </div>
 
         <div>
-          <label htmlFor="description" className={LABEL}>
+          <label htmlFor="description" className={LABEL} style={LABEL_STYLE}>
             Description
-            <span className="text-[#9CF0FF]/25 font-normal normal-case tracking-normal ml-2">
+            <span
+              className="font-normal normal-case tracking-normal ml-2"
+              style={{ color: "#94a3b8" }}
+            >
               optional
             </span>
           </label>
@@ -82,13 +108,14 @@ export default function NewSessionPage() {
             rows={3}
             maxLength={2000}
             placeholder="What will participants experience?"
-            className={`${INPUT} resize-none`}
+            className={`${INPUT_CLASS} resize-none`}
+            style={INPUT_STYLE}
           />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label htmlFor="date" className={LABEL}>
+            <label htmlFor="date" className={LABEL} style={LABEL_STYLE}>
               Date
             </label>
             <input
@@ -96,11 +123,12 @@ export default function NewSessionPage() {
               name="date"
               type="date"
               required
-              className={INPUT}
+              className={INPUT_CLASS}
+              style={INPUT_STYLE}
             />
           </div>
           <div>
-            <label htmlFor="time" className={LABEL}>
+            <label htmlFor="time" className={LABEL} style={LABEL_STYLE}>
               Time
             </label>
             <input
@@ -109,14 +137,19 @@ export default function NewSessionPage() {
               type="time"
               required
               defaultValue="10:00"
-              className={INPUT}
+              className={INPUT_CLASS}
+              style={INPUT_STYLE}
             />
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label htmlFor="duration_minutes" className={LABEL}>
+            <label
+              htmlFor="duration_minutes"
+              className={LABEL}
+              style={LABEL_STYLE}
+            >
               Duration (minutes)
             </label>
             <input
@@ -127,13 +160,17 @@ export default function NewSessionPage() {
               min={5}
               max={480}
               defaultValue={60}
-              className={INPUT}
+              className={INPUT_CLASS}
+              style={INPUT_STYLE}
             />
           </div>
           <div>
-            <label htmlFor="capacity" className={LABEL}>
+            <label htmlFor="capacity" className={LABEL} style={LABEL_STYLE}>
               Capacity
-              <span className="text-[#9CF0FF]/25 font-normal normal-case tracking-normal ml-2">
+              <span
+                className="font-normal normal-case tracking-normal ml-2"
+                style={{ color: "#94a3b8" }}
+              >
                 optional
               </span>
             </label>
@@ -144,13 +181,14 @@ export default function NewSessionPage() {
               min={1}
               max={10000}
               placeholder="Unlimited"
-              className={INPUT}
+              className={INPUT_CLASS}
+              style={INPUT_STYLE}
             />
           </div>
         </div>
 
         <div>
-          <label htmlFor="price" className={LABEL}>
+          <label htmlFor="price" className={LABEL} style={LABEL_STYLE}>
             Ticket Price (CHF)
           </label>
           <input
@@ -161,9 +199,10 @@ export default function NewSessionPage() {
             min={0}
             step={0.5}
             defaultValue={0}
-            className={INPUT}
+            className={INPUT_CLASS}
+            style={INPUT_STYLE}
           />
-          <p className="text-[10px] text-[#9CF0FF]/25 mt-1.5">
+          <p className="text-[10px] mt-1.5" style={{ color: "#94a3b8" }}>
             Price must be greater than 0 to publish.
           </p>
         </div>
@@ -171,7 +210,12 @@ export default function NewSessionPage() {
         <button
           type="submit"
           disabled={pending}
-          className="w-full py-3.5 rounded-full bg-[#FF6130] text-white text-sm font-black font-headline hover:scale-[1.02] transition-transform shadow-[0_0_20px_rgba(255,97,48,0.25)] disabled:opacity-50 disabled:hover:scale-100"
+          className="w-full py-3.5 rounded-full text-white text-sm font-black font-headline hover:scale-[1.02] transition-transform disabled:opacity-50 disabled:hover:scale-100"
+          style={{
+            backgroundColor: "#FF6130",
+            boxShadow:
+              "0 4px 14px rgba(255,97,48,0.35), 0 2px 6px rgba(255,97,48,0.20)",
+          }}
         >
           {pending ? "Publishing..." : "Publish Session"}
         </button>

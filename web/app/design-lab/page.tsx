@@ -38,6 +38,30 @@ const ENTRIES: Entry[] = [
     notes:
       "Original DepthBackground before the bottom-beam direction was chosen. Three layered waves drift left/right at the bottom of the viewport with deterministic star particles scattered above. Kept for comparison.",
   },
+  {
+    href: "/design-lab/wave-rotated",
+    title: "Wave background (light, rotated)",
+    subtitle: "Light cream theme · horizontal waves rotated +16° + INFITRA brand header",
+    status: "experimental",
+    notes:
+      "Light-theme variant where the entire horizontal wave system is wrapped in a rotated and scaled container so the brand cyan→orange flow tilts diagonally from lower-left toward upper-right. Same wave-lr / wave-rl drift animations, just travelling along the rotated axis. Includes the INFITRA logo + nav header on a warm cream background.",
+  },
+  {
+    href: "/design-lab/wave-bending",
+    title: "Wave background (light, bending)",
+    subtitle: "Light cream theme · static diagonal wavy stripes drawn with SVG paths",
+    status: "experimental",
+    notes:
+      "Three diagonal wavy stripes drawn directly as SVG paths (not horizontal waves rotated). Each stripe bends from lower-left toward upper-right and is filled with the brand gradient. The cyan rises from the bottom-left and the orange flows into the upper-right. Fully static — no animation.",
+  },
+  {
+    href: "/design-lab/wave-flowing",
+    title: "Wave background (light, flowing)",
+    subtitle: "Same as wave-bending but the broad blur breathes and layers pulse",
+    status: "experimental",
+    notes:
+      "Identical visual setup to wave-bending — same colours, gradients, paths, layout. Adds two motion sources: (1) SMIL animation on Wave 1's feGaussianBlur stdDeviation cycling 8↔28 over 9s so the broad backdrop visibly breathes between sharper and softer states, and (2) CSS opacity pulses on each wave layer with independent cycles so the cumulative colour amount actually fluctuates over time. No spatial transform anywhere — wave shapes never move so corners stay anchored. No filter brightness/saturate so brand colours stay exactly #9CF0FF and #FF6130.",
+  },
 ];
 
 const STATUS_STYLES: Record<Entry["status"], string> = {

@@ -129,7 +129,8 @@ export function CommentSection({
       {/* Toggle */}
       <button
         onClick={() => setOpen(!open)}
-        className="inline-flex items-center gap-1.5 text-[#9CF0FF]/25 hover:text-[#9CF0FF]/50 transition-colors"
+        className="inline-flex items-center gap-1.5 transition-colors hover:opacity-80"
+        style={{ color: "#94a3b8" }}
       >
         <svg
           width="16"
@@ -148,29 +149,52 @@ export function CommentSection({
 
       {/* Expanded comments */}
       {open && (
-        <div className="mt-3 pt-3 border-t border-[#9CF0FF]/8 space-y-3">
+        <div
+          className="mt-3 pt-3 border-t space-y-3"
+          style={{ borderColor: "rgba(15, 34, 41, 0.10)" }}
+        >
           {loading ? (
-            <p className="text-xs text-[#9CF0FF]/25">Loading...</p>
+            <p className="text-xs" style={{ color: "#94a3b8" }}>
+              Loading...
+            </p>
           ) : comments.length === 0 ? (
-            <p className="text-xs text-[#9CF0FF]/20">
+            <p className="text-xs" style={{ color: "#94a3b8" }}>
               No comments yet.
             </p>
           ) : (
             comments.map((c) => (
               <div key={c.id} className="flex gap-2">
-                <div className="w-5 h-5 rounded-full bg-[#9CF0FF]/10 flex items-center justify-center shrink-0 mt-0.5">
-                  <span className="text-[8px] font-black text-[#9CF0FF]/40 font-headline">
+                <div
+                  className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5"
+                  style={{
+                    backgroundColor: "rgba(8, 145, 178, 0.12)",
+                    border: "1px solid rgba(8, 145, 178, 0.30)",
+                  }}
+                >
+                  <span
+                    className="text-[8px] font-black font-headline"
+                    style={{ color: "#0891b2" }}
+                  >
                     {c.authorName[0]?.toUpperCase()}
                   </span>
                 </div>
                 <div className="min-w-0">
-                  <span className="text-xs font-bold text-white font-headline">
+                  <span
+                    className="text-xs font-bold font-headline"
+                    style={{ color: "#0F2229" }}
+                  >
                     {c.authorName}
                   </span>
-                  <span className="text-[10px] text-[#9CF0FF]/20 ml-2">
+                  <span
+                    className="text-[10px] ml-2"
+                    style={{ color: "#94a3b8" }}
+                  >
                     {timeAgo(c.created_at)}
                   </span>
-                  <p className="text-xs text-[#9CF0FF]/50 mt-0.5 leading-relaxed">
+                  <p
+                    className="text-xs mt-0.5 leading-relaxed"
+                    style={{ color: "#475569" }}
+                  >
                     {c.body}
                   </p>
                 </div>
@@ -187,12 +211,21 @@ export function CommentSection({
               onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
               placeholder="Write a comment..."
               maxLength={2000}
-              className="flex-1 bg-transparent border border-[#9CF0FF]/10 rounded-lg px-3 py-2 text-xs text-white placeholder:text-[#9CF0FF]/20 focus:border-[#9CF0FF]/25 focus:outline-none"
+              className="flex-1 rounded-lg px-3 py-2 text-xs focus:outline-none"
+              style={{
+                backgroundColor: "rgba(255, 255, 255, 0.78)",
+                border: "1px solid rgba(15, 34, 41, 0.15)",
+                color: "#0F2229",
+              }}
             />
             <button
               onClick={handleSubmit}
               disabled={submitting || !newBody.trim()}
-              className="px-3 py-2 rounded-lg bg-[#FF6130] text-white text-[10px] font-bold font-headline disabled:opacity-40 shrink-0"
+              className="px-3 py-2 rounded-lg text-white text-[10px] font-bold font-headline disabled:opacity-40 shrink-0"
+              style={{
+                backgroundColor: "#FF6130",
+                boxShadow: "0 4px 14px rgba(255,97,48,0.30)",
+              }}
             >
               {submitting ? "..." : "Post"}
             </button>

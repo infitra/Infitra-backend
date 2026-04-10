@@ -69,13 +69,27 @@ export function PurchaseButton({ kind, targetId, label, className }: Props) {
         disabled={loading}
         className={
           className ??
-          "w-full py-4 rounded-full bg-[#FF6130] text-white text-sm font-black font-headline shadow-[0_0_25px_rgba(255,97,48,0.3)] hover:scale-[1.02] transition-transform disabled:opacity-70 disabled:hover:scale-100"
+          "w-full py-4 rounded-full text-white text-sm font-black font-headline hover:scale-[1.02] transition-transform disabled:opacity-70 disabled:hover:scale-100"
+        }
+        style={
+          className
+            ? undefined
+            : {
+                backgroundColor: "#FF6130",
+                boxShadow:
+                  "0 4px 14px rgba(255,97,48,0.35), 0 2px 6px rgba(255,97,48,0.20)",
+              }
         }
       >
         {loading ? "Redirecting to checkout..." : label}
       </button>
       {error && (
-        <p className="text-xs text-[#FF6130] text-center mt-2">{error}</p>
+        <p
+          className="text-xs text-center mt-2"
+          style={{ color: "#FF6130" }}
+        >
+          {error}
+        </p>
       )}
     </div>
   );

@@ -35,7 +35,7 @@
   --color-on-surface:             var(--on-surface);
   --color-on-background:          var(--on-background);
   --color-outline-variant:        var(--outline-variant);
-  --font-headline: var(--font-rajdhani);
+  --font-headline: 'General Sans', sans-serif;
   --font-body:     var(--font-inter);
 }
 
@@ -143,50 +143,89 @@ body {
   75%      { opacity: 0.4; }
 }
 
-/* ── Beam vocabulary (interactive states) ───────────────
-   Apply .beam-hover-cyan to any container with rounded corners. The
-   inset shadow follows the border-radius automatically. Inline styles
-   on featured/active cards override the :hover via CSS specificity,
-   so an active card stays in its active state on hover. */
-.beam-hover-cyan {
-  transition: background-color 200ms, border-color 200ms, box-shadow 200ms;
-}
-.beam-hover-cyan:hover {
-  box-shadow:
-    inset 0 -3px 0 #9CF0FF,
-    0 0 8px rgba(156, 240, 255, 0.28),
-    0 3px 12px rgba(156, 240, 255, 0.14);
+/* Sweep drift — slow translation along the diagonal axis so the
+   brand sweep never feels static. Used by /test-wave-light. */
+@keyframes sweep-drift {
+  0%, 100% { transform: translate(-1.2%, 1.2%) rotate(-0.3deg); }
+  50%      { transform: translate(1.2%, -1.2%) rotate(0.3deg); }
 }
 
-/* ── Glass Card System ─────────────────────────────────── */
+/* Halo breath — extremely slow opacity pulse on the corner glows */
+@keyframes halo-breath {
+  0%, 100% { opacity: 0.85; }
+  50%      { opacity: 1; }
+}
 
-/* Glass card — semi-transparent with subtle backdrop blur */
+/* Diagonal drift NE — calm subtle drift along the rising diagonal axis. */
+@keyframes diagonal-drift-ne {
+  0%, 100% { transform: translate(-1.6%, 1.6%); }
+  50%      { transform: translate(1.6%, -1.6%); }
+}
+
+/* Diagonal drift SW — opposite phase, same calm amplitude. */
+@keyframes diagonal-drift-sw {
+  0%, 100% { transform: translate(1.6%, -1.6%); }
+  50%      { transform: translate(-1.6%, 1.6%); }
+}
+
+/* Flowing diagonal drift NE — tiny amplitude (±1.5%) so the wave shape
+   never visibly exposes corners. Pair with wave-pulse for the visible
+   motion via opacity instead of spatial shift. */
+@keyframes flow-drift-ne {
+  0%, 100% { transform: translate(-1.5%, 1.5%); }
+  50%      { transform: translate(1.5%, -1.5%); }
+}
+
+@keyframes flow-drift-sw {
+  0%, 100% { transform: translate(1.5%, -1.5%); }
+  50%      { transform: translate(-1.5%, 1.5%); }
+}
+
+/* Wave opacity pulses — bigger ranges + faster cycles so the motion
+   is fast enough to register as actual movement to the eye, not just
+   slow gradual change. Independent cycles so layers never sync. */
+@keyframes wave-pulse-1 {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.55; }
+}
+@keyframes wave-pulse-2 {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.30; }
+}
+@keyframes wave-pulse-3 {
+  0%, 100% { opacity: 0.30; }
+  50%      { opacity: 1; }
+}
+
+/* beam-hover-cyan — legacy, kept for design-lab only */
+
+/* ── Card Base — static container, no hover ─────────────── */
+.infitra-card,
 .infitra-glass {
-  background: rgba(15, 34, 41, 0.55);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(156, 240, 255, 0.08);
-  transition: border-color 0.3s, background-color 0.3s;
+  background: #FEFEFF;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.07),
+    0 4px 16px rgba(0, 0, 0, 0.09);
 }
 
-.infitra-glass:hover {
-  border-color: rgba(156, 240, 255, 0.15);
-  background: rgba(15, 34, 41, 0.65);
-}
-
-/* Glass card with orange hover (for interactive/action cards) */
+/* ── Card Link — clickable, instant hover ───────────────── */
+.infitra-card-link,
+.infitra-glass-interactive,
 .infitra-glass-action {
-  background: rgba(15, 34, 41, 0.55);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(156, 240, 255, 0.08);
-  transition: border-color 0.3s, background-color 0.3s, box-shadow 0.3s;
+  background: #FEFEFF;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.07),
+    0 4px 16px rgba(0, 0, 0, 0.09);
+  cursor: pointer;
 }
 
+.infitra-card-link:hover,
+.infitra-glass-interactive:hover,
 .infitra-glass-action:hover {
-  border-color: rgba(255, 97, 48, 0.2);
-  background: rgba(15, 34, 41, 0.65);
-  box-shadow: 0 0 30px rgba(255, 97, 48, 0.05);
+  background: #FFFCF9;
+  border-color: rgba(0, 0, 0, 0.14);
 }
 
 /* Noise overlay removed — clean gradients against deep dark, no grain */

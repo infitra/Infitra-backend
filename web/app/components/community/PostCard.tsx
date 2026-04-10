@@ -47,17 +47,17 @@ export function PostCard({
       {/* Author row */}
       <div className="flex items-center gap-3 mb-3">
         <div
-          className={`w-8 h-8 rounded-full flex items-center justify-center ${
+          className={`w-8 h-8 rounded-full flex items-center justify-center border ${
             communityType === "creator"
-              ? "bg-[#9CF0FF]/10 border border-[#9CF0FF]/20"
-              : "bg-[#FF6130]/10 border border-[#FF6130]/20"
+              ? "bg-cyan-100/80 border-cyan-200"
+              : "bg-orange-100/80 border-orange-200"
           }`}
         >
           <span
             className={`text-xs font-black font-headline ${
               communityType === "creator"
-                ? "text-[#9CF0FF]/60"
-                : "text-[#FF6130]"
+                ? "text-cyan-700"
+                : "text-orange-700"
             }`}
           >
             {authorName[0]?.toUpperCase()}
@@ -66,23 +66,30 @@ export function PostCard({
         <div>
           <Link
             href={`/profile/${post.author_id}`}
-            className="text-sm font-bold text-white font-headline hover:text-[#FF6130] transition-colors"
+            className="text-sm font-bold font-headline transition-colors hover:opacity-75"
+            style={{ color: "#0F2229" }}
           >
             {authorName}
           </Link>
-          <p className="text-[10px] text-[#9CF0FF]/25">
+          <p className="text-[10px]" style={{ color: "#94a3b8" }}>
             {timeAgo(post.created_at)}
           </p>
         </div>
       </div>
 
       {/* Body */}
-      <p className="text-sm text-[#9CF0FF]/60 leading-relaxed whitespace-pre-line mb-4">
+      <p
+        className="text-sm leading-relaxed whitespace-pre-line mb-4"
+        style={{ color: "#475569" }}
+      >
         {post.body}
       </p>
 
       {/* Actions */}
-      <div className="flex items-center gap-5 pt-3 border-t border-[#9CF0FF]/8">
+      <div
+        className="flex items-center gap-5 pt-3 border-t"
+        style={{ borderColor: "rgba(15, 34, 41, 0.08)" }}
+      >
         <LikeButton
           postId={post.id}
           communityType={communityType}

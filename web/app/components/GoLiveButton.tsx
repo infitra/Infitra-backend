@@ -45,7 +45,12 @@ export function GoLiveButton({ sessionId }: { sessionId: string }) {
       <button
         onClick={handleGoLive}
         disabled={loading}
-        className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-[#FF6130] text-white text-sm font-black font-headline hover:scale-[1.02] transition-transform shadow-[0_0_20px_rgba(255,97,48,0.25)] disabled:opacity-70 disabled:hover:scale-100"
+        className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full text-white text-sm font-black font-headline hover:scale-[1.02] transition-transform disabled:opacity-70 disabled:hover:scale-100"
+        style={{
+          backgroundColor: "#FF6130",
+          boxShadow:
+            "0 4px 14px rgba(255,97,48,0.35), 0 2px 6px rgba(255,97,48,0.20)",
+        }}
       >
         {loading ? (
           "Creating room..."
@@ -57,7 +62,9 @@ export function GoLiveButton({ sessionId }: { sessionId: string }) {
         )}
       </button>
       {error && (
-        <p className="text-xs text-[#FF6130] mt-2">{error}</p>
+        <p className="text-xs mt-2" style={{ color: "#FF6130" }}>
+          {error}
+        </p>
       )}
     </div>
   );

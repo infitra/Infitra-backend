@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { updateSession } from "@/lib/supabase/proxy";
 
 // Routes that are always public — no beta gate, no auth required
-const PUBLIC_ROUTES = ["/", "/beta-access", "/auth/callback"];
+const PUBLIC_ROUTES = ["/", "/beta-access", "/auth/callback", "/test-wave-light"];
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

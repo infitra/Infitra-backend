@@ -138,7 +138,7 @@ export default async function DashboardPage() {
   return (
     <div className="py-10">
       {/* ── Stats bar ─────────────────────────────────────── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
         {[
           { label: "Sessions", value: String(publishedSessionCount ?? 0) },
           { label: "Members", value: String(memberCount) },
@@ -147,12 +147,18 @@ export default async function DashboardPage() {
         ].map(({ label, value }) => (
           <div
             key={label}
-            className="px-4 py-3 rounded-xl infitra-glass flex items-center justify-between"
+            className="px-6 py-5 rounded-2xl infitra-card flex items-center justify-between"
           >
-            <span className="text-[10px] font-bold text-[#9CF0FF]/40 uppercase tracking-widest font-headline">
+            <span
+              className="text-[10px] font-bold uppercase tracking-widest font-headline"
+              style={{ color: "rgba(15, 34, 41, 0.45)" }}
+            >
               {label}
             </span>
-            <span className="text-lg font-black text-white font-headline">
+            <span
+              className="text-xl font-black font-headline"
+              style={{ color: "#0F2229" }}
+            >
               {value}
             </span>
           </div>
@@ -163,11 +169,17 @@ export default async function DashboardPage() {
         {/* ── Community Feed (main column) ──────────────────── */}
         <div className="lg:col-span-2">
           <div className="flex items-center gap-3 mb-4">
-            <h2 className="text-lg font-black text-white font-headline tracking-tight">
+            <h2
+              className="text-lg font-black font-headline tracking-tight"
+              style={{ color: "#0F2229" }}
+            >
               Your Community
             </h2>
             {space && (
-              <span className="text-[10px] text-[#9CF0FF]/25 font-headline">
+              <span
+                className="text-[10px] font-headline"
+                style={{ color: "rgba(15, 34, 41, 0.40)" }}
+              >
                 {memberCount} member{memberCount !== 1 ? "s" : ""}
               </span>
             )}
@@ -181,11 +193,20 @@ export default async function DashboardPage() {
               canPost={true}
             />
           ) : (
-            <div className="text-center py-16 rounded-2xl bg-[#0F2229] border border-dashed border-[#9CF0FF]/10">
-              <p className="text-sm text-[#9CF0FF]/30 mb-1">
+            <div
+              className="text-center py-16 rounded-2xl border border-dashed"
+              style={{
+                backgroundColor: "rgba(255, 255, 255, 0.55)",
+                borderColor: "rgba(15, 34, 41, 0.15)",
+              }}
+            >
+              <p className="text-sm mb-1" style={{ color: "#0F2229" }}>
                 No community yet
               </p>
-              <p className="text-xs text-[#9CF0FF]/20 max-w-xs mx-auto">
+              <p
+                className="text-xs max-w-xs mx-auto"
+                style={{ color: "#64748b" }}
+              >
                 Your community appears automatically when someone purchases from
                 you.
               </p>
@@ -198,25 +219,36 @@ export default async function DashboardPage() {
           {/* Next Up */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-bold text-[#9CF0FF]/50 uppercase tracking-wider font-headline">
+              <h3
+                className="text-sm font-bold uppercase tracking-wider font-headline"
+                style={{ color: "rgba(15, 34, 41, 0.55)" }}
+              >
                 Next Up
               </h3>
               <Link
                 href="/dashboard/sessions"
-                className="text-[10px] font-bold text-[#9CF0FF]/30 hover:text-[#9CF0FF] font-headline transition-colors"
+                className="text-[10px] font-bold font-headline transition-colors hover:opacity-100"
+                style={{ color: "rgba(15, 34, 41, 0.40)" }}
               >
                 All &rarr;
               </Link>
             </div>
 
             {!hasUpcoming ? (
-              <div className="p-4 rounded-xl bg-[#0F2229] border border-dashed border-[#9CF0FF]/10 text-center">
-                <p className="text-xs text-[#9CF0FF]/25 mb-2">
+              <div
+                className="p-4 rounded-xl border border-dashed text-center"
+                style={{
+                  backgroundColor: "rgba(255, 255, 255, 0.55)",
+                  borderColor: "rgba(15, 34, 41, 0.15)",
+                }}
+              >
+                <p className="text-xs mb-2" style={{ color: "#64748b" }}>
                   No upcoming sessions
                 </p>
                 <Link
                   href="/dashboard/sessions/new"
-                  className="text-[10px] font-bold text-[#FF6130] font-headline"
+                  className="text-[10px] font-bold font-headline"
+                  style={{ color: "#FF6130" }}
                 >
                   + Create session
                 </Link>
@@ -231,9 +263,10 @@ export default async function DashboardPage() {
                   const challengeName = challengeMap[sess.id];
 
                   return (
-                    <div
+                    <Link
                       key={sess.id}
-                      className="p-3 rounded-xl infitra-glass"
+                      href={`/dashboard/sessions/${sess.id}`}
+                      className="group block p-5 rounded-2xl infitra-card-link"
                     >
                       <div className="flex items-center gap-2 mb-1">
                         <span
@@ -242,42 +275,57 @@ export default async function DashboardPage() {
                               ? "bg-red-500 animate-pulse"
                               : canGoLive
                                 ? "bg-[#FF6130]"
-                                : "bg-[#9CF0FF]/20"
+                                : ""
                           }`}
+                          style={
+                            !hasRoom && !canGoLive
+                              ? { backgroundColor: "rgba(15, 34, 41, 0.20)" }
+                              : undefined
+                          }
                         />
-                        <Link
-                          href={`/dashboard/sessions/${sess.id}`}
-                          className="text-sm font-bold text-white font-headline truncate hover:text-[#FF6130] transition-colors"
-                        >
+                        <span className="text-sm font-bold font-headline truncate text-[#0F2229] group-hover:text-[#FF6130]">
                           {sess.title}
-                        </Link>
+                        </span>
                       </div>
                       <div className="flex items-center justify-between pl-4">
-                        <span className="text-[10px] text-[#9CF0FF]/30">
+                        <span
+                          className="text-[10px]"
+                          style={{ color: "#64748b" }}
+                        >
                           {formatRelativeTime(sess.start_time)}
                           {challengeName && (
-                            <span className="text-[#FF6130]/40 ml-1">
+                            <span
+                              className="ml-1"
+                              style={{ color: "rgba(255, 97, 48, 0.65)" }}
+                            >
                               &middot; {challengeName}
                             </span>
                           )}
                         </span>
                         {hasRoom ? (
-                          <Link
-                            href={`/dashboard/sessions/${sess.id}/live`}
-                            className="px-2.5 py-1 rounded-full bg-[#FF6130] text-white text-[9px] font-bold font-headline"
-                          >
+                          <span className="px-2.5 py-1 rounded-full bg-[#FF6130] text-white text-[9px] font-bold font-headline">
                             Enter
-                          </Link>
+                          </span>
                         ) : canGoLive ? (
-                          <Link
-                            href={`/dashboard/sessions/${sess.id}`}
-                            className="px-2.5 py-1 rounded-full bg-[#FF6130] text-white text-[9px] font-bold font-headline"
-                          >
+                          <span className="px-2.5 py-1 rounded-full bg-[#FF6130] text-white text-[9px] font-bold font-headline">
                             Go Live
-                          </Link>
-                        ) : null}
+                          </span>
+                        ) : (
+                          <svg
+                            width="14"
+                            height="14"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth={2}
+                            viewBox="0 0 24 24"
+                            className="shrink-0 opacity-0 group-hover:opacity-50"
+                            style={{ color: "#0F2229" }}
+                          >
+                            <path d="M9 18l6-6-6-6" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        )}
                       </div>
-                    </div>
+                    </Link>
                   );
                 })}
               </div>
@@ -286,13 +334,22 @@ export default async function DashboardPage() {
 
           {/* Active Tribes */}
           <div>
-            <h3 className="text-sm font-bold text-[#9CF0FF]/50 uppercase tracking-wider font-headline mb-3">
+            <h3
+              className="text-sm font-bold uppercase tracking-wider font-headline mb-3"
+              style={{ color: "rgba(15, 34, 41, 0.55)" }}
+            >
               Active Tribes
             </h3>
 
             {!hasTribes ? (
-              <div className="p-4 rounded-xl bg-[#0F2229] border border-dashed border-[#9CF0FF]/10 text-center">
-                <p className="text-xs text-[#9CF0FF]/25">
+              <div
+                className="p-4 rounded-xl border border-dashed text-center"
+                style={{
+                  backgroundColor: "rgba(255, 255, 255, 0.55)",
+                  borderColor: "rgba(15, 34, 41, 0.15)",
+                }}
+              >
+                <p className="text-xs" style={{ color: "#64748b" }}>
                   Tribes appear when you publish challenges.
                 </p>
               </div>
@@ -316,14 +373,24 @@ export default async function DashboardPage() {
           <div className="flex items-center gap-2">
             <Link
               href="/dashboard/sessions/new"
-              className="px-4 py-2 rounded-full bg-[#FF6130] text-white text-xs font-black font-headline hover:scale-[1.03] transition-transform"
+              className="px-4 py-2 rounded-full text-white text-xs font-black font-headline hover:scale-[1.03] transition-transform"
+              style={{
+                backgroundColor: "#FF6130",
+                boxShadow:
+                  "0 4px 14px rgba(255,97,48,0.35), 0 2px 6px rgba(255,97,48,0.20)",
+              }}
             >
               + Session
             </Link>
             <form action={createDraftChallenge}>
               <button
                 type="submit"
-                className="px-4 py-2 rounded-full bg-[#0F2229] border border-[#FF6130]/25 text-xs font-black text-[#FF6130] font-headline hover:scale-[1.03] transition-transform"
+                className="px-4 py-2 rounded-full text-xs font-black font-headline hover:scale-[1.03] transition-transform"
+                style={{
+                  backgroundColor: "rgba(255, 255, 255, 0.85)",
+                  border: "1px solid rgba(255, 97, 48, 0.45)",
+                  color: "#FF6130",
+                }}
               >
                 + Challenge
               </button>

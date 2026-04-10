@@ -1,12 +1,6 @@
 import type { Metadata } from "next";
-import { Rajdhani, Inter } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
-
-const rajdhani = Rajdhani({
-  variable: "--font-rajdhani",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-});
 
 const inter = Inter({
   variable: "--font-inter",
@@ -31,7 +25,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${rajdhani.variable} ${inter.variable} h-full`}>
+    <html lang="en" className={`${inter.variable} h-full`}>
+      <head>
+        <link
+          rel="stylesheet"
+          href="https://api.fontshare.com/v2/css?f[]=general-sans@200,300,400,500,600,700&display=swap"
+        />
+      </head>
       <body className="min-h-full flex flex-col antialiased bg-surface text-on-surface">
         {children}
       </body>

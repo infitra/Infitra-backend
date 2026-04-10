@@ -68,9 +68,10 @@ export default async function ChallengeTribePage({
     .eq("id", user.id)
     .single();
 
-  const backPath = myProfile?.role === "creator" || myProfile?.role === "admin"
-    ? "/dashboard"
-    : "/discover";
+  const backPath =
+    myProfile?.role === "creator" || myProfile?.role === "admin"
+      ? "/dashboard"
+      : "/discover";
 
   // Challenge sessions
   let challengeSessions: any[] = [];
@@ -78,12 +79,17 @@ export default async function ChallengeTribePage({
   if (space.source_challenge_id) {
     const { data: links } = await supabase
       .from("app_challenge_session")
-      .select("session_id, app_session(id, title, start_time, duration_minutes, status, live_room_id)")
+      .select(
+        "session_id, app_session(id, title, start_time, duration_minutes, status, live_room_id)"
+      )
       .eq("challenge_id", space.source_challenge_id);
     challengeSessions = (links ?? [])
       .map((l: any) => l.app_session)
       .filter(Boolean)
-      .sort((a: any, b: any) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+      .sort(
+        (a: any, b: any) =>
+          new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
+      );
   }
 
   return (
@@ -95,7 +101,8 @@ export default async function ChallengeTribePage({
           {/* Back */}
           <Link
             href={backPath}
-            className="text-xs text-[#9CF0FF]/40 hover:text-[#9CF0FF] transition-colors mb-8 flex items-center gap-1.5 font-headline"
+            className="text-xs transition-colors mb-8 flex items-center gap-1.5 font-headline"
+            style={{ color: "#64748b" }}
           >
             <svg
               width="14"
@@ -117,34 +124,57 @@ export default async function ChallengeTribePage({
           {/* Header */}
           <div className="mb-8">
             <div className="flex items-center gap-3 mb-3">
-              <span className="text-[9px] font-bold text-[#FF6130]/60 bg-[#FF6130]/10 px-2.5 py-1 rounded-full font-headline">
+              <span
+                className="text-[9px] font-bold px-2.5 py-1 rounded-full font-headline"
+                style={{
+                  color: "#FF6130",
+                  backgroundColor: "rgba(255, 97, 48, 0.10)",
+                  border: "1px solid rgba(255, 97, 48, 0.20)",
+                }}
+              >
                 TRIBE
               </span>
-              <span className="text-xs text-[#9CF0FF]/25">
+              <span className="text-xs" style={{ color: "#94a3b8" }}>
                 {memberCount ?? 0} member
                 {(memberCount ?? 0) !== 1 ? "s" : ""}
               </span>
             </div>
 
-            <h1 className="text-3xl md:text-4xl font-black text-white font-headline tracking-tight mb-3">
+            <h1
+              className="text-3xl md:text-4xl font-black font-headline tracking-tight mb-3"
+              style={{ color: "#0F2229" }}
+            >
               {space.title}
             </h1>
 
             {/* Challenge + owner info */}
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-[#FF6130]/10 border border-[#FF6130]/20 flex items-center justify-center">
-                <span className="text-xs font-black text-[#FF6130] font-headline">
+              <div
+                className="w-8 h-8 rounded-full flex items-center justify-center"
+                style={{
+                  backgroundColor: "rgba(255, 97, 48, 0.12)",
+                  border: "1px solid rgba(255, 97, 48, 0.30)",
+                }}
+              >
+                <span
+                  className="text-xs font-black font-headline"
+                  style={{ color: "#FF6130" }}
+                >
                   {(owner?.display_name ?? "?")[0].toUpperCase()}
                 </span>
               </div>
               <div>
-                <p className="text-sm font-bold text-white font-headline">
+                <p
+                  className="text-sm font-bold font-headline"
+                  style={{ color: "#0F2229" }}
+                >
                   {owner?.display_name}
                 </p>
                 {challengeTitle && (
                   <Link
                     href={`/challenges/${space.source_challenge_id}`}
-                    className="text-[10px] text-[#FF6130]/50 hover:text-[#FF6130] font-headline transition-colors"
+                    className="text-[10px] font-headline transition-colors hover:opacity-80"
+                    style={{ color: "#FF6130" }}
                   >
                     {challengeTitle} &rarr;
                   </Link>
@@ -153,7 +183,10 @@ export default async function ChallengeTribePage({
             </div>
 
             {space.description && (
-              <p className="text-sm text-[#9CF0FF]/40 mt-4 max-w-lg">
+              <p
+                className="text-sm mt-4 max-w-lg"
+                style={{ color: "#64748b" }}
+              >
                 {space.description}
               </p>
             )}
@@ -162,45 +195,76 @@ export default async function ChallengeTribePage({
           {/* Challenge sessions */}
           {challengeSessions.length > 0 && (
             <div className="mb-6">
-              <h3 className="text-xs font-bold text-[#FF6130]/40 uppercase tracking-wider font-headline mb-3">
+              <h3
+                className="text-xs font-bold uppercase tracking-wider font-headline mb-3"
+                style={{ color: "rgba(15, 34, 41, 0.55)" }}
+              >
                 Sessions
               </h3>
               <div className="space-y-2">
                 {challengeSessions.map((sess: any) => {
                   const startTime = new Date(sess.start_time);
                   const isEnded = sess.status === "ended";
-                  const isPast = startTime < now;
-                  const joinOpensAt = new Date(startTime.getTime() - 5 * 60 * 1000);
-                  const canJoinSess = !!sess.live_room_id && now >= joinOpensAt && !isEnded;
-                  const diffMin = Math.floor((startTime.getTime() - now.getTime()) / 60000);
-                  const timeLabel =
-                    isEnded ? "Ended" :
-                    diffMin < 0 ? "Now" :
-                    diffMin < 60 ? `In ${diffMin} min` :
-                    diffMin < 1440 ? `In ${Math.floor(diffMin / 60)}h` :
-                    startTime.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+                  const joinOpensAt = new Date(
+                    startTime.getTime() - 5 * 60 * 1000
+                  );
+                  const canJoinSess =
+                    !!sess.live_room_id && now >= joinOpensAt && !isEnded;
+                  const diffMin = Math.floor(
+                    (startTime.getTime() - now.getTime()) / 60000
+                  );
+                  const timeLabel = isEnded
+                    ? "Ended"
+                    : diffMin < 0
+                      ? "Now"
+                      : diffMin < 60
+                        ? `In ${diffMin} min`
+                        : diffMin < 1440
+                          ? `In ${Math.floor(diffMin / 60)}h`
+                          : startTime.toLocaleDateString("en-GB", {
+                              weekday: "short",
+                              day: "numeric",
+                              month: "short",
+                            });
 
                   return (
                     <div
                       key={sess.id}
-                      className={`flex items-center gap-3 p-3 rounded-xl border ${
-                        isEnded
-                          ? "bg-[#071318]/30 border-[#9CF0FF]/5 opacity-50"
-                          : "bg-[#071318]/50 border-[#9CF0FF]/8"
+                      className={`flex items-center gap-3 p-3 rounded-xl infitra-glass ${
+                        isEnded ? "opacity-60" : ""
                       }`}
                     >
-                      <span className={`w-2 h-2 rounded-full shrink-0 ${
-                        sess.live_room_id && !isEnded ? "bg-red-500 animate-pulse" :
-                        isEnded ? "bg-[#9CF0FF]/10" : "bg-[#9CF0FF]/20"
-                      }`} />
+                      <span
+                        className={`w-2 h-2 rounded-full shrink-0 ${
+                          sess.live_room_id && !isEnded
+                            ? "bg-rose-500 animate-pulse"
+                            : isEnded
+                              ? "bg-slate-300"
+                              : "bg-orange-500"
+                        }`}
+                      />
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-bold text-white font-headline truncate">{sess.title}</p>
-                        <p className="text-[10px] text-[#9CF0FF]/30">{timeLabel} &middot; {sess.duration_minutes} min</p>
+                        <p
+                          className="text-sm font-bold font-headline truncate"
+                          style={{ color: "#0F2229" }}
+                        >
+                          {sess.title}
+                        </p>
+                        <p
+                          className="text-[10px]"
+                          style={{ color: "#64748b" }}
+                        >
+                          {timeLabel} &middot; {sess.duration_minutes} min
+                        </p>
                       </div>
                       {canJoinSess && (
                         <Link
                           href={`/sessions/${sess.id}/live`}
-                          className="px-2.5 py-1 rounded-full bg-[#FF6130] text-white text-[9px] font-bold font-headline shrink-0 inline-flex items-center gap-1"
+                          className="px-2.5 py-1 rounded-full text-white text-[9px] font-bold font-headline shrink-0 inline-flex items-center gap-1"
+                          style={{
+                            backgroundColor: "#FF6130",
+                            boxShadow: "0 4px 14px rgba(255,97,48,0.30)",
+                          }}
                         >
                           <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
                           Join

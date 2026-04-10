@@ -86,12 +86,16 @@ export default async function ChallengePreviewPage({
     <div className="py-10 max-w-2xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <p className="text-xs text-[#9CF0FF]/40 uppercase tracking-widest font-bold font-headline">
+        <p
+          className="text-xs uppercase tracking-widest font-bold font-headline"
+          style={{ color: "rgba(15, 34, 41, 0.55)" }}
+        >
           Preview &mdash; how participants will see this
         </p>
         <Link
           href={`/dashboard/challenges/${id}`}
-          className="text-xs text-[#9CF0FF]/40 hover:text-[#9CF0FF] transition-colors flex items-center gap-1.5 font-headline"
+          className="text-xs transition-colors flex items-center gap-1.5 font-headline"
+          style={{ color: "#64748b" }}
         >
           <svg
             width="14"
@@ -112,17 +116,23 @@ export default async function ChallengePreviewPage({
       </div>
 
       {/* Challenge card preview */}
-      <div className="rounded-2xl bg-[#0F2229] border border-[#9CF0FF]/10 overflow-hidden">
+      <div className="rounded-2xl infitra-glass overflow-hidden">
         {/* Accent bar */}
         <div className="h-1 bg-gradient-to-r from-[#FF6130] to-[#FF6130]/40" />
 
         <div className="p-8 md:p-10">
-          <h1 className="text-3xl md:text-4xl font-black text-white font-headline tracking-tight mb-3">
+          <h1
+            className="text-3xl md:text-4xl font-black font-headline tracking-tight mb-3"
+            style={{ color: "#0F2229" }}
+          >
             {challenge.title}
           </h1>
 
           {challenge.description && (
-            <p className="text-sm text-[#9CF0FF]/50 leading-relaxed mb-8 max-w-lg whitespace-pre-line">
+            <p
+              className="text-sm leading-relaxed mb-8 max-w-lg whitespace-pre-line"
+              style={{ color: "#64748b" }}
+            >
               {challenge.description}
             </p>
           )}
@@ -130,36 +140,60 @@ export default async function ChallengePreviewPage({
           {/* Info grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             <div>
-              <p className="text-[10px] font-bold text-[#9CF0FF]/30 uppercase tracking-widest font-headline mb-1">
+              <p
+                className="text-[10px] font-bold uppercase tracking-widest font-headline mb-1"
+                style={{ color: "rgba(15, 34, 41, 0.55)" }}
+              >
                 Starts
               </p>
-              <p className="text-sm font-semibold text-white">
+              <p
+                className="text-sm font-semibold"
+                style={{ color: "#0F2229" }}
+              >
                 {formatDate(challenge.start_date)}
               </p>
             </div>
             <div>
-              <p className="text-[10px] font-bold text-[#9CF0FF]/30 uppercase tracking-widest font-headline mb-1">
+              <p
+                className="text-[10px] font-bold uppercase tracking-widest font-headline mb-1"
+                style={{ color: "rgba(15, 34, 41, 0.55)" }}
+              >
                 Ends
               </p>
-              <p className="text-sm font-semibold text-white">
+              <p
+                className="text-sm font-semibold"
+                style={{ color: "#0F2229" }}
+              >
                 {formatDate(challenge.end_date)}
               </p>
             </div>
             <div>
-              <p className="text-[10px] font-bold text-[#9CF0FF]/30 uppercase tracking-widest font-headline mb-1">
+              <p
+                className="text-[10px] font-bold uppercase tracking-widest font-headline mb-1"
+                style={{ color: "rgba(15, 34, 41, 0.55)" }}
+              >
                 Spots
               </p>
-              <p className="text-sm font-semibold text-white">
+              <p
+                className="text-sm font-semibold"
+                style={{ color: "#0F2229" }}
+              >
                 {challenge.capacity
                   ? `${challenge.capacity} available`
                   : "Unlimited"}
               </p>
             </div>
             <div>
-              <p className="text-[10px] font-bold text-[#9CF0FF]/30 uppercase tracking-widest font-headline mb-1">
+              <p
+                className="text-[10px] font-bold uppercase tracking-widest font-headline mb-1"
+                style={{ color: "rgba(15, 34, 41, 0.55)" }}
+              >
                 Price
               </p>
-              <p className="text-sm font-semibold text-white">
+              <p
+                className="text-sm font-semibold"
+                style={{ color: "#0F2229" }}
+              >
                 {priceCHF > 0 ? `CHF ${priceCHF.toFixed(2)}` : "Free"}
               </p>
             </div>
@@ -168,7 +202,10 @@ export default async function ChallengePreviewPage({
           {/* Session timeline */}
           {linkedSessions.length > 0 && (
             <div className="mb-8">
-              <p className="text-[10px] font-bold text-[#9CF0FF]/30 uppercase tracking-widest font-headline mb-3">
+              <p
+                className="text-[10px] font-bold uppercase tracking-widest font-headline mb-3"
+                style={{ color: "rgba(15, 34, 41, 0.55)" }}
+              >
                 {linkedSessions.length} Session
                 {linkedSessions.length !== 1 ? "s" : ""} included
               </p>
@@ -176,9 +213,19 @@ export default async function ChallengePreviewPage({
                 {linkedSessions.map((sess: any) => (
                   <div
                     key={sess.id}
-                    className="flex items-center gap-3 p-3 rounded-lg bg-[#071318]/50 border border-[#9CF0FF]/8"
+                    className="flex items-center gap-3 p-3 rounded-lg"
+                    style={{
+                      backgroundColor: "rgba(255, 255, 255, 0.55)",
+                      border: "1px solid rgba(15, 34, 41, 0.10)",
+                    }}
                   >
-                    <div className="w-8 h-8 rounded-lg bg-[#FF6130]/10 border border-[#FF6130]/20 flex items-center justify-center shrink-0">
+                    <div
+                      className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                      style={{
+                        backgroundColor: "rgba(255, 97, 48, 0.10)",
+                        border: "1px solid rgba(255, 97, 48, 0.25)",
+                      }}
+                    >
                       <svg
                         width="14"
                         height="14"
@@ -203,10 +250,16 @@ export default async function ChallengePreviewPage({
                       </svg>
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-bold text-white font-headline truncate">
+                      <p
+                        className="text-sm font-bold font-headline truncate"
+                        style={{ color: "#0F2229" }}
+                      >
                         {sess.title}
                       </p>
-                      <p className="text-[10px] text-[#9CF0FF]/40">
+                      <p
+                        className="text-[10px]"
+                        style={{ color: "#64748b" }}
+                      >
                         {formatSessionDate(sess.start_time)} at{" "}
                         {formatSessionTime(sess.start_time)} &middot;{" "}
                         {sess.duration_minutes} min
@@ -219,17 +272,34 @@ export default async function ChallengePreviewPage({
           )}
 
           {/* Host badge */}
-          <div className="flex items-center gap-3 pt-6 border-t border-[#9CF0FF]/8">
-            <div className="w-9 h-9 rounded-full bg-[#FF6130]/15 border border-[#FF6130]/30 flex items-center justify-center">
-              <span className="text-sm font-black text-[#FF6130] font-headline">
+          <div
+            className="flex items-center gap-3 pt-6 border-t"
+            style={{ borderColor: "rgba(15, 34, 41, 0.10)" }}
+          >
+            <div
+              className="w-9 h-9 rounded-full flex items-center justify-center"
+              style={{
+                backgroundColor: "rgba(255, 97, 48, 0.12)",
+                border: "1px solid rgba(255, 97, 48, 0.30)",
+              }}
+            >
+              <span
+                className="text-sm font-black font-headline"
+                style={{ color: "#FF6130" }}
+              >
                 {(profile?.display_name ?? "?")[0].toUpperCase()}
               </span>
             </div>
             <div>
-              <p className="text-sm font-bold text-white font-headline">
+              <p
+                className="text-sm font-bold font-headline"
+                style={{ color: "#0F2229" }}
+              >
                 {profile?.display_name}
               </p>
-              <p className="text-[10px] text-[#9CF0FF]/30">Creator</p>
+              <p className="text-[10px]" style={{ color: "#94a3b8" }}>
+                Creator
+              </p>
             </div>
           </div>
         </div>

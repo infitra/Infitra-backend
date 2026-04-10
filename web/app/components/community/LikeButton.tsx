@@ -46,11 +46,8 @@ export function LikeButton({
     <button
       onClick={handleToggle}
       disabled={pending}
-      className={`inline-flex items-center gap-1.5 transition-colors ${
-        liked
-          ? "text-[#FF6130]"
-          : "text-[#9CF0FF]/25 hover:text-[#FF6130]/60"
-      }`}
+      className="inline-flex items-center gap-1.5 transition-colors hover:opacity-80"
+      style={{ color: liked ? "#FF6130" : "#94a3b8" }}
     >
       <svg
         width="16"

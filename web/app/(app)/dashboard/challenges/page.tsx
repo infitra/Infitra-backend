@@ -7,47 +7,31 @@ export const metadata = {
   title: "Challenges — INFITRA",
 };
 
-// ── Beam vocabulary tokens ──────────────────────────────────────
-// Inset bottom line follows any rounded radius automatically; outer
-// shadows provide the downward-biased halo. Cyan = featured / structural,
-// Orange = primary action.
-const cardBeamCyan: CSSProperties = {
-  boxShadow: [
-    "inset 0 -3px 0 #9CF0FF",
-    "0 0 18px rgba(156,240,255,0.45)",
-    "0 0 48px rgba(156,240,255,0.20)",
-    "0 6px 30px rgba(156,240,255,0.32)",
-    "0 14px 50px rgba(156,240,255,0.16)",
-  ].join(", "),
+// ── Light theme tokens ──────────────────────────────────────────
+// No featured extra styling — all cards are uniform
+
+const buttonOrangePill: CSSProperties = {
+  backgroundColor: "#FF6130",
+  boxShadow:
+    "0 4px 14px rgba(255,97,48,0.35), 0 2px 6px rgba(255,97,48,0.20)",
 };
 
-const buttonBeamOrange: CSSProperties = {
-  boxShadow: [
-    "inset 0 -3px 0 #FF6130",
-    "0 0 14px rgba(255,97,48,0.55)",
-    "0 0 36px rgba(255,97,48,0.28)",
-    "0 5px 22px rgba(255,97,48,0.40)",
-  ].join(", "),
-};
-
-// Status badges — kept inside the cyan family so they don't compete
-// with the beam vocabulary.
 const STATUS_STYLES: Record<string, { label: string; color: string }> = {
   draft: {
     label: "Draft",
-    color: "text-[#9CF0FF]/50 bg-[#9CF0FF]/8 border-[#9CF0FF]/15",
+    color: "text-slate-500 bg-slate-100/70 border-slate-200",
   },
   published: {
     label: "Published",
-    color: "text-[#9CF0FF] bg-[#9CF0FF]/10 border-[#9CF0FF]/25",
+    color: "text-emerald-700 bg-emerald-100/80 border-emerald-200",
   },
   completed: {
     label: "Completed",
-    color: "text-[#9CF0FF]/30 bg-[#9CF0FF]/4 border-[#9CF0FF]/10",
+    color: "text-slate-500 bg-slate-100/70 border-slate-200",
   },
   canceled: {
     label: "Canceled",
-    color: "text-white/30 bg-white/4 border-white/10",
+    color: "text-slate-400 bg-slate-100/50 border-slate-200",
   },
 };
 
@@ -63,7 +47,6 @@ function formatDate(dateStr: string) {
 export default async function ChallengesPage() {
   const supabase = await createClient();
 
-  // Query user's challenges directly — vw_my_challenges_overview may be empty for new creators
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -77,7 +60,6 @@ export default async function ChallengesPage() {
     .neq("status", "draft")
     .order("created_at", { ascending: false });
 
-  // Get session counts per challenge
   const challengeIds = (challenges ?? []).map((c: any) => c.id);
   const { data: sessionCounts } = challengeIds.length
     ? await supabase
@@ -93,9 +75,7 @@ export default async function ChallengesPage() {
 
   const hasChallenges = challenges && challenges.length > 0;
 
-  // Identify the Featured challenge — the only row that gets the cyan beam.
-  // Priority: currently-running published challenge → otherwise the next
-  // upcoming published challenge.
+  // Featured: currently-running > next upcoming
   const today = new Date().toISOString().split("T")[0];
   const publishedChallenges = (challenges ?? []).filter(
     (c: any) => c.status === "published",
@@ -109,8 +89,6 @@ export default async function ChallengesPage() {
   const featuredChallenge = runningChallenge ?? upcomingChallenge;
   const featuredLabel = runningChallenge ? "Active" : "Next up";
 
-  // Reorder so the featured challenge is always first in the list —
-  // otherwise the cyan beam can hide far down a long history.
   const orderedChallenges = (() => {
     if (!challenges) return [];
     if (!featuredChallenge) return challenges;
@@ -122,18 +100,21 @@ export default async function ChallengesPage() {
     <div className="py-10">
       <div className="flex items-center justify-between mb-10">
         <div>
-          <h1 className="text-3xl md:text-4xl font-black text-white font-headline tracking-tight">
+          <h1
+            className="text-3xl md:text-4xl font-black font-headline tracking-tight"
+            style={{ color: "#0F2229" }}
+          >
             Challenges
           </h1>
-          <p className="text-sm text-[#9CF0FF]/40 mt-1">
+          <p className="text-sm mt-1" style={{ color: "#64748b" }}>
             Build multi-session programmes for your community.
           </p>
         </div>
         <form action={createDraftChallenge}>
           <button
             type="submit"
-            className="px-7 py-3 rounded-md bg-[#0F2229] text-[#FF6130] text-xs font-black font-headline uppercase tracking-[0.15em] hover:scale-[1.02] transition-transform"
-            style={buttonBeamOrange}
+            className="px-7 py-3 rounded-md text-white text-xs font-black font-headline uppercase tracking-[0.15em] hover:scale-[1.02] transition-transform"
+            style={buttonOrangePill}
           >
             New Challenge
           </button>
@@ -142,7 +123,13 @@ export default async function ChallengesPage() {
 
       {!hasChallenges ? (
         <div className="text-center py-20">
-          <div className="w-16 h-16 rounded-full bg-[#FF6130]/10 border border-[#FF6130]/20 flex items-center justify-center mx-auto mb-6">
+          <div
+            className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6"
+            style={{
+              backgroundColor: "rgba(255, 97, 48, 0.10)",
+              border: "1px solid rgba(255, 97, 48, 0.25)",
+            }}
+          >
             <svg
               width="28"
               height="28"
@@ -156,24 +143,30 @@ export default async function ChallengesPage() {
               <path d="M12 5v14M5 12h14" />
             </svg>
           </div>
-          <h2 className="text-xl font-black text-white font-headline tracking-tight mb-2">
+          <h2
+            className="text-xl font-black font-headline tracking-tight mb-2"
+            style={{ color: "#0F2229" }}
+          >
             No challenges yet
           </h2>
-          <p className="text-sm text-[#9CF0FF]/40 mb-6 max-w-xs mx-auto">
+          <p
+            className="text-sm mb-6 max-w-xs mx-auto"
+            style={{ color: "#64748b" }}
+          >
             Create your first challenge to bundle sessions into a programme.
           </p>
           <form action={createDraftChallenge} className="inline-block">
             <button
               type="submit"
-              className="px-7 py-3 rounded-md bg-[#0F2229] text-[#FF6130] text-xs font-black font-headline uppercase tracking-[0.15em] hover:scale-[1.02] transition-transform"
-              style={buttonBeamOrange}
+              className="px-7 py-3 rounded-md text-white text-xs font-black font-headline uppercase tracking-[0.15em] hover:scale-[1.02] transition-transform"
+              style={buttonOrangePill}
             >
               Create Challenge
             </button>
           </form>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-3 pb-12">
           {orderedChallenges.map((challenge: any) => {
             const s = STATUS_STYLES[challenge.status] ?? STATUS_STYLES.draft;
             const priceCHF = (challenge.price_cents ?? 0) / 100;
@@ -184,18 +177,22 @@ export default async function ChallengesPage() {
               <Link
                 key={challenge.id}
                 href={`/dashboard/challenges/${challenge.id}`}
-                className="beam-hover-cyan block p-5 rounded-xl bg-[rgba(15,34,41,0.55)] backdrop-blur-xl border border-[rgba(156,240,255,0.10)] hover:bg-[rgba(15,34,41,0.85)] hover:border-[rgba(156,240,255,0.28)] group"
-                style={isFeatured ? cardBeamCyan : undefined}
+                className="block p-5 rounded-2xl infitra-card-link group"
               >
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       {isFeatured && (
-                        <span className="font-headline text-[10px] font-bold uppercase tracking-[0.2em] text-[#9CF0FF] shrink-0">
+                        <span
+                          className="font-headline text-[10px] font-bold uppercase tracking-[0.2em] shrink-0"
+                          style={{ color: "#0891b2" }}
+                        >
                           {featuredLabel}
                         </span>
                       )}
-                      <h3 className="text-lg font-black text-white font-headline tracking-tight truncate">
+                      <h3
+                        className="text-lg font-black font-headline tracking-tight truncate text-[#0F2229] group-hover:text-[#FF6130]"
+                      >
                         {challenge.title}
                       </h3>
                       <span
@@ -204,14 +201,16 @@ export default async function ChallengesPage() {
                         {s.label}
                       </span>
                     </div>
-                    <div className="flex items-center gap-4 text-xs text-[#9CF0FF]/40">
+                    <div
+                      className="flex items-center gap-4 text-xs"
+                      style={{ color: "#64748b" }}
+                    >
                       <span>
                         {formatDate(challenge.start_date)} —{" "}
                         {formatDate(challenge.end_date)}
                       </span>
                       <span>
-                        {sessionCount} session
-                        {sessionCount !== 1 ? "s" : ""}
+                        {sessionCount} session{sessionCount !== 1 ? "s" : ""}
                       </span>
                       {priceCHF > 0 && <span>CHF {priceCHF.toFixed(2)}</span>}
                     </div>
@@ -223,7 +222,8 @@ export default async function ChallengesPage() {
                     stroke="currentColor"
                     strokeWidth={2}
                     viewBox="0 0 24 24"
-                    className="text-[#9CF0FF]/30 group-hover:text-[#9CF0FF]/60 transition-colors shrink-0 mt-1"
+                    className="shrink-0 mt-1 opacity-0 group-hover:opacity-50"
+                    style={{ color: "#0F2229" }}
                   >
                     <path
                       d="M9 18l6-6-6-6"

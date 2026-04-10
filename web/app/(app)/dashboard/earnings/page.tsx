@@ -37,7 +37,6 @@ export default async function EarningsPage() {
   const creatorCutCents = Number(summary?.creator_cut_cents ?? 0);
   const platformCutCents = grossCents - creatorCutCents;
   const uniqueBuyers = Number(summary?.unique_buyers ?? 0);
-  const totalAttendees = Number(summary?.total_attendees ?? 0);
 
   // Transaction history
   const { data: transactions } = await supabase
@@ -64,10 +63,13 @@ export default async function EarningsPage() {
   return (
     <div className="py-10">
       <div className="mb-8">
-        <h1 className="text-3xl md:text-4xl font-black text-white font-headline tracking-tight">
+        <h1
+          className="text-3xl md:text-4xl font-black font-headline tracking-tight"
+          style={{ color: "#0F2229" }}
+        >
           Earnings
         </h1>
-        <p className="text-sm text-[#9CF0FF]/40 mt-1">
+        <p className="text-sm mt-1" style={{ color: "#64748b" }}>
           Revenue breakdown across all your sessions and challenges.
         </p>
       </div>
@@ -75,44 +77,78 @@ export default async function EarningsPage() {
       {/* ── Summary Cards ────────────────────────────────── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-10">
         <div className="p-5 rounded-2xl infitra-glass">
-          <p className="text-[10px] font-bold text-[#9CF0FF]/40 uppercase tracking-widest font-headline mb-2">
+          <p
+            className="text-[10px] font-bold uppercase tracking-widest font-headline mb-2"
+            style={{ color: "rgba(15, 34, 41, 0.55)" }}
+          >
             Total Revenue
           </p>
-          <p className="text-2xl font-black text-white font-headline tracking-tight">
+          <p
+            className="text-2xl font-black font-headline tracking-tight"
+            style={{ color: "#0F2229" }}
+          >
             {chf(grossCents)}
           </p>
-          <p className="text-[10px] text-[#9CF0FF]/25 mt-1">Gross sales</p>
+          <p className="text-[10px] mt-1" style={{ color: "#94a3b8" }}>
+            Gross sales
+          </p>
         </div>
-        <div className="p-5 rounded-2xl bg-[#0F2229] border border-green-400/15">
-          <p className="text-[10px] font-bold text-green-400/60 uppercase tracking-widest font-headline mb-2">
+        <div
+          className="p-5 rounded-2xl backdrop-blur-xl"
+          style={{
+            backgroundColor: "rgba(220, 252, 231, 0.78)",
+            border: "1px solid rgba(16, 185, 129, 0.30)",
+            boxShadow:
+              "0 1px 2px rgba(15, 34, 41, 0.04), 0 4px 16px rgba(16, 185, 129, 0.12)",
+          }}
+        >
+          <p
+            className="text-[10px] font-bold uppercase tracking-widest font-headline mb-2"
+            style={{ color: "#047857" }}
+          >
             Your Earnings
           </p>
-          <p className="text-2xl font-black text-green-400 font-headline tracking-tight">
+          <p
+            className="text-2xl font-black font-headline tracking-tight"
+            style={{ color: "#047857" }}
+          >
             {chf(creatorCutCents)}
           </p>
-          <p className="text-[10px] text-[#9CF0FF]/25 mt-1">
+          <p className="text-[10px] mt-1" style={{ color: "#059669" }}>
             80% creator share
           </p>
         </div>
         <div className="p-5 rounded-2xl infitra-glass">
-          <p className="text-[10px] font-bold text-[#9CF0FF]/40 uppercase tracking-widest font-headline mb-2">
+          <p
+            className="text-[10px] font-bold uppercase tracking-widest font-headline mb-2"
+            style={{ color: "rgba(15, 34, 41, 0.55)" }}
+          >
             Platform Fee
           </p>
-          <p className="text-2xl font-black text-[#9CF0FF]/50 font-headline tracking-tight">
+          <p
+            className="text-2xl font-black font-headline tracking-tight"
+            style={{ color: "#64748b" }}
+          >
             {chf(platformCutCents)}
           </p>
-          <p className="text-[10px] text-[#9CF0FF]/25 mt-1">
+          <p className="text-[10px] mt-1" style={{ color: "#94a3b8" }}>
             20% of gross
           </p>
         </div>
         <div className="p-5 rounded-2xl infitra-glass">
-          <p className="text-[10px] font-bold text-[#9CF0FF]/40 uppercase tracking-widest font-headline mb-2">
+          <p
+            className="text-[10px] font-bold uppercase tracking-widest font-headline mb-2"
+            style={{ color: "rgba(15, 34, 41, 0.55)" }}
+          >
             Buyers
           </p>
-          <p className="text-2xl font-black text-white font-headline tracking-tight">
+          <p
+            className="text-2xl font-black font-headline tracking-tight"
+            style={{ color: "#0F2229" }}
+          >
             {uniqueBuyers}
           </p>
-          <p className="text-[10px] text-[#9CF0FF]/25 mt-1">
+          <p className="text-[10px] mt-1" style={{ color: "#94a3b8" }}>
             Unique customers
           </p>
         </div>
@@ -123,40 +159,58 @@ export default async function EarningsPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-10">
           <div className="px-5 py-4 rounded-xl infitra-glass flex items-center justify-between">
             <div>
-              <p className="text-[10px] font-bold text-[#9CF0FF]/40 uppercase tracking-widest font-headline">
+              <p
+                className="text-[10px] font-bold uppercase tracking-widest font-headline"
+                style={{ color: "rgba(15, 34, 41, 0.55)" }}
+              >
                 Sessions
               </p>
-              <p className="text-xs text-[#9CF0FF]/25 mt-0.5">
+              <p className="text-xs mt-0.5" style={{ color: "#94a3b8" }}>
                 Ticket sales
               </p>
             </div>
-            <p className="text-lg font-black text-white font-headline">
+            <p
+              className="text-lg font-black font-headline"
+              style={{ color: "#0F2229" }}
+            >
               {chf(sessionRevenue)}
             </p>
           </div>
           <div className="px-5 py-4 rounded-xl infitra-glass flex items-center justify-between">
             <div>
-              <p className="text-[10px] font-bold text-[#9CF0FF]/40 uppercase tracking-widest font-headline">
+              <p
+                className="text-[10px] font-bold uppercase tracking-widest font-headline"
+                style={{ color: "rgba(15, 34, 41, 0.55)" }}
+              >
                 Challenges
               </p>
-              <p className="text-xs text-[#9CF0FF]/25 mt-0.5">
+              <p className="text-xs mt-0.5" style={{ color: "#94a3b8" }}>
                 Bundle sales
               </p>
             </div>
-            <p className="text-lg font-black text-white font-headline">
+            <p
+              className="text-lg font-black font-headline"
+              style={{ color: "#0F2229" }}
+            >
               {chf(challengeRevenue)}
             </p>
           </div>
           <div className="px-5 py-4 rounded-xl infitra-glass flex items-center justify-between">
             <div>
-              <p className="text-[10px] font-bold text-[#9CF0FF]/40 uppercase tracking-widest font-headline">
+              <p
+                className="text-[10px] font-bold uppercase tracking-widest font-headline"
+                style={{ color: "rgba(15, 34, 41, 0.55)" }}
+              >
                 Processing
               </p>
-              <p className="text-xs text-[#9CF0FF]/25 mt-0.5">
+              <p className="text-xs mt-0.5" style={{ color: "#94a3b8" }}>
                 Stripe fees
               </p>
             </div>
-            <p className="text-lg font-black text-[#9CF0FF]/40 font-headline">
+            <p
+              className="text-lg font-black font-headline"
+              style={{ color: "#64748b" }}
+            >
               {chf(totalFees)}
             </p>
           </div>
@@ -165,13 +219,22 @@ export default async function EarningsPage() {
 
       {/* ── Transaction History ──────────────────────────── */}
       <div>
-        <h2 className="text-lg font-black text-white font-headline tracking-tight mb-4">
+        <h2
+          className="text-lg font-black font-headline tracking-tight mb-4"
+          style={{ color: "#0F2229" }}
+        >
           Transactions
         </h2>
 
         {!hasTransactions ? (
-          <div className="text-center py-16 rounded-2xl bg-[#0F2229] border border-dashed border-[#9CF0FF]/10">
-            <p className="text-sm text-[#9CF0FF]/30">
+          <div
+            className="text-center py-16 rounded-2xl border border-dashed"
+            style={{
+              backgroundColor: "rgba(255, 255, 255, 0.55)",
+              borderColor: "rgba(15, 34, 41, 0.15)",
+            }}
+          >
+            <p className="text-sm" style={{ color: "#64748b" }}>
               No transactions yet. Revenue will appear here when participants
               purchase your sessions or challenges.
             </p>
@@ -179,7 +242,13 @@ export default async function EarningsPage() {
         ) : (
           <div className="rounded-2xl infitra-glass overflow-hidden">
             {/* Table header */}
-            <div className="hidden md:grid grid-cols-12 gap-4 px-5 py-3 border-b border-[#9CF0FF]/8 text-[10px] font-bold text-[#9CF0FF]/30 uppercase tracking-widest font-headline">
+            <div
+              className="hidden md:grid grid-cols-12 gap-4 px-5 py-3 border-b text-[10px] font-bold uppercase tracking-widest font-headline"
+              style={{
+                borderColor: "rgba(15, 34, 41, 0.10)",
+                color: "rgba(15, 34, 41, 0.55)",
+              }}
+            >
               <div className="col-span-3">Item</div>
               <div className="col-span-2">Buyer</div>
               <div className="col-span-2">Date</div>
@@ -190,7 +259,10 @@ export default async function EarningsPage() {
             </div>
 
             {/* Rows */}
-            <div className="divide-y divide-[#9CF0FF]/5">
+            <div
+              className="divide-y"
+              style={{ borderColor: "rgba(15, 34, 41, 0.06)" }}
+            >
               {transactions!.map((tx: any) => {
                 const itemTitle =
                   tx.type === "bundle"
@@ -203,22 +275,25 @@ export default async function EarningsPage() {
                 return (
                   <div
                     key={tx.id}
-                    className="grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-4 px-5 py-4 hover:bg-[#9CF0FF]/3 transition-colors"
+                    className="grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-4 px-5 py-4 transition-colors"
                   >
                     {/* Item */}
                     <div className="col-span-3 min-w-0">
                       <div className="flex items-center gap-2">
                         <span
-                          className={`shrink-0 text-[8px] font-bold px-1.5 py-0.5 rounded font-headline ${
+                          className={`shrink-0 text-[8px] font-bold px-1.5 py-0.5 rounded font-headline border ${
                             tx.type === "bundle"
-                              ? "text-[#FF6130]/60 bg-[#FF6130]/10"
-                              : "text-[#9CF0FF]/50 bg-[#9CF0FF]/8"
+                              ? "text-orange-700 bg-orange-100/80 border-orange-200"
+                              : "text-cyan-700 bg-cyan-100/80 border-cyan-200"
                           }`}
                         >
                           {tx.type === "bundle" ? "CHALLENGE" : "SESSION"}
                         </span>
                       </div>
-                      <p className="text-sm font-bold text-white font-headline truncate mt-1">
+                      <p
+                        className="text-sm font-bold font-headline truncate mt-1"
+                        style={{ color: "#0F2229" }}
+                      >
                         {itemTitle ?? "Unknown"}
                       </p>
                     </div>
@@ -228,20 +303,26 @@ export default async function EarningsPage() {
                       {tx.buyer_id ? (
                         <Link
                           href={`/profile/${tx.buyer_id}`}
-                          className="text-xs text-[#9CF0FF]/50 hover:text-[#9CF0FF] truncate transition-colors"
+                          className="text-xs truncate transition-colors hover:opacity-75"
+                          style={{ color: "#475569" }}
                         >
                           {tx.buyer_name ?? "—"}
                         </Link>
                       ) : (
-                        <p className="text-xs text-[#9CF0FF]/50 truncate">—</p>
+                        <p
+                          className="text-xs truncate"
+                          style={{ color: "#475569" }}
+                        >
+                          —
+                        </p>
                       )}
                     </div>
 
                     {/* Date */}
                     <div className="col-span-2 flex items-center">
-                      <p className="text-xs text-[#9CF0FF]/40">
+                      <p className="text-xs" style={{ color: "#64748b" }}>
                         {formatDate(tx.created_at)}{" "}
-                        <span className="text-[#9CF0FF]/25">
+                        <span style={{ color: "#94a3b8" }}>
                           {formatTime(tx.created_at)}
                         </span>
                       </p>
@@ -249,28 +330,34 @@ export default async function EarningsPage() {
 
                     {/* Gross */}
                     <div className="col-span-1 flex items-center justify-end">
-                      <p className="text-xs text-white font-headline font-bold">
+                      <p
+                        className="text-xs font-headline font-bold"
+                        style={{ color: "#0F2229" }}
+                      >
                         {chf(tx.amount_gross_cents)}
                       </p>
                     </div>
 
                     {/* Fees */}
                     <div className="col-span-1 flex items-center justify-end">
-                      <p className="text-xs text-[#9CF0FF]/30">
+                      <p className="text-xs" style={{ color: "#94a3b8" }}>
                         -{chf(fees)}
                       </p>
                     </div>
 
                     {/* Platform */}
                     <div className="col-span-1 flex items-center justify-end">
-                      <p className="text-xs text-[#9CF0FF]/30">
+                      <p className="text-xs" style={{ color: "#94a3b8" }}>
                         -{chf(tx.platform_cut_cents)}
                       </p>
                     </div>
 
                     {/* Your Cut */}
                     <div className="col-span-2 flex items-center justify-end">
-                      <p className="text-sm font-black text-green-400 font-headline">
+                      <p
+                        className="text-sm font-black font-headline"
+                        style={{ color: "#047857" }}
+                      >
                         {chf(tx.creator_cut_cents)}
                       </p>
                     </div>

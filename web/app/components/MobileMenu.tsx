@@ -14,7 +14,8 @@ export function MobileMenu({
     <div className="md:hidden">
       <button
         onClick={() => setOpen(!open)}
-        className="p-2 text-[#9CF0FF]/40 hover:text-[#9CF0FF] transition-colors"
+        className="p-2 transition-colors"
+        style={{ color: "rgba(15, 34, 41, 0.55)" }}
         aria-label="Menu"
       >
         {open ? (
@@ -29,13 +30,20 @@ export function MobileMenu({
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 right-0 bg-[#0F2229] border-b border-[#9CF0FF]/10 py-3 px-6 space-y-1">
+        <div
+          className="absolute top-full left-0 right-0 backdrop-blur-xl border-b py-3 px-6 space-y-1"
+          style={{
+            backgroundColor: "rgba(242, 239, 232, 0.95)",
+            borderColor: "rgba(15, 34, 41, 0.10)",
+          }}
+        >
           {links.map(({ label, href }) => (
             <Link
               key={href}
               href={href}
               onClick={() => setOpen(false)}
-              className="block py-2.5 text-sm font-semibold text-[#9CF0FF]/50 hover:text-[#9CF0FF] transition-colors font-headline"
+              className="block py-2.5 font-headline text-xs font-bold uppercase tracking-widest transition-colors"
+              style={{ color: "rgba(15, 34, 41, 0.55)" }}
             >
               {label}
             </Link>
