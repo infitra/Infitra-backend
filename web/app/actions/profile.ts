@@ -31,9 +31,13 @@ export async function updateProfile(prevState: unknown, formData: FormData) {
     }
     const ext = avatarFile.name.split(".").pop()?.toLowerCase() || "jpg";
     const path = `${user.id}/avatar.${ext}`;
+    const buffer = Buffer.from(await avatarFile.arrayBuffer());
     const { error: upErr } = await supabase.storage
       .from("profile-images")
-      .upload(path, avatarFile, { upsert: true, contentType: avatarFile.type });
+      .upload(path, buffer, {
+        upsert: true,
+        contentType: avatarFile.type,
+      });
     if (upErr) return { error: `Avatar upload failed: ${upErr.message}` };
     const { data: urlData } = supabase.storage
       .from("profile-images")
@@ -51,9 +55,13 @@ export async function updateProfile(prevState: unknown, formData: FormData) {
     }
     const ext = coverFile.name.split(".").pop()?.toLowerCase() || "jpg";
     const path = `${user.id}/cover.${ext}`;
+    const buffer = Buffer.from(await coverFile.arrayBuffer());
     const { error: upErr } = await supabase.storage
       .from("profile-images")
-      .upload(path, coverFile, { upsert: true, contentType: coverFile.type });
+      .upload(path, buffer, {
+        upsert: true,
+        contentType: coverFile.type,
+      });
     if (upErr) return { error: `Cover upload failed: ${upErr.message}` };
     const { data: urlData } = supabase.storage
       .from("profile-images")
