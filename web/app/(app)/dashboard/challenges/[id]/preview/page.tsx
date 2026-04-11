@@ -30,7 +30,7 @@ export default async function ChallengePreviewPage({ params }: { params: Promise
 
   const { data: linkedRows } = await supabase
     .from("app_challenge_session")
-    .select("session_id, app_session(id, title, start_time, duration_minutes, image_url)")
+    .select("session_id, app_session(id, title, description, start_time, duration_minutes, image_url)")
     .eq("challenge_id", id);
 
   const linkedSessions = (linkedRows ?? []).map((r: any) => r.app_session).filter(Boolean)
@@ -115,6 +115,9 @@ export default async function ChallengePreviewPage({ params }: { params: Promise
                     <div className="p-3">
                       {!sess.image_url && (
                         <p className="text-sm font-bold font-headline mb-1" style={{ color: "#0F2229" }}>{sess.title}</p>
+                      )}
+                      {sess.description && (
+                        <p className="text-xs mb-1 line-clamp-2" style={{ color: "#94a3b8" }}>{sess.description}</p>
                       )}
                       <p className="text-[10px]" style={{ color: "#64748b" }}>
                         {formatSessionDate(sess.start_time)} at {formatSessionTime(sess.start_time)} · {sess.duration_minutes} min

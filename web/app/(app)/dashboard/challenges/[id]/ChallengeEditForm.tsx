@@ -44,6 +44,8 @@ interface Challenge {
 interface SessionSummary {
   id: string;
   title: string;
+  description?: string | null;
+  image_url?: string | null;
   start_time: string;
   duration_minutes: number;
 }
@@ -142,6 +144,8 @@ export function ChallengeEditForm({
           {
             id: result.sessionId,
             title: newTitle.trim(),
+            description: newDescription.trim() || null,
+            image_url: newImageUrl,
             start_time: startTime,
             duration_minutes: dur,
           },
@@ -605,8 +609,12 @@ export function ChallengeEditForm({
                   /* Display mode */
                   <div
                     key={sess.id}
-                    className="flex items-center justify-between p-3 rounded-xl infitra-glass group/item"
+                    className="flex items-start gap-3 p-3 rounded-xl infitra-glass group/item"
                   >
+                    {/* Thumbnail */}
+                    {sess.image_url && (
+                      <img src={sess.image_url} alt="" className="w-16 h-16 rounded-lg object-cover shrink-0" />
+                    )}
                     <button
                       type="button"
                       onClick={() => startEditing(sess)}
@@ -618,6 +626,9 @@ export function ChallengeEditForm({
                       >
                         {sess.title}
                       </p>
+                      {sess.description && (
+                        <p className="text-xs mt-0.5 line-clamp-1" style={{ color: "#94a3b8" }}>{sess.description}</p>
+                      )}
                       <p
                         className="text-[10px] mt-0.5"
                         style={{ color: "#64748b" }}

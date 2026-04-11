@@ -65,7 +65,7 @@ export default async function ChallengeDetailPage({
   // Fetch linked sessions
   const { data: linkedRows } = await supabase
     .from("app_challenge_session")
-    .select("session_id, app_session(id, title, start_time, duration_minutes, status)")
+    .select("session_id, app_session(id, title, description, image_url, start_time, duration_minutes, status)")
     .eq("challenge_id", id);
 
   const linkedSessions = (linkedRows ?? [])
