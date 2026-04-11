@@ -9,6 +9,7 @@ import {
   updateChallengeSession,
   removeChallengeSession,
 } from "@/app/actions/challenge";
+import { ImageSelector } from "@/app/components/ImageSelector";
 
 const INPUT_CLASS =
   "w-full px-4 py-3 rounded-xl focus:outline-none transition-colors text-sm";
@@ -33,6 +34,7 @@ interface Challenge {
   id: string;
   title: string;
   description: string | null;
+  image_url: string | null;
   start_date: string;
   end_date: string;
   capacity: number | null;
@@ -54,6 +56,7 @@ export function ChallengeEditForm({
   linkedSessions: SessionSummary[];
 }) {
   const router = useRouter();
+  const [imageUrl, setImageUrl] = useState<string | null>(challenge.image_url);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [sessionError, setSessionError] = useState<string | null>(null);
@@ -224,6 +227,16 @@ export function ChallengeEditForm({
       {/* ── Challenge Details Form ─────────────────────────────── */}
       <form action={action} className="space-y-6" data-challenge-form>
         <input type="hidden" name="challenge_id" value={challenge.id} />
+        <input type="hidden" name="image_url" value={imageUrl ?? ""} />
+
+        {/* Cover Image */}
+        <div>
+          <label className={LABEL} style={LABEL_STYLE}>
+            Cover Image
+            <span className="font-normal normal-case tracking-normal ml-2" style={{ color: "#94a3b8" }}>recommended</span>
+          </label>
+          <ImageSelector currentUrl={imageUrl} title={challenge.title || "Challenge"} onSelect={setImageUrl} size="md" />
+        </div>
 
         {(state?.error || deleteError) && (
           <div

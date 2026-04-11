@@ -3,6 +3,7 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { ParticipantNav } from "@/app/components/ParticipantNav";
 import { PostFeed } from "@/app/components/community/PostFeed";
+import { TribeCoverEditor } from "./TribeCoverEditor";
 
 export const metadata = { title: "Tribe — INFITRA" };
 
@@ -12,7 +13,7 @@ export default async function ChallengeTribePage({ params }: { params: Promise<{
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: space } = await supabase.from("app_challenge_space").select("id, title, description, owner_id, source_challenge_id").eq("id", spaceId).single();
+  const { data: space } = await supabase.from("app_challenge_space").select("id, title, description, owner_id, source_challenge_id, cover_image_url").eq("id", spaceId).single();
   if (!space) notFound();
 
   let challenge: any = null;
@@ -108,12 +109,17 @@ export default async function ChallengeTribePage({ params }: { params: Promise<{
 
           {/* 1. TRIBE SPACE IDENTITY */}
           <div className="relative overflow-hidden">
-            {/* Cover image — clean, not blurred, faded to dark at bottom */}
-            {owner?.cover_image_url && (
+            {/* Tribe cover image */}
+            {space.cover_image_url && (
               <div className="absolute inset-0">
-                <img src={owner.cover_image_url} alt="" className="w-full h-full object-cover" style={{ opacity: 0.35 }} />
+                <img src={space.cover_image_url} alt="" className="w-full h-full object-cover" style={{ opacity: 0.35 }} />
                 <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 0%, rgba(8,18,24,1) 85%)" }} />
               </div>
+            )}
+
+            {/* Owner-only: edit cover */}
+            {isOwner && (
+              <TribeCoverEditor spaceId={spaceId} currentCoverUrl={space.cover_image_url ?? null} tribeName={space.title} />
             )}
 
             <div className="relative px-6 md:px-10 lg:px-16 pt-10 pb-10">

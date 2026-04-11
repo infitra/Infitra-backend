@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { revalidatePath } from "next/cache";
 
 /** Creates a blank draft challenge with sensible defaults and redirects to the edit page. */
 export async function createDraftChallenge() {
@@ -50,6 +51,7 @@ export async function updateChallenge(prevState: unknown, formData: FormData) {
   const title = (formData.get("title") as string)?.trim();
   const description =
     (formData.get("description") as string)?.trim() || null;
+  const image_url = (formData.get("image_url") as string)?.trim() || null;
   const startDate = formData.get("start_date") as string;
   const endDate = formData.get("end_date") as string;
   const capacityRaw = formData.get("capacity") as string;
@@ -81,6 +83,7 @@ export async function updateChallenge(prevState: unknown, formData: FormData) {
     .update({
       title,
       description,
+      image_url,
       start_date: startDate,
       end_date: endDate,
       capacity,
@@ -260,6 +263,23 @@ export async function deleteChallenge(challengeId: string) {
   }
 
   redirect("/dashboard/challenges");
+}
+
+/** Updates a tribe space cover image (owner only). */
+export async function updateTribeCover(spaceId: string, coverImageUrl: string | null) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated." };
+
+  const { error } = await supabase
+    .from("app_challenge_space")
+    .update({ cover_image_url: coverImageUrl })
+    .eq("id", spaceId)
+    .eq("owner_id", user.id);
+
+  if (error) return { error: error.message };
+  revalidatePath(`/communities/challenge/${spaceId}`);
+  return { success: true };
 }
 
 /* ── Helpers ─────────────────────────────────────────────── */
