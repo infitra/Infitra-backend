@@ -126,7 +126,7 @@ export default async function ChallengeTribePage({
         <div className="flex-1 pt-20 px-6">
           <div className="max-w-4xl mx-auto py-8">
 
-            <Link href={backPath} className="text-xs mb-6 flex items-center gap-1.5 font-headline text-[#9CF0FF]/40 hover:text-white">
+            <Link href={backPath} className="text-xs mb-6 flex items-center gap-1.5 font-headline text-[#9CF0FF]/60 hover:text-white">
               <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                 <path d="M19 12H5M12 19l-7-7 7-7" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
@@ -141,10 +141,10 @@ export default async function ChallengeTribePage({
                 {space.title}
               </h1>
               {space.description && (
-                <p className="text-base text-[#9CF0FF]/50 max-w-xl mb-4">{space.description}</p>
+                <p className="text-base text-[#9CF0FF]/70 max-w-xl mb-4">{space.description}</p>
               )}
               {challenge && (
-                <div className="flex items-center gap-3 text-xs text-[#9CF0FF]/30">
+                <div className="flex items-center gap-3 text-xs text-[#9CF0FF]/50">
                   {challenge.start_date && challenge.end_date && (
                     <span>{formatDate(challenge.start_date)} — {formatDate(challenge.end_date)}</span>
                   )}
@@ -165,36 +165,42 @@ export default async function ChallengeTribePage({
                     className="rounded-2xl overflow-hidden"
                     style={{
                       background: tribeState === "live"
-                        ? "linear-gradient(135deg, rgba(239,68,68,0.18) 0%, rgba(239,68,68,0.04) 100%)"
-                        : "linear-gradient(135deg, rgba(255,97,48,0.15) 0%, rgba(255,97,48,0.03) 100%)",
-                      border: `1px solid ${tribeState === "live" ? "rgba(239,68,68,0.30)" : "rgba(255,97,48,0.25)"}`,
+                        ? "linear-gradient(135deg, #7f1d1d 0%, #450a0a 100%)"
+                        : "linear-gradient(135deg, #7c2d12 0%, #431407 100%)",
+                      border: `2px solid ${tribeState === "live" ? "#ef4444" : "#FF6130"}`,
+                      boxShadow: tribeState === "live"
+                        ? "0 0 40px rgba(239,68,68,0.25), inset 0 1px 0 rgba(255,255,255,0.05)"
+                        : "0 0 40px rgba(255,97,48,0.20), inset 0 1px 0 rgba(255,255,255,0.05)",
                     }}
                   >
-                    <div className="p-6 md:p-8">
+                    <div className="p-8 md:p-10">
                       <div className="flex items-end gap-3 mb-5">
                         <span
-                          className="text-6xl md:text-7xl font-black font-headline leading-none"
-                          style={{ color: tribeState === "live" ? "#ef4444" : "#FF6130" }}
+                          className="text-7xl md:text-8xl font-black font-headline leading-none"
+                          style={{
+                            color: tribeState === "live" ? "#ef4444" : "#FF6130",
+                            textShadow: tribeState === "live" ? "0 0 30px rgba(239,68,68,0.5)" : "0 0 30px rgba(255,97,48,0.4)",
+                          }}
                         >
                           {tribeState === "live" ? "LIVE" : countdown?.value}
                         </span>
                         {countdown?.unit && (
-                          <span className="text-xl font-bold font-headline mb-2" style={{ color: tribeState === "live" ? "rgba(239,68,68,0.5)" : "rgba(255,97,48,0.5)" }}>
+                          <span className="text-2xl font-bold font-headline mb-3" style={{ color: tribeState === "live" ? "#fca5a5" : "#fdba74" }}>
                             {countdown.unit}
                           </span>
                         )}
                       </div>
-                      <h2 className="text-2xl font-black font-headline text-white tracking-tight mb-2">
+                      <h2 className="text-2xl md:text-3xl font-black font-headline text-white tracking-tight mb-2">
                         {hotSession.title}
                       </h2>
-                      <p className="text-sm text-[#9CF0FF]/40 mb-6">
+                      <p className="text-sm text-white/60 mb-6">
                         {formatSessionTime(hotSession.start_time)} · {hotSession.duration_minutes} min
                       </p>
                       {tribeState === "live" ? (
                         <Link
                           href={`/sessions/${hotSession.id}/live`}
                           className="inline-flex items-center gap-2.5 px-8 py-4 rounded-full text-white text-base font-black font-headline"
-                          style={{ backgroundColor: "#ef4444", boxShadow: "0 4px 24px rgba(239,68,68,0.5)" }}
+                          style={{ backgroundColor: "#ef4444", boxShadow: "0 0 30px rgba(239,68,68,0.6), 0 4px 14px rgba(239,68,68,0.4)" }}
                         >
                           <span className="w-3 h-3 rounded-full bg-white animate-pulse" />
                           Join Now
@@ -206,11 +212,11 @@ export default async function ChallengeTribePage({
 
                 {/* New/empty tribe — full potential */}
                 {tribeState === "new" && (
-                  <div className="rounded-2xl p-10 text-center" style={{ background: "linear-gradient(135deg, rgba(255,97,48,0.08) 0%, rgba(156,240,255,0.04) 100%)", border: "1px solid rgba(255,97,48,0.15)" }}>
+                  <div className="rounded-2xl p-10 text-center" style={{ background: "linear-gradient(135deg, #2a1508 0%, #0c2933 100%)", border: "2px solid #9a3412" }}>
                     <p className="text-3xl font-black font-headline text-white mb-3">
                       {isOwner ? "Your stage is set" : "Something is about to begin"}
                     </p>
-                    <p className="text-sm text-[#9CF0FF]/50 max-w-md mx-auto">
+                    <p className="text-sm text-[#9CF0FF]/70 max-w-md mx-auto">
                       {isOwner
                         ? "Add sessions to your challenge. When they go live, this space ignites."
                         : "Sessions will drop here soon. Stay — this is where it happens."
@@ -220,11 +226,11 @@ export default async function ChallengeTribePage({
                 )}
 
                 {tribeState === "between" && !hotSession && (
-                  <div className="rounded-2xl p-6" style={{ background: "linear-gradient(135deg, rgba(156,240,255,0.08) 0%, rgba(156,240,255,0.02) 100%)", border: "1px solid rgba(156,240,255,0.12)" }}>
+                  <div className="rounded-2xl p-6" style={{ background: "linear-gradient(135deg, #0c2933 0%, #152830 100%)", border: "1px solid #0e7490" }}>
                     <p className="text-lg font-bold font-headline text-[#9CF0FF]/70 mb-1">
                       {completedSessions} session{completedSessions !== 1 ? "s" : ""} done. Keep moving.
                     </p>
-                    <p className="text-sm text-[#9CF0FF]/30">
+                    <p className="text-sm text-[#9CF0FF]/50">
                       Share your progress below. Your tribe is watching.
                     </p>
                   </div>
@@ -233,12 +239,12 @@ export default async function ChallengeTribePage({
                 {/* Upcoming sessions */}
                 {upcomingSessions.length > (hotSession ? 1 : 0) && (
                   <div>
-                    <p className="text-[10px] font-bold font-headline uppercase tracking-wider text-[#9CF0FF]/30 mb-2">Coming up</p>
+                    <p className="text-[10px] font-bold font-headline uppercase tracking-wider text-[#9CF0FF]/50 mb-2">Coming up</p>
                     <div className="space-y-1.5">
                       {upcomingSessions.slice(hotSession ? 1 : 0, 5).map((sess: any) => {
                         const cd = formatCountdown(sess.start_time);
                         return (
-                          <div key={sess.id} className="flex items-center justify-between py-3 px-4 rounded-xl" style={{ backgroundColor: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.04)" }}>
+                          <div key={sess.id} className="flex items-center justify-between py-3 px-4 rounded-xl" style={{ backgroundColor: "#152830", border: "1px solid #1a3340" }}>
                             <div className="flex items-center gap-3 min-w-0">
                               <span className="w-2 h-2 rounded-full bg-[#FF6130]/40 shrink-0" />
                               <span className="text-sm text-white font-bold font-headline truncate">{sess.title}</span>
@@ -263,7 +269,7 @@ export default async function ChallengeTribePage({
                         <div key={sess.id} className="flex items-center gap-3 py-2 px-3 opacity-30">
                           <span className="w-2 h-2 rounded-full bg-[#9CF0FF] shrink-0" />
                           <span className="text-sm text-white font-headline truncate">{sess.title}</span>
-                          <span className="text-[10px] text-[#9CF0FF]/40 shrink-0 ml-auto">✓</span>
+                          <span className="text-[10px] text-[#9CF0FF]/60 shrink-0 ml-auto">✓</span>
                         </div>
                       ))}
                     </div>
@@ -285,7 +291,7 @@ export default async function ChallengeTribePage({
 
                 {/* Active Challenge Progress */}
                 {totalSessions > 0 && (
-                  <div className="rounded-2xl p-5" style={{ backgroundColor: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                  <div className="rounded-2xl p-5" style={{ backgroundColor: "#162B35", border: "1px solid #1e3a47" }}>
                     <p className="text-[10px] font-bold font-headline uppercase tracking-wider text-[#FF6130] mb-4">Active Challenge Progress</p>
 
                     {/* Progress ring (simplified as arc) */}
@@ -295,16 +301,17 @@ export default async function ChallengeTribePage({
                           <path
                             d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                             fill="none"
-                            stroke="rgba(156,240,255,0.08)"
-                            strokeWidth="3"
+                            stroke="#1a3340"
+                            strokeWidth="3.5"
                           />
                           <path
                             d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                             fill="none"
                             stroke="#FF6130"
-                            strokeWidth="3"
+                            strokeWidth="3.5"
                             strokeDasharray={`${progressPct}, 100`}
                             strokeLinecap="round"
+                            style={{ filter: "drop-shadow(0 0 6px rgba(255,97,48,0.5))" }}
                           />
                         </svg>
                         <div className="absolute inset-0 flex items-center justify-center">
@@ -312,20 +319,20 @@ export default async function ChallengeTribePage({
                         </div>
                       </div>
                       <div>
-                        <p className="text-2xl font-black font-headline text-white leading-none">{completedSessions}<span className="text-[#9CF0FF]/30 text-sm font-normal">/{totalSessions}</span></p>
-                        <p className="text-xs text-[#9CF0FF]/40 mt-1">sessions</p>
+                        <p className="text-2xl font-black font-headline text-white leading-none">{completedSessions}<span className="text-[#9CF0FF]/50 text-sm font-normal">/{totalSessions}</span></p>
+                        <p className="text-xs text-[#9CF0FF]/60 mt-1">sessions</p>
                       </div>
                     </div>
 
                     {/* Stats */}
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="p-3 rounded-xl" style={{ backgroundColor: "rgba(156,240,255,0.04)" }}>
-                        <p className="text-lg font-black font-headline text-[#9CF0FF] leading-none">{completedMinutes}</p>
-                        <p className="text-[10px] text-[#9CF0FF]/30 mt-1">min completed</p>
+                      <div className="p-3 rounded-xl" style={{ backgroundColor: "#0c2933", border: "1px solid #0e7490" }}>
+                        <p className="text-xl font-black font-headline text-[#9CF0FF] leading-none">{completedMinutes}</p>
+                        <p className="text-[10px] text-[#9CF0FF]/60 mt-1 font-headline font-bold">MIN DONE</p>
                       </div>
-                      <div className="p-3 rounded-xl" style={{ backgroundColor: "rgba(255,97,48,0.04)" }}>
-                        <p className="text-lg font-black font-headline text-[#FF6130] leading-none">{totalMinutes - completedMinutes}</p>
-                        <p className="text-[10px] text-[#FF6130]/30 mt-1">min remaining</p>
+                      <div className="p-3 rounded-xl" style={{ backgroundColor: "#2a1508", border: "1px solid #9a3412" }}>
+                        <p className="text-xl font-black font-headline text-[#FF6130] leading-none">{totalMinutes - completedMinutes}</p>
+                        <p className="text-[10px] text-[#FF6130]/60 mt-1 font-headline font-bold">MIN LEFT</p>
                       </div>
                     </div>
 
@@ -355,8 +362,8 @@ export default async function ChallengeTribePage({
                 )}
 
                 {/* Host */}
-                <div className="rounded-2xl p-5" style={{ backgroundColor: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
-                  <p className="text-[10px] font-bold font-headline uppercase tracking-wider text-[#9CF0FF]/30 mb-4">Host</p>
+                <div className="rounded-2xl p-5" style={{ backgroundColor: "#162B35", border: "1px solid #1e3a47" }}>
+                  <p className="text-[10px] font-bold font-headline uppercase tracking-wider text-[#9CF0FF]/50 mb-4">Host</p>
                   <div className="flex items-center gap-3 mb-3">
                     {owner?.avatar_url ? (
                       <img src={owner.avatar_url} alt={owner.display_name ?? ""} className="w-12 h-12 rounded-full object-cover" style={{ border: "2px solid rgba(255,97,48,0.30)" }} />
@@ -367,10 +374,10 @@ export default async function ChallengeTribePage({
                     )}
                     <div className="min-w-0">
                       <p className="text-sm font-black font-headline text-white truncate">{owner?.display_name}</p>
-                      {owner?.tagline && <p className="text-[10px] text-[#9CF0FF]/40 truncate">{owner.tagline}</p>}
+                      {owner?.tagline && <p className="text-[10px] text-[#9CF0FF]/60 truncate">{owner.tagline}</p>}
                     </div>
                   </div>
-                  {owner?.bio && <p className="text-xs text-[#9CF0FF]/30 line-clamp-3 leading-relaxed">{owner.bio}</p>}
+                  {owner?.bio && <p className="text-xs text-[#9CF0FF]/50 line-clamp-3 leading-relaxed">{owner.bio}</p>}
                   {owner?.username && (
                     <Link href={`/creators/${owner.username}`} className="block mt-3 text-[10px] font-bold font-headline text-[#FF6130]">
                       View Profile →
@@ -379,14 +386,14 @@ export default async function ChallengeTribePage({
                 </div>
 
                 {/* Members */}
-                <div className="rounded-2xl p-5" style={{ backgroundColor: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
-                  <p className="text-[10px] font-bold font-headline uppercase tracking-wider text-[#9CF0FF]/30 mb-4">
+                <div className="rounded-2xl p-5" style={{ backgroundColor: "#162B35", border: "1px solid #1e3a47" }}>
+                  <p className="text-[10px] font-bold font-headline uppercase tracking-wider text-[#9CF0FF]/50 mb-4">
                     {memberCount === 0 ? "Members" : `${memberCount} Member${memberCount !== 1 ? "s" : ""}`}
                   </p>
                   {memberCount > 0 ? (
                     <div className="flex flex-wrap gap-2">
                       {memberProfiles.map((m, i) => (
-                        <div key={m.id} className="flex items-center gap-2 py-1.5 px-3 rounded-full" style={{ backgroundColor: "rgba(255,255,255,0.04)" }}>
+                        <div key={m.id} className="flex items-center gap-2 py-1.5 px-3 rounded-full" style={{ backgroundColor: "#152830" }}>
                           {m.avatar ? (
                             <img src={m.avatar} alt={m.name} className="w-5 h-5 rounded-full object-cover" />
                           ) : (
@@ -406,9 +413,9 @@ export default async function ChallengeTribePage({
                 </div>
 
                 {/* Collaborators placeholder — for later */}
-                <div className="rounded-2xl p-5" style={{ backgroundColor: "rgba(255,255,255,0.02)", border: "1px dashed rgba(255,255,255,0.06)" }}>
-                  <p className="text-[10px] font-bold font-headline uppercase tracking-wider text-[#9CF0FF]/15 mb-2">Collaborators</p>
-                  <p className="text-xs text-[#9CF0FF]/15">
+                <div className="rounded-2xl p-5" style={{ backgroundColor: "#12222b", border: "1px dashed #1a3340" }}>
+                  <p className="text-[10px] font-bold font-headline uppercase tracking-wider text-[#FF6130]/60 mb-2">Collaborators</p>
+                  <p className="text-xs text-[#9CF0FF]/40">
                     Invite creators to co-host sessions and split revenue — coming soon
                   </p>
                 </div>
