@@ -64,7 +64,7 @@ export default async function ChallengeTribePage({ params }: { params: Promise<{
   function formatDate(dateStr: string) { return new Date(dateStr + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" }); }
 
   const countdown = hotSession ? formatCountdown(hotSession.start_time) : null;
-  const avatarColors = ["#FF6130", "#0891b2", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#6366f1", "#f43f5e"];
+  const avatarColors = ["#FF6130", "#9CF0FF", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#6366f1", "#f43f5e"];
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -97,16 +97,16 @@ export default async function ChallengeTribePage({ params }: { params: Promise<{
                   {/* Meta row */}
                   <div className="flex flex-wrap items-center gap-4 mb-6">
                     {challenge?.start_date && challenge?.end_date && (
-                      <div className="px-3 py-1.5 rounded-lg" style={{ backgroundColor: "#0f2d3a" }}>
+                      <div className="px-3 py-1.5 rounded-lg" style={{ backgroundColor: "#0d2a36" }}>
                         <span className="text-xs font-bold font-headline text-[#9CF0FF]">{formatDate(challenge.start_date)} — {formatDate(challenge.end_date)}</span>
                       </div>
                     )}
                     {challenge?.price_cents > 0 && (
-                      <div className="px-3 py-1.5 rounded-lg" style={{ backgroundColor: "#2a1508" }}>
+                      <div className="px-3 py-1.5 rounded-lg" style={{ backgroundColor: "#1f1005" }}>
                         <span className="text-xs font-bold font-headline text-[#FF6130]">CHF {(challenge.price_cents / 100).toFixed(2)}</span>
                       </div>
                     )}
-                    <div className="px-3 py-1.5 rounded-lg" style={{ backgroundColor: "#0f2d3a" }}>
+                    <div className="px-3 py-1.5 rounded-lg" style={{ backgroundColor: "#0d2a36" }}>
                       <span className="text-xs font-bold font-headline text-[#9CF0FF]">{totalSessions} session{totalSessions !== 1 ? "s" : ""} · {totalMinutes} min total</span>
                     </div>
                   </div>
@@ -149,9 +149,9 @@ export default async function ChallengeTribePage({ params }: { params: Promise<{
                         style={{ backgroundColor: "#0d1f28", border: "1px solid #1a3340", minWidth: "200px" }}
                       >
                         {owner?.avatar_url ? (
-                          <img src={owner.avatar_url} alt="" className="w-12 h-12 rounded-full object-cover" style={{ border: "3px solid #FF6130", boxShadow: "0 0 12px rgba(255,97,48,0.3)" }} />
+                          <img src={owner.avatar_url} alt="" className="w-12 h-12 rounded-full object-cover" style={{ border: "3px solid #FF6130", boxShadow: "0 0 12px rgba(255, 97, 48, 0.3)" }} />
                         ) : (
-                          <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: "#7c2d12", border: "3px solid #FF6130" }}>
+                          <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: "#662008", border: "3px solid #FF6130" }}>
                             <span className="text-lg font-black font-headline text-white">{(owner?.display_name ?? "?")[0].toUpperCase()}</span>
                           </div>
                         )}
@@ -171,7 +171,7 @@ export default async function ChallengeTribePage({ params }: { params: Promise<{
                         <div className="relative w-16 h-16 shrink-0">
                           <svg viewBox="0 0 36 36" className="w-16 h-16 -rotate-90">
                             <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#1a3340" strokeWidth="4" />
-                            <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#FF6130" strokeWidth="4" strokeDasharray={`${progressPct}, 100`} strokeLinecap="round" style={{ filter: "drop-shadow(0 0 8px rgba(255,97,48,0.7))" }} />
+                            <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#FF6130" strokeWidth="4" strokeDasharray={`${progressPct}, 100`} strokeLinecap="round" style={{ filter: "drop-shadow(0 0 8px rgba(255, 97, 48, 0.7))" }} />
                           </svg>
                           <div className="absolute inset-0 flex items-center justify-center">
                             <span className="text-sm font-black font-headline text-white">{progressPct}%</span>
@@ -199,23 +199,23 @@ export default async function ChallengeTribePage({ params }: { params: Promise<{
               style={{
                 background: tribeState === "live"
                   ? "linear-gradient(135deg, #991b1b 0%, #450a0a 50%, #0a1218 100%)"
-                  : "linear-gradient(135deg, #9a3412 0%, #431407 50%, #0a1218 100%)",
+                  : "linear-gradient(135deg, #FF6130 0%, #3d1206 50%, #0a1218 100%)",
                 borderBottom: `2px solid ${tribeState === "live" ? "#ef4444" : "#FF6130"}`,
               }}
             >
               <div className="max-w-7xl mx-auto flex items-center justify-between">
                 <div>
                   <div className="flex items-end gap-3 mb-3">
-                    <span className="text-7xl md:text-8xl font-black font-headline leading-none" style={{ color: tribeState === "live" ? "#ef4444" : "#FF6130", textShadow: `0 0 40px ${tribeState === "live" ? "rgba(239,68,68,0.6)" : "rgba(255,97,48,0.5)"}` }}>
+                    <span className="text-7xl md:text-8xl font-black font-headline leading-none" style={{ color: tribeState === "live" ? "#ef4444" : "#FF6130", textShadow: `0 0 40px ${tribeState === "live" ? "rgba(239, 68, 68, 0.6)" : "rgba(255, 97, 48, 0.5)"}` }}>
                       {tribeState === "live" ? "LIVE" : countdown?.value}
                     </span>
-                    {countdown?.unit && <span className="text-2xl font-bold font-headline mb-3" style={{ color: tribeState === "live" ? "#fca5a5" : "#fdba74" }}>{countdown.unit}</span>}
+                    {countdown?.unit && <span className="text-2xl font-bold font-headline mb-3" style={{ color: tribeState === "live" ? "#fca5a5" : "#FF9166" }}>{countdown.unit}</span>}
                   </div>
                   <h2 className="text-2xl md:text-3xl font-black font-headline text-white tracking-tight mb-1">{hotSession.title}</h2>
                   <p className="text-sm text-white/50">{new Date(hotSession.start_time).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })} · {hotSession.duration_minutes} min</p>
                 </div>
                 {tribeState === "live" && (
-                  <Link href={`/sessions/${hotSession.id}/live`} className="px-10 py-4 rounded-full text-white text-lg font-black font-headline inline-flex items-center gap-3" style={{ backgroundColor: "#ef4444", boxShadow: "0 0 30px rgba(239,68,68,0.6)" }}>
+                  <Link href={`/sessions/${hotSession.id}/live`} className="px-10 py-4 rounded-full text-white text-lg font-black font-headline inline-flex items-center gap-3" style={{ backgroundColor: "#ef4444", boxShadow: "0 0 30px rgba(239, 68, 68, 0.6)" }}>
                     <span className="w-3 h-3 rounded-full bg-white animate-pulse" />
                     JOIN NOW
                   </Link>
@@ -226,7 +226,7 @@ export default async function ChallengeTribePage({ params }: { params: Promise<{
 
           {/* States when no hot session */}
           {tribeState === "new" && (
-            <div className="px-6 md:px-10 lg:px-16 py-12 text-center" style={{ background: "linear-gradient(135deg, #2a1508 0%, #0a1218 100%)", borderBottom: "2px solid #9a3412" }}>
+            <div className="px-6 md:px-10 lg:px-16 py-12 text-center" style={{ background: "linear-gradient(135deg, #1f1005 0%, #0a1218 100%)", borderBottom: "2px solid #FF6130" }}>
               <div className="max-w-xl mx-auto">
                 <p className="text-3xl font-black font-headline text-white mb-3">{isOwner ? "Your stage is set" : "Something is about to begin"}</p>
                 <p className="text-base text-[#9CF0FF]/60">{isOwner ? "Add sessions to your challenge. When they go live, this space ignites." : "Sessions will drop here soon. This is where it happens."}</p>
@@ -235,7 +235,7 @@ export default async function ChallengeTribePage({ params }: { params: Promise<{
           )}
 
           {tribeState === "between" && !hotSession && (
-            <div className="px-6 md:px-10 lg:px-16 py-8" style={{ background: "linear-gradient(135deg, #0c2933 0%, #0a1218 100%)", borderBottom: "1px solid #0e7490" }}>
+            <div className="px-6 md:px-10 lg:px-16 py-8" style={{ background: "linear-gradient(135deg, #0d2a36 0%, #0a1218 100%)", borderBottom: "1px solid #9CF0FF" }}>
               <div className="max-w-7xl mx-auto">
                 <p className="text-xl font-bold font-headline text-[#9CF0FF] mb-1">{completedSessions} session{completedSessions !== 1 ? "s" : ""} done. Keep moving.</p>
                 <p className="text-sm text-[#9CF0FF]/50">Share your progress. Your tribe is watching.</p>
@@ -258,12 +258,12 @@ export default async function ChallengeTribePage({ params }: { params: Promise<{
                     const cd = formatCountdown(sess.start_time);
                     const sessDate = new Date(sess.start_time);
                     return (
-                      <div key={sess.id} className="shrink-0 w-64 rounded-xl overflow-hidden" style={{ boxShadow: isHot ? `0 0 30px ${isLive ? "rgba(239,68,68,0.4)" : "rgba(255,97,48,0.35)"}` : "0 4px 16px rgba(0,0,0,0.4)" }}>
-                        <div className="h-2" style={{ backgroundColor: isLive ? "#ef4444" : isEnded ? "#0891b2" : isHot ? "#FF6130" : "#1a3340" }} />
-                        <div className="p-5" style={{ backgroundColor: isLive ? "#7f1d1d" : isEnded ? "#0c4a6e" : isHot ? "#7c2d12" : "#0f2d3a" }}>
+                      <div key={sess.id} className="shrink-0 w-64 rounded-xl overflow-hidden" style={{ boxShadow: isHot ? `0 0 30px ${isLive ? "rgba(239, 68, 68, 0.4)" : "rgba(255, 97, 48, 0.35)"}` : "0 4px 16px rgba(0,0,0,0.4)" }}>
+                        <div className="h-2" style={{ backgroundColor: isLive ? "#ef4444" : isEnded ? "#9CF0FF" : isHot ? "#FF6130" : "#1a3340" }} />
+                        <div className="p-5" style={{ backgroundColor: isLive ? "#7f1d1d" : isEnded ? "#0d3040" : isHot ? "#662008" : "#0d2a36" }}>
                           <div className="flex items-center justify-between mb-3">
                             <span className="text-xs font-black font-headline text-white/30">#{idx + 1}</span>
-                            <span className={`text-xs font-bold font-headline uppercase tracking-wider ${isLive ? "animate-pulse" : ""}`} style={{ color: isLive ? "#fca5a5" : isEnded ? "#67e8f9" : isHot ? "#fdba74" : "#9CF0FF60" }}>
+                            <span className={`text-xs font-bold font-headline uppercase tracking-wider ${isLive ? "animate-pulse" : ""}`} style={{ color: isLive ? "#fca5a5" : isEnded ? "#9CF0FF" : isHot ? "#FF9166" : "#9CF0FF60" }}>
                               {isLive ? "● LIVE" : isEnded ? "✓ DONE" : isHot ? `IN ${cd.value}${cd.unit ? cd.unit[0].toUpperCase() : ""}` : sessDate.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
                             </span>
                           </div>
@@ -276,7 +276,7 @@ export default async function ChallengeTribePage({ params }: { params: Promise<{
                           </div>
                           <p className="text-xs text-white/30">{sessDate.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}</p>
                           {isLive && (
-                            <Link href={`/sessions/${sess.id}/live`} className="mt-4 block text-center py-2.5 rounded-full text-sm font-black font-headline text-white" style={{ backgroundColor: "#ef4444", boxShadow: "0 0 20px rgba(239,68,68,0.6)" }}>
+                            <Link href={`/sessions/${sess.id}/live`} className="mt-4 block text-center py-2.5 rounded-full text-sm font-black font-headline text-white" style={{ backgroundColor: "#ef4444", boxShadow: "0 0 20px rgba(239, 68, 68, 0.6)" }}>
                               JOIN NOW
                             </Link>
                           )}
