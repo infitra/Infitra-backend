@@ -75,17 +75,17 @@ export default async function ChallengePreviewPage({ params }: { params: Promise
             </p>
           )}
 
-          {/* Info grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          {/* Info cards */}
+          <div className="flex flex-wrap gap-3 mb-8">
             {[
               { label: "Starts", value: formatDate(challenge.start_date) },
               { label: "Ends", value: formatDate(challenge.end_date) },
-              { label: "Spots", value: challenge.capacity ? `${challenge.capacity}` : "Unlimited" },
+              ...(challenge.capacity ? [{ label: "Spots", value: `${challenge.capacity} available` }] : []),
               { label: "Price", value: priceCHF > 0 ? `CHF ${priceCHF.toFixed(2)}` : "Free" },
             ].map(({ label, value }) => (
-              <div key={label}>
-                <p className="text-[10px] font-bold uppercase tracking-widest font-headline mb-1" style={{ color: "rgba(15, 34, 41, 0.55)" }}>{label}</p>
-                <p className="text-sm font-semibold" style={{ color: "#0F2229" }}>{value}</p>
+              <div key={label} className="px-4 py-3 rounded-xl" style={{ backgroundColor: "rgba(15, 34, 41, 0.04)", border: "1px solid rgba(15, 34, 41, 0.08)" }}>
+                <p className="text-[10px] font-bold uppercase tracking-widest font-headline mb-1" style={{ color: "rgba(15, 34, 41, 0.45)" }}>{label}</p>
+                <p className="text-sm font-bold font-headline" style={{ color: "#0F2229" }}>{value}</p>
               </div>
             ))}
           </div>
@@ -126,18 +126,21 @@ export default async function ChallengePreviewPage({ params }: { params: Promise
             </div>
           )}
 
-          {/* Host */}
-          <div className="flex items-center gap-3 pt-6 border-t" style={{ borderColor: "rgba(15, 34, 41, 0.10)" }}>
-            {profile?.avatar_url ? (
-              <img src={profile.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover" style={{ border: "2px solid rgba(255,97,48,0.3)" }} />
-            ) : (
-              <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(255, 97, 48, 0.12)", border: "1px solid rgba(255, 97, 48, 0.30)" }}>
-                <span className="text-sm font-black font-headline" style={{ color: "#FF6130" }}>{(profile?.display_name ?? "?")[0].toUpperCase()}</span>
+          {/* Creator — branded, prominent */}
+          <div className="pt-6 border-t" style={{ borderColor: "rgba(15, 34, 41, 0.08)" }}>
+            <p className="text-[10px] font-bold uppercase tracking-widest font-headline mb-3" style={{ color: "#FF6130" }}>Your Host</p>
+            <div className="flex items-center gap-4">
+              {profile?.avatar_url ? (
+                <img src={profile.avatar_url} alt="" className="w-14 h-14 rounded-full object-cover" style={{ border: "3px solid #FF6130", boxShadow: "0 2px 10px rgba(255,97,48,0.2)" }} />
+              ) : (
+                <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(255, 97, 48, 0.12)", border: "3px solid #FF6130" }}>
+                  <span className="text-xl font-black font-headline" style={{ color: "#FF6130" }}>{(profile?.display_name ?? "?")[0].toUpperCase()}</span>
+                </div>
+              )}
+              <div>
+                <p className="text-base font-black font-headline" style={{ color: "#0F2229" }}>{profile?.display_name}</p>
+                <p className="text-xs" style={{ color: "#64748b" }}>Creator</p>
               </div>
-            )}
-            <div>
-              <p className="text-sm font-bold font-headline" style={{ color: "#0F2229" }}>{profile?.display_name}</p>
-              <p className="text-[10px]" style={{ color: "#94a3b8" }}>Creator</p>
             </div>
           </div>
         </div>
