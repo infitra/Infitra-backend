@@ -46,11 +46,11 @@ export default async function DashboardPage() {
     memberCount = count ?? 0;
   }
 
-  // Upcoming sessions
+  // Upcoming sessions for pulse
   const now = new Date();
   const { data: upcomingSessions } = await supabase
     .from("app_session")
-    .select("id, title, start_time, duration_minutes, status, live_room_id")
+    .select("id, title, start_time, live_room_id")
     .eq("host_id", user!.id)
     .eq("status", "published")
     .gte("start_time", now.toISOString())
@@ -95,175 +95,209 @@ export default async function DashboardPage() {
   const initials = (profile?.display_name ?? "?")[0].toUpperCase();
 
   return (
-    <div className="py-6 space-y-6">
+    <div className="py-6 space-y-8">
 
-      {/* ── THE PULSE (only when urgent) ──────────────────── */}
+      {/* ── PULSE (urgent only) ───────────────────────────── */}
       {showPulse && (
-        <div className="rounded-2xl infitra-card overflow-hidden">
-          <div className="p-6 flex items-center justify-between">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="w-2.5 h-2.5 rounded-full animate-pulse" style={{ backgroundColor: liveSession ? "#ef4444" : "#FF6130" }} />
-                <span className="text-xs font-bold font-headline uppercase tracking-wider" style={{ color: liveSession ? "#ef4444" : "#FF6130" }}>
-                  {liveSession ? "Live Now" : "Ready to go live"}
-                </span>
-              </div>
-              <h2 className="text-xl font-black font-headline text-[#0F2229] tracking-tight truncate">
-                {(liveSession ?? goLiveSession)!.title}
-              </h2>
+        <div
+          className="rounded-2xl overflow-hidden p-6 flex items-center justify-between"
+          style={{
+            backgroundColor: "#0F2229",
+            boxShadow: "0 4px 20px rgba(15,34,41,0.25)",
+          }}
+        >
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="w-2.5 h-2.5 rounded-full animate-pulse" style={{ backgroundColor: liveSession ? "#ef4444" : "#FF6130" }} />
+              <span className="text-xs font-bold font-headline uppercase tracking-wider" style={{ color: liveSession ? "#ef4444" : "#FF6130" }}>
+                {liveSession ? "Live Now" : "Ready to go live"}
+              </span>
             </div>
-            <Link
-              href={`/dashboard/sessions/${(liveSession ?? goLiveSession)!.id}${liveSession ? "/live" : ""}`}
-              className="px-6 py-3 rounded-full text-white text-sm font-black font-headline shrink-0"
-              style={{ backgroundColor: "#FF6130", boxShadow: "0 4px 14px rgba(255,97,48,0.35)" }}
-            >
-              {liveSession ? "Enter Session" : "Go Live"}
-            </Link>
+            <h2 className="text-xl font-black font-headline text-white tracking-tight truncate">
+              {(liveSession ?? goLiveSession)!.title}
+            </h2>
           </div>
+          <Link
+            href={`/dashboard/sessions/${(liveSession ?? goLiveSession)!.id}${liveSession ? "/live" : ""}`}
+            className="px-6 py-3 rounded-full text-white text-sm font-black font-headline shrink-0"
+            style={{ backgroundColor: "#FF6130", boxShadow: "0 4px 14px rgba(255,97,48,0.5)" }}
+          >
+            {liveSession ? "Enter Session" : "Go Live"}
+          </Link>
         </div>
       )}
 
       {/* ══════════════════════════════════════════════════════
-          CREATOR BRAND — Your identity. Bold. Unmistakable.
+          CREATOR BRAND — Bold. Unmistakable. Your studio.
           ══════════════════════════════════════════════════════ */}
       <div className="rounded-2xl infitra-card overflow-hidden">
-        {/* Cover image or brand gradient */}
+        {/* Cover / Brand banner */}
         {profile?.cover_image_url ? (
-          <div className="h-32 md:h-40 relative">
+          <div className="h-40 md:h-52 relative">
             <img src={profile.cover_image_url} alt="" className="w-full h-full object-cover" />
+            <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.3) 0%, transparent 60%)" }} />
           </div>
         ) : (
-          <div className="h-16 md:h-20" style={{ background: "linear-gradient(135deg, rgba(8,145,178,0.15) 0%, rgba(255,97,48,0.15) 100%)" }} />
+          <div
+            className="h-28 md:h-36"
+            style={{ background: "linear-gradient(135deg, #0F2229 0%, rgba(8,145,178,0.4) 50%, rgba(255,97,48,0.3) 100%)" }}
+          />
         )}
 
-        <div className="px-6 pb-6 relative">
-          {/* Avatar — overlaps cover */}
-          <div className={profile?.cover_image_url ? "-mt-10" : "-mt-8"}>
+        <div className="px-8 pb-8 relative">
+          {/* Avatar */}
+          <div className="-mt-12 mb-4">
             {profile?.avatar_url ? (
               <img
                 src={profile.avatar_url}
                 alt={profile.display_name ?? ""}
-                className="w-16 h-16 md:w-20 md:h-20 rounded-full object-cover bg-white"
-                style={{ border: "4px solid #FEFEFF", boxShadow: "0 2px 8px rgba(0,0,0,0.10)" }}
+                className="w-24 h-24 rounded-full object-cover"
+                style={{ border: "4px solid #FEFEFF", boxShadow: "0 4px 16px rgba(0,0,0,0.15)" }}
               />
             ) : (
               <div
-                className="w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center"
-                style={{ backgroundColor: "rgba(255,97,48,0.10)", border: "4px solid #FEFEFF", boxShadow: "0 2px 8px rgba(0,0,0,0.10)" }}
+                className="w-24 h-24 rounded-full flex items-center justify-center"
+                style={{ backgroundColor: "rgba(255,97,48,0.10)", border: "4px solid #FEFEFF", boxShadow: "0 4px 16px rgba(0,0,0,0.15)" }}
               >
-                <span className="text-xl md:text-2xl font-black font-headline text-[#FF6130]">{initials}</span>
+                <span className="text-3xl font-black font-headline text-[#FF6130]">{initials}</span>
               </div>
             )}
           </div>
 
-          {/* Identity */}
-          <div className="mt-3 flex flex-col md:flex-row md:items-end md:justify-between gap-3">
-            <div className="min-w-0">
-              <h1 className="text-2xl md:text-3xl font-black font-headline text-[#0F2229] tracking-tight">
-                {profile?.display_name}
-              </h1>
-              {profile?.tagline && (
-                <p className="text-sm md:text-base text-[#64748b] mt-1">{profile.tagline}</p>
-              )}
-              {profile?.bio && (
-                <p className="text-sm text-[#94a3b8] mt-2 max-w-lg line-clamp-2">{profile.bio}</p>
+          {/* Name — BIG */}
+          <h1 className="text-3xl md:text-4xl font-black font-headline text-[#0F2229] tracking-tight leading-none">
+            {profile?.display_name}
+          </h1>
+          {profile?.tagline && (
+            <p className="text-base md:text-lg text-[#64748b] mt-2 font-headline font-semibold">
+              {profile.tagline}
+            </p>
+          )}
+          {profile?.bio && (
+            <p className="text-sm text-[#94a3b8] mt-3 max-w-xl leading-relaxed">
+              {profile.bio}
+            </p>
+          )}
+
+          {/* Stats + Edit */}
+          <div className="flex items-center justify-between mt-5 pt-5" style={{ borderTop: "1px solid rgba(0,0,0,0.05)" }}>
+            <div className="flex items-center gap-6">
+              <div>
+                <span className="text-xl font-black font-headline text-[#0891b2]">{memberCount}</span>
+                <span className="text-xs text-[#94a3b8] ml-1.5">community</span>
+              </div>
+              {hasTribes && (
+                <div>
+                  <span className="text-xl font-black font-headline text-[#FF6130]">{tribeCount}</span>
+                  <span className="text-xs text-[#94a3b8] ml-1.5">tribe{tribeCount !== 1 ? "s" : ""}</span>
+                </div>
               )}
             </div>
             <Link
               href="/dashboard/profile"
-              className="text-xs font-bold font-headline text-[#94a3b8] hover:text-[#0F2229] shrink-0"
-              style={{ border: "1px solid rgba(0,0,0,0.08)", borderRadius: "9999px", padding: "8px 16px" }}
+              className="text-xs font-bold font-headline text-[#94a3b8] hover:text-[#0F2229] px-4 py-2 rounded-full"
+              style={{ border: "1px solid rgba(0,0,0,0.08)" }}
             >
               Edit Profile
             </Link>
           </div>
+        </div>
+      </div>
 
-          {/* Quick stats */}
-          <div className="flex items-center gap-5 mt-4 pt-4" style={{ borderTop: "1px solid rgba(0,0,0,0.05)" }}>
-            <span className="text-xs text-[#64748b]">
-              <span className="font-bold text-[#0F2229]">{memberCount}</span> community member{memberCount !== 1 ? "s" : ""}
-            </span>
-            {hasTribes && (
-              <span className="text-xs text-[#64748b]">
-                <span className="font-bold text-[#FF6130]">{tribeCount}</span> tribe{tribeCount !== 1 ? "s" : ""}
-                <span className="ml-1">· {totalTribeMembers} member{totalTribeMembers !== 1 ? "s" : ""}</span>
-              </span>
+      {/* ══════════════════════════════════════════════════════
+          TRIBES GATEWAY — Dark zone. Where the action is.
+          ══════════════════════════════════════════════════════ */}
+      <div
+        className="rounded-2xl overflow-hidden"
+        style={{
+          backgroundColor: "#0F2229",
+          boxShadow: "0 4px 20px rgba(15,34,41,0.20)",
+        }}
+      >
+        <div className="p-8">
+          <div className="flex items-start justify-between gap-6">
+            <div>
+              <p className="text-xs font-bold font-headline uppercase tracking-wider text-[#FF6130] mb-2">
+                The Engagement Layer
+              </p>
+              <h2 className="text-2xl font-black font-headline text-white tracking-tight mb-2">
+                Your Tribes
+              </h2>
+              <p className="text-sm text-[#9CF0FF]/50 max-w-md">
+                Where communities engage freely, collaborations happen, and participants share and grow together — without mixing with your personal identity.
+              </p>
+            </div>
+            <Link
+              href={hasTribes ? "/dashboard/tribes" : "/dashboard/create"}
+              className="px-6 py-3 rounded-full text-sm font-bold font-headline shrink-0 mt-1"
+              style={{
+                backgroundColor: "#FF6130",
+                color: "white",
+                boxShadow: "0 4px 14px rgba(255,97,48,0.4)",
+              }}
+            >
+              {hasTribes ? "Enter Tribes →" : "Start Your First →"}
+            </Link>
+          </div>
+
+          {hasTribes ? (
+            <div className="flex items-end gap-10 mt-8">
+              <div>
+                <p className="text-5xl font-black font-headline text-white leading-none">{tribeCount}</p>
+                <p className="text-xs text-[#9CF0FF]/40 mt-1 font-headline uppercase tracking-wider">
+                  Active Tribe{tribeCount !== 1 ? "s" : ""}
+                </p>
+              </div>
+              <div>
+                <p className="text-5xl font-black font-headline text-[#FF6130] leading-none">{totalTribeMembers}</p>
+                <p className="text-xs text-[#9CF0FF]/40 mt-1 font-headline uppercase tracking-wider">
+                  Total Members
+                </p>
+              </div>
+              <div className="flex-1" />
+              <p className="text-[10px] text-[#9CF0FF]/30 font-headline">
+                Sessions → Challenges → <span className="text-[#FF6130]">Tribes</span>
+              </p>
+            </div>
+          ) : (
+            <div className="mt-6 p-4 rounded-xl" style={{ backgroundColor: "rgba(156,240,255,0.06)", border: "1px solid rgba(156,240,255,0.10)" }}>
+              <p className="text-xs text-[#9CF0FF]/60">
+                <span className="text-[#FF6130] font-bold font-headline">The golden path:</span> Create sessions → bundle into a challenge → publish → your tribe is born. A community space where participants can post, share, and engage freely.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ══════════════════════════════════════════════════════
+          HOME BASE — Your loyal community. Warm. Stable.
+          ══════════════════════════════════════════════════════ */}
+      <div className="rounded-2xl infitra-card overflow-hidden">
+        <div
+          className="px-8 pt-6 pb-5"
+          style={{ borderBottom: "1px solid rgba(8,145,178,0.10)", background: "linear-gradient(to bottom, rgba(8,145,178,0.03), transparent)" }}
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-2.5 h-2.5 rounded-full bg-[#0891b2]" />
+                <h2 className="text-base font-black font-headline text-[#0F2229] tracking-tight">
+                  Home Base
+                </h2>
+              </div>
+              <p className="text-xs text-[#64748b]">
+                Your identity · Your loyal community · {memberCount} member{memberCount !== 1 ? "s" : ""}
+              </p>
+            </div>
+            {space && (
+              <Link href={`/communities/creator/${space.id}`} className="text-xs font-bold font-headline text-[#0891b2]">
+                Open Full →
+              </Link>
             )}
           </div>
         </div>
-      </div>
 
-      {/* ══════════════════════════════════════════════════════
-          TRIBES GATEWAY — The engagement layer
-          ══════════════════════════════════════════════════════ */}
-      <div className="rounded-2xl infitra-card overflow-hidden">
-        <div className="h-1" style={{ background: "linear-gradient(90deg, #FF6130 0%, rgba(255,97,48,0.15) 100%)" }} />
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-1">
-            <h2 className="text-base font-black font-headline text-[#0F2229] tracking-tight">
-              Your Tribes
-            </h2>
-            <Link
-              href="/dashboard/tribes"
-              className="px-4 py-2 rounded-full text-white text-xs font-bold font-headline shrink-0"
-              style={{ backgroundColor: "#FF6130" }}
-            >
-              {hasTribes ? "Enter Tribes →" : "Create Your First →"}
-            </Link>
-          </div>
-          <p className="text-[11px] text-[#64748b] mb-4">
-            Where communities engage freely and collaborations happen
-          </p>
-
-          {hasTribes ? (
-            <div className="flex items-center gap-6">
-              <div className="flex items-center gap-2">
-                <span className="text-2xl font-black font-headline text-[#FF6130]">{tribeCount}</span>
-                <span className="text-xs text-[#94a3b8]">active<br/>tribe{tribeCount !== 1 ? "s" : ""}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-2xl font-black font-headline text-[#0F2229]">{totalTribeMembers}</span>
-                <span className="text-xs text-[#94a3b8]">total<br/>members</span>
-              </div>
-              <div className="h-8 w-px" style={{ backgroundColor: "rgba(0,0,0,0.06)" }} />
-              <Link href="/dashboard/create" className="text-xs font-bold font-headline text-[#0891b2] hover:text-[#0F2229]">
-                Sessions → Challenges → Tribes
-              </Link>
-            </div>
-          ) : (
-            <div>
-              <p className="text-sm text-[#64748b] mb-3 max-w-md">
-                Start a challenge, bundle 3+ sessions, publish it — and your first tribe is born. A space where participants engage freely, separate from your home community.
-              </p>
-              <Link href="/dashboard/create" className="text-xs font-bold font-headline text-[#FF6130]">
-                Learn the golden path →
-              </Link>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ══════════════════════════════════════════════════════
-          HOME BASE — Your loyal community
-          ══════════════════════════════════════════════════════ */}
-      <div className="rounded-2xl infitra-card overflow-hidden">
-        <div className="px-6 pt-5 pb-4 flex items-center justify-between" style={{ borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
-          <div>
-            <h2 className="text-sm font-bold font-headline uppercase tracking-wider text-[#0891b2]">
-              Home Base
-            </h2>
-            <p className="text-[11px] text-[#64748b] mt-0.5">
-              Your loyal community · {memberCount} member{memberCount !== 1 ? "s" : ""}
-            </p>
-          </div>
-          {space && (
-            <Link href={`/communities/creator/${space.id}`} className="text-[10px] font-bold font-headline text-[#0891b2]">
-              Open →
-            </Link>
-          )}
-        </div>
-
-        <div className="p-6">
+        <div className="px-8 py-6">
           {space ? (
             <PostFeed
               spaceId={space.id}
@@ -272,10 +306,13 @@ export default async function DashboardPage() {
               canPost={true}
             />
           ) : (
-            <div className="text-center py-12">
-              <p className="text-sm font-bold font-headline mb-2 text-[#0F2229]">Your home base is waiting</p>
-              <p className="text-xs max-w-xs mx-auto text-[#64748b]">
-                It appears automatically when someone purchases from you.
+            <div className="text-center py-14">
+              <div className="w-12 h-12 rounded-full bg-[#0891b2]/10 flex items-center justify-center mx-auto mb-4">
+                <div className="w-3 h-3 rounded-full bg-[#0891b2]" />
+              </div>
+              <p className="text-base font-bold font-headline mb-2 text-[#0F2229]">Your home base is waiting</p>
+              <p className="text-sm max-w-sm mx-auto text-[#64748b]">
+                It appears automatically when someone purchases from you. This is where your loyal community grows.
               </p>
             </div>
           )}
