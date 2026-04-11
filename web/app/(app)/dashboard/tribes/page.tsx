@@ -113,10 +113,14 @@ export default async function TribesPage() {
   const totalMembers = Object.values(tribeMemberCounts).reduce((a, b) => a + b, 0);
 
   return (
-    <div className="py-6 max-w-4xl mx-auto">
+    <>
+      {/* Dark overlay — covers the cream background, waves still show through */}
+      <div className="fixed inset-0 z-0 pointer-events-none" style={{ backgroundColor: "rgba(15, 34, 41, 0.88)" }} />
+
+      <div className="relative z-10 py-6 max-w-4xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-2">
-        <h1 className="text-2xl font-black font-headline text-[#0F2229] tracking-tight">
+        <h1 className="text-2xl font-black font-headline text-white tracking-tight">
           Your Tribes
         </h1>
         <form action={createDraftChallenge}>
@@ -129,10 +133,10 @@ export default async function TribesPage() {
           </button>
         </form>
       </div>
-      <p className="text-sm text-[#64748b] mb-8">
+      <p className="text-sm text-[#9CF0FF]/50 mb-8">
         Where communities engage freely, collaborations happen, and participants thrive together.
         {hasTribes && (
-          <span className="ml-2 text-[#0F2229] font-bold font-headline">
+          <span className="ml-2 text-white font-bold font-headline">
             {tribeCount} tribe{tribeCount !== 1 ? "s" : ""} · {totalMembers} member{totalMembers !== 1 ? "s" : ""}
           </span>
         )}
@@ -148,55 +152,59 @@ export default async function TribesPage() {
             const authorName = latestPost ? authorNames[latestPost.author_id] ?? "User" : null;
 
             return (
-              <div key={cs.id} className="rounded-2xl infitra-card overflow-hidden">
+              <div
+                key={cs.id}
+                className="rounded-2xl overflow-hidden"
+                style={{ backgroundColor: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)" }}
+              >
                 {/* Orange energy bar */}
                 <div className="h-1" style={{ background: "linear-gradient(90deg, #FF6130 0%, rgba(255,97,48,0.2) 100%)" }} />
 
                 <div className="p-6">
                   <div className="flex items-start justify-between gap-4 mb-4">
                     <div className="min-w-0">
-                      <h2 className="text-lg font-black font-headline text-[#0F2229] tracking-tight">
+                      <h2 className="text-lg font-black font-headline text-white tracking-tight">
                         {cs.title}
                       </h2>
-                      {cTitle && <p className="text-xs text-[#64748b] mt-0.5">{cTitle}</p>}
+                      {cTitle && <p className="text-xs text-[#9CF0FF]/40 mt-0.5">{cTitle}</p>}
                     </div>
                     <Link
                       href={`/communities/challenge/${cs.id}`}
                       className="px-4 py-2 rounded-full text-white text-xs font-bold font-headline shrink-0"
-                      style={{ backgroundColor: "#FF6130" }}
+                      style={{ backgroundColor: "#FF6130", boxShadow: "0 4px 14px rgba(255,97,48,0.4)" }}
                     >
                       Enter Tribe →
                     </Link>
                   </div>
 
                   <div className="flex items-center gap-4 mb-4">
-                    <span className="text-sm font-bold font-headline text-[#0F2229]">
-                      {mCount} <span className="text-[#94a3b8] font-normal text-xs">member{mCount !== 1 ? "s" : ""}</span>
+                    <span className="text-sm font-bold font-headline text-white">
+                      {mCount} <span className="text-[#9CF0FF]/40 font-normal text-xs">member{mCount !== 1 ? "s" : ""}</span>
                     </span>
                     {nextSess && (
                       <div className="flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#0891b2]" />
-                        <span className="text-xs font-bold font-headline text-[#0891b2]">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#9CF0FF]" />
+                        <span className="text-xs font-bold font-headline text-[#9CF0FF]">
                           {formatRelativeTime(nextSess.start_time)}
                         </span>
-                        <span className="text-xs text-[#64748b]">· {nextSess.title}</span>
+                        <span className="text-xs text-[#9CF0FF]/40">· {nextSess.title}</span>
                       </div>
                     )}
                   </div>
 
                   {/* Latest post */}
                   {latestPost ? (
-                    <div className="p-3 rounded-xl" style={{ backgroundColor: "rgba(0,0,0,0.02)", border: "1px solid rgba(0,0,0,0.04)" }}>
+                    <div className="p-3 rounded-xl" style={{ backgroundColor: "rgba(156,240,255,0.04)", border: "1px solid rgba(156,240,255,0.08)" }}>
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[10px] font-bold font-headline text-[#0F2229]">{authorName}</span>
-                        <span className="text-[10px] text-[#94a3b8]">
+                        <span className="text-[10px] font-bold font-headline text-white">{authorName}</span>
+                        <span className="text-[10px] text-[#9CF0FF]/30">
                           {formatRelativeTime(latestPost.created_at)} ago
                         </span>
                       </div>
-                      <p className="text-xs text-[#64748b] line-clamp-2">{latestPost.body}</p>
+                      <p className="text-xs text-[#9CF0FF]/50 line-clamp-2">{latestPost.body}</p>
                     </div>
                   ) : (
-                    <p className="text-xs text-[#94a3b8]">No posts yet — be the first to share something</p>
+                    <p className="text-xs text-[#9CF0FF]/30">No posts yet — be the first to share something</p>
                   )}
                 </div>
               </div>
@@ -204,9 +212,9 @@ export default async function TribesPage() {
           })}
         </div>
       ) : (
-        <div className="rounded-2xl infitra-card p-10 text-center">
-          <h2 className="text-lg font-black font-headline text-[#0F2229] mb-2">Create your first tribe</h2>
-          <p className="text-sm text-[#64748b] max-w-md mx-auto mb-6">
+        <div className="rounded-2xl p-10 text-center" style={{ backgroundColor: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)" }}>
+          <h2 className="text-lg font-black font-headline text-white mb-2">Create your first tribe</h2>
+          <p className="text-sm text-[#9CF0FF]/50 max-w-md mx-auto mb-6">
             Publish a challenge and a tribe is born — a space where participants commit, engage freely, and grow together. Separate from your home community. Open for collaboration.
           </p>
           <form action={createDraftChallenge} className="inline-block">
@@ -222,10 +230,11 @@ export default async function TribesPage() {
       )}
 
       <div className="mt-6">
-        <Link href="/dashboard" className="text-xs font-bold font-headline text-[#94a3b8] hover:text-[#0F2229]">
+        <Link href="/dashboard" className="text-xs font-bold font-headline text-[#9CF0FF]/40 hover:text-white">
           ← Back to Dashboard
         </Link>
       </div>
     </div>
+    </>
   );
 }
