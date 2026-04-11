@@ -71,6 +71,7 @@ export function ChallengeEditForm({
   const [newDate, setNewDate] = useState("");
   const [newTime, setNewTime] = useState("10:00");
   const [newDuration, setNewDuration] = useState("60");
+  const [newImageUrl, setNewImageUrl] = useState<string | null>(null);
 
   // Edit session form state
   const [editTitle, setEditTitle] = useState("");
@@ -128,7 +129,8 @@ export function ChallengeEditForm({
         challenge.id,
         newTitle.trim(),
         startTime,
-        dur
+        dur,
+        newImageUrl
       );
       if (result?.error) {
         setSessionError(result.error);
@@ -146,6 +148,7 @@ export function ChallengeEditForm({
         setNewDate("");
         setNewTime("10:00");
         setNewDuration("60");
+        setNewImageUrl(null);
         setShowAddForm(false);
       }
     });
@@ -437,6 +440,8 @@ export function ChallengeEditForm({
             >
               New Session
             </p>
+            {/* Session cover image */}
+            <ImageSelector currentUrl={newImageUrl} title={newTitle || "Session"} onSelect={setNewImageUrl} size="sm" />
             <input
               type="text"
               value={newTitle}

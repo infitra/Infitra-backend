@@ -102,7 +102,8 @@ export async function createChallengeSession(
   challengeId: string,
   title: string,
   startTime: string,
-  durationMinutes: number
+  durationMinutes: number,
+  imageUrl?: string | null
 ) {
   const supabase = await createClient();
   const {
@@ -133,7 +134,14 @@ export async function createChallengeSession(
   if (error) return { error: error.message };
 
   const row = Array.isArray(data) ? data[0] : data;
-  return { success: true, sessionId: row?.session_id };
+  const sessionId = row?.session_id;
+
+  // Update image_url on the created session if provided
+  if (sessionId && imageUrl) {
+    await supabase.from("app_session").update({ image_url: imageUrl }).eq("id", sessionId);
+  }
+
+  return { success: true, sessionId };
 }
 
 /** Updates an inline challenge session (app_session row). RLS ensures only owner drafts. */
