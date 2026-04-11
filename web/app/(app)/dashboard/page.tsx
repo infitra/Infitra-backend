@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { PostFeed } from "@/app/components/community/PostFeed";
+import { TribesPanel } from "./TribesPanel";
 
 export const metadata = {
   title: "Home — INFITRA",
@@ -227,17 +228,11 @@ export default async function DashboardPage() {
                 Where communities engage freely, collaborations happen, and participants share and grow together — without mixing with your personal identity.
               </p>
             </div>
-            <Link
-              href={hasTribes ? "/dashboard/tribes" : "/dashboard/create"}
-              className="px-6 py-3 rounded-full text-sm font-bold font-headline shrink-0 mt-1"
-              style={{
-                backgroundColor: "#FF6130",
-                color: "white",
-                boxShadow: "0 4px 14px rgba(255,97,48,0.4)",
-              }}
-            >
-              {hasTribes ? "Enter Tribes →" : "Start Your First →"}
-            </Link>
+            <TribesPanel
+              tribeCount={tribeCount}
+              totalMembers={totalTribeMembers}
+              hasTribes={hasTribes}
+            />
           </div>
 
           {hasTribes ? (
