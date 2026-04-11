@@ -131,15 +131,15 @@ export default async function ChallengePreviewPage({ params }: { params: Promise
             <p className="text-[10px] font-bold uppercase tracking-widest font-headline mb-3" style={{ color: "#FF6130" }}>Your Host</p>
             <div className="flex items-center gap-4">
               {profile?.avatar_url ? (
-                <img src={profile.avatar_url} alt="" className="w-14 h-14 rounded-full object-cover" style={{ border: "3px solid #FF6130", boxShadow: "0 2px 10px rgba(255,97,48,0.2)" }} />
+                <img src={profile.avatar_url} alt="" className="w-24 h-24 rounded-full object-cover" style={{ border: "3px solid #FF6130", boxShadow: "0 4px 16px rgba(255,97,48,0.2)" }} />
               ) : (
-                <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(255, 97, 48, 0.12)", border: "3px solid #FF6130" }}>
-                  <span className="text-xl font-black font-headline" style={{ color: "#FF6130" }}>{(profile?.display_name ?? "?")[0].toUpperCase()}</span>
+                <div className="w-24 h-24 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(255, 97, 48, 0.12)", border: "3px solid #FF6130" }}>
+                  <span className="text-3xl font-black font-headline" style={{ color: "#FF6130" }}>{(profile?.display_name ?? "?")[0].toUpperCase()}</span>
                 </div>
               )}
               <div>
-                <p className="text-base font-black font-headline" style={{ color: "#0F2229" }}>{profile?.display_name}</p>
-                <p className="text-xs" style={{ color: "#64748b" }}>Creator</p>
+                <p className="text-xl font-black font-headline" style={{ color: "#0F2229" }}>{profile?.display_name}</p>
+                <p className="text-sm" style={{ color: "#64748b" }}>Creator</p>
               </div>
             </div>
           </div>
