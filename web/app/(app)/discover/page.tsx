@@ -197,7 +197,7 @@ export default async function DiscoverPage() {
   // ── Discover: public content ───────────────────────────
   const { data: allSessions } = await supabase
     .from("app_session")
-    .select("id, title, description, start_time, duration_minutes, capacity, price_cents, currency, host_id, app_profile!app_session_host_id_fkey(display_name, username)")
+    .select("id, title, description, image_url, start_time, duration_minutes, capacity, price_cents, currency, host_id, app_profile!app_session_host_id_fkey(display_name, username)")
     .eq("status", "published")
     .gte("start_time", now.toISOString())
     .order("start_time", { ascending: true });
@@ -218,7 +218,7 @@ export default async function DiscoverPage() {
 
   const { data: allChallenges } = await supabase
     .from("app_challenge")
-    .select("id, title, description, start_date, end_date, price_cents, capacity, owner_id, app_profile!app_challenge_owner_id_fkey(display_name, username)")
+    .select("id, title, description, image_url, start_date, end_date, price_cents, capacity, owner_id, app_profile!app_challenge_owner_id_fkey(display_name, username)")
     .eq("status", "published")
     .gte("start_date", now.toISOString().split("T")[0])
     .order("start_date", { ascending: true });

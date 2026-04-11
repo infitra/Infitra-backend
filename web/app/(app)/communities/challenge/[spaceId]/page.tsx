@@ -64,7 +64,7 @@ export default async function ChallengeTribePage({ params }: { params: Promise<{
   let allSessions: any[] = [];
   const now = new Date();
   if (space.source_challenge_id) {
-    const { data: links } = await supabase.from("app_challenge_session").select("session_id, app_session(id, title, start_time, duration_minutes, status, live_room_id, image_url)").eq("challenge_id", space.source_challenge_id);
+    const { data: links } = await supabase.from("app_challenge_session").select("session_id, app_session(id, title, description, start_time, duration_minutes, status, live_room_id, image_url)").eq("challenge_id", space.source_challenge_id);
     allSessions = (links ?? []).map((l: any) => l.app_session).filter(Boolean).sort((a: any, b: any) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
   }
 

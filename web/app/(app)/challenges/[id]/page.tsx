@@ -105,7 +105,7 @@ export default async function ChallengePage({
   const { data: linkedRows } = await supabase
     .from("app_challenge_session")
     .select(
-      "session_id, app_session(id, title, start_time, duration_minutes, status, live_room_id)"
+      "session_id, app_session(id, title, description, image_url, start_time, duration_minutes, status, live_room_id)"
     )
     .eq("challenge_id", id);
 
