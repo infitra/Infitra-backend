@@ -103,7 +103,8 @@ export async function createChallengeSession(
   title: string,
   startTime: string,
   durationMinutes: number,
-  imageUrl?: string | null
+  imageUrl?: string | null,
+  description?: string | null
 ) {
   const supabase = await createClient();
   const {
@@ -136,9 +137,12 @@ export async function createChallengeSession(
   const row = Array.isArray(data) ? data[0] : data;
   const sessionId = row?.session_id;
 
-  // Update image_url on the created session if provided
-  if (sessionId && imageUrl) {
-    await supabase.from("app_session").update({ image_url: imageUrl }).eq("id", sessionId);
+  // Update image_url and description on the created session if provided
+  if (sessionId && (imageUrl || description)) {
+    const updates: Record<string, any> = {};
+    if (imageUrl) updates.image_url = imageUrl;
+    if (description) updates.description = description;
+    await supabase.from("app_session").update(updates).eq("id", sessionId);
   }
 
   return { success: true, sessionId };

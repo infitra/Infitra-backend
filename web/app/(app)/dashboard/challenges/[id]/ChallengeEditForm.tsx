@@ -68,6 +68,7 @@ export function ChallengeEditForm({
 
   // Add session form state
   const [newTitle, setNewTitle] = useState("");
+  const [newDescription, setNewDescription] = useState("");
   const [newDate, setNewDate] = useState("");
   const [newTime, setNewTime] = useState("10:00");
   const [newDuration, setNewDuration] = useState("60");
@@ -130,7 +131,8 @@ export function ChallengeEditForm({
         newTitle.trim(),
         startTime,
         dur,
-        newImageUrl
+        newImageUrl,
+        newDescription.trim() || null
       );
       if (result?.error) {
         setSessionError(result.error);
@@ -145,6 +147,7 @@ export function ChallengeEditForm({
           },
         ]);
         setNewTitle("");
+        setNewDescription("");
         setNewDate("");
         setNewTime("10:00");
         setNewDuration("60");
@@ -450,6 +453,15 @@ export function ChallengeEditForm({
               minLength={3}
               maxLength={120}
               className={INPUT_SM_CLASS}
+              style={INPUT_STYLE}
+            />
+            <textarea
+              value={newDescription}
+              onChange={(e) => setNewDescription(e.target.value)}
+              placeholder="What happens in this session? (optional)"
+              maxLength={1000}
+              rows={2}
+              className={`${INPUT_SM_CLASS} resize-none`}
               style={INPUT_STYLE}
             />
             <div className="grid grid-cols-3 gap-3">
