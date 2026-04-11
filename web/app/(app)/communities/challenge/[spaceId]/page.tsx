@@ -41,7 +41,7 @@ export default async function ChallengeTribePage({ params }: { params: Promise<{
   }
   const activeMemberCount = activeMemberProfiles.length;
 
-  const { data: owner } = await supabase.from("app_profile").select("id, display_name, avatar_url, tagline, bio, username").eq("id", space.owner_id).single();
+  const { data: owner } = await supabase.from("app_profile").select("id, display_name, avatar_url, cover_image_url, tagline, bio, username").eq("id", space.owner_id).single();
 
   let cohosts: { id: string; name: string; avatar?: string; splitPct: number }[] = [];
   if (space.source_challenge_id) {
@@ -99,55 +99,84 @@ export default async function ChallengeTribePage({ params }: { params: Promise<{
 
   return (
     <div className="min-h-screen flex flex-col">
-      <div className="fixed inset-0 z-[1] pointer-events-none" style={{ backgroundColor: "rgba(8, 18, 24, 0.94)" }} />
+      {/* Dark overlay — 85% so wave colors bleed through as atmosphere */}
+      <div className="fixed inset-0 z-[1] pointer-events-none" style={{ backgroundColor: "rgba(8, 18, 24, 0.85)" }} />
       <div className="relative z-[2]">
         <ParticipantNav displayName={myProfile?.display_name ?? null} role={myProfile?.role} />
 
         <div className="flex-1 pt-20">
 
-          {/* 1. TRIBE SPACE IDENTITY */}
-          <div className="px-6 md:px-10 lg:px-16 pt-8 pb-6">
-            <div className="max-w-7xl mx-auto">
-              <Link href={backPath} className="text-xs mb-6 flex items-center gap-1.5 font-headline text-[#9CF0FF]/50 hover:text-white">
-                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                Back
-              </Link>
+          {/* 1. TRIBE SPACE IDENTITY — with cover image + brand */}
+          <div className="relative overflow-hidden">
+            {/* Cover image background */}
+            {owner?.cover_image_url && (
+              <div className="absolute inset-0">
+                <img src={owner.cover_image_url} alt="" className="w-full h-full object-cover" style={{ filter: "blur(20px) brightness(0.3) saturate(1.3)" }} />
+                <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(8,18,24,0.4) 0%, rgba(8,18,24,0.95) 100%)" }} />
+              </div>
+            )}
 
-              <h1 className="text-5xl md:text-6xl lg:text-7xl font-black font-headline text-white tracking-tight leading-none mb-4">{space.title}</h1>
-              {space.description && <p className="text-base text-[#9CF0FF]/70 max-w-2xl mb-5">{space.description}</p>}
+            {/* INFITRA logo mark watermark */}
+            <div className="absolute top-6 right-10 opacity-[0.04] pointer-events-none">
+              <img src="/logo-mark.png" alt="" width={280} height={280} />
+            </div>
 
-              <div className="flex items-center gap-5">
-                <div className="flex items-center gap-2">
-                  <Avatar src={owner?.avatar_url ?? undefined} name={owner?.display_name ?? "?"} i={0} size="w-8 h-8" />
-                  <div>
-                    <p className="text-xs text-[#9CF0FF]/50">Owner</p>
-                    <p className="text-sm font-bold font-headline text-white">{owner?.display_name}</p>
+            <div className="relative px-6 md:px-10 lg:px-16 pt-8 pb-8">
+              <div className="max-w-7xl mx-auto">
+                <Link href={backPath} className="text-xs mb-8 flex items-center gap-1.5 font-headline text-[#9CF0FF]/50 hover:text-white">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                  Back
+                </Link>
+
+                <h1 className="text-5xl md:text-6xl lg:text-7xl font-black font-headline text-white tracking-tight leading-none mb-4">{space.title}</h1>
+                {space.description && <p className="text-lg text-white/70 max-w-2xl mb-6 leading-relaxed">{space.description}</p>}
+
+                <div className="flex items-center gap-5">
+                  <Link href={owner?.username ? `/creators/${owner.username}` : "#"} className="flex items-center gap-3 group">
+                    {owner?.avatar_url ? (
+                      <img src={owner.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover" style={{ border: "2px solid #FF6130" }} />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: "#FF6130" }}>
+                        <span className="text-sm font-black text-white">{(owner?.display_name ?? "?")[0].toUpperCase()}</span>
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-sm font-black font-headline text-white group-hover:text-[#FF6130]">{owner?.display_name}</p>
+                      {owner?.tagline && <p className="text-xs text-white/50">{owner.tagline}</p>}
+                    </div>
+                  </Link>
+                  <div className="h-6 w-px bg-white/10" />
+                  <div className="flex items-center gap-2">
+                    <div className="flex -space-x-1.5">
+                      {allMemberProfiles.slice(0, 5).map((m, i) => <Avatar key={m.id} src={m.avatar} name={m.name} i={i} size="w-7 h-7" />)}
+                    </div>
+                    <p className="text-sm font-bold font-headline text-white">{totalMemberCount} <span className="text-white/50 font-normal text-xs">member{totalMemberCount !== 1 ? "s" : ""}</span></p>
                   </div>
-                </div>
-                <div className="h-6 w-px" style={{ backgroundColor: "#1a3340" }} />
-                <div className="flex items-center gap-2">
-                  <div className="flex -space-x-1.5">
-                    {allMemberProfiles.slice(0, 5).map((m, i) => <Avatar key={m.id} src={m.avatar} name={m.name} i={i} size="w-6 h-6" />)}
-                  </div>
-                  <p className="text-sm font-bold font-headline text-white">{totalMemberCount} <span className="text-[#9CF0FF]/50 font-normal text-xs">member{totalMemberCount !== 1 ? "s" : ""}</span></p>
                 </div>
               </div>
             </div>
+
+            {/* Brand gradient divider */}
+            <div className="h-[2px]" style={{ background: "linear-gradient(90deg, #9CF0FF, #FF6130)" }} />
           </div>
 
           {/* 2. ACTIVE CHALLENGE — one unified block */}
           {challenge && (
             <div className="px-6 md:px-10 lg:px-16 py-8">
               <div
-                className="max-w-7xl mx-auto rounded-2xl overflow-hidden"
+                className="max-w-7xl mx-auto rounded-2xl overflow-hidden relative"
                 style={{
                   backgroundColor: "#0d1f28",
                   border: isActive ? "1px solid #1a3340" : "1px solid #1a3340",
                   boxShadow: isActive ? "0 4px 30px rgba(0,0,0,0.4)" : "none",
                 }}
               >
+                {/* Brand watermark in challenge card */}
+                <div className="absolute bottom-4 right-6 opacity-[0.03] pointer-events-none">
+                  <img src="/logo-mark.png" alt="" width={180} height={180} />
+                </div>
                 {/* ── Top: Progress bar + badge ──────────────── */}
-                <div className="px-8 pt-6 pb-5" style={{ borderBottom: "1px solid #1a3340" }}>
+                <div className="px-8 pt-6 pb-5" style={{ borderBottom: "1px solid #1a334066" }}>
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                       {isActive && <span className="w-3 h-3 rounded-full bg-[#FF6130] animate-pulse" />}
@@ -170,7 +199,7 @@ export default async function ChallengeTribePage({ params }: { params: Promise<{
                 </div>
 
                 {/* ── Middle: Challenge info + hot session ──── */}
-                <div className="px-8 py-6" style={{ borderBottom: "1px solid #1a3340" }}>
+                <div className="px-8 py-6" style={{ borderBottom: "1px solid #1a334066" }}>
                   <h2 className="text-3xl md:text-4xl font-black font-headline text-white tracking-tight mb-3">{challenge.title}</h2>
                   {challenge.description && <p className="text-base text-[#9CF0FF]/70 mb-5 max-w-2xl leading-relaxed">{challenge.description}</p>}
 
@@ -182,7 +211,7 @@ export default async function ChallengeTribePage({ params }: { params: Promise<{
                       </div>
                     )}
                     <div className="px-3.5 py-2 rounded-lg" style={{ backgroundColor: "#0a1218", border: "1px solid #9CF0FF33" }}>
-                      <span className="text-sm font-bold font-headline text-white">{totalSessions} session{totalSessions !== 1 ? "s" : ""}</span>
+                      <span className="text-sm font-bold font-headline text-white">{totalSessions} session{totalSessions !== 1 ? "s" : ""} to complete</span>
                       <span className="text-sm text-[#9CF0FF]/50 mx-1">·</span>
                       <span className="text-sm font-bold font-headline text-white">{totalMinutes} min</span>
                     </div>
@@ -227,7 +256,7 @@ export default async function ChallengeTribePage({ params }: { params: Promise<{
                 </div>
 
                 {/* ── Hosts row ─────────────────────────────── */}
-                <div className="px-8 py-5" style={{ borderBottom: "1px solid #1a3340" }}>
+                <div className="px-8 py-5" style={{ borderBottom: "1px solid #1a334066" }}>
                   <p className="text-[10px] font-bold font-headline uppercase tracking-wider text-[#FF6130] mb-3">Host{cohosts.length > 0 ? "s & Co-Hosts" : ""}</p>
                   <div className="flex gap-3 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
                     <Link href={owner?.username ? `/creators/${owner.username}` : "#"} className="shrink-0 flex items-center gap-3 p-3 rounded-xl group" style={{ backgroundColor: "#0a1218", border: "2px solid #FF6130", minWidth: "220px" }}>
@@ -269,6 +298,9 @@ export default async function ChallengeTribePage({ params }: { params: Promise<{
               </div>
             </div>
           )}
+
+          {/* Brand gradient divider */}
+          <div className="h-[2px] mx-6 md:mx-10 lg:mx-16" style={{ background: "linear-gradient(90deg, #9CF0FF33, #FF613066, #9CF0FF33)" }} />
 
           {/* 3. TRIBE FEED + SIDEBAR */}
           <div className="px-6 md:px-10 lg:px-16 py-10">
