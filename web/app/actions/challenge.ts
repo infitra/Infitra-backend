@@ -153,7 +153,9 @@ export async function updateChallengeSession(
   sessionId: string,
   title: string,
   startTime: string,
-  durationMinutes: number
+  durationMinutes: number,
+  description?: string | null,
+  imageUrl?: string | null
 ) {
   const supabase = await createClient();
   const {
@@ -166,13 +168,17 @@ export async function updateChallengeSession(
     return { error: "Session title must be at least 3 characters." };
   }
 
+  const updates: Record<string, any> = {
+    title: title.trim(),
+    start_time: startTime,
+    duration_minutes: durationMinutes,
+  };
+  if (description !== undefined) updates.description = description;
+  if (imageUrl !== undefined) updates.image_url = imageUrl;
+
   const { error } = await supabase
     .from("app_session")
-    .update({
-      title: title.trim(),
-      start_time: startTime,
-      duration_minutes: durationMinutes,
-    })
+    .update(updates)
     .eq("id", sessionId)
     .eq("host_id", user.id);
 

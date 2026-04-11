@@ -78,6 +78,8 @@ export function ChallengeEditForm({
 
   // Edit session form state
   const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editImageUrl, setEditImageUrl] = useState<string | null>(null);
   const [editDate, setEditDate] = useState("");
   const [editTime, setEditTime] = useState("");
   const [editDuration, setEditDuration] = useState("");
@@ -164,6 +166,8 @@ export function ChallengeEditForm({
   function startEditing(sess: SessionSummary) {
     setEditingId(sess.id);
     setEditTitle(sess.title);
+    setEditDescription(sess.description ?? "");
+    setEditImageUrl(sess.image_url ?? null);
     const d = new Date(sess.start_time);
     setEditDate(d.toISOString().split("T")[0]);
     setEditTime(d.toTimeString().slice(0, 5));
@@ -180,7 +184,9 @@ export function ChallengeEditForm({
         sessionId,
         editTitle.trim(),
         startTime,
-        dur
+        dur,
+        editDescription.trim() || null,
+        editImageUrl
       );
       if (result?.error) {
         setSessionError(result.error);
@@ -191,6 +197,8 @@ export function ChallengeEditForm({
               ? {
                   ...s,
                   title: editTitle.trim(),
+                  description: editDescription.trim() || null,
+                  image_url: editImageUrl,
                   start_time: startTime,
                   duration_minutes: dur,
                 }
@@ -552,11 +560,23 @@ export function ChallengeEditForm({
                       border: "1px solid rgba(8, 145, 178, 0.30)",
                     }}
                   >
+                    <div className="w-48">
+                      <ImageSelector currentUrl={editImageUrl} title={editTitle || "Session"} onSelect={setEditImageUrl} size="sm" />
+                    </div>
                     <input
                       type="text"
                       value={editTitle}
                       onChange={(e) => setEditTitle(e.target.value)}
                       className={INPUT_SM_CLASS}
+                      style={INPUT_STYLE}
+                    />
+                    <textarea
+                      value={editDescription}
+                      onChange={(e) => setEditDescription(e.target.value)}
+                      placeholder="What happens in this session? (optional)"
+                      maxLength={1000}
+                      rows={2}
+                      className={`${INPUT_SM_CLASS} resize-none`}
                       style={INPUT_STYLE}
                     />
                     <div className="grid grid-cols-3 gap-3">
