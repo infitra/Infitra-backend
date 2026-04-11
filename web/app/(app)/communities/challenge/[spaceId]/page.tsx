@@ -99,37 +99,37 @@ export default async function ChallengeTribePage({ params }: { params: Promise<{
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Dark overlay — 85% so wave colors bleed through as atmosphere */}
-      <div className="fixed inset-0 z-[1] pointer-events-none" style={{ backgroundColor: "rgba(8, 18, 24, 0.85)" }} />
+      {/* Dark overlay */}
+      <div className="fixed inset-0 z-[1] pointer-events-none" style={{ backgroundColor: "rgba(8, 18, 24, 0.92)" }} />
       <div className="relative z-[2]">
         <ParticipantNav displayName={myProfile?.display_name ?? null} role={myProfile?.role} />
 
         <div className="flex-1 pt-20">
 
-          {/* 1. TRIBE SPACE IDENTITY — with cover image + brand */}
+          {/* 1. TRIBE SPACE IDENTITY */}
           <div className="relative overflow-hidden">
-            {/* Cover image background */}
+            {/* Cover image — clean, not blurred, faded to dark at bottom */}
             {owner?.cover_image_url && (
               <div className="absolute inset-0">
-                <img src={owner.cover_image_url} alt="" className="w-full h-full object-cover" style={{ filter: "blur(20px) brightness(0.3) saturate(1.3)" }} />
-                <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(8,18,24,0.4) 0%, rgba(8,18,24,0.95) 100%)" }} />
+                <img src={owner.cover_image_url} alt="" className="w-full h-full object-cover" style={{ opacity: 0.35 }} />
+                <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 0%, rgba(8,18,24,1) 85%)" }} />
               </div>
             )}
 
-            {/* INFITRA logo mark watermark */}
-            <div className="absolute top-6 right-10 opacity-[0.04] pointer-events-none">
-              <img src="/logo-mark.png" alt="" width={280} height={280} />
-            </div>
-
-            <div className="relative px-6 md:px-10 lg:px-16 pt-8 pb-8">
+            <div className="relative px-6 md:px-10 lg:px-16 pt-10 pb-10">
               <div className="max-w-7xl mx-auto">
                 <Link href={backPath} className="text-xs mb-8 flex items-center gap-1.5 font-headline text-[#9CF0FF]/50 hover:text-white">
                   <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7" strokeLinecap="round" strokeLinejoin="round" /></svg>
                   Back
                 </Link>
 
-                <h1 className="text-5xl md:text-6xl lg:text-7xl font-black font-headline text-white tracking-tight leading-none mb-4">{space.title}</h1>
-                {space.description && <p className="text-lg text-white/70 max-w-2xl mb-6 leading-relaxed">{space.description}</p>}
+                {/* INFITRA logo mark — subtle, positioned */}
+                <div className="absolute top-10 right-16 opacity-[0.025] pointer-events-none hidden lg:block">
+                  <img src="/logo-mark.png" alt="" width={200} height={200} />
+                </div>
+
+                <h1 className="text-5xl md:text-6xl lg:text-7xl font-black font-headline text-white tracking-tight leading-none mb-5">{space.title}</h1>
+                {space.description && <p className="text-lg text-[#9CF0FF]/70 max-w-2xl mb-6 leading-relaxed">{space.description}</p>}
 
                 <div className="flex items-center gap-5">
                   <Link href={owner?.username ? `/creators/${owner.username}` : "#"} className="flex items-center gap-3 group">
@@ -142,7 +142,7 @@ export default async function ChallengeTribePage({ params }: { params: Promise<{
                     )}
                     <div>
                       <p className="text-sm font-black font-headline text-white group-hover:text-[#FF6130]">{owner?.display_name}</p>
-                      {owner?.tagline && <p className="text-xs text-white/50">{owner.tagline}</p>}
+                      {owner?.tagline && <p className="text-xs text-[#9CF0FF]/50">{owner.tagline}</p>}
                     </div>
                   </Link>
                   <div className="h-6 w-px bg-white/10" />
@@ -156,8 +156,8 @@ export default async function ChallengeTribePage({ params }: { params: Promise<{
               </div>
             </div>
 
-            {/* Brand gradient divider */}
-            <div className="h-[2px]" style={{ background: "linear-gradient(90deg, #9CF0FF, #FF6130)" }} />
+            {/* Brand gradient line */}
+            <div className="h-px" style={{ background: "linear-gradient(90deg, #9CF0FF44, #FF613066, #9CF0FF44)" }} />
           </div>
 
           {/* 2. ACTIVE CHALLENGE — one unified block */}
