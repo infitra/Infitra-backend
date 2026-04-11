@@ -57,12 +57,10 @@ export function ImageSelector({
     setUploading(false);
   }
 
-  const heights = { sm: "h-24", md: "h-40", lg: "h-56" };
-
   return (
     <div>
-      {/* Preview */}
-      <div className={`relative rounded-xl overflow-hidden ${heights[size]} mb-3 group`}>
+      {/* Preview — uses aspect ratio to match final display */}
+      <div className="relative rounded-xl overflow-hidden aspect-[3/2] mb-3 group">
         {currentUrl ? (
           <img src={currentUrl} alt="" className="w-full h-full object-cover" />
         ) : (

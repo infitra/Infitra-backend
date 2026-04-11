@@ -55,14 +55,19 @@ export default async function ChallengePreviewPage({ params }: { params: Promise
       {/* Challenge card */}
       <div className="rounded-2xl infitra-card overflow-hidden">
         {/* Cover image or branded default */}
-        {challenge.image_url ? (
-          <div className="h-48 md:h-56 relative">
-            <img src={challenge.image_url} alt="" className="w-full h-full object-cover" />
-            <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 50%)" }} />
-          </div>
-        ) : (
-          <BrandedCover title={challenge.title} subtitle={`${linkedSessions.length} sessions · ${totalMinutes} min`} size="lg" />
-        )}
+        <div className="aspect-[3/1] relative overflow-hidden">
+          {challenge.image_url ? (
+            <>
+              <img src={challenge.image_url} alt="" className="w-full h-full object-cover" />
+              <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 50%)" }} />
+            </>
+          ) : (
+            <div className="w-full h-full" style={{ background: "linear-gradient(135deg, #0F2229 0%, #0d2a36 30%, #1a3340 50%, #2a1508 70%, #0F2229 100%)" }}>
+              <div className="absolute inset-0 opacity-[0.18]" style={{ background: "radial-gradient(ellipse at 20% 80%, #9CF0FF 0%, transparent 50%), radial-gradient(ellipse at 80% 20%, #FF6130 0%, transparent 50%)" }} />
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.06]"><img src="/logo-mark.png" alt="" width={140} height={140} /></div>
+            </div>
+          )}
+        </div>
 
         <div className="p-8 md:p-10">
           <h1 className="text-3xl md:text-4xl font-black font-headline tracking-tight mb-3" style={{ color: "#0F2229" }}>
@@ -98,24 +103,23 @@ export default async function ChallengePreviewPage({ params }: { params: Promise
               </p>
               <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
                 {linkedSessions.map((sess: any, idx: number) => (
-                  <div key={sess.id} className="shrink-0 w-52 rounded-xl overflow-hidden infitra-card">
+                  <Link key={sess.id} href={`/dashboard/sessions/${sess.id}`} className="shrink-0 w-56 rounded-xl overflow-hidden infitra-card-link group block">
                     {/* Session image */}
-                    {sess.image_url ? (
-                      <div className="h-28 relative">
-                        <img src={sess.image_url} alt="" className="w-full h-full object-cover" />
-                        <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.6) 100%)" }} />
-                        <div className="absolute bottom-2 left-3 right-3">
-                          <p className="text-sm font-black font-headline text-white line-clamp-1">{sess.title}</p>
-                        </div>
-                        <span className="absolute top-2 left-3 text-[10px] font-black text-white/50">#{idx + 1}</span>
-                      </div>
-                    ) : (
-                      <BrandedCover title={sess.title} size="sm" />
-                    )}
-                    <div className="p-3">
-                      {!sess.image_url && (
-                        <p className="text-sm font-bold font-headline mb-1" style={{ color: "#0F2229" }}>{sess.title}</p>
+                    <div className="aspect-[3/2] relative">
+                      {sess.image_url ? (
+                        <>
+                          <img src={sess.image_url} alt="" className="w-full h-full object-cover" />
+                          <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 30%, rgba(0,0,0,0.6) 100%)" }} />
+                        </>
+                      ) : (
+                        <BrandedCover size="sm" />
                       )}
+                      <div className="absolute bottom-2 left-3 right-3">
+                        <p className="text-sm font-black font-headline text-white line-clamp-1 group-hover:text-[#FF6130]">{sess.title}</p>
+                      </div>
+                      <span className="absolute top-2 left-3 text-[10px] font-black text-white/50">#{idx + 1}</span>
+                    </div>
+                    <div className="p-3">
                       {sess.description && (
                         <p className="text-xs mb-1 line-clamp-2" style={{ color: "#94a3b8" }}>{sess.description}</p>
                       )}
@@ -123,7 +127,7 @@ export default async function ChallengePreviewPage({ params }: { params: Promise
                         {formatSessionDate(sess.start_time)} at {formatSessionTime(sess.start_time)} · {sess.duration_minutes} min
                       </p>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </div>
