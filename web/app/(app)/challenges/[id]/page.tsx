@@ -80,7 +80,7 @@ export default async function ChallengePage({
 
   const { data: myProfile } = await supabase
     .from("app_profile")
-    .select("display_name")
+    .select("display_name, role")
     .eq("id", user.id)
     .single();
 
@@ -136,7 +136,7 @@ export default async function ChallengePage({
 
   return (
     <div className="min-h-screen flex flex-col">
-      <ParticipantNav displayName={myProfile?.display_name ?? null} />
+      <ParticipantNav displayName={myProfile?.display_name ?? null} role={myProfile?.role} />
 
       <div className="flex-1 pt-20 px-6">
         <div className="max-w-3xl mx-auto py-10">

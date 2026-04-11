@@ -128,7 +128,7 @@ export default async function CreatorProfilePage({
 
   return (
     <div className="min-h-screen flex flex-col">
-      <ParticipantNav displayName={myProfile?.display_name ?? null} />
+      <ParticipantNav displayName={myProfile?.display_name ?? null} role={myProfile?.role} />
 
       <div className="flex-1 pt-20 px-6">
         <div className="max-w-3xl mx-auto py-10">

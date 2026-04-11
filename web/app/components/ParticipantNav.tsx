@@ -1,16 +1,31 @@
 import Link from "next/link";
-import Image from "next/image";
 import { signOut } from "@/app/actions/auth";
 import { MobileMenu } from "@/app/components/MobileMenu";
 
 export function ParticipantNav({
   displayName,
+  role,
 }: {
   displayName: string | null;
+  role?: string;
 }) {
+  const isCreator = role === "creator" || role === "admin";
+  const homeHref = isCreator ? "/dashboard" : "/discover";
+
+  const links = isCreator
+    ? [
+        { label: "Home", href: "/dashboard" },
+        { label: "Create", href: "/dashboard/create" },
+        { label: "Tribes", href: "/dashboard/tribes" },
+        { label: "Earnings", href: "/dashboard/earnings" },
+      ]
+    : [
+        { label: "Home", href: "/discover" },
+        { label: "Discover", href: "/discover#discover" },
+      ];
+
   return (
     <nav className="fixed top-0 w-full z-50">
-      {/* Gradient fade: slightly opaque at top → transparent at bottom */}
       <div
         style={{
           position: "absolute",
@@ -20,7 +35,7 @@ export function ParticipantNav({
         }}
       />
       <div className="relative max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
-        <Link href="/discover" className="flex items-center gap-2.5">
+        <Link href={homeHref} className="flex items-center gap-2.5">
           <img
             src="/logo-mark.png"
             alt="INFITRA"
@@ -36,26 +51,19 @@ export function ParticipantNav({
           </span>
         </Link>
         <div className="flex items-center gap-4">
-          <MobileMenu
-            links={[
-              { label: "Home", href: "/discover" },
-              { label: "Discover", href: "/discover#discover" },
-            ]}
-          />
-          <Link
-            href="/discover"
-            className="font-headline text-xs font-bold uppercase tracking-widest transition-colors hidden md:block hover:opacity-80"
-            style={{ color: "rgba(15, 34, 41, 0.50)" }}
-          >
-            Home
-          </Link>
-          <Link
-            href="/discover#discover"
-            className="font-headline text-xs font-bold uppercase tracking-widest transition-colors hidden md:block hover:opacity-80"
-            style={{ color: "rgba(15, 34, 41, 0.50)" }}
-          >
-            Discover
-          </Link>
+          <MobileMenu links={links} />
+          <div className="hidden md:flex items-center gap-8">
+            {links.map(({ label, href }) => (
+              <Link
+                key={href}
+                href={href}
+                className="font-headline text-xs font-bold uppercase tracking-widest transition-colors hover:opacity-80"
+                style={{ color: "rgba(15, 34, 41, 0.50)" }}
+              >
+                {label}
+              </Link>
+            ))}
+          </div>
           {displayName && (
             <span
               className="text-sm font-headline font-semibold hidden md:block"

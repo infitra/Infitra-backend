@@ -94,7 +94,7 @@ export default async function ChallengeTribePage({
       />
 
       <div className="relative z-[2]">
-        <ParticipantNav displayName={myProfile?.display_name ?? null} />
+        <ParticipantNav displayName={myProfile?.display_name ?? null} role={myProfile?.role} />
 
         <div className="flex-1 pt-20 px-6">
           <div className="max-w-3xl mx-auto py-10">

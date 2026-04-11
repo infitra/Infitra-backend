@@ -49,7 +49,7 @@ export default async function DiscoverPage() {
 
   const { data: profile } = await supabase
     .from("app_profile")
-    .select("display_name")
+    .select("display_name, role")
     .eq("id", user.id)
     .single();
 
@@ -235,7 +235,7 @@ export default async function DiscoverPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <ParticipantNav displayName={profile?.display_name ?? null} />
+      <ParticipantNav displayName={profile?.display_name ?? null} role={profile?.role} />
 
       <div className="flex-1 pt-20 px-6">
         <div className="max-w-5xl mx-auto py-10">
