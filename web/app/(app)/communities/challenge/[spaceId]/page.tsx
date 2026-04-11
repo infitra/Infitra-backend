@@ -63,7 +63,7 @@ export default async function ChallengeTribePage({ params }: { params: Promise<{
   let allSessions: any[] = [];
   const now = new Date();
   if (space.source_challenge_id) {
-    const { data: links } = await supabase.from("app_challenge_session").select("session_id, app_session(id, title, start_time, duration_minutes, status, live_room_id)").eq("challenge_id", space.source_challenge_id);
+    const { data: links } = await supabase.from("app_challenge_session").select("session_id, app_session(id, title, start_time, duration_minutes, status, live_room_id, image_url)").eq("challenge_id", space.source_challenge_id);
     allSessions = (links ?? []).map((l: any) => l.app_session).filter(Boolean).sort((a: any, b: any) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
   }
 
@@ -281,13 +281,34 @@ export default async function ChallengeTribePage({ params }: { params: Promise<{
                       {allSessions.map((sess: any, idx: number) => {
                         const isLive = !!sess.live_room_id && sess.status !== "ended"; const isEnded = sess.status === "ended"; const isHot = hotSession?.id === sess.id; const sd = new Date(sess.start_time);
                         return (
-                          <div key={sess.id} className="shrink-0 w-52 rounded-xl overflow-hidden" style={{ boxShadow: isHot ? `0 0 15px ${isLive ? "rgba(239,68,68,0.3)" : "rgba(255,97,48,0.2)"}` : "none" }}>
-                            <div className="h-1.5" style={{ backgroundColor: isLive ? "#ef4444" : isEnded ? "#9CF0FF" : isHot ? "#FF6130" : "#1a3340" }} />
+                          <div key={sess.id} className="shrink-0 w-56 rounded-xl overflow-hidden" style={{ boxShadow: isHot ? `0 0 15px ${isLive ? "rgba(239,68,68,0.3)" : "rgba(255,97,48,0.2)"}` : "0 2px 8px rgba(0,0,0,0.3)" }}>
+                            {/* Session image or branded default */}
+                            {sess.image_url ? (
+                              <div className="h-28 relative">
+                                <img src={sess.image_url} alt="" className="w-full h-full object-cover" />
+                                <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.7) 100%)" }} />
+                                <div className="absolute bottom-2 left-3 right-3">
+                                  <p className="text-sm font-black font-headline text-white line-clamp-1">{sess.title}</p>
+                                </div>
+                                <div className="absolute top-2 left-3 right-3 flex items-center justify-between">
+                                  <span className="text-[10px] font-black text-white/50">#{idx + 1}</span>
+                                  <span className={`text-[10px] font-bold font-headline uppercase ${isLive ? "animate-pulse" : ""}`} style={{ color: isLive ? "#ef4444" : isEnded ? "#9CF0FF" : isHot ? "#FF6130" : "white" }}>
+                                    {isLive ? "● LIVE" : isEnded ? "✓" : isHot ? fmtCountdown(sess.start_time) : sd.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+                                  </span>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="h-1.5" style={{ backgroundColor: isLive ? "#ef4444" : isEnded ? "#9CF0FF" : isHot ? "#FF6130" : "#1a3340" }} />
+                            )}
                             <div className="p-3.5" style={{ backgroundColor: isLive ? "#7f1d1d" : isEnded ? "#0d3040" : isHot ? "#662008" : "#0a1218" }}>
-                              <div className="flex items-center justify-between mb-1.5"><span className="text-[10px] font-black text-white/30">#{idx + 1}</span><span className={`text-[10px] font-bold font-headline uppercase ${isLive ? "animate-pulse" : ""}`} style={{ color: isLive ? "#ef4444" : isEnded ? "#9CF0FF" : isHot ? "#FF6130" : "#9CF0FF50" }}>{isLive ? "● LIVE" : isEnded ? "✓" : isHot ? fmtCountdown(sess.start_time) : sd.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</span></div>
-                              <p className="text-sm font-black font-headline text-white mb-1.5 line-clamp-1">{sess.title}</p>
-                              <p className="text-[10px] text-white/40">{sd.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })} · {sess.duration_minutes}m</p>
-                              {isLive && <Link href={`/sessions/${sess.id}/live`} className="mt-2 block text-center py-1.5 rounded-full text-[10px] font-black text-white" style={{ backgroundColor: "#ef4444" }}>JOIN</Link>}
+                              {!sess.image_url && (
+                                <>
+                                  <div className="flex items-center justify-between mb-1.5"><span className="text-[10px] font-black text-white/30">#{idx + 1}</span><span className={`text-[10px] font-bold font-headline uppercase ${isLive ? "animate-pulse" : ""}`} style={{ color: isLive ? "#ef4444" : isEnded ? "#9CF0FF" : isHot ? "#FF6130" : "#9CF0FF50" }}>{isLive ? "● LIVE" : isEnded ? "✓" : isHot ? fmtCountdown(sess.start_time) : sd.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</span></div>
+                                  <p className="text-sm font-black font-headline text-white mb-1.5 line-clamp-1">{sess.title}</p>
+                                </>
+                              )}
+                              <p className="text-[10px] text-white/50">{sd.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })} · {sess.duration_minutes}m · {sd.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}</p>
+                              {isLive && <Link href={`/sessions/${sess.id}/live`} className="mt-2 block text-center py-1.5 rounded-full text-[10px] font-black text-white" style={{ backgroundColor: "#ef4444", boxShadow: "0 0 10px rgba(239,68,68,0.5)" }}>JOIN</Link>}
                             </div>
                           </div>
                         );
