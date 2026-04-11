@@ -192,8 +192,8 @@ export async function removeChallengeSession(
 
   if (!user) return { error: "Not authenticated." };
 
-  // Unlink from challenge
-  const { error: unlinkError } = await supabase.rpc(
+  // Try RPC first (handles all validation)
+  const { error: rpcError } = await supabase.rpc(
     "challenge_remove_session",
     {
       p_challenge: challengeId,
@@ -201,14 +201,25 @@ export async function removeChallengeSession(
     }
   );
 
-  if (unlinkError) return { error: unlinkError.message };
+  if (rpcError) {
+    // If RPC fails, try direct delete as fallback (draft sessions only)
+    const { error: unlinkError } = await supabase
+      .from("app_challenge_session")
+      .delete()
+      .eq("challenge_id", challengeId)
+      .eq("session_id", sessionId);
 
-  // Delete the session row (it was created for this challenge only)
-  await supabase
+    if (unlinkError) return { error: `Unlink failed: ${unlinkError.message}` };
+  }
+
+  // Delete the session row
+  const { error: deleteError } = await supabase
     .from("app_session")
     .delete()
     .eq("id", sessionId)
     .eq("host_id", user.id);
+
+  if (deleteError) return { error: `Session delete failed: ${deleteError.message}` };
 
   return { success: true };
 }
