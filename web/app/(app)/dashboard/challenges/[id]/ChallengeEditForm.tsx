@@ -448,7 +448,9 @@ export function ChallengeEditForm({
               New Session
             </p>
             {/* Session cover image */}
-            <ImageSelector currentUrl={newImageUrl} title={newTitle || "Session"} onSelect={setNewImageUrl} size="sm" />
+            <div className="w-48">
+              <ImageSelector currentUrl={newImageUrl} title={newTitle || "Session"} onSelect={setNewImageUrl} size="sm" />
+            </div>
             <input
               type="text"
               value={newTitle}
@@ -612,9 +614,15 @@ export function ChallengeEditForm({
                     className="flex items-start gap-3 p-3 rounded-xl infitra-glass group/item"
                   >
                     {/* Thumbnail */}
-                    {sess.image_url && (
-                      <img src={sess.image_url} alt="" className="w-16 h-16 rounded-lg object-cover shrink-0" />
-                    )}
+                    <div className="w-16 h-16 rounded-lg overflow-hidden shrink-0">
+                      {sess.image_url ? (
+                        <img src={sess.image_url} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, #0F2229, #1a3340, #2a1508)" }}>
+                          <img src="/logo-mark.png" alt="" width={24} height={24} style={{ opacity: 0.15 }} />
+                        </div>
+                      )}
+                    </div>
                     <button
                       type="button"
                       onClick={() => startEditing(sess)}

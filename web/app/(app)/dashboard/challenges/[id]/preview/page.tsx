@@ -3,17 +3,12 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { PreviewActions } from "./PreviewActions";
 import { BrandedCover } from "@/app/components/BrandedCover";
+import { SessionCard } from "./SessionDetailPopup";
 
 export const metadata = { title: "Preview Challenge — INFITRA" };
 
 function formatDate(dateStr: string) {
   return new Date(dateStr + "T00:00:00").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
-}
-function formatSessionDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
-}
-function formatSessionTime(dateStr: string) {
-  return new Date(dateStr).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 }
 
 export default async function ChallengePreviewPage({ params }: { params: Promise<{ id: string }> }) {
@@ -103,31 +98,7 @@ export default async function ChallengePreviewPage({ params }: { params: Promise
               </p>
               <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
                 {linkedSessions.map((sess: any, idx: number) => (
-                  <Link key={sess.id} href={`/dashboard/sessions/${sess.id}`} className="shrink-0 w-56 rounded-xl overflow-hidden infitra-card-link group block">
-                    {/* Session image */}
-                    <div className="aspect-[3/2] relative">
-                      {sess.image_url ? (
-                        <>
-                          <img src={sess.image_url} alt="" className="w-full h-full object-cover" />
-                          <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 30%, rgba(0,0,0,0.6) 100%)" }} />
-                        </>
-                      ) : (
-                        <BrandedCover size="sm" />
-                      )}
-                      <div className="absolute bottom-2 left-3 right-3">
-                        <p className="text-sm font-black font-headline text-white line-clamp-1 group-hover:text-[#FF6130]">{sess.title}</p>
-                      </div>
-                      <span className="absolute top-2 left-3 text-[10px] font-black text-white/50">#{idx + 1}</span>
-                    </div>
-                    <div className="p-3">
-                      {sess.description && (
-                        <p className="text-xs mb-1 line-clamp-2" style={{ color: "#94a3b8" }}>{sess.description}</p>
-                      )}
-                      <p className="text-[10px]" style={{ color: "#64748b" }}>
-                        {formatSessionDate(sess.start_time)} at {formatSessionTime(sess.start_time)} · {sess.duration_minutes} min
-                      </p>
-                    </div>
-                  </Link>
+                  <SessionCard key={sess.id} sess={sess} idx={idx} />
                 ))}
               </div>
             </div>
