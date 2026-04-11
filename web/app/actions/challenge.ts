@@ -192,8 +192,9 @@ export async function removeChallengeSession(
 
   if (!user) return { error: "Not authenticated." };
 
-  // Unlink via RPC (this is the only way — RLS enforces it)
-  const { error: rpcError } = await supabase.rpc(
+  // Unlink via RPC — this is the only allowed way (guard trigger enforces it).
+  // The RPC sets app.via_rpc before deleting from app_challenge_session.
+  const { error } = await supabase.rpc(
     "challenge_remove_session",
     {
       p_challenge: challengeId,
@@ -201,17 +202,12 @@ export async function removeChallengeSession(
     }
   );
 
-  if (rpcError) return { error: rpcError.message };
+  if (error) return { error: error.message };
 
-  // Delete the session row (RLS allows delete on draft sessions by owner)
-  // This may fail if session is not draft — that's OK, the unlink already happened
-  await supabase
-    .from("app_session")
-    .delete()
-    .eq("id", sessionId)
-    .eq("host_id", user.id)
-    .eq("status", "draft");
-
+  // NOTE: We do NOT delete the app_session row here.
+  // Deleting app_session cascades to app_challenge_session (FK ON DELETE CASCADE),
+  // which triggers guard_link_via_rpc and blocks the operation.
+  // The orphaned draft session is harmless — it has no links, won't appear anywhere.
   return { success: true };
 }
 
