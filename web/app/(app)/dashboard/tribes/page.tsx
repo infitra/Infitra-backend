@@ -114,8 +114,8 @@ export default async function TribesPage() {
 
   return (
     <>
-      {/* Dark overlay — translucent so waves bleed through visibly */}
-      <div className="fixed inset-0 z-0 pointer-events-none" style={{ backgroundColor: "rgba(15, 34, 41, 0.72)" }} />
+      {/* Override parent background to dark — waves render on dark base naturally */}
+      <style dangerouslySetInnerHTML={{ __html: `.min-h-screen[style] { background-color: #0F2229 !important; }` }} />
 
       <div className="relative z-10 py-6 max-w-4xl mx-auto">
       {/* Header */}
