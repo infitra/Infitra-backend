@@ -135,109 +135,123 @@ export default async function ChallengeTribePage({ params }: { params: Promise<{
             </div>
           </div>
 
-          {/* 2. ACTIVE CHALLENGE */}
+          {/* 2. ACTIVE CHALLENGE — one unified block */}
           {challenge && (
-            <div className="px-6 md:px-10 lg:px-16 py-8" style={{ background: isActive ? "linear-gradient(135deg, rgba(255, 97, 48, 0.12) 0%, rgba(8, 18, 24, 1) 60%)" : "#0a1218", borderTop: isActive ? "2px solid #FF6130" : "1px solid #1a3340", borderBottom: "1px solid #1a3340" }}>
-              <div className="max-w-7xl mx-auto">
-                <div className="flex items-center gap-3 mb-4">
-                  {isActive && <span className="w-3 h-3 rounded-full bg-[#FF6130] animate-pulse" />}
-                  <span className="text-xs font-bold font-headline uppercase tracking-wider text-[#FF6130]">{isActive ? "Active Challenge" : "Challenge"}</span>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-                  <div className="lg:col-span-2">
-                    <h2 className="text-3xl font-black font-headline text-white tracking-tight mb-2">{challenge.title}</h2>
-                    {challenge.description && <p className="text-sm text-[#9CF0FF]/60 mb-4 max-w-xl">{challenge.description}</p>}
-
-                    <div className="flex flex-wrap items-center gap-3 mb-6">
-                      {challenge.start_date && challenge.end_date && (
-                        <div className="px-3 py-1.5 rounded-lg" style={{ backgroundColor: "#0d2a36", border: "1px solid #1a3340" }}>
-                          <span className="text-xs font-bold font-headline text-[#9CF0FF]">{fmtDate(challenge.start_date)} — {fmtDate(challenge.end_date)}</span>
-                        </div>
-                      )}
-                      {challenge.price_cents > 0 && (
-                        <div className="px-3 py-1.5 rounded-lg" style={{ backgroundColor: "#1f1005", border: "1px solid #FF6130" }}>
-                          <span className="text-xs font-bold font-headline text-[#FF6130]">CHF {(challenge.price_cents / 100).toFixed(2)}</span>
-                        </div>
-                      )}
-                      <div className="px-3 py-1.5 rounded-lg" style={{ backgroundColor: "#0d2a36", border: "1px solid #1a3340" }}>
-                        <span className="text-xs font-bold font-headline text-[#9CF0FF]">{totalSessions} session{totalSessions !== 1 ? "s" : ""} · {totalMinutes} min</span>
+            <div className="px-6 md:px-10 lg:px-16 py-8">
+              <div
+                className="max-w-7xl mx-auto rounded-2xl overflow-hidden"
+                style={{
+                  backgroundColor: "#0d1f28",
+                  border: isActive ? "2px solid #FF6130" : "1px solid #1a3340",
+                  boxShadow: isActive ? "0 0 40px rgba(255, 97, 48, 0.15)" : "none",
+                }}
+              >
+                {/* ── Top: Progress bar + badge ──────────────── */}
+                <div className="px-8 pt-6 pb-5" style={{ borderBottom: "1px solid #1a3340" }}>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      {isActive && <span className="w-3 h-3 rounded-full bg-[#FF6130] animate-pulse" />}
+                      <span className="text-xs font-bold font-headline uppercase tracking-wider text-[#FF6130]">{isActive ? "Active Challenge" : "Challenge"}</span>
+                    </div>
+                    {totalSessions > 0 && (
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-black font-headline text-white">{completedSessions}/{totalSessions}</span>
+                        <span className="text-xs text-[#9CF0FF]/50">sessions</span>
+                        <span className="text-sm font-black font-headline text-[#FF6130]">{progressPct}%</span>
                       </div>
-                    </div>
-
-                    <p className="text-[10px] font-bold font-headline uppercase tracking-wider text-[#FF6130] mb-2">Host{cohosts.length > 0 ? "s" : ""}</p>
-                    <div className="flex gap-3 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
-                      <Link href={owner?.username ? `/creators/${owner.username}` : "#"} className="shrink-0 flex items-center gap-3 p-3 rounded-xl group" style={{ backgroundColor: "#0d1f28", border: "2px solid #FF6130", minWidth: "220px", boxShadow: "0 0 15px rgba(255, 97, 48, 0.2)" }}>
-                        {owner?.avatar_url ? <img src={owner.avatar_url} alt="" className="w-12 h-12 rounded-full object-cover" style={{ border: "2px solid #FF6130" }} /> : <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: "#662008", border: "2px solid #FF6130" }}><span className="text-lg font-black font-headline text-white">{(owner?.display_name ?? "?")[0].toUpperCase()}</span></div>}
-                        <div className="min-w-0">
-                          <p className="text-sm font-black font-headline text-white truncate group-hover:text-[#FF6130]">{owner?.display_name}</p>
-                          <p className="text-[10px] text-[#FF6130] font-bold font-headline">Lead Host</p>
-                        </div>
-                      </Link>
-                      {cohosts.map((ch, i) => (
-                        <div key={ch.id} className="shrink-0 flex items-center gap-3 p-3 rounded-xl" style={{ backgroundColor: "#0d1f28", border: "1px solid #1a3340", minWidth: "200px" }}>
-                          <Avatar src={ch.avatar} name={ch.name} i={i + 1} size="w-10 h-10" />
-                          <div className="min-w-0"><p className="text-sm font-bold font-headline text-white truncate">{ch.name}</p><p className="text-[10px] text-[#9CF0FF]/60">Co-Host · {ch.splitPct}%</p></div>
-                        </div>
-                      ))}
-                      {cohosts.length === 0 && !isOwner && <div className="shrink-0 p-3 rounded-xl flex items-center" style={{ backgroundColor: "#0a1218", border: "1px dashed #1a3340", minWidth: "180px" }}><p className="text-xs text-[#9CF0FF]/30">Collaboration slots</p></div>}
-                    </div>
+                    )}
                   </div>
-
+                  {/* Full-width progress bar */}
                   {totalSessions > 0 && (
-                    <div className="p-5 rounded-xl" style={{ backgroundColor: "#0d1f28", border: "1px solid #1a3340" }}>
-                      <p className="text-[10px] font-bold font-headline uppercase tracking-wider text-[#FF6130] mb-4">Progress</p>
-                      <div className="flex items-center gap-5 mb-4">
-                        <div className="relative w-20 h-20 shrink-0">
-                          <svg viewBox="0 0 36 36" className="w-20 h-20 -rotate-90">
-                            <path d="M18 2.0845a15.9155 15.9155 0 010 31.831 15.9155 15.9155 0 010-31.831" fill="none" stroke="#1a3340" strokeWidth="4" />
-                            <path d="M18 2.0845a15.9155 15.9155 0 010 31.831 15.9155 15.9155 0 010-31.831" fill="none" stroke="#FF6130" strokeWidth="4" strokeDasharray={`${progressPct}, 100`} strokeLinecap="round" style={{ filter: "drop-shadow(0 0 8px rgba(255, 97, 48, 0.7))" }} />
-                          </svg>
-                          <div className="absolute inset-0 flex items-center justify-center"><span className="text-lg font-black font-headline text-white">{progressPct}%</span></div>
-                        </div>
-                        <div>
-                          <p className="text-3xl font-black font-headline text-white leading-none">{completedSessions}<span className="text-white/30 text-lg">/{totalSessions}</span></p>
-                          <p className="text-xs text-[#9CF0FF]/60 mt-1">sessions</p>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="p-2.5 rounded-lg" style={{ backgroundColor: "#0d2a36", border: "1px solid #9CF0FF33" }}><p className="text-lg font-black font-headline text-[#9CF0FF]">{completedMinutes}</p><p className="text-[9px] text-[#9CF0FF]/50 font-bold font-headline">MIN DONE</p></div>
-                        <div className="p-2.5 rounded-lg" style={{ backgroundColor: "#1f1005", border: "1px solid #FF613033" }}><p className="text-lg font-black font-headline text-[#FF6130]">{totalMinutes - completedMinutes}</p><p className="text-[9px] text-[#FF6130]/50 font-bold font-headline">MIN LEFT</p></div>
-                      </div>
-                      {activeMemberCount > 0 && (
-                        <div className="mt-4 pt-3" style={{ borderTop: "1px solid #1a3340" }}>
-                          <p className="text-[10px] font-bold font-headline text-[#9CF0FF]/50 mb-2">{activeMemberCount} active</p>
-                          <div className="flex -space-x-1.5">{activeMemberProfiles.slice(0, 8).map((m, i) => <Avatar key={m.id} src={m.avatar} name={m.name} i={i} size="w-7 h-7" />)}</div>
-                        </div>
-                      )}
+                    <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: "#1a3340" }}>
+                      <div className="h-full rounded-full" style={{ width: `${Math.max(progressPct, 2)}%`, background: "linear-gradient(90deg, #FF6130, #FF6130cc)", boxShadow: "0 0 10px rgba(255, 97, 48, 0.5)" }} />
                     </div>
                   )}
                 </div>
 
-                {hotSession && (
-                  <div className="mt-6 flex items-center justify-between p-5 rounded-xl" style={{ background: tribeState === "live" ? "linear-gradient(90deg, #991b1b, #450a0a)" : "linear-gradient(90deg, #662008, #3d1206)", border: `2px solid ${tribeState === "live" ? "#ef4444" : "#FF6130"}`, boxShadow: `0 0 30px ${tribeState === "live" ? "rgba(239,68,68,0.3)" : "rgba(255,97,48,0.25)"}` }}>
-                    <div className="flex items-center gap-4">
-                      <span className="text-4xl md:text-5xl font-black font-headline leading-none" style={{ color: tribeState === "live" ? "#ef4444" : "#FF6130", textShadow: `0 0 20px ${tribeState === "live" ? "rgba(239,68,68,0.5)" : "rgba(255,97,48,0.4)"}` }}>{tribeState === "live" ? "LIVE" : fmtCountdown(hotSession.start_time)}</span>
-                      <div><p className="text-lg font-black font-headline text-white">{hotSession.title}</p><p className="text-xs text-white/50">{new Date(hotSession.start_time).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })} · {hotSession.duration_minutes} min</p></div>
-                    </div>
-                    {tribeState === "live" && <Link href={`/sessions/${hotSession.id}/live`} className="px-8 py-3 rounded-full text-white text-sm font-black font-headline inline-flex items-center gap-2" style={{ backgroundColor: "#ef4444", boxShadow: "0 0 25px rgba(239,68,68,0.5)" }}><span className="w-2.5 h-2.5 rounded-full bg-white animate-pulse" /> JOIN NOW</Link>}
-                  </div>
-                )}
+                {/* ── Middle: Challenge info + hot session ──── */}
+                <div className="px-8 py-6" style={{ borderBottom: "1px solid #1a3340" }}>
+                  <h2 className="text-2xl md:text-3xl font-black font-headline text-white tracking-tight mb-2">{challenge.title}</h2>
+                  {challenge.description && <p className="text-sm text-[#9CF0FF]/60 mb-4 max-w-2xl">{challenge.description}</p>}
 
+                  {/* Meta + stats inline */}
+                  <div className="flex flex-wrap items-center gap-3 mb-6">
+                    {challenge.start_date && challenge.end_date && (
+                      <span className="text-xs font-bold font-headline text-[#9CF0FF]">{fmtDate(challenge.start_date)} — {fmtDate(challenge.end_date)}</span>
+                    )}
+                    <span className="text-[#9CF0FF]/20">·</span>
+                    <span className="text-xs font-bold font-headline text-[#9CF0FF]">{totalSessions} session{totalSessions !== 1 ? "s" : ""} · {totalMinutes} min</span>
+                    {challenge.price_cents > 0 && (
+                      <>
+                        <span className="text-[#9CF0FF]/20">·</span>
+                        <span className="text-xs font-bold font-headline text-[#FF6130]">CHF {(challenge.price_cents / 100).toFixed(2)}</span>
+                      </>
+                    )}
+                    <span className="text-[#9CF0FF]/20">·</span>
+                    <span className="text-xs text-[#9CF0FF]/50">{completedMinutes} min done · {totalMinutes - completedMinutes} left</span>
+                    {activeMemberCount > 0 && (
+                      <>
+                        <span className="text-[#9CF0FF]/20">·</span>
+                        <div className="flex items-center gap-1.5">
+                          <div className="flex -space-x-1">{activeMemberProfiles.slice(0, 4).map((m, i) => <Avatar key={m.id} src={m.avatar} name={m.name} i={i} size="w-5 h-5" />)}</div>
+                          <span className="text-xs font-bold text-white">{activeMemberCount} active</span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Hot session inline */}
+                  {hotSession && (
+                    <div className="flex items-center justify-between p-4 rounded-xl" style={{ background: tribeState === "live" ? "linear-gradient(90deg, #991b1b, #450a0a)" : "linear-gradient(90deg, #662008, #3d1206)", border: `1px solid ${tribeState === "live" ? "#ef4444" : "#FF6130"}` }}>
+                      <div className="flex items-center gap-4">
+                        <span className="text-3xl md:text-4xl font-black font-headline leading-none" style={{ color: tribeState === "live" ? "#ef4444" : "#FF6130", textShadow: `0 0 15px ${tribeState === "live" ? "rgba(239,68,68,0.5)" : "rgba(255,97,48,0.4)"}` }}>{tribeState === "live" ? "LIVE" : fmtCountdown(hotSession.start_time)}</span>
+                        <div><p className="text-base font-black font-headline text-white">{hotSession.title}</p><p className="text-xs text-white/50">{new Date(hotSession.start_time).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })} · {hotSession.duration_minutes} min</p></div>
+                      </div>
+                      {tribeState === "live" && <Link href={`/sessions/${hotSession.id}/live`} className="px-6 py-2.5 rounded-full text-white text-sm font-black font-headline inline-flex items-center gap-2" style={{ backgroundColor: "#ef4444", boxShadow: "0 0 20px rgba(239,68,68,0.5)" }}><span className="w-2 h-2 rounded-full bg-white animate-pulse" /> JOIN</Link>}
+                    </div>
+                  )}
+
+                  {tribeState === "new" && (
+                    <div className="p-6 rounded-xl text-center" style={{ border: "1px dashed #FF6130" }}>
+                      <p className="text-xl font-black font-headline text-white mb-1">{isOwner ? "Your stage is set" : "Coming soon"}</p>
+                      <p className="text-sm text-[#9CF0FF]/50">{isOwner ? "Add sessions to bring this alive." : "Sessions will appear here."}</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* ── Hosts row ─────────────────────────────── */}
+                <div className="px-8 py-5" style={{ borderBottom: "1px solid #1a3340" }}>
+                  <p className="text-[10px] font-bold font-headline uppercase tracking-wider text-[#FF6130] mb-3">Host{cohosts.length > 0 ? "s & Co-Hosts" : ""}</p>
+                  <div className="flex gap-3 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
+                    <Link href={owner?.username ? `/creators/${owner.username}` : "#"} className="shrink-0 flex items-center gap-3 p-3 rounded-xl group" style={{ backgroundColor: "#0a1218", border: "2px solid #FF6130", minWidth: "220px" }}>
+                      {owner?.avatar_url ? <img src={owner.avatar_url} alt="" className="w-11 h-11 rounded-full object-cover" style={{ border: "2px solid #FF6130" }} /> : <div className="w-11 h-11 rounded-full flex items-center justify-center" style={{ backgroundColor: "#662008", border: "2px solid #FF6130" }}><span className="text-base font-black font-headline text-white">{(owner?.display_name ?? "?")[0].toUpperCase()}</span></div>}
+                      <div className="min-w-0"><p className="text-sm font-black font-headline text-white truncate group-hover:text-[#FF6130]">{owner?.display_name}</p><p className="text-[10px] text-[#FF6130] font-bold font-headline">Lead Host</p></div>
+                    </Link>
+                    {cohosts.map((ch, i) => (
+                      <div key={ch.id} className="shrink-0 flex items-center gap-3 p-3 rounded-xl" style={{ backgroundColor: "#0a1218", border: "1px solid #1a3340", minWidth: "200px" }}>
+                        <Avatar src={ch.avatar} name={ch.name} i={i + 1} size="w-10 h-10" />
+                        <div className="min-w-0"><p className="text-sm font-bold font-headline text-white truncate">{ch.name}</p><p className="text-[10px] text-[#9CF0FF]/60">Co-Host · {ch.splitPct}%</p></div>
+                      </div>
+                    ))}
+                    {cohosts.length === 0 && <div className="shrink-0 p-3 rounded-xl flex items-center" style={{ backgroundColor: "#0a1218", border: "1px dashed #1a3340", minWidth: "160px" }}><p className="text-xs text-[#9CF0FF]/30">+ Collaborators</p></div>}
+                  </div>
+                </div>
+
+                {/* ── Sessions scroll ───────────────────────── */}
                 {allSessions.length > 0 && (
-                  <div className="mt-6">
-                    <p className="text-[10px] font-bold font-headline uppercase tracking-wider text-[#FF6130] mb-3">Sessions</p>
-                    <div className="flex gap-3 overflow-x-auto pb-3" style={{ scrollbarWidth: "none" }}>
+                  <div className="px-8 py-5">
+                    <p className="text-[10px] font-bold font-headline uppercase tracking-wider text-[#9CF0FF]/50 mb-3">Sessions</p>
+                    <div className="flex gap-3 overflow-x-auto pb-1" style={{ scrollbarWidth: "none" }}>
                       {allSessions.map((sess: any, idx: number) => {
                         const isLive = !!sess.live_room_id && sess.status !== "ended"; const isEnded = sess.status === "ended"; const isHot = hotSession?.id === sess.id; const sd = new Date(sess.start_time);
                         return (
-                          <div key={sess.id} className="shrink-0 w-56 rounded-xl overflow-hidden" style={{ boxShadow: isHot ? `0 0 20px ${isLive ? "rgba(239,68,68,0.3)" : "rgba(255,97,48,0.25)"}` : "0 2px 8px rgba(0,0,0,0.3)" }}>
+                          <div key={sess.id} className="shrink-0 w-52 rounded-xl overflow-hidden" style={{ boxShadow: isHot ? `0 0 15px ${isLive ? "rgba(239,68,68,0.3)" : "rgba(255,97,48,0.2)"}` : "none" }}>
                             <div className="h-1.5" style={{ backgroundColor: isLive ? "#ef4444" : isEnded ? "#9CF0FF" : isHot ? "#FF6130" : "#1a3340" }} />
-                            <div className="p-4" style={{ backgroundColor: isLive ? "#7f1d1d" : isEnded ? "#0d3040" : isHot ? "#662008" : "#0d1f28" }}>
-                              <div className="flex items-center justify-between mb-2"><span className="text-[10px] font-black text-white/30">#{idx + 1}</span><span className={`text-[10px] font-bold font-headline uppercase ${isLive ? "animate-pulse" : ""}`} style={{ color: isLive ? "#ef4444" : isEnded ? "#9CF0FF" : isHot ? "#FF6130" : "#9CF0FF50" }}>{isLive ? "● LIVE" : isEnded ? "✓" : isHot ? fmtCountdown(sess.start_time) : sd.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</span></div>
-                              <p className="text-sm font-black font-headline text-white mb-2 line-clamp-2 leading-tight">{sess.title}</p>
-                              <p className="text-[10px] text-white/40">{sd.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })} · {sess.duration_minutes}m · {sd.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}</p>
-                              {isLive && <Link href={`/sessions/${sess.id}/live`} className="mt-3 block text-center py-2 rounded-full text-xs font-black text-white" style={{ backgroundColor: "#ef4444", boxShadow: "0 0 12px rgba(239,68,68,0.5)" }}>JOIN</Link>}
+                            <div className="p-3.5" style={{ backgroundColor: isLive ? "#7f1d1d" : isEnded ? "#0d3040" : isHot ? "#662008" : "#0a1218" }}>
+                              <div className="flex items-center justify-between mb-1.5"><span className="text-[10px] font-black text-white/30">#{idx + 1}</span><span className={`text-[10px] font-bold font-headline uppercase ${isLive ? "animate-pulse" : ""}`} style={{ color: isLive ? "#ef4444" : isEnded ? "#9CF0FF" : isHot ? "#FF6130" : "#9CF0FF50" }}>{isLive ? "● LIVE" : isEnded ? "✓" : isHot ? fmtCountdown(sess.start_time) : sd.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}</span></div>
+                              <p className="text-sm font-black font-headline text-white mb-1.5 line-clamp-1">{sess.title}</p>
+                              <p className="text-[10px] text-white/40">{sd.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })} · {sess.duration_minutes}m</p>
+                              {isLive && <Link href={`/sessions/${sess.id}/live`} className="mt-2 block text-center py-1.5 rounded-full text-[10px] font-black text-white" style={{ backgroundColor: "#ef4444" }}>JOIN</Link>}
                             </div>
                           </div>
                         );
@@ -245,8 +259,6 @@ export default async function ChallengeTribePage({ params }: { params: Promise<{
                     </div>
                   </div>
                 )}
-
-                {tribeState === "new" && <div className="mt-6 p-8 rounded-xl text-center" style={{ background: "linear-gradient(135deg, #1f1005, #0a1218)", border: "2px solid #FF6130" }}><p className="text-2xl font-black font-headline text-white mb-2">{isOwner ? "Your stage is set" : "Something is about to begin"}</p><p className="text-sm text-[#9CF0FF]/60">{isOwner ? "Add sessions to bring this space alive." : "Sessions will drop here soon."}</p></div>}
               </div>
             </div>
           )}
