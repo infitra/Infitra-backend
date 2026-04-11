@@ -142,8 +142,8 @@ export default async function ChallengeTribePage({ params }: { params: Promise<{
                 className="max-w-7xl mx-auto rounded-2xl overflow-hidden"
                 style={{
                   backgroundColor: "#0d1f28",
-                  border: isActive ? "2px solid #FF6130" : "1px solid #1a3340",
-                  boxShadow: isActive ? "0 0 40px rgba(255, 97, 48, 0.15)" : "none",
+                  border: isActive ? "1px solid #1a3340" : "1px solid #1a3340",
+                  boxShadow: isActive ? "0 4px 30px rgba(0,0,0,0.4)" : "none",
                 }}
               >
                 {/* ── Top: Progress bar + badge ──────────────── */}
@@ -163,32 +163,39 @@ export default async function ChallengeTribePage({ params }: { params: Promise<{
                   </div>
                   {/* Full-width progress bar */}
                   {totalSessions > 0 && (
-                    <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: "#1a3340" }}>
-                      <div className="h-full rounded-full" style={{ width: `${Math.max(progressPct, 2)}%`, background: "linear-gradient(90deg, #FF6130, #FF6130cc)", boxShadow: "0 0 10px rgba(255, 97, 48, 0.5)" }} />
+                    <div className="h-3 rounded-full overflow-hidden" style={{ backgroundColor: "#0a1218" }}>
+                      <div className="h-full rounded-full" style={{ width: `${Math.max(progressPct, 2)}%`, background: "linear-gradient(90deg, #FF6130, #ff8c5a)", boxShadow: "0 0 20px rgba(255, 97, 48, 0.6), 0 0 40px rgba(255, 97, 48, 0.2)" }} />
                     </div>
                   )}
                 </div>
 
                 {/* ── Middle: Challenge info + hot session ──── */}
                 <div className="px-8 py-6" style={{ borderBottom: "1px solid #1a3340" }}>
-                  <h2 className="text-2xl md:text-3xl font-black font-headline text-white tracking-tight mb-2">{challenge.title}</h2>
-                  {challenge.description && <p className="text-sm text-[#9CF0FF]/60 mb-4 max-w-2xl">{challenge.description}</p>}
+                  <h2 className="text-3xl md:text-4xl font-black font-headline text-white tracking-tight mb-3">{challenge.title}</h2>
+                  {challenge.description && <p className="text-base text-[#9CF0FF]/70 mb-5 max-w-2xl leading-relaxed">{challenge.description}</p>}
 
-                  {/* Meta + stats inline */}
-                  <div className="flex flex-wrap items-center gap-3 mb-6">
+                  {/* Meta blocks — visible, not invisible */}
+                  <div className="flex flex-wrap items-center gap-4 mb-6">
                     {challenge.start_date && challenge.end_date && (
-                      <span className="text-xs font-bold font-headline text-[#9CF0FF]">{fmtDate(challenge.start_date)} — {fmtDate(challenge.end_date)}</span>
+                      <div className="px-3.5 py-2 rounded-lg" style={{ backgroundColor: "#0a1218", border: "1px solid #9CF0FF33" }}>
+                        <span className="text-sm font-bold font-headline text-[#9CF0FF]">{fmtDate(challenge.start_date)} — {fmtDate(challenge.end_date)}</span>
+                      </div>
                     )}
-                    <span className="text-[#9CF0FF]/20">·</span>
-                    <span className="text-xs font-bold font-headline text-[#9CF0FF]">{totalSessions} session{totalSessions !== 1 ? "s" : ""} · {totalMinutes} min</span>
+                    <div className="px-3.5 py-2 rounded-lg" style={{ backgroundColor: "#0a1218", border: "1px solid #9CF0FF33" }}>
+                      <span className="text-sm font-bold font-headline text-white">{totalSessions} session{totalSessions !== 1 ? "s" : ""}</span>
+                      <span className="text-sm text-[#9CF0FF]/50 mx-1">·</span>
+                      <span className="text-sm font-bold font-headline text-white">{totalMinutes} min</span>
+                    </div>
                     {challenge.price_cents > 0 && (
-                      <>
-                        <span className="text-[#9CF0FF]/20">·</span>
-                        <span className="text-xs font-bold font-headline text-[#FF6130]">CHF {(challenge.price_cents / 100).toFixed(2)}</span>
-                      </>
+                      <div className="px-3.5 py-2 rounded-lg" style={{ backgroundColor: "#1f1005", border: "1px solid #FF613066" }}>
+                        <span className="text-sm font-black font-headline text-[#FF6130]">CHF {(challenge.price_cents / 100).toFixed(2)}</span>
+                      </div>
                     )}
-                    <span className="text-[#9CF0FF]/20">·</span>
-                    <span className="text-xs text-[#9CF0FF]/50">{completedMinutes} min done · {totalMinutes - completedMinutes} left</span>
+                    <div className="px-3.5 py-2 rounded-lg" style={{ backgroundColor: "#0a1218" }}>
+                      <span className="text-sm font-bold text-[#9CF0FF]/70">{completedMinutes} done</span>
+                      <span className="text-sm text-[#9CF0FF]/30 mx-1">·</span>
+                      <span className="text-sm font-bold text-[#FF6130]/70">{totalMinutes - completedMinutes} left</span>
+                    </div>
                     {activeMemberCount > 0 && (
                       <>
                         <span className="text-[#9CF0FF]/20">·</span>
