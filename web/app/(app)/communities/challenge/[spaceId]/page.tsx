@@ -25,37 +25,44 @@ export default async function ChallengeTribePage({
     .single();
   if (!space) notFound();
 
-  let challengeTitle: string | null = null;
+  // Challenge details
+  let challenge: any = null;
   if (space.source_challenge_id) {
-    const { data: ch } = await supabase.from("app_challenge").select("title").eq("id", space.source_challenge_id).single();
-    challengeTitle = ch?.title ?? null;
+    const { data: ch } = await supabase
+      .from("app_challenge")
+      .select("id, title, description, start_date, end_date, price_cents")
+      .eq("id", space.source_challenge_id)
+      .single();
+    challenge = ch;
   }
 
   const { data: canPostResult } = await supabase.rpc("can_post_in_challenge_space", { p_space: spaceId, p_user: user.id });
   const canPost = canPostResult === true;
 
-  // Members with names for avatars
+  // Members with profiles
   const { data: memberRows } = await supabase
     .from("app_challenge_space_member")
     .select("user_id")
     .eq("space_id", spaceId)
-    .limit(8);
+    .limit(12);
   const memberIds = (memberRows ?? []).map((m: any) => m.user_id);
   const memberProfiles: { id: string; name: string; avatar?: string }[] = [];
   if (memberIds.length > 0) {
-    const { data: profiles } = await supabase
-      .from("app_profile")
-      .select("id, display_name, avatar_url")
-      .in("id", memberIds);
+    const { data: profiles } = await supabase.from("app_profile").select("id, display_name, avatar_url").in("id", memberIds);
     for (const p of profiles ?? []) {
       memberProfiles.push({ id: p.id, name: p.display_name ?? "User", avatar: p.avatar_url ?? undefined });
     }
   }
   const memberCount = memberIds.length;
 
-  const { data: owner } = await supabase.from("app_profile").select("display_name, avatar_url").eq("id", space.owner_id).single();
-  const { data: myProfile } = await supabase.from("app_profile").select("display_name, role").eq("id", user.id).single();
+  // Owner profile (full)
+  const { data: owner } = await supabase
+    .from("app_profile")
+    .select("id, display_name, avatar_url, tagline, bio, username")
+    .eq("id", space.owner_id)
+    .single();
 
+  const { data: myProfile } = await supabase.from("app_profile").select("display_name, role").eq("id", user.id).single();
   const backPath = myProfile?.role === "creator" || myProfile?.role === "admin" ? "/dashboard" : "/discover";
   const isOwner = user.id === space.owner_id;
 
@@ -79,17 +86,18 @@ export default async function ChallengeTribePage({
   const totalSessions = allSessions.length;
   const completedSessions = pastSessions.length;
   const progressPct = totalSessions > 0 ? Math.round((completedSessions / totalSessions) * 100) : 0;
+  const totalMinutes = allSessions.reduce((acc: number, s: any) => acc + (s.duration_minutes ?? 0), 0);
+  const completedMinutes = pastSessions.reduce((acc: number, s: any) => acc + (s.duration_minutes ?? 0), 0);
 
   const tribeState = liveSession ? "live" : nextSession ? "upcoming" : allSessions.length > 0 ? "between" : "new";
 
-  // Countdown helpers
   function formatCountdown(dateStr: string) {
     const d = new Date(dateStr);
     const diffMs = d.getTime() - now.getTime();
     const diffMin = Math.floor(diffMs / 60000);
     const diffH = Math.floor(diffMin / 60);
     const diffD = Math.floor(diffH / 24);
-    if (diffMin < 0) return { value: "Now", unit: "" };
+    if (diffMin < 0) return { value: "NOW", unit: "" };
     if (diffMin < 60) return { value: String(diffMin), unit: "min" };
     if (diffH < 24) return { value: String(diffH), unit: diffH === 1 ? "hour" : "hours" };
     return { value: String(diffD), unit: diffD === 1 ? "day" : "days" };
@@ -101,9 +109,11 @@ export default async function ChallengeTribePage({
       " · " + d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
   }
 
-  const countdown = hotSession ? formatCountdown(hotSession.start_time) : null;
+  function formatDate(dateStr: string) {
+    return new Date(dateStr + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  }
 
-  // Avatar colors for members without photos
+  const countdown = hotSession ? formatCountdown(hotSession.start_time) : null;
   const avatarColors = ["#FF6130", "#0891b2", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#6366f1", "#f43f5e"];
 
   return (
@@ -114,7 +124,7 @@ export default async function ChallengeTribePage({
         <ParticipantNav displayName={myProfile?.display_name ?? null} role={myProfile?.role} />
 
         <div className="flex-1 pt-20 px-6">
-          <div className="max-w-3xl mx-auto py-8">
+          <div className="max-w-4xl mx-auto py-8">
 
             <Link href={backPath} className="text-xs mb-6 flex items-center gap-1.5 font-headline text-[#9CF0FF]/40 hover:text-white">
               <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -124,252 +134,286 @@ export default async function ChallengeTribePage({
             </Link>
 
             {/* ══════════════════════════════════════════════════
-                HEADER — tribe name + progress + members
+                TRIBE HEADER
                 ══════════════════════════════════════════════════ */}
-            <div className="mb-8">
-              <h1 className="text-4xl md:text-5xl font-black font-headline text-white tracking-tight leading-none mb-5">
+            <div className="mb-10">
+              <h1 className="text-4xl md:text-5xl font-black font-headline text-white tracking-tight leading-none mb-3">
                 {space.title}
               </h1>
-
-              {/* Progress bar */}
-              {totalSessions > 0 && (
-                <div className="mb-5">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold font-headline text-[#9CF0FF]/60">
-                      {completedSessions} of {totalSessions} sessions
-                    </span>
-                    <span className="text-xs font-black font-headline text-[#FF6130]">{progressPct}%</span>
-                  </div>
-                  <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: "rgba(156,240,255,0.08)" }}>
-                    <div
-                      className="h-full rounded-full"
-                      style={{
-                        width: `${Math.max(progressPct, 2)}%`,
-                        background: progressPct === 100
-                          ? "linear-gradient(90deg, #10b981, #059669)"
-                          : "linear-gradient(90deg, #FF6130, #FF6130cc)",
-                      }}
-                    />
-                  </div>
-                </div>
+              {space.description && (
+                <p className="text-base text-[#9CF0FF]/50 max-w-xl mb-4">{space.description}</p>
               )}
-
-              {/* Session timeline dots */}
-              {totalSessions > 0 && totalSessions <= 20 && (
-                <div className="flex items-center gap-1.5 mb-5">
-                  {allSessions.map((sess: any, i: number) => {
-                    const isLive = !!sess.live_room_id && sess.status !== "ended";
-                    const isEnded = sess.status === "ended";
-                    const isNext = hotSession?.id === sess.id;
-                    return (
-                      <div
-                        key={sess.id}
-                        className={`rounded-full ${isLive || isNext ? "w-3.5 h-3.5" : "w-2.5 h-2.5"}`}
-                        style={{
-                          backgroundColor: isLive
-                            ? "#ef4444"
-                            : isNext
-                              ? "#FF6130"
-                              : isEnded
-                                ? "#9CF0FF"
-                                : "rgba(156,240,255,0.15)",
-                          border: isNext && !isLive ? "2px solid rgba(255,97,48,0.5)" : undefined,
-                          animation: isLive ? "pulse 2s ease-in-out infinite" : undefined,
-                        }}
-                        title={sess.title}
-                      />
-                    );
-                  })}
-                </div>
-              )}
-
-              {/* Member avatars */}
-              <div className="flex items-center gap-3">
-                <div className="flex items-center -space-x-2">
-                  {/* Owner avatar always first */}
-                  {owner?.avatar_url ? (
-                    <img
-                      src={owner.avatar_url}
-                      alt={owner.display_name ?? ""}
-                      className="w-8 h-8 rounded-full object-cover ring-2 ring-[#0F2229]"
-                    />
-                  ) : (
-                    <div
-                      className="w-8 h-8 rounded-full flex items-center justify-center ring-2 ring-[#0F2229] text-[10px] font-black font-headline text-white"
-                      style={{ backgroundColor: avatarColors[0] }}
-                    >
-                      {(owner?.display_name ?? "?")[0].toUpperCase()}
-                    </div>
+              {challenge && (
+                <div className="flex items-center gap-3 text-xs text-[#9CF0FF]/30">
+                  {challenge.start_date && challenge.end_date && (
+                    <span>{formatDate(challenge.start_date)} — {formatDate(challenge.end_date)}</span>
                   )}
-                  {/* Member avatars */}
-                  {memberProfiles.filter(m => m.id !== space.owner_id).slice(0, 5).map((m, i) => (
-                    m.avatar ? (
-                      <img
-                        key={m.id}
-                        src={m.avatar}
-                        alt={m.name}
-                        className="w-8 h-8 rounded-full object-cover ring-2 ring-[#0F2229]"
-                      />
-                    ) : (
-                      <div
-                        key={m.id}
-                        className="w-8 h-8 rounded-full flex items-center justify-center ring-2 ring-[#0F2229] text-[10px] font-black font-headline text-white"
-                        style={{ backgroundColor: avatarColors[(i + 1) % avatarColors.length] }}
-                      >
-                        {m.name[0].toUpperCase()}
-                      </div>
-                    )
-                  ))}
+                  {challenge.price_cents > 0 && (
+                    <span>· CHF {(challenge.price_cents / 100).toFixed(2)}</span>
+                  )}
                 </div>
-                <span className="text-xs text-[#9CF0FF]/40">
-                  {memberCount === 0
-                    ? "No members yet — be the first"
-                    : `${memberCount} member${memberCount !== 1 ? "s" : ""}`}
-                </span>
-                <span className="text-[10px] text-[#9CF0FF]/20">·</span>
-                <span className="text-xs text-[#9CF0FF]/30">
-                  by {owner?.display_name}
-                </span>
-              </div>
+              )}
             </div>
 
-            {/* ══════════════════════════════════════════════════
-                THE HOT SESSION — visual weight, color-filled
-                ══════════════════════════════════════════════════ */}
-            {hotSession && (
-              <div
-                className="rounded-2xl overflow-hidden mb-6"
-                style={{
-                  background: tribeState === "live"
-                    ? "linear-gradient(135deg, rgba(239,68,68,0.15) 0%, rgba(239,68,68,0.05) 100%)"
-                    : "linear-gradient(135deg, rgba(255,97,48,0.12) 0%, rgba(255,97,48,0.03) 100%)",
-                  border: `1px solid ${tribeState === "live" ? "rgba(239,68,68,0.25)" : "rgba(255,97,48,0.20)"}`,
-                }}
-              >
-                <div className="p-6 md:p-8">
-                  {/* Countdown block */}
-                  {countdown && (
-                    <div className="flex items-end gap-2 mb-4">
-                      <span
-                        className="text-5xl md:text-6xl font-black font-headline leading-none"
-                        style={{ color: tribeState === "live" ? "#ef4444" : "#FF6130" }}
-                      >
-                        {tribeState === "live" ? "LIVE" : countdown.value}
-                      </span>
-                      {countdown.unit && (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* ── LEFT COLUMN (2/3) ─────────────────────────── */}
+              <div className="lg:col-span-2 space-y-6">
+
+                {/* THE HOT SESSION */}
+                {hotSession && (
+                  <div
+                    className="rounded-2xl overflow-hidden"
+                    style={{
+                      background: tribeState === "live"
+                        ? "linear-gradient(135deg, rgba(239,68,68,0.18) 0%, rgba(239,68,68,0.04) 100%)"
+                        : "linear-gradient(135deg, rgba(255,97,48,0.15) 0%, rgba(255,97,48,0.03) 100%)",
+                      border: `1px solid ${tribeState === "live" ? "rgba(239,68,68,0.30)" : "rgba(255,97,48,0.25)"}`,
+                    }}
+                  >
+                    <div className="p-6 md:p-8">
+                      <div className="flex items-end gap-3 mb-5">
                         <span
-                          className="text-lg font-bold font-headline mb-1"
-                          style={{ color: tribeState === "live" ? "rgba(239,68,68,0.6)" : "rgba(255,97,48,0.6)" }}
+                          className="text-6xl md:text-7xl font-black font-headline leading-none"
+                          style={{ color: tribeState === "live" ? "#ef4444" : "#FF6130" }}
                         >
-                          {countdown.unit}
+                          {tribeState === "live" ? "LIVE" : countdown?.value}
                         </span>
-                      )}
+                        {countdown?.unit && (
+                          <span className="text-xl font-bold font-headline mb-2" style={{ color: tribeState === "live" ? "rgba(239,68,68,0.5)" : "rgba(255,97,48,0.5)" }}>
+                            {countdown.unit}
+                          </span>
+                        )}
+                      </div>
+                      <h2 className="text-2xl font-black font-headline text-white tracking-tight mb-2">
+                        {hotSession.title}
+                      </h2>
+                      <p className="text-sm text-[#9CF0FF]/40 mb-6">
+                        {formatSessionTime(hotSession.start_time)} · {hotSession.duration_minutes} min
+                      </p>
+                      {tribeState === "live" ? (
+                        <Link
+                          href={`/sessions/${hotSession.id}/live`}
+                          className="inline-flex items-center gap-2.5 px-8 py-4 rounded-full text-white text-base font-black font-headline"
+                          style={{ backgroundColor: "#ef4444", boxShadow: "0 4px 24px rgba(239,68,68,0.5)" }}
+                        >
+                          <span className="w-3 h-3 rounded-full bg-white animate-pulse" />
+                          Join Now
+                        </Link>
+                      ) : null}
                     </div>
-                  )}
+                  </div>
+                )}
 
-                  <h2 className="text-xl md:text-2xl font-black font-headline text-white tracking-tight mb-2">
-                    {hotSession.title}
-                  </h2>
-                  <p className="text-sm text-[#9CF0FF]/40 mb-5">
-                    {formatSessionTime(hotSession.start_time)} · {hotSession.duration_minutes} min
-                  </p>
+                {/* New/empty tribe — full potential */}
+                {tribeState === "new" && (
+                  <div className="rounded-2xl p-10 text-center" style={{ background: "linear-gradient(135deg, rgba(255,97,48,0.08) 0%, rgba(156,240,255,0.04) 100%)", border: "1px solid rgba(255,97,48,0.15)" }}>
+                    <p className="text-3xl font-black font-headline text-white mb-3">
+                      {isOwner ? "Your stage is set" : "Something is about to begin"}
+                    </p>
+                    <p className="text-sm text-[#9CF0FF]/50 max-w-md mx-auto">
+                      {isOwner
+                        ? "Add sessions to your challenge. When they go live, this space ignites."
+                        : "Sessions will drop here soon. Stay — this is where it happens."
+                      }
+                    </p>
+                  </div>
+                )}
 
-                  {tribeState === "live" ? (
-                    <Link
-                      href={`/sessions/${hotSession.id}/live`}
-                      className="inline-flex items-center gap-2.5 px-8 py-3.5 rounded-full text-white text-sm font-black font-headline"
-                      style={{ backgroundColor: "#ef4444", boxShadow: "0 4px 20px rgba(239,68,68,0.5)" }}
-                    >
-                      <span className="w-2.5 h-2.5 rounded-full bg-white animate-pulse" />
-                      Join Now
+                {tribeState === "between" && !hotSession && (
+                  <div className="rounded-2xl p-6" style={{ background: "linear-gradient(135deg, rgba(156,240,255,0.08) 0%, rgba(156,240,255,0.02) 100%)", border: "1px solid rgba(156,240,255,0.12)" }}>
+                    <p className="text-lg font-bold font-headline text-[#9CF0FF]/70 mb-1">
+                      {completedSessions} session{completedSessions !== 1 ? "s" : ""} done. Keep moving.
+                    </p>
+                    <p className="text-sm text-[#9CF0FF]/30">
+                      Share your progress below. Your tribe is watching.
+                    </p>
+                  </div>
+                )}
+
+                {/* Upcoming sessions */}
+                {upcomingSessions.length > (hotSession ? 1 : 0) && (
+                  <div>
+                    <p className="text-[10px] font-bold font-headline uppercase tracking-wider text-[#9CF0FF]/30 mb-2">Coming up</p>
+                    <div className="space-y-1.5">
+                      {upcomingSessions.slice(hotSession ? 1 : 0, 5).map((sess: any) => {
+                        const cd = formatCountdown(sess.start_time);
+                        return (
+                          <div key={sess.id} className="flex items-center justify-between py-3 px-4 rounded-xl" style={{ backgroundColor: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.04)" }}>
+                            <div className="flex items-center gap-3 min-w-0">
+                              <span className="w-2 h-2 rounded-full bg-[#FF6130]/40 shrink-0" />
+                              <span className="text-sm text-white font-bold font-headline truncate">{sess.title}</span>
+                            </div>
+                            <div className="text-right shrink-0 ml-3">
+                              <span className="text-sm font-black font-headline text-[#FF6130]">{cd.value}</span>
+                              <span className="text-[10px] text-[#FF6130]/50 ml-1">{cd.unit}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Completed sessions */}
+                {pastSessions.length > 0 && (
+                  <div>
+                    <p className="text-[10px] font-bold font-headline uppercase tracking-wider text-[#9CF0FF]/20 mb-2">Completed</p>
+                    <div className="space-y-0.5">
+                      {pastSessions.slice(0, 5).map((sess: any) => (
+                        <div key={sess.id} className="flex items-center gap-3 py-2 px-3 opacity-30">
+                          <span className="w-2 h-2 rounded-full bg-[#9CF0FF] shrink-0" />
+                          <span className="text-sm text-white font-headline truncate">{sess.title}</span>
+                          <span className="text-[10px] text-[#9CF0FF]/40 shrink-0 ml-auto">✓</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* TRIBE ACTIVITY */}
+                <div className="mt-4">
+                  <div className="flex items-center gap-2 mb-5">
+                    <div className="w-2.5 h-2.5 rounded-full bg-[#FF6130]" />
+                    <h2 className="text-sm font-bold font-headline uppercase tracking-wider text-white">Tribe Activity</h2>
+                  </div>
+                  <PostFeed spaceId={spaceId} communityType="challenge" currentUserId={user.id} canPost={canPost} />
+                </div>
+              </div>
+
+              {/* ── RIGHT SIDEBAR ─────────────────────────────── */}
+              <div className="space-y-6">
+
+                {/* Active Challenge Progress */}
+                {totalSessions > 0 && (
+                  <div className="rounded-2xl p-5" style={{ backgroundColor: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                    <p className="text-[10px] font-bold font-headline uppercase tracking-wider text-[#FF6130] mb-4">Active Challenge Progress</p>
+
+                    {/* Progress ring (simplified as arc) */}
+                    <div className="flex items-center gap-5 mb-5">
+                      <div className="relative w-20 h-20 shrink-0">
+                        <svg viewBox="0 0 36 36" className="w-20 h-20 -rotate-90">
+                          <path
+                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                            fill="none"
+                            stroke="rgba(156,240,255,0.08)"
+                            strokeWidth="3"
+                          />
+                          <path
+                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                            fill="none"
+                            stroke="#FF6130"
+                            strokeWidth="3"
+                            strokeDasharray={`${progressPct}, 100`}
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <span className="text-lg font-black font-headline text-white">{progressPct}%</span>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-2xl font-black font-headline text-white leading-none">{completedSessions}<span className="text-[#9CF0FF]/30 text-sm font-normal">/{totalSessions}</span></p>
+                        <p className="text-xs text-[#9CF0FF]/40 mt-1">sessions</p>
+                      </div>
+                    </div>
+
+                    {/* Stats */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="p-3 rounded-xl" style={{ backgroundColor: "rgba(156,240,255,0.04)" }}>
+                        <p className="text-lg font-black font-headline text-[#9CF0FF] leading-none">{completedMinutes}</p>
+                        <p className="text-[10px] text-[#9CF0FF]/30 mt-1">min completed</p>
+                      </div>
+                      <div className="p-3 rounded-xl" style={{ backgroundColor: "rgba(255,97,48,0.04)" }}>
+                        <p className="text-lg font-black font-headline text-[#FF6130] leading-none">{totalMinutes - completedMinutes}</p>
+                        <p className="text-[10px] text-[#FF6130]/30 mt-1">min remaining</p>
+                      </div>
+                    </div>
+
+                    {/* Session timeline dots */}
+                    {totalSessions <= 20 && (
+                      <div className="flex items-center gap-1 mt-4 flex-wrap">
+                        {allSessions.map((sess: any) => {
+                          const isLive = !!sess.live_room_id && sess.status !== "ended";
+                          const isEnded = sess.status === "ended";
+                          const isNext = hotSession?.id === sess.id;
+                          return (
+                            <div
+                              key={sess.id}
+                              className={`rounded-full ${isLive || isNext ? "w-3 h-3" : "w-2.5 h-2.5"}`}
+                              style={{
+                                backgroundColor: isLive ? "#ef4444" : isNext ? "#FF6130" : isEnded ? "#9CF0FF" : "rgba(156,240,255,0.12)",
+                                border: isNext && !isLive ? "2px solid rgba(255,97,48,0.5)" : undefined,
+                                animation: isLive ? "pulse 2s ease-in-out infinite" : undefined,
+                              }}
+                              title={sess.title}
+                            />
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Host */}
+                <div className="rounded-2xl p-5" style={{ backgroundColor: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                  <p className="text-[10px] font-bold font-headline uppercase tracking-wider text-[#9CF0FF]/30 mb-4">Host</p>
+                  <div className="flex items-center gap-3 mb-3">
+                    {owner?.avatar_url ? (
+                      <img src={owner.avatar_url} alt={owner.display_name ?? ""} className="w-12 h-12 rounded-full object-cover" style={{ border: "2px solid rgba(255,97,48,0.30)" }} />
+                    ) : (
+                      <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(255,97,48,0.15)", border: "2px solid rgba(255,97,48,0.30)" }}>
+                        <span className="text-lg font-black font-headline text-[#FF6130]">{(owner?.display_name ?? "?")[0].toUpperCase()}</span>
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-sm font-black font-headline text-white truncate">{owner?.display_name}</p>
+                      {owner?.tagline && <p className="text-[10px] text-[#9CF0FF]/40 truncate">{owner.tagline}</p>}
+                    </div>
+                  </div>
+                  {owner?.bio && <p className="text-xs text-[#9CF0FF]/30 line-clamp-3 leading-relaxed">{owner.bio}</p>}
+                  {owner?.username && (
+                    <Link href={`/creators/${owner.username}`} className="block mt-3 text-[10px] font-bold font-headline text-[#FF6130]">
+                      View Profile →
                     </Link>
+                  )}
+                </div>
+
+                {/* Members */}
+                <div className="rounded-2xl p-5" style={{ backgroundColor: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}>
+                  <p className="text-[10px] font-bold font-headline uppercase tracking-wider text-[#9CF0FF]/30 mb-4">
+                    {memberCount === 0 ? "Members" : `${memberCount} Member${memberCount !== 1 ? "s" : ""}`}
+                  </p>
+                  {memberCount > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {memberProfiles.map((m, i) => (
+                        <div key={m.id} className="flex items-center gap-2 py-1.5 px-3 rounded-full" style={{ backgroundColor: "rgba(255,255,255,0.04)" }}>
+                          {m.avatar ? (
+                            <img src={m.avatar} alt={m.name} className="w-5 h-5 rounded-full object-cover" />
+                          ) : (
+                            <div className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-black text-white" style={{ backgroundColor: avatarColors[i % avatarColors.length] }}>
+                              {m.name[0].toUpperCase()}
+                            </div>
+                          )}
+                          <span className="text-[11px] text-white font-headline">{m.name}</span>
+                        </div>
+                      ))}
+                    </div>
                   ) : (
-                    <p className="text-sm font-bold font-headline text-[#FF6130]">
-                      {formatSessionTime(hotSession.start_time)}
+                    <p className="text-xs text-[#9CF0FF]/20">
+                      {isOwner ? "Share your challenge to grow your tribe" : "Be the first to join this tribe"}
                     </p>
                   )}
                 </div>
-              </div>
-            )}
 
-            {/* Upcoming sessions — secondary */}
-            {upcomingSessions.length > 1 && (
-              <div className="mb-6 space-y-1">
-                {upcomingSessions.slice(1, 4).map((sess: any) => {
-                  const cd = formatCountdown(sess.start_time);
-                  return (
-                    <div key={sess.id} className="flex items-center justify-between py-2.5 px-4 rounded-lg" style={{ backgroundColor: "rgba(255,255,255,0.03)" }}>
-                      <div className="flex items-center gap-3 min-w-0">
-                        <span className="w-2 h-2 rounded-full bg-[#FF6130]/30 shrink-0" />
-                        <span className="text-sm text-white font-bold font-headline truncate">{sess.title}</span>
-                      </div>
-                      <span className="text-xs font-bold font-headline text-[#9CF0FF]/40 shrink-0 ml-3">
-                        {cd.value}{cd.unit ? ` ${cd.unit}` : ""}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Empty / new tribe state */}
-            {tribeState === "new" && (
-              <div className="rounded-2xl p-8 md:p-10 mb-6 text-center" style={{ background: "linear-gradient(135deg, rgba(255,97,48,0.06) 0%, rgba(156,240,255,0.04) 100%)", border: "1px solid rgba(255,97,48,0.12)" }}>
-                <p className="text-2xl font-black font-headline text-white mb-3">
-                  {isOwner ? "Ready to launch" : "Something is about to begin"}
-                </p>
-                <p className="text-sm text-[#9CF0FF]/50 max-w-md mx-auto">
-                  {isOwner
-                    ? "Add sessions to your challenge. When it starts, this space comes alive."
-                    : "Sessions will appear here soon. Stay — this is where things happen."
-                  }
-                </p>
-              </div>
-            )}
-
-            {tribeState === "between" && !hotSession && (
-              <div className="rounded-2xl p-6 mb-6" style={{ background: "linear-gradient(135deg, rgba(156,240,255,0.06) 0%, rgba(156,240,255,0.02) 100%)", border: "1px solid rgba(156,240,255,0.10)" }}>
-                <p className="text-sm font-bold font-headline text-[#9CF0FF]/70 mb-1">
-                  {completedSessions} session{completedSessions !== 1 ? "s" : ""} down. Keep the momentum.
-                </p>
-                <p className="text-xs text-[#9CF0FF]/30">
-                  Share your progress. Celebrate wins. Stay connected.
-                </p>
-              </div>
-            )}
-
-            {/* Completed sessions — faded */}
-            {pastSessions.length > 0 && (
-              <div className="mb-6">
-                <div className="space-y-0.5">
-                  {pastSessions.slice(0, 3).map((sess: any) => (
-                    <div key={sess.id} className="flex items-center gap-3 py-1.5 px-3 opacity-30">
-                      <span className="w-2 h-2 rounded-full bg-[#9CF0FF] shrink-0" />
-                      <span className="text-xs text-[#9CF0FF]/60 font-headline truncate">{sess.title}</span>
-                      <span className="text-[10px] text-[#9CF0FF]/20 shrink-0">done</span>
-                    </div>
-                  ))}
+                {/* Collaborators placeholder — for later */}
+                <div className="rounded-2xl p-5" style={{ backgroundColor: "rgba(255,255,255,0.02)", border: "1px dashed rgba(255,255,255,0.06)" }}>
+                  <p className="text-[10px] font-bold font-headline uppercase tracking-wider text-[#9CF0FF]/15 mb-2">Collaborators</p>
+                  <p className="text-xs text-[#9CF0FF]/15">
+                    Invite creators to co-host sessions and split revenue — coming soon
+                  </p>
                 </div>
-              </div>
-            )}
 
-            {/* ══════════════════════════════════════════════════
-                TRIBE ACTIVITY
-                ══════════════════════════════════════════════════ */}
-            <div className="mt-10">
-              <div className="flex items-center gap-2 mb-5">
-                <div className="w-2.5 h-2.5 rounded-full bg-[#FF6130]" />
-                <h2 className="text-sm font-bold font-headline uppercase tracking-wider text-white">
-                  Tribe Activity
-                </h2>
               </div>
-
-              <PostFeed
-                spaceId={spaceId}
-                communityType="challenge"
-                currentUserId={user.id}
-                canPost={canPost}
-              />
             </div>
 
           </div>
