@@ -29,12 +29,18 @@ export default async function DashboardPage() {
     communityMembers = count ?? 0;
   }
 
-  // Sessions completed
+  // Session counts
   const { count: sessionsCompleted } = await supabase
     .from("app_session")
     .select("id", { count: "exact", head: true })
     .eq("host_id", user!.id)
     .eq("status", "ended");
+
+  const { count: sessionsPublished } = await supabase
+    .from("app_session")
+    .select("id", { count: "exact", head: true })
+    .eq("host_id", user!.id)
+    .neq("status", "draft");
 
   // ── Upcoming sessions (10, with images + challenge links) ──
   const now = new Date();
@@ -107,7 +113,7 @@ export default async function DashboardPage() {
   const challengeIds = (challengeSpaces ?? []).map((s: any) => s.source_challenge_id).filter(Boolean);
   const challengeDetails: Record<string, any> = {};
   if (challengeIds.length > 0) {
-    const { data: chs } = await supabase.from("app_challenge").select("id, title, status, start_date, end_date").in("id", challengeIds);
+    const { data: chs } = await supabase.from("app_challenge").select("id, title, status, start_date, end_date, price_cents").in("id", challengeIds);
     for (const c of chs ?? []) challengeDetails[c.id] = c;
   }
 
@@ -154,6 +160,7 @@ export default async function DashboardPage() {
         challengeStatus: ch.status ?? "draft",
         challengeStartDate: ch.start_date ?? null,
         challengeEndDate: ch.end_date ?? null,
+        challengePriceCents: ch.price_cents ?? 0,
         nextSessionTitle: nextSess?.title ?? null,
         nextSessionTime: nextSess?.start_time ?? null,
       };
@@ -232,6 +239,8 @@ export default async function DashboardPage() {
           activeTribes,
           activeParticipants: totalTribeMembers,
           sessionsCompleted: sessionsCompleted ?? 0,
+          sessionsUpcoming: (upcomingSessions ?? []).length,
+          sessionsPublished: sessionsPublished ?? 0,
           earningsCHF,
         }}
         sessions={sessionsForStrip}
@@ -245,7 +254,7 @@ export default async function DashboardPage() {
             <h2 className="text-lg font-black font-headline text-[#0F2229] tracking-tight">Your Tribes</h2>
             <Link href="/dashboard/create" className="text-xs font-bold font-headline text-[#FF6130]">+ New Challenge</Link>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="flex gap-4 overflow-x-auto pb-3" style={{ scrollbarWidth: "none" }}>
             {tribeData.map((tribe) => (
               <TribeCard key={tribe.id} tribe={tribe} />
             ))}
