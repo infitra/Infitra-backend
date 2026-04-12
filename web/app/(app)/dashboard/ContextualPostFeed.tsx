@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { PostCard } from "@/app/components/community/PostCard";
-import { PostContextBadge } from "@/app/components/community/PostContextBadge";
 import { EventSelector } from "./EventSelector";
 import {
   createCreatorPost,
@@ -30,6 +29,7 @@ interface EnrichedPost {
   contextId: string | null;
   contextTitle: string | null;
   contextImageUrl: string | null;
+  authorAvatarUrl: string | null;
 }
 
 /**
@@ -72,14 +72,18 @@ export function ContextualPostFeed({
 
       // Enrich in parallel
       const [profilesRes, likesRes, myLikesRes, commentsRes] = await Promise.all([
-        supabase.from("app_profile").select("id, display_name").in("id", authorIds as string[]),
+        supabase.from("app_profile").select("id, display_name, avatar_url").in("id", authorIds as string[]),
         supabase.from("app_creator_post_like").select("post_id").in("post_id", postIds),
         supabase.from("app_creator_post_like").select("post_id").in("post_id", postIds).eq("user_id", currentUserId),
         supabase.from("app_creator_comment").select("post_id").in("post_id", postIds),
       ]);
 
       const nameMap: Record<string, string> = {};
-      for (const p of profilesRes.data ?? []) nameMap[p.id] = p.display_name ?? "User";
+      const avatarMap: Record<string, string | null> = {};
+      for (const p of profilesRes.data ?? []) {
+        nameMap[p.id] = p.display_name ?? "User";
+        avatarMap[p.id] = p.avatar_url ?? null;
+      }
 
       const likeCounts: Record<string, number> = {};
       for (const l of likesRes.data ?? []) likeCounts[l.post_id] = (likeCounts[l.post_id] ?? 0) + 1;
@@ -119,6 +123,7 @@ export function ContextualPostFeed({
         contextId: p.context_id ?? null,
         contextTitle: p.context_id ? contextTitles[p.context_id]?.title ?? null : null,
         contextImageUrl: p.context_id ? contextTitles[p.context_id]?.imageUrl ?? null : null,
+        authorAvatarUrl: avatarMap[p.author_id] ?? null,
       }));
 
       return { posts: enriched, hasMore: rawPosts.length >= 20 };
@@ -221,31 +226,27 @@ export function ContextualPostFeed({
         </div>
       ) : (
         posts.map((post) => (
-          <div key={post.id}>
-            {post.contextType && post.contextTitle && post.contextId && (
-              <PostContextBadge
-                contextType={post.contextType}
-                contextTitle={post.contextTitle}
-                contextImageUrl={post.contextImageUrl}
-                contextId={post.contextId}
-              />
-            )}
-            <PostCard
-              post={{
-                id: post.id,
-                author_id: post.author_id,
-                body: post.body,
-                media_url: post.media_url,
-                created_at: post.created_at,
-              }}
-              authorName={post.authorName}
-              communityType="creator"
-              likeCount={post.likeCount}
-              commentCount={post.commentCount}
-              isLikedByMe={post.isLikedByMe}
-              currentUserId={currentUserId}
-            />
-          </div>
+          <PostCard
+            key={post.id}
+            post={{
+              id: post.id,
+              author_id: post.author_id,
+              body: post.body,
+              media_url: post.media_url,
+              created_at: post.created_at,
+            }}
+            authorName={post.authorName}
+            authorAvatarUrl={post.authorAvatarUrl}
+            communityType="creator"
+            likeCount={post.likeCount}
+            commentCount={post.commentCount}
+            isLikedByMe={post.isLikedByMe}
+            currentUserId={currentUserId}
+            contextType={post.contextType}
+            contextTitle={post.contextTitle}
+            contextImageUrl={post.contextImageUrl}
+            contextId={post.contextId}
+          />
         ))
       )}
 
