@@ -474,15 +474,25 @@ export default async function DiscoverPage() {
                           <Link
                             key={challenge.id}
                             href={`/challenges/${challenge.id}`}
-                            className="group block rounded-2xl infitra-card-link"
+                            className="group block rounded-2xl infitra-card-link overflow-hidden"
                           >
+                            {/* Cover image */}
+                            {challenge.image_url ? (
+                              <div className="aspect-[3/2] relative">
+                                <img src={challenge.image_url} alt="" className="w-full h-full object-cover" />
+                                <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.5) 100%)" }} />
+                                <div className="absolute bottom-2 left-3"><span className="text-[9px] font-bold text-white bg-[#FF6130] px-2 py-0.5 rounded-full font-headline">CHALLENGE</span></div>
+                              </div>
+                            ) : null}
                                                         <div className="p-5">
+                              {!challenge.image_url && (
                               <div className="flex items-center gap-2 mb-3">
                                 <span className="text-[9px] font-bold text-orange-700 bg-orange-100/80 border border-orange-200 px-2 py-0.5 rounded-full font-headline">CHALLENGE</span>
                                 <span className="text-[10px]" style={{ color: "#94a3b8" }}>
                                   {formatDate(challenge.start_date + "T00:00:00")} — {formatDate(challenge.end_date + "T00:00:00")}
                                 </span>
                               </div>
+                              )}
                               <h3
                                 className="text-base font-black font-headline tracking-tight mb-2 line-clamp-2 text-[#0F2229] group-hover:text-[#FF6130]"
                               >
@@ -522,23 +532,33 @@ export default async function DiscoverPage() {
                           <Link
                             key={session.id}
                             href={`/sessions/${session.id}`}
-                            className="group block rounded-2xl infitra-card-link"
+                            className="group block rounded-2xl infitra-card-link overflow-hidden"
                           >
+                            {/* Cover image */}
+                            {session.image_url ? (
+                              <div className="aspect-[3/2] relative">
+                                <img src={session.image_url} alt="" className="w-full h-full object-cover" />
+                                <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.5) 100%)" }} />
+                                <div className="absolute bottom-2 left-3 right-3"><p className="text-sm font-black font-headline text-white line-clamp-1">{session.title}</p></div>
+                              </div>
+                            ) : null}
                                                         <div className="p-5">
                               <div className="flex items-center gap-2 mb-3">
-                                <span
-                                  className="text-[10px] font-bold uppercase tracking-widest font-headline"
-                                  style={{ color: "rgba(15, 34, 41, 0.55)" }}
-                                >
+                                <span className="text-[10px] font-bold uppercase tracking-widest font-headline" style={{ color: "rgba(15, 34, 41, 0.55)" }}>
                                   {formatDate(session.start_time)} &middot; {formatTime(session.start_time)}
                                 </span>
                                 <span className="text-[10px]" style={{ color: "#94a3b8" }}>{session.duration_minutes} min</span>
                               </div>
-                              <h3
-                                className="text-base font-black font-headline tracking-tight mb-2 line-clamp-2 text-[#0F2229] group-hover:text-[#FF6130]"
-                              >
+                              {!session.image_url && (
+                              <h3 className="text-base font-black font-headline tracking-tight mb-2 line-clamp-2 text-[#0F2229] group-hover:text-[#FF6130]">
                                 {session.title}
                               </h3>
+                              )}
+                              {session.image_url && (
+                              <h3 className="text-base font-black font-headline tracking-tight mb-2 line-clamp-2 text-[#0F2229] group-hover:text-[#FF6130]">
+                                {session.title}
+                              </h3>
+                              )}
                               {session.description && (
                                 <p className="text-xs line-clamp-2 mb-4" style={{ color: "#64748b" }}>{session.description}</p>
                               )}

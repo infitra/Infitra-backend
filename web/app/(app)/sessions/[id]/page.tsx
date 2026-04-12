@@ -139,8 +139,15 @@ export default async function SessionPage({
 
           {/* Session card */}
           <div className="rounded-2xl infitra-glass overflow-hidden">
-            {/* Accent bar */}
-            <div className="h-1 bg-gradient-to-r from-[#FF6130] to-[#FF6130]/40" />
+            {/* Cover image or accent bar */}
+            {session.image_url ? (
+              <div className="aspect-[3/1] relative">
+                <img src={session.image_url} alt="" className="w-full h-full object-cover" />
+                <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.3) 0%, transparent 50%)" }} />
+              </div>
+            ) : (
+              <div className="h-1 bg-gradient-to-r from-[#FF6130] to-[#FF6130]/40" />
+            )}
 
             <div className="p-8 md:p-10">
               {/* Challenge banner */}

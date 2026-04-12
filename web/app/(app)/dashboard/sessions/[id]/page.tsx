@@ -137,6 +137,13 @@ export default async function SessionDetailPage({
         All Sessions
       </Link>
 
+      {/* Cover image */}
+      {session.image_url && (
+        <div className="aspect-[3/1] rounded-2xl overflow-hidden mb-6">
+          <img src={session.image_url} alt="" className="w-full h-full object-cover" />
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-start justify-between gap-4 mb-8">
         <div>

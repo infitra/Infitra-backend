@@ -32,7 +32,7 @@ export default async function TribesPage() {
   // Tribes
   const { data: challengeSpaces } = await supabase
     .from("app_challenge_space")
-    .select("id, title, description, source_challenge_id")
+    .select("id, title, description, source_challenge_id, cover_image_url")
     .eq("owner_id", user.id);
 
   // Member counts
@@ -157,8 +157,15 @@ export default async function TribesPage() {
                 className="rounded-2xl overflow-hidden"
                 style={{ backgroundColor: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)" }}
               >
-                {/* Orange energy bar */}
-                <div className="h-1" style={{ background: "linear-gradient(90deg, #FF6130 0%, rgba(255,97,48,0.2) 100%)" }} />
+                {/* Cover image or energy bar */}
+                {cs.cover_image_url ? (
+                  <div className="h-24 relative">
+                    <img src={cs.cover_image_url} alt="" className="w-full h-full object-cover" style={{ opacity: 0.5 }} />
+                    <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 20%, rgba(15,34,41,1) 100%)" }} />
+                  </div>
+                ) : (
+                  <div className="h-1" style={{ background: "linear-gradient(90deg, #FF6130 0%, rgba(255,97,48,0.2) 100%)" }} />
+                )}
 
                 <div className="p-6">
                   <div className="flex items-start justify-between gap-4 mb-4">

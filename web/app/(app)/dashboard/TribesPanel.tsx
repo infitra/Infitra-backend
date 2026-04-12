@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 interface Tribe {
   id: string;
   title: string;
+  coverImageUrl: string | null;
   challengeTitle: string;
   memberCount: number;
   nextSession: { title: string; startTime: string } | null;
@@ -64,7 +65,7 @@ export function TribesPanel({
       // Fetch tribe spaces
       const { data: spaces } = await supabase
         .from("app_challenge_space")
-        .select("id, title, source_challenge_id, owner_id");
+        .select("id, title, source_challenge_id, owner_id, cover_image_url");
 
       if (cancelled || !spaces) { setLoading(false); return; }
 
@@ -136,6 +137,7 @@ export function TribesPanel({
         mySpaces.map((s: any) => ({
           id: s.id,
           title: s.title,
+          coverImageUrl: s.cover_image_url ?? null,
           challengeTitle: challengeTitles[s.source_challenge_id] ?? "",
           memberCount: memberCounts[s.id] ?? 0,
           nextSession: nextSessions[s.id]
@@ -207,8 +209,15 @@ export function TribesPanel({
                 className="group block rounded-2xl overflow-hidden"
                 style={{ backgroundColor: "#0F2229", border: "1px solid rgba(156,240,255,0.08)" }}
               >
-                {/* Orange energy bar */}
-                <div className="h-1" style={{ background: "linear-gradient(90deg, #FF6130, rgba(255,97,48,0.2))" }} />
+                {/* Cover image or energy bar */}
+                {tribe.coverImageUrl ? (
+                  <div className="h-20 relative">
+                    <img src={tribe.coverImageUrl} alt="" className="w-full h-full object-cover" style={{ opacity: 0.6 }} />
+                    <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 30%, #0F2229 100%)" }} />
+                  </div>
+                ) : (
+                  <div className="h-1" style={{ background: "linear-gradient(90deg, #FF6130, rgba(255,97,48,0.2))" }} />
+                )}
 
                 <div className="p-5">
                   <div className="flex items-start justify-between gap-3 mb-3">

@@ -69,7 +69,7 @@ export default async function CreatorProfilePage({
   // All upcoming published sessions
   const { data: allSessions } = await supabase
     .from("app_session")
-    .select("id, title, start_time, duration_minutes, price_cents")
+    .select("id, title, image_url, start_time, duration_minutes, price_cents")
     .eq("host_id", creator.id)
     .eq("status", "published")
     .gte("start_time", now.toISOString())
@@ -101,7 +101,7 @@ export default async function CreatorProfilePage({
   // Published challenges
   const { data: challenges } = await supabase
     .from("app_challenge")
-    .select("id, title, start_date, end_date, price_cents")
+    .select("id, title, image_url, start_date, end_date, price_cents")
     .eq("owner_id", creator.id)
     .eq("status", "published")
     .gte("start_date", now.toISOString().split("T")[0])
@@ -246,8 +246,11 @@ export default async function CreatorProfilePage({
                           ? `/challenges/${linked.challengeId}`
                           : `/sessions/${sess.id}`
                       }
-                      className="flex items-center justify-between p-4 rounded-xl infitra-glass-interactive group"
+                      className="flex items-center gap-3 p-4 rounded-xl infitra-glass-interactive group overflow-hidden"
                     >
+                      {sess.image_url && (
+                        <img src={sess.image_url} alt="" className="w-14 h-14 rounded-lg object-cover shrink-0" />
+                      )}
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <p
@@ -309,9 +312,12 @@ export default async function CreatorProfilePage({
                     <Link
                       key={ch.id}
                       href={`/challenges/${ch.id}`}
-                      className="flex items-center justify-between p-4 rounded-xl infitra-glass-interactive group"
+                      className="flex items-center gap-3 p-4 rounded-xl infitra-glass-interactive group overflow-hidden"
                     >
-                      <div>
+                      {ch.image_url && (
+                        <img src={ch.image_url} alt="" className="w-14 h-14 rounded-lg object-cover shrink-0" />
+                      )}
+                      <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <span
                             className="text-[9px] font-bold px-2 py-0.5 rounded-full font-headline"
