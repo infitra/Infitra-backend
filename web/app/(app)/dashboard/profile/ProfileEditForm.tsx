@@ -9,12 +9,14 @@ export function ProfileEditForm({
   bio,
   avatarUrl,
   coverUrl,
+  onSaved,
 }: {
   displayName: string;
   tagline: string;
   bio: string;
   avatarUrl: string | null;
   coverUrl: string | null;
+  onSaved?: () => void;
 }) {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(avatarUrl);
   const [coverPreview, setCoverPreview] = useState<string | null>(coverUrl);
@@ -151,6 +153,7 @@ export function ProfileEditForm({
       }
 
       setSuccess(true);
+      onSaved?.();
       avatarFileRef.current = null;
       coverFileRef.current = null;
     } catch (err: any) {

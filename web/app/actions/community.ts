@@ -3,7 +3,12 @@
 import { createClient } from "@/lib/supabase/server";
 
 /** Create a post in a creator community. Creator-only (enforced by RPC). */
-export async function createCreatorPost(spaceId: string, body: string) {
+export async function createCreatorPost(
+  spaceId: string,
+  body: string,
+  contextType?: "session" | "challenge" | null,
+  contextId?: string | null,
+) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -16,10 +21,16 @@ export async function createCreatorPost(spaceId: string, body: string) {
   if (trimmed.length > 5000)
     return { error: "Post must be under 5000 characters." };
 
-  const { data, error } = await supabase.rpc("create_creator_post", {
+  const rpcParams: any = {
     p_space: spaceId,
     p_body: trimmed,
-  });
+  };
+  if (contextType && contextId) {
+    rpcParams.p_context_type = contextType;
+    rpcParams.p_context_id = contextId;
+  }
+
+  const { data, error } = await supabase.rpc("create_creator_post", rpcParams);
 
   if (error) return { error: error.message };
   return { success: true, postId: data };
