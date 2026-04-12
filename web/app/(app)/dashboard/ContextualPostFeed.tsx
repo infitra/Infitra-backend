@@ -231,15 +231,18 @@ export function ContextualPostFeed({
               />
             )}
             <PostCard
-              postId={post.id}
-              authorId={post.author_id}
+              post={{
+                id: post.id,
+                author_id: post.author_id,
+                body: post.body,
+                media_url: post.media_url,
+                created_at: post.created_at,
+              }}
               authorName={post.authorName}
-              body={post.body}
-              createdAt={post.created_at}
+              communityType="creator"
               likeCount={post.likeCount}
               commentCount={post.commentCount}
               isLikedByMe={post.isLikedByMe}
-              communityType="creator"
               currentUserId={currentUserId}
             />
           </div>
