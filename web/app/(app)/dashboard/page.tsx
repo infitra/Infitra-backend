@@ -262,43 +262,66 @@ export default async function DashboardPage() {
         badges={badges}
       />
 
-      {/* ── SECTION 2: Next Up (compact urgency pulse) ───── */}
+      {/* ── SECTION 2: Next Up — bold, image-forward ─────── */}
       {nextUpSessions.length > 0 && (
         <div>
-          <h2 className="text-sm font-bold font-headline uppercase tracking-wider text-[#94a3b8] mb-3">Next Up</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {nextUpSessions.map((sess) => {
+          <h2 className="text-lg font-black font-headline text-[#0F2229] tracking-tight mb-4">Next Up</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {nextUpSessions.map((sess, i) => {
               const isUrgent = (new Date(sess.start_time).getTime() - now.getTime()) < 24 * 60 * 60 * 1000;
               const isLive = !!sess.live_room_id;
               return (
                 <Link
                   key={sess.id}
                   href={`/dashboard/sessions/${sess.id}`}
-                  className="flex items-center gap-3 p-3 rounded-xl infitra-card-link group"
+                  className="block rounded-2xl overflow-hidden infitra-card-link group"
                 >
-                  {sess.image_url ? (
-                    <img src={sess.image_url} alt="" className="w-12 h-12 rounded-lg object-cover shrink-0" />
-                  ) : (
-                    <div className="w-12 h-12 rounded-lg shrink-0 flex items-center justify-center" style={{ background: "linear-gradient(135deg, #0F2229, #1a3340)" }}>
-                      <img src="/logo-mark.png" alt="" width={16} height={16} style={{ opacity: 0.15 }} />
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold font-headline text-[#0F2229] truncate group-hover:text-[#FF6130]">{sess.title}</p>
-                    <div className="flex items-center gap-2">
+                  {/* Image area */}
+                  <div className="h-32 relative">
+                    {sess.image_url ? (
+                      <>
+                        <img src={sess.image_url} alt="" className="w-full h-full object-cover" />
+                        <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 20%, rgba(0,0,0,0.7) 100%)" }} />
+                      </>
+                    ) : (
+                      <div className="w-full h-full" style={{ background: "linear-gradient(135deg, #0F2229 0%, #1a3340 50%, #2a1508 100%)" }}>
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.06]">
+                          <img src="/logo-mark.png" alt="" width={32} height={32} />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Countdown — prominent */}
+                    <div className="absolute top-3 right-3">
                       {isLive ? (
-                        <span className="flex items-center gap-1 text-[10px] font-bold font-headline text-red-500">
-                          <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                        <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black font-headline text-white bg-red-500">
+                          <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
                           LIVE
                         </span>
                       ) : (
-                        <span className={`text-[10px] font-bold font-headline ${isUrgent ? "text-[#FF6130]" : "text-[#94a3b8]"}`}>
+                        <span
+                          className="px-3 py-1.5 rounded-full text-xs font-black font-headline text-white"
+                          style={{ backgroundColor: isUrgent ? "#FF6130" : "rgba(0,0,0,0.6)" }}
+                        >
                           {formatRelativeTime(sess.start_time)}
                         </span>
                       )}
-                      {sess.challengeName && (
-                        <span className="text-[10px] text-[#94a3b8]">· {sess.challengeName}</span>
-                      )}
+                    </div>
+
+                    {/* Challenge label */}
+                    {sess.challengeName && (
+                      <div className="absolute top-3 left-3">
+                        <span className="px-2.5 py-1 rounded text-[10px] font-bold font-headline text-white" style={{ backgroundColor: "rgba(255,97,48,0.85)" }}>
+                          {sess.challengeName}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Title at bottom */}
+                    <div className="absolute bottom-3 left-3 right-3">
+                      <h3 className="text-base font-black font-headline text-white tracking-tight group-hover:text-[#FF6130]">
+                        {sess.title}
+                      </h3>
                     </div>
                   </div>
                 </Link>
@@ -334,27 +357,32 @@ export default async function DashboardPage() {
       {/* ── Standalone Sessions (not linked to tribes) ──── */}
       {standaloneSessions.length > 0 && (
         <div>
-          <h2 className="text-sm font-bold font-headline uppercase tracking-wider text-[#94a3b8] mb-3">Quick Sessions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {standaloneSessions.slice(0, 6).map((sess: any) => (
-              <Link
-                key={sess.id}
-                href={`/dashboard/sessions/${sess.id}`}
-                className="flex items-center gap-3 p-3 rounded-xl infitra-card-link group"
-              >
-                {sess.image_url ? (
-                  <img src={sess.image_url} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />
-                ) : (
-                  <div className="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center" style={{ background: "linear-gradient(135deg, #0F2229, #1a3340)" }}>
-                    <img src="/logo-mark.png" alt="" width={12} height={12} style={{ opacity: 0.15 }} />
+          <h2 className="text-lg font-black font-headline text-[#0F2229] tracking-tight mb-4">Quick Sessions</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {standaloneSessions.slice(0, 6).map((sess: any) => {
+              const isUrgent = (new Date(sess.start_time).getTime() - now.getTime()) < 24 * 60 * 60 * 1000;
+              return (
+                <Link
+                  key={sess.id}
+                  href={`/dashboard/sessions/${sess.id}`}
+                  className="flex items-center gap-4 p-4 rounded-2xl infitra-card-link group"
+                >
+                  {sess.image_url ? (
+                    <img src={sess.image_url} alt="" className="w-16 h-16 rounded-xl object-cover shrink-0" />
+                  ) : (
+                    <div className="w-16 h-16 rounded-xl shrink-0 flex items-center justify-center" style={{ background: "linear-gradient(135deg, #0F2229, #1a3340)" }}>
+                      <img src="/logo-mark.png" alt="" width={18} height={18} style={{ opacity: 0.12 }} />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-base font-black font-headline text-[#0F2229] truncate group-hover:text-[#FF6130]">{sess.title}</p>
+                    <p className={`text-xs font-bold font-headline mt-1 ${isUrgent ? "text-[#FF6130]" : "text-[#94a3b8]"}`}>
+                      {formatRelativeTime(sess.start_time)}
+                    </p>
                   </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold font-headline text-[#0F2229] truncate group-hover:text-[#FF6130]">{sess.title}</p>
-                  <p className="text-[10px] text-[#94a3b8]">{formatRelativeTime(sess.start_time)}</p>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              );
+            })}
           </div>
         </div>
       )}

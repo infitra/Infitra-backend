@@ -116,40 +116,49 @@ export function TribeCard({ tribe }: { tribe: TribeData }) {
         </div>
       </Link>
 
-      {/* Embedded next sessions */}
-      <div className="p-3">
+      {/* Embedded next sessions — prominent, action-oriented */}
+      <div className="p-4">
         {tribe.nextSessions.length > 0 ? (
-          <div className="space-y-1">
-            {tribe.nextSessions.slice(0, 2).map((sess) => (
-              <Link
-                key={sess.id}
-                href={`/dashboard/sessions/${sess.id}`}
-                className="flex items-center gap-3 p-2 rounded-xl hover:bg-white/50 group/sess"
-              >
-                {sess.image_url ? (
-                  <img src={sess.image_url} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />
-                ) : (
-                  <div className="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center" style={{ background: "linear-gradient(135deg, #0F2229, #1a3340)" }}>
-                    <img src="/logo-mark.png" alt="" width={14} height={14} style={{ opacity: 0.15 }} />
+          <div className="space-y-2">
+            <p className="text-[10px] font-bold font-headline uppercase tracking-wider text-[#94a3b8] mb-1">Next Sessions</p>
+            {tribe.nextSessions.slice(0, 2).map((sess) => {
+              const sessUrgent = (new Date(sess.start_time).getTime() - new Date().getTime()) < 24 * 60 * 60 * 1000;
+              return (
+                <Link
+                  key={sess.id}
+                  href={`/dashboard/sessions/${sess.id}`}
+                  className="flex items-center gap-3 p-2.5 rounded-xl group/sess"
+                  style={{ backgroundColor: "rgba(255,255,255,0.5)", border: "1px solid rgba(15,34,41,0.06)" }}
+                >
+                  {sess.image_url ? (
+                    <img src={sess.image_url} alt="" className="w-14 h-14 rounded-xl object-cover shrink-0" />
+                  ) : (
+                    <div className="w-14 h-14 rounded-xl shrink-0 flex items-center justify-center" style={{ background: "linear-gradient(135deg, #0F2229, #1a3340)" }}>
+                      <img src="/logo-mark.png" alt="" width={16} height={16} style={{ opacity: 0.12 }} />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-black font-headline text-[#0F2229] truncate group-hover/sess:text-[#FF6130]">{sess.title}</p>
+                    <p className={`text-xs font-bold font-headline mt-0.5 ${sessUrgent ? "text-[#FF6130]" : "text-[#94a3b8]"}`}>
+                      {formatSessionTime(sess.start_time)}
+                    </p>
                   </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold font-headline text-[#0F2229] truncate group-hover/sess:text-[#FF6130]">{sess.title}</p>
-                  <p className="text-[10px] text-[#94a3b8]">{formatSessionTime(sess.start_time)}</p>
-                </div>
-                <span className="text-[10px] font-bold font-headline text-[#FF6130] shrink-0 opacity-0 group-hover/sess:opacity-100">
-                  View →
-                </span>
-              </Link>
-            ))}
+                  <div className="shrink-0">
+                    <span className="px-3 py-1.5 rounded-full text-[10px] font-black font-headline text-white" style={{ backgroundColor: sessUrgent ? "#FF6130" : "#0891b2" }}>
+                      {sessUrgent ? "Soon" : "View"}
+                    </span>
+                  </div>
+                </Link>
+              );
+            })}
             {tribe.nextSessions.length > 2 && (
-              <Link href={`/communities/challenge/${tribe.id}`} className="block text-center text-[10px] font-bold font-headline text-[#94a3b8] hover:text-[#FF6130] py-1">
-                +{tribe.nextSessions.length - 2} more sessions →
+              <Link href={`/communities/challenge/${tribe.id}`} className="block text-center text-xs font-bold font-headline text-[#FF6130] hover:text-[#0F2229] py-1">
+                +{tribe.nextSessions.length - 2} more →
               </Link>
             )}
           </div>
         ) : (
-          <p className="text-[10px] text-[#94a3b8] text-center py-2">No upcoming sessions</p>
+          <p className="text-xs text-[#94a3b8] text-center py-3">No upcoming sessions</p>
         )}
       </div>
     </div>
