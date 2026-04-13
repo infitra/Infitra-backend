@@ -22,88 +22,112 @@ export function CreatorIdentitySection({ profile, stats, sessions, badges }: Pro
 
   return (
     <>
+      {/* ── HERO SECTION ────────────────────────────────── */}
       <div className="rounded-2xl infitra-card overflow-hidden">
-        {/* Cover — subtle background */}
+        {/* Cover image */}
         {profile.cover_image_url ? (
-          <div className="h-36 md:h-44 relative">
+          <div className="h-48 md:h-60 relative">
             <img src={profile.cover_image_url} alt="" className="w-full h-full object-cover" />
-            <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 30%, rgba(254,254,255,0.95) 100%)" }} />
+            <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 40%, #FEFEFF 100%)" }} />
           </div>
         ) : (
-          <div className="h-20 md:h-24" style={{ background: "linear-gradient(135deg, #0F2229 0%, rgba(8,145,178,0.3) 50%, rgba(255,97,48,0.2) 100%)" }} />
+          <div className="h-28 md:h-36" style={{ background: "linear-gradient(135deg, #0F2229 0%, rgba(8,145,178,0.4) 40%, rgba(255,97,48,0.3) 70%, #0F2229 100%)" }} />
         )}
 
-        <div className="px-6 md:px-8 pb-8 relative">
-          {/* Avatar + identity row */}
-          <div className="flex items-end gap-6 -mt-20 mb-5">
-            {/* Dominant avatar */}
+        <div className="px-8 md:px-10 pb-10">
+          {/* Avatar — large, overlapping */}
+          <div className="-mt-16 md:-mt-20 mb-6">
             {profile.avatar_url ? (
-              <img src={profile.avatar_url} alt="" className="w-36 h-36 rounded-full object-cover shrink-0" style={{ border: "6px solid #FEFEFF", boxShadow: "0 8px 30px rgba(0,0,0,0.20)" }} />
+              <img src={profile.avatar_url} alt="" className="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover" style={{ border: "6px solid #FEFEFF", boxShadow: "0 8px 30px rgba(0,0,0,0.18)" }} />
             ) : (
-              <div className="w-36 h-36 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: "rgba(255,97,48,0.10)", border: "6px solid #FEFEFF", boxShadow: "0 8px 30px rgba(0,0,0,0.20)" }}>
-                <span className="text-5xl font-black font-headline text-[#FF6130]">{initials}</span>
+              <div className="w-32 h-32 md:w-40 md:h-40 rounded-full flex items-center justify-center" style={{ backgroundColor: "#FF6130", border: "6px solid #FEFEFF", boxShadow: "0 8px 30px rgba(0,0,0,0.18)" }}>
+                <span className="text-5xl md:text-6xl font-black font-headline text-white">{initials}</span>
               </div>
             )}
-            <div className="flex-1 min-w-0 pb-1">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h1 className="text-2xl md:text-3xl font-black font-headline text-[#0F2229] tracking-tight">{profile.display_name}</h1>
-                  {profile.tagline && <p className="text-sm text-[#64748b] mt-1 font-headline font-semibold">{profile.tagline}</p>}
-                </div>
-                <button onClick={() => setEditOpen(true)} className="text-xs font-bold font-headline text-[#94a3b8] hover:text-[#0F2229] px-4 py-2 rounded-full shrink-0" style={{ border: "1px solid rgba(0,0,0,0.08)" }}>
-                  Edit Profile
-                </button>
-              </div>
-            </div>
           </div>
 
-          {profile.bio && <p className="text-sm text-[#94a3b8] mb-5 max-w-xl line-clamp-2">{profile.bio}</p>}
+          {/* Name + tagline — BOLD */}
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-6">
+            <div>
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-black font-headline text-[#0F2229] tracking-tight leading-none">
+                {profile.display_name}
+              </h1>
+              {profile.tagline && (
+                <p className="text-lg md:text-xl font-semibold font-headline text-[#FF6130] mt-2">
+                  {profile.tagline}
+                </p>
+              )}
+              {profile.bio && (
+                <p className="text-base text-[#64748b] mt-3 max-w-2xl leading-relaxed">
+                  {profile.bio}
+                </p>
+              )}
+            </div>
+            <button
+              onClick={() => setEditOpen(true)}
+              className="px-5 py-2.5 rounded-full text-sm font-bold font-headline text-[#0F2229] shrink-0 self-start"
+              style={{ border: "2px solid rgba(0,0,0,0.10)" }}
+            >
+              Edit Profile
+            </button>
+          </div>
 
-          {/* Stat cards — grouped, strong, clean */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            {/* Community */}
-            <div className="p-5 rounded-2xl" style={{ backgroundColor: "#f0fdfa", border: "2px solid #99f6e4" }}>
-              <p className="text-3xl font-black font-headline text-[#0891b2] leading-none">{stats.communityMembers}</p>
-              <p className="text-xs font-bold font-headline text-[#0891b2]/70 mt-2">Community</p>
-              <p className="text-[10px] text-[#0891b2]/50">members</p>
+          {/* Stats — bold blocks */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div className="p-5 rounded-2xl" style={{ backgroundColor: "#ecfeff", border: "2px solid #a5f3fc" }}>
+              <p className="text-4xl font-black font-headline text-[#0891b2] leading-none">{stats.communityMembers}</p>
+              <p className="text-sm font-bold font-headline text-[#0891b2] mt-2">Community</p>
             </div>
 
-            {/* Active engagement */}
-            <div className="p-5 rounded-2xl" style={{ backgroundColor: "#fff7ed", border: "2px solid #fed7aa" }}>
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-3xl font-black font-headline text-[#FF6130] leading-none">{stats.activeTribes}</span>
-                <span className="text-sm font-bold font-headline text-[#FF6130]/50">/ {stats.activeParticipants}</span>
+            <div className="p-5 rounded-2xl" style={{ backgroundColor: "#fff7ed", border: "2px solid #fdba74" }}>
+              <div className="flex items-baseline gap-2">
+                <span className="text-4xl font-black font-headline text-[#FF6130] leading-none">{stats.activeTribes}</span>
+                <span className="text-xl font-black font-headline text-[#FF6130]/40">{stats.activeParticipants}</span>
               </div>
-              <p className="text-xs font-bold font-headline text-[#FF6130]/70 mt-2">Active Tribes</p>
-              <p className="text-[10px] text-[#FF6130]/50">{stats.activeParticipants} participant{stats.activeParticipants !== 1 ? "s" : ""}</p>
+              <p className="text-sm font-bold font-headline text-[#FF6130] mt-2">Tribes · Participants</p>
             </div>
 
-            {/* Sessions */}
-            <div className="p-5 rounded-2xl" style={{ backgroundColor: "#f8fafc", border: "2px solid #e2e8f0" }}>
-              <p className="text-3xl font-black font-headline text-[#0F2229] leading-none">{stats.sessionsPublished}</p>
-              <p className="text-xs font-bold font-headline text-[#64748b] mt-2">Sessions</p>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="text-[10px] font-bold text-emerald-600">✓ {stats.sessionsCompleted}</span>
-                <span className="text-[10px] font-bold text-[#0891b2]">↑ {stats.sessionsUpcoming}</span>
-              </div>
+            <div className="p-5 rounded-2xl" style={{ backgroundColor: "#f0fdf4", border: "2px solid #86efac" }}>
+              <p className="text-4xl font-black font-headline text-[#0F2229] leading-none">{stats.sessionsPublished}</p>
+              <p className="text-sm font-bold font-headline text-[#22c55e] mt-2">
+                Sessions <span className="text-[#22c55e]/60">✓{stats.sessionsCompleted} ↑{stats.sessionsUpcoming}</span>
+              </p>
             </div>
 
-            {/* Earnings */}
-            <Link href="/dashboard/earnings" className="p-5 rounded-2xl group" style={{ backgroundColor: "#f8fafc", border: "2px solid #e2e8f0" }}>
-              <p className="text-2xl font-black font-headline text-[#0F2229] leading-none group-hover:text-[#FF6130]">CHF {stats.earningsCHF}</p>
-              <p className="text-xs font-bold font-headline text-[#64748b] mt-2">Earnings</p>
-              <p className="text-[10px] text-[#FF6130] font-bold font-headline mt-1">View →</p>
+            <Link href="/dashboard/earnings" className="p-5 rounded-2xl group" style={{ backgroundColor: "#fafafa", border: "2px solid #e5e7eb" }}>
+              <p className="text-3xl font-black font-headline text-[#0F2229] leading-none group-hover:text-[#FF6130]">
+                {stats.earningsCHF}
+              </p>
+              <p className="text-sm font-bold font-headline text-[#94a3b8] mt-2">CHF Earned</p>
+              <p className="text-xs font-bold text-[#FF6130] mt-1">Details →</p>
             </Link>
           </div>
-
-          {/* Sessions strip */}
-          <UpcomingSessionsStrip sessions={sessions} />
-
-          {/* Badges */}
-          {badges.length > 0 && <div className="mt-5"><BadgesSection badges={badges} /></div>}
         </div>
       </div>
 
+      {/* ── UPCOMING SESSIONS ─────────────────────────────── */}
+      {sessions.length > 0 && (
+        <div className="mt-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-black font-headline text-[#0F2229] tracking-tight">
+              Upcoming Sessions
+            </h2>
+            <Link href="/dashboard/sessions" className="text-xs font-bold font-headline text-[#FF6130]">
+              All Sessions →
+            </Link>
+          </div>
+          <UpcomingSessionsStrip sessions={sessions} />
+        </div>
+      )}
+
+      {/* ── BADGES ────────────────────────────────────────── */}
+      {badges.length > 0 && (
+        <div className="mt-6">
+          <BadgesSection badges={badges} />
+        </div>
+      )}
+
+      {/* ── EDIT SLIDEOVER ────────────────────────────────── */}
       <SlideOver open={editOpen} onClose={() => setEditOpen(false)} title="Edit Profile">
         <ProfileEditForm
           displayName={profile.display_name}
