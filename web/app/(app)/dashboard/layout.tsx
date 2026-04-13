@@ -60,8 +60,8 @@ export default async function DashboardLayout({
           <div className="hidden md:flex items-center gap-8">
             {[
               { label: "Home", href: "/dashboard" },
-              { label: "Sessions", href: "/dashboard/sessions" },
-              { label: "Challenges", href: "/dashboard/challenges" },
+              { label: "Create", href: "/dashboard/create" },
+              { label: "Tribes", href: "/dashboard/tribes" },
               { label: "Earnings", href: "/dashboard/earnings" },
             ].map(({ label, href }) => (
               <Link
@@ -79,8 +79,8 @@ export default async function DashboardLayout({
             <MobileMenu
               links={[
                 { label: "Home", href: "/dashboard" },
-                { label: "Sessions", href: "/dashboard/sessions" },
-                { label: "Challenges", href: "/dashboard/challenges" },
+                { label: "Create", href: "/dashboard/create" },
+                { label: "Tribes", href: "/dashboard/tribes" },
                 { label: "Earnings", href: "/dashboard/earnings" },
               ]}
             />

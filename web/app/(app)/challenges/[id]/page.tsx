@@ -80,7 +80,7 @@ export default async function ChallengePage({
 
   const { data: myProfile } = await supabase
     .from("app_profile")
-    .select("display_name")
+    .select("display_name, role")
     .eq("id", user.id)
     .single();
 
@@ -105,7 +105,7 @@ export default async function ChallengePage({
   const { data: linkedRows } = await supabase
     .from("app_challenge_session")
     .select(
-      "session_id, app_session(id, title, start_time, duration_minutes, status, live_room_id)"
+      "session_id, app_session(id, title, description, image_url, start_time, duration_minutes, status, live_room_id)"
     )
     .eq("challenge_id", id);
 
@@ -136,7 +136,7 @@ export default async function ChallengePage({
 
   return (
     <div className="min-h-screen flex flex-col">
-      <ParticipantNav displayName={myProfile?.display_name ?? null} />
+      <ParticipantNav displayName={myProfile?.display_name ?? null} role={myProfile?.role} />
 
       <div className="flex-1 pt-20 px-6">
         <div className="max-w-3xl mx-auto py-10">
@@ -165,8 +165,15 @@ export default async function ChallengePage({
 
           {/* Challenge card */}
           <div className="rounded-2xl infitra-glass overflow-hidden">
-            {/* Accent bar */}
-            <div className="h-1 bg-gradient-to-r from-[#FF6130] to-[#FF6130]/40" />
+            {/* Cover image or accent bar */}
+            {challenge.image_url ? (
+              <div className="aspect-[3/1] relative">
+                <img src={challenge.image_url} alt="" className="w-full h-full object-cover" />
+                <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.3) 0%, transparent 50%)" }} />
+              </div>
+            ) : (
+              <div className="h-1 bg-gradient-to-r from-[#FF6130] to-[#FF6130]/40" />
+            )}
 
             <div className="p-8 md:p-10">
               {/* Badge */}

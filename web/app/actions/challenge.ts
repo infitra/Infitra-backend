@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { revalidatePath } from "next/cache";
 
 /** Creates a blank draft challenge with sensible defaults and redirects to the edit page. */
 export async function createDraftChallenge() {
@@ -50,6 +51,7 @@ export async function updateChallenge(prevState: unknown, formData: FormData) {
   const title = (formData.get("title") as string)?.trim();
   const description =
     (formData.get("description") as string)?.trim() || null;
+  const image_url = (formData.get("image_url") as string)?.trim() || null;
   const startDate = formData.get("start_date") as string;
   const endDate = formData.get("end_date") as string;
   const capacityRaw = formData.get("capacity") as string;
@@ -81,6 +83,7 @@ export async function updateChallenge(prevState: unknown, formData: FormData) {
     .update({
       title,
       description,
+      image_url,
       start_date: startDate,
       end_date: endDate,
       capacity,
@@ -99,7 +102,9 @@ export async function createChallengeSession(
   challengeId: string,
   title: string,
   startTime: string,
-  durationMinutes: number
+  durationMinutes: number,
+  imageUrl?: string | null,
+  description?: string | null
 ) {
   const supabase = await createClient();
   const {
@@ -130,7 +135,17 @@ export async function createChallengeSession(
   if (error) return { error: error.message };
 
   const row = Array.isArray(data) ? data[0] : data;
-  return { success: true, sessionId: row?.session_id };
+  const sessionId = row?.session_id;
+
+  // Update image_url and description on the created session if provided
+  if (sessionId && (imageUrl || description)) {
+    const updates: Record<string, any> = {};
+    if (imageUrl) updates.image_url = imageUrl;
+    if (description) updates.description = description;
+    await supabase.from("app_session").update(updates).eq("id", sessionId);
+  }
+
+  return { success: true, sessionId };
 }
 
 /** Updates an inline challenge session (app_session row). RLS ensures only owner drafts. */
@@ -138,7 +153,9 @@ export async function updateChallengeSession(
   sessionId: string,
   title: string,
   startTime: string,
-  durationMinutes: number
+  durationMinutes: number,
+  description?: string | null,
+  imageUrl?: string | null
 ) {
   const supabase = await createClient();
   const {
@@ -151,13 +168,17 @@ export async function updateChallengeSession(
     return { error: "Session title must be at least 3 characters." };
   }
 
+  const updates: Record<string, any> = {
+    title: title.trim(),
+    start_time: startTime,
+    duration_minutes: durationMinutes,
+  };
+  if (description !== undefined) updates.description = description;
+  if (imageUrl !== undefined) updates.image_url = imageUrl;
+
   const { error } = await supabase
     .from("app_session")
-    .update({
-      title: title.trim(),
-      start_time: startTime,
-      duration_minutes: durationMinutes,
-    })
+    .update(updates)
     .eq("id", sessionId)
     .eq("host_id", user.id);
 
@@ -177,23 +198,17 @@ export async function removeChallengeSession(
 
   if (!user) return { error: "Not authenticated." };
 
-  // Unlink from challenge
-  const { error: unlinkError } = await supabase.rpc(
-    "challenge_remove_session",
+  // Single RPC that unlinks AND deletes the session in one transaction.
+  // Sets app.via_rpc so the guard trigger allows both operations.
+  const { error } = await supabase.rpc(
+    "challenge_remove_session_and_delete",
     {
       p_challenge: challengeId,
       p_session: sessionId,
     }
   );
 
-  if (unlinkError) return { error: unlinkError.message };
-
-  // Delete the session row (it was created for this challenge only)
-  await supabase
-    .from("app_session")
-    .delete()
-    .eq("id", sessionId)
-    .eq("host_id", user.id);
+  if (error) return { error: error.message };
 
   return { success: true };
 }
@@ -260,6 +275,23 @@ export async function deleteChallenge(challengeId: string) {
   }
 
   redirect("/dashboard/challenges");
+}
+
+/** Updates a tribe space cover image (owner only). */
+export async function updateTribeCover(spaceId: string, coverImageUrl: string | null) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated." };
+
+  const { error } = await supabase
+    .from("app_challenge_space")
+    .update({ cover_image_url: coverImageUrl })
+    .eq("id", spaceId)
+    .eq("owner_id", user.id);
+
+  if (error) return { error: error.message };
+  revalidatePath(`/communities/challenge/${spaceId}`);
+  return { success: true };
 }
 
 /* ── Helpers ─────────────────────────────────────────────── */

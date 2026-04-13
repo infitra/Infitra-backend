@@ -65,7 +65,7 @@ export default async function ChallengeDetailPage({
   // Fetch linked sessions
   const { data: linkedRows } = await supabase
     .from("app_challenge_session")
-    .select("session_id, app_session(id, title, start_time, duration_minutes, status)")
+    .select("session_id, app_session(id, title, description, image_url, start_time, duration_minutes, status)")
     .eq("challenge_id", id);
 
   const linkedSessions = (linkedRows ?? [])
@@ -105,157 +105,87 @@ export default async function ChallengeDetailPage({
       {isDraft ? (
         <>
           <div className="flex items-center gap-3 mb-8">
-            <h1
-              className="text-3xl md:text-4xl font-black font-headline tracking-tight"
-              style={{ color: "#0F2229" }}
-            >
-              Edit Challenge
-            </h1>
-            <span
-              className={`shrink-0 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest border font-headline ${s.className}`}
-            >
-              {s.label}
-            </span>
+            <h1 className="text-3xl md:text-4xl font-black font-headline tracking-tight" style={{ color: "#0F2229" }}>Edit Challenge</h1>
+            <span className={`shrink-0 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest border font-headline ${s.className}`}>{s.label}</span>
           </div>
-          <ChallengeEditForm
-            challenge={challenge}
-            linkedSessions={linkedSessions}
-          />
+          <ChallengeEditForm challenge={challenge} linkedSessions={linkedSessions} />
         </>
       ) : (
-        <>
-          <div className="flex items-start justify-between gap-4 mb-8">
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <h1
-                  className="text-3xl md:text-4xl font-black font-headline tracking-tight"
-                  style={{ color: "#0F2229" }}
-                >
-                  {challenge.title}
-                </h1>
-                <span
-                  className={`shrink-0 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest border font-headline ${s.className}`}
-                >
-                  {s.label}
-                </span>
+        <div className="max-w-3xl mx-auto">
+          {/* Cover image */}
+          {challenge.image_url && (
+            <div className="aspect-[3/1] rounded-2xl overflow-hidden mb-6">
+              <img src={challenge.image_url} alt="" className="w-full h-full object-cover" />
+            </div>
+          )}
+
+          <div className="flex items-center gap-3 mb-3">
+            <h1 className="text-3xl md:text-4xl font-black font-headline tracking-tight" style={{ color: "#0F2229" }}>{challenge.title}</h1>
+            <span className={`shrink-0 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest border font-headline ${s.className}`}>{s.label}</span>
+          </div>
+          {challenge.description && (
+            <p className="text-sm max-w-xl mb-6" style={{ color: "#64748b" }}>{challenge.description}</p>
+          )}
+
+          {/* Info cards */}
+          <div className="flex flex-wrap gap-3 mb-8">
+            {[
+              { label: "Starts", value: formatDate(challenge.start_date) },
+              { label: "Ends", value: formatDate(challenge.end_date) },
+              { label: "Sessions", value: String(linkedSessions.length) },
+              { label: "Price", value: priceCHF > 0 ? `CHF ${priceCHF.toFixed(2)}` : "Free" },
+            ].map(({ label, value }) => (
+              <div key={label} className="px-4 py-3 rounded-xl" style={{ backgroundColor: "rgba(15,34,41,0.04)", border: "1px solid rgba(15,34,41,0.08)" }}>
+                <p className="text-[10px] font-bold uppercase tracking-widest font-headline mb-1" style={{ color: "rgba(15,34,41,0.45)" }}>{label}</p>
+                <p className="text-sm font-bold font-headline" style={{ color: "#0F2229" }}>{value}</p>
               </div>
-              {challenge.description && (
-                <p className="text-sm max-w-xl" style={{ color: "#64748b" }}>
-                  {challenge.description}
-                </p>
-              )}
-            </div>
+            ))}
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <div className="p-5 rounded-2xl infitra-glass">
-              <p
-                className="text-[10px] font-bold uppercase tracking-widest font-headline mb-2"
-                style={{ color: "rgba(15, 34, 41, 0.55)" }}
-              >
-                Starts
-              </p>
-              <p
-                className="text-sm font-semibold"
-                style={{ color: "#0F2229" }}
-              >
-                {formatDate(challenge.start_date)}
-              </p>
-            </div>
-            <div className="p-5 rounded-2xl infitra-glass">
-              <p
-                className="text-[10px] font-bold uppercase tracking-widest font-headline mb-2"
-                style={{ color: "rgba(15, 34, 41, 0.55)" }}
-              >
-                Ends
-              </p>
-              <p
-                className="text-sm font-semibold"
-                style={{ color: "#0F2229" }}
-              >
-                {formatDate(challenge.end_date)}
-              </p>
-            </div>
-            <div className="p-5 rounded-2xl infitra-glass">
-              <p
-                className="text-[10px] font-bold uppercase tracking-widest font-headline mb-2"
-                style={{ color: "rgba(15, 34, 41, 0.55)" }}
-              >
-                Sessions
-              </p>
-              <p
-                className="text-sm font-semibold"
-                style={{ color: "#0F2229" }}
-              >
-                {linkedSessions.length}
-              </p>
-            </div>
-            <div className="p-5 rounded-2xl infitra-glass">
-              <p
-                className="text-[10px] font-bold uppercase tracking-widest font-headline mb-2"
-                style={{ color: "rgba(15, 34, 41, 0.55)" }}
-              >
-                Price
-              </p>
-              <p
-                className="text-sm font-semibold"
-                style={{ color: "#0F2229" }}
-              >
-                {priceCHF > 0 ? `CHF ${priceCHF.toFixed(2)}` : "Free"}
-              </p>
-            </div>
-          </div>
-
-          {/* Linked sessions list */}
+          {/* Sessions — horizontal scroll with images */}
           {linkedSessions.length > 0 && (
             <div className="mb-8">
-              <h2
-                className="text-xs font-bold uppercase tracking-wider font-headline mb-3"
-                style={{ color: "rgba(15, 34, 41, 0.55)" }}
-              >
-                Sessions
-              </h2>
-              <div className="space-y-2">
-                {linkedSessions.map((sess: any) => (
-                  <div key={sess.id} className="p-4 rounded-xl infitra-glass">
-                    <p
-                      className="text-sm font-bold font-headline"
-                      style={{ color: "#0F2229" }}
-                    >
-                      {sess.title}
-                    </p>
-                    <p className="text-xs mt-1" style={{ color: "#64748b" }}>
-                      {new Date(sess.start_time).toLocaleDateString("en-GB", {
-                        weekday: "short",
-                        day: "numeric",
-                        month: "short",
-                      })}{" "}
-                      &middot; {sess.duration_minutes} min
-                    </p>
-                  </div>
+              <p className="text-[10px] font-bold uppercase tracking-widest font-headline mb-3" style={{ color: "rgba(15,34,41,0.55)" }}>
+                {linkedSessions.length} Session{linkedSessions.length !== 1 ? "s" : ""}
+              </p>
+              <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
+                {linkedSessions.map((sess: any, idx: number) => (
+                  <Link key={sess.id} href={`/dashboard/sessions/${sess.id}`} className="shrink-0 w-56 rounded-xl overflow-hidden infitra-card-link group block">
+                    <div className="aspect-[3/2] relative">
+                      {sess.image_url ? (
+                        <>
+                          <img src={sess.image_url} alt="" className="w-full h-full object-cover" />
+                          <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 30%, rgba(0,0,0,0.6) 100%)" }} />
+                        </>
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, #0F2229, #1a3340, #2a1508)" }}>
+                          <img src="/logo-mark.png" alt="" width={40} height={40} style={{ opacity: 0.1 }} />
+                        </div>
+                      )}
+                      <div className="absolute bottom-2 left-3 right-3">
+                        <p className="text-sm font-black font-headline text-white line-clamp-1 group-hover:text-[#FF6130]">{sess.title}</p>
+                      </div>
+                      <span className="absolute top-2 left-3 text-[10px] font-black text-white/50">#{idx + 1}</span>
+                    </div>
+                    <div className="p-3">
+                      {sess.description && <p className="text-xs mb-1 line-clamp-2" style={{ color: "#94a3b8" }}>{sess.description}</p>}
+                      <p className="text-[10px]" style={{ color: "#64748b" }}>
+                        {new Date(sess.start_time).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })} · {sess.duration_minutes} min
+                      </p>
+                    </div>
+                  </Link>
                 ))}
               </div>
             </div>
           )}
 
           {challenge.status === "published" && (
-            <div
-              className="flex items-center gap-2 px-4 py-2.5 rounded-full w-fit"
-              style={{
-                backgroundColor: "rgba(16, 185, 129, 0.10)",
-                border: "1px solid rgba(16, 185, 129, 0.30)",
-              }}
-            >
+            <div className="flex items-center gap-2 px-4 py-2.5 rounded-full w-fit" style={{ backgroundColor: "rgba(16,185,129,0.10)", border: "1px solid rgba(16,185,129,0.30)" }}>
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span
-                className="text-sm font-bold font-headline"
-                style={{ color: "#047857" }}
-              >
-                Live &mdash; visible to participants
-              </span>
+              <span className="text-sm font-bold font-headline" style={{ color: "#047857" }}>Live — visible to participants</span>
             </div>
           )}
-        </>
+        </div>
       )}
     </div>
   );

@@ -33,7 +33,7 @@ export default async function CheckoutSuccessPage({
 
   return (
     <div className="min-h-screen flex flex-col">
-      <ParticipantNav displayName={profile?.display_name ?? null} />
+      <ParticipantNav displayName={profile?.display_name ?? null} role={profile?.role} />
 
       <div className="flex-1 pt-20 px-6 flex items-center justify-center">
         <div className="max-w-md w-full text-center">

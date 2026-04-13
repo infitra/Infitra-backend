@@ -2,310 +2,128 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { PreviewActions } from "./PreviewActions";
+import { BrandedCover } from "@/app/components/BrandedCover";
+import { SessionCard } from "./SessionDetailPopup";
 
-export const metadata = {
-  title: "Preview Challenge — INFITRA",
-};
+export const metadata = { title: "Preview Challenge — INFITRA" };
 
 function formatDate(dateStr: string) {
-  const d = new Date(dateStr + "T00:00:00");
-  return d.toLocaleDateString("en-GB", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+  return new Date(dateStr + "T00:00:00").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 }
 
-function formatSessionDate(dateStr: string) {
-  const d = new Date(dateStr);
-  return d.toLocaleDateString("en-GB", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-  });
-}
-
-function formatSessionTime(dateStr: string) {
-  const d = new Date(dateStr);
-  return d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
-}
-
-export default async function ChallengePreviewPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function ChallengePreviewPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: challenge } = await supabase
-    .from("app_challenge")
-    .select("*")
-    .eq("id", id)
-    .eq("owner_id", user.id)
-    .single();
-
+  const { data: challenge } = await supabase.from("app_challenge").select("*").eq("id", id).eq("owner_id", user.id).single();
   if (!challenge) notFound();
+  if (challenge.status !== "draft") redirect(`/dashboard/challenges/${id}`);
 
-  // If already published, redirect to the detail page
-  if (challenge.status !== "draft") {
-    redirect(`/dashboard/challenges/${id}`);
-  }
+  const { data: profile } = await supabase.from("app_profile").select("display_name, username, avatar_url").eq("id", user.id).single();
 
-  const { data: profile } = await supabase
-    .from("app_profile")
-    .select("display_name, username")
-    .eq("id", user.id)
-    .single();
-
-  // Fetch linked sessions
   const { data: linkedRows } = await supabase
     .from("app_challenge_session")
-    .select(
-      "session_id, app_session(id, title, start_time, duration_minutes)"
-    )
+    .select("session_id, app_session(id, title, description, start_time, duration_minutes, image_url)")
     .eq("challenge_id", id);
 
-  const linkedSessions = (linkedRows ?? [])
-    .map((r: any) => r.app_session)
-    .filter(Boolean)
-    .sort(
-      (a: any, b: any) =>
-        new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
-    );
+  const linkedSessions = (linkedRows ?? []).map((r: any) => r.app_session).filter(Boolean)
+    .sort((a: any, b: any) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
 
   const priceCHF = (challenge.price_cents ?? 0) / 100;
+  const totalMinutes = linkedSessions.reduce((a: number, s: any) => a + (s.duration_minutes ?? 0), 0);
 
   return (
-    <div className="py-10 max-w-2xl mx-auto">
+    <div className="py-10 max-w-3xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <p
-          className="text-xs uppercase tracking-widest font-bold font-headline"
-          style={{ color: "rgba(15, 34, 41, 0.55)" }}
-        >
-          Preview &mdash; how participants will see this
+        <p className="text-xs uppercase tracking-widest font-bold font-headline" style={{ color: "rgba(15, 34, 41, 0.55)" }}>
+          Preview — how participants will see this
         </p>
-        <Link
-          href={`/dashboard/challenges/${id}`}
-          className="text-xs transition-colors flex items-center gap-1.5 font-headline"
-          style={{ color: "#64748b" }}
-        >
-          <svg
-            width="14"
-            height="14"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
-            viewBox="0 0 24 24"
-          >
-            <path
-              d="M19 12H5M12 19l-7-7 7-7"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+        <Link href={`/dashboard/challenges/${id}`} className="text-xs flex items-center gap-1.5 font-headline" style={{ color: "#64748b" }}>
+          <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7" strokeLinecap="round" strokeLinejoin="round" /></svg>
           Edit
         </Link>
       </div>
 
-      {/* Challenge card preview */}
-      <div className="rounded-2xl infitra-glass overflow-hidden">
-        {/* Accent bar */}
-        <div className="h-1 bg-gradient-to-r from-[#FF6130] to-[#FF6130]/40" />
+      {/* Challenge card */}
+      <div className="rounded-2xl infitra-card overflow-hidden">
+        {/* Cover image or branded default */}
+        <div className="aspect-[3/1] relative overflow-hidden">
+          {challenge.image_url ? (
+            <>
+              <img src={challenge.image_url} alt="" className="w-full h-full object-cover" />
+              <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 50%)" }} />
+            </>
+          ) : (
+            <div className="w-full h-full" style={{ background: "linear-gradient(135deg, #0F2229 0%, #0d2a36 30%, #1a3340 50%, #2a1508 70%, #0F2229 100%)" }}>
+              <div className="absolute inset-0 opacity-[0.18]" style={{ background: "radial-gradient(ellipse at 20% 80%, #9CF0FF 0%, transparent 50%), radial-gradient(ellipse at 80% 20%, #FF6130 0%, transparent 50%)" }} />
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.06]"><img src="/logo-mark.png" alt="" width={140} height={140} /></div>
+            </div>
+          )}
+        </div>
 
         <div className="p-8 md:p-10">
-          <h1
-            className="text-3xl md:text-4xl font-black font-headline tracking-tight mb-3"
-            style={{ color: "#0F2229" }}
-          >
+          <h1 className="text-3xl md:text-4xl font-black font-headline tracking-tight mb-3" style={{ color: "#0F2229" }}>
             {challenge.title}
           </h1>
 
           {challenge.description && (
-            <p
-              className="text-sm leading-relaxed mb-8 max-w-lg whitespace-pre-line"
-              style={{ color: "#64748b" }}
-            >
+            <p className="text-sm leading-relaxed mb-6 max-w-lg whitespace-pre-line" style={{ color: "#64748b" }}>
               {challenge.description}
             </p>
           )}
 
-          {/* Info grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <div>
-              <p
-                className="text-[10px] font-bold uppercase tracking-widest font-headline mb-1"
-                style={{ color: "rgba(15, 34, 41, 0.55)" }}
-              >
-                Starts
-              </p>
-              <p
-                className="text-sm font-semibold"
-                style={{ color: "#0F2229" }}
-              >
-                {formatDate(challenge.start_date)}
-              </p>
-            </div>
-            <div>
-              <p
-                className="text-[10px] font-bold uppercase tracking-widest font-headline mb-1"
-                style={{ color: "rgba(15, 34, 41, 0.55)" }}
-              >
-                Ends
-              </p>
-              <p
-                className="text-sm font-semibold"
-                style={{ color: "#0F2229" }}
-              >
-                {formatDate(challenge.end_date)}
-              </p>
-            </div>
-            <div>
-              <p
-                className="text-[10px] font-bold uppercase tracking-widest font-headline mb-1"
-                style={{ color: "rgba(15, 34, 41, 0.55)" }}
-              >
-                Spots
-              </p>
-              <p
-                className="text-sm font-semibold"
-                style={{ color: "#0F2229" }}
-              >
-                {challenge.capacity
-                  ? `${challenge.capacity} available`
-                  : "Unlimited"}
-              </p>
-            </div>
-            <div>
-              <p
-                className="text-[10px] font-bold uppercase tracking-widest font-headline mb-1"
-                style={{ color: "rgba(15, 34, 41, 0.55)" }}
-              >
-                Price
-              </p>
-              <p
-                className="text-sm font-semibold"
-                style={{ color: "#0F2229" }}
-              >
-                {priceCHF > 0 ? `CHF ${priceCHF.toFixed(2)}` : "Free"}
-              </p>
-            </div>
+          {/* Info cards */}
+          <div className="flex flex-wrap gap-3 mb-8">
+            {[
+              { label: "Starts", value: formatDate(challenge.start_date) },
+              { label: "Ends", value: formatDate(challenge.end_date) },
+              ...(challenge.capacity ? [{ label: "Spots", value: `${challenge.capacity} available` }] : []),
+              { label: "Price", value: priceCHF > 0 ? `CHF ${priceCHF.toFixed(2)}` : "Free" },
+            ].map(({ label, value }) => (
+              <div key={label} className="px-4 py-3 rounded-xl" style={{ backgroundColor: "rgba(15, 34, 41, 0.04)", border: "1px solid rgba(15, 34, 41, 0.08)" }}>
+                <p className="text-[10px] font-bold uppercase tracking-widest font-headline mb-1" style={{ color: "rgba(15, 34, 41, 0.45)" }}>{label}</p>
+                <p className="text-sm font-bold font-headline" style={{ color: "#0F2229" }}>{value}</p>
+              </div>
+            ))}
           </div>
 
-          {/* Session timeline */}
+          {/* Sessions — horizontal scroll with images */}
           {linkedSessions.length > 0 && (
             <div className="mb-8">
-              <p
-                className="text-[10px] font-bold uppercase tracking-widest font-headline mb-3"
-                style={{ color: "rgba(15, 34, 41, 0.55)" }}
-              >
-                {linkedSessions.length} Session
-                {linkedSessions.length !== 1 ? "s" : ""} included
+              <p className="text-[10px] font-bold uppercase tracking-widest font-headline mb-3" style={{ color: "rgba(15, 34, 41, 0.55)" }}>
+                {linkedSessions.length} Session{linkedSessions.length !== 1 ? "s" : ""} · {totalMinutes} min total
               </p>
-              <div className="space-y-2">
-                {linkedSessions.map((sess: any) => (
-                  <div
-                    key={sess.id}
-                    className="flex items-center gap-3 p-3 rounded-lg"
-                    style={{
-                      backgroundColor: "rgba(255, 255, 255, 0.55)",
-                      border: "1px solid rgba(15, 34, 41, 0.10)",
-                    }}
-                  >
-                    <div
-                      className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                      style={{
-                        backgroundColor: "rgba(255, 97, 48, 0.10)",
-                        border: "1px solid rgba(255, 97, 48, 0.25)",
-                      }}
-                    >
-                      <svg
-                        width="14"
-                        height="14"
-                        fill="none"
-                        stroke="#FF6130"
-                        strokeWidth={1.5}
-                        viewBox="0 0 24 24"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <rect
-                          x="3"
-                          y="4"
-                          width="18"
-                          height="18"
-                          rx="2"
-                          ry="2"
-                        />
-                        <line x1="16" y1="2" x2="16" y2="6" />
-                        <line x1="8" y1="2" x2="8" y2="6" />
-                        <line x1="3" y1="10" x2="21" y2="10" />
-                      </svg>
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p
-                        className="text-sm font-bold font-headline truncate"
-                        style={{ color: "#0F2229" }}
-                      >
-                        {sess.title}
-                      </p>
-                      <p
-                        className="text-[10px]"
-                        style={{ color: "#64748b" }}
-                      >
-                        {formatSessionDate(sess.start_time)} at{" "}
-                        {formatSessionTime(sess.start_time)} &middot;{" "}
-                        {sess.duration_minutes} min
-                      </p>
-                    </div>
-                  </div>
+              <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
+                {linkedSessions.map((sess: any, idx: number) => (
+                  <SessionCard key={sess.id} sess={sess} idx={idx} />
                 ))}
               </div>
             </div>
           )}
 
-          {/* Host badge */}
-          <div
-            className="flex items-center gap-3 pt-6 border-t"
-            style={{ borderColor: "rgba(15, 34, 41, 0.10)" }}
-          >
-            <div
-              className="w-9 h-9 rounded-full flex items-center justify-center"
-              style={{
-                backgroundColor: "rgba(255, 97, 48, 0.12)",
-                border: "1px solid rgba(255, 97, 48, 0.30)",
-              }}
-            >
-              <span
-                className="text-sm font-black font-headline"
-                style={{ color: "#FF6130" }}
-              >
-                {(profile?.display_name ?? "?")[0].toUpperCase()}
-              </span>
-            </div>
-            <div>
-              <p
-                className="text-sm font-bold font-headline"
-                style={{ color: "#0F2229" }}
-              >
-                {profile?.display_name}
-              </p>
-              <p className="text-[10px]" style={{ color: "#94a3b8" }}>
-                Creator
-              </p>
+          {/* Creator — branded, prominent */}
+          <div className="pt-6 border-t" style={{ borderColor: "rgba(15, 34, 41, 0.08)" }}>
+            <p className="text-[10px] font-bold uppercase tracking-widest font-headline mb-3" style={{ color: "#FF6130" }}>Your Host</p>
+            <div className="flex items-center gap-4">
+              {profile?.avatar_url ? (
+                <img src={profile.avatar_url} alt="" className="w-24 h-24 rounded-full object-cover" style={{ border: "3px solid #FF6130", boxShadow: "0 4px 16px rgba(255,97,48,0.2)" }} />
+              ) : (
+                <div className="w-24 h-24 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(255, 97, 48, 0.12)", border: "3px solid #FF6130" }}>
+                  <span className="text-3xl font-black font-headline" style={{ color: "#FF6130" }}>{(profile?.display_name ?? "?")[0].toUpperCase()}</span>
+                </div>
+              )}
+              <div>
+                <p className="text-xl font-black font-headline" style={{ color: "#0F2229" }}>{profile?.display_name}</p>
+                <p className="text-sm" style={{ color: "#64748b" }}>Creator</p>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Actions */}
       <PreviewActions challengeId={challenge.id} />
     </div>
   );

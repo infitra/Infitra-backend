@@ -22,6 +22,7 @@ export async function createAndPublishSession(
   const title = (formData.get("title") as string)?.trim();
   const description =
     (formData.get("description") as string)?.trim() || null;
+  const image_url = (formData.get("image_url") as string)?.trim() || null;
   const date = formData.get("date") as string;
   const time = formData.get("time") as string;
   const durationMinutes = parseInt(formData.get("duration_minutes") as string);
@@ -61,6 +62,7 @@ export async function createAndPublishSession(
     .insert({
       title,
       description,
+      image_url,
       start_time: startTime.toISOString(),
       duration_minutes: durationMinutes,
       capacity,

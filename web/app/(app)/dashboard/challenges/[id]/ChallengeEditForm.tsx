@@ -9,6 +9,7 @@ import {
   updateChallengeSession,
   removeChallengeSession,
 } from "@/app/actions/challenge";
+import { ImageSelector } from "@/app/components/ImageSelector";
 
 const INPUT_CLASS =
   "w-full px-4 py-3 rounded-xl focus:outline-none transition-colors text-sm";
@@ -33,6 +34,7 @@ interface Challenge {
   id: string;
   title: string;
   description: string | null;
+  image_url: string | null;
   start_date: string;
   end_date: string;
   capacity: number | null;
@@ -42,6 +44,8 @@ interface Challenge {
 interface SessionSummary {
   id: string;
   title: string;
+  description?: string | null;
+  image_url?: string | null;
   start_time: string;
   duration_minutes: number;
 }
@@ -54,6 +58,7 @@ export function ChallengeEditForm({
   linkedSessions: SessionSummary[];
 }) {
   const router = useRouter();
+  const [imageUrl, setImageUrl] = useState<string | null>(challenge.image_url);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [sessionError, setSessionError] = useState<string | null>(null);
@@ -65,12 +70,16 @@ export function ChallengeEditForm({
 
   // Add session form state
   const [newTitle, setNewTitle] = useState("");
+  const [newDescription, setNewDescription] = useState("");
   const [newDate, setNewDate] = useState("");
   const [newTime, setNewTime] = useState("10:00");
   const [newDuration, setNewDuration] = useState("60");
+  const [newImageUrl, setNewImageUrl] = useState<string | null>(null);
 
   // Edit session form state
   const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [editImageUrl, setEditImageUrl] = useState<string | null>(null);
   const [editDate, setEditDate] = useState("");
   const [editTime, setEditTime] = useState("");
   const [editDuration, setEditDuration] = useState("");
@@ -125,7 +134,9 @@ export function ChallengeEditForm({
         challenge.id,
         newTitle.trim(),
         startTime,
-        dur
+        dur,
+        newImageUrl,
+        newDescription.trim() || null
       );
       if (result?.error) {
         setSessionError(result.error);
@@ -135,14 +146,18 @@ export function ChallengeEditForm({
           {
             id: result.sessionId,
             title: newTitle.trim(),
+            description: newDescription.trim() || null,
+            image_url: newImageUrl,
             start_time: startTime,
             duration_minutes: dur,
           },
         ]);
         setNewTitle("");
+        setNewDescription("");
         setNewDate("");
         setNewTime("10:00");
         setNewDuration("60");
+        setNewImageUrl(null);
         setShowAddForm(false);
       }
     });
@@ -151,6 +166,8 @@ export function ChallengeEditForm({
   function startEditing(sess: SessionSummary) {
     setEditingId(sess.id);
     setEditTitle(sess.title);
+    setEditDescription(sess.description ?? "");
+    setEditImageUrl(sess.image_url ?? null);
     const d = new Date(sess.start_time);
     setEditDate(d.toISOString().split("T")[0]);
     setEditTime(d.toTimeString().slice(0, 5));
@@ -167,7 +184,9 @@ export function ChallengeEditForm({
         sessionId,
         editTitle.trim(),
         startTime,
-        dur
+        dur,
+        editDescription.trim() || null,
+        editImageUrl
       );
       if (result?.error) {
         setSessionError(result.error);
@@ -178,6 +197,8 @@ export function ChallengeEditForm({
               ? {
                   ...s,
                   title: editTitle.trim(),
+                  description: editDescription.trim() || null,
+                  image_url: editImageUrl,
                   start_time: startTime,
                   duration_minutes: dur,
                 }
@@ -224,6 +245,16 @@ export function ChallengeEditForm({
       {/* ── Challenge Details Form ─────────────────────────────── */}
       <form action={action} className="space-y-6" data-challenge-form>
         <input type="hidden" name="challenge_id" value={challenge.id} />
+        <input type="hidden" name="image_url" value={imageUrl ?? ""} />
+
+        {/* Cover Image */}
+        <div>
+          <label className={LABEL} style={LABEL_STYLE}>
+            Cover Image
+            <span className="font-normal normal-case tracking-normal ml-2" style={{ color: "#94a3b8" }}>recommended</span>
+          </label>
+          <ImageSelector currentUrl={imageUrl} title={challenge.title || "Challenge"} onSelect={setImageUrl} size="md" />
+        </div>
 
         {(state?.error || deleteError) && (
           <div
@@ -424,6 +455,10 @@ export function ChallengeEditForm({
             >
               New Session
             </p>
+            {/* Session cover image */}
+            <div className="w-48">
+              <ImageSelector currentUrl={newImageUrl} title={newTitle || "Session"} onSelect={setNewImageUrl} size="sm" />
+            </div>
             <input
               type="text"
               value={newTitle}
@@ -432,6 +467,15 @@ export function ChallengeEditForm({
               minLength={3}
               maxLength={120}
               className={INPUT_SM_CLASS}
+              style={INPUT_STYLE}
+            />
+            <textarea
+              value={newDescription}
+              onChange={(e) => setNewDescription(e.target.value)}
+              placeholder="What happens in this session? (optional)"
+              maxLength={1000}
+              rows={2}
+              className={`${INPUT_SM_CLASS} resize-none`}
               style={INPUT_STYLE}
             />
             <div className="grid grid-cols-3 gap-3">
@@ -516,11 +560,23 @@ export function ChallengeEditForm({
                       border: "1px solid rgba(8, 145, 178, 0.30)",
                     }}
                   >
+                    <div className="w-48">
+                      <ImageSelector currentUrl={editImageUrl} title={editTitle || "Session"} onSelect={setEditImageUrl} size="sm" />
+                    </div>
                     <input
                       type="text"
                       value={editTitle}
                       onChange={(e) => setEditTitle(e.target.value)}
                       className={INPUT_SM_CLASS}
+                      style={INPUT_STYLE}
+                    />
+                    <textarea
+                      value={editDescription}
+                      onChange={(e) => setEditDescription(e.target.value)}
+                      placeholder="What happens in this session? (optional)"
+                      maxLength={1000}
+                      rows={2}
+                      className={`${INPUT_SM_CLASS} resize-none`}
                       style={INPUT_STYLE}
                     />
                     <div className="grid grid-cols-3 gap-3">
@@ -575,8 +631,18 @@ export function ChallengeEditForm({
                   /* Display mode */
                   <div
                     key={sess.id}
-                    className="flex items-center justify-between p-3 rounded-xl infitra-glass group/item"
+                    className="flex items-start gap-3 p-3 rounded-xl infitra-glass group/item"
                   >
+                    {/* Thumbnail */}
+                    <div className="w-16 h-16 rounded-lg overflow-hidden shrink-0">
+                      {sess.image_url ? (
+                        <img src={sess.image_url} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, #0F2229, #1a3340, #2a1508)" }}>
+                          <img src="/logo-mark.png" alt="" width={24} height={24} style={{ opacity: 0.15 }} />
+                        </div>
+                      )}
+                    </div>
                     <button
                       type="button"
                       onClick={() => startEditing(sess)}
@@ -588,6 +654,9 @@ export function ChallengeEditForm({
                       >
                         {sess.title}
                       </p>
+                      {sess.description && (
+                        <p className="text-xs mt-0.5 line-clamp-1" style={{ color: "#94a3b8" }}>{sess.description}</p>
+                      )}
                       <p
                         className="text-[10px] mt-0.5"
                         style={{ color: "#64748b" }}
