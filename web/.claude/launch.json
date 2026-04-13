@@ -3,9 +3,9 @@
   "configurations": [
     {
       "name": "web",
-      "runtimeExecutable": "npx",
-      "runtimeArgs": ["--cache", "/tmp/npm-cache", "next", "dev"],
-      "port": 3000
+      "runtimeExecutable": "/usr/local/bin/node",
+      "runtimeArgs": ["/Users/yvesimhasly/supabase/web/node_modules/.bin/next", "dev", "--port", "3001"],
+      "port": 3001
     }
   ]
 }
