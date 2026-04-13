@@ -248,9 +248,20 @@ body {
 }
 
 .glow-cyan {
-  box-shadow: 0 0 15px rgba(156, 240, 255, 0.15);
+  box-shadow: 0 0 15px rgba(156, 240, 255, 0.25);
 }
 
 .glow-orange {
   box-shadow: 0 0 15px rgba(255, 97, 48, 0.15);
+}
+
+/* ── Active tribe breathing glow ────────────────────────── */
+@keyframes tribe-breathe {
+  0%, 100% { box-shadow: 0 0 12px rgba(156, 240, 255, 0.20), 0 4px 16px rgba(0, 0, 0, 0.08); }
+  50% { box-shadow: 0 0 28px rgba(156, 240, 255, 0.40), 0 4px 16px rgba(0, 0, 0, 0.08); }
+}
+
+.tribe-active-glow {
+  animation: tribe-breathe 3s ease-in-out infinite;
+  border: 2px solid #9CF0FF;
 }
