@@ -23,56 +23,46 @@ export function CreatorIdentitySection({ profile, stats, sessions, badges }: Pro
   return (
     <>
       {/* ── HERO SECTION ────────────────────────────────── */}
-      <div className="relative">
+      <div>
         <div className="rounded-2xl infitra-card">
-          {/* Cover image — only this wrapper clips */}
-          <div className="rounded-t-2xl overflow-hidden">
-            {profile.cover_image_url ? (
-              <div className="h-48 md:h-60 relative">
-                <img src={profile.cover_image_url} alt="" className="w-full h-full object-cover" />
-                <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 40%, #FEFEFF 100%)" }} />
-              </div>
-            ) : (
-              <div className="h-28 md:h-36" style={{ background: "linear-gradient(135deg, #0F2229 0%, rgba(8,145,178,0.4) 40%, rgba(255,97,48,0.3) 70%, #0F2229 100%)" }} />
-            )}
-          </div>
-
-        <div className="px-8 md:px-10 pb-10">
-          {/* Avatar — negative margin pulls it up into the cover area */}
-          <div className="-mt-16 md:-mt-20 mb-5 relative z-10">
+        <div className="p-6 md:p-8">
+          {/* Avatar + Name + Tagline — all in one row */}
+          <div className="flex items-start gap-5 mb-5">
+            {/* Avatar — top left, prominent */}
             {profile.avatar_url ? (
-              <img src={profile.avatar_url} alt="" className="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover" style={{ border: "6px solid #FEFEFF", boxShadow: "0 8px 30px rgba(0,0,0,0.18)" }} />
+              <img src={profile.avatar_url} alt="" className="w-24 h-24 md:w-28 md:h-28 rounded-full object-cover shrink-0" style={{ border: "4px solid #FF6130", boxShadow: "0 4px 20px rgba(255,97,48,0.15)" }} />
             ) : (
-              <div className="w-32 h-32 md:w-40 md:h-40 rounded-full flex items-center justify-center" style={{ backgroundColor: "#FF6130", border: "6px solid #FEFEFF", boxShadow: "0 8px 30px rgba(0,0,0,0.18)" }}>
-                <span className="text-5xl md:text-6xl font-black font-headline text-white">{initials}</span>
+              <div className="w-24 h-24 md:w-28 md:h-28 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: "#FF6130", border: "4px solid #FF6130" }}>
+                <span className="text-4xl md:text-5xl font-black font-headline text-white">{initials}</span>
               </div>
             )}
-          </div>
 
-          {/* Name + tagline — BOLD */}
-          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-6">
-            <div>
-              <h1 className="text-3xl md:text-4xl lg:text-5xl font-black font-headline text-[#0F2229] tracking-tight leading-none">
-                {profile.display_name}
-              </h1>
-              {profile.tagline && (
-                <p className="text-lg md:text-xl font-semibold font-headline text-[#FF6130] mt-2">
-                  {profile.tagline}
-                </p>
-              )}
+            <div className="flex-1 min-w-0 pt-1">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h1 className="text-3xl md:text-4xl font-black font-headline text-[#0F2229] tracking-tight leading-none">
+                    {profile.display_name}
+                  </h1>
+                  {profile.tagline && (
+                    <p className="text-lg font-semibold font-headline text-[#FF6130] mt-2">
+                      {profile.tagline}
+                    </p>
+                  )}
+                </div>
+                <button
+                  onClick={() => setEditOpen(true)}
+                  className="px-4 py-2 rounded-full text-xs font-bold font-headline text-[#94a3b8] hover:text-[#0F2229] shrink-0"
+                  style={{ border: "1px solid rgba(0,0,0,0.10)" }}
+                >
+                  Edit
+                </button>
+              </div>
               {profile.bio && (
-                <p className="text-base text-[#64748b] mt-3 max-w-2xl leading-relaxed">
+                <p className="text-sm text-[#64748b] mt-3 max-w-xl leading-relaxed">
                   {profile.bio}
                 </p>
               )}
             </div>
-            <button
-              onClick={() => setEditOpen(true)}
-              className="px-5 py-2.5 rounded-full text-sm font-bold font-headline text-[#0F2229] shrink-0 self-start"
-              style={{ border: "2px solid rgba(0,0,0,0.10)" }}
-            >
-              Edit Profile
-            </button>
           </div>
 
           {/* Stats — clean, on-brand, unified */}
