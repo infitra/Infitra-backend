@@ -97,6 +97,7 @@ export function CreatorIdentitySection({ profile, stats, sessions, badges }: Pro
           </div>
         </div>
       </div>
+      </div>
 
       {/* ── UPCOMING SESSIONS ─────────────────────────────── */}
       {sessions.length > 0 && (
