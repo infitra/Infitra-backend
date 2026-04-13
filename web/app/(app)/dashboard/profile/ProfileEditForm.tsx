@@ -20,6 +20,7 @@ export function ProfileEditForm({
 }) {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(avatarUrl);
   const [coverPreview, setCoverPreview] = useState<string | null>(coverUrl);
+  const [removeCoverFlag, setRemoveCoverFlag] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -138,6 +139,8 @@ export function ProfileEditForm({
           .from("profile-images")
           .getPublicUrl(path);
         updates.cover_image_url = urlData.publicUrl;
+      } else if (removeCoverFlag) {
+        updates.cover_image_url = null;
       }
 
       // Update profile
@@ -244,9 +247,20 @@ export function ProfileEditForm({
           className="hidden"
           onChange={handleCoverChange}
         />
-        <p className="text-[10px] text-[#94a3b8] mt-1">
-          JPEG, PNG or WebP. Max 5MB. Recommended 1200×400.
-        </p>
+        <div className="flex items-center gap-3 mt-1">
+          <p className="text-[10px] text-[#94a3b8]">
+            JPEG, PNG or WebP. Max 5MB. Recommended 1200×400.
+          </p>
+          {(coverPreview || coverUrl) && !removeCoverFlag && (
+            <button
+              type="button"
+              onClick={() => { setCoverPreview(null); coverFileRef.current = null; setRemoveCoverFlag(true); }}
+              className="text-[10px] font-bold text-rose-500 hover:text-rose-700"
+            >
+              Remove cover
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Avatar */}

@@ -23,22 +23,19 @@ export function CreatorIdentitySection({ profile, stats, sessions, badges }: Pro
   return (
     <>
       {/* ── HERO SECTION ────────────────────────────────── */}
-      <div className="rounded-2xl infitra-card overflow-visible">
-        {/* Cover image — clipped separately so avatar can overflow */}
-        <div className="rounded-t-2xl overflow-hidden">
+      <div className="rounded-2xl infitra-card">
+        {/* Cover image with avatar positioned at bottom edge */}
+        <div className="relative rounded-t-2xl overflow-hidden">
           {profile.cover_image_url ? (
-            <div className="h-48 md:h-60 relative">
+            <div className="h-48 md:h-60">
               <img src={profile.cover_image_url} alt="" className="w-full h-full object-cover" />
               <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 40%, #FEFEFF 100%)" }} />
             </div>
           ) : (
             <div className="h-28 md:h-36" style={{ background: "linear-gradient(135deg, #0F2229 0%, rgba(8,145,178,0.4) 40%, rgba(255,97,48,0.3) 70%, #0F2229 100%)" }} />
           )}
-        </div>
-
-        <div className="px-8 md:px-10 pb-10">
-          {/* Avatar — large, overlapping */}
-          <div className="-mt-16 md:-mt-20 mb-6">
+          {/* Avatar anchored to bottom of cover */}
+          <div className="absolute -bottom-16 md:-bottom-20 left-8 md:left-10">
             {profile.avatar_url ? (
               <img src={profile.avatar_url} alt="" className="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover" style={{ border: "6px solid #FEFEFF", boxShadow: "0 8px 30px rgba(0,0,0,0.18)" }} />
             ) : (
@@ -47,6 +44,11 @@ export function CreatorIdentitySection({ profile, stats, sessions, badges }: Pro
               </div>
             )}
           </div>
+        </div>
+
+        <div className="px-8 md:px-10 pb-10">
+          {/* Spacer for avatar overflow */}
+          <div className="h-20 md:h-24"></div>
 
           {/* Name + tagline — BOLD */}
           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-6">
