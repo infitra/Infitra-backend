@@ -311,7 +311,7 @@ export default async function DashboardPage() {
                     {/* Challenge label */}
                     {sess.challengeName && (
                       <div className="absolute top-3 left-3">
-                        <span className="px-2.5 py-1 rounded text-[10px] font-bold font-headline text-white" style={{ backgroundColor: "rgba(255,97,48,0.85)" }}>
+                        <span className="px-2.5 py-1 rounded text-[10px] font-bold font-headline text-white/90" style={{ backgroundColor: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}>
                           {sess.challengeName}
                         </span>
                       </div>
