@@ -63,8 +63,8 @@ export function TribeCard({ tribe }: { tribe: TribeData }) {
   return (
     <div className="shrink-0 w-80 md:w-96 rounded-2xl overflow-hidden infitra-card-link group"
       style={{
-        border: isActive ? "2px solid #FF6130" : isUpcoming ? "1px solid rgba(8,145,178,0.25)" : undefined,
-        boxShadow: isActive ? "0 0 30px rgba(255,97,48,0.15), 0 4px 16px rgba(0,0,0,0.08)" : undefined,
+        border: isActive ? "2px solid #0891b2" : isUpcoming ? "1px solid rgba(8,145,178,0.25)" : undefined,
+        boxShadow: isActive ? "0 0 24px rgba(8,145,178,0.15), 0 4px 16px rgba(0,0,0,0.08)" : undefined,
       }}
     >
       {/* Cover image or branded fallback */}
@@ -88,7 +88,7 @@ export function TribeCard({ tribe }: { tribe: TribeData }) {
           {/* Status badge — top left */}
           <div className="absolute top-3 left-3">
             {isActive ? (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold font-headline text-white" style={{ backgroundColor: "rgba(255,97,48,0.9)", backdropFilter: "blur(8px)" }}>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold font-headline text-white" style={{ backgroundColor: "rgba(8,145,178,0.9)", backdropFilter: "blur(8px)" }}>
                 <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
                 ACTIVE
               </span>

@@ -51,7 +51,7 @@ export function CreatorIdentitySection({ profile, stats, badges }: Props) {
                     {profile.display_name}
                   </h1>
                   {profile.tagline && (
-                    <p className="text-lg font-semibold font-headline text-[#FF6130] mt-2">
+                    <p className="text-lg font-semibold font-headline text-[#64748b] mt-2">
                       {profile.tagline}
                     </p>
                   )}
@@ -81,16 +81,16 @@ export function CreatorIdentitySection({ profile, stats, badges }: Props) {
             ].map(({ value, label, sub }) => (
               <div key={label} className="p-5 rounded-2xl infitra-card">
                 <p className="text-3xl font-black font-headline text-[#0F2229] leading-none">{value}</p>
-                <p className="text-xs font-bold font-headline text-[#FF6130] mt-2">{label}</p>
+                <p className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider mt-2">{label}</p>
                 <p className="text-[10px] text-[#94a3b8] mt-0.5">{sub}</p>
               </div>
             ))}
             <Link href="/dashboard/earnings" className="p-5 rounded-2xl infitra-card-link group">
-              <p className="text-3xl font-black font-headline text-[#FF6130] leading-none">
+              <p className="text-3xl font-black font-headline text-[#0F2229] leading-none">
                 {stats.earningsCHF}
               </p>
-              <p className="text-xs font-bold font-headline text-[#0F2229] mt-2">CHF Earned</p>
-              <p className="text-[10px] text-[#94a3b8] mt-0.5 group-hover:text-[#FF6130]">View details →</p>
+              <p className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider mt-2">CHF Earned</p>
+              <p className="text-[10px] text-[#FF6130] mt-0.5">View details →</p>
             </Link>
           </div>
         </div>
