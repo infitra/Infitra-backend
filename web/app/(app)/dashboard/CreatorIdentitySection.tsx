@@ -5,17 +5,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { SlideOver } from "@/app/components/SlideOver";
 import { ProfileEditForm } from "@/app/(app)/dashboard/profile/ProfileEditForm";
-import { UpcomingSessionsStrip } from "./UpcomingSessionsStrip";
 import { BadgesSection } from "./BadgesSection";
 
 interface Props {
   profile: { display_name: string; tagline: string | null; bio: string | null; avatar_url: string | null; cover_image_url: string | null };
   stats: { communityMembers: number; activeTribes: number; activeParticipants: number; sessionsCompleted: number; sessionsUpcoming: number; sessionsPublished: number; earningsCHF: string };
-  sessions: { id: string; title: string; image_url: string | null; start_time: string; challengeName: string | null }[];
   badges: { badge_id: string; label: string; description: string | null; tier: string; color_hex: string | null; icon: string | null; awarded_at: string }[];
 }
 
-export function CreatorIdentitySection({ profile, stats, sessions, badges }: Props) {
+export function CreatorIdentitySection({ profile, stats, badges }: Props) {
   const [editOpen, setEditOpen] = useState(false);
   const router = useRouter();
   const initials = (profile.display_name ?? "?")[0].toUpperCase();
@@ -98,21 +96,6 @@ export function CreatorIdentitySection({ profile, stats, sessions, badges }: Pro
         </div>
       </div>
       </div>
-
-      {/* ── UPCOMING SESSIONS ─────────────────────────────── */}
-      {sessions.length > 0 && (
-        <div className="mt-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-black font-headline text-[#0F2229] tracking-tight">
-              Upcoming Sessions
-            </h2>
-            <Link href="/dashboard/sessions" className="text-xs font-bold font-headline text-[#FF6130]">
-              All Sessions →
-            </Link>
-          </div>
-          <UpcomingSessionsStrip sessions={sessions} />
-        </div>
-      )}
 
       {/* ── BADGES ────────────────────────────────────────── */}
       {badges.length > 0 && (

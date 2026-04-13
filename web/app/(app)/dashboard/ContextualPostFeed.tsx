@@ -40,10 +40,12 @@ export function ContextualPostFeed({
   spaceId,
   currentUserId,
   events,
+  avatarUrl,
 }: {
   spaceId: string;
   currentUserId: string;
   events: EventItem[];
+  avatarUrl?: string | null;
 }) {
   const [posts, setPosts] = useState<EnrichedPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -184,26 +186,36 @@ export function ContextualPostFeed({
   }
 
   return (
-    <div className="space-y-4">
+    <div>
       {/* Composer */}
-      <div className="rounded-2xl infitra-card p-5">
-        {/* Event selector */}
+      <div className="pb-4 border-b" style={{ borderColor: "rgba(15,34,41,0.06)" }}>
         <EventSelector events={events} selected={selectedEvent} onSelect={setSelectedEvent} />
 
-        <textarea
-          value={newBody}
-          onChange={(e) => setNewBody(e.target.value)}
-          placeholder={selectedEvent ? `Share about this ${selectedEvent.type}...` : "Share something with your community..."}
-          maxLength={5000}
-          rows={3}
-          className="w-full rounded-xl p-4 text-sm focus:outline-none resize-none"
-          style={{ backgroundColor: "rgba(255,255,255,0.55)", border: "1px solid rgba(15,34,41,0.12)", color: "#0F2229" }}
-        />
+        <div className="flex gap-3">
+          {avatarUrl ? (
+            <img src={avatarUrl} alt="" className="w-11 h-11 rounded-full object-cover shrink-0 mt-1" />
+          ) : (
+            <div className="w-11 h-11 rounded-full bg-cyan-100/80 border border-cyan-200 flex items-center justify-center shrink-0 mt-1">
+              <span className="text-sm font-black font-headline text-cyan-700">Y</span>
+            </div>
+          )}
+          <div className="flex-1">
+            <textarea
+              value={newBody}
+              onChange={(e) => setNewBody(e.target.value)}
+              placeholder={selectedEvent ? `Share about this ${selectedEvent.type}...` : "Share something with your community..."}
+              maxLength={5000}
+              rows={3}
+              className="w-full rounded-xl p-3 text-sm focus:outline-none resize-none"
+              style={{ backgroundColor: "rgba(255,255,255,0.55)", border: "1px solid rgba(15,34,41,0.08)", color: "#0F2229" }}
+            />
+          </div>
+        </div>
         {postError && <p className="text-xs mt-2 text-[#FF6130]">{postError}</p>}
         <div className="flex items-center justify-between mt-3">
           {selectedEvent && (
-            <span className="text-xs text-[#FF6130] font-bold font-headline">
-              📌 {events.find(e => e.id === selectedEvent.id && e.type === selectedEvent.type)?.title}
+            <span className="text-xs text-[#FF6130] font-bold font-headline truncate mr-2">
+              {events.find(e => e.id === selectedEvent.id && e.type === selectedEvent.type)?.title}
             </span>
           )}
           <div className="flex-1" />
@@ -218,40 +230,43 @@ export function ContextualPostFeed({
         </div>
       </div>
 
-      {/* Posts */}
+      {/* Posts — inline variant, flowing inside the container */}
       {posts.length === 0 ? (
         <div className="text-center py-12">
           <p className="text-sm text-[#0F2229] font-bold font-headline mb-1">No activity yet</p>
           <p className="text-xs text-[#64748b]">Share something with your community to get started.</p>
         </div>
       ) : (
-        posts.map((post) => (
-          <PostCard
-            key={post.id}
-            post={{
-              id: post.id,
-              author_id: post.author_id,
-              body: post.body,
-              media_url: post.media_url,
-              created_at: post.created_at,
-            }}
-            authorName={post.authorName}
-            authorAvatarUrl={post.authorAvatarUrl}
-            communityType="creator"
-            likeCount={post.likeCount}
-            commentCount={post.commentCount}
-            isLikedByMe={post.isLikedByMe}
-            currentUserId={currentUserId}
-            contextType={post.contextType}
-            contextTitle={post.contextTitle}
-            contextImageUrl={post.contextImageUrl}
-            contextId={post.contextId}
-          />
-        ))
+        <div>
+          {posts.map((post) => (
+            <PostCard
+              key={post.id}
+              post={{
+                id: post.id,
+                author_id: post.author_id,
+                body: post.body,
+                media_url: post.media_url,
+                created_at: post.created_at,
+              }}
+              authorName={post.authorName}
+              authorAvatarUrl={post.authorAvatarUrl}
+              communityType="creator"
+              likeCount={post.likeCount}
+              commentCount={post.commentCount}
+              isLikedByMe={post.isLikedByMe}
+              currentUserId={currentUserId}
+              contextType={post.contextType}
+              contextTitle={post.contextTitle}
+              contextImageUrl={post.contextImageUrl}
+              contextId={post.contextId}
+              variant="inline"
+            />
+          ))}
+        </div>
       )}
 
       {hasMore && (
-        <div className="text-center pt-4">
+        <div className="text-center pt-2 pb-2">
           <button onClick={handleLoadMore} disabled={loadingMore} className="text-xs font-bold font-headline text-[#94a3b8] hover:text-[#0F2229] disabled:opacity-50">
             {loadingMore ? "Loading..." : "Load more"}
           </button>
