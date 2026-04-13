@@ -29,6 +29,7 @@ export function PostCard({
   contextTitle,
   contextImageUrl,
   contextId,
+  variant = "card",
 }: {
   post: {
     id: string;
@@ -48,26 +49,29 @@ export function PostCard({
   contextTitle?: string | null;
   contextImageUrl?: string | null;
   contextId?: string | null;
+  variant?: "card" | "inline";
 }) {
-  return (
-    <div className="rounded-2xl infitra-glass p-5">
+  const isInline = variant === "inline";
+
+  const content = (
+    <>
       {/* Author row */}
       <div className="flex items-center gap-3 mb-3">
         {authorAvatarUrl ? (
-          <img src={authorAvatarUrl} alt="" className="w-9 h-9 rounded-full object-cover shrink-0" />
+          <img src={authorAvatarUrl} alt="" className="w-11 h-11 rounded-full object-cover shrink-0" />
         ) : (
           <div
-            className={`w-9 h-9 rounded-full flex items-center justify-center border ${
+            className={`w-11 h-11 rounded-full flex items-center justify-center border ${
               communityType === "creator" ? "bg-cyan-100/80 border-cyan-200" : "bg-orange-100/80 border-orange-200"
             }`}
           >
-            <span className={`text-xs font-black font-headline ${communityType === "creator" ? "text-cyan-700" : "text-orange-700"}`}>
+            <span className={`text-sm font-black font-headline ${communityType === "creator" ? "text-cyan-700" : "text-orange-700"}`}>
               {authorName[0]?.toUpperCase()}
             </span>
           </div>
         )}
         <div>
-          <Link href={`/profile/${post.author_id}`} className="text-sm font-bold font-headline text-[#0F2229] hover:opacity-75">
+          <Link href={`/profile/${post.author_id}`} className="text-base font-bold font-headline text-[#0F2229] hover:opacity-75">
             {authorName}
           </Link>
           <p className="text-[10px] text-[#94a3b8]">{timeAgo(post.created_at)}</p>
@@ -78,6 +82,13 @@ export function PostCard({
       <p className="text-sm leading-relaxed whitespace-pre-line mb-3" style={{ color: "#475569" }}>
         {post.body}
       </p>
+
+      {/* Media image */}
+      {post.media_url && (
+        <div className="rounded-xl overflow-hidden mb-3">
+          <img src={post.media_url} alt="" className="w-full object-cover max-h-80" />
+        </div>
+      )}
 
       {/* Context card — INSIDE the post */}
       {contextType && contextTitle && contextId && (
@@ -106,6 +117,20 @@ export function PostCard({
         <LikeButton postId={post.id} communityType={communityType} initialLiked={isLikedByMe} initialCount={likeCount} />
         <CommentSection postId={post.id} communityType={communityType} currentUserId={currentUserId} initialCount={commentCount} />
       </div>
+    </>
+  );
+
+  if (isInline) {
+    return (
+      <div className="py-5 border-t" style={{ borderColor: "rgba(15, 34, 41, 0.06)" }}>
+        {content}
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl infitra-glass p-5">
+      {content}
     </div>
   );
 }

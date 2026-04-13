@@ -6,6 +6,20 @@ import { ContextualPostFeed } from "./ContextualPostFeed";
 
 export const metadata = { title: "Home — INFITRA" };
 
+function formatRelativeTime(dateStr: string) {
+  const now = new Date();
+  const d = new Date(dateStr);
+  const diffMs = d.getTime() - now.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  const diffH = Math.floor(diffMin / 60);
+  const diffD = Math.floor(diffH / 24);
+  if (diffMin < 0) return "Now";
+  if (diffMin < 60) return `In ${diffMin}m`;
+  if (diffH < 24) return `In ${diffH}h`;
+  if (diffD === 1) return "Tomorrow";
+  return d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+}
+
 export default async function DashboardPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -31,18 +45,14 @@ export default async function DashboardPage() {
 
   // Session counts
   const { count: sessionsCompleted } = await supabase
-    .from("app_session")
-    .select("id", { count: "exact", head: true })
-    .eq("host_id", user!.id)
-    .eq("status", "ended");
+    .from("app_session").select("id", { count: "exact", head: true })
+    .eq("host_id", user!.id).eq("status", "ended");
 
   const { count: sessionsPublished } = await supabase
-    .from("app_session")
-    .select("id", { count: "exact", head: true })
-    .eq("host_id", user!.id)
-    .neq("status", "draft");
+    .from("app_session").select("id", { count: "exact", head: true })
+    .eq("host_id", user!.id).neq("status", "draft");
 
-  // ── Upcoming sessions (10, with images + challenge links) ──
+  // ── Upcoming sessions (all, for partitioning) ────────
   const now = new Date();
   const { data: upcomingSessions } = await supabase
     .from("app_session")
@@ -51,31 +61,25 @@ export default async function DashboardPage() {
     .eq("status", "published")
     .gte("start_time", now.toISOString())
     .order("start_time", { ascending: true })
-    .limit(10);
+    .limit(20);
 
-  // Get challenge names for sessions
-  const sessionIds = (upcomingSessions ?? []).map((s: any) => s.id);
-  const challengeMap: Record<string, string> = {};
-  if (sessionIds.length > 0) {
+  // Get ALL challenge_session links for upcoming sessions
+  const allSessionIds = (upcomingSessions ?? []).map((s: any) => s.id);
+  const sessionToChallengeId: Record<string, string> = {};
+  const sessionToChallengeName: Record<string, string> = {};
+  if (allSessionIds.length > 0) {
     const { data: links } = await supabase
       .from("app_challenge_session")
-      .select("session_id, app_challenge(title)")
-      .in("session_id", sessionIds);
+      .select("session_id, challenge_id, app_challenge(title)")
+      .in("session_id", allSessionIds);
     for (const link of links ?? []) {
+      sessionToChallengeId[(link as any).session_id] = (link as any).challenge_id;
       const ch = (link as any).app_challenge;
-      if (ch?.title) challengeMap[(link as any).session_id] = ch.title;
+      if (ch?.title) sessionToChallengeName[(link as any).session_id] = ch.title;
     }
   }
 
-  const sessionsForStrip = (upcomingSessions ?? []).map((s: any) => ({
-    id: s.id,
-    title: s.title,
-    image_url: s.image_url ?? null,
-    start_time: s.start_time,
-    challengeName: challengeMap[s.id] ?? null,
-  }));
-
-  // Pulse session
+  // Pulse session (live or ready to go live)
   const liveSession = (upcomingSessions ?? []).find((s: any) => !!s.live_room_id);
   const goLiveSession = !liveSession
     ? (upcomingSessions ?? []).find((s: any) => {
@@ -109,7 +113,6 @@ export default async function DashboardPage() {
     .select("id, title, source_challenge_id, cover_image_url")
     .eq("owner_id", user!.id);
 
-  // Fetch challenge details for status/dates
   const challengeIds = (challengeSpaces ?? []).map((s: any) => s.source_challenge_id).filter(Boolean);
   const challengeDetails: Record<string, any> = {};
   if (challengeIds.length > 0) {
@@ -126,31 +129,42 @@ export default async function DashboardPage() {
     for (const m of members ?? []) { const sid = c2s[m.challenge_id]; if (sid) tribeMemberCounts[sid] = (tribeMemberCounts[sid] ?? 0) + 1; }
   }
 
-  // Next session per tribe
-  const tribeNextSessions: Record<string, any> = {};
-  if (challengeIds.length > 0) {
-    const c2s: Record<string, string> = {};
-    for (const cs of challengeSpaces ?? []) { if (cs.source_challenge_id) c2s[cs.source_challenge_id] = cs.id; }
-    const { data: tsLinks } = await supabase
-      .from("app_challenge_session")
-      .select("challenge_id, app_session(id, title, start_time, status)")
-      .in("challenge_id", challengeIds);
-    for (const link of tsLinks ?? []) {
-      const sess = (link as any).app_session;
-      if (!sess || sess.status !== "published" || new Date(sess.start_time) < now) continue;
-      const spaceId = c2s[(link as any).challenge_id];
-      if (spaceId && (!tribeNextSessions[spaceId] || new Date(sess.start_time) < new Date(tribeNextSessions[spaceId].start_time))) {
-        tribeNextSessions[spaceId] = sess;
+  // ── Per-tribe sessions (next sessions grouped by tribe) ──
+  const tribeSessions: Record<string, { id: string; title: string; image_url: string | null; start_time: string }[]> = {};
+  const linkedSessionIds = new Set<string>();
+
+  // Map challenge_id → space_id
+  const challengeToSpace: Record<string, string> = {};
+  for (const cs of challengeSpaces ?? []) {
+    if (cs.source_challenge_id) challengeToSpace[cs.source_challenge_id] = cs.id;
+  }
+
+  // Assign upcoming sessions to their tribe
+  for (const sess of upcomingSessions ?? []) {
+    const challengeId = sessionToChallengeId[sess.id];
+    if (challengeId) {
+      const spaceId = challengeToSpace[challengeId];
+      if (spaceId) {
+        if (!tribeSessions[spaceId]) tribeSessions[spaceId] = [];
+        tribeSessions[spaceId].push({
+          id: sess.id,
+          title: sess.title,
+          image_url: sess.image_url ?? null,
+          start_time: sess.start_time,
+        });
+        linkedSessionIds.add(sess.id);
       }
     }
   }
+
+  // Standalone sessions (not linked to any challenge)
+  const standaloneSessions = (upcomingSessions ?? []).filter((s: any) => !linkedSessionIds.has(s.id));
 
   // Build tribe data — filter to active + upcoming only
   const today = now.toISOString().split("T")[0];
   const tribeData = (challengeSpaces ?? [])
     .map((cs: any) => {
       const ch = challengeDetails[cs.source_challenge_id] ?? {};
-      const nextSess = tribeNextSessions[cs.id];
       return {
         id: cs.id,
         title: cs.title,
@@ -161,39 +175,41 @@ export default async function DashboardPage() {
         challengeStartDate: ch.start_date ?? null,
         challengeEndDate: ch.end_date ?? null,
         challengePriceCents: ch.price_cents ?? 0,
-        nextSessionTitle: nextSess?.title ?? null,
-        nextSessionTime: nextSess?.start_time ?? null,
+        nextSessions: tribeSessions[cs.id] ?? [],
       };
     })
     .filter((t) => {
       if (t.challengeStatus !== "published") return false;
-      // Active: between start and end
       if (t.challengeStartDate && t.challengeEndDate) {
         if (today >= t.challengeStartDate && today <= t.challengeEndDate) return true;
-        if (today < t.challengeStartDate) return true; // upcoming
+        if (today < t.challengeStartDate) return true;
       }
       return false;
     });
 
-  // Active tribe stats
+  // Stats
   const activeTribes = tribeData.filter((t) => t.challengeStartDate && today >= t.challengeStartDate && t.challengeEndDate && today <= t.challengeEndDate).length;
   const totalTribeMembers = tribeData.reduce((a, t) => a + t.memberCount, 0);
 
+  // ── Next Up: 3 soonest sessions across everything ────
+  const nextUpSessions = (upcomingSessions ?? []).slice(0, 3).map((s: any) => ({
+    id: s.id,
+    title: s.title,
+    image_url: s.image_url ?? null,
+    start_time: s.start_time,
+    live_room_id: s.live_room_id,
+    challengeName: sessionToChallengeName[s.id] ?? null,
+  }));
+
   // ── Available events for contextual feed ──────────────
   const { data: feedSessions } = await supabase
-    .from("app_session")
-    .select("id, title, image_url")
-    .eq("host_id", user!.id)
-    .in("status", ["published", "ended"])
-    .order("start_time", { ascending: false })
-    .limit(15);
+    .from("app_session").select("id, title, image_url")
+    .eq("host_id", user!.id).in("status", ["published", "ended"])
+    .order("start_time", { ascending: false }).limit(15);
 
   const { data: feedChallenges } = await supabase
-    .from("app_challenge")
-    .select("id, title, image_url")
-    .eq("owner_id", user!.id)
-    .eq("status", "published")
-    .limit(10);
+    .from("app_challenge").select("id, title, image_url")
+    .eq("owner_id", user!.id).eq("status", "published").limit(10);
 
   const feedEvents = [
     ...(feedSessions ?? []).map((s: any) => ({ id: s.id, type: "session" as const, title: s.title, imageUrl: s.image_url })),
@@ -243,11 +259,56 @@ export default async function DashboardPage() {
           sessionsPublished: sessionsPublished ?? 0,
           earningsCHF,
         }}
-        sessions={sessionsForStrip}
         badges={badges}
       />
 
-      {/* ── SECTION 2: Your Tribes (active + upcoming) ──── */}
+      {/* ── SECTION 2: Next Up (compact urgency pulse) ───── */}
+      {nextUpSessions.length > 0 && (
+        <div>
+          <h2 className="text-sm font-bold font-headline uppercase tracking-wider text-[#94a3b8] mb-3">Next Up</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {nextUpSessions.map((sess) => {
+              const isUrgent = (new Date(sess.start_time).getTime() - now.getTime()) < 24 * 60 * 60 * 1000;
+              const isLive = !!sess.live_room_id;
+              return (
+                <Link
+                  key={sess.id}
+                  href={`/dashboard/sessions/${sess.id}`}
+                  className="flex items-center gap-3 p-3 rounded-xl infitra-card-link group"
+                >
+                  {sess.image_url ? (
+                    <img src={sess.image_url} alt="" className="w-12 h-12 rounded-lg object-cover shrink-0" />
+                  ) : (
+                    <div className="w-12 h-12 rounded-lg shrink-0 flex items-center justify-center" style={{ background: "linear-gradient(135deg, #0F2229, #1a3340)" }}>
+                      <img src="/logo-mark.png" alt="" width={16} height={16} style={{ opacity: 0.15 }} />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold font-headline text-[#0F2229] truncate group-hover:text-[#FF6130]">{sess.title}</p>
+                    <div className="flex items-center gap-2">
+                      {isLive ? (
+                        <span className="flex items-center gap-1 text-[10px] font-bold font-headline text-red-500">
+                          <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                          LIVE
+                        </span>
+                      ) : (
+                        <span className={`text-[10px] font-bold font-headline ${isUrgent ? "text-[#FF6130]" : "text-[#94a3b8]"}`}>
+                          {formatRelativeTime(sess.start_time)}
+                        </span>
+                      )}
+                      {sess.challengeName && (
+                        <span className="text-[10px] text-[#94a3b8]">· {sess.challengeName}</span>
+                      )}
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ── SECTION 3: Your Tribes (active + upcoming) ──── */}
       {tribeData.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-4">
@@ -270,9 +331,37 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {/* ── SECTION 3: Community Feed ────────────────────── */}
-      <div>
-        <div className="flex items-center gap-2 mb-4">
+      {/* ── Standalone Sessions (not linked to tribes) ──── */}
+      {standaloneSessions.length > 0 && (
+        <div>
+          <h2 className="text-sm font-bold font-headline uppercase tracking-wider text-[#94a3b8] mb-3">Quick Sessions</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {standaloneSessions.slice(0, 6).map((sess: any) => (
+              <Link
+                key={sess.id}
+                href={`/dashboard/sessions/${sess.id}`}
+                className="flex items-center gap-3 p-3 rounded-xl infitra-card-link group"
+              >
+                {sess.image_url ? (
+                  <img src={sess.image_url} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />
+                ) : (
+                  <div className="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center" style={{ background: "linear-gradient(135deg, #0F2229, #1a3340)" }}>
+                    <img src="/logo-mark.png" alt="" width={12} height={12} style={{ opacity: 0.15 }} />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold font-headline text-[#0F2229] truncate group-hover:text-[#FF6130]">{sess.title}</p>
+                  <p className="text-[10px] text-[#94a3b8]">{formatRelativeTime(sess.start_time)}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── SECTION 4: Community Feed (contained space) ─── */}
+      <div className="rounded-2xl infitra-card p-6">
+        <div className="flex items-center gap-2 mb-5">
           <div className="w-2.5 h-2.5 rounded-full bg-[#0891b2]" />
           <h2 className="text-lg font-black font-headline text-[#0F2229] tracking-tight">Community</h2>
           <span className="text-xs text-[#94a3b8]">· {communityMembers} member{communityMembers !== 1 ? "s" : ""}</span>
@@ -283,9 +372,10 @@ export default async function DashboardPage() {
             spaceId={space.id}
             currentUserId={user!.id}
             events={feedEvents}
+            avatarUrl={profile?.avatar_url ?? null}
           />
         ) : (
-          <div className="text-center py-16 rounded-2xl border border-dashed" style={{ borderColor: "rgba(15,34,41,0.12)" }}>
+          <div className="text-center py-12">
             <p className="text-base font-bold font-headline mb-2 text-[#0F2229]">Your community is waiting</p>
             <p className="text-sm max-w-sm mx-auto text-[#64748b]">It appears automatically when someone purchases from you.</p>
           </div>
