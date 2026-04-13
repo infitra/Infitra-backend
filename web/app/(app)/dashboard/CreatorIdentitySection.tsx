@@ -24,7 +24,16 @@ export function CreatorIdentitySection({ profile, stats, sessions, badges }: Pro
     <>
       {/* ── HERO SECTION ────────────────────────────────── */}
       <div>
-        <div className="rounded-2xl infitra-card">
+        {/* Optional cover image — separate from the card, above it */}
+        {profile.cover_image_url && (
+          <div className="rounded-t-2xl overflow-hidden mb-0">
+            <div className="h-32 md:h-40 relative">
+              <img src={profile.cover_image_url} alt="" className="w-full h-full object-cover" />
+            </div>
+          </div>
+        )}
+
+        <div className={`rounded-2xl infitra-card ${profile.cover_image_url ? "rounded-t-none" : ""}`}>
         <div className="p-6 md:p-8">
           {/* Avatar + Name + Tagline — all in one row */}
           <div className="flex items-start gap-5 mb-5">
