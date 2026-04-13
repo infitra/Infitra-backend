@@ -61,10 +61,9 @@ export function TribeCard({ tribe }: { tribe: TribeData }) {
   }, [isUpcoming, tribe.challengeStartDate]);
 
   return (
-    <div className="shrink-0 w-80 md:w-96 rounded-2xl overflow-hidden infitra-card-link group"
+    <div className={`shrink-0 w-80 md:w-96 rounded-2xl overflow-hidden infitra-card-link group ${isActive ? "tribe-active-glow" : ""}`}
       style={{
-        border: isActive ? "2px solid #0891b2" : isUpcoming ? "1px solid rgba(8,145,178,0.25)" : undefined,
-        boxShadow: isActive ? "0 0 24px rgba(8,145,178,0.15), 0 4px 16px rgba(0,0,0,0.08)" : undefined,
+        border: !isActive ? (isUpcoming ? "1px solid rgba(156,240,255,0.30)" : undefined) : undefined,
       }}
     >
       {/* Cover image or branded fallback */}
@@ -88,12 +87,12 @@ export function TribeCard({ tribe }: { tribe: TribeData }) {
           {/* Status badge — top left */}
           <div className="absolute top-3 left-3">
             {isActive ? (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold font-headline text-white" style={{ backgroundColor: "rgba(8,145,178,0.9)", backdropFilter: "blur(8px)" }}>
-                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold font-headline" style={{ backgroundColor: "#9CF0FF", color: "#064e5c", backdropFilter: "blur(8px)" }}>
+                <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: "#064e5c" }} />
                 ACTIVE
               </span>
             ) : isUpcoming ? (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold font-headline text-white" style={{ backgroundColor: "rgba(8,145,178,0.9)", backdropFilter: "blur(8px)" }}>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold font-headline" style={{ backgroundColor: "rgba(156,240,255,0.85)", color: "#064e5c", backdropFilter: "blur(8px)" }}>
                 Starts in {countdown}
               </span>
             ) : null}
@@ -144,7 +143,13 @@ export function TribeCard({ tribe }: { tribe: TribeData }) {
                     </p>
                   </div>
                   <div className="shrink-0">
-                    <span className="px-3 py-1.5 rounded-full text-[10px] font-black font-headline text-white" style={{ backgroundColor: sessUrgent ? "#FF6130" : "#0891b2" }}>
+                    <span
+                      className="px-3 py-1.5 rounded-full text-[10px] font-black font-headline"
+                      style={{
+                        backgroundColor: sessUrgent ? "#FF6130" : "#9CF0FF",
+                        color: sessUrgent ? "#ffffff" : "#064e5c",
+                      }}
+                    >
                       {sessUrgent ? "Soon" : "View"}
                     </span>
                   </div>

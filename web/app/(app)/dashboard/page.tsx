@@ -390,7 +390,7 @@ export default async function DashboardPage() {
       {/* ── SECTION 4: Community Feed (contained space) ─── */}
       <div className="rounded-2xl infitra-card p-6">
         <div className="flex items-center gap-2 mb-5">
-          <div className="w-2.5 h-2.5 rounded-full bg-[#0891b2]" />
+          <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "#9CF0FF", boxShadow: "0 0 6px rgba(156,240,255,0.5)" }} />
           <h2 className="text-lg font-black font-headline text-[#0F2229] tracking-tight">Community</h2>
           <span className="text-xs text-[#94a3b8]">· {communityMembers} member{communityMembers !== 1 ? "s" : ""}</span>
         </div>
