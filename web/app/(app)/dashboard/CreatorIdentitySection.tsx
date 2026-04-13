@@ -23,16 +23,18 @@ export function CreatorIdentitySection({ profile, stats, sessions, badges }: Pro
   return (
     <>
       {/* ── HERO SECTION ────────────────────────────────── */}
-      <div className="rounded-2xl infitra-card overflow-hidden">
-        {/* Cover image */}
-        {profile.cover_image_url ? (
-          <div className="h-48 md:h-60 relative">
-            <img src={profile.cover_image_url} alt="" className="w-full h-full object-cover" />
-            <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 40%, #FEFEFF 100%)" }} />
-          </div>
-        ) : (
-          <div className="h-28 md:h-36" style={{ background: "linear-gradient(135deg, #0F2229 0%, rgba(8,145,178,0.4) 40%, rgba(255,97,48,0.3) 70%, #0F2229 100%)" }} />
-        )}
+      <div className="rounded-2xl infitra-card overflow-visible">
+        {/* Cover image — clipped separately so avatar can overflow */}
+        <div className="rounded-t-2xl overflow-hidden">
+          {profile.cover_image_url ? (
+            <div className="h-48 md:h-60 relative">
+              <img src={profile.cover_image_url} alt="" className="w-full h-full object-cover" />
+              <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 40%, #FEFEFF 100%)" }} />
+            </div>
+          ) : (
+            <div className="h-28 md:h-36" style={{ background: "linear-gradient(135deg, #0F2229 0%, rgba(8,145,178,0.4) 40%, rgba(255,97,48,0.3) 70%, #0F2229 100%)" }} />
+          )}
+        </div>
 
         <div className="px-8 md:px-10 pb-10">
           {/* Avatar — large, overlapping */}
@@ -72,34 +74,25 @@ export function CreatorIdentitySection({ profile, stats, sessions, badges }: Pro
             </button>
           </div>
 
-          {/* Stats — bold blocks */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            <div className="p-5 rounded-2xl" style={{ backgroundColor: "#ecfeff", border: "2px solid #a5f3fc" }}>
-              <p className="text-4xl font-black font-headline text-[#0891b2] leading-none">{stats.communityMembers}</p>
-              <p className="text-sm font-bold font-headline text-[#0891b2] mt-2">Community</p>
-            </div>
-
-            <div className="p-5 rounded-2xl" style={{ backgroundColor: "#fff7ed", border: "2px solid #fdba74" }}>
-              <div className="flex items-baseline gap-2">
-                <span className="text-4xl font-black font-headline text-[#FF6130] leading-none">{stats.activeTribes}</span>
-                <span className="text-xl font-black font-headline text-[#FF6130]/40">{stats.activeParticipants}</span>
+          {/* Stats — clean, on-brand, unified */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
+            {[
+              { value: String(stats.communityMembers), label: "Community", sub: "members" },
+              { value: `${stats.activeTribes}`, label: "Active Tribes", sub: `${stats.activeParticipants} participants` },
+              { value: String(stats.sessionsPublished), label: "Sessions", sub: `${stats.sessionsCompleted} done · ${stats.sessionsUpcoming} next` },
+            ].map(({ value, label, sub }) => (
+              <div key={label} className="p-5 rounded-2xl" style={{ backgroundColor: "#0F2229" }}>
+                <p className="text-3xl font-black font-headline text-white leading-none">{value}</p>
+                <p className="text-xs font-bold font-headline text-[#FF6130] mt-2">{label}</p>
+                <p className="text-[10px] text-[#9CF0FF]/60 mt-0.5">{sub}</p>
               </div>
-              <p className="text-sm font-bold font-headline text-[#FF6130] mt-2">Tribes · Participants</p>
-            </div>
-
-            <div className="p-5 rounded-2xl" style={{ backgroundColor: "#f0fdf4", border: "2px solid #86efac" }}>
-              <p className="text-4xl font-black font-headline text-[#0F2229] leading-none">{stats.sessionsPublished}</p>
-              <p className="text-sm font-bold font-headline text-[#22c55e] mt-2">
-                Sessions <span className="text-[#22c55e]/60">✓{stats.sessionsCompleted} ↑{stats.sessionsUpcoming}</span>
-              </p>
-            </div>
-
-            <Link href="/dashboard/earnings" className="p-5 rounded-2xl group" style={{ backgroundColor: "#fafafa", border: "2px solid #e5e7eb" }}>
-              <p className="text-3xl font-black font-headline text-[#0F2229] leading-none group-hover:text-[#FF6130]">
+            ))}
+            <Link href="/dashboard/earnings" className="p-5 rounded-2xl group" style={{ backgroundColor: "#0F2229" }}>
+              <p className="text-3xl font-black font-headline text-[#FF6130] leading-none group-hover:text-white">
                 {stats.earningsCHF}
               </p>
-              <p className="text-sm font-bold font-headline text-[#94a3b8] mt-2">CHF Earned</p>
-              <p className="text-xs font-bold text-[#FF6130] mt-1">Details →</p>
+              <p className="text-xs font-bold font-headline text-white mt-2">CHF Earned</p>
+              <p className="text-[10px] text-[#9CF0FF]/60 mt-0.5 group-hover:text-[#FF6130]">View details →</p>
             </Link>
           </div>
         </div>
