@@ -36,8 +36,10 @@ export default async function DashboardLayout({
           style={{
             position: "absolute",
             inset: 0,
-            background: "rgba(242, 239, 232, 0.92)",
-            borderBottom: "1px solid rgba(15, 34, 41, 0.08)",
+            background: "rgba(242, 239, 232, 0.80)",
+            backdropFilter: "blur(16px)",
+            WebkitBackdropFilter: "blur(16px)",
+            borderBottom: "1px solid rgba(255, 255, 255, 0.40)",
           }}
         />
         <div className="relative max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">

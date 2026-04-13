@@ -46,31 +46,30 @@ export function TribeCard({ tribe }: { tribe: TribeData }) {
   return (
     <Link
       href={`/communities/challenge/${tribe.id}`}
-      className="shrink-0 w-72 md:w-80 block rounded-2xl overflow-hidden group"
+      className="shrink-0 w-72 md:w-80 block rounded-2xl overflow-hidden group infitra-card-link"
       style={{
-        backgroundColor: isActive ? "#1a0a00" : "#FEFEFF",
-        border: isActive ? "2px solid #FF6130" : isUpcoming ? "1px solid rgba(8,145,178,0.20)" : "1px solid rgba(0,0,0,0.06)",
+        border: isActive ? "2px solid #FF6130" : isUpcoming ? "1px solid rgba(8,145,178,0.25)" : undefined,
         boxShadow: isActive
-          ? "0 0 30px rgba(255,97,48,0.15), 0 4px 16px rgba(0,0,0,0.10)"
-          : "0 2px 8px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.06)",
+          ? "0 0 30px rgba(255,97,48,0.15), 0 4px 16px rgba(0,0,0,0.08)"
+          : undefined,
       }}
     >
       {/* Cover or accent */}
       {tribe.coverImageUrl ? (
         <div className="h-32 relative">
-          <img src={tribe.coverImageUrl} alt="" className="w-full h-full object-cover" style={isActive ? { opacity: 0.7 } : undefined} />
-          <div className="absolute inset-0" style={{ background: isActive ? "linear-gradient(to bottom, transparent 20%, #1a0a00 100%)" : "linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.5) 100%)" }} />
+          <img src={tribe.coverImageUrl} alt="" className="w-full h-full object-cover" />
+          <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.5) 100%)" }} />
           <div className="absolute bottom-3 left-4 right-4">
-            <h3 className={`text-base font-black font-headline tracking-tight truncate ${isActive ? "text-[#FF6130]" : "text-white"} group-hover:text-[#FF6130]`}>{tribe.title}</h3>
+            <h3 className="text-base font-black font-headline tracking-tight truncate text-white group-hover:text-[#FF6130]">{tribe.title}</h3>
           </div>
         </div>
       ) : (
-        <div className="h-2" style={{ background: isActive ? "linear-gradient(90deg, #FF6130, rgba(255,97,48,0.4))" : isUpcoming ? "linear-gradient(90deg, #0891b2, rgba(8,145,178,0.3))" : "linear-gradient(90deg, #e2e8f0, #f1f5f9)" }} />
+        <div className="h-2" style={{ background: isActive ? "linear-gradient(90deg, #FF6130, rgba(255,97,48,0.3))" : isUpcoming ? "linear-gradient(90deg, #0891b2, rgba(8,145,178,0.2))" : "linear-gradient(90deg, rgba(0,0,0,0.06), rgba(0,0,0,0.02))" }} />
       )}
 
       <div className="p-4">
         {!tribe.coverImageUrl && (
-          <h3 className={`text-base font-black font-headline tracking-tight truncate mb-2 ${isActive ? "text-[#FF6130]" : "text-[#0F2229]"} group-hover:text-[#FF6130]`}>{tribe.title}</h3>
+          <h3 className="text-base font-black font-headline tracking-tight truncate mb-2 text-[#0F2229] group-hover:text-[#FF6130]">{tribe.title}</h3>
         )}
 
         {/* Status + members + price */}
@@ -85,22 +84,22 @@ export function TribeCard({ tribe }: { tribe: TribeData }) {
               ⏱ {countdown}
             </span>
           ) : null}
-          <span className={`text-xs font-bold ${isActive ? "text-white/60" : "text-[#94a3b8]"}`}>
+          <span className="text-xs font-bold text-[#94a3b8]">
             {tribe.memberCount} member{tribe.memberCount !== 1 ? "s" : ""}
           </span>
           {priceCHF && (
-            <span className={`text-xs font-bold font-headline ${isActive ? "text-[#FF6130]" : "text-[#0F2229]"}`}>{priceCHF}</span>
+            <span className="text-xs font-bold font-headline text-[#0F2229]">{priceCHF}</span>
           )}
         </div>
 
         {/* Challenge name */}
-        <p className={`text-xs truncate ${isActive ? "text-white/40" : "text-[#64748b]"}`}>{tribe.challengeTitle}</p>
+        <p className="text-xs truncate text-[#64748b]">{tribe.challengeTitle}</p>
 
         {/* Next session */}
         {tribe.nextSessionTitle && (
           <div className="flex items-center gap-1.5 mt-2">
             <span className="w-1.5 h-1.5 rounded-full bg-[#0891b2]" />
-            <span className={`text-[10px] font-bold font-headline truncate ${isActive ? "text-[#9CF0FF]" : "text-[#0891b2]"}`}>
+            <span className="text-[10px] font-bold font-headline truncate text-[#0891b2]">
               Next: {tribe.nextSessionTitle}
             </span>
           </div>
