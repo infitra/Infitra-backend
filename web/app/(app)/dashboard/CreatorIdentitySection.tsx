@@ -110,9 +110,9 @@ export function CreatorIdentitySection({ profile, stats, badges }: Props) {
           {/* Stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {[
-              { value: String(stats.communityMembers), label: "Community Members" },
-              { value: `${stats.activeTribes}`, label: `Active Tribes · ${stats.activeParticipants} participants` },
-              { value: String(stats.sessionsPublished), label: `Sessions · ${stats.sessionsCompleted} done · ${stats.sessionsUpcoming} upcoming` },
+              { value: String(stats.communityMembers), label: "Members" },
+              { value: `${stats.activeTribes}`, label: "Active Tribes" },
+              { value: String(stats.sessionsPublished), label: "Sessions" },
             ].map(({ value, label }) => (
               <div key={label} className="p-5 rounded-2xl infitra-card">
                 <p className="text-3xl font-black font-headline text-[#0F2229] leading-none">{value}</p>
