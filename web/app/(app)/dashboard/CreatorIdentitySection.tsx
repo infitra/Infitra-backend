@@ -110,21 +110,20 @@ export function CreatorIdentitySection({ profile, stats, badges }: Props) {
           {/* Stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {[
-              { value: String(stats.communityMembers), label: "Community", sub: "members" },
-              { value: `${stats.activeTribes}`, label: "Active Tribes", sub: `${stats.activeParticipants} participants` },
-              { value: String(stats.sessionsPublished), label: "Sessions", sub: `${stats.sessionsCompleted} done · ${stats.sessionsUpcoming} next` },
-            ].map(({ value, label, sub }) => (
+              { value: String(stats.communityMembers), label: "Community Members" },
+              { value: `${stats.activeTribes}`, label: `Active Tribes · ${stats.activeParticipants} participants` },
+              { value: String(stats.sessionsPublished), label: `Sessions · ${stats.sessionsCompleted} done · ${stats.sessionsUpcoming} upcoming` },
+            ].map(({ value, label }) => (
               <div key={label} className="p-5 rounded-2xl infitra-card">
                 <p className="text-3xl font-black font-headline text-[#0F2229] leading-none">{value}</p>
-                <p className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider mt-2">{label}</p>
-                <p className="text-[10px] text-[#94a3b8] mt-0.5">{sub}</p>
+                <p className="text-xs font-bold font-headline text-[#94a3b8] mt-2">{label}</p>
               </div>
             ))}
             <Link href="/dashboard/earnings" className="p-5 rounded-2xl infitra-card-link group">
               <p className="text-3xl font-black font-headline text-[#0F2229] leading-none">
                 {stats.earningsCHF}
               </p>
-              <p className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider mt-2">CHF Earned</p>
+              <p className="text-xs font-bold font-headline text-[#94a3b8] mt-2">CHF Earned</p>
               <p className="text-[10px] text-[#FF6130] mt-0.5">View details →</p>
             </Link>
           </div>

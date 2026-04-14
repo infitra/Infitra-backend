@@ -279,7 +279,10 @@ export default async function DashboardPage() {
       {/* ── SECTION 2: Next Up — bold, image-forward ─────── */}
       {nextUpSessions.length > 0 && (
         <div>
-          <h2 className="text-lg font-black font-headline text-[#0F2229] tracking-tight mb-4">Next Up</h2>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-1 h-6 rounded-full" style={{ backgroundColor: "#FF6130" }} />
+            <h2 className="text-xl font-black font-headline text-[#0F2229] tracking-tight">Next Up</h2>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {nextUpSessions.map((sess, i) => {
               const isUrgent = (new Date(sess.start_time).getTime() - now.getTime()) < 24 * 60 * 60 * 1000;
@@ -349,7 +352,10 @@ export default async function DashboardPage() {
       {tribeData.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-black font-headline text-[#0F2229] tracking-tight">Your Tribes</h2>
+            <div className="flex items-center gap-3">
+              <div className="w-1 h-6 rounded-full" style={{ backgroundColor: "#9CF0FF" }} />
+              <h2 className="text-xl font-black font-headline text-[#0F2229] tracking-tight">Your Tribes</h2>
+            </div>
             <Link href="/dashboard/create" className="text-xs font-bold font-headline text-[#FF6130]">+ New Challenge</Link>
           </div>
 
@@ -398,7 +404,10 @@ export default async function DashboardPage() {
       {/* ── Standalone Sessions (not linked to tribes) ──── */}
       {standaloneSessions.length > 0 && (
         <div>
-          <h2 className="text-lg font-black font-headline text-[#0F2229] tracking-tight mb-4">Quick Sessions</h2>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-1 h-6 rounded-full" style={{ backgroundColor: "#94a3b8" }} />
+            <h2 className="text-xl font-black font-headline text-[#0F2229] tracking-tight">Quick Sessions</h2>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {standaloneSessions.slice(0, 6).map((sess: any) => {
               const isUrgent = (new Date(sess.start_time).getTime() - now.getTime()) < 24 * 60 * 60 * 1000;
@@ -433,7 +442,8 @@ export default async function DashboardPage() {
         {/* Header with avatar strip */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <h2 className="text-lg font-black font-headline text-[#0F2229] tracking-tight">Community</h2>
+            <div className="w-1 h-6 rounded-full" style={{ backgroundColor: "#9CF0FF" }} />
+            <h2 className="text-xl font-black font-headline text-[#0F2229] tracking-tight">Community</h2>
             {/* Stacked member avatars */}
             {memberAvatars.length > 0 && (
               <div className="flex items-center -space-x-2">
