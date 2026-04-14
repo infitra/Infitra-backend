@@ -274,7 +274,7 @@ export async function deleteChallenge(challengeId: string) {
     }
   }
 
-  redirect("/dashboard/challenges");
+  redirect("/dashboard");
 }
 
 /** Updates a tribe space cover image (owner only). */

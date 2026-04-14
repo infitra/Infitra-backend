@@ -81,7 +81,7 @@ export default async function ChallengeDetailPage({
   return (
     <div className="py-10 max-w-2xl mx-auto">
       <Link
-        href="/dashboard/challenges"
+        href="/dashboard"
         className="text-xs transition-colors mb-6 flex items-center gap-1.5 font-headline"
         style={{ color: "#64748b" }}
       >
