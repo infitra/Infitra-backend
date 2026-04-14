@@ -30,10 +30,10 @@ export function ParticipantNav({
         style={{
           position: "absolute",
           inset: 0,
-          background: "rgba(242, 239, 232, 0.80)",
-          backdropFilter: "blur(16px)",
-          WebkitBackdropFilter: "blur(16px)",
-          borderBottom: "1px solid rgba(255, 255, 255, 0.40)",
+          background: "rgba(242, 239, 232, 0.55)",
+          backdropFilter: "blur(20px) saturate(1.2)",
+          WebkitBackdropFilter: "blur(20px) saturate(1.2)",
+          borderBottom: "1px solid rgba(255, 255, 255, 0.25)",
         }}
       />
       <div className="relative max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">

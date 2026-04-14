@@ -109,16 +109,40 @@ export function CreatorIdentitySection({ profile, stats, badges }: Props) {
 
           {/* Stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            {[
-              { value: String(stats.communityMembers), label: "Members" },
-              { value: `${stats.activeTribes}`, label: "Active Tribes" },
-              { value: String(stats.sessionsPublished), label: "Sessions" },
-            ].map(({ value, label }) => (
-              <div key={label} className="p-5 rounded-2xl infitra-card">
-                <p className="text-3xl font-black font-headline text-[#0F2229] leading-none">{value}</p>
-                <p className="text-xs font-bold font-headline text-[#94a3b8] mt-2">{label}</p>
+            <div className="p-5 rounded-2xl infitra-card">
+              <p className="text-3xl font-black font-headline text-[#0F2229] leading-none">{stats.communityMembers}</p>
+              <p className="text-xs font-bold font-headline text-[#94a3b8] mt-2">Community Members</p>
+            </div>
+            <div className="p-5 rounded-2xl infitra-card">
+              <div className="flex items-end justify-between">
+                <div>
+                  <p className="text-3xl font-black font-headline text-[#0F2229] leading-none">{stats.activeTribes}</p>
+                  <p className="text-xs font-bold font-headline text-[#94a3b8] mt-2">Active Tribes</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-lg font-black font-headline text-[#0F2229]/60 leading-none">{stats.activeParticipants}</p>
+                  <p className="text-[10px] font-bold font-headline text-[#94a3b8] mt-1">Participants</p>
+                </div>
               </div>
-            ))}
+            </div>
+            <div className="p-5 rounded-2xl infitra-card">
+              <div className="flex items-end justify-between">
+                <div>
+                  <p className="text-3xl font-black font-headline text-[#0F2229] leading-none">{stats.sessionsPublished}</p>
+                  <p className="text-xs font-bold font-headline text-[#94a3b8] mt-2">Sessions</p>
+                </div>
+                <div className="flex gap-4 text-right">
+                  <div>
+                    <p className="text-lg font-black font-headline text-[#0F2229]/60 leading-none">{stats.sessionsCompleted}</p>
+                    <p className="text-[10px] font-bold font-headline text-[#94a3b8] mt-1">Done</p>
+                  </div>
+                  <div>
+                    <p className="text-lg font-black font-headline text-[#0F2229]/60 leading-none">{stats.sessionsUpcoming}</p>
+                    <p className="text-[10px] font-bold font-headline text-[#94a3b8] mt-1">Upcoming</p>
+                  </div>
+                </div>
+              </div>
+            </div>
             <Link href="/dashboard/earnings" className="p-5 rounded-2xl infitra-card-link group">
               <p className="text-3xl font-black font-headline text-[#0F2229] leading-none">
                 {stats.earningsCHF}
