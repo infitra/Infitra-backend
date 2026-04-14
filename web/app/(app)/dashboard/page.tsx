@@ -388,58 +388,31 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {/* ── SECTION 3: Your Tribes (active + upcoming) ──── */}
-      {tribeData.length > 0 && (
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-1 h-6 rounded-full" style={{ backgroundColor: "#FF6130" }} />
-              <h2 className="text-xl font-black font-headline text-[#0F2229] tracking-tight">Your Tribes</h2>
-            </div>
-            <Link href="/dashboard/create" className="text-xs font-bold font-headline text-[#FF6130]">+ New Challenge</Link>
+      {/* ── SECTION 3: Your Tribe — challenges inside ───── */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-1 h-6 rounded-full" style={{ backgroundColor: "#FF6130" }} />
+            <h2 className="text-xl font-black font-headline text-[#0F2229] tracking-tight">Your Tribe</h2>
+            <span className="text-xs text-[#94a3b8]">· {communityMembers} member{communityMembers !== 1 ? "s" : ""}</span>
           </div>
-
-          {/* ≤2 tribes: full-width grid. 3+: horizontal scroll */}
-          {tribeData.length <= 2 ? (
-            <div className={`grid gap-4 ${tribeData.length === 1 ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1 md:grid-cols-2"}`}>
-              {tribeData.map((tribe) => (
-                <TribeCard key={tribe.id} tribe={tribe} fullWidth />
-              ))}
-              {/* Fill space with CTA when only 1 tribe */}
-              {tribeData.length === 1 && (
-                <Link
-                  href="/dashboard/create"
-                  className="rounded-2xl infitra-card-link p-8 flex flex-col items-center justify-center text-center group min-h-[280px]"
-                >
-                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style={{ backgroundColor: "rgba(156,240,255,0.15)", border: "1px solid rgba(156,240,255,0.25)" }}>
-                    <span className="text-2xl font-black font-headline" style={{ color: "#0891b2" }}>+</span>
-                  </div>
-                  <p className="text-base font-bold font-headline text-[#0F2229] mb-2 group-hover:text-[#FF6130]">
-                    Start your next challenge
-                  </p>
-                  <p className="text-sm text-[#94a3b8] max-w-xs">
-                    Create a new challenge to grow your community with another tribe.
-                  </p>
-                </Link>
-              )}
-            </div>
-          ) : (
-            <div className="flex gap-4 overflow-x-auto pb-3" style={{ scrollbarWidth: "none" }}>
-              {tribeData.map((tribe) => (
-                <TribeCard key={tribe.id} tribe={tribe} />
-              ))}
-            </div>
-          )}
         </div>
-      )}
 
-      {tribeData.length === 0 && (
-        <div className="rounded-2xl infitra-card p-8 text-center">
-          <p className="text-base font-bold font-headline text-[#0F2229] mb-2">No active tribes yet</p>
-          <p className="text-sm text-[#64748b] max-w-md mx-auto mb-4">Start a challenge to create your first tribe — where your community engages freely.</p>
-          <Link href="/dashboard/create" className="text-sm font-bold font-headline text-[#FF6130]">Create Challenge →</Link>
-        </div>
-      )}
+        {/* Active challenges as tribe content */}
+        {tribeData.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {tribeData.map((tribe) => (
+              <TribeCard key={tribe.id} tribe={tribe} fullWidth />
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-2xl infitra-card p-8 text-center">
+            <p className="text-base font-bold font-headline text-[#0F2229] mb-2">No active challenges</p>
+            <p className="text-sm text-[#64748b] max-w-md mx-auto mb-4">Launch a challenge in your tribe to start building your community.</p>
+            <Link href="/dashboard/create" className="text-sm font-bold font-headline text-[#FF6130]">Create Challenge →</Link>
+          </div>
+        )}
+      </div>
 
       {/* ── Standalone Sessions (not linked to tribes) ──── */}
       {standaloneSessions.length > 0 && (

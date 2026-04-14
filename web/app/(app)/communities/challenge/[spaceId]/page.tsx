@@ -107,6 +107,13 @@ export default async function ChallengeTribePage({ params }: { params: Promise<{
 
         <div className="flex-1 pt-20">
 
+          {/* Back to tribe */}
+          <div className="max-w-7xl mx-auto px-6 mb-4">
+            <Link href="/dashboard" className="text-xs font-bold font-headline text-[#9CF0FF]/60 hover:text-[#9CF0FF]">
+              ← Back to {owner?.display_name ?? "Creator"}&apos;s Tribe
+            </Link>
+          </div>
+
           {/* 1. TRIBE SPACE IDENTITY */}
           <div className="relative overflow-hidden">
             {/* Tribe cover image */}
