@@ -49,6 +49,7 @@ export function PostCard({
   contextTitle?: string | null;
   contextImageUrl?: string | null;
   contextId?: string | null;
+  contextMeta?: string | null;
   variant?: "card" | "inline";
 }) {
   const isInline = variant === "inline";
@@ -96,7 +97,7 @@ export function PostCard({
           href={contextType === "session" ? `/sessions/${contextId}` : `/challenges/${contextId}`}
           className="block rounded-xl overflow-hidden mb-4 group/ctx"
         >
-          <div className="h-40 relative">
+          <div className="aspect-[2/1] relative">
             {contextImageUrl ? (
               <>
                 <img src={contextImageUrl} alt="" className="w-full h-full object-cover group-hover/ctx:scale-[1.02] transition-transform duration-300" />
@@ -125,11 +126,14 @@ export function PostCard({
               </span>
             </div>
 
-            {/* Title — bottom */}
+            {/* Title + meta — bottom */}
             <div className="absolute bottom-3 left-4 right-4">
               <h4 className="text-lg font-black font-headline text-white tracking-tight group-hover/ctx:text-[#9CF0FF]">
                 {contextTitle}
               </h4>
+              {contextMeta && (
+                <p className="text-xs font-bold font-headline text-white/70 mt-0.5">{contextMeta}</p>
+              )}
             </div>
           </div>
         </Link>

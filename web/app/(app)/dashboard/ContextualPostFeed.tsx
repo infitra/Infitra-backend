@@ -29,6 +29,7 @@ interface EnrichedPost {
   contextId: string | null;
   contextTitle: string | null;
   contextImageUrl: string | null;
+  contextMeta: string | null;
   authorAvatarUrl: string | null;
 }
 
@@ -95,20 +96,39 @@ export function ContextualPostFeed({
       const commentCounts: Record<string, number> = {};
       for (const c of commentsRes.data ?? []) commentCounts[c.post_id] = (commentCounts[c.post_id] ?? 0) + 1;
 
-      // Resolve context titles for posts that have them
+      // Resolve context details for posts that have them
       const contextIds = rawPosts.filter((p: any) => p.context_id).map((p: any) => ({ type: p.context_type, id: p.context_id }));
-      const contextTitles: Record<string, { title: string; imageUrl: string | null }> = {};
+      const contextData: Record<string, { title: string; imageUrl: string | null; meta: string | null }> = {};
 
       const sessionContextIds = contextIds.filter((c: any) => c.type === "session").map((c: any) => c.id);
       const challengeContextIds = contextIds.filter((c: any) => c.type === "challenge").map((c: any) => c.id);
 
       if (sessionContextIds.length > 0) {
-        const { data: sessions } = await supabase.from("app_session").select("id, title, image_url").in("id", sessionContextIds);
-        for (const s of sessions ?? []) contextTitles[s.id] = { title: s.title, imageUrl: s.image_url };
+        const { data: sessions } = await supabase.from("app_session").select("id, title, image_url, duration_minutes, price_cents").in("id", sessionContextIds);
+        for (const s of sessions ?? []) {
+          const parts: string[] = [];
+          if (s.duration_minutes) parts.push(`${s.duration_minutes} min`);
+          if (s.price_cents > 0) parts.push(`CHF ${(s.price_cents / 100).toFixed(0)}`);
+          else parts.push("Free");
+          contextData[s.id] = { title: s.title, imageUrl: s.image_url, meta: parts.join(" · ") };
+        }
       }
       if (challengeContextIds.length > 0) {
-        const { data: challenges } = await supabase.from("app_challenge").select("id, title, image_url").in("id", challengeContextIds);
-        for (const c of challenges ?? []) contextTitles[c.id] = { title: c.title, imageUrl: c.image_url };
+        const { data: challenges } = await supabase.from("app_challenge").select("id, title, image_url, price_cents").in("id", challengeContextIds);
+        // Count sessions per challenge
+        const challengeSessionCounts: Record<string, number> = {};
+        if (challengeContextIds.length > 0) {
+          const { data: csLinks } = await supabase.from("app_challenge_session").select("challenge_id").in("challenge_id", challengeContextIds);
+          for (const l of csLinks ?? []) challengeSessionCounts[l.challenge_id] = (challengeSessionCounts[l.challenge_id] ?? 0) + 1;
+        }
+        for (const c of challenges ?? []) {
+          const parts: string[] = [];
+          const sessCount = challengeSessionCounts[c.id] ?? 0;
+          if (sessCount > 0) parts.push(`${sessCount} session${sessCount !== 1 ? "s" : ""}`);
+          if (c.price_cents > 0) parts.push(`CHF ${(c.price_cents / 100).toFixed(0)}`);
+          else parts.push("Free");
+          contextData[c.id] = { title: c.title, imageUrl: c.image_url, meta: parts.join(" · ") };
+        }
       }
 
       const enriched: EnrichedPost[] = rawPosts.map((p: any) => ({
@@ -123,8 +143,9 @@ export function ContextualPostFeed({
         isLikedByMe: myLikes.has(p.id),
         contextType: p.context_type ?? null,
         contextId: p.context_id ?? null,
-        contextTitle: p.context_id ? contextTitles[p.context_id]?.title ?? null : null,
-        contextImageUrl: p.context_id ? contextTitles[p.context_id]?.imageUrl ?? null : null,
+        contextTitle: p.context_id ? contextData[p.context_id]?.title ?? null : null,
+        contextImageUrl: p.context_id ? contextData[p.context_id]?.imageUrl ?? null : null,
+        contextMeta: p.context_id ? contextData[p.context_id]?.meta ?? null : null,
         authorAvatarUrl: avatarMap[p.author_id] ?? null,
       }));
 
@@ -253,6 +274,7 @@ export function ContextualPostFeed({
               contextTitle={post.contextTitle}
               contextImageUrl={post.contextImageUrl}
               contextId={post.contextId}
+              contextMeta={post.contextMeta}
               variant="inline"
             />
           ))}
