@@ -255,34 +255,13 @@ body {
   box-shadow: 0 0 15px rgba(255, 97, 48, 0.15);
 }
 
-/* ── Active tribe — rotating gradient border ─────────────── */
-@property --tribe-angle {
-  syntax: "<angle>";
-  initial-value: 0deg;
-  inherits: false;
-}
-
-@keyframes tribe-border-spin {
-  to { --tribe-angle: 360deg; }
+/* ── Active tribe — breathing border color ───────────────── */
+@keyframes tribe-border-breathe {
+  0%, 100% { border-color: #9CF0FF; box-shadow: 0 0 16px rgba(156, 240, 255, 0.20), 0 4px 16px rgba(0, 0, 0, 0.06); }
+  50% { border-color: rgba(255, 97, 48, 0.45); box-shadow: 0 0 16px rgba(255, 97, 48, 0.12), 0 4px 16px rgba(0, 0, 0, 0.06); }
 }
 
 .tribe-active-glow {
-  position: relative;
-  border: none !important;
-}
-
-.tribe-active-glow::before {
-  content: "";
-  position: absolute;
-  inset: -2px;
-  border-radius: inherit;
-  padding: 2px;
-  background: conic-gradient(from var(--tribe-angle), #9CF0FF, #0891b2, #FF6130, #0891b2, #9CF0FF);
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  mask-composite: exclude;
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  animation: tribe-border-spin 4s linear infinite;
-  z-index: 1;
-  pointer-events: none;
+  border: 2px solid #9CF0FF;
+  animation: tribe-border-breathe 3.5s ease-in-out infinite;
 }
