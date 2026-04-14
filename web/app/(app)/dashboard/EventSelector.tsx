@@ -42,13 +42,14 @@ export function EventSelector({
       ) : (
         <button
           onClick={() => setOpen(true)}
-          className="inline-flex items-center gap-1.5 text-xs font-bold font-headline text-[#94a3b8] hover:text-[#0891b2] mb-2"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold font-headline text-[#0891b2] hover:text-[#064e5c] mb-2"
+          style={{ backgroundColor: "rgba(156,240,255,0.10)", border: "1px solid rgba(156,240,255,0.20)" }}
         >
-          <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+          <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
             <path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101" strokeLinecap="round" strokeLinejoin="round" />
             <path d="M10.172 13.828a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.102 1.101" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-          Add context
+          Link Event to Post
         </button>
       )}
 
