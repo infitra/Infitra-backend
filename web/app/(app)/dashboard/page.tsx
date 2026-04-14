@@ -3,6 +3,7 @@ import Link from "next/link";
 import { CreatorIdentitySection } from "./CreatorIdentitySection";
 import { TribeCard } from "./TribeCard";
 import { ContextualPostFeed } from "./ContextualPostFeed";
+import { CollabInvitations } from "./CollabInvitations";
 
 export const metadata = { title: "Home — INFITRA" };
 
@@ -223,6 +224,22 @@ export default async function DashboardPage() {
     challengeName: sessionToChallengeName[s.id] ?? null,
   }));
 
+  // ── Pending collaboration invitations ─────────────────
+  const { data: pendingInvites } = await supabase
+    .from("app_collaboration_invite")
+    .select("id, from_id, message, initial_split_percent, created_at")
+    .eq("to_id", user!.id)
+    .eq("status", "pending")
+    .order("created_at", { ascending: false });
+
+  // Fetch inviter profiles
+  const inviterIds = [...new Set((pendingInvites ?? []).map((i: any) => i.from_id))];
+  const inviterProfiles: Record<string, { name: string; avatar: string | null; tagline: string | null }> = {};
+  if (inviterIds.length > 0) {
+    const { data: profiles } = await supabase.from("app_profile").select("id, display_name, avatar_url, tagline").in("id", inviterIds);
+    for (const p of profiles ?? []) inviterProfiles[p.id] = { name: p.display_name ?? "Creator", avatar: p.avatar_url, tagline: p.tagline };
+  }
+
   // ── Available events for contextual feed ──────────────
   const { data: feedSessions } = await supabase
     .from("app_session").select("id, title, image_url")
@@ -261,6 +278,21 @@ export default async function DashboardPage() {
             {liveSession ? "Enter Session" : "Go Live"}
           </Link>
         </div>
+      )}
+
+      {/* ── COLLABORATION INVITATIONS ─────────────────────── */}
+      {(pendingInvites ?? []).length > 0 && (
+        <CollabInvitations
+          invites={(pendingInvites ?? []).map((i: any) => ({
+            id: i.id,
+            fromName: inviterProfiles[i.from_id]?.name ?? "Creator",
+            fromAvatar: inviterProfiles[i.from_id]?.avatar ?? null,
+            fromTagline: inviterProfiles[i.from_id]?.tagline ?? null,
+            message: i.message,
+            splitPercent: i.initial_split_percent,
+            createdAt: i.created_at,
+          }))}
+        />
       )}
 
       {/* ── SECTION 1: Creator Identity ──────────────────── */}
