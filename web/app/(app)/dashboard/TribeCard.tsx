@@ -87,8 +87,8 @@ export function TribeCard({ tribe, fullWidth = false }: { tribe: TribeData; full
           {/* Status badge — top left */}
           <div className="absolute top-3 left-3">
             {isActive ? (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold font-headline" style={{ backgroundColor: "#9CF0FF", color: "#064e5c", backdropFilter: "blur(8px)" }}>
-                <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: "#064e5c" }} />
+              <span className="inline-flex items-center gap-1.5 px-2 py-1 text-[11px] font-black font-headline tracking-wide" style={{ color: "#FF6130" }}>
+                <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: "#FF6130", boxShadow: "0 0 6px rgba(255,97,48,0.5)" }} />
                 ACTIVE
               </span>
             ) : isUpcoming ? (
