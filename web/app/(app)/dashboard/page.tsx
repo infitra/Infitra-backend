@@ -353,7 +353,7 @@ export default async function DashboardPage() {
         <div>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="w-1 h-6 rounded-full" style={{ backgroundColor: "#0891b2" }} />
+              <div className="w-1 h-6 rounded-full" style={{ backgroundColor: "#FF6130" }} />
               <h2 className="text-xl font-black font-headline text-[#0F2229] tracking-tight">Your Tribes</h2>
             </div>
             <Link href="/dashboard/create" className="text-xs font-bold font-headline text-[#FF6130]">+ New Challenge</Link>
