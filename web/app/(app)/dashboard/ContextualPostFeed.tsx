@@ -187,10 +187,8 @@ export function ContextualPostFeed({
 
   return (
     <div>
-      {/* Composer */}
-      <div className="pb-4 border-b" style={{ borderColor: "rgba(15,34,41,0.06)" }}>
-        <EventSelector events={events} selected={selectedEvent} onSelect={setSelectedEvent} />
-
+      {/* Composer — compact */}
+      <div className="pb-5 border-b" style={{ borderColor: "rgba(15,34,41,0.06)" }}>
         <div className="flex gap-3">
           {avatarUrl ? (
             <img src={avatarUrl} alt="" className="w-11 h-11 rounded-full object-cover shrink-0 mt-1" />
@@ -205,28 +203,24 @@ export function ContextualPostFeed({
               onChange={(e) => setNewBody(e.target.value)}
               placeholder={selectedEvent ? `Share about this ${selectedEvent.type}...` : "Share something with your community..."}
               maxLength={5000}
-              rows={3}
+              rows={2}
               className="w-full rounded-xl p-3 text-sm focus:outline-none resize-none"
               style={{ backgroundColor: "rgba(255,255,255,0.55)", border: "1px solid rgba(15,34,41,0.08)", color: "#0F2229" }}
             />
+            {/* Actions row — context link + post button */}
+            <div className="flex items-center justify-between mt-2">
+              <EventSelector events={events} selected={selectedEvent} onSelect={setSelectedEvent} />
+              <button
+                onClick={handleCreatePost}
+                disabled={posting || !newBody.trim()}
+                className="px-5 py-2 rounded-full text-white text-sm font-black font-headline disabled:opacity-40 shrink-0"
+                style={{ backgroundColor: "#FF6130", boxShadow: "0 4px 14px rgba(255,97,48,0.35)" }}
+              >
+                {posting ? "Posting..." : "Post"}
+              </button>
+            </div>
+            {postError && <p className="text-xs mt-1 text-[#FF6130]">{postError}</p>}
           </div>
-        </div>
-        {postError && <p className="text-xs mt-2 text-[#FF6130]">{postError}</p>}
-        <div className="flex items-center justify-between mt-3">
-          {selectedEvent && (
-            <span className="text-xs text-[#FF6130] font-bold font-headline truncate mr-2">
-              {events.find(e => e.id === selectedEvent.id && e.type === selectedEvent.type)?.title}
-            </span>
-          )}
-          <div className="flex-1" />
-          <button
-            onClick={handleCreatePost}
-            disabled={posting || !newBody.trim()}
-            className="px-5 py-2.5 rounded-full text-white text-sm font-black font-headline disabled:opacity-40"
-            style={{ backgroundColor: "#FF6130", boxShadow: "0 4px 14px rgba(255,97,48,0.35)" }}
-          >
-            {posting ? "Posting..." : "Post"}
-          </button>
         </div>
       </div>
 
