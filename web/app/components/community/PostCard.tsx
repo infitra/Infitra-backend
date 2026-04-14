@@ -29,6 +29,7 @@ export function PostCard({
   contextTitle,
   contextImageUrl,
   contextId,
+  contextMeta,
   variant = "card",
 }: {
   post: {
