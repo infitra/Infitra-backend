@@ -109,40 +109,16 @@ export function CreatorIdentitySection({ profile, stats, badges }: Props) {
 
           {/* Stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <div className="p-5 rounded-2xl infitra-card flex items-center justify-center">
-              <div className="text-center">
-                <p className="text-3xl font-black font-headline text-[#0F2229] leading-none">{stats.communityMembers}</p>
-                <p className="text-xs font-bold font-headline text-[#94a3b8] mt-2">Community Members</p>
+            {[
+              { value: String(stats.communityMembers), label: "Community Members" },
+              { value: String(stats.activeTribes), label: "Active Tribes" },
+              { value: String(stats.sessionsUpcoming), label: "Upcoming Sessions" },
+            ].map(({ value, label }) => (
+              <div key={label} className="p-5 rounded-2xl infitra-card text-center">
+                <p className="text-3xl font-black font-headline text-[#0F2229] leading-none">{value}</p>
+                <p className="text-xs font-bold font-headline text-[#94a3b8] mt-2">{label}</p>
               </div>
-            </div>
-            <div className="p-5 rounded-2xl infitra-card">
-              <div className="flex items-center justify-evenly">
-                <div className="text-center">
-                  <p className="text-3xl font-black font-headline text-[#0F2229] leading-none">{stats.activeTribes}</p>
-                  <p className="text-xs font-bold font-headline text-[#94a3b8] mt-2">Active Tribes</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-xl font-black font-headline text-[#0F2229]/50 leading-none">{stats.activeParticipants}</p>
-                  <p className="text-[10px] font-bold font-headline text-[#94a3b8] mt-1.5">Participants</p>
-                </div>
-              </div>
-            </div>
-            <div className="p-5 rounded-2xl infitra-card">
-              <div className="flex items-center justify-evenly">
-                <div className="text-center">
-                  <p className="text-3xl font-black font-headline text-[#0F2229] leading-none">{stats.sessionsPublished}</p>
-                  <p className="text-xs font-bold font-headline text-[#94a3b8] mt-2">Sessions</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-xl font-black font-headline text-[#0F2229]/50 leading-none">{stats.sessionsCompleted}</p>
-                  <p className="text-[10px] font-bold font-headline text-[#94a3b8] mt-1.5">Done</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-xl font-black font-headline text-[#0F2229]/50 leading-none">{stats.sessionsUpcoming}</p>
-                  <p className="text-[10px] font-bold font-headline text-[#94a3b8] mt-1.5">Upcoming</p>
-                </div>
-              </div>
-            </div>
+            ))}
             <Link href="/dashboard/earnings" className="p-5 rounded-2xl infitra-card-link group">
               <p className="text-3xl font-black font-headline text-[#0F2229] leading-none">
                 {stats.earningsCHF}
