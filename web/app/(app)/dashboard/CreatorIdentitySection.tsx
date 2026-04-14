@@ -119,12 +119,12 @@ export function CreatorIdentitySection({ profile, stats, badges }: Props) {
                 <p className="text-xs font-bold font-headline text-[#94a3b8] mt-2">{label}</p>
               </div>
             ))}
-            <Link href="/dashboard/earnings" className="p-5 rounded-2xl infitra-card-link group">
+            <Link href="/dashboard/earnings" className="p-5 rounded-2xl infitra-card-link group text-center">
               <p className="text-3xl font-black font-headline text-[#0F2229] leading-none">
                 {stats.earningsCHF}
               </p>
               <p className="text-xs font-bold font-headline text-[#94a3b8] mt-2">CHF Earned</p>
-              <p className="text-[10px] text-[#FF6130] mt-0.5">View details →</p>
+              <p className="text-[10px] text-[#FF6130] mt-1">View details →</p>
             </Link>
           </div>
         </div>
