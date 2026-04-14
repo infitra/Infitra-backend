@@ -43,7 +43,7 @@ export function CreatorIdentitySection({ profile, stats, badges }: Props) {
         <div className="p-6 md:p-8">
           <div className="flex items-start gap-5 mb-5">
             {/* Avatar — thin gradient border, true to brand */}
-            <div className="shrink-0 rounded-full p-[2px]" style={{ background: "linear-gradient(150deg, #9CF0FF 0%, #0891b2 50%, #c75a2a 100%)" }}>
+            <div className="shrink-0 rounded-full p-[2px]" style={{ background: "linear-gradient(150deg, #9CF0FF 0%, #0891b2 45%, #FF6130 100%)" }}>
               {profile.avatar_url ? (
                 <img src={profile.avatar_url} alt="" className="w-24 h-24 md:w-28 md:h-28 rounded-full object-cover" style={{ border: "2px solid white" }} />
               ) : (

@@ -257,8 +257,8 @@ body {
 
 /* ── Active tribe breathing glow — warm orange felt, not read ── */
 @keyframes tribe-breathe {
-  0%, 100% { box-shadow: 0 0 20px rgba(255, 97, 48, 0.08), 0 4px 16px rgba(0, 0, 0, 0.06); }
-  50% { box-shadow: 0 0 40px rgba(255, 97, 48, 0.18), 0 4px 16px rgba(0, 0, 0, 0.06); }
+  0%, 100% { box-shadow: 0 0 24px rgba(255, 97, 48, 0.12), 0 0 48px rgba(255, 97, 48, 0.06), 0 4px 16px rgba(0, 0, 0, 0.06); }
+  50% { box-shadow: 0 0 32px rgba(255, 97, 48, 0.25), 0 0 64px rgba(255, 97, 48, 0.12), 0 4px 16px rgba(0, 0, 0, 0.06); }
 }
 
 .tribe-active-glow {
