@@ -47,7 +47,7 @@ function formatSessionTime(dateStr: string) {
   return d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
 }
 
-export function TribeCard({ tribe }: { tribe: TribeData }) {
+export function TribeCard({ tribe, fullWidth = false }: { tribe: TribeData; fullWidth?: boolean }) {
   const now = new Date();
   const today = now.toISOString().split("T")[0];
   const isActive = tribe.challengeStatus === "published" && tribe.challengeStartDate && tribe.challengeEndDate && today >= tribe.challengeStartDate && today <= tribe.challengeEndDate;
@@ -61,9 +61,9 @@ export function TribeCard({ tribe }: { tribe: TribeData }) {
   }, [isUpcoming, tribe.challengeStartDate]);
 
   return (
-    <div className={`shrink-0 w-80 md:w-96 rounded-2xl overflow-hidden infitra-card-link group ${isActive ? "tribe-active-glow" : ""}`}
+    <div className={`rounded-2xl overflow-hidden infitra-card-link group ${isActive ? "tribe-active-glow" : ""} ${fullWidth ? "w-full" : "shrink-0 w-80 md:w-96"}`}
       style={{
-        border: !isActive ? (isUpcoming ? "1px solid rgba(156,240,255,0.30)" : undefined) : undefined,
+        border: isUpcoming && !isActive ? "1px solid rgba(156,240,255,0.30)" : undefined,
       }}
     >
       {/* Cover image or branded fallback */}

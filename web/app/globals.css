@@ -255,13 +255,12 @@ body {
   box-shadow: 0 0 15px rgba(255, 97, 48, 0.15);
 }
 
-/* ── Active tribe breathing glow ────────────────────────── */
+/* ── Active tribe breathing glow — warm orange felt, not read ── */
 @keyframes tribe-breathe {
-  0%, 100% { box-shadow: 0 0 12px rgba(156, 240, 255, 0.20), 0 4px 16px rgba(0, 0, 0, 0.08); }
-  50% { box-shadow: 0 0 28px rgba(156, 240, 255, 0.40), 0 4px 16px rgba(0, 0, 0, 0.08); }
+  0%, 100% { box-shadow: 0 0 20px rgba(255, 97, 48, 0.08), 0 4px 16px rgba(0, 0, 0, 0.06); }
+  50% { box-shadow: 0 0 40px rgba(255, 97, 48, 0.18), 0 4px 16px rgba(0, 0, 0, 0.06); }
 }
 
 .tribe-active-glow {
-  animation: tribe-breathe 3s ease-in-out infinite;
-  border: 2px solid #9CF0FF;
+  animation: tribe-breathe 3.5s ease-in-out infinite;
 }
