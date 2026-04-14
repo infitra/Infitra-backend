@@ -12,13 +12,13 @@ interface Props {
   badges: { badge_id: string; label: string; description: string | null; tier: string; color_hex: string | null; icon: string | null; awarded_at: string }[];
 }
 
-const tierColors: Record<string, { bg: string; text: string; border: string }> = {
-  common: { bg: "rgba(148,163,184,0.10)", text: "#64748b", border: "rgba(148,163,184,0.25)" },
-  advanced: { bg: "rgba(8,145,178,0.08)", text: "#0891b2", border: "rgba(8,145,178,0.20)" },
-  rare: { bg: "rgba(139,92,246,0.08)", text: "#7c3aed", border: "rgba(139,92,246,0.20)" },
-  epic: { bg: "rgba(255,97,48,0.06)", text: "#FF6130", border: "rgba(255,97,48,0.15)" },
-  legendary: { bg: "rgba(245,158,11,0.08)", text: "#d97706", border: "rgba(245,158,11,0.20)" },
-  seasonal: { bg: "rgba(16,185,129,0.08)", text: "#059669", border: "rgba(16,185,129,0.20)" },
+const tierDots: Record<string, string> = {
+  common: "#94a3b8",
+  advanced: "#9CF0FF",
+  rare: "#a78bfa",
+  epic: "#FF6130",
+  legendary: "#f59e0b",
+  seasonal: "#34d399",
 };
 
 export function CreatorIdentitySection({ profile, stats, badges }: Props) {
@@ -31,7 +31,6 @@ export function CreatorIdentitySection({ profile, stats, badges }: Props) {
     <>
       {/* ── HERO SECTION ────────────────────────────────── */}
       <div>
-        {/* Optional cover image — separate from the card, above it */}
         {profile.cover_image_url && (
           <div className="rounded-t-2xl overflow-hidden mb-0">
             <div className="h-32 md:h-40 relative">
@@ -42,14 +41,13 @@ export function CreatorIdentitySection({ profile, stats, badges }: Props) {
 
         <div className={`rounded-2xl infitra-card ${profile.cover_image_url ? "rounded-t-none" : ""}`}>
         <div className="p-6 md:p-8">
-          {/* Avatar + Name + Tagline + Badges — all in one row */}
           <div className="flex items-start gap-5 mb-5">
-            {/* Avatar — cyan-to-orange gradient border */}
-            <div className="shrink-0 rounded-full p-[3px]" style={{ background: "linear-gradient(135deg, #9CF0FF, #0891b2 40%, #FF6130)" }}>
+            {/* Avatar — thin gradient border, true to brand */}
+            <div className="shrink-0 rounded-full p-[2px]" style={{ background: "linear-gradient(150deg, #9CF0FF 0%, #0891b2 50%, #c75a2a 100%)" }}>
               {profile.avatar_url ? (
-                <img src={profile.avatar_url} alt="" className="w-24 h-24 md:w-28 md:h-28 rounded-full object-cover" style={{ border: "3px solid white" }} />
+                <img src={profile.avatar_url} alt="" className="w-24 h-24 md:w-28 md:h-28 rounded-full object-cover" style={{ border: "2px solid white" }} />
               ) : (
-                <div className="w-24 h-24 md:w-28 md:h-28 rounded-full flex items-center justify-center" style={{ backgroundColor: "#0F2229", border: "3px solid white" }}>
+                <div className="w-24 h-24 md:w-28 md:h-28 rounded-full flex items-center justify-center" style={{ backgroundColor: "#0F2229", border: "2px solid white" }}>
                   <span className="text-4xl md:text-5xl font-black font-headline text-white">{initials}</span>
                 </div>
               )}
@@ -58,31 +56,39 @@ export function CreatorIdentitySection({ profile, stats, badges }: Props) {
             <div className="flex-1 min-w-0 pt-1">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <h1 className="text-3xl md:text-4xl font-black font-headline text-[#0F2229] tracking-tight leading-none">
-                    {profile.display_name}
-                  </h1>
+                  {/* Name + badges on same line */}
+                  <div className="flex items-center gap-2.5">
+                    <h1 className="text-3xl md:text-4xl font-black font-headline text-[#0F2229] tracking-tight leading-none">
+                      {profile.display_name}
+                    </h1>
+                    {/* Badge dots — compact, hover reveals label */}
+                    {topBadges.length > 0 && (
+                      <div className="flex items-center gap-1.5 pt-1">
+                        {topBadges.map((b) => {
+                          const color = tierDots[b.tier] ?? tierDots.common;
+                          return (
+                            <span
+                              key={b.badge_id}
+                              className="relative group/badge"
+                            >
+                              <span
+                                className="block w-3 h-3 rounded-full"
+                                style={{ backgroundColor: color, boxShadow: `0 0 6px ${color}40` }}
+                              />
+                              {/* Tooltip on hover */}
+                              <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1 rounded-lg text-[10px] font-bold font-headline text-white whitespace-nowrap opacity-0 group-hover/badge:opacity-100 pointer-events-none" style={{ backgroundColor: "#0F2229", boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }}>
+                                {b.label}
+                              </span>
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                   {profile.tagline && (
                     <p className="text-lg font-semibold font-headline text-[#64748b] mt-2">
                       {profile.tagline}
                     </p>
-                  )}
-
-                  {/* Badges inline — up to 3 */}
-                  {topBadges.length > 0 && (
-                    <div className="flex items-center gap-2 mt-3">
-                      {topBadges.map((b) => {
-                        const colors = tierColors[b.tier] ?? tierColors.common;
-                        return (
-                          <span
-                            key={b.badge_id}
-                            className="px-2.5 py-1 rounded-full text-[10px] font-bold font-headline"
-                            style={{ backgroundColor: colors.bg, color: colors.text, border: `1px solid ${colors.border}` }}
-                          >
-                            {b.label}
-                          </span>
-                        );
-                      })}
-                    </div>
                   )}
                 </div>
                 <button
@@ -101,7 +107,7 @@ export function CreatorIdentitySection({ profile, stats, badges }: Props) {
             </div>
           </div>
 
-          {/* Stats — translucent, wave-influenced */}
+          {/* Stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {[
               { value: String(stats.communityMembers), label: "Community", sub: "members" },
@@ -126,7 +132,6 @@ export function CreatorIdentitySection({ profile, stats, badges }: Props) {
       </div>
       </div>
 
-      {/* ── EDIT SLIDEOVER ────────────────────────────────── */}
       <SlideOver open={editOpen} onClose={() => setEditOpen(false)} title="Edit Profile">
         <ProfileEditForm
           displayName={profile.display_name}

@@ -338,11 +338,38 @@ export default async function DashboardPage() {
             <h2 className="text-lg font-black font-headline text-[#0F2229] tracking-tight">Your Tribes</h2>
             <Link href="/dashboard/create" className="text-xs font-bold font-headline text-[#FF6130]">+ New Challenge</Link>
           </div>
-          <div className="flex gap-4 overflow-x-auto pb-3" style={{ scrollbarWidth: "none" }}>
-            {tribeData.map((tribe) => (
-              <TribeCard key={tribe.id} tribe={tribe} />
-            ))}
-          </div>
+
+          {/* ≤2 tribes: full-width grid. 3+: horizontal scroll */}
+          {tribeData.length <= 2 ? (
+            <div className={`grid gap-4 ${tribeData.length === 1 ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1 md:grid-cols-2"}`}>
+              {tribeData.map((tribe) => (
+                <TribeCard key={tribe.id} tribe={tribe} fullWidth />
+              ))}
+              {/* Fill space with CTA when only 1 tribe */}
+              {tribeData.length === 1 && (
+                <Link
+                  href="/dashboard/create"
+                  className="rounded-2xl infitra-card-link p-8 flex flex-col items-center justify-center text-center group min-h-[280px]"
+                >
+                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style={{ backgroundColor: "rgba(156,240,255,0.15)", border: "1px solid rgba(156,240,255,0.25)" }}>
+                    <span className="text-2xl font-black font-headline" style={{ color: "#0891b2" }}>+</span>
+                  </div>
+                  <p className="text-base font-bold font-headline text-[#0F2229] mb-2 group-hover:text-[#FF6130]">
+                    Start your next challenge
+                  </p>
+                  <p className="text-sm text-[#94a3b8] max-w-xs">
+                    Create a new challenge to grow your community with another tribe.
+                  </p>
+                </Link>
+              )}
+            </div>
+          ) : (
+            <div className="flex gap-4 overflow-x-auto pb-3" style={{ scrollbarWidth: "none" }}>
+              {tribeData.map((tribe) => (
+                <TribeCard key={tribe.id} tribe={tribe} />
+              ))}
+            </div>
+          )}
         </div>
       )}
 
