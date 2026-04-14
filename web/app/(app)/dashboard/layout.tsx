@@ -59,22 +59,28 @@ export default async function DashboardLayout({
             </span>
           </Link>
 
-          <div className="hidden md:flex items-center gap-8">
+          <div className="hidden md:flex items-center gap-6">
             {[
               { label: "Home", href: "/dashboard" },
-              { label: "Create", href: "/dashboard/create" },
               { label: "Tribes", href: "/dashboard/tribes" },
               { label: "Earnings", href: "/dashboard/earnings" },
             ].map(({ label, href }) => (
               <Link
                 key={href}
                 href={href}
-                className="font-headline text-xs font-bold uppercase tracking-widest transition-colors hover:opacity-80"
+                className="font-headline text-xs font-bold uppercase tracking-widest py-1 border-b-2 border-transparent hover:border-[#FF6130] transition-all"
                 style={{ color: "rgba(15, 34, 41, 0.50)" }}
               >
                 {label}
               </Link>
             ))}
+            <Link
+              href="/dashboard/create"
+              className="px-4 py-2 rounded-full text-xs font-black font-headline text-white uppercase tracking-widest"
+              style={{ backgroundColor: "#FF6130", boxShadow: "0 2px 8px rgba(255,97,48,0.3)" }}
+            >
+              + Create
+            </Link>
           </div>
 
           <div className="flex items-center gap-4">
