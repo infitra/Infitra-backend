@@ -105,21 +105,42 @@ export function ContextualPostFeed({
 
       if (sessionContextIds.length > 0) {
         const { data: sessions } = await supabase.from("app_session").select("id, title, image_url, duration_minutes, price_cents").in("id", sessionContextIds);
+        // Check which sessions belong to a challenge
+        const { data: sessChLinks } = await supabase.from("app_challenge_session").select("session_id, app_challenge(title, price_cents)").in("session_id", sessionContextIds);
+        const sessToChallenge: Record<string, { title: string; priceCents: number }> = {};
+        for (const l of sessChLinks ?? []) {
+          const ch = (l as any).app_challenge;
+          if (ch) sessToChallenge[(l as any).session_id] = { title: ch.title, priceCents: ch.price_cents ?? 0 };
+        }
         for (const s of sessions ?? []) {
           const parts: string[] = [];
           if (s.duration_minutes) parts.push(`${s.duration_minutes} min`);
-          if (s.price_cents > 0) parts.push(`CHF ${(s.price_cents / 100).toFixed(0)}`);
-          else parts.push("Free");
+          const challenge = sessToChallenge[s.id];
+          if (challenge) {
+            parts.push(`Part of ${challenge.title}`);
+            if (challenge.priceCents > 0) parts.push(`CHF ${(challenge.priceCents / 100).toFixed(0)}`);
+          } else {
+            if (s.price_cents > 0) parts.push(`CHF ${(s.price_cents / 100).toFixed(0)}`);
+            else parts.push("Free");
+          }
           contextData[s.id] = { title: s.title, imageUrl: s.image_url, meta: parts.join(" · ") };
         }
       }
       if (challengeContextIds.length > 0) {
         const { data: challenges } = await supabase.from("app_challenge").select("id, title, image_url, price_cents").in("id", challengeContextIds);
-        // Count sessions per challenge
+        // Count PUBLISHED sessions per challenge (exclude drafts)
         const challengeSessionCounts: Record<string, number> = {};
         if (challengeContextIds.length > 0) {
-          const { data: csLinks } = await supabase.from("app_challenge_session").select("challenge_id").in("challenge_id", challengeContextIds);
-          for (const l of csLinks ?? []) challengeSessionCounts[l.challenge_id] = (challengeSessionCounts[l.challenge_id] ?? 0) + 1;
+          const { data: csLinks } = await supabase
+            .from("app_challenge_session")
+            .select("challenge_id, app_session(status)")
+            .in("challenge_id", challengeContextIds);
+          for (const l of csLinks ?? []) {
+            const sess = (l as any).app_session;
+            if (sess && sess.status !== "draft") {
+              challengeSessionCounts[(l as any).challenge_id] = (challengeSessionCounts[(l as any).challenge_id] ?? 0) + 1;
+            }
+          }
         }
         for (const c of challenges ?? []) {
           const parts: string[] = [];
