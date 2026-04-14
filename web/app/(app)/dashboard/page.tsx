@@ -199,6 +199,14 @@ export default async function DashboardPage() {
         if (today < t.challengeStartDate) return true;
       }
       return false;
+    })
+    .sort((a, b) => {
+      const aNext = a.nextSessions[0]?.start_time;
+      const bNext = b.nextSessions[0]?.start_time;
+      if (!aNext && !bNext) return 0;
+      if (!aNext) return 1;
+      if (!bNext) return -1;
+      return new Date(aNext).getTime() - new Date(bNext).getTime();
     });
 
   // Stats
