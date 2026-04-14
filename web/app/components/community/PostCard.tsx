@@ -131,24 +131,17 @@ export function PostCard({
         </Link>
       )}
 
-      {/* Actions */}
-      <div className="flex items-center gap-5 pt-3 border-t" style={{ borderColor: "rgba(15, 34, 41, 0.08)" }}>
+      {/* Actions — prominent */}
+      <div className="flex items-center gap-6 pt-4 mt-1 border-t" style={{ borderColor: "rgba(15, 34, 41, 0.08)" }}>
         <LikeButton postId={post.id} communityType={communityType} initialLiked={isLikedByMe} initialCount={likeCount} />
         <CommentSection postId={post.id} communityType={communityType} currentUserId={currentUserId} initialCount={commentCount} />
       </div>
     </>
   );
 
-  if (isInline) {
-    return (
-      <div className="py-6 border-t" style={{ borderColor: "rgba(15, 34, 41, 0.06)" }}>
-        {content}
-      </div>
-    );
-  }
-
+  // Both variants now use cards
   return (
-    <div className="rounded-2xl infitra-glass p-5">
+    <div className="rounded-2xl infitra-card p-5">
       {content}
     </div>
   );

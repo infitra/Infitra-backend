@@ -245,14 +245,14 @@ export function ContextualPostFeed({
         </div>
       </div>
 
-      {/* Posts — inline variant, flowing inside the container */}
+      {/* Posts — individual cards with spacing */}
       {posts.length === 0 ? (
         <div className="text-center py-12">
           <p className="text-sm text-[#0F2229] font-bold font-headline mb-1">No activity yet</p>
           <p className="text-xs text-[#64748b]">Share something with your community to get started.</p>
         </div>
       ) : (
-        <div>
+        <div className="space-y-4 mt-4">
           {posts.map((post) => (
             <PostCard
               key={post.id}

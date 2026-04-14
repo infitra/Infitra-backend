@@ -46,12 +46,12 @@ export function LikeButton({
     <button
       onClick={handleToggle}
       disabled={pending}
-      className="inline-flex items-center gap-1.5 transition-colors hover:opacity-80"
-      style={{ color: liked ? "#FF6130" : "#94a3b8" }}
+      className="inline-flex items-center gap-2 transition-colors hover:opacity-80"
+      style={{ color: liked ? "#FF6130" : "#64748b" }}
     >
       <svg
-        width="16"
-        height="16"
+        width="20"
+        height="20"
         viewBox="0 0 24 24"
         fill={liked ? "currentColor" : "none"}
         stroke="currentColor"
@@ -61,7 +61,7 @@ export function LikeButton({
       >
         <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
       </svg>
-      <span className="text-xs font-headline font-bold">{count}</span>
+      <span className="text-sm font-headline font-bold">{count}</span>
     </button>
   );
 }
