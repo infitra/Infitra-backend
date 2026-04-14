@@ -71,7 +71,7 @@ export function PostCard({
           </div>
         )}
         <div>
-          <Link href={`/profile/${post.author_id}`} className="text-base font-bold font-headline text-[#0F2229] hover:opacity-75">
+          <Link href={`/profile/${post.author_id}`} className="text-base font-black font-headline text-[#0F2229] hover:opacity-75">
             {authorName}
           </Link>
           <p className="text-[10px] text-[#94a3b8]">{timeAgo(post.created_at)}</p>
@@ -79,36 +79,59 @@ export function PostCard({
       </div>
 
       {/* Body */}
-      <p className="text-sm leading-relaxed whitespace-pre-line mb-3" style={{ color: "#475569" }}>
+      <p className="text-base leading-relaxed whitespace-pre-line mb-4" style={{ color: "#334155" }}>
         {post.body}
       </p>
 
       {/* Media image */}
       {post.media_url && (
-        <div className="rounded-xl overflow-hidden mb-3">
+        <div className="rounded-xl overflow-hidden mb-4">
           <img src={post.media_url} alt="" className="w-full object-cover max-h-80" />
         </div>
       )}
 
-      {/* Context card — INSIDE the post */}
+      {/* Context card — editorial promotional style */}
       {contextType && contextTitle && contextId && (
         <Link
           href={contextType === "session" ? `/sessions/${contextId}` : `/challenges/${contextId}`}
-          className="flex items-center gap-3 p-3 rounded-xl mb-3 group"
-          style={{ backgroundColor: "rgba(255,97,48,0.04)", border: "1px solid rgba(255,97,48,0.12)" }}
+          className="block rounded-xl overflow-hidden mb-4 group/ctx"
         >
-          {contextImageUrl ? (
-            <img src={contextImageUrl} alt="" className="w-12 h-12 rounded-lg object-cover shrink-0" />
-          ) : (
-            <div className="w-12 h-12 rounded-lg flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg, #0F2229, #1a3340)" }}>
-              <img src="/logo-mark.png" alt="" width={16} height={16} style={{ opacity: 0.15 }} />
+          <div className="h-40 relative">
+            {contextImageUrl ? (
+              <>
+                <img src={contextImageUrl} alt="" className="w-full h-full object-cover group-hover/ctx:scale-[1.02] transition-transform duration-300" />
+                <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 20%, rgba(0,0,0,0.7) 100%)" }} />
+              </>
+            ) : (
+              <>
+                <div className="w-full h-full" style={{ background: "linear-gradient(135deg, #0F2229 0%, #1a3340 50%, #2a1508 100%)" }} />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.06]">
+                  <img src="/logo-mark.png" alt="" width={32} height={32} />
+                </div>
+                <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.5) 100%)" }} />
+              </>
+            )}
+
+            {/* Type badge — top left */}
+            <div className="absolute top-3 left-3">
+              <span
+                className="px-2.5 py-1 rounded text-[10px] font-bold font-headline uppercase tracking-wider"
+                style={{
+                  backgroundColor: contextType === "session" ? "rgba(156,240,255,0.85)" : "rgba(255,97,48,0.85)",
+                  color: contextType === "session" ? "#064e5c" : "#ffffff",
+                }}
+              >
+                {contextType}
+              </span>
             </div>
-          )}
-          <div className="flex-1 min-w-0">
-            <p className="text-[10px] font-bold font-headline uppercase tracking-wider text-[#FF6130]">{contextType}</p>
-            <p className="text-sm font-bold font-headline text-[#0F2229] truncate group-hover:text-[#FF6130]">{contextTitle}</p>
+
+            {/* Title — bottom */}
+            <div className="absolute bottom-3 left-4 right-4">
+              <h4 className="text-lg font-black font-headline text-white tracking-tight group-hover/ctx:text-[#9CF0FF]">
+                {contextTitle}
+              </h4>
+            </div>
           </div>
-          <span className="text-xs font-bold text-[#FF6130] shrink-0">View →</span>
         </Link>
       )}
 
@@ -122,7 +145,7 @@ export function PostCard({
 
   if (isInline) {
     return (
-      <div className="py-5 border-t" style={{ borderColor: "rgba(15, 34, 41, 0.06)" }}>
+      <div className="py-6 border-t" style={{ borderColor: "rgba(15, 34, 41, 0.06)" }}>
         {content}
       </div>
     );

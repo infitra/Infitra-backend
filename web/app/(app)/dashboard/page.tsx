@@ -35,12 +35,26 @@ export default async function DashboardPage() {
   const { data: summary } = await supabase.from("vw_my_creator_summary").select("*").single();
   const earningsCHF = (Number(summary?.creator_cut_cents ?? 0) / 100).toFixed(2);
 
-  // Community members
+  // Community members + avatar strip
   const { data: space } = await supabase.from("app_creator_space").select("id").eq("creator_id", user!.id).maybeSingle();
   let communityMembers = 0;
+  let memberAvatars: string[] = [];
   if (space?.id) {
     const { count } = await supabase.from("app_creator_space_member").select("user_id", { count: "exact", head: true }).eq("space_id", space.id);
     communityMembers = count ?? 0;
+    // Fetch up to 5 member avatars for the header strip
+    const { data: memberRows } = await supabase
+      .from("app_creator_space_member")
+      .select("user_id")
+      .eq("space_id", space.id)
+      .limit(5);
+    if (memberRows?.length) {
+      const { data: memberProfiles } = await supabase
+        .from("app_profile")
+        .select("avatar_url")
+        .in("id", memberRows.map((m: any) => m.user_id));
+      memberAvatars = (memberProfiles ?? []).map((p: any) => p.avatar_url).filter(Boolean);
+    }
   }
 
   // Session counts
@@ -416,10 +430,25 @@ export default async function DashboardPage() {
 
       {/* ── SECTION 4: Community Feed (contained space) ─── */}
       <div className="rounded-2xl infitra-card p-6">
-        <div className="flex items-center gap-2 mb-5">
-          <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "#9CF0FF", boxShadow: "0 0 6px rgba(156,240,255,0.5)" }} />
-          <h2 className="text-lg font-black font-headline text-[#0F2229] tracking-tight">Community</h2>
-          <span className="text-xs text-[#94a3b8]">· {communityMembers} member{communityMembers !== 1 ? "s" : ""}</span>
+        {/* Header with avatar strip */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <h2 className="text-lg font-black font-headline text-[#0F2229] tracking-tight">Community</h2>
+            {/* Stacked member avatars */}
+            {memberAvatars.length > 0 && (
+              <div className="flex items-center -space-x-2">
+                {memberAvatars.map((url, i) => (
+                  <img key={i} src={url} alt="" className="w-7 h-7 rounded-full object-cover" style={{ border: "2px solid white", zIndex: 5 - i }} />
+                ))}
+                {communityMembers > 5 && (
+                  <div className="w-7 h-7 rounded-full flex items-center justify-center text-[9px] font-bold font-headline text-[#64748b]" style={{ backgroundColor: "rgba(0,0,0,0.06)", border: "2px solid white", zIndex: 0 }}>
+                    +{communityMembers - 5}
+                  </div>
+                )}
+              </div>
+            )}
+            <span className="text-xs text-[#94a3b8]">{communityMembers} member{communityMembers !== 1 ? "s" : ""}</span>
+          </div>
         </div>
 
         {space ? (
