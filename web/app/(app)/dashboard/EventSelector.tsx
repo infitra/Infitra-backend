@@ -42,8 +42,8 @@ export function EventSelector({
       ) : (
         <button
           onClick={() => setOpen(true)}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold font-headline text-[#0891b2] hover:text-[#064e5c] mb-2"
-          style={{ backgroundColor: "rgba(156,240,255,0.10)", border: "1px solid rgba(156,240,255,0.20)" }}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold font-headline text-[#FF6130] hover:text-[#d4512a] mb-2"
+          style={{ border: "1px solid rgba(255,97,48,0.25)" }}
         >
           <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
             <path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101" strokeLinecap="round" strokeLinejoin="round" />

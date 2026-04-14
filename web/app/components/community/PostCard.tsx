@@ -92,50 +92,41 @@ export function PostCard({
         </div>
       )}
 
-      {/* Context card — editorial promotional style */}
+      {/* Context card — editorial with balanced image + info */}
       {contextType && contextTitle && contextId && (
         <Link
           href={contextType === "session" ? `/sessions/${contextId}` : `/challenges/${contextId}`}
-          className="block rounded-xl overflow-hidden mb-4 group/ctx"
+          className="flex rounded-xl overflow-hidden mb-4 group/ctx"
+          style={{ border: "1px solid rgba(15,34,41,0.08)" }}
         >
-          <div className="aspect-[2/1] relative">
+          {/* Image side */}
+          <div className="w-40 md:w-48 shrink-0 relative">
             {contextImageUrl ? (
-              <>
-                <img src={contextImageUrl} alt="" className="w-full h-full object-cover group-hover/ctx:scale-[1.02] transition-transform duration-300" />
-                <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 20%, rgba(0,0,0,0.7) 100%)" }} />
-              </>
+              <img src={contextImageUrl} alt="" className="w-full h-full object-cover group-hover/ctx:scale-[1.03] transition-transform duration-300" />
             ) : (
-              <>
-                <div className="w-full h-full" style={{ background: "linear-gradient(135deg, #0F2229 0%, #1a3340 50%, #2a1508 100%)" }} />
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.06]">
-                  <img src="/logo-mark.png" alt="" width={32} height={32} />
+              <div className="w-full h-full min-h-[100px]" style={{ background: "linear-gradient(135deg, #0F2229 0%, #1a3340 50%, #2a1508 100%)" }}>
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.08]">
+                  <img src="/logo-mark.png" alt="" width={28} height={28} />
                 </div>
-                <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.5) 100%)" }} />
-              </>
+              </div>
             )}
+          </div>
 
-            {/* Type badge — top left */}
-            <div className="absolute top-3 left-3">
-              <span
-                className="px-2.5 py-1 rounded text-[10px] font-bold font-headline uppercase tracking-wider"
-                style={{
-                  backgroundColor: contextType === "session" ? "rgba(156,240,255,0.85)" : "rgba(255,97,48,0.85)",
-                  color: contextType === "session" ? "#064e5c" : "#ffffff",
-                }}
-              >
-                {contextType}
-              </span>
-            </div>
-
-            {/* Title + meta — bottom */}
-            <div className="absolute bottom-3 left-4 right-4">
-              <h4 className="text-lg font-black font-headline text-white tracking-tight group-hover/ctx:text-[#9CF0FF]">
-                {contextTitle}
-              </h4>
-              {contextMeta && (
-                <p className="text-xs font-bold font-headline text-white/70 mt-0.5">{contextMeta}</p>
-              )}
-            </div>
+          {/* Info side */}
+          <div className="flex-1 p-4 flex flex-col justify-center min-w-0">
+            <span
+              className="text-[10px] font-bold font-headline uppercase tracking-wider mb-1"
+              style={{ color: contextType === "session" ? "#0891b2" : "#FF6130" }}
+            >
+              {contextType}
+            </span>
+            <h4 className="text-base font-black font-headline text-[#0F2229] tracking-tight group-hover/ctx:text-[#FF6130] line-clamp-2">
+              {contextTitle}
+            </h4>
+            {contextMeta && (
+              <p className="text-xs font-bold text-[#94a3b8] mt-1">{contextMeta}</p>
+            )}
+            <span className="text-xs font-bold font-headline text-[#FF6130] mt-2">View →</span>
           </div>
         </Link>
       )}
