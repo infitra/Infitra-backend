@@ -304,17 +304,8 @@ export default async function DashboardPage() {
 
   // Fetch partner names for workspaces
   const workspacePartnerIds = new Set<string>();
-  for (const w of allCollabWorkspaces) {
-    if (w.role === "owner") {
-      // Need cohost names
-      const cohostLink = (cohostCollabLinks ?? []).find((l: any) => l.challenge_id === w.id);
-      if (cohostLink) workspacePartnerIds.add((cohostLink as any).cohost_id ?? (cohostLink as any).app_challenge?.owner_id);
-    } else {
-      workspacePartnerIds.add(w.owner_id);
-    }
-  }
-  // Also get cohost IDs for owned collabs
   const workspaceCohostMap: Record<string, string> = {};
+  // For owned collabs: find cohost partner
   if (myOwnedCollabs.length > 0) {
     const { data: wCohosts } = await supabase
       .from("app_challenge_cohost")
@@ -324,6 +315,10 @@ export default async function DashboardPage() {
       workspaceCohostMap[(wc as any).challenge_id] = (wc as any).cohost_id;
       workspacePartnerIds.add((wc as any).cohost_id);
     }
+  }
+  // For cohost collabs: the partner is the owner
+  for (const c of cohostCollabs) {
+    workspacePartnerIds.add(c.owner_id);
   }
 
   const workspacePartnerProfiles: Record<string, { name: string; avatar: string | null }> = {};
