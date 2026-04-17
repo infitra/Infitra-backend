@@ -241,6 +241,21 @@ export default async function DashboardPage() {
     for (const p of profiles ?? []) inviterProfiles[p.id] = { name: p.display_name ?? "Creator", avatar: p.avatar_url, tagline: p.tagline };
   }
 
+  // ── Sent collaboration invitations (for the inviter) ──
+  const { data: sentInvites } = await supabase
+    .from("app_collaboration_invite")
+    .select("id, to_id, message, initial_split_percent, status, created_at, challenge_id")
+    .eq("from_id", user!.id)
+    .in("status", ["pending", "interested"])
+    .order("created_at", { ascending: false });
+
+  const sentInviteeIds = [...new Set((sentInvites ?? []).map((i: any) => i.to_id))];
+  const sentInviteeProfiles: Record<string, { name: string; avatar: string | null }> = {};
+  if (sentInviteeIds.length > 0) {
+    const { data: profiles } = await supabase.from("app_profile").select("id, display_name, avatar_url").in("id", sentInviteeIds);
+    for (const p of profiles ?? []) sentInviteeProfiles[p.id] = { name: p.display_name ?? "Creator", avatar: p.avatar_url };
+  }
+
   // ── Available events for contextual feed ──────────────
   const { data: feedSessions } = await supabase
     .from("app_session").select("id, title, image_url")
@@ -294,6 +309,44 @@ export default async function DashboardPage() {
             createdAt: i.created_at,
           }))}
         />
+      )}
+
+      {/* ── SENT INVITATIONS (inviter's view) ────────────── */}
+      {(sentInvites ?? []).length > 0 && (
+        <div>
+          <h3 className="text-sm font-bold font-headline text-[#94a3b8] uppercase tracking-wider mb-3">Sent Invitations</h3>
+          <div className="space-y-2">
+            {(sentInvites ?? []).map((i: any) => {
+              const invitee = sentInviteeProfiles[i.to_id];
+              return (
+                <div key={i.id} className="flex items-center justify-between p-4 rounded-2xl infitra-card">
+                  <div className="flex items-center gap-3 min-w-0">
+                    {invitee?.avatar ? (
+                      <img src={invitee.avatar} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-cyan-100 flex items-center justify-center shrink-0">
+                        <span className="text-sm font-black font-headline text-cyan-700">{invitee?.name?.[0] ?? "?"}</span>
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold font-headline text-[#0F2229] truncate">{invitee?.name ?? "Creator"}</p>
+                      <p className="text-[10px] text-[#94a3b8] truncate">{i.message}</p>
+                    </div>
+                  </div>
+                  <div className="shrink-0 ml-3">
+                    {i.status === "pending" ? (
+                      <span className="text-[10px] font-bold font-headline text-[#94a3b8]">⏳ Pending</span>
+                    ) : i.status === "interested" ? (
+                      <a href={`/dashboard/collaborate/${i.challenge_id}`} className="text-[10px] font-bold font-headline text-[#FF6130]">
+                        Open Workspace →
+                      </a>
+                    ) : null}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       )}
 
       {/* ── SECTION 1: Creator Identity ──────────────────── */}
