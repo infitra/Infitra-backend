@@ -246,7 +246,7 @@ export default async function DashboardPage() {
     .from("app_collaboration_invite")
     .select("id, to_id, message, initial_split_percent, status, created_at, challenge_id")
     .eq("from_id", user!.id)
-    .in("status", ["pending", "interested"])
+    .eq("status", "pending")
     .order("created_at", { ascending: false });
 
   const sentInviteeIds = [...new Set((sentInvites ?? []).map((i: any) => i.to_id))];
@@ -415,7 +415,7 @@ export default async function DashboardPage() {
         <div>
           <div className="flex items-center gap-3 mb-3">
             <div className="w-1 h-6 rounded-full" style={{ backgroundColor: "#9CF0FF" }} />
-            <h2 className="text-xl font-black font-headline text-[#0F2229] tracking-tight">Active Collaborations</h2>
+            <h2 className="text-xl font-black font-headline text-[#0F2229] tracking-tight">Active Collaboration Drafts</h2>
           </div>
           <div className="space-y-2">
             {allCollabWorkspaces.map((w: any) => {
