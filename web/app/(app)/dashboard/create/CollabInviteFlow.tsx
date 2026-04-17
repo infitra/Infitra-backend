@@ -59,7 +59,7 @@ export function CollabInviteFlow() {
     return (
       <div className="text-center py-4">
         <p className="text-sm font-bold font-headline text-[#0F2229] mb-1">Invite sent!</p>
-        <p className="text-xs text-[#64748b]">You&apos;ll be notified when {selected?.display_name} responds.</p>
+        <p className="text-xs text-[#64748b]">If {selected?.display_name} is interested, a shared workspace will be created automatically.</p>
         <button onClick={() => { setStep("idle"); setSelected(null); setMessage(""); setSplit(50); }} className="text-xs font-bold font-headline text-[#FF6130] mt-3">
           Send another
         </button>
@@ -140,38 +140,47 @@ export function CollabInviteFlow() {
         </div>
       </div>
 
-      {/* Share split */}
-      <div className="mb-4">
-        <ShareDonut
-          size={100}
-          shares={[
-            { label: "You", percent: 100 - split, color: "#FF6130" },
-            { label: selected?.display_name ?? "Partner", percent: split, color: "#9CF0FF" },
-          ]}
-        />
-        <div className="flex items-center gap-3 mt-3">
-          <label className="text-xs font-bold font-headline text-[#94a3b8]">Their share:</label>
-          <input
-            type="range"
-            min={10}
-            max={90}
-            value={split}
-            onChange={(e) => setSplit(Number(e.target.value))}
-            className="flex-1 accent-[#9CF0FF]"
-          />
-          <span className="text-sm font-black font-headline text-[#0F2229] w-10 text-right">{split}%</span>
-        </div>
-      </div>
-
-      {/* Message */}
+      {/* Message first — the pitch */}
       <textarea
         value={message}
         onChange={(e) => setMessage(e.target.value)}
-        placeholder="Hey! I have an idea for a collaboration..."
+        placeholder="Share your idea — what would you build together?"
         rows={3}
-        className="w-full rounded-xl p-3 text-sm focus:outline-none resize-none mb-3"
+        className="w-full rounded-xl p-3 text-sm focus:outline-none resize-none mb-4"
         style={{ border: "1px solid rgba(15,34,41,0.12)", color: "#0F2229" }}
       />
+
+      {/* Suggested split — clearly non-binding */}
+      <div className="mb-3">
+        <p className="text-[10px] font-bold font-headline text-[#94a3b8] uppercase tracking-wider mb-2">Suggested Split (can be changed later)</p>
+        <div className="flex items-center gap-3">
+          <ShareDonut
+            size={72}
+            shares={[
+              { label: "You", percent: 100 - split, color: "#FF6130" },
+              { label: selected?.display_name ?? "Partner", percent: split, color: "#9CF0FF" },
+            ]}
+          />
+          <div className="flex-1">
+            <input
+              type="range"
+              min={10}
+              max={90}
+              value={split}
+              onChange={(e) => setSplit(Number(e.target.value))}
+              className="w-full accent-[#9CF0FF]"
+            />
+            <div className="flex justify-between text-[10px] text-[#94a3b8] mt-1">
+              <span>You {100 - split}%</span>
+              <span>{selected?.display_name} {split}%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p className="text-[10px] text-[#94a3b8] mb-3">
+        This is just a first contact — nothing binding. You&apos;ll work out the details together in a shared workspace.
+      </p>
 
       {error && <p className="text-xs text-[#FF6130] mb-2">{error}</p>}
 
