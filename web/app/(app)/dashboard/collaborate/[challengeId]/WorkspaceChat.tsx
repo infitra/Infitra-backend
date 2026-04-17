@@ -50,22 +50,31 @@ export function WorkspaceChat({ conversationId, currentUserId, profiles }: Props
     load();
   }, [conversationId]);
 
-  // Poll for new messages (realtime blocked by restrictive RLS on app_dm_message)
+  // Realtime subscription for new messages
   useEffect(() => {
-    const interval = setInterval(async () => {
-      const supabase = createClient();
-      const { data } = await supabase.rpc("list_dm_messages", {
-        p_conversation_id: conversationId,
-        p_limit: 100,
-      });
-      if (data && data.length > 0) {
-        setMessages(data);
-        // Scroll if new messages arrived
-        setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
-      }
-    }, 3000);
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`dm-${conversationId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "app_dm_message",
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        (payload) => {
+          const msg = payload.new as Message;
+          setMessages((prev) => {
+            if (prev.some((m) => m.id === msg.id)) return prev;
+            return [...prev, msg];
+          });
+          setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+        }
+      )
+      .subscribe();
 
-    return () => clearInterval(interval);
+    return () => { supabase.removeChannel(channel); };
   }, [conversationId]);
 
   async function handleSend() {
@@ -73,18 +82,7 @@ export function WorkspaceChat({ conversationId, currentUserId, profiles }: Props
     const body = newMessage.trim();
     setNewMessage("");
     setSending(true);
-
     await sendDmMessage(conversationId, body);
-
-    // Fetch fresh messages immediately after send
-    const supabase = createClient();
-    const { data } = await supabase.rpc("list_dm_messages", {
-      p_conversation_id: conversationId,
-      p_limit: 100,
-    });
-    if (data) setMessages(data);
-    setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
-
     setSending(false);
   }
 
