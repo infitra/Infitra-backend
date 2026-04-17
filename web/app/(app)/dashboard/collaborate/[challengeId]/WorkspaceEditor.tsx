@@ -108,7 +108,7 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
           {challenge.title || "Untitled Collaboration"}
         </h2>
 
-        {isDraft && (
+        {isDraft && isOwner && (
           <Link
             href={`/dashboard/challenges/${challenge.id}`}
             className="text-xs font-bold font-headline text-[#FF6130] mb-4 block"
