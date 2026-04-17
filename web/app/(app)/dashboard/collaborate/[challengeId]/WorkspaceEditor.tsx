@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ShareDonut } from "@/app/components/ShareDonut";
 import { ImageSelector } from "@/app/components/ImageSelector";
-import { updateChallenge, publishChallenge, createChallengeSession } from "@/app/actions/challenge";
+import { updateChallenge, publishChallenge, createChallengeSession, removeChallengeSession } from "@/app/actions/challenge";
 import { lockTerms, confirmTerms, requestChanges, reactivateDrafting, updateCohostSplit } from "@/app/actions/collaboration";
 
 interface Props {
@@ -101,6 +101,14 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
     router.refresh();
   }
 
+  async function handleDeleteSession(sessionId: string) {
+    if (!confirm("Delete this session?")) return;
+    setError(null);
+    const result = await removeChallengeSession(challenge.id, sessionId);
+    if (result?.error) { setError(result.error); return; }
+    router.refresh();
+  }
+
   async function handleAddSession() {
     if (!sessTitle.trim() || !sessDate) return;
     setAddingSession(true); setError(null);
@@ -164,20 +172,22 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
       {/* ── COVER IMAGE ─────────────────────────── */}
       <div className="rounded-2xl infitra-card p-6">
         <h3 className="text-sm font-black font-headline text-[#94a3b8] uppercase tracking-wider mb-4">Cover Image</h3>
-        {canEdit ? (
-          <ImageSelector
-            currentUrl={imageUrl}
-            title={title}
-            onSelect={(url) => setImageUrl(url)}
-            size="lg"
-          />
-        ) : imageUrl ? (
-          <img src={imageUrl} alt="" className="w-full aspect-[3/2] rounded-xl object-cover" />
-        ) : (
-          <div className="w-full aspect-[3/2] rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, #0F2229, #1a3340, #2a1508)" }}>
-            <img src="/logo-mark.png" alt="" width={48} height={48} style={{ opacity: 0.15 }} />
-          </div>
-        )}
+        <div className="max-w-md">
+          {canEdit ? (
+            <ImageSelector
+              currentUrl={imageUrl}
+              title={title}
+              onSelect={(url) => setImageUrl(url)}
+              size="md"
+            />
+          ) : imageUrl ? (
+            <img src={imageUrl} alt="" className="w-full aspect-[3/2] rounded-xl object-cover" />
+          ) : (
+            <div className="w-full aspect-[3/2] rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, #0F2229, #1a3340, #2a1508)" }}>
+              <img src="/logo-mark.png" alt="" width={48} height={48} style={{ opacity: 0.15 }} />
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ── CHALLENGE DETAILS ─────────────────────── */}
@@ -202,7 +212,7 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
               <label className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-2">Title</label>
               <input
                 value={title} onChange={(e) => setTitle(e.target.value)}
-                className="w-full rounded-xl p-4 text-xl font-black font-headline focus:outline-none"
+                className="w-full rounded-xl p-3 text-base font-bold font-headline focus:outline-none"
                 style={{ border: "1px solid rgba(15,34,41,0.12)", color: "#0F2229" }}
               />
             </div>
@@ -212,25 +222,25 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
                 value={description} onChange={(e) => setDescription(e.target.value)}
                 rows={3}
                 placeholder="What will participants experience?"
-                className="w-full rounded-xl p-4 text-base focus:outline-none resize-none"
+                className="w-full rounded-xl p-3 text-sm focus:outline-none resize-none"
                 style={{ border: "1px solid rgba(15,34,41,0.12)", color: "#0F2229" }}
               />
             </div>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-3 gap-3">
               <div>
                 <label className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-2">Start Date</label>
                 <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full rounded-xl p-3 text-base font-bold font-headline focus:outline-none" style={{ border: "1px solid rgba(15,34,41,0.12)", color: "#0F2229" }} />
+                  className="w-full rounded-xl p-2.5 text-sm font-bold font-headline focus:outline-none" style={{ border: "1px solid rgba(15,34,41,0.12)", color: "#0F2229" }} />
               </div>
               <div>
                 <label className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-2">End Date</label>
                 <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full rounded-xl p-3 text-base font-bold font-headline focus:outline-none" style={{ border: "1px solid rgba(15,34,41,0.12)", color: "#0F2229" }} />
+                  className="w-full rounded-xl p-2.5 text-sm font-bold font-headline focus:outline-none" style={{ border: "1px solid rgba(15,34,41,0.12)", color: "#0F2229" }} />
               </div>
               <div>
                 <label className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-2">Price (CHF)</label>
                 <input type="number" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="0"
-                  className="w-full rounded-xl p-3 text-base font-bold font-headline focus:outline-none" style={{ border: "1px solid rgba(15,34,41,0.12)", color: "#0F2229" }} />
+                  className="w-full rounded-xl p-2.5 text-sm font-bold font-headline focus:outline-none" style={{ border: "1px solid rgba(15,34,41,0.12)", color: "#0F2229" }} />
               </div>
             </div>
           </div>
@@ -262,17 +272,17 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
             {/* Owner */}
             <div className="flex items-center gap-4">
               {ownerProfile.avatar ? (
-                <img src={ownerProfile.avatar} alt="" className="w-12 h-12 rounded-full object-cover shrink-0" />
+                <img src={ownerProfile.avatar} alt="" className="w-14 h-14 rounded-full object-cover shrink-0" />
               ) : (
-                <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center shrink-0">
-                  <span className="text-sm font-black text-orange-700">{ownerProfile.name[0]}</span>
+                <div className="w-14 h-14 rounded-full bg-orange-100 flex items-center justify-center shrink-0">
+                  <span className="text-lg font-black text-orange-700">{ownerProfile.name[0]}</span>
                 </div>
               )}
               <div className="flex-1">
-                <p className="text-base font-black font-headline text-[#0F2229]">{ownerProfile.name}</p>
-                <p className="text-xs font-bold text-[#94a3b8]">Owner</p>
+                <p className="text-lg font-black font-headline text-[#0F2229]">{ownerProfile.name}</p>
+                <p className="text-sm font-bold text-[#94a3b8]">Owner</p>
               </div>
-              <p className="text-xl font-black font-headline text-[#FF6130]">{currentOwnerSplit}%</p>
+              <p className="text-2xl font-black font-headline text-[#FF6130]">{currentOwnerSplit}%</p>
             </div>
             {/* Cohosts */}
             {cohosts.map((c) => {
@@ -280,19 +290,19 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
               return (
                 <div key={c.id} className="flex items-center gap-4">
                   {c.avatar ? (
-                    <img src={c.avatar} alt="" className="w-12 h-12 rounded-full object-cover shrink-0" />
+                    <img src={c.avatar} alt="" className="w-14 h-14 rounded-full object-cover shrink-0" />
                   ) : (
-                    <div className="w-12 h-12 rounded-full bg-cyan-100 flex items-center justify-center shrink-0">
-                      <span className="text-sm font-black text-cyan-700">{c.name[0]}</span>
+                    <div className="w-14 h-14 rounded-full bg-cyan-100 flex items-center justify-center shrink-0">
+                      <span className="text-lg font-black text-cyan-700">{c.name[0]}</span>
                     </div>
                   )}
                   <div className="flex-1">
-                    <p className="text-base font-black font-headline text-[#0F2229]">{c.name}</p>
-                    <p className="text-xs font-bold text-[#94a3b8]">Collaborator</p>
+                    <p className="text-lg font-black font-headline text-[#0F2229]">{c.name}</p>
+                    <p className="text-sm font-bold text-[#94a3b8]">Collaborator</p>
                   </div>
-                  <p className="text-xl font-black font-headline text-[#0891b2]">{split}%</p>
+                  <p className="text-2xl font-black font-headline text-[#0891b2]">{split}%</p>
                   {contract && (
-                    <span className="text-xs font-bold font-headline shrink-0">
+                    <span className="text-sm font-bold font-headline shrink-0">
                       {contract.acceptances.includes(c.id) ? (
                         <span className="text-green-600">✓ Confirmed</span>
                       ) : contract.declines.some((d) => d.cohostId === c.id) ? (
@@ -318,13 +328,13 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
                 <div key={c.id} className="flex items-center gap-3 mb-2">
                   <span className="text-sm font-bold font-headline text-[#0F2229] w-32 truncate">{c.name}</span>
                   <input
-                    type="range" min={10} max={90} value={split}
+                    type="range" min={0} max={100} value={split}
                     onChange={(e) => setCohostSplits((prev) => ({ ...prev, [c.id]: Number(e.target.value) }))}
                     onMouseUp={(e) => handleSaveCohostSplit(c.id, Number((e.target as HTMLInputElement).value))}
                     onTouchEnd={(e) => handleSaveCohostSplit(c.id, Number((e.target as HTMLInputElement).value))}
                     className="flex-1 accent-[#9CF0FF]"
                   />
-                  <span className="text-base font-black font-headline text-[#0891b2] w-12 text-right">{split}%</span>
+                  <span className="text-lg font-black font-headline text-[#0891b2] w-14 text-right">{split}%</span>
                 </div>
               );
             })}
@@ -401,6 +411,17 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
                   </p>
                 </div>
                 <span className="text-xs font-bold font-headline text-[#94a3b8] shrink-0">Host: {s.hostName}</span>
+                {canEdit && (
+                  <button
+                    onClick={() => handleDeleteSession(s.id)}
+                    className="text-[#94a3b8] hover:text-red-500 shrink-0"
+                    title="Delete session"
+                  >
+                    <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                      <path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+                )}
               </div>
             ))}
           </div>
