@@ -5,6 +5,7 @@ import { TribeCard } from "./TribeCard";
 import { ContextualPostFeed } from "./ContextualPostFeed";
 import { CollabInvitations } from "./CollabInvitations";
 
+export const dynamic = "force-dynamic";
 export const metadata = { title: "Home — INFITRA" };
 
 function formatRelativeTime(dateStr: string) {
