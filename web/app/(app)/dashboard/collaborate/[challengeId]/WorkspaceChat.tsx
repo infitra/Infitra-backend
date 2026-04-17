@@ -83,12 +83,25 @@ export function WorkspaceChat({ conversationId, currentUserId, profiles }: Props
     setNewMessage("");
     setSending(true);
 
-    // Call dm_send RPC directly from client (not SECURITY DEFINER, RLS works)
     const supabase = createClient();
-    await supabase.rpc("dm_send", {
+    const { error } = await supabase.rpc("dm_send", {
       p_conversation_id: conversationId,
       p_body: body,
     });
+
+    if (error) {
+      console.error("dm_send failed:", error.message);
+    }
+
+    // Fetch fresh in case Realtime didn't fire yet
+    const { data } = await supabase.rpc("list_dm_messages", {
+      p_conversation_id: conversationId,
+      p_limit: 100,
+    });
+    if (data) {
+      setMessages(data);
+      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+    }
 
     setSending(false);
   }
