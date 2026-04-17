@@ -4,8 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ShareDonut } from "@/app/components/ShareDonut";
 import { ImageSelector } from "@/app/components/ImageSelector";
+import { CollabInviteFlow } from "@/app/(app)/dashboard/create/CollabInviteFlow";
 import { updateChallenge, publishChallenge, createChallengeSession, removeChallengeSession } from "@/app/actions/challenge";
-import { lockTerms, confirmTerms, requestChanges, reactivateDrafting, updateCohostSplit } from "@/app/actions/collaboration";
+import { lockTerms, confirmTerms, requestChanges, reactivateDrafting, updateCohostSplit, addSessionCohost, removeSessionCohost } from "@/app/actions/collaboration";
 
 interface Props {
   challenge: {
@@ -24,7 +25,16 @@ interface Props {
   ownerProfile: { name: string; avatar: string | null };
   ownerSplit: number;
   cohosts: { id: string; name: string; avatar: string | null; splitPercent: number }[];
-  sessions: { id: string; title: string; startTime: string; durationMinutes: number; hostId: string; hostName: string; imageUrl?: string | null }[];
+  sessions: {
+    id: string; title: string; startTime: string; durationMinutes: number;
+    hostId: string; hostName: string; hostAvatar?: string | null;
+    imageUrl?: string | null;
+    cohosts: { id: string; name: string; avatar: string | null; splitPercent: number }[];
+  }[];
+  pendingInvites?: {
+    id: string; toId: string; toName: string; toAvatar: string | null;
+    splitPercent: number; message: string;
+  }[];
   contract: {
     id: string;
     lockedAt: string;
@@ -33,7 +43,7 @@ interface Props {
   } | null;
 }
 
-export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfile, ownerSplit, cohosts, sessions, contract }: Props) {
+export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfile, ownerSplit, cohosts, sessions, pendingInvites, contract }: Props) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [locking, setLocking] = useState(false);
@@ -105,6 +115,20 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
     if (!confirm("Delete this session?")) return;
     setError(null);
     const result = await removeChallengeSession(challenge.id, sessionId);
+    if (result?.error) { setError(result.error); return; }
+    router.refresh();
+  }
+
+  async function handleAddSessionCohost(sessionId: string, cohostId: string) {
+    setError(null);
+    const result = await addSessionCohost(sessionId, cohostId, 0);
+    if (result?.error) { setError(result.error); return; }
+    router.refresh();
+  }
+
+  async function handleRemoveSessionCohost(sessionId: string, cohostId: string) {
+    setError(null);
+    const result = await removeSessionCohost(sessionId, cohostId);
     if (result?.error) { setError(result.error); return; }
     router.refresh();
   }
@@ -262,6 +286,51 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
         )}
       </div>
 
+      {/* ── COLLABORATORS ─────────────────────────── */}
+      {(pendingInvites && pendingInvites.length > 0) || (canEdit && isOwner) ? (
+        <div className="rounded-2xl infitra-card p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-black font-headline text-[#94a3b8] uppercase tracking-wider">
+              Collaborators · {cohosts.length + 1 + (pendingInvites?.length ?? 0)}
+            </h3>
+          </div>
+
+          {/* Pending invites */}
+          {pendingInvites && pendingInvites.length > 0 && (
+            <div className="space-y-2 mb-4">
+              {pendingInvites.map((inv) => (
+                <div key={inv.id} className="flex items-center gap-3 p-3 rounded-xl" style={{ border: "1px dashed rgba(148,163,184,0.35)", backgroundColor: "rgba(255,255,255,0.5)" }}>
+                  {inv.toAvatar ? (
+                    <img src={inv.toAvatar} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-cyan-100 flex items-center justify-center shrink-0">
+                      <span className="text-sm font-black text-cyan-700">{inv.toName[0]}</span>
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-base font-bold font-headline text-[#0F2229] truncate">{inv.toName}</p>
+                    <p className="text-xs text-[#94a3b8]">⏳ Waiting for response</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Invite more — owner only */}
+          {canEdit && isOwner && (
+            <div className="pt-2">
+              <CollabInviteFlow
+                existingChallengeId={challenge.id}
+                existingCollaboratorIds={[
+                  ...cohosts.map((c) => c.id),
+                  ...(pendingInvites?.map((p) => p.toId) ?? []),
+                ]}
+              />
+            </div>
+          )}
+        </div>
+      ) : null}
+
       {/* ── REVENUE SHARE ─────────────────────────── */}
       <div className="rounded-2xl infitra-card p-6">
         <h3 className="text-sm font-black font-headline text-[#94a3b8] uppercase tracking-wider mb-5">Revenue Share</h3>
@@ -394,36 +463,124 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
 
         {sessions.length > 0 ? (
           <div className="space-y-3">
-            {sessions.map((s) => (
-              <div key={s.id} className="flex items-center gap-4 p-4 rounded-xl" style={{ backgroundColor: "rgba(255,255,255,0.5)", border: "1px solid rgba(15,34,41,0.06)" }}>
-                {s.imageUrl ? (
-                  <img src={s.imageUrl} alt="" className="w-14 h-14 rounded-lg object-cover shrink-0" />
-                ) : (
-                  <div className="w-14 h-14 rounded-lg shrink-0 flex items-center justify-center" style={{ background: "linear-gradient(135deg, #0F2229, #1a3340)" }}>
-                    <img src="/logo-mark.png" alt="" width={18} height={18} style={{ opacity: 0.15 }} />
+            {sessions.map((s) => {
+              // Candidates for session cohost: challenge owner + challenge cohosts, minus host + existing cohosts
+              const existingIds = new Set([s.hostId, ...s.cohosts.map(c => c.id)]);
+              const candidates = [
+                { id: ownerProfile === null ? "" : "", name: "" }, // placeholder filler
+              ].filter(() => false);
+              // Build real candidates: owner profile + challenge cohosts
+              const allCollabs = [
+                { id: s.hostId === challenge.id ? "" : "", name: "" }
+              ];
+              // Real candidate list
+              const candidateList: { id: string; name: string; avatar: string | null }[] = [];
+              // Challenge owner is always a candidate (if not already on session)
+              // We need challenge.owner_id which is not directly on the challenge prop. Use ownerProfile.name instead.
+              // Actually ownerProfile.id isn't in props. Let me use cohosts from the challenge level.
+              cohosts.forEach((cc) => {
+                if (!existingIds.has(cc.id)) candidateList.push({ id: cc.id, name: cc.name, avatar: cc.avatar });
+              });
+
+              return (
+                <div key={s.id} className="p-4 rounded-xl" style={{ backgroundColor: "rgba(255,255,255,0.5)", border: "1px solid rgba(15,34,41,0.06)" }}>
+                  <div className="flex items-center gap-4">
+                    {s.imageUrl ? (
+                      <img src={s.imageUrl} alt="" className="w-14 h-14 rounded-lg object-cover shrink-0" />
+                    ) : (
+                      <div className="w-14 h-14 rounded-lg shrink-0 flex items-center justify-center" style={{ background: "linear-gradient(135deg, #0F2229, #1a3340)" }}>
+                        <img src="/logo-mark.png" alt="" width={18} height={18} style={{ opacity: 0.15 }} />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-base font-black font-headline text-[#0F2229] truncate">{s.title}</p>
+                      <p className="text-xs font-bold text-[#94a3b8]">
+                        {new Date(s.startTime).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                        {" · "}{s.durationMinutes} min
+                      </p>
+                    </div>
+                    {/* Host + cohosts avatars */}
+                    <div className="flex -space-x-2 shrink-0">
+                      {s.hostAvatar ? (
+                        <img src={s.hostAvatar} alt={s.hostName} title={`${s.hostName} (Host)`} className="w-8 h-8 rounded-full object-cover" style={{ border: "2px solid white", zIndex: 10 }} />
+                      ) : (
+                        <div title={`${s.hostName} (Host)`} className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center" style={{ border: "2px solid white", zIndex: 10 }}>
+                          <span className="text-[10px] font-black text-orange-700">{s.hostName[0]}</span>
+                        </div>
+                      )}
+                      {s.cohosts.map((c, idx) => (
+                        c.avatar ? (
+                          <img key={c.id} src={c.avatar} alt={c.name} title={c.name} className="w-8 h-8 rounded-full object-cover" style={{ border: "2px solid white", zIndex: 9 - idx }} />
+                        ) : (
+                          <div key={c.id} title={c.name} className="w-8 h-8 rounded-full bg-cyan-100 flex items-center justify-center" style={{ border: "2px solid white", zIndex: 9 - idx }}>
+                            <span className="text-[10px] font-black text-cyan-700">{c.name[0]}</span>
+                          </div>
+                        )
+                      ))}
+                    </div>
+                    {canEdit && (
+                      <button
+                        onClick={() => handleDeleteSession(s.id)}
+                        className="text-[#94a3b8] hover:text-red-500 shrink-0"
+                        title="Delete session"
+                      >
+                        <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                          <path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </button>
+                    )}
                   </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="text-base font-black font-headline text-[#0F2229] truncate">{s.title}</p>
-                  <p className="text-xs font-bold text-[#94a3b8]">
-                    {new Date(s.startTime).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
-                    {" · "}{s.durationMinutes} min
-                  </p>
+
+                  {/* Host + cohost names + add */}
+                  <div className="mt-3 pl-[4.5rem] flex items-center flex-wrap gap-2">
+                    <span className="text-xs text-[#94a3b8]">
+                      <span className="font-bold text-[#FF6130]">{s.hostName}</span>
+                      <span className="text-[10px] uppercase tracking-wider ml-1">Host</span>
+                    </span>
+                    {s.cohosts.map((c) => (
+                      <span key={c.id} className="text-xs text-[#94a3b8] flex items-center gap-1">
+                        · <span className="font-bold text-[#0891b2]">{c.name}</span>
+                        <span className="text-[10px] uppercase tracking-wider">Cohost</span>
+                        {canEdit && (
+                          <button
+                            onClick={() => handleRemoveSessionCohost(s.id, c.id)}
+                            className="text-[#94a3b8] hover:text-red-500 ml-0.5"
+                            title="Remove cohost"
+                          >
+                            <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                              <path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          </button>
+                        )}
+                      </span>
+                    ))}
+                    {canEdit && candidateList.length > 0 && (
+                      <details className="inline-block relative">
+                        <summary className="text-xs font-bold font-headline text-[#FF6130] cursor-pointer list-none">+ Add Cohost</summary>
+                        <div className="absolute top-full left-0 mt-1 min-w-[200px] rounded-xl shadow-lg z-10 overflow-hidden" style={{ backgroundColor: "white", border: "1px solid rgba(0,0,0,0.08)" }}>
+                          {candidateList.map((c) => (
+                            <button
+                              key={c.id}
+                              onClick={() => handleAddSessionCohost(s.id, c.id)}
+                              className="w-full flex items-center gap-2 p-2 hover:bg-gray-50 text-left"
+                            >
+                              {c.avatar ? (
+                                <img src={c.avatar} alt="" className="w-6 h-6 rounded-full object-cover shrink-0" />
+                              ) : (
+                                <div className="w-6 h-6 rounded-full bg-cyan-100 flex items-center justify-center shrink-0">
+                                  <span className="text-[10px] font-black text-cyan-700">{c.name[0]}</span>
+                                </div>
+                              )}
+                              <span className="text-sm font-bold text-[#0F2229]">{c.name}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </details>
+                    )}
+                  </div>
                 </div>
-                <span className="text-xs font-bold font-headline text-[#94a3b8] shrink-0">Host: {s.hostName}</span>
-                {canEdit && (
-                  <button
-                    onClick={() => handleDeleteSession(s.id)}
-                    className="text-[#94a3b8] hover:text-red-500 shrink-0"
-                    title="Delete session"
-                  >
-                    <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                      <path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </button>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <p className="text-sm text-[#94a3b8] text-center py-6">No sessions yet. Add your first session above.</p>

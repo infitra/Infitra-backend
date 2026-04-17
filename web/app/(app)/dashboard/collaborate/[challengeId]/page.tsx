@@ -92,14 +92,50 @@ export default async function CollaborateWorkspacePage({
     }
   }
 
-  // Find DM conversation from invite
-  const { data: invite } = await supabase
+  // Find DM conversation from any invite linked to this challenge
+  const { data: invites } = await supabase
     .from("app_collaboration_invite")
-    .select("dm_conversation_id")
+    .select("dm_conversation_id, to_id, message, initial_split_percent, status, created_at, id")
     .eq("challenge_id", challengeId)
-    .maybeSingle();
+    .order("created_at", { ascending: true });
 
-  const dmConversationId = invite?.dm_conversation_id ?? null;
+  const dmConversationId = (invites ?? []).find((i: any) => i.dm_conversation_id)?.dm_conversation_id ?? null;
+
+  // Pending invites (waiting for response)
+  const pendingInvites = (invites ?? []).filter((i: any) => i.status === "pending");
+  const pendingInviteeIds = [...new Set(pendingInvites.map((i: any) => i.to_id))];
+  const pendingInviteeProfiles: Record<string, { name: string; avatar: string | null }> = {};
+  if (pendingInviteeIds.length > 0) {
+    const { data: profs } = await supabase.from("app_profile").select("id, display_name, avatar_url").in("id", pendingInviteeIds);
+    for (const p of profs ?? []) pendingInviteeProfiles[p.id] = { name: p.display_name ?? "Creator", avatar: p.avatar_url };
+  }
+
+  // Session cohosts
+  const sessionIds = sessions.map((s: any) => s.id);
+  let sessionCohostMap: Record<string, { cohostId: string; splitPercent: number }[]> = {};
+  if (sessionIds.length > 0) {
+    const { data: sessCohosts } = await supabase
+      .from("app_session_cohost")
+      .select("session_id, cohost_id, split_percent")
+      .in("session_id", sessionIds);
+    for (const sc of sessCohosts ?? []) {
+      if (!sessionCohostMap[(sc as any).session_id]) sessionCohostMap[(sc as any).session_id] = [];
+      sessionCohostMap[(sc as any).session_id].push({
+        cohostId: (sc as any).cohost_id,
+        splitPercent: (sc as any).split_percent ?? 0,
+      });
+      // Add cohost profiles if not already fetched
+      if (!profileMap[(sc as any).cohost_id]) {
+        allUserIds.push((sc as any).cohost_id);
+      }
+    }
+    // Fetch missing profiles
+    const missingIds = [...new Set((sessCohosts ?? []).map((sc: any) => sc.cohost_id).filter((id: string) => !profileMap[id]))];
+    if (missingIds.length > 0) {
+      const { data: moreProfs } = await supabase.from("app_profile").select("id, display_name, avatar_url").in("id", missingIds);
+      for (const p of moreProfs ?? []) profileMap[p.id] = { name: p.display_name ?? "Creator", avatar: p.avatar_url };
+    }
+  }
 
   // Calculate owner split (100% - sum of cohost splits)
   const cohostSplitTotal = (cohosts ?? []).reduce((sum: number, c: any) => sum + (c.split_percent ?? 0), 0);
@@ -160,7 +196,22 @@ export default async function CollaborateWorkspacePage({
               durationMinutes: s.duration_minutes,
               hostId: s.host_id,
               hostName: profileMap[s.host_id]?.name ?? "Host",
+              hostAvatar: profileMap[s.host_id]?.avatar ?? null,
               imageUrl: s.image_url ?? null,
+              cohosts: (sessionCohostMap[s.id] ?? []).map((sc) => ({
+                id: sc.cohostId,
+                name: profileMap[sc.cohostId]?.name ?? "Creator",
+                avatar: profileMap[sc.cohostId]?.avatar ?? null,
+                splitPercent: sc.splitPercent,
+              })),
+            }))}
+            pendingInvites={pendingInvites.map((i: any) => ({
+              id: i.id,
+              toId: i.to_id,
+              toName: pendingInviteeProfiles[i.to_id]?.name ?? "Creator",
+              toAvatar: pendingInviteeProfiles[i.to_id]?.avatar ?? null,
+              splitPercent: i.initial_split_percent,
+              message: i.message,
             }))}
             contract={contract ? {
               id: contract.id,
