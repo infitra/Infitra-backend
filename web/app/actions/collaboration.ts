@@ -5,21 +5,56 @@ import { createClient } from "@/lib/supabase/server";
 
 // ── Collaboration Invite Flow ───────────────────────────
 
-/** Send a collaboration invite to another creator. Single RPC — atomic. */
-export async function sendCollabInvite(
-  toId: string,
-  message: string,
-  initialSplitPercent: number
-) {
+/**
+ * Start a new collaboration: create draft + invite 1 or more creators.
+ * Returns the challenge_id so the sender can be redirected to the workspace.
+ */
+export async function sendCollabInvites(params: {
+  title?: string;
+  message: string;
+  invitees: { toId: string; splitPercent: number }[];
+}) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated." };
 
-  const { data, error } = await supabase.rpc("send_collab_invite", {
+  if (params.invitees.length === 0) return { error: "Select at least one creator." };
+  if (!params.message.trim()) return { error: "Please write a message." };
+
+  const { data, error } = await supabase.rpc("send_collab_invites_with_draft", {
     p_from: user.id,
-    p_to: toId,
-    p_message: message,
-    p_split: initialSplitPercent,
+    p_title: params.title ?? "",
+    p_message: params.message,
+    p_invitees: params.invitees.map((i) => ({
+      to_id: i.toId,
+      split_percent: i.splitPercent,
+    })),
+  });
+
+  if (error) return { error: error.message };
+  return { ok: true, challengeId: data };
+}
+
+/**
+ * Invite an additional collaborator to an existing workspace.
+ * Only the challenge owner can call this.
+ */
+export async function sendAdditionalCollabInvite(params: {
+  challengeId: string;
+  toId: string;
+  message: string;
+  splitPercent: number;
+}) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated." };
+
+  const { data, error } = await supabase.rpc("send_additional_collab_invite", {
+    p_challenge_id: params.challengeId,
+    p_from: user.id,
+    p_to: params.toId,
+    p_message: params.message,
+    p_split_percent: params.splitPercent,
   });
 
   if (error) return { error: error.message };
@@ -169,6 +204,38 @@ export async function removeCohost(challengeId: string, cohostId: string) {
     .from("app_challenge_cohost")
     .delete()
     .eq("challenge_id", challengeId)
+    .eq("cohost_id", cohostId);
+
+  if (error) return { error: error.message };
+  return { ok: true };
+}
+
+// ── Session Cohost Management (RLS enforces session host only) ──
+
+/** Add a cohost to a session. Must be a challenge cohost per backend rules. */
+export async function addSessionCohost(sessionId: string, cohostId: string, splitPercent: number = 0) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated." };
+
+  const { error } = await supabase
+    .from("app_session_cohost")
+    .insert({ session_id: sessionId, cohost_id: cohostId, split_percent: splitPercent });
+
+  if (error) return { error: error.message };
+  return { ok: true };
+}
+
+/** Remove a cohost from a session. */
+export async function removeSessionCohost(sessionId: string, cohostId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated." };
+
+  const { error } = await supabase
+    .from("app_session_cohost")
+    .delete()
+    .eq("session_id", sessionId)
     .eq("cohost_id", cohostId);
 
   if (error) return { error: error.message };
