@@ -53,10 +53,10 @@ export default async function CollaborateWorkspacePage({
   const profileMap: Record<string, { name: string; avatar: string | null }> = {};
   for (const p of profiles ?? []) profileMap[p.id] = { name: p.display_name ?? "Creator", avatar: p.avatar_url };
 
-  // Fetch linked sessions
+  // Fetch linked sessions (include image_url)
   const { data: sessionLinks } = await supabase
     .from("app_challenge_session")
-    .select("session_id, app_session(id, title, start_time, duration_minutes, host_id, status)")
+    .select("session_id, app_session(id, title, start_time, duration_minutes, host_id, status, image_url)")
     .eq("challenge_id", challengeId);
 
   const sessions = (sessionLinks ?? [])
@@ -160,6 +160,7 @@ export default async function CollaborateWorkspacePage({
               durationMinutes: s.duration_minutes,
               hostId: s.host_id,
               hostName: profileMap[s.host_id]?.name ?? "Host",
+              imageUrl: s.image_url ?? null,
             }))}
             contract={contract ? {
               id: contract.id,
