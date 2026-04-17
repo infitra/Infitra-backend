@@ -187,7 +187,7 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
       <div className="rounded-2xl infitra-card p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-bold font-headline text-[#94a3b8] uppercase tracking-wider">Sessions · {sessions.length}</h3>
-          {isDraft && !isLocked && (
+          {isDraft && !isLocked && isOwner && (
             <Link href={`/dashboard/challenges/${challenge.id}`} className="text-xs font-bold font-headline text-[#FF6130]">
               Manage Sessions →
             </Link>
