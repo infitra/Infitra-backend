@@ -25,30 +25,23 @@ export default async function CollaborateWorkspacePage({
 
   if (!challenge) redirect("/dashboard");
 
-  // Verify user is owner or cohost (use RPC — cohost table blocked by restrictive RLS)
+  // Verify user is owner or cohost
   const isOwner = challenge.owner_id === user.id;
-  let isCohost = false;
-  if (!isOwner) {
-    const { data: cohostResult } = await supabase.rpc("is_challenge_cohost", {
-      p_challenge: challengeId,
-      p_user: user.id,
-    });
-    isCohost = cohostResult === true;
-  }
+  const { data: cohostCheck } = await supabase
+    .from("app_challenge_cohost")
+    .select("cohost_id")
+    .eq("challenge_id", challengeId)
+    .eq("cohost_id", user.id)
+    .maybeSingle();
+  const isCohost = !!cohostCheck;
   if (!isOwner && !isCohost) redirect("/dashboard");
 
-  // Fetch cohost data from invite table (cohost table blocked by restrictive RLS)
-  const { data: inviteData } = await supabase
-    .from("app_collaboration_invite")
-    .select("to_id, initial_split_percent, from_id")
-    .eq("challenge_id", challengeId)
-    .eq("status", "interested");
-
-  // Build cohosts array from invite data
-  const cohosts = (inviteData ?? []).map((inv: any) => ({
-    cohost_id: inv.from_id === challenge.owner_id ? inv.to_id : inv.from_id,
-    split_percent: inv.initial_split_percent,
-  }));
+  // Fetch all cohosts directly
+  const { data: cohostRows } = await supabase
+    .from("app_challenge_cohost")
+    .select("cohost_id, split_percent")
+    .eq("challenge_id", challengeId);
+  const cohosts = cohostRows ?? [];
 
   // Fetch profiles for owner + cohosts
   const allUserIds = [challenge.owner_id, ...cohosts.map((c: any) => c.cohost_id)];

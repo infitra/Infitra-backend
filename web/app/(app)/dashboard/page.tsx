@@ -295,16 +295,15 @@ export default async function DashboardPage() {
   // Fetch partner names for workspaces
   const workspacePartnerIds = new Set<string>();
   const workspaceCohostMap: Record<string, string> = {};
-  // For owned collabs: find cohost partner via invite table (cohost table blocked by RLS)
+  // For owned collabs: find cohost partner directly from cohost table
   if (myOwnedCollabs.length > 0) {
-    const { data: inviteLinks } = await supabase
-      .from("app_collaboration_invite")
-      .select("challenge_id, to_id")
-      .in("challenge_id", myOwnedCollabs.map((c: any) => c.id))
-      .eq("status", "interested");
-    for (const il of inviteLinks ?? []) {
-      workspaceCohostMap[(il as any).challenge_id] = (il as any).to_id;
-      workspacePartnerIds.add((il as any).to_id);
+    const { data: wCohosts } = await supabase
+      .from("app_challenge_cohost")
+      .select("challenge_id, cohost_id")
+      .in("challenge_id", myOwnedCollabs.map((c: any) => c.id));
+    for (const wc of wCohosts ?? []) {
+      workspaceCohostMap[(wc as any).challenge_id] = (wc as any).cohost_id;
+      workspacePartnerIds.add((wc as any).cohost_id);
     }
   }
   // For cohost collabs: the partner is the owner
