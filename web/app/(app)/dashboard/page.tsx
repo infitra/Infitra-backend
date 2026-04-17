@@ -277,14 +277,24 @@ export default async function DashboardPage() {
   }
   const myOwnedCollabs = (ownedCollabDrafts ?? []).filter((c: any) => ownedCollabIds.has(c.id));
 
-  // Cohost collab drafts
-  const { data: cohostCollabLinks } = await supabase
-    .from("app_challenge_cohost")
-    .select("challenge_id, app_challenge(id, title, owner_id, status, created_at)")
-    .eq("cohost_id", user!.id);
-  const cohostCollabs = (cohostCollabLinks ?? [])
-    .filter((l: any) => l.app_challenge?.status === "draft")
-    .map((l: any) => l.app_challenge);
+  // Cohost collab drafts — query challenges directly (RLS allows cohost access)
+  const { data: allDraftChallenges } = await supabase
+    .from("app_challenge")
+    .select("id, title, owner_id, status, created_at")
+    .eq("status", "draft")
+    .neq("owner_id", user!.id);
+  // Filter to only those where user is cohost
+  const otherDraftIds = (allDraftChallenges ?? []).map((c: any) => c.id);
+  let cohostCollabs: any[] = [];
+  if (otherDraftIds.length > 0) {
+    const { data: myCoLinks } = await supabase
+      .from("app_challenge_cohost")
+      .select("challenge_id")
+      .eq("cohost_id", user!.id)
+      .in("challenge_id", otherDraftIds);
+    const myCoChallengeIds = new Set((myCoLinks ?? []).map((l: any) => l.challenge_id));
+    cohostCollabs = (allDraftChallenges ?? []).filter((c: any) => myCoChallengeIds.has(c.id));
+  }
 
   // All active workspaces
   const allCollabWorkspaces = [
