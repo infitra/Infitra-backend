@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { sendDmMessage } from "@/app/actions/collaboration";
 
 interface Props {
   conversationId: string;
@@ -50,23 +49,32 @@ export function WorkspaceChat({ conversationId, currentUserId, profiles }: Props
     load();
   }, [conversationId]);
 
-  // Poll for new messages every 2s
-  const lastCountRef = useRef(0);
+  // Realtime subscription — works now that deny_all policies are removed
+  // and dm_send is not SECURITY DEFINER (INSERT happens as authenticated user)
   useEffect(() => {
-    async function fetchMessages() {
-      const supabase = createClient();
-      const { data } = await supabase.rpc("list_dm_messages", {
-        p_conversation_id: conversationId,
-        p_limit: 100,
-      });
-      if (data && data.length !== lastCountRef.current) {
-        lastCountRef.current = data.length;
-        setMessages(data);
-        setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
-      }
-    }
-    const interval = setInterval(fetchMessages, 2000);
-    return () => clearInterval(interval);
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`dm-${conversationId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "app_dm_message",
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        (payload) => {
+          const msg = payload.new as Message;
+          setMessages((prev) => {
+            if (prev.some((m) => m.id === msg.id)) return prev;
+            return [...prev, msg];
+          });
+          setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [conversationId]);
 
   async function handleSend() {
@@ -75,19 +83,13 @@ export function WorkspaceChat({ conversationId, currentUserId, profiles }: Props
     setNewMessage("");
     setSending(true);
 
-    await sendDmMessage(conversationId, body);
-
-    // Fetch immediately after send
+    // Call dm_send RPC directly from client (not SECURITY DEFINER, RLS works)
     const supabase = createClient();
-    const { data } = await supabase.rpc("list_dm_messages", {
+    await supabase.rpc("dm_send", {
       p_conversation_id: conversationId,
-      p_limit: 100,
+      p_body: body,
     });
-    if (data) {
-      lastCountRef.current = data.length;
-      setMessages(data);
-      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
-    }
+
     setSending(false);
   }
 
