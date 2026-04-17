@@ -35,17 +35,14 @@ export function WorkspaceChat({ conversationId, currentUserId, profiles }: Props
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // Load initial messages
+  // Load initial messages via RPC (direct table SELECT blocked by restrictive RLS)
   useEffect(() => {
     async function load() {
       const supabase = createClient();
-      const { data } = await supabase
-        .from("app_dm_message")
-        .select("id, author_id, body, created_at")
-        .eq("conversation_id", conversationId)
-        .is("deleted_at", null)
-        .order("created_at", { ascending: true })
-        .limit(100);
+      const { data } = await supabase.rpc("list_dm_messages", {
+        p_conversation_id: conversationId,
+        p_limit: 100,
+      });
       setMessages(data ?? []);
       setLoading(false);
       setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
