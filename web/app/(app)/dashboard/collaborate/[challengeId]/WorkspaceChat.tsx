@@ -50,38 +50,42 @@ export function WorkspaceChat({ conversationId, currentUserId, profiles }: Props
     load();
   }, [conversationId]);
 
-  // Realtime subscription
+  // Poll for new messages (realtime blocked by restrictive RLS on app_dm_message)
   useEffect(() => {
-    const supabase = createClient();
-    const channel = supabase
-      .channel(`dm-${conversationId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "app_dm_message",
-          filter: `conversation_id=eq.${conversationId}`,
-        },
-        (payload) => {
-          const msg = payload.new as Message;
-          setMessages((prev) => {
-            if (prev.some((m) => m.id === msg.id)) return prev;
-            return [...prev, msg];
-          });
-          setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
-        }
-      )
-      .subscribe();
+    const interval = setInterval(async () => {
+      const supabase = createClient();
+      const { data } = await supabase.rpc("list_dm_messages", {
+        p_conversation_id: conversationId,
+        p_limit: 100,
+      });
+      if (data) {
+        setMessages((prev) => {
+          if (JSON.stringify(prev.map(m => m.id)) === JSON.stringify(data.map((m: Message) => m.id))) return prev;
+          return data;
+        });
+      }
+    }, 3000);
 
-    return () => { supabase.removeChannel(channel); };
+    return () => clearInterval(interval);
   }, [conversationId]);
 
   async function handleSend() {
     if (!newMessage.trim() || sending) return;
+    const body = newMessage.trim();
     setSending(true);
-    await sendDmMessage(conversationId, newMessage);
+
+    // Optimistic: add message locally immediately
+    const optimisticMsg: Message = {
+      id: `temp-${Date.now()}`,
+      author_id: currentUserId,
+      body,
+      created_at: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, optimisticMsg]);
     setNewMessage("");
+    setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+
+    await sendDmMessage(conversationId, body);
     setSending(false);
   }
 
