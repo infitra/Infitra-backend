@@ -194,7 +194,7 @@ export async function updateTribeCover(coverUrl: string) {
 
 // ── DM Messages (single mutation, RLS-protected) ────────
 
-/** Send a message in a DM conversation. Uses SECURITY DEFINER RPC. */
+/** Send a message in a DM conversation. Uses dm_send RPC (SECURITY DEFINER). */
 export async function sendDmMessage(conversationId: string, body: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -202,9 +202,8 @@ export async function sendDmMessage(conversationId: string, body: string) {
 
   if (!body.trim()) return { error: "Message cannot be empty." };
 
-  const { error } = await supabase.rpc("send_dm_message", {
+  const { error } = await supabase.rpc("dm_send", {
     p_conversation_id: conversationId,
-    p_author: user.id,
     p_body: body.trim(),
   });
 
