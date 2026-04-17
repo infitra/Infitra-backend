@@ -256,6 +256,72 @@ export default async function DashboardPage() {
     for (const p of profiles ?? []) sentInviteeProfiles[p.id] = { name: p.display_name ?? "Creator", avatar: p.avatar_url };
   }
 
+  // ── Active collaboration workspaces (draft challenges where user is owner or cohost) ──
+  // Owned collab drafts
+  const { data: ownedCollabDrafts } = await supabase
+    .from("app_challenge")
+    .select("id, title, created_at, owner_id")
+    .eq("owner_id", user!.id)
+    .eq("status", "draft")
+    .not("id", "is", null);
+
+  // Filter to only those with cohosts
+  const ownedDraftIds = (ownedCollabDrafts ?? []).map((c: any) => c.id);
+  let ownedCollabIds = new Set<string>();
+  if (ownedDraftIds.length > 0) {
+    const { data: cohostLinks } = await supabase
+      .from("app_challenge_cohost")
+      .select("challenge_id")
+      .in("challenge_id", ownedDraftIds);
+    ownedCollabIds = new Set((cohostLinks ?? []).map((l: any) => l.challenge_id));
+  }
+  const myOwnedCollabs = (ownedCollabDrafts ?? []).filter((c: any) => ownedCollabIds.has(c.id));
+
+  // Cohost collab drafts
+  const { data: cohostCollabLinks } = await supabase
+    .from("app_challenge_cohost")
+    .select("challenge_id, app_challenge(id, title, owner_id, status, created_at)")
+    .eq("cohost_id", user!.id);
+  const cohostCollabs = (cohostCollabLinks ?? [])
+    .filter((l: any) => l.app_challenge?.status === "draft")
+    .map((l: any) => l.app_challenge);
+
+  // All active workspaces
+  const allCollabWorkspaces = [
+    ...myOwnedCollabs.map((c: any) => ({ ...c, role: "owner" as const })),
+    ...cohostCollabs.map((c: any) => ({ ...c, role: "cohost" as const })),
+  ];
+
+  // Fetch partner names for workspaces
+  const workspacePartnerIds = new Set<string>();
+  for (const w of allCollabWorkspaces) {
+    if (w.role === "owner") {
+      // Need cohost names
+      const cohostLink = (cohostCollabLinks ?? []).find((l: any) => l.challenge_id === w.id);
+      if (cohostLink) workspacePartnerIds.add((cohostLink as any).cohost_id ?? (cohostLink as any).app_challenge?.owner_id);
+    } else {
+      workspacePartnerIds.add(w.owner_id);
+    }
+  }
+  // Also get cohost IDs for owned collabs
+  const workspaceCohostMap: Record<string, string> = {};
+  if (myOwnedCollabs.length > 0) {
+    const { data: wCohosts } = await supabase
+      .from("app_challenge_cohost")
+      .select("challenge_id, cohost_id")
+      .in("challenge_id", myOwnedCollabs.map((c: any) => c.id));
+    for (const wc of wCohosts ?? []) {
+      workspaceCohostMap[(wc as any).challenge_id] = (wc as any).cohost_id;
+      workspacePartnerIds.add((wc as any).cohost_id);
+    }
+  }
+
+  const workspacePartnerProfiles: Record<string, { name: string; avatar: string | null }> = {};
+  if (workspacePartnerIds.size > 0) {
+    const { data: profiles } = await supabase.from("app_profile").select("id, display_name, avatar_url").in("id", [...workspacePartnerIds]);
+    for (const p of profiles ?? []) workspacePartnerProfiles[p.id] = { name: p.display_name ?? "Creator", avatar: p.avatar_url };
+  }
+
   // ── Available events for contextual feed ──────────────
   const { data: feedSessions } = await supabase
     .from("app_session").select("id, title, image_url")
@@ -343,6 +409,51 @@ export default async function DashboardPage() {
                     ) : null}
                   </div>
                 </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ── ACTIVE COLLABORATION WORKSPACES ─────────────── */}
+      {allCollabWorkspaces.length > 0 && (
+        <div>
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-1 h-6 rounded-full" style={{ backgroundColor: "#9CF0FF" }} />
+            <h2 className="text-xl font-black font-headline text-[#0F2229] tracking-tight">Active Collaborations</h2>
+          </div>
+          <div className="space-y-2">
+            {allCollabWorkspaces.map((w: any) => {
+              const partnerId = w.role === "owner" ? workspaceCohostMap[w.id] : w.owner_id;
+              const partner = partnerId ? workspacePartnerProfiles[partnerId] : null;
+              return (
+                <a
+                  key={w.id}
+                  href={`/dashboard/collaborate/${w.id}`}
+                  className="group flex items-center justify-between p-4 rounded-2xl infitra-card-link"
+                  style={{ border: "1px solid rgba(156,240,255,0.20)" }}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    {partner?.avatar ? (
+                      <img src={partner.avatar} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-cyan-100 flex items-center justify-center shrink-0">
+                        <span className="text-sm font-black font-headline text-cyan-700">{partner?.name?.[0] ?? "?"}</span>
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold font-headline text-[#0F2229] truncate group-hover:text-[#FF6130]">
+                        {w.title || "Untitled Collaboration"}
+                      </p>
+                      <p className="text-[10px] text-[#0891b2]">
+                        with {partner?.name ?? "Creator"} · Draft
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-bold font-headline text-[#FF6130] shrink-0">
+                    Open Workspace →
+                  </span>
+                </a>
               );
             })}
           </div>
