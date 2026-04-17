@@ -58,11 +58,10 @@ export function WorkspaceChat({ conversationId, currentUserId, profiles }: Props
         p_conversation_id: conversationId,
         p_limit: 100,
       });
-      if (data) {
-        setMessages((prev) => {
-          if (JSON.stringify(prev.map(m => m.id)) === JSON.stringify(data.map((m: Message) => m.id))) return prev;
-          return data;
-        });
+      if (data && data.length > 0) {
+        setMessages(data);
+        // Scroll if new messages arrived
+        setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
       }
     }, 3000);
 
@@ -72,20 +71,20 @@ export function WorkspaceChat({ conversationId, currentUserId, profiles }: Props
   async function handleSend() {
     if (!newMessage.trim() || sending) return;
     const body = newMessage.trim();
+    setNewMessage("");
     setSending(true);
 
-    // Optimistic: add message locally immediately
-    const optimisticMsg: Message = {
-      id: `temp-${Date.now()}`,
-      author_id: currentUserId,
-      body,
-      created_at: new Date().toISOString(),
-    };
-    setMessages((prev) => [...prev, optimisticMsg]);
-    setNewMessage("");
+    await sendDmMessage(conversationId, body);
+
+    // Fetch fresh messages immediately after send
+    const supabase = createClient();
+    const { data } = await supabase.rpc("list_dm_messages", {
+      p_conversation_id: conversationId,
+      p_limit: 100,
+    });
+    if (data) setMessages(data);
     setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
 
-    await sendDmMessage(conversationId, body);
     setSending(false);
   }
 
