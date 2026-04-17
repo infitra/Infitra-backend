@@ -277,24 +277,14 @@ export default async function DashboardPage() {
   }
   const myOwnedCollabs = (ownedCollabDrafts ?? []).filter((c: any) => ownedCollabIds.has(c.id));
 
-  // Cohost collab drafts — query challenges directly (RLS allows cohost access)
-  const { data: allDraftChallenges } = await supabase
+  // Cohost collab drafts — RLS on app_challenge already filters to challenges
+  // where user is owner OR cohost. So draft challenges NOT owned by user = cohost collabs.
+  const { data: cohostCollabDrafts } = await supabase
     .from("app_challenge")
     .select("id, title, owner_id, status, created_at")
     .eq("status", "draft")
     .neq("owner_id", user!.id);
-  // Filter to only those where user is cohost
-  const otherDraftIds = (allDraftChallenges ?? []).map((c: any) => c.id);
-  let cohostCollabs: any[] = [];
-  if (otherDraftIds.length > 0) {
-    const { data: myCoLinks } = await supabase
-      .from("app_challenge_cohost")
-      .select("challenge_id")
-      .eq("cohost_id", user!.id)
-      .in("challenge_id", otherDraftIds);
-    const myCoChallengeIds = new Set((myCoLinks ?? []).map((l: any) => l.challenge_id));
-    cohostCollabs = (allDraftChallenges ?? []).filter((c: any) => myCoChallengeIds.has(c.id));
-  }
+  const cohostCollabs = cohostCollabDrafts ?? [];
 
   // All active workspaces
   const allCollabWorkspaces = [
@@ -305,15 +295,16 @@ export default async function DashboardPage() {
   // Fetch partner names for workspaces
   const workspacePartnerIds = new Set<string>();
   const workspaceCohostMap: Record<string, string> = {};
-  // For owned collabs: find cohost partner
+  // For owned collabs: find cohost partner via invite table (cohost table blocked by RLS)
   if (myOwnedCollabs.length > 0) {
-    const { data: wCohosts } = await supabase
-      .from("app_challenge_cohost")
-      .select("challenge_id, cohost_id")
-      .in("challenge_id", myOwnedCollabs.map((c: any) => c.id));
-    for (const wc of wCohosts ?? []) {
-      workspaceCohostMap[(wc as any).challenge_id] = (wc as any).cohost_id;
-      workspacePartnerIds.add((wc as any).cohost_id);
+    const { data: inviteLinks } = await supabase
+      .from("app_collaboration_invite")
+      .select("challenge_id, to_id")
+      .in("challenge_id", myOwnedCollabs.map((c: any) => c.id))
+      .eq("status", "interested");
+    for (const il of inviteLinks ?? []) {
+      workspaceCohostMap[(il as any).challenge_id] = (il as any).to_id;
+      workspacePartnerIds.add((il as any).to_id);
     }
   }
   // For cohost collabs: the partner is the owner
