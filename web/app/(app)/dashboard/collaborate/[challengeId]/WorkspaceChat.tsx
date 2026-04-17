@@ -50,31 +50,23 @@ export function WorkspaceChat({ conversationId, currentUserId, profiles }: Props
     load();
   }, [conversationId]);
 
-  // Realtime subscription for new messages
+  // Poll for new messages every 2s
+  const lastCountRef = useRef(0);
   useEffect(() => {
-    const supabase = createClient();
-    const channel = supabase
-      .channel(`dm-${conversationId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "app_dm_message",
-          filter: `conversation_id=eq.${conversationId}`,
-        },
-        (payload) => {
-          const msg = payload.new as Message;
-          setMessages((prev) => {
-            if (prev.some((m) => m.id === msg.id)) return prev;
-            return [...prev, msg];
-          });
-          setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
-        }
-      )
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
+    async function fetchMessages() {
+      const supabase = createClient();
+      const { data } = await supabase.rpc("list_dm_messages", {
+        p_conversation_id: conversationId,
+        p_limit: 100,
+      });
+      if (data && data.length !== lastCountRef.current) {
+        lastCountRef.current = data.length;
+        setMessages(data);
+        setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+      }
+    }
+    const interval = setInterval(fetchMessages, 2000);
+    return () => clearInterval(interval);
   }, [conversationId]);
 
   async function handleSend() {
@@ -82,7 +74,20 @@ export function WorkspaceChat({ conversationId, currentUserId, profiles }: Props
     const body = newMessage.trim();
     setNewMessage("");
     setSending(true);
+
     await sendDmMessage(conversationId, body);
+
+    // Fetch immediately after send
+    const supabase = createClient();
+    const { data } = await supabase.rpc("list_dm_messages", {
+      p_conversation_id: conversationId,
+      p_limit: 100,
+    });
+    if (data) {
+      lastCountRef.current = data.length;
+      setMessages(data);
+      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+    }
     setSending(false);
   }
 
