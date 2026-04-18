@@ -7,7 +7,7 @@ export default function AppLayout({
 }) {
   return (
     <div
-      className="min-h-screen relative overflow-hidden"
+      className="min-h-screen relative overflow-x-clip"
       style={{ backgroundColor: "#F2EFE8" }}
     >
       <WaveFlowingBackground />
