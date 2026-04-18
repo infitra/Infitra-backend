@@ -121,7 +121,9 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
 
   async function handleAddSessionCohost(sessionId: string, cohostId: string) {
     setError(null);
-    const result = await addSessionCohost(sessionId, cohostId, 0);
+    // Pass null — split_percent only matters for standalone session sales,
+    // and this session is bundled with the challenge.
+    const result = await addSessionCohost(sessionId, cohostId, null);
     if (result?.error) { setError(result.error); return; }
     router.refresh();
   }

@@ -212,8 +212,13 @@ export async function removeCohost(challengeId: string, cohostId: string) {
 
 // ── Session Cohost Management (RLS enforces session host only) ──
 
-/** Add a cohost to a session. Must be a challenge cohost per backend rules. */
-export async function addSessionCohost(sessionId: string, cohostId: string, splitPercent: number = 0) {
+/**
+ * Add a cohost to a session. Must be a challenge cohost per backend rules.
+ * split_percent is NULL for challenge-bundled sessions (revenue governed by
+ * challenge contract). The backend trigger validates 1-99 + sum<=100 only
+ * for standalone sessions.
+ */
+export async function addSessionCohost(sessionId: string, cohostId: string, splitPercent: number | null = null) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated." };
