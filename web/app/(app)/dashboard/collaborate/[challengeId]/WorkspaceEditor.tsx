@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ShareDonut } from "@/app/components/ShareDonut";
 import { ImageSelector } from "@/app/components/ImageSelector";
 import { CollabInviteFlow } from "@/app/(app)/dashboard/create/CollabInviteFlow";
-import { updateChallenge, publishChallenge, createChallengeSession, removeChallengeSession } from "@/app/actions/challenge";
+import { updateChallenge, publishChallenge, createChallengeSession, updateChallengeSession, removeChallengeSession } from "@/app/actions/challenge";
 import { lockTerms, confirmTerms, requestChanges, reactivateDrafting, updateCohostSplit, addSessionCohost, removeSessionCohost } from "@/app/actions/collaboration";
 
 interface Props {
@@ -22,7 +22,7 @@ interface Props {
   };
   isOwner: boolean;
   currentUserId: string;
-  ownerProfile: { name: string; avatar: string | null };
+  ownerProfile: { id: string; name: string; avatar: string | null };
   ownerSplit: number;
   cohosts: { id: string; name: string; avatar: string | null; splitPercent: number }[];
   sessions: {
@@ -116,6 +116,44 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
     setError(null);
     const result = await removeChallengeSession(challenge.id, sessionId);
     if (result?.error) { setError(result.error); return; }
+    router.refresh();
+  }
+
+  // Inline session editing
+  const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
+  const [editFields, setEditFields] = useState<{ title: string; startTime: string; duration: string; imageUrl: string | null }>({
+    title: "", startTime: "", duration: "60", imageUrl: null,
+  });
+  const [savingSession, setSavingSession] = useState(false);
+
+  function startEditSession(s: Props["sessions"][number]) {
+    setEditingSessionId(s.id);
+    // Convert ISO to local datetime-local format
+    const dt = new Date(s.startTime);
+    const tzOffset = dt.getTimezoneOffset() * 60000;
+    const localISO = new Date(dt.getTime() - tzOffset).toISOString().slice(0, 16);
+    setEditFields({
+      title: s.title,
+      startTime: localISO,
+      duration: String(s.durationMinutes),
+      imageUrl: s.imageUrl ?? null,
+    });
+  }
+
+  async function handleSaveSession(sessionId: string) {
+    if (!editFields.title.trim() || !editFields.startTime) return;
+    setSavingSession(true); setError(null);
+    const result = await updateChallengeSession(
+      sessionId,
+      editFields.title.trim(),
+      new Date(editFields.startTime).toISOString(),
+      parseInt(editFields.duration),
+      undefined,
+      editFields.imageUrl,
+    );
+    setSavingSession(false);
+    if (result?.error) { setError(result.error); return; }
+    setEditingSessionId(null);
     router.refresh();
   }
 
@@ -482,65 +520,137 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
               const allCollabs = [
                 { id: s.hostId === challenge.id ? "" : "", name: "" }
               ];
-              // Real candidate list
+              // Candidate list = challenge owner + all challenge cohosts, minus session host & existing session cohosts
               const candidateList: { id: string; name: string; avatar: string | null }[] = [];
-              // Challenge owner is always a candidate (if not already on session)
-              // We need challenge.owner_id which is not directly on the challenge prop. Use ownerProfile.name instead.
-              // Actually ownerProfile.id isn't in props. Let me use cohosts from the challenge level.
+              if (!existingIds.has(ownerProfile.id)) {
+                candidateList.push({ id: ownerProfile.id, name: ownerProfile.name, avatar: ownerProfile.avatar });
+              }
               cohosts.forEach((cc) => {
                 if (!existingIds.has(cc.id)) candidateList.push({ id: cc.id, name: cc.name, avatar: cc.avatar });
               });
 
               return (
                 <div key={s.id} className="p-4 rounded-xl" style={{ backgroundColor: "rgba(255,255,255,0.5)", border: "1px solid rgba(15,34,41,0.06)" }}>
-                  <div className="flex items-center gap-4">
-                    {s.imageUrl ? (
-                      <img src={s.imageUrl} alt="" className="w-14 h-14 rounded-lg object-cover shrink-0" />
-                    ) : (
-                      <div className="w-14 h-14 rounded-lg shrink-0 flex items-center justify-center" style={{ background: "linear-gradient(135deg, #0F2229, #1a3340)" }}>
-                        <img src="/logo-mark.png" alt="" width={18} height={18} style={{ opacity: 0.15 }} />
+                  {editingSessionId === s.id ? (
+                    /* INLINE EDIT MODE */
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-[10px] font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-1">Title</label>
+                        <input
+                          value={editFields.title}
+                          onChange={(e) => setEditFields({ ...editFields, title: e.target.value })}
+                          className="w-full rounded-xl p-2.5 text-sm font-bold focus:outline-none"
+                          style={{ border: "1px solid rgba(15,34,41,0.10)", color: "#0F2229" }}
+                        />
                       </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-base font-black font-headline text-[#0F2229] truncate">{s.title}</p>
-                      <p className="text-xs font-bold text-[#94a3b8]">
-                        {new Date(s.startTime).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
-                        {" · "}{s.durationMinutes} min
-                      </p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-[10px] font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-1">Date & Time</label>
+                          <input
+                            type="datetime-local"
+                            value={editFields.startTime}
+                            onChange={(e) => setEditFields({ ...editFields, startTime: e.target.value })}
+                            className="w-full rounded-xl p-2.5 text-sm focus:outline-none"
+                            style={{ border: "1px solid rgba(15,34,41,0.10)", color: "#0F2229" }}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-1">Duration (min)</label>
+                          <input
+                            type="number" min={5} max={480}
+                            value={editFields.duration}
+                            onChange={(e) => setEditFields({ ...editFields, duration: e.target.value })}
+                            className="w-full rounded-xl p-2.5 text-sm focus:outline-none"
+                            style={{ border: "1px solid rgba(15,34,41,0.10)", color: "#0F2229" }}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-1">Cover Image (optional)</label>
+                        <ImageSelector currentUrl={editFields.imageUrl} title={editFields.title} onSelect={(url) => setEditFields({ ...editFields, imageUrl: url })} size="sm" />
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleSaveSession(s.id)}
+                          disabled={savingSession || !editFields.title.trim() || !editFields.startTime}
+                          className="px-4 py-2 rounded-full text-xs font-black font-headline text-white disabled:opacity-40"
+                          style={{ backgroundColor: "#FF6130" }}
+                        >
+                          {savingSession ? "Saving..." : "Save"}
+                        </button>
+                        <button
+                          onClick={() => setEditingSessionId(null)}
+                          className="px-4 py-2 rounded-full text-xs font-bold font-headline text-[#94a3b8] hover:text-[#0F2229]"
+                          style={{ border: "1px solid rgba(0,0,0,0.08)" }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
                     </div>
-                    {/* Host + cohosts avatars */}
-                    <div className="flex -space-x-2 shrink-0">
-                      {s.hostAvatar ? (
-                        <img src={s.hostAvatar} alt={s.hostName} title={`${s.hostName} (Host)`} className="w-8 h-8 rounded-full object-cover" style={{ border: "2px solid white", zIndex: 10 }} />
+                  ) : (
+                    /* DISPLAY MODE */
+                    <div className="flex items-center gap-4">
+                      {s.imageUrl ? (
+                        <img src={s.imageUrl} alt="" className="w-14 h-14 rounded-lg object-cover shrink-0" />
                       ) : (
-                        <div title={`${s.hostName} (Host)`} className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center" style={{ border: "2px solid white", zIndex: 10 }}>
-                          <span className="text-[10px] font-black text-orange-700">{s.hostName[0]}</span>
+                        <div className="w-14 h-14 rounded-lg shrink-0 flex items-center justify-center" style={{ background: "linear-gradient(135deg, #0F2229, #1a3340)" }}>
+                          <img src="/logo-mark.png" alt="" width={18} height={18} style={{ opacity: 0.15 }} />
                         </div>
                       )}
-                      {s.cohosts.map((c, idx) => (
-                        c.avatar ? (
-                          <img key={c.id} src={c.avatar} alt={c.name} title={c.name} className="w-8 h-8 rounded-full object-cover" style={{ border: "2px solid white", zIndex: 9 - idx }} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-base font-black font-headline text-[#0F2229] truncate">{s.title}</p>
+                        <p className="text-xs font-bold text-[#94a3b8]">
+                          {new Date(s.startTime).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                          {" · "}{s.durationMinutes} min
+                        </p>
+                      </div>
+                      {/* Host + cohosts avatars */}
+                      <div className="flex -space-x-2 shrink-0">
+                        {s.hostAvatar ? (
+                          <img src={s.hostAvatar} alt={s.hostName} title={`${s.hostName} (Host)`} className="w-8 h-8 rounded-full object-cover" style={{ border: "2px solid white", zIndex: 10 }} />
                         ) : (
-                          <div key={c.id} title={c.name} className="w-8 h-8 rounded-full bg-cyan-100 flex items-center justify-center" style={{ border: "2px solid white", zIndex: 9 - idx }}>
-                            <span className="text-[10px] font-black text-cyan-700">{c.name[0]}</span>
+                          <div title={`${s.hostName} (Host)`} className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center" style={{ border: "2px solid white", zIndex: 10 }}>
+                            <span className="text-[10px] font-black text-orange-700">{s.hostName[0]}</span>
                           </div>
-                        )
-                      ))}
+                        )}
+                        {s.cohosts.map((c, idx) => (
+                          c.avatar ? (
+                            <img key={c.id} src={c.avatar} alt={c.name} title={c.name} className="w-8 h-8 rounded-full object-cover" style={{ border: "2px solid white", zIndex: 9 - idx }} />
+                          ) : (
+                            <div key={c.id} title={c.name} className="w-8 h-8 rounded-full bg-cyan-100 flex items-center justify-center" style={{ border: "2px solid white", zIndex: 9 - idx }}>
+                              <span className="text-[10px] font-black text-cyan-700">{c.name[0]}</span>
+                            </div>
+                          )
+                        ))}
+                      </div>
+                      {/* Edit only for the session host */}
+                      {canEdit && s.hostId === currentUserId && (
+                        <button
+                          onClick={() => startEditSession(s)}
+                          className="text-[#94a3b8] hover:text-[#FF6130] shrink-0"
+                          title="Edit session"
+                        >
+                          <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                            <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </button>
+                      )}
+                      {canEdit && (
+                        <button
+                          onClick={() => handleDeleteSession(s.id)}
+                          className="text-[#94a3b8] hover:text-red-500 shrink-0"
+                          title="Delete session"
+                        >
+                          <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                            <path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </button>
+                      )}
                     </div>
-                    {canEdit && (
-                      <button
-                        onClick={() => handleDeleteSession(s.id)}
-                        className="text-[#94a3b8] hover:text-red-500 shrink-0"
-                        title="Delete session"
-                      >
-                        <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                          <path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      </button>
-                    )}
-                  </div>
+                  )}
 
-                  {/* Host + cohost names + add */}
+                  {/* Host + cohost names + add (hidden in edit mode) */}
+                  {editingSessionId !== s.id && (
                   <div className="mt-3 pl-[4.5rem] flex items-center flex-wrap gap-2">
                     <span className="text-xs text-[#94a3b8]">
                       <span className="font-bold text-[#FF6130]">{s.hostName}</span>
@@ -595,6 +705,7 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
                       </div>
                     )}
                   </div>
+                  )}
                 </div>
               );
             })}

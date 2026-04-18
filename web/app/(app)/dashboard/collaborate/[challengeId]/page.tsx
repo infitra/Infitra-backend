@@ -181,7 +181,7 @@ export default async function CollaborateWorkspacePage({
             }}
             isOwner={isOwner}
             currentUserId={user.id}
-            ownerProfile={profileMap[challenge.owner_id] ?? { name: "Owner", avatar: null }}
+            ownerProfile={{ id: challenge.owner_id, ...(profileMap[challenge.owner_id] ?? { name: "Owner", avatar: null }) }}
             ownerSplit={ownerSplit}
             cohosts={(cohosts ?? []).map((c: any) => ({
               id: c.cohost_id,
