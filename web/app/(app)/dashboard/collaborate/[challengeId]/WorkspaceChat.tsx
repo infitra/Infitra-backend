@@ -36,9 +36,8 @@ export function WorkspaceChat({ conversationId, currentUserId, profiles }: Props
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // Centralized refetch — used by initial load, the manual "activity" signal
-  // dispatched by WorkspaceEditor after each mutation, Realtime INSERTs, and
-  // the polling fallback for remote updates.
+  // Centralized refetch — initial load + local "activity" signal from
+  // WorkspaceEditor after mutations. Idempotent; compares by id/length.
   async function refetchMessages(scroll: boolean = false) {
     const supabase = createClient();
     const { data } = await supabase.rpc("list_dm_messages", {
@@ -47,7 +46,6 @@ export function WorkspaceChat({ conversationId, currentUserId, profiles }: Props
     });
     if (!data) return;
     setMessages((prev) => {
-      // Only update if the list actually changed (avoid churn under polling)
       if (prev.length === data.length && prev.every((m, i) => m.id === data[i].id)) {
         return prev;
       }
@@ -67,8 +65,10 @@ export function WorkspaceChat({ conversationId, currentUserId, profiles }: Props
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId]);
 
-  // Realtime subscription — fires when it works; if it doesn't, the polling
-  // + window-event fallbacks below cover the same ground.
+  // Realtime subscription — the scalable path for the remote party.
+  // Table is in supabase_realtime publication with REPLICA IDENTITY FULL.
+  // Status callback logs connect failures so we can diagnose rather than
+  // mask them with polling.
   useEffect(() => {
     const supabase = createClient();
     const channel = supabase
@@ -90,28 +90,24 @@ export function WorkspaceChat({ conversationId, currentUserId, profiles }: Props
           setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
         }
       )
-      .subscribe();
+      .subscribe((status, err) => {
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+          // Log so we can diagnose instead of silently falling back
+          // eslint-disable-next-line no-console
+          console.warn("[WorkspaceChat] Realtime subscription", status, err);
+        }
+      });
 
     return () => { supabase.removeChannel(channel); };
   }, [conversationId]);
 
-  // Signal path for the local actor: WorkspaceEditor dispatches
-  // `workspace-activity` on window right after any mutation action resolves.
-  // We refetch immediately so the acting user sees their own system message
-  // without waiting on Realtime.
+  // Local actor signal — WorkspaceEditor dispatches `workspace-activity`
+  // after every mutation so the acting user sees their own system message
+  // land without a round trip over Realtime. Zero network cost.
   useEffect(() => {
     function handler() { refetchMessages(true); }
     window.addEventListener("workspace-activity", handler);
     return () => window.removeEventListener("workspace-activity", handler);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conversationId]);
-
-  // Polling fallback for the remote party — covers both system messages
-  // (from the other collaborator's actions) and regular chat if Realtime
-  // is flaky. 8s is frequent enough to feel live without being wasteful.
-  useEffect(() => {
-    const id = setInterval(() => { refetchMessages(false); }, 8000);
-    return () => clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId]);
 
