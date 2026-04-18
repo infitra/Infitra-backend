@@ -93,13 +93,19 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
   const isLocked = !!contract;
   const allAccepted = contract ? cohosts.every((c) => contract.acceptances.includes(c.id)) : false;
   const hasDeclines = contract ? contract.declines.length > 0 : false;
-  // Owner-only edits: challenge details, revenue share, invite, lock, publish
-  const canEditChallenge = isDraft && !isLocked && isOwner;
+  // Cohorts can now edit broader fields (title, description, dates, price,
+  // cover image) while drafting. The activity log makes every change
+  // transparent in chat. Backed by the update_challenge_workspace RPC,
+  // which permits owner OR cohost and locks down owner_id/status/contract_id.
+  const canEditChallenge = isDraft && !isLocked;
   // Anyone in the collaboration can add their own sessions while drafting
   const canAddSession = isDraft && !isLocked;
   // Per-session: only the session host can edit/delete it + manage its cohosts
   const canEditSession = (hostId: string) => isDraft && !isLocked && hostId === currentUserId;
-  // Backwards-compat alias used in a few places where owner-edit was implied
+  // Owner-only governance: invite/remove cohosts, adjust splits, lock,
+  // publish, delete. Use canManageCollaboration for these gates.
+  const canManageCollaboration = isDraft && !isLocked && isOwner;
+  // Backwards-compat alias used in a few places where editing is implied
   const canEdit = canEditChallenge;
 
   const shares = [
@@ -171,6 +177,7 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
       parseInt(editFields.duration),
       undefined,
       editFields.imageUrl,
+      challenge.id,
     );
     setSavingSession(false);
     if (result?.error) { setError(result.error); return; }
@@ -187,7 +194,7 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
     setAddingCohostFor(sessionId);
     // Pass null — split_percent only matters for standalone session sales,
     // and this session is bundled with the challenge.
-    const result = await addSessionCohost(sessionId, cohostId, null);
+    const result = await addSessionCohost(sessionId, cohostId, null, challenge.id);
     setAddingCohostFor(null);
     setOpenCohostPicker(null); // close the picker
     if (result?.error) { setError(result.error); return; }
@@ -196,7 +203,7 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
 
   async function handleRemoveSessionCohost(sessionId: string, cohostId: string) {
     setError(null);
-    const result = await removeSessionCohost(sessionId, cohostId);
+    const result = await removeSessionCohost(sessionId, cohostId, challenge.id);
     if (result?.error) { setError(result.error); return; }
     router.refresh();
   }
@@ -213,7 +220,7 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
     const newSessionId = (result as any).sessionId;
     if (newSessionId && sessCohostIds.length > 0) {
       for (const cohostId of sessCohostIds) {
-        const r = await addSessionCohost(newSessionId, cohostId, null);
+        const r = await addSessionCohost(newSessionId, cohostId, null, challenge.id);
         if (r?.error) {
           setError(`Session created, but couldn't add cohost: ${r.error}`);
         }
@@ -372,7 +379,7 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
           <h3 className="text-sm font-black font-headline text-[#94a3b8] uppercase tracking-wider">
             Collaborators · {cohosts.length + 1 + (pendingInvites?.length ?? 0)}
           </h3>
-          {canEdit && isOwner && (
+          {canManageCollaboration && (
             <div className="shrink-0">
               <CollabInviteFlow
                 existingChallengeId={challenge.id}
@@ -495,8 +502,8 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
           </div>
         </div>
 
-        {/* Editable sliders (owner, not locked) */}
-        {canEdit && cohosts.length > 0 && (
+        {/* Revenue split sliders — owner only (governance) */}
+        {canManageCollaboration && cohosts.length > 0 && (
           <div className="pt-5 border-t" style={{ borderColor: "rgba(15,34,41,0.06)" }}>
             <p className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider mb-3">Adjust Splits</p>
             {cohosts.map((c) => {
@@ -749,7 +756,8 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
                           </svg>
                         </button>
                       )}
-                      {(canEditSession(s.hostId) || canEditChallenge) && (
+                      {/* Delete: session host OR challenge owner (matches RPC authz) */}
+                      {(canEditSession(s.hostId) || canManageCollaboration) && (
                         <button
                           onClick={() => handleDeleteSession(s.id)}
                           className="text-[#94a3b8] hover:text-red-500 shrink-0"

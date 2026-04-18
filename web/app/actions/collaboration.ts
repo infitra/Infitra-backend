@@ -3,6 +3,27 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
+// ── Workspace Activity Log ──────────────────────────────
+
+/**
+ * Posts a system message into the workspace DM conversation for a challenge.
+ * Best-effort: silently no-ops if no conversation exists or actor isn't a member.
+ * Server-side only — uses the SECURITY DEFINER post_workspace_log RPC.
+ */
+async function logWorkspaceActivity(
+  challengeId: string | undefined,
+  body: string,
+  metadata?: Record<string, unknown>,
+) {
+  if (!challengeId) return;
+  const supabase = await createClient();
+  await supabase.rpc("post_workspace_log", {
+    p_challenge_id: challengeId,
+    p_body: body,
+    p_metadata: metadata ?? {},
+  });
+}
+
 // ── Collaboration Invite Flow ───────────────────────────
 
 /**
@@ -175,6 +196,7 @@ export async function addCohost(challengeId: string, cohostId: string, splitPerc
     .insert({ challenge_id: challengeId, cohost_id: cohostId, split_percent: splitPercent });
 
   if (error) return { error: error.message };
+  await logWorkspaceActivity(challengeId, "added a collaborator");
   return { ok: true };
 }
 
@@ -191,6 +213,7 @@ export async function updateCohostSplit(challengeId: string, cohostId: string, s
     .eq("cohost_id", cohostId);
 
   if (error) return { error: error.message };
+  await logWorkspaceActivity(challengeId, "adjusted revenue splits");
   return { ok: true };
 }
 
@@ -207,6 +230,7 @@ export async function removeCohost(challengeId: string, cohostId: string) {
     .eq("cohost_id", cohostId);
 
   if (error) return { error: error.message };
+  await logWorkspaceActivity(challengeId, "removed a collaborator");
   return { ok: true };
 }
 
@@ -218,7 +242,12 @@ export async function removeCohost(challengeId: string, cohostId: string) {
  * challenge contract). The backend trigger validates 1-99 + sum<=100 only
  * for standalone sessions.
  */
-export async function addSessionCohost(sessionId: string, cohostId: string, splitPercent: number | null = null) {
+export async function addSessionCohost(
+  sessionId: string,
+  cohostId: string,
+  splitPercent: number | null = null,
+  challengeId?: string,
+) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated." };
@@ -228,11 +257,16 @@ export async function addSessionCohost(sessionId: string, cohostId: string, spli
     .insert({ session_id: sessionId, cohost_id: cohostId, split_percent: splitPercent });
 
   if (error) return { error: error.message };
+  await logWorkspaceActivity(challengeId, "added a cohost to a session");
   return { ok: true };
 }
 
 /** Remove a cohost from a session. */
-export async function removeSessionCohost(sessionId: string, cohostId: string) {
+export async function removeSessionCohost(
+  sessionId: string,
+  cohostId: string,
+  challengeId?: string,
+) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated." };
@@ -244,6 +278,7 @@ export async function removeSessionCohost(sessionId: string, cohostId: string) {
     .eq("cohost_id", cohostId);
 
   if (error) return { error: error.message };
+  await logWorkspaceActivity(challengeId, "removed a cohost from a session");
   return { ok: true };
 }
 

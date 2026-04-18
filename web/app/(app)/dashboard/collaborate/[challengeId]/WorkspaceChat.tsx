@@ -14,6 +14,8 @@ interface Message {
   author_id: string;
   body: string;
   created_at: string;
+  kind?: "user" | "system";
+  metadata?: Record<string, unknown> | null;
 }
 
 function formatTime(dateStr: string) {
@@ -128,6 +130,22 @@ export function WorkspaceChat({ conversationId, currentUserId, profiles }: Props
           <p className="text-xs text-[#94a3b8] text-center py-8">Start the conversation!</p>
         ) : (
           messages.map((msg) => {
+            // System messages — full-width, centered, no bubble, italic.
+            if (msg.kind === "system") {
+              const actorName = profiles[msg.author_id]?.name ?? "Someone";
+              return (
+                <div key={msg.id} className="flex items-center gap-2 py-1">
+                  <div className="flex-1 h-px" style={{ backgroundColor: "rgba(15,34,41,0.06)" }} />
+                  <p className="text-[10px] italic text-[#94a3b8] text-center px-2 leading-tight">
+                    <span className="font-semibold">{actorName}</span>{" "}{msg.body}
+                    <span className="ml-1.5 not-italic">·</span>{" "}
+                    <span className="not-italic">{formatTime(msg.created_at)}</span>
+                  </p>
+                  <div className="flex-1 h-px" style={{ backgroundColor: "rgba(15,34,41,0.06)" }} />
+                </div>
+              );
+            }
+
             const isMe = msg.author_id === currentUserId;
             const profile = profiles[msg.author_id];
             return (
