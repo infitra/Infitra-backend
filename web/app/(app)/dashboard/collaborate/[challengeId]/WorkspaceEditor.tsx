@@ -733,7 +733,7 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
                       )}
                       <div className="flex-1 min-w-0">
                         <p className="text-base font-black font-headline text-[#0F2229] truncate">{s.title}</p>
-                        <p className="text-xs font-bold text-[#94a3b8]">
+                        <p className="text-xs font-bold text-[#94a3b8]" suppressHydrationWarning>
                           {new Date(s.startTime).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
                           {" · "}{s.durationMinutes} min
                         </p>
