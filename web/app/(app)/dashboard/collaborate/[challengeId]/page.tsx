@@ -47,11 +47,17 @@ export default async function CollaborateWorkspacePage({
   const allUserIds = [challenge.owner_id, ...cohosts.map((c: any) => c.cohost_id)];
   const { data: profiles } = await supabase
     .from("app_profile")
-    .select("id, display_name, avatar_url")
+    .select("id, display_name, avatar_url, tagline, bio, username")
     .in("id", allUserIds);
 
-  const profileMap: Record<string, { name: string; avatar: string | null }> = {};
-  for (const p of profiles ?? []) profileMap[p.id] = { name: p.display_name ?? "Creator", avatar: p.avatar_url };
+  const profileMap: Record<string, { name: string; avatar: string | null; tagline?: string | null; bio?: string | null; username?: string | null }> = {};
+  for (const p of profiles ?? []) profileMap[p.id] = {
+    name: p.display_name ?? "Creator",
+    avatar: p.avatar_url,
+    tagline: p.tagline,
+    bio: p.bio,
+    username: p.username,
+  };
 
   // Fetch linked sessions (include image_url)
   const { data: sessionLinks } = await supabase
@@ -104,10 +110,10 @@ export default async function CollaborateWorkspacePage({
   // Pending invites (waiting for response)
   const pendingInvites = (invites ?? []).filter((i: any) => i.status === "pending");
   const pendingInviteeIds = [...new Set(pendingInvites.map((i: any) => i.to_id))];
-  const pendingInviteeProfiles: Record<string, { name: string; avatar: string | null }> = {};
+  const pendingInviteeProfiles: Record<string, { name: string; avatar: string | null; tagline?: string | null; username?: string | null }> = {};
   if (pendingInviteeIds.length > 0) {
-    const { data: profs } = await supabase.from("app_profile").select("id, display_name, avatar_url").in("id", pendingInviteeIds);
-    for (const p of profs ?? []) pendingInviteeProfiles[p.id] = { name: p.display_name ?? "Creator", avatar: p.avatar_url };
+    const { data: profs } = await supabase.from("app_profile").select("id, display_name, avatar_url, tagline, username").in("id", pendingInviteeIds);
+    for (const p of profs ?? []) pendingInviteeProfiles[p.id] = { name: p.display_name ?? "Creator", avatar: p.avatar_url, tagline: p.tagline, username: p.username };
   }
 
   // Session cohosts
@@ -132,8 +138,8 @@ export default async function CollaborateWorkspacePage({
     // Fetch missing profiles
     const missingIds = [...new Set((sessCohosts ?? []).map((sc: any) => sc.cohost_id).filter((id: string) => !profileMap[id]))];
     if (missingIds.length > 0) {
-      const { data: moreProfs } = await supabase.from("app_profile").select("id, display_name, avatar_url").in("id", missingIds);
-      for (const p of moreProfs ?? []) profileMap[p.id] = { name: p.display_name ?? "Creator", avatar: p.avatar_url };
+      const { data: moreProfs } = await supabase.from("app_profile").select("id, display_name, avatar_url, tagline, bio, username").in("id", missingIds);
+      for (const p of moreProfs ?? []) profileMap[p.id] = { name: p.display_name ?? "Creator", avatar: p.avatar_url, tagline: p.tagline, bio: p.bio, username: p.username };
     }
   }
 
@@ -187,6 +193,8 @@ export default async function CollaborateWorkspacePage({
               id: c.cohost_id,
               name: profileMap[c.cohost_id]?.name ?? "Creator",
               avatar: profileMap[c.cohost_id]?.avatar ?? null,
+              tagline: profileMap[c.cohost_id]?.tagline ?? null,
+              username: profileMap[c.cohost_id]?.username ?? null,
               splitPercent: c.split_percent,
             }))}
             sessions={sessions.map((s: any) => ({
@@ -210,6 +218,8 @@ export default async function CollaborateWorkspacePage({
               toId: i.to_id,
               toName: pendingInviteeProfiles[i.to_id]?.name ?? "Creator",
               toAvatar: pendingInviteeProfiles[i.to_id]?.avatar ?? null,
+              toTagline: pendingInviteeProfiles[i.to_id]?.tagline ?? null,
+              toUsername: pendingInviteeProfiles[i.to_id]?.username ?? null,
               splitPercent: i.initial_split_percent,
               message: i.message,
             }))}
