@@ -119,11 +119,18 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
     router.refresh();
   }
 
+  const [openCohostPicker, setOpenCohostPicker] = useState<string | null>(null);
+  const [addingCohostFor, setAddingCohostFor] = useState<string | null>(null);
+
   async function handleAddSessionCohost(sessionId: string, cohostId: string) {
+    if (addingCohostFor) return; // prevent double-click while request in flight
     setError(null);
+    setAddingCohostFor(sessionId);
     // Pass null — split_percent only matters for standalone session sales,
     // and this session is bundled with the challenge.
     const result = await addSessionCohost(sessionId, cohostId, null);
+    setAddingCohostFor(null);
+    setOpenCohostPicker(null); // close the picker
     if (result?.error) { setError(result.error); return; }
     router.refresh();
   }
@@ -557,27 +564,35 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
                       </span>
                     ))}
                     {canEdit && candidateList.length > 0 && (
-                      <details className="inline-block relative">
-                        <summary className="text-xs font-bold font-headline text-[#FF6130] cursor-pointer list-none">+ Add Cohost</summary>
-                        <div className="absolute top-full left-0 mt-1 min-w-[200px] rounded-xl shadow-lg z-10 overflow-hidden" style={{ backgroundColor: "white", border: "1px solid rgba(0,0,0,0.08)" }}>
-                          {candidateList.map((c) => (
-                            <button
-                              key={c.id}
-                              onClick={() => handleAddSessionCohost(s.id, c.id)}
-                              className="w-full flex items-center gap-2 p-2 hover:bg-gray-50 text-left"
-                            >
-                              {c.avatar ? (
-                                <img src={c.avatar} alt="" className="w-6 h-6 rounded-full object-cover shrink-0" />
-                              ) : (
-                                <div className="w-6 h-6 rounded-full bg-cyan-100 flex items-center justify-center shrink-0">
-                                  <span className="text-[10px] font-black text-cyan-700">{c.name[0]}</span>
-                                </div>
-                              )}
-                              <span className="text-sm font-bold text-[#0F2229]">{c.name}</span>
-                            </button>
-                          ))}
-                        </div>
-                      </details>
+                      <div className="inline-block relative">
+                        <button
+                          onClick={() => setOpenCohostPicker(openCohostPicker === s.id ? null : s.id)}
+                          className="text-xs font-bold font-headline text-[#FF6130] cursor-pointer"
+                        >
+                          + Add Cohost
+                        </button>
+                        {openCohostPicker === s.id && (
+                          <div className="absolute top-full left-0 mt-1 min-w-[200px] rounded-xl shadow-lg z-10 overflow-hidden" style={{ backgroundColor: "white", border: "1px solid rgba(0,0,0,0.08)" }}>
+                            {candidateList.map((c) => (
+                              <button
+                                key={c.id}
+                                onClick={() => handleAddSessionCohost(s.id, c.id)}
+                                disabled={addingCohostFor === s.id}
+                                className="w-full flex items-center gap-2 p-2 hover:bg-gray-50 text-left disabled:opacity-40"
+                              >
+                                {c.avatar ? (
+                                  <img src={c.avatar} alt="" className="w-6 h-6 rounded-full object-cover shrink-0" />
+                                ) : (
+                                  <div className="w-6 h-6 rounded-full bg-cyan-100 flex items-center justify-center shrink-0">
+                                    <span className="text-[10px] font-black text-cyan-700">{c.name[0]}</span>
+                                  </div>
+                                )}
+                                <span className="text-sm font-bold text-[#0F2229]">{c.name}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>
