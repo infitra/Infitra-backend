@@ -93,8 +93,14 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
   const isLocked = !!contract;
   const allAccepted = contract ? cohosts.every((c) => contract.acceptances.includes(c.id)) : false;
   const hasDeclines = contract ? contract.declines.length > 0 : false;
-  const canEdit = isDraft && !isLocked && isOwner;
-  const canViewEdit = isDraft && !isLocked;
+  // Owner-only edits: challenge details, revenue share, invite, lock, publish
+  const canEditChallenge = isDraft && !isLocked && isOwner;
+  // Anyone in the collaboration can add their own sessions while drafting
+  const canAddSession = isDraft && !isLocked;
+  // Per-session: only the session host can edit/delete it + manage its cohosts
+  const canEditSession = (hostId: string) => isDraft && !isLocked && hostId === currentUserId;
+  // Backwards-compat alias used in a few places where owner-edit was implied
+  const canEdit = canEditChallenge;
 
   const shares = [
     { label: ownerProfile.name, percent: currentOwnerSplit, color: "#FF6130" },
@@ -518,14 +524,14 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
       <div className="rounded-2xl infitra-card p-6">
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-sm font-black font-headline text-[#94a3b8] uppercase tracking-wider">Sessions · {sessions.length}</h3>
-          {canEdit && (
+          {canAddSession && (
             <button onClick={() => setShowAddSession(!showAddSession)} className="text-sm font-black font-headline text-[#FF6130]">
               {showAddSession ? "Cancel" : "+ Add Session"}
             </button>
           )}
         </div>
 
-        {showAddSession && canEdit && (
+        {showAddSession && canAddSession && (
           <div className="p-5 rounded-xl mb-4 space-y-4" style={{ border: "1px solid rgba(15,34,41,0.08)", backgroundColor: "rgba(255,255,255,0.5)" }}>
             <div>
               <label className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-2">Session Title</label>
@@ -731,8 +737,8 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
                           )
                         ))}
                       </div>
-                      {/* Edit only for the session host */}
-                      {canEdit && s.hostId === currentUserId && (
+                      {/* Edit + delete only for the session host (or owner can also delete) */}
+                      {canEditSession(s.hostId) && (
                         <button
                           onClick={() => startEditSession(s)}
                           className="text-[#94a3b8] hover:text-[#FF6130] shrink-0"
@@ -743,7 +749,7 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
                           </svg>
                         </button>
                       )}
-                      {canEdit && (
+                      {(canEditSession(s.hostId) || canEditChallenge) && (
                         <button
                           onClick={() => handleDeleteSession(s.id)}
                           className="text-[#94a3b8] hover:text-red-500 shrink-0"
@@ -768,7 +774,7 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
                       <span key={c.id} className="text-xs text-[#94a3b8] flex items-center gap-1">
                         · <span className="font-bold text-[#0891b2]">{c.name}</span>
                         <span className="text-[10px] uppercase tracking-wider">Cohost</span>
-                        {canEdit && (
+                        {canEditSession(s.hostId) && (
                           <button
                             onClick={() => handleRemoveSessionCohost(s.id, c.id)}
                             className="text-[#94a3b8] hover:text-red-500 ml-0.5"
@@ -781,7 +787,7 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
                         )}
                       </span>
                     ))}
-                    {canEdit && candidateList.length > 0 && (
+                    {canEditSession(s.hostId) && candidateList.length > 0 && (
                       <div className="inline-block relative">
                         <button
                           onClick={() => setOpenCohostPicker(openCohostPicker === s.id ? null : s.id)}
