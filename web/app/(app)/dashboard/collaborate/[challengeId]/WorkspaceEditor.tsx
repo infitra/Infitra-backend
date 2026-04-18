@@ -46,6 +46,19 @@ interface Props {
 
 export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfile, ownerSplit, cohosts, sessions, pendingInvites, contract }: Props) {
   const router = useRouter();
+
+  /**
+   * Run after any workspace mutation. Refreshes server components AND signals
+   * the chat panel to refetch messages so the system log appears immediately
+   * for the acting user (the other collaborator picks it up via the chat's
+   * Realtime subscription / polling fallback).
+   */
+  function refreshAfterAction() {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("workspace-activity"));
+    }
+    router.refresh();
+  }
   const [saving, setSaving] = useState(false);
   const [locking, setLocking] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -128,14 +141,14 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
     if (result?.error) { setError(result.error); setSaving(false); return; }
     setSuccess("Saved"); setTimeout(() => setSuccess(null), 2000);
     setSaving(false);
-    router.refresh();
+    refreshAfterAction();
   }
 
   async function handleSaveCohostSplit(cohostId: string, newSplit: number) {
     const result = await updateCohostSplit(challenge.id, cohostId, newSplit);
     if (result.error) { setError(result.error); return; }
     setCohostSplits((prev) => ({ ...prev, [cohostId]: newSplit }));
-    router.refresh();
+    refreshAfterAction();
   }
 
   async function handleDeleteSession(sessionId: string) {
@@ -143,7 +156,7 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
     setError(null);
     const result = await removeChallengeSession(challenge.id, sessionId);
     if (result?.error) { setError(result.error); return; }
-    router.refresh();
+    refreshAfterAction();
   }
 
   // Inline session editing
@@ -182,7 +195,7 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
     setSavingSession(false);
     if (result?.error) { setError(result.error); return; }
     setEditingSessionId(null);
-    router.refresh();
+    refreshAfterAction();
   }
 
   const [openCohostPicker, setOpenCohostPicker] = useState<string | null>(null);
@@ -198,14 +211,14 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
     setAddingCohostFor(null);
     setOpenCohostPicker(null); // close the picker
     if (result?.error) { setError(result.error); return; }
-    router.refresh();
+    refreshAfterAction();
   }
 
   async function handleRemoveSessionCohost(sessionId: string, cohostId: string) {
     setError(null);
     const result = await removeSessionCohost(sessionId, cohostId, challenge.id);
     if (result?.error) { setError(result.error); return; }
-    router.refresh();
+    refreshAfterAction();
   }
 
   async function handleAddSession() {
@@ -229,7 +242,7 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
 
     setSessTitle(""); setSessDate(""); setSessImageUrl(null); setSessCohostIds([]); setShowAddSession(false);
     setAddingSession(false);
-    router.refresh();
+    refreshAfterAction();
   }
 
   async function handleLockTerms() {
@@ -238,7 +251,7 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
     if (result.error) { setError(result.error); setLocking(false); return; }
     setSuccess("Contract locked. Waiting for collaborators to confirm.");
     setLocking(false);
-    router.refresh();
+    refreshAfterAction();
   }
 
   async function handleConfirm() {
@@ -248,7 +261,7 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
     if (result.error) { setError(result.error); setConfirming(false); return; }
     setSuccess("Terms confirmed!");
     setConfirming(false);
-    router.refresh();
+    refreshAfterAction();
   }
 
   async function handleRequestChanges() {
@@ -259,7 +272,7 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
     if (result.error) { setError(result.error); setConfirming(false); return; }
     setSuccess("Change request sent.");
     setConfirming(false);
-    router.refresh();
+    refreshAfterAction();
   }
 
   async function handleReactivate() {
@@ -269,7 +282,7 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
     if (result.error) { setError(result.error); setLocking(false); return; }
     setSuccess("Draft reactivated. You can make changes and lock again.");
     setLocking(false);
-    router.refresh();
+    refreshAfterAction();
   }
 
   async function handlePublish() {
