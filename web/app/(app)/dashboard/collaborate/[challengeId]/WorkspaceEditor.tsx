@@ -72,7 +72,18 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
   const [sessDate, setSessDate] = useState("");
   const [sessDuration, setSessDuration] = useState("60");
   const [sessImageUrl, setSessImageUrl] = useState<string | null>(null);
+  const [sessCohostIds, setSessCohostIds] = useState<string[]>([]);
   const [addingSession, setAddingSession] = useState(false);
+
+  // Dirty check: only enable Save when something changed
+  const initialPriceStr = challenge.priceCents > 0 ? (challenge.priceCents / 100).toString() : "";
+  const isDirty =
+    title !== challenge.title ||
+    description !== (challenge.description ?? "") ||
+    startDate !== challenge.startDate ||
+    endDate !== challenge.endDate ||
+    price !== initialPriceStr ||
+    imageUrl !== challenge.imageUrl;
 
   const isDraft = challenge.status === "draft";
   const isLocked = !!contract;
@@ -187,7 +198,19 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
       challenge.id, sessTitle.trim(), sessDate, parseInt(sessDuration), sessImageUrl
     );
     if (result?.error) { setError(result.error); setAddingSession(false); return; }
-    setSessTitle(""); setSessDate(""); setSessImageUrl(null); setShowAddSession(false);
+
+    // Add selected cohosts to the new session (host_id = current user, RLS allows it)
+    const newSessionId = (result as any).sessionId;
+    if (newSessionId && sessCohostIds.length > 0) {
+      for (const cohostId of sessCohostIds) {
+        const r = await addSessionCohost(newSessionId, cohostId, null);
+        if (r?.error) {
+          setError(`Session created, but couldn't add cohost: ${r.error}`);
+        }
+      }
+    }
+
+    setSessTitle(""); setSessDate(""); setSessImageUrl(null); setSessCohostIds([]); setShowAddSession(false);
     setAddingSession(false);
     router.refresh();
   }
@@ -268,11 +291,11 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
           {canEdit && (
             <button
               onClick={handleSave}
-              disabled={saving}
+              disabled={saving || !isDirty}
               className="px-5 py-2 rounded-full text-sm font-black font-headline text-white disabled:opacity-40"
               style={{ backgroundColor: "#FF6130" }}
             >
-              {saving ? "Saving..." : success ?? "Save Changes"}
+              {saving ? "Saving..." : success ?? (isDirty ? "Save Changes" : "Saved")}
             </button>
           )}
         </div>
@@ -497,6 +520,59 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
               <label className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-2">Cover Image (optional)</label>
               <ImageSelector currentUrl={sessImageUrl} title={sessTitle} onSelect={setSessImageUrl} size="sm" />
             </div>
+
+            {/* Cohost selector — pick from challenge collaborators (you'll be the host since you create the session) */}
+            {(() => {
+              // Candidates: challenge owner + all challenge cohosts, minus the creator (who becomes host)
+              const candidates: { id: string; name: string; avatar: string | null }[] = [];
+              if (ownerProfile.id !== currentUserId) {
+                candidates.push({ id: ownerProfile.id, name: ownerProfile.name, avatar: ownerProfile.avatar });
+              }
+              cohosts.forEach((c) => {
+                if (c.id !== currentUserId) candidates.push({ id: c.id, name: c.name, avatar: c.avatar });
+              });
+              if (candidates.length === 0) return null;
+              return (
+                <div>
+                  <label className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-2">
+                    Cohosts (optional) — you&apos;ll be the host
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {candidates.map((c) => {
+                      const selected = sessCohostIds.includes(c.id);
+                      return (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => setSessCohostIds(
+                            selected
+                              ? sessCohostIds.filter((id) => id !== c.id)
+                              : [...sessCohostIds, c.id]
+                          )}
+                          className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold font-headline transition-all"
+                          style={{
+                            backgroundColor: selected ? "rgba(156,240,255,0.20)" : "rgba(0,0,0,0.03)",
+                            border: selected ? "1px solid #0891b2" : "1px solid rgba(15,34,41,0.08)",
+                            color: selected ? "#0891b2" : "#64748b",
+                          }}
+                        >
+                          {c.avatar ? (
+                            <img src={c.avatar} alt="" className="w-5 h-5 rounded-full object-cover" />
+                          ) : (
+                            <div className="w-5 h-5 rounded-full bg-cyan-100 flex items-center justify-center">
+                              <span className="text-[9px] font-black text-cyan-700">{c.name[0]}</span>
+                            </div>
+                          )}
+                          {c.name}
+                          {selected && <span className="text-[9px]">✓</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
+
             <button
               onClick={handleAddSession}
               disabled={addingSession || !sessTitle.trim() || !sessDate}
