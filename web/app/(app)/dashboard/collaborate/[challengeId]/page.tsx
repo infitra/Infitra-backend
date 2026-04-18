@@ -222,19 +222,21 @@ export default async function CollaborateWorkspacePage({
           />
         </div>
 
-        {/* Right: Chat (1/3) */}
+        {/* Right: Chat (1/3) — sticky so it stays visible while page scrolls */}
         <div className="lg:col-span-1">
-          {dmConversationId ? (
-            <WorkspaceChat
-              conversationId={dmConversationId}
-              currentUserId={user.id}
-              profiles={profileMap}
-            />
-          ) : (
-            <div className="rounded-2xl infitra-card p-6 text-center">
-              <p className="text-sm text-[#94a3b8]">Chat will be available once the collaboration is set up.</p>
-            </div>
-          )}
+          <div className="lg:sticky lg:top-24">
+            {dmConversationId ? (
+              <WorkspaceChat
+                conversationId={dmConversationId}
+                currentUserId={user.id}
+                profiles={profileMap}
+              />
+            ) : (
+              <div className="rounded-2xl infitra-card p-6 text-center">
+                <p className="text-sm text-[#94a3b8]">Chat will be available once the collaboration is set up.</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

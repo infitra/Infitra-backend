@@ -114,7 +114,7 @@ export function WorkspaceChat({ conversationId, currentUserId, profiles }: Props
   }
 
   return (
-    <div className="rounded-2xl infitra-card flex flex-col" style={{ height: "calc(100vh - 200px)", minHeight: "400px" }}>
+    <div className="rounded-2xl infitra-card flex flex-col" style={{ height: "calc(100vh - 140px)", minHeight: "400px" }}>
       {/* Header */}
       <div className="p-4 border-b" style={{ borderColor: "rgba(15,34,41,0.06)" }}>
         <h3 className="text-sm font-black font-headline text-[#0F2229]">Chat</h3>
