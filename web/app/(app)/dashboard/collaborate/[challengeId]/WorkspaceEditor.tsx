@@ -171,6 +171,7 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
       parseInt(editFields.duration),
       undefined,
       editFields.imageUrl,
+      challenge.id,
     );
     setSavingSession(false);
     if (result?.error) { setError(result.error); return; }
@@ -187,7 +188,7 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
     setAddingCohostFor(sessionId);
     // Pass null — split_percent only matters for standalone session sales,
     // and this session is bundled with the challenge.
-    const result = await addSessionCohost(sessionId, cohostId, null);
+    const result = await addSessionCohost(sessionId, cohostId, null, challenge.id);
     setAddingCohostFor(null);
     setOpenCohostPicker(null); // close the picker
     if (result?.error) { setError(result.error); return; }
@@ -196,7 +197,7 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
 
   async function handleRemoveSessionCohost(sessionId: string, cohostId: string) {
     setError(null);
-    const result = await removeSessionCohost(sessionId, cohostId);
+    const result = await removeSessionCohost(sessionId, cohostId, challenge.id);
     if (result?.error) { setError(result.error); return; }
     router.refresh();
   }
@@ -213,7 +214,7 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
     const newSessionId = (result as any).sessionId;
     if (newSessionId && sessCohostIds.length > 0) {
       for (const cohostId of sessCohostIds) {
-        const r = await addSessionCohost(newSessionId, cohostId, null);
+        const r = await addSessionCohost(newSessionId, cohostId, null, challenge.id);
         if (r?.error) {
           setError(`Session created, but couldn't add cohost: ${r.error}`);
         }

@@ -4,6 +4,23 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
+/**
+ * Posts a system message into the workspace DM conversation for a challenge.
+ * Best-effort: silently no-ops if no workspace conversation exists.
+ */
+async function logWorkspaceActivity(
+  challengeId: string | undefined,
+  body: string,
+) {
+  if (!challengeId) return;
+  const supabase = await createClient();
+  await supabase.rpc("post_workspace_log", {
+    p_challenge_id: challengeId,
+    p_body: body,
+    p_metadata: {},
+  });
+}
+
 /** Creates a blank draft challenge with sensible defaults and redirects to the edit page. */
 export async function createDraftChallenge() {
   const supabase = await createClient();
@@ -94,6 +111,7 @@ export async function updateChallenge(prevState: unknown, formData: FormData) {
 
   if (error) return { error: error.message };
 
+  await logWorkspaceActivity(challengeId, "updated the challenge details");
   return { success: true, challengeId };
 }
 
@@ -145,6 +163,7 @@ export async function createChallengeSession(
     await supabase.from("app_session").update(updates).eq("id", sessionId);
   }
 
+  await logWorkspaceActivity(challengeId, "added a session");
   return { success: true, sessionId };
 }
 
@@ -155,7 +174,8 @@ export async function updateChallengeSession(
   startTime: string,
   durationMinutes: number,
   description?: string | null,
-  imageUrl?: string | null
+  imageUrl?: string | null,
+  challengeId?: string,
 ) {
   const supabase = await createClient();
   const {
@@ -183,6 +203,7 @@ export async function updateChallengeSession(
     .eq("host_id", user.id);
 
   if (error) return { error: error.message };
+  await logWorkspaceActivity(challengeId, "updated a session");
   return { success: true };
 }
 
@@ -210,6 +231,7 @@ export async function removeChallengeSession(
 
   if (error) return { error: error.message };
 
+  await logWorkspaceActivity(challengeId, "removed a session");
   return { success: true };
 }
 
@@ -236,6 +258,7 @@ export async function publishChallenge(challengeId: string) {
     };
   }
 
+  await logWorkspaceActivity(challengeId, "published the challenge");
   redirect(`/dashboard/challenges/${challengeId}`);
 }
 
