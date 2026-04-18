@@ -22,9 +22,9 @@ interface Props {
   };
   isOwner: boolean;
   currentUserId: string;
-  ownerProfile: { id: string; name: string; avatar: string | null };
+  ownerProfile: { id: string; name: string; avatar: string | null; tagline?: string | null; bio?: string | null; username?: string | null };
   ownerSplit: number;
-  cohosts: { id: string; name: string; avatar: string | null; splitPercent: number }[];
+  cohosts: { id: string; name: string; avatar: string | null; tagline?: string | null; username?: string | null; splitPercent: number }[];
   sessions: {
     id: string; title: string; startTime: string; durationMinutes: number;
     hostId: string; hostName: string; hostAvatar?: string | null;
@@ -33,6 +33,7 @@ interface Props {
   }[];
   pendingInvites?: {
     id: string; toId: string; toName: string; toAvatar: string | null;
+    toTagline?: string | null; toUsername?: string | null;
     splitPercent: number; message: string;
   }[];
   contract: {
@@ -65,6 +66,9 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
     () => Object.fromEntries(cohosts.map((c) => [c.id, c.splitPercent]))
   );
   const currentOwnerSplit = 100 - Object.values(cohostSplits).reduce((a, b) => a + b, 0);
+
+  // Collaborator profile popover (one open at a time)
+  const [openCollaboratorId, setOpenCollaboratorId] = useState<string | null>(null);
 
   // Add session state
   const [showAddSession, setShowAddSession] = useState(false);
@@ -357,38 +361,13 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
       </div>
 
       {/* ── COLLABORATORS ─────────────────────────── */}
-      {(pendingInvites && pendingInvites.length > 0) || (canEdit && isOwner) ? (
-        <div className="rounded-2xl infitra-card p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-black font-headline text-[#94a3b8] uppercase tracking-wider">
-              Collaborators · {cohosts.length + 1 + (pendingInvites?.length ?? 0)}
-            </h3>
-          </div>
-
-          {/* Pending invites */}
-          {pendingInvites && pendingInvites.length > 0 && (
-            <div className="space-y-2 mb-4">
-              {pendingInvites.map((inv) => (
-                <div key={inv.id} className="flex items-center gap-3 p-3 rounded-xl" style={{ border: "1px dashed rgba(148,163,184,0.35)", backgroundColor: "rgba(255,255,255,0.5)" }}>
-                  {inv.toAvatar ? (
-                    <img src={inv.toAvatar} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-cyan-100 flex items-center justify-center shrink-0">
-                      <span className="text-sm font-black text-cyan-700">{inv.toName[0]}</span>
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-base font-bold font-headline text-[#0F2229] truncate">{inv.toName}</p>
-                    <p className="text-xs text-[#94a3b8]">⏳ Waiting for response</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Invite more — owner only */}
+      <div className="rounded-2xl infitra-card p-6">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <h3 className="text-sm font-black font-headline text-[#94a3b8] uppercase tracking-wider">
+            Collaborators · {cohosts.length + 1 + (pendingInvites?.length ?? 0)}
+          </h3>
           {canEdit && isOwner && (
-            <div className="pt-2">
+            <div className="shrink-0">
               <CollabInviteFlow
                 existingChallengeId={challenge.id}
                 existingCollaboratorIds={[
@@ -399,7 +378,60 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
             </div>
           )}
         </div>
-      ) : null}
+
+        {/* Inline collaborator chips */}
+        <div className="flex flex-wrap gap-2 mt-4">
+          {/* Owner */}
+          <CollaboratorChip
+            id={ownerProfile.id}
+            name={ownerProfile.name}
+            avatar={ownerProfile.avatar}
+            tagline={ownerProfile.tagline ?? null}
+            bio={ownerProfile.bio ?? null}
+            username={ownerProfile.username ?? null}
+            role="Owner"
+            roleColor="#FF6130"
+            open={openCollaboratorId === ownerProfile.id}
+            onToggle={() => setOpenCollaboratorId(openCollaboratorId === ownerProfile.id ? null : ownerProfile.id)}
+            onClose={() => setOpenCollaboratorId(null)}
+          />
+          {/* Confirmed cohosts */}
+          {cohosts.map((c) => (
+            <CollaboratorChip
+              key={c.id}
+              id={c.id}
+              name={c.name}
+              avatar={c.avatar}
+              tagline={c.tagline ?? null}
+              bio={null}
+              username={c.username ?? null}
+              role="Cohost"
+              roleColor="#0891b2"
+              open={openCollaboratorId === c.id}
+              onToggle={() => setOpenCollaboratorId(openCollaboratorId === c.id ? null : c.id)}
+              onClose={() => setOpenCollaboratorId(null)}
+            />
+          ))}
+          {/* Pending invites */}
+          {pendingInvites?.map((inv) => (
+            <CollaboratorChip
+              key={inv.id}
+              id={inv.toId}
+              name={inv.toName}
+              avatar={inv.toAvatar}
+              tagline={inv.toTagline ?? null}
+              bio={null}
+              username={inv.toUsername ?? null}
+              role="Pending"
+              roleColor="#94a3b8"
+              dashed
+              open={openCollaboratorId === inv.toId}
+              onToggle={() => setOpenCollaboratorId(openCollaboratorId === inv.toId ? null : inv.toId)}
+              onClose={() => setOpenCollaboratorId(null)}
+            />
+          ))}
+        </div>
+      </div>
 
       {/* ── REVENUE SHARE ─────────────────────────── */}
       <div className="rounded-2xl infitra-card p-6">
@@ -873,6 +905,95 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
           <p className="text-base text-[#0891b2] font-black text-center">Contract locked. Waiting for collaborators to confirm.</p>
         )}
       </div>
+    </div>
+  );
+}
+
+/* ── CollaboratorChip — clickable avatar+name with profile popover ─────── */
+function CollaboratorChip({
+  id, name, avatar, tagline, bio, username, role, roleColor, dashed, open, onToggle, onClose,
+}: {
+  id: string;
+  name: string;
+  avatar: string | null;
+  tagline: string | null;
+  bio: string | null;
+  username: string | null;
+  role: string;
+  roleColor: string;
+  dashed?: boolean;
+  open: boolean;
+  onToggle: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="relative">
+      <button
+        onClick={onToggle}
+        className="flex items-center gap-2 px-3 py-1.5 rounded-full transition-all hover:shadow-sm"
+        style={{
+          backgroundColor: "rgba(255,255,255,0.5)",
+          border: dashed
+            ? `1px dashed ${roleColor}66`
+            : `1px solid rgba(15,34,41,0.08)`,
+        }}
+      >
+        {avatar ? (
+          <img src={avatar} alt="" className="w-7 h-7 rounded-full object-cover" />
+        ) : (
+          <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ backgroundColor: `${roleColor}20` }}>
+            <span className="text-[11px] font-black" style={{ color: roleColor }}>{name[0]}</span>
+          </div>
+        )}
+        <div className="text-left">
+          <span className="text-sm font-bold font-headline text-[#0F2229] block leading-none">{name}</span>
+          <span className="text-[10px] font-bold font-headline uppercase tracking-wider" style={{ color: roleColor }}>{role}</span>
+        </div>
+      </button>
+
+      {open && (
+        <>
+          {/* Click-outside backdrop */}
+          <div className="fixed inset-0 z-40" onClick={onClose} />
+          {/* Popover */}
+          <div
+            className="absolute top-full left-0 mt-2 w-72 rounded-2xl shadow-xl z-50 overflow-hidden"
+            style={{ backgroundColor: "white", border: "1px solid rgba(0,0,0,0.08)" }}
+          >
+            <div className="p-5">
+              <div className="flex items-center gap-3 mb-3">
+                {avatar ? (
+                  <img src={avatar} alt="" className="w-14 h-14 rounded-full object-cover" />
+                ) : (
+                  <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ backgroundColor: `${roleColor}20` }}>
+                    <span className="text-lg font-black" style={{ color: roleColor }}>{name[0]}</span>
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <p className="text-base font-black font-headline text-[#0F2229] truncate">{name}</p>
+                  <p className="text-[10px] font-bold font-headline uppercase tracking-wider" style={{ color: roleColor }}>{role}</p>
+                </div>
+              </div>
+              {tagline && (
+                <p className="text-sm font-bold text-[#334155] mb-2 leading-snug">{tagline}</p>
+              )}
+              {bio && (
+                <p className="text-xs text-[#64748b] leading-relaxed line-clamp-3">{bio}</p>
+              )}
+              {username && (
+                <a
+                  href={`/creators/${username}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block mt-4 text-xs font-bold font-headline text-[#FF6130] hover:opacity-80"
+                >
+                  View full profile →
+                </a>
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
