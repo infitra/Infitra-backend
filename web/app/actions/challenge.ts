@@ -55,7 +55,12 @@ export async function createDraftChallenge() {
   redirect(`/dashboard/challenges/${data.id}`);
 }
 
-/** Updates a draft challenge. Only works on drafts you own (RLS enforced). */
+/**
+ * Updates a draft challenge. Owner OR any cohost may edit while drafting and
+ * before the contract is locked. Calls update_challenge_workspace (SECURITY
+ * DEFINER) so the same path serves both roles. Locked-down columns
+ * (owner_id, status, contract_id, currency) are not exposed by the RPC.
+ */
 export async function updateChallenge(prevState: unknown, formData: FormData) {
   const supabase = await createClient();
   const {
@@ -95,24 +100,39 @@ export async function updateChallenge(prevState: unknown, formData: FormData) {
     return { error: "Price cannot be negative." };
   }
 
-  const { error } = await supabase
-    .from("app_challenge")
-    .update({
-      title,
-      description,
-      image_url,
-      start_date: startDate,
-      end_date: endDate,
-      capacity,
-      price_cents: priceCents,
-    })
-    .eq("id", challengeId)
-    .eq("owner_id", user.id);
+  const { error } = await supabase.rpc("update_challenge_workspace", {
+    p_challenge_id: challengeId,
+    p_title: title,
+    p_description: description,
+    p_image_url: image_url,
+    p_start_date: startDate,
+    p_end_date: endDate,
+    p_capacity: capacity,
+    p_price_cents: priceCents,
+  });
 
-  if (error) return { error: error.message };
+  if (error) return { error: humanizeUpdateError(error.message) };
 
   await logWorkspaceActivity(challengeId, "updated the challenge details");
   return { success: true, challengeId };
+}
+
+function humanizeUpdateError(code: string): string {
+  const map: Record<string, string> = {
+    not_authenticated: "You need to be signed in.",
+    challenge_not_found: "Challenge not found.",
+    challenge_not_draft: "Only drafts can be edited.",
+    challenge_locked: "The contract is locked — reactivate drafting to edit.",
+    not_a_collaborator: "Only the owner or a cohost can edit this challenge.",
+    title_too_short: "Title must be at least 3 characters.",
+    dates_required: "Start date and end date are required.",
+    end_before_start: "End date must be after start date.",
+    capacity_out_of_range: "Capacity must be between 1 and 10,000.",
+    invalid_price: "Price cannot be negative.",
+  };
+  // Postgres error messages may include extra context — match leading token.
+  const key = code.split("\n")[0].trim();
+  return map[key] ?? code;
 }
 
 /** Creates a session inline within a challenge via create_challenge_session RPC. */
