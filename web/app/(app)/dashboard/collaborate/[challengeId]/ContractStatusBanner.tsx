@@ -5,7 +5,10 @@ interface Party {
   name: string;
   avatar: string | null;
   role: "Owner" | "Cohost";
-  status: "confirmed" | "pending" | "declined";
+  // "awaiting" is specific to the owner — they haven't "confirmed" in the
+  // cohost sense; they're holding the publish action, waiting on the
+  // others. Keeps ownership semantics honest.
+  status: "confirmed" | "pending" | "declined" | "awaiting";
   statusAt?: string | null;
   declineComment?: string | null;
 }
@@ -41,12 +44,16 @@ function formatTimeShort(iso: string | null | undefined): string {
  * - Invite (not push) the reader to scroll before signing.
  */
 export function ContractStatusBanner({ ownerName, lockedAt, parties, hasDeclines }: Props) {
-  const totalToSign = parties.length; // owner + all cohosts count toward signatures
-  const confirmedCount = parties.filter((p) => p.status === "confirmed").length;
+  // The signature count is about *collaborators signing off on the owner's
+  // terms*. The owner themselves isn't signing — they're holding the publish
+  // button, awaiting the others. So they don't count toward the fraction.
+  const signingParties = parties.filter((p) => p.status !== "awaiting");
+  const totalToSign = signingParties.length;
+  const confirmedCount = signingParties.filter((p) => p.status === "confirmed").length;
 
   const headline = hasDeclines
     ? "Contract changes requested"
-    : confirmedCount === totalToSign
+    : totalToSign > 0 && confirmedCount === totalToSign
       ? "All signatures in — ready to publish"
       : "Contract under review";
 
@@ -125,6 +132,14 @@ export function ContractStatusBanner({ ownerName, lockedAt, parties, hasDeclines
                 >
                   <span>⏳</span>
                   <span>Pending</span>
+                </span>
+              )}
+              {p.status === "awaiting" && (
+                <span
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-black font-headline"
+                  style={{ backgroundColor: "rgba(8,145,178,0.1)", color: "#0891b2" }}
+                >
+                  <span>Awaiting acceptance to publish</span>
                 </span>
               )}
               {p.status === "declined" && (

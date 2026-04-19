@@ -299,8 +299,9 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
     if (result?.error) { setError(result.error); setPublishing(false); return; }
   }
 
-  // Parties shown in the contract status banner. The owner is auto-signed
-  // by the act of locking; cohost status comes from acceptances/declines.
+  // Parties shown in the contract status banner. The owner isn't "confirming"
+  // the terms the way a cohost does — they authored them and are now holding
+  // the publish action, awaiting cohort acceptances. Status reflects that.
   const contractParties = contract
     ? [
         {
@@ -308,7 +309,7 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
           name: ownerProfile.name,
           avatar: ownerProfile.avatar,
           role: "Owner" as const,
-          status: "confirmed" as const,
+          status: "awaiting" as const,
           statusAt: contract.lockedAt,
         },
         ...cohosts.map((c) => {
@@ -1026,11 +1027,23 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
           </p>
         )}
 
-        {/* Locked, owner with still-pending cohosts — no action available */}
+        {/* Locked, owner with still-pending cohosts — can wait, or reopen
+            the draft if they spot something to change. Reopening clears
+            any acceptances that already came in (see banner copy). */}
         {isLocked && !hasDeclines && isOwner && !allAccepted && (
-          <p className="text-sm text-[#94a3b8] text-center">
-            Waiting for the remaining collaborators to respond.
-          </p>
+          <div className="space-y-3">
+            <p className="text-sm text-[#94a3b8] text-center">
+              Waiting for the remaining collaborators to accept.
+            </p>
+            <button
+              onClick={handleReactivate}
+              disabled={locking}
+              className="px-6 py-3 rounded-full text-base font-black font-headline text-[#0F2229] disabled:opacity-40 w-full"
+              style={{ border: "1px solid rgba(0,0,0,0.12)" }}
+            >
+              {locking ? "..." : "Reopen Draft"}
+            </button>
+          </div>
         )}
       </div>
 
