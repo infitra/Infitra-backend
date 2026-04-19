@@ -355,6 +355,25 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
         />
       )}
 
+      {/*
+        Contract envelope (locked only). Wraps every section that is part
+        of the snapshot under review — cover, details, collaborators,
+        revenue, sessions, signing panel — in one softly tinted tray so
+        they read as a single document, not a stack of editable cards.
+        In draft mode the wrapper is invisible: just space-y-6 between
+        children, matching the previous layout.
+      */}
+      <div
+        className={`space-y-6 ${isLocked ? "rounded-3xl p-5 sm:p-6" : ""}`}
+        style={
+          isLocked
+            ? {
+                backgroundColor: "rgba(15,34,41,0.045)",
+                border: "1px solid rgba(15,34,41,0.06)",
+              }
+            : undefined
+        }
+      >
       {/* ── COVER IMAGE ─────────────────────────── */}
       <div className="rounded-2xl infitra-card p-6">
         <h3 className="text-sm font-black font-headline text-[#94a3b8] uppercase tracking-wider mb-4">Cover Image</h3>
@@ -1009,6 +1028,9 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
             Waiting for the remaining collaborators to respond.
           </p>
         )}
+      </div>
+
+      {/* end of contract envelope */}
       </div>
 
       {/* Acceptance modal — the signature moment. Lives at the root so it
