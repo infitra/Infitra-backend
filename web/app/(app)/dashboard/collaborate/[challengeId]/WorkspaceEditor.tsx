@@ -7,6 +7,8 @@ import { ImageSelector } from "@/app/components/ImageSelector";
 import { CollabInviteFlow } from "@/app/(app)/dashboard/create/CollabInviteFlow";
 import { updateChallenge, publishChallenge, createChallengeSession, updateChallengeSession, removeChallengeSession } from "@/app/actions/challenge";
 import { lockTerms, confirmTerms, requestChanges, reactivateDrafting, updateCohostSplit, addSessionCohost, removeSessionCohost } from "@/app/actions/collaboration";
+import { AcceptTermsModal } from "./AcceptTermsModal";
+import { ContractStatusBanner } from "./ContractStatusBanner";
 
 interface Props {
   challenge: {
@@ -254,12 +256,18 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
     refreshAfterAction();
   }
 
+  // Acceptance is a deliberate, binding step — route it through a modal
+  // that surfaces the commitment clearly. Button opens modal; modal calls
+  // the actual RPC only once the checkbox is ticked.
+  const [acceptModalOpen, setAcceptModalOpen] = useState(false);
+
   async function handleConfirm() {
     if (!contract) return;
     setConfirming(true); setError(null);
     const result = await confirmTerms(contract.id);
     if (result.error) { setError(result.error); setConfirming(false); return; }
-    setSuccess("Terms confirmed!");
+    setAcceptModalOpen(false);
+    setSuccess("Terms confirmed.");
     setConfirming(false);
     refreshAfterAction();
   }
@@ -291,8 +299,62 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
     if (result?.error) { setError(result.error); setPublishing(false); return; }
   }
 
+  // Parties shown in the contract status banner. The owner is auto-signed
+  // by the act of locking; cohost status comes from acceptances/declines.
+  const contractParties = contract
+    ? [
+        {
+          id: ownerProfile.id,
+          name: ownerProfile.name,
+          avatar: ownerProfile.avatar,
+          role: "Owner" as const,
+          status: "confirmed" as const,
+          statusAt: contract.lockedAt,
+        },
+        ...cohosts.map((c) => {
+          const declineRow = contract.declines.find((d) => d.cohostId === c.id);
+          if (declineRow) {
+            return {
+              id: c.id,
+              name: c.name,
+              avatar: c.avatar,
+              role: "Cohost" as const,
+              status: "declined" as const,
+              declineComment: declineRow.comment,
+            };
+          }
+          if (contract.acceptances.includes(c.id)) {
+            return {
+              id: c.id,
+              name: c.name,
+              avatar: c.avatar,
+              role: "Cohost" as const,
+              status: "confirmed" as const,
+            };
+          }
+          return {
+            id: c.id,
+            name: c.name,
+            avatar: c.avatar,
+            role: "Cohost" as const,
+            status: "pending" as const,
+          };
+        }),
+      ]
+    : [];
+
   return (
     <div className="space-y-6">
+      {/* ── CONTRACT STATUS BANNER (locked only) ─── */}
+      {isLocked && contract && (
+        <ContractStatusBanner
+          ownerName={ownerProfile.name}
+          lockedAt={contract.lockedAt}
+          parties={contractParties}
+          hasDeclines={hasDeclines}
+        />
+      )}
+
       {/* ── COVER IMAGE ─────────────────────────── */}
       <div className="rounded-2xl infitra-card p-6">
         <h3 className="text-sm font-black font-headline text-[#94a3b8] uppercase tracking-wider mb-4">Cover Image</h3>
@@ -498,17 +560,8 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
                     <p className="text-sm font-bold text-[#94a3b8]">Collaborator</p>
                   </div>
                   <p className="text-2xl font-black font-headline text-[#0891b2]">{split}%</p>
-                  {contract && (
-                    <span className="text-sm font-bold font-headline shrink-0">
-                      {contract.acceptances.includes(c.id) ? (
-                        <span className="text-green-600">✓ Confirmed</span>
-                      ) : contract.declines.some((d) => d.cohostId === c.id) ? (
-                        <span className="text-red-500">✕ Changes requested</span>
-                      ) : (
-                        <span className="text-[#94a3b8]">⏳ Pending</span>
-                      )}
-                    </span>
-                  )}
+                  {/* Acceptance status lives in the top Contract Status Banner now
+                      — chips stay about identity + split only. */}
                 </div>
               );
             })}
@@ -850,10 +903,16 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
         )}
       </div>
 
-      {/* ── CONTRACT ACTIONS ──────────────────────── */}
+      {/* ── SIGNING / ACTION PANEL ───────────────────
+          Responsibilities split with the top banner:
+          - Banner = status + process context (who signed, freeze/reset rules)
+          - This panel = the single actionable next step for the current viewer
+          Verbiage about the contract process lives in the banner and the chat
+          log; this panel stays lean and action-focused. */}
       <div className="rounded-2xl infitra-card p-6">
         {error && <p className="text-sm text-red-500 mb-4">{error}</p>}
 
+        {/* Drafting: owner can lock once there's at least one cohost */}
         {!isLocked && isDraft && isOwner && (
           <div>
             <p className="text-base text-[#64748b] mb-4">
@@ -870,68 +929,97 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
           </div>
         )}
 
+        {/* Drafting: cohost just waits */}
         {!isLocked && isDraft && !isOwner && (
           <p className="text-sm text-[#94a3b8] text-center">
             Waiting for {ownerProfile.name} to finalize and lock terms.
           </p>
         )}
 
-        {isLocked && !allAccepted && !hasDeclines && !isOwner && !contract?.acceptances.includes(currentUserId) && (
-          <div>
-            <p className="text-base text-[#64748b] mb-4">
-              Review everything above. When ready, confirm or request changes.
-            </p>
-            <div className="flex gap-3">
-              <button onClick={handleConfirm} disabled={confirming}
-                className="flex-1 px-6 py-3 rounded-full text-white text-base font-black font-headline disabled:opacity-40" style={{ backgroundColor: "#0891b2" }}>
-                {confirming ? "..." : "Confirm Terms"}
-              </button>
-              <button onClick={handleRequestChanges} disabled={confirming}
-                className="px-6 py-3 rounded-full text-sm font-bold font-headline text-[#94a3b8] disabled:opacity-40" style={{ border: "1px solid rgba(0,0,0,0.08)" }}>
-                Request Changes
-              </button>
-            </div>
+        {/* Locked, cohost hasn't acted yet: accept (via modal) or request changes */}
+        {isLocked && !hasDeclines && !isOwner && !contract?.acceptances.includes(currentUserId) && (
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
+              onClick={() => setAcceptModalOpen(true)}
+              disabled={confirming}
+              className="flex-1 px-6 py-3 rounded-full text-white text-base font-black font-headline disabled:opacity-40"
+              style={{ backgroundColor: "#0891b2" }}
+            >
+              Accept Terms
+            </button>
+            <button
+              onClick={handleRequestChanges}
+              disabled={confirming}
+              className="px-6 py-3 rounded-full text-sm font-bold font-headline text-[#94a3b8] disabled:opacity-40"
+              style={{ border: "1px solid rgba(0,0,0,0.08)" }}
+            >
+              Request Changes
+            </button>
           </div>
         )}
 
+        {/* Locked, cohost already confirmed, waiting for the rest */}
+        {isLocked && !hasDeclines && !isOwner && contract?.acceptances.includes(currentUserId) && !allAccepted && (
+          <p className="text-sm text-[#94a3b8] text-center">
+            You&apos;ve accepted. Waiting on the remaining collaborators.
+          </p>
+        )}
+
+        {/* Locked, someone declined — only the owner can reactivate */}
         {isLocked && hasDeclines && isOwner && (
-          <div>
-            <p className="text-base text-[#64748b] mb-2">A collaborator requested changes.</p>
-            {contract?.declines.map((d) => (
-              <p key={d.cohostId} className="text-sm text-red-500 mb-2">
-                {cohosts.find((c) => c.id === d.cohostId)?.name}: {d.comment || "No comment provided"}
-              </p>
-            ))}
-            <button onClick={handleReactivate} disabled={locking}
-              className="px-6 py-3 rounded-full text-base font-black font-headline text-[#0F2229] disabled:opacity-40 w-full" style={{ border: "1px solid rgba(0,0,0,0.12)" }}>
-              {locking ? "..." : "Reactivate Draft"}
-            </button>
-          </div>
+          <button
+            onClick={handleReactivate}
+            disabled={locking}
+            className="px-6 py-3 rounded-full text-base font-black font-headline text-[#0F2229] disabled:opacity-40 w-full"
+            style={{ border: "1px solid rgba(0,0,0,0.12)" }}
+          >
+            {locking ? "..." : "Reopen Draft"}
+          </button>
         )}
 
+        {/* Locked, someone declined — non-owner can't act */}
+        {isLocked && hasDeclines && !isOwner && (
+          <p className="text-sm text-[#94a3b8] text-center">
+            Waiting for {ownerProfile.name} to reopen the draft.
+          </p>
+        )}
+
+        {/* Locked, all accepted, owner publishes */}
         {isLocked && allAccepted && isOwner && (
-          <div>
-            <p className="text-base text-green-600 font-black mb-4">All collaborators confirmed. Ready to publish!</p>
-            <button onClick={handlePublish} disabled={publishing}
-              className="px-6 py-3 rounded-full text-white text-base font-black font-headline disabled:opacity-40 w-full"
-              style={{ backgroundColor: "#FF6130", boxShadow: "0 4px 14px rgba(255,97,48,0.35)" }}>
-              {publishing ? "Publishing..." : "Publish Challenge"}
-            </button>
-          </div>
+          <button
+            onClick={handlePublish}
+            disabled={publishing}
+            className="px-6 py-3 rounded-full text-white text-base font-black font-headline disabled:opacity-40 w-full"
+            style={{ backgroundColor: "#FF6130", boxShadow: "0 4px 14px rgba(255,97,48,0.35)" }}
+          >
+            {publishing ? "Publishing..." : "Publish Challenge"}
+          </button>
         )}
 
+        {/* Locked, all accepted, waiting for owner */}
         {isLocked && allAccepted && !isOwner && (
-          <p className="text-base text-green-600 font-black text-center">All confirmed. Waiting for {ownerProfile.name} to publish.</p>
+          <p className="text-sm text-[#94a3b8] text-center">
+            All signatures in. Waiting for {ownerProfile.name} to publish.
+          </p>
         )}
 
-        {isLocked && !hasDeclines && contract?.acceptances.includes(currentUserId) && !allAccepted && (
-          <p className="text-base text-[#0891b2] font-black text-center">You confirmed. Waiting for others.</p>
-        )}
-
+        {/* Locked, owner with still-pending cohosts — no action available */}
         {isLocked && !hasDeclines && isOwner && !allAccepted && (
-          <p className="text-base text-[#0891b2] font-black text-center">Contract locked. Waiting for collaborators to confirm.</p>
+          <p className="text-sm text-[#94a3b8] text-center">
+            Waiting for the remaining collaborators to respond.
+          </p>
         )}
       </div>
+
+      {/* Acceptance modal — the signature moment. Lives at the root so it
+          overlays the whole workspace. */}
+      <AcceptTermsModal
+        open={acceptModalOpen}
+        ownerName={ownerProfile.name}
+        submitting={confirming}
+        onConfirm={handleConfirm}
+        onCancel={() => setAcceptModalOpen(false)}
+      />
     </div>
   );
 }
