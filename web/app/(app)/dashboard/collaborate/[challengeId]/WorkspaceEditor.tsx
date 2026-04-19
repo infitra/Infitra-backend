@@ -262,7 +262,8 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
     setLocking(true); setError(null);
     const result = await lockTerms(challenge.id);
     if (result.error) { setError(result.error); setLocking(false); return; }
-    setSuccess("Contract locked. Waiting for collaborators to confirm.");
+    // No toast: the banner appearing and the envelope tint switching is the
+    // visible confirmation. (Leaving the Save pill's `success` state alone.)
     setLocking(false);
     refreshAfterAction();
   }
@@ -278,7 +279,7 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
     const result = await confirmTerms(contract.id);
     if (result.error) { setError(result.error); setConfirming(false); return; }
     setAcceptModalOpen(false);
-    setSuccess("Terms confirmed.");
+    // Banner pill flips to "Confirmed" — no toast needed.
     setConfirming(false);
     refreshAfterAction();
   }
@@ -289,7 +290,7 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
     setConfirming(true); setError(null);
     const result = await requestChanges(contract.id, comment ?? undefined);
     if (result.error) { setError(result.error); setConfirming(false); return; }
-    setSuccess("Change request sent.");
+    // Banner headline flips to "Contract changes requested" — no toast needed.
     setConfirming(false);
     refreshAfterAction();
   }
@@ -299,7 +300,8 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
     setLocking(true); setError(null);
     const result = await reactivateDrafting(challenge.id, contract.id);
     if (result.error) { setError(result.error); setLocking(false); return; }
-    setSuccess("Draft reactivated. You can make changes and lock again.");
+    // Banner disappears and fields become editable — visual state is the
+    // confirmation. Don't write into `success` (that's the Save pill's lane).
     setLocking(false);
     refreshAfterAction();
   }
@@ -413,29 +415,20 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
 
       {/* ── CHALLENGE DETAILS ─────────────────────── */}
       <div className="rounded-2xl infitra-card p-6">
-        <div className="flex items-center justify-between mb-5 gap-3">
+        <div className="flex items-center justify-between mb-5">
           <h3 className="text-sm font-black font-headline text-[#94a3b8] uppercase tracking-wider">Challenge Details</h3>
           {canEdit && (
-            <div className="flex items-center gap-3 shrink-0">
-              {/* Tiny italic "Saved" confirmation fades after success; blocks
-                  nothing and hints the save actually happened. */}
-              {!isDirty && success && (
-                <span className="text-xs font-bold italic text-[#94a3b8]">{success}</span>
-              )}
-              {/* Compact contextual Save — cyan (not orange) so it doesn't
-                  compete with the Publish CTA, and hidden entirely when clean
-                  so the header stays quiet. */}
-              {isDirty && (
-                <button
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="px-3.5 py-1.5 rounded-full text-xs font-black font-headline text-white disabled:opacity-40"
-                  style={{ backgroundColor: "#0891b2" }}
-                >
-                  {saving ? "Saving…" : "Save"}
-                </button>
-              )}
-            </div>
+            <button
+              onClick={handleSave}
+              disabled={saving || !isDirty}
+              className="px-5 py-2 rounded-full text-sm font-black font-headline text-white disabled:opacity-40"
+              style={{ backgroundColor: "#FF6130" }}
+            >
+              {/* Intentional: only short "Saved" belongs in the pill. Other
+                  action success messages (reactivate / lock / confirm) are
+                  conveyed by the page state changing — they don't write here. */}
+              {saving ? "Saving..." : success ?? (isDirty ? "Save Changes" : "Saved")}
+            </button>
           )}
         </div>
 
@@ -959,7 +952,10 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
       <div className="rounded-2xl infitra-card p-6">
         {error && <p className="text-sm text-red-500 mb-4">{error}</p>}
 
-        {/* Drafting: owner can lock once there's at least one cohost */}
+        {/* Drafting: owner can lock once there's at least one cohost AND no
+            unsaved changes. Locking snapshots the DB state — if we let the
+            owner lock with a dirty form, their in-progress edits would be
+            silently discarded. */}
         {!isLocked && isDraft && isOwner && (
           <div>
             <p className="text-base text-[#64748b] mb-4">
@@ -967,12 +963,22 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
             </p>
             <button
               onClick={handleLockTerms}
-              disabled={locking || cohosts.length === 0}
+              disabled={locking || cohosts.length === 0 || isDirty}
               className="px-6 py-3 rounded-full text-white text-base font-black font-headline disabled:opacity-40 w-full"
               style={{ backgroundColor: "#0891b2" }}
             >
               {locking ? "Locking..." : "Lock Terms for Review"}
             </button>
+            {isDirty && (
+              <p className="text-xs font-bold text-[#FF6130] text-center mt-3">
+                Save your changes before locking.
+              </p>
+            )}
+            {!isDirty && cohosts.length === 0 && (
+              <p className="text-xs font-bold text-[#94a3b8] text-center mt-3">
+                Invite at least one collaborator before locking.
+              </p>
+            )}
           </div>
         )}
 
