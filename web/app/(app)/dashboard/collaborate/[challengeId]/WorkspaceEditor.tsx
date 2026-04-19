@@ -7,7 +7,7 @@ import { ImageSelector } from "@/app/components/ImageSelector";
 import { CollabInviteFlow } from "@/app/(app)/dashboard/create/CollabInviteFlow";
 import { updateChallenge, publishChallenge, createChallengeSession, updateChallengeSession, removeChallengeSession } from "@/app/actions/challenge";
 import { lockTerms, confirmTerms, requestChanges, reactivateDrafting, updateCohostSplit, addSessionCohost, removeSessionCohost } from "@/app/actions/collaboration";
-import { AcceptTermsModal } from "./AcceptTermsModal";
+import { ContractCommitmentModal } from "./ContractCommitmentModal";
 import { ContractStatusBanner } from "./ContractStatusBanner";
 
 interface Props {
@@ -268,10 +268,11 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
     refreshAfterAction();
   }
 
-  // Acceptance is a deliberate, binding step — route it through a modal
-  // that surfaces the commitment clearly. Button opens modal; modal calls
-  // the actual RPC only once the checkbox is ticked.
+  // Both binding steps are gated by a deliberate commitment modal. The
+  // cohost's Accept flow and the owner's Publish flow share the same
+  // modal component — only the copy differs.
   const [acceptModalOpen, setAcceptModalOpen] = useState(false);
+  const [publishModalOpen, setPublishModalOpen] = useState(false);
 
   async function handleConfirm() {
     if (!contract) return;
@@ -310,6 +311,8 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
     setPublishing(true); setError(null);
     const result = await publishChallenge(challenge.id);
     if (result?.error) { setError(result.error); setPublishing(false); return; }
+    // On success publishChallenge redirects via the server action, so we
+    // don't need to close the modal or reset state here.
   }
 
   // Parties shown in the contract status banner. The owner isn't "confirming"
@@ -1047,16 +1050,28 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
           </p>
         )}
 
-        {/* Locked, all accepted, owner publishes */}
+        {/* Locked, all accepted, owner publishes — primary CTA, plus a
+            de-emphasised escape hatch to reopen the draft. Even at this
+            stage the owner should have a way out; it just shouldn't
+            compete with Publish visually. */}
         {isLocked && allAccepted && isOwner && (
-          <button
-            onClick={handlePublish}
-            disabled={publishing}
-            className="px-6 py-3 rounded-full text-white text-base font-black font-headline disabled:opacity-40 w-full"
-            style={{ backgroundColor: "#FF6130", boxShadow: "0 4px 14px rgba(255,97,48,0.35)" }}
-          >
-            {publishing ? "Publishing..." : "Publish Challenge"}
-          </button>
+          <div className="space-y-3">
+            <button
+              onClick={() => setPublishModalOpen(true)}
+              disabled={publishing}
+              className="px-6 py-3 rounded-full text-white text-base font-black font-headline disabled:opacity-40 w-full"
+              style={{ backgroundColor: "#FF6130", boxShadow: "0 4px 14px rgba(255,97,48,0.35)" }}
+            >
+              {publishing ? "Publishing..." : "Publish Challenge"}
+            </button>
+            <button
+              onClick={handleReactivate}
+              disabled={locking || publishing}
+              className="block mx-auto text-xs font-bold font-headline text-[#94a3b8] hover:text-[#0F2229] disabled:opacity-40"
+            >
+              {locking ? "…" : "Reopen draft to edit"}
+            </button>
+          </div>
         )}
 
         {/* Locked, all accepted, waiting for owner */}
@@ -1089,14 +1104,42 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
       {/* end of contract envelope */}
       </div>
 
-      {/* Acceptance modal — the signature moment. Lives at the root so it
-          overlays the whole workspace. */}
-      <AcceptTermsModal
+      {/* Cohost acceptance — signature moment #1. */}
+      <ContractCommitmentModal
         open={acceptModalOpen}
-        ownerName={ownerProfile.name}
+        title="Accept the collaboration terms?"
+        introLine="By accepting, you commit to the following:"
+        bullets={[
+          "You agree to fulfill your contributions as stated.",
+          <>You are authorising <span className="font-bold">{ownerProfile.name}</span> to publish this collaboration.</>,
+          "Once published, the terms are binding for everyone.",
+        ]}
+        checkboxLabel="I've reviewed the terms and accept them."
+        confirmLabel="Accept Terms"
+        submittingLabel="Accepting…"
         submitting={confirming}
         onConfirm={handleConfirm}
         onCancel={() => setAcceptModalOpen(false)}
+      />
+
+      {/* Owner publish — signature moment #2. Parallel structure to the
+          cohost's accept flow: same gravity, same friction level, owner
+          perspective. */}
+      <ContractCommitmentModal
+        open={publishModalOpen}
+        title="Publish the collaboration?"
+        introLine="By publishing, you commit to the following:"
+        bullets={[
+          "You agree to fulfill your contributions as stated.",
+          "You are making the collaboration live with the accepted terms.",
+          "Once published, the terms are binding for everyone — including you.",
+        ]}
+        checkboxLabel="I've reviewed the final terms and publish the collaboration."
+        confirmLabel="Publish Collaboration"
+        submittingLabel="Publishing…"
+        submitting={publishing}
+        onConfirm={handlePublish}
+        onCancel={() => setPublishModalOpen(false)}
       />
     </div>
   );
