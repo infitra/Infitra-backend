@@ -388,8 +388,12 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
           isLocked
             ? allAccepted && !hasDeclines
               ? {
-                  backgroundColor: "#CFE3E8",
-                  border: "1px solid rgba(8,145,178,0.2)",
+                  // Clearly cyan — visibly shifted from the slate "review"
+                  // tint so the ready-to-publish state is unmissable at a
+                  // glance. Still dialled down vs the bright #9CF0FF so
+                  // the Publish CTA stays the dominant orange focal point.
+                  backgroundColor: "#A8D5DC",
+                  border: "1px solid rgba(8,145,178,0.35)",
                 }
               : {
                   backgroundColor: "#D8DEE2",
