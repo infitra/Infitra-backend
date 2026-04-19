@@ -368,8 +368,10 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
         style={
           isLocked
             ? {
-                backgroundColor: "rgba(15,34,41,0.045)",
-                border: "1px solid rgba(15,34,41,0.06)",
+                // Solid warm-gray so it reads as a defined container, not a
+                // semi-transparent fog over the page background.
+                backgroundColor: "#E2DDD0",
+                border: "1px solid rgba(15,34,41,0.1)",
               }
             : undefined
         }
