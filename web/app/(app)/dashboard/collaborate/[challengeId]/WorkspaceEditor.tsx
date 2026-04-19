@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ShareDonut } from "@/app/components/ShareDonut";
 import { ImageSelector } from "@/app/components/ImageSelector";
@@ -146,28 +146,10 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
     refreshAfterAction();
   }
 
-  /**
-   * Auto-save the details form on field blur. Debounced so rapid tabbing
-   * between fields only fires one save. Runs local validation first — a
-   * blur with a 1-char title shouldn't nuisance-call the server only to
-   * reject; we just wait for the user to fix it.
-   */
-  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  function scheduleAutoSave() {
-    if (!canEditChallenge) return;
-    if (!isDirty) return;
-    // Quick local validation — match the server-side checks in updateChallenge
-    if (!title.trim() || title.trim().length < 3) return;
-    if (!startDate || !endDate) return;
-    if (new Date(startDate) <= new Date()) return;
-    if (new Date(endDate) <= new Date(startDate)) return;
-    if (price && parseFloat(price) < 0) return;
-    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    saveTimeoutRef.current = setTimeout(() => { handleSave(); }, 400);
-  }
-
-  // Cover image is a discrete action — save immediately when it changes
-  // from whatever the server currently has.
+  // Cover image is one discrete action — auto-save when it changes from
+  // what the server has. Everything else (title/desc/dates/price) uses
+  // the explicit Save button so we have one activity log entry per
+  // meaningful edit batch, not per field blur.
   useEffect(() => {
     if (!canEditChallenge) return;
     if (imageUrl === challenge.imageUrl) return;
@@ -431,14 +413,29 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
 
       {/* ── CHALLENGE DETAILS ─────────────────────── */}
       <div className="rounded-2xl infitra-card p-6">
-        <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center justify-between mb-5 gap-3">
           <h3 className="text-sm font-black font-headline text-[#94a3b8] uppercase tracking-wider">Challenge Details</h3>
-          {/* Passive auto-save indicator — replaces the old prominent Save button.
-              Fields save on blur; cover image saves on select. */}
-          {canEdit && (saving || success) && (
-            <span className="text-xs font-bold italic text-[#94a3b8]">
-              {saving ? "Saving…" : success}
-            </span>
+          {canEdit && (
+            <div className="flex items-center gap-3 shrink-0">
+              {/* Tiny italic "Saved" confirmation fades after success; blocks
+                  nothing and hints the save actually happened. */}
+              {!isDirty && success && (
+                <span className="text-xs font-bold italic text-[#94a3b8]">{success}</span>
+              )}
+              {/* Compact contextual Save — cyan (not orange) so it doesn't
+                  compete with the Publish CTA, and hidden entirely when clean
+                  so the header stays quiet. */}
+              {isDirty && (
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="px-3.5 py-1.5 rounded-full text-xs font-black font-headline text-white disabled:opacity-40"
+                  style={{ backgroundColor: "#0891b2" }}
+                >
+                  {saving ? "Saving…" : "Save"}
+                </button>
+              )}
+            </div>
           )}
         </div>
 
@@ -447,7 +444,7 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
             <div>
               <label className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-2">Title</label>
               <input
-                value={title} onChange={(e) => setTitle(e.target.value)} onBlur={scheduleAutoSave}
+                value={title} onChange={(e) => setTitle(e.target.value)}
                 className="w-full rounded-xl p-3 text-base font-bold font-headline focus:outline-none"
                 style={{ border: "1px solid rgba(15,34,41,0.12)", color: "#0F2229" }}
               />
@@ -455,7 +452,7 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
             <div>
               <label className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-2">Description</label>
               <textarea
-                value={description} onChange={(e) => setDescription(e.target.value)} onBlur={scheduleAutoSave}
+                value={description} onChange={(e) => setDescription(e.target.value)}
                 rows={3}
                 placeholder="What will participants experience?"
                 className="w-full rounded-xl p-3 text-sm focus:outline-none resize-none"
@@ -465,17 +462,17 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
             <div className="grid grid-cols-3 gap-3">
               <div>
                 <label className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-2">Start Date</label>
-                <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} onBlur={scheduleAutoSave}
+                <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}
                   className="w-full rounded-xl p-2.5 text-sm font-bold font-headline focus:outline-none" style={{ border: "1px solid rgba(15,34,41,0.12)", color: "#0F2229" }} />
               </div>
               <div>
                 <label className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-2">End Date</label>
-                <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} onBlur={scheduleAutoSave}
+                <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)}
                   className="w-full rounded-xl p-2.5 text-sm font-bold font-headline focus:outline-none" style={{ border: "1px solid rgba(15,34,41,0.12)", color: "#0F2229" }} />
               </div>
               <div>
                 <label className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-2">Price (CHF)</label>
-                <input type="number" value={price} onChange={(e) => setPrice(e.target.value)} onBlur={scheduleAutoSave} placeholder="0"
+                <input type="number" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="0"
                   className="w-full rounded-xl p-2.5 text-sm font-bold font-headline focus:outline-none" style={{ border: "1px solid rgba(15,34,41,0.12)", color: "#0F2229" }} />
               </div>
             </div>
