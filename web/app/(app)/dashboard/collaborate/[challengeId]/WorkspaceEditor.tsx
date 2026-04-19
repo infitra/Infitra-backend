@@ -377,18 +377,24 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
         In draft mode the wrapper is invisible: just space-y-6 between
         children, matching the previous layout.
       */}
+      {/* Envelope color reflects the contract state:
+          - reviewing / declined → muted slate (paused mood)
+          - all signatures in → pale cyan (Infitra's brand cyan, dialled
+            down so it doesn't compete with the orange Publish button —
+            but clearly shifted from grey so the workspace *feels* ready) */}
       <div
-        className={`space-y-6 ${isLocked ? "rounded-3xl p-5 sm:p-6" : ""}`}
+        className={`space-y-6 transition-colors duration-300 ${isLocked ? "rounded-3xl p-5 sm:p-6" : ""}`}
         style={
           isLocked
-            ? {
-                // Cool pale slate — reads as a defined container distinct
-                // from the warm cream page background, and picks up the
-                // cyan DNA of the review-state banner without competing
-                // with the warm accents elsewhere.
-                backgroundColor: "#D8DEE2",
-                border: "1px solid rgba(15,34,41,0.1)",
-              }
+            ? allAccepted && !hasDeclines
+              ? {
+                  backgroundColor: "#CFE3E8",
+                  border: "1px solid rgba(8,145,178,0.2)",
+                }
+              : {
+                  backgroundColor: "#D8DEE2",
+                  border: "1px solid rgba(15,34,41,0.1)",
+                }
             : undefined
         }
       >
