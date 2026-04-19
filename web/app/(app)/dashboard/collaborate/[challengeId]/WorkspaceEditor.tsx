@@ -368,9 +368,11 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
         style={
           isLocked
             ? {
-                // Solid warm-gray so it reads as a defined container, not a
-                // semi-transparent fog over the page background.
-                backgroundColor: "#E2DDD0",
+                // Cool pale slate — reads as a defined container distinct
+                // from the warm cream page background, and picks up the
+                // cyan DNA of the review-state banner without competing
+                // with the warm accents elsewhere.
+                backgroundColor: "#D8DEE2",
                 border: "1px solid rgba(15,34,41,0.1)",
               }
             : undefined
