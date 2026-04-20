@@ -279,7 +279,11 @@ export async function publishChallenge(challengeId: string) {
   }
 
   await logWorkspaceActivity(challengeId, "published the challenge");
-  redirect(`/dashboard/challenges/${challengeId}`);
+  // Land on the celebration page for collaboration publishes (it handles the
+  // party-membership check and renders a summary with a single CTA back to
+  // the dashboard). Solo publishes also route here — the page reads fine
+  // for a single-party "collaboration" too.
+  redirect(`/dashboard/collaborate/${challengeId}/published`);
 }
 
 /** Deletes a draft challenge. Only drafts can be deleted (RLS enforced). */
