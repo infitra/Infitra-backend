@@ -99,17 +99,57 @@ export async function completeOnboarding(prevState: unknown, formData: FormData)
   if (!user) return { error: "Not authenticated." };
 
   const displayName = (formData.get("display_name") as string)?.trim();
+  const legalName = (formData.get("legal_name") as string)?.trim();
+  const attested = formData.get("attested") === "on";
 
   if (!displayName || displayName.length < 2) {
     return { error: "Display name must be at least 2 characters." };
   }
-
   if (displayName.length > 50) {
     return { error: "Display name must be under 50 characters." };
   }
 
-  // Only update display_name — role is immutable after account creation
-  // and was set correctly by the trigger from signup metadata.
+  // Read role up front so we know whether to collect legal name + attestation.
+  // Role is immutable after signup (trigger sets it from auth metadata), so
+  // this is the source of truth even if the client's UI state was mis-set.
+  const { data: profile } = await supabase
+    .from("app_profile")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+  const isCreator = profile?.role === "creator";
+
+  if (isCreator) {
+    if (!legalName || legalName.length < 2) {
+      return { error: "Legal name must be at least 2 characters." };
+    }
+    if (legalName.length > 100) {
+      return { error: "Legal name must be under 100 characters." };
+    }
+    if (!attested) {
+      return { error: "Please confirm this is your legal name." };
+    }
+
+    // Write the signing identity BEFORE the profile update so the contract
+    // engine has everything it needs the moment onboarding finishes. If this
+    // fails, we haven't touched the profile yet — user can retry cleanly.
+    const { error: identityError } = await supabase
+      .from("app_creator_contract_identity")
+      .upsert(
+        {
+          creator_id: user.id,
+          party_type: "individual",
+          contract_name: legalName,
+          authority_attested: true,
+        },
+        { onConflict: "creator_id" },
+      );
+
+    if (identityError) {
+      return { error: `Could not save signing identity: ${identityError.message}` };
+    }
+  }
+
   const { error } = await supabase
     .from("app_profile")
     .update({
@@ -120,13 +160,6 @@ export async function completeOnboarding(prevState: unknown, formData: FormData)
 
   if (error) return { error: error.message };
 
-  // Read role from profile to redirect correctly
-  const { data: profile } = await supabase
-    .from("app_profile")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
   const cookieStore = await cookies();
   cookieStore.set("x-onboarded", "1", {
     httpOnly: true,
@@ -135,5 +168,5 @@ export async function completeOnboarding(prevState: unknown, formData: FormData)
     maxAge: 60 * 60 * 24 * 30,
   });
 
-  redirect(profile?.role === "creator" ? "/dashboard" : "/discover");
+  redirect(isCreator ? "/dashboard" : "/discover");
 }

@@ -248,7 +248,59 @@ export function OnboardingForm() {
                     color: "#0F2229",
                   }}
                 />
+                <p className="text-[11px] mt-1.5" style={{ color: "#94a3b8" }}>
+                  {role === "creator"
+                    ? "How you'll appear on INFITRA."
+                    : "How you'll appear to creators and other participants."}
+                </p>
               </div>
+
+              {/* Legal name + attestation — creators only. Captures the signing
+                  identity once, up front. Every contract from this creator
+                  onward renders automatically with no further prompts. */}
+              {role === "creator" && (
+                <>
+                  <div>
+                    <label
+                      htmlFor="legal_name"
+                      className="block text-xs font-bold uppercase tracking-wider mb-2 font-headline"
+                      style={{ color: "rgba(15, 34, 41, 0.55)" }}
+                    >
+                      Legal Name
+                    </label>
+                    <input
+                      id="legal_name"
+                      name="legal_name"
+                      type="text"
+                      required
+                      minLength={2}
+                      maxLength={100}
+                      placeholder="Your full legal name"
+                      className="w-full px-4 py-3 rounded-xl focus:outline-none transition-colors text-sm"
+                      style={{
+                        backgroundColor: "rgba(255, 255, 255, 0.78)",
+                        border: "1px solid rgba(15, 34, 41, 0.15)",
+                        color: "#0F2229",
+                      }}
+                    />
+                    <p className="text-[11px] mt-1.5" style={{ color: "#94a3b8" }}>
+                      Appears on collaboration contracts.
+                    </p>
+                  </div>
+
+                  <label className="flex items-start gap-3 cursor-pointer select-none pt-1">
+                    <input
+                      type="checkbox"
+                      name="attested"
+                      required
+                      className="mt-0.5 w-4 h-4 shrink-0 cursor-pointer accent-[#FF6130]"
+                    />
+                    <span className="text-xs text-[#0F2229] leading-relaxed">
+                      I confirm this is my legal name and I can sign collaboration contracts under it.
+                    </span>
+                  </label>
+                </>
+              )}
 
               <button
                 type="submit"
