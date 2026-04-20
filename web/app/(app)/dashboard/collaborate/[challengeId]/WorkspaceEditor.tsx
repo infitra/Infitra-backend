@@ -1131,8 +1131,8 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
         introLine="By publishing, you commit to the following:"
         bullets={[
           "You agree to fulfill your contributions as stated.",
-          "You are making the collaboration live with the accepted terms.",
-          "Once published, the terms are binding for everyone — including you.",
+          "You are publishing the collaboration with the accepted terms.",
+          "Once published, the terms are binding for everyone.",
         ]}
         checkboxLabel="I've reviewed the final terms and publish the collaboration."
         confirmLabel="Publish Collaboration"
