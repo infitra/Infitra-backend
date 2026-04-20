@@ -9,6 +9,7 @@ import { updateChallenge, publishChallenge, createChallengeSession, updateChalle
 import { lockTerms, confirmTerms, requestChanges, reactivateDrafting, updateCohostSplit, addSessionCohost, removeSessionCohost } from "@/app/actions/collaboration";
 import { ContractCommitmentModal } from "./ContractCommitmentModal";
 import { ContractStatusBanner } from "./ContractStatusBanner";
+import { SessionDetailModal } from "./SessionDetailModal";
 
 interface Props {
   challenge: {
@@ -273,6 +274,7 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
   // modal component — only the copy differs.
   const [acceptModalOpen, setAcceptModalOpen] = useState(false);
   const [publishModalOpen, setPublishModalOpen] = useState(false);
+  const [detailSession, setDetailSession] = useState<Props["sessions"][number] | null>(null);
 
   async function handleConfirm() {
     if (!contract) return;
@@ -770,7 +772,21 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
               });
 
               return (
-                <div key={s.id} className="p-4 rounded-xl" style={{ backgroundColor: "rgba(255,255,255,0.5)", border: "1px solid rgba(15,34,41,0.06)" }}>
+                <div
+                  key={s.id}
+                  className={`p-4 rounded-xl ${editingSessionId === s.id ? "" : "cursor-pointer hover:bg-white/80 transition-colors"}`}
+                  style={{ backgroundColor: "rgba(255,255,255,0.5)", border: "1px solid rgba(15,34,41,0.06)" }}
+                  onClick={(e) => {
+                    // Only open the detail modal when clicking the card itself,
+                    // not when the inline edit form is mounted (the form has
+                    // its own inputs / buttons).
+                    if (editingSessionId === s.id) return;
+                    // Skip if the click originated on a button (edit/delete).
+                    const target = e.target as HTMLElement;
+                    if (target.closest("button")) return;
+                    setDetailSession(s);
+                  }}
+                >
                   {editingSessionId === s.id ? (
                     /* INLINE EDIT MODE */
                     <div className="space-y-3">
@@ -1103,6 +1119,15 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
 
       {/* end of contract envelope */}
       </div>
+
+      {/* Read-only session detail popup. Opens on any session card click,
+          in any contract state — stays in context rather than nesting out
+          to /dashboard/sessions/[id]. */}
+      <SessionDetailModal
+        open={!!detailSession}
+        session={detailSession}
+        onClose={() => setDetailSession(null)}
+      />
 
       {/* Cohost acceptance — signature moment #1. */}
       <ContractCommitmentModal
