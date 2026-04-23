@@ -10,19 +10,20 @@ export function ParticipantNav({
   role?: string;
 }) {
   const isCreator = role === "creator" || role === "admin";
-  const homeHref = isCreator ? "/dashboard" : "/discover";
+  // Pilot: participants have no dedicated home; they arrive via challenge URLs.
+  // Creators go to their dashboard.
+  const homeHref = isCreator ? "/dashboard" : "/";
 
+  // Creator links mirror the dashboard layout nav (post-Tribes removal).
+  // Participant nav has no links — they're contextually on a challenge page
+  // and don't need platform-level navigation.
   const links = isCreator
     ? [
         { label: "Home", href: "/dashboard" },
         { label: "Create", href: "/dashboard/create" },
-        { label: "Tribes", href: "/dashboard/tribes" },
         { label: "Earnings", href: "/dashboard/earnings" },
       ]
-    : [
-        { label: "Home", href: "/discover" },
-        { label: "Discover", href: "/discover#discover" },
-      ];
+    : [];
 
   return (
     <nav className="fixed top-0 w-full z-50">

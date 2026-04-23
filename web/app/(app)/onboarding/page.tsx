@@ -22,7 +22,8 @@ export default async function OnboardingPage() {
 
   // Already onboarded
   if (profile?.display_name) {
-    redirect(profile.role === "creator" ? "/dashboard" : "/discover");
+    // Pilot: participants arrive via challenge URLs, no dedicated home yet.
+    redirect(profile.role === "creator" ? "/dashboard" : "/");
   }
 
   return <OnboardingForm />;

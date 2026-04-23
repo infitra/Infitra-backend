@@ -1241,16 +1241,7 @@ function CollaboratorChip({
               {bio && (
                 <p className="text-xs text-[#64748b] leading-relaxed line-clamp-3">{bio}</p>
               )}
-              {username && (
-                <a
-                  href={`/creators/${username}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-block mt-4 text-xs font-bold font-headline text-[#FF6130] hover:opacity-80"
-                >
-                  View full profile →
-                </a>
-              )}
+              {/* Public creator profile route removed for pilot; name-only shown above. */}
             </div>
           </div>
         </>

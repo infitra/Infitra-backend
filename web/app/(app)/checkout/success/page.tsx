@@ -29,7 +29,7 @@ export default async function CheckoutSuccessPage({
   const homePath =
     profile?.role === "creator" || profile?.role === "admin"
       ? "/dashboard"
-      : "/discover";
+      : "/";
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -76,7 +76,7 @@ export default async function CheckoutSuccessPage({
 
           <div className="flex flex-col gap-3">
             <Link
-              href="/discover"
+              href="/"
               className="w-full py-3.5 rounded-full text-white text-sm font-black font-headline hover:scale-[1.02] transition-transform text-center"
               style={{
                 backgroundColor: "#FF6130",

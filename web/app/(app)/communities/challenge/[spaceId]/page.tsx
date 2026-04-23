@@ -58,7 +58,7 @@ export default async function ChallengeTribePage({ params }: { params: Promise<{
   }
 
   const { data: myProfile } = await supabase.from("app_profile").select("display_name, role").eq("id", user.id).single();
-  const backPath = myProfile?.role === "creator" || myProfile?.role === "admin" ? "/dashboard" : "/discover";
+  const backPath = myProfile?.role === "creator" || myProfile?.role === "admin" ? "/dashboard" : "/";
   const isOwner = user.id === space.owner_id;
 
   let allSessions: any[] = [];
@@ -145,7 +145,7 @@ export default async function ChallengeTribePage({ params }: { params: Promise<{
                 {space.description && <p className="text-lg text-[#9CF0FF]/70 max-w-2xl mb-6 leading-relaxed">{space.description}</p>}
 
                 <div className="flex items-center gap-5">
-                  <Link href={owner?.username ? `/creators/${owner.username}` : "#"} className="flex items-center gap-3 group">
+                  <div className="flex items-center gap-3">
                     {owner?.avatar_url ? (
                       <img src={owner.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover" style={{ border: "2px solid #FF6130" }} />
                     ) : (
@@ -154,10 +154,10 @@ export default async function ChallengeTribePage({ params }: { params: Promise<{
                       </div>
                     )}
                     <div>
-                      <p className="text-sm font-black font-headline text-white group-hover:text-[#FF6130]">{owner?.display_name}</p>
+                      <p className="text-sm font-black font-headline text-white">{owner?.display_name}</p>
                       {owner?.tagline && <p className="text-xs text-[#9CF0FF]/50">{owner.tagline}</p>}
                     </div>
-                  </Link>
+                  </div>
                   <div className="h-6 w-px bg-white/10" />
                   <div className="flex items-center gap-2">
                     <div className="flex -space-x-1.5">
@@ -272,10 +272,10 @@ export default async function ChallengeTribePage({ params }: { params: Promise<{
                 <div className="px-8 py-5" style={{ borderBottom: "1px solid #1a334066" }}>
                   <p className="text-[10px] font-bold font-headline uppercase tracking-wider text-[#FF6130] mb-3">Host{cohosts.length > 0 ? "s & Co-Hosts" : ""}</p>
                   <div className="flex gap-3 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
-                    <Link href={owner?.username ? `/creators/${owner.username}` : "#"} className="shrink-0 flex items-center gap-3 p-3 rounded-xl group" style={{ backgroundColor: "#0a1218", border: "2px solid #FF6130", minWidth: "220px" }}>
+                    <div className="shrink-0 flex items-center gap-3 p-3 rounded-xl" style={{ backgroundColor: "#0a1218", border: "2px solid #FF6130", minWidth: "220px" }}>
                       {owner?.avatar_url ? <img src={owner.avatar_url} alt="" className="w-11 h-11 rounded-full object-cover" style={{ border: "2px solid #FF6130" }} /> : <div className="w-11 h-11 rounded-full flex items-center justify-center" style={{ backgroundColor: "#662008", border: "2px solid #FF6130" }}><span className="text-base font-black font-headline text-white">{(owner?.display_name ?? "?")[0].toUpperCase()}</span></div>}
-                      <div className="min-w-0"><p className="text-sm font-black font-headline text-white truncate group-hover:text-[#FF6130]">{owner?.display_name}</p><p className="text-[10px] text-[#FF6130] font-bold font-headline">Lead Host</p></div>
-                    </Link>
+                      <div className="min-w-0"><p className="text-sm font-black font-headline text-white truncate">{owner?.display_name}</p><p className="text-[10px] text-[#FF6130] font-bold font-headline">Lead Host</p></div>
+                    </div>
                     {cohosts.map((ch, i) => (
                       <div key={ch.id} className="shrink-0 flex items-center gap-3 p-3 rounded-xl" style={{ backgroundColor: "#0a1218", border: "1px solid #1a3340", minWidth: "200px" }}>
                         <Avatar src={ch.avatar} name={ch.name} i={i + 1} size="w-10 h-10" />

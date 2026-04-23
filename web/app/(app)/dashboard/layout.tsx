@@ -24,7 +24,8 @@ export default async function DashboardLayout({
     .single();
 
   if (profile?.role !== "creator" && profile?.role !== "admin") {
-    redirect("/discover");
+    // Pilot: participants have no dashboard; send to landing.
+    redirect("/");
   }
 
   return (
@@ -62,7 +63,6 @@ export default async function DashboardLayout({
           <div className="hidden md:flex items-center gap-6">
             {[
               { label: "Home", href: "/dashboard" },
-              { label: "Tribes", href: "/dashboard/tribes" },
               { label: "Earnings", href: "/dashboard/earnings" },
             ].map(({ label, href }) => (
               <Link
@@ -88,7 +88,6 @@ export default async function DashboardLayout({
               links={[
                 { label: "Home", href: "/dashboard" },
                 { label: "Create", href: "/dashboard/create" },
-                { label: "Tribes", href: "/dashboard/tribes" },
                 { label: "Earnings", href: "/dashboard/earnings" },
               ]}
             />

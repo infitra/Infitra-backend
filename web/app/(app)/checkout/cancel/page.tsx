@@ -63,7 +63,7 @@ export default async function CheckoutCancelPage() {
           </p>
 
           <Link
-            href="/discover"
+            href="/"
             className="w-full inline-block py-3.5 rounded-full text-white text-sm font-black font-headline hover:scale-[1.02] transition-transform text-center"
             style={{
               backgroundColor: "#FF6130",

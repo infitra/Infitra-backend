@@ -116,7 +116,7 @@ export default async function SessionPage({
         <div className="max-w-3xl mx-auto py-10">
           {/* Back link */}
           <Link
-            href="/discover"
+            href="/"
             className="text-xs transition-colors mb-8 flex items-center gap-1.5 font-headline"
             style={{ color: "#64748b" }}
           >
@@ -288,10 +288,9 @@ export default async function SessionPage({
                 )}
               </div>
 
-              {/* Host */}
-              <Link
-                href={host?.username ? `/creators/${host.username}` : "#"}
-                className="flex items-center gap-3 pt-6 mb-8 group/host border-t"
+              {/* Host — plain info (creator profile routes removed for pilot) */}
+              <div
+                className="flex items-center gap-3 pt-6 mb-8 border-t"
                 style={{ borderColor: "rgba(15, 34, 41, 0.10)" }}
               >
                 <div
@@ -310,7 +309,7 @@ export default async function SessionPage({
                 </div>
                 <div className="flex-1 min-w-0">
                   <p
-                    className="text-sm font-bold font-headline transition-colors"
+                    className="text-sm font-bold font-headline"
                     style={{ color: "#0F2229" }}
                   >
                     {host?.display_name}
@@ -324,23 +323,7 @@ export default async function SessionPage({
                     </p>
                   )}
                 </div>
-                <svg
-                  width="14"
-                  height="14"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  viewBox="0 0 24 24"
-                  className="shrink-0"
-                  style={{ color: "#94a3b8" }}
-                >
-                  <path
-                    d="M9 18l6-6-6-6"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </Link>
+              </div>
 
               {/* CTA */}
               {isHost ? (

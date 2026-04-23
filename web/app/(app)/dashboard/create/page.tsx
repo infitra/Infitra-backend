@@ -104,7 +104,7 @@ export default async function CreatePage() {
             {draftChallenges!.map((ch: any) => (
               <Link
                 key={ch.id}
-                href={`/dashboard/challenges/${ch.id}`}
+                href={`/dashboard/collaborate/${ch.id}`}
                 className="group flex items-center justify-between p-4 rounded-2xl infitra-card-link"
               >
                 <div className="min-w-0">
@@ -152,26 +152,6 @@ export default async function CreatePage() {
         </div>
       )}
 
-      {/* ── QUICK SESSION ─────────────────────────────────── */}
-      <div className="rounded-2xl infitra-card p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-sm font-bold font-headline text-[#0F2229] mb-1">
-              Quick Session
-            </h3>
-            <p className="text-xs text-[#64748b]">
-              One-off live session. No challenge needed.
-            </p>
-          </div>
-          <Link
-            href="/dashboard/sessions/new"
-            className="px-4 py-2.5 rounded-full text-xs font-bold font-headline text-[#0F2229] shrink-0"
-            style={{ border: "1px solid rgba(0,0,0,0.10)" }}
-          >
-            + Create Session
-          </Link>
-        </div>
-      </div>
     </div>
   );
 }

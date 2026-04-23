@@ -73,9 +73,8 @@ export function PostCard({
           </div>
         )}
         <div>
-          <Link href={`/profile/${post.author_id}`} className="text-base font-black font-headline text-[#0F2229] hover:opacity-75">
-            {authorName}
-          </Link>
+          {/* Profile route removed for pilot — author shown as plain text */}
+          <p className="text-base font-black font-headline text-[#0F2229]">{authorName}</p>
           <p className="text-[10px] text-[#94a3b8]">{timeAgo(post.created_at)}</p>
         </div>
       </div>
