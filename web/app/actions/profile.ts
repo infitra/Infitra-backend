@@ -168,5 +168,5 @@ export async function completeOnboarding(prevState: unknown, formData: FormData)
     maxAge: 60 * 60 * 24 * 30,
   });
 
-  redirect(isCreator ? "/dashboard" : "/discover");
+  redirect(isCreator ? "/dashboard" : "/");
 }

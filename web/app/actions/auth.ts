@@ -32,7 +32,7 @@ export async function signUp(prevState: unknown, formData: FormData) {
 
   // Profile row now has the correct role and display_name from the trigger.
   // Skip onboarding — go straight to the right home.
-  redirect(role === "creator" ? "/dashboard" : "/discover");
+  redirect(role === "creator" ? "/dashboard" : "/");
 }
 
 export async function signIn(prevState: unknown, formData: FormData) {

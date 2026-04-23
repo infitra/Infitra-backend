@@ -52,7 +52,10 @@ export async function createDraftChallenge() {
 
   if (error) throw new Error(error.message);
 
-  redirect(`/dashboard/challenges/${data.id}`);
+  // Pilot: all challenge editing happens in the collaboration workspace
+  // (handles solo + collab on the same path). The /dashboard/challenges/ route
+  // was deleted — workspace is the single edit surface.
+  redirect(`/dashboard/collaborate/${data.id}`);
 }
 
 /**

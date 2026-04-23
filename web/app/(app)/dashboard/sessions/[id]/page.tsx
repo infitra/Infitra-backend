@@ -116,7 +116,7 @@ export default async function SessionDetailPage({
   return (
     <div className="py-10 max-w-2xl mx-auto">
       <Link
-        href="/dashboard/sessions"
+        href="/dashboard"
         className="text-xs transition-colors mb-6 flex items-center gap-1.5 font-headline"
         style={{ color: "#64748b" }}
       >
@@ -134,7 +134,7 @@ export default async function SessionDetailPage({
             strokeLinejoin="round"
           />
         </svg>
-        All Sessions
+        Back to Dashboard
       </Link>
 
       {/* Cover image */}
@@ -239,7 +239,7 @@ export default async function SessionDetailPage({
       {/* Challenge link */}
       {challengeLink && (
         <Link
-          href={`/dashboard/challenges/${challengeLink.challenge_id}`}
+          href={`/dashboard/collaborate/${challengeLink.challenge_id}`}
           className="mb-6 inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-bold font-headline transition-colors hover:opacity-80"
           style={{
             backgroundColor: "rgba(8, 145, 178, 0.10)",
@@ -340,10 +340,8 @@ export default async function SessionDetailPage({
                 key={a.userId}
                 className="flex items-center justify-between px-5 py-3"
               >
-                <Link
-                  href={`/profile/${a.userId}`}
-                  className="flex items-center gap-3 hover:opacity-80 transition-opacity"
-                >
+                {/* Attendee — plain text (participant profile route removed for pilot) */}
+                <div className="flex items-center gap-3">
                   <div
                     className="w-7 h-7 rounded-full flex items-center justify-center"
                     style={{
@@ -364,7 +362,7 @@ export default async function SessionDetailPage({
                   >
                     {a.name}
                   </span>
-                </Link>
+                </div>
                 <span className="text-[10px]" style={{ color: "#94a3b8" }}>
                   {a.joinedAt ? "Joined" : "Purchased"}
                 </span>

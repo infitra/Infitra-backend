@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { SlideOver } from "@/app/components/SlideOver";
-import { ProfileEditForm } from "@/app/(app)/dashboard/profile/ProfileEditForm";
+import { ProfileEditForm } from "@/app/components/ProfileEditForm";
 
 interface Props {
   profile: { display_name: string; tagline: string | null; bio: string | null; avatar_url: string | null; cover_image_url: string | null };

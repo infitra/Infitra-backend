@@ -298,24 +298,14 @@ export default async function EarningsPage() {
                       </p>
                     </div>
 
-                    {/* Buyer */}
+                    {/* Buyer — plain text (participant profile route removed for pilot) */}
                     <div className="col-span-2 flex items-center">
-                      {tx.buyer_id ? (
-                        <Link
-                          href={`/profile/${tx.buyer_id}`}
-                          className="text-xs truncate transition-colors hover:opacity-75"
-                          style={{ color: "#475569" }}
-                        >
-                          {tx.buyer_name ?? "—"}
-                        </Link>
-                      ) : (
-                        <p
-                          className="text-xs truncate"
-                          style={{ color: "#475569" }}
-                        >
-                          —
-                        </p>
-                      )}
+                      <p
+                        className="text-xs truncate"
+                        style={{ color: "#475569" }}
+                      >
+                        {tx.buyer_id ? (tx.buyer_name ?? "—") : "—"}
+                      </p>
                     </div>
 
                     {/* Date */}

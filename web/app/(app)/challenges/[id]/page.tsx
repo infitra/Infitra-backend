@@ -142,7 +142,7 @@ export default async function ChallengePage({
         <div className="max-w-3xl mx-auto py-10">
           {/* Back link */}
           <Link
-            href="/discover"
+            href="/"
             className="text-xs transition-colors mb-8 flex items-center gap-1.5 font-headline"
             style={{ color: "#64748b" }}
           >
@@ -447,10 +447,10 @@ export default async function ChallengePage({
                 </div>
               )}
 
-              {/* Creator */}
-              <Link
-                href={owner?.username ? `/creators/${owner.username}` : "#"}
-                className="flex items-center gap-3 pt-6 mb-8 group/host border-t"
+              {/* Creator — plain info (creator profile routes removed for pilot;
+                  will be re-thought in Phase 4 participant-journey rewrite) */}
+              <div
+                className="flex items-center gap-3 pt-6 mb-8 border-t"
                 style={{ borderColor: "rgba(15, 34, 41, 0.10)" }}
               >
                 <div
@@ -469,7 +469,7 @@ export default async function ChallengePage({
                 </div>
                 <div className="flex-1 min-w-0">
                   <p
-                    className="text-sm font-bold font-headline transition-colors"
+                    className="text-sm font-bold font-headline"
                     style={{ color: "#0F2229" }}
                   >
                     {owner?.display_name}
@@ -483,28 +483,12 @@ export default async function ChallengePage({
                     </p>
                   )}
                 </div>
-                <svg
-                  width="14"
-                  height="14"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  viewBox="0 0 24 24"
-                  className="shrink-0"
-                  style={{ color: "#94a3b8" }}
-                >
-                  <path
-                    d="M9 18l6-6-6-6"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </Link>
+              </div>
 
               {/* CTA */}
               {isOwner ? (
                 <Link
-                  href={`/dashboard/challenges/${challenge.id}`}
+                  href={`/dashboard/collaborate/${challenge.id}`}
                   className="inline-block px-6 py-3.5 rounded-full text-sm font-bold font-headline transition-colors hover:opacity-80"
                   style={{
                     backgroundColor: "rgba(8, 145, 178, 0.10)",
@@ -512,7 +496,7 @@ export default async function ChallengePage({
                     color: "#0e7490",
                   }}
                 >
-                  View in Dashboard
+                  Open Workspace
                 </Link>
               ) : hasPurchased ? (
                 <div
