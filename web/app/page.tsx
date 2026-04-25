@@ -5,10 +5,17 @@ import { WaveFlowingBackground } from "./components/WaveFlowingBackground";
 /**
  * INFITRA — pilot landing page.
  *
- * One-screen pitch focused on the pilot wedge: cross-discipline fitness
- * creators running joint challenges as a single product. Invite-only.
- * Uses the production Infitra background (cream + WaveFlowing) and keeps
- * the floating logo-mark animation (`float-twist` keyframes in globals.css).
+ * Narrative arc, top to bottom:
+ *   1. Hero — the promise + identity
+ *   2. What you can build — concrete vision (one elevated card)
+ *   3. What's broken today — frustration zone (3 sub-sections, darker bg)
+ *   4. Manifesto — bridge from frustration to solution
+ *   5. INFITRA solution — clarity, "what changes" list
+ *   6. Pilot CTA — confident close
+ *   7. Footer — minimal
+ *
+ * Cream + WaveFlowingBackground throughout, except the frustration zone
+ * which has a clearly darker warm-gray to mark the thematic block.
  */
 export default function LandingPage() {
   return (
@@ -19,7 +26,7 @@ export default function LandingPage() {
       <WaveFlowingBackground />
 
       <div className="relative z-10">
-        {/* ── NAV ── */}
+        {/* ── NAV ───────────────────────────────────── */}
         <nav className="fixed top-0 w-full z-40">
           <div
             style={{
@@ -58,7 +65,7 @@ export default function LandingPage() {
         </nav>
 
         <main>
-          {/* ── HERO ── */}
+          {/* ── HERO ──────────────────────────────────── */}
           <section className="relative min-h-screen flex flex-col items-center justify-center px-6 pt-28 pb-20 text-center">
             <div className="relative max-w-4xl mx-auto w-full flex flex-col items-center">
               {/* Pilot badge */}
@@ -74,25 +81,17 @@ export default function LandingPage() {
                   className="text-[#0891b2] text-[10px] tracking-widest uppercase font-headline"
                   style={{ fontWeight: 700 }}
                 >
-                  Closed Pilot · DACH · Applications Open
+                  Closed Pilot · Applications Open
                 </span>
               </div>
 
-              {/* ── Floating logo mark — clean cyan glow, no dark backdrop.
-                  The cyan logo on cream + cyan-wave background reads as
-                  warm, premium, alive. Lets the brand colours speak rather
-                  than imposing a dark stage on the page. ── */}
-              <div className="relative w-[280px] h-[280px] md:w-[340px] md:h-[340px] mb-10 flex items-center justify-center">
-                {/* Soft cyan halo — biggest, most diffuse */}
+              {/* Floating logo mark — clean cyan glow on cream, no dark stage */}
+              <div className="relative w-[260px] h-[260px] md:w-[320px] md:h-[320px] mb-8 flex items-center justify-center">
                 <div className="absolute inset-0 scale-[1.6] rounded-full bg-[#9CF0FF]/40 blur-[90px]" />
-                {/* Tighter inner glow for definition */}
                 <div className="absolute inset-0 scale-[1.1] rounded-full bg-[#9CF0FF]/35 blur-[40px]" />
 
                 <div className="float-twist absolute inset-0">
-                  {/* Subtle warm ground shadow */}
                   <div className="absolute w-[60%] h-[8%] bottom-[-6%] left-[20%] rounded-full bg-[#0F2229]/15 blur-[12px]" />
-
-                  {/* Dark underside */}
                   <div
                     className="absolute w-full h-full translate-y-[1px]"
                     style={{
@@ -103,13 +102,9 @@ export default function LandingPage() {
                   >
                     <Image src="/logo-mark-cyan.png" alt="" fill className="object-contain" aria-hidden />
                   </div>
-
-                  {/* Base mark */}
                   <div className="absolute w-full h-full">
                     <Image src="/logo-mark-cyan.png" alt="" fill className="object-contain" aria-hidden />
                   </div>
-
-                  {/* Mid-tone depth bottom-right */}
                   <div
                     className="absolute w-full h-full"
                     style={{
@@ -120,8 +115,6 @@ export default function LandingPage() {
                   >
                     <Image src="/logo-mark-cyan.png" alt="" fill className="object-contain" aria-hidden />
                   </div>
-
-                  {/* Highlight top-left */}
                   <div
                     className="absolute w-full h-full"
                     style={{
@@ -132,8 +125,6 @@ export default function LandingPage() {
                   >
                     <Image src="/logo-mark-cyan.png" alt="" fill className="object-contain" aria-hidden />
                   </div>
-
-                  {/* Specular rim top-left */}
                   <div
                     className="absolute w-full h-full"
                     style={{
@@ -147,31 +138,41 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              {/* INFITRA wordmark — same upright treatment as the dashboard
-                  nav (no italic; italic was a legacy of the old dark theme),
-                  scaled up to hero proportions with font-black for stage
-                  presence. */}
-              <p className="text-7xl md:text-8xl lg:text-9xl font-black text-[#FF6130] tracking-tighter font-headline leading-none mb-8">
+              {/* Wordmark — upright, matches dashboard */}
+              <p className="text-6xl md:text-7xl lg:text-8xl font-black text-[#FF6130] tracking-tighter font-headline leading-none mb-10">
                 INFITRA
               </p>
 
-              {/* The pitch headline */}
+              {/* Headline — the promise */}
               <h1
-                className="text-3xl md:text-4xl lg:text-5xl font-headline tracking-tight leading-[1.05] max-w-3xl mb-6"
+                className="text-3xl md:text-4xl lg:text-5xl font-headline tracking-tight leading-[1.1] max-w-3xl mb-6"
                 style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.025em" }}
               >
-                Run your next challenge with a coach your audience doesn&apos;t have.
+                Build a program that&apos;s better than what you can offer alone.
               </h1>
 
+              {/* Subhead */}
               <p
-                className="text-lg md:text-xl max-w-2xl mx-auto leading-relaxed mb-12"
+                className="text-lg md:text-xl max-w-2xl mx-auto leading-relaxed mb-10"
                 style={{ color: "#475569" }}
               >
-                Pair your training with complementary expertise. Co-design one program. Sell it
-                as one product. Split revenue cleanly.
+                Combine your expertise with another coach and deliver it as one seamless program
+                your audience will pay more for.
               </p>
 
-              {/* Primary CTA */}
+              {/* Tagline — display treatment with horizontal rules */}
+              <div className="flex items-center gap-4 mb-12 max-w-3xl w-full">
+                <div className="flex-1 h-px" style={{ backgroundColor: "rgba(15,34,41,0.12)" }} />
+                <p
+                  className="text-xs md:text-sm uppercase tracking-[0.25em] font-headline text-center shrink-0"
+                  style={{ color: "#0F2229", fontWeight: 700 }}
+                >
+                  One program. Multiple experts. Built and sold as one.
+                </p>
+                <div className="flex-1 h-px" style={{ backgroundColor: "rgba(15,34,41,0.12)" }} />
+              </div>
+
+              {/* CTA */}
               <Link
                 href="/apply"
                 className="inline-block px-12 py-4 rounded-full text-white text-lg font-headline tracking-wide transition-transform hover:scale-[1.03]"
@@ -183,142 +184,467 @@ export default function LandingPage() {
               >
                 Apply for the pilot
               </Link>
-
               <p className="text-xs mt-5 tracking-wide" style={{ color: "#94a3b8" }}>
                 Closed cohort of 5 fitness creator pairs. Reviewed individually.
               </p>
             </div>
           </section>
 
-          {/* ── THE EXAMPLE — concrete, one card ── */}
+          {/* ── [2] WHAT YOU CAN BUILD ────────────────── */}
           <section className="px-6 py-28">
             <div className="max-w-4xl mx-auto">
-              <div className="text-center mb-10">
-                <p className="text-xs font-headline font-bold uppercase tracking-[0.2em] mb-3"
-                   style={{ color: "#0891b2" }}>
+              <div className="text-center mb-12">
+                <p
+                  className="text-xs uppercase tracking-[0.25em] mb-4 font-headline"
+                  style={{ color: "#0891b2", fontWeight: 700 }}
+                >
                   What you can build
                 </p>
-                <h2 className="text-3xl md:text-4xl font-headline font-bold tracking-tight"
-                    style={{ color: "#0F2229" }}>
-                  Two experts. One program. One unified experience.
+                <h2
+                  className="text-3xl md:text-4xl lg:text-5xl font-headline tracking-tight"
+                  style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.02em" }}
+                >
+                  Multiple experts. One program. One unified experience.
                 </h2>
               </div>
 
               <div
-                className="rounded-3xl p-8 md:p-10"
+                className="rounded-3xl p-8 md:p-12"
                 style={{
-                  backgroundColor: "rgba(255,255,255,0.6)",
+                  backgroundColor: "rgba(255,255,255,0.7)",
                   border: "1px solid rgba(15,34,41,0.08)",
-                  boxShadow: "0 8px 32px rgba(15,34,41,0.04)",
+                  boxShadow: "0 12px 40px rgba(15,34,41,0.06)",
                 }}
               >
-                <p className="text-lg md:text-xl leading-relaxed mb-6" style={{ color: "#0F2229" }}>
-                  A <span style={{ color: "#FF6130", fontWeight: 700 }}>fitness trainer</span> teams up
-                  with a <span style={{ color: "#0891b2", fontWeight: 700 }}>nutritionist</span> to
-                  co-create a 4-week fat-loss journey.
-                </p>
-                <p className="text-base leading-relaxed" style={{ color: "#475569" }}>
-                  Their audiences each see one program — not two coaches tag-teaming.
-                  Participants buy once, get the full experience, and pay a premium because the value is holistic.
-                  Behind the scenes, INFITRA handles the workspace, the contract, the unified checkout, and the revenue split.
-                </p>
+                {/* Two creators → one challenge — pure typography */}
+                <div className="text-center mb-10">
+                  <div className="flex flex-col md:flex-row items-center justify-center gap-3 md:gap-6 mb-4">
+                    <span
+                      className="text-2xl md:text-3xl font-headline"
+                      style={{ color: "#FF6130", fontWeight: 700 }}
+                    >
+                      Fitness coach
+                    </span>
+                    <span
+                      className="text-xl md:text-2xl"
+                      style={{ color: "#94a3b8", fontWeight: 400 }}
+                    >
+                      ×
+                    </span>
+                    <span
+                      className="text-2xl md:text-3xl font-headline"
+                      style={{ color: "#0891b2", fontWeight: 700 }}
+                    >
+                      Nutritionist
+                    </span>
+                  </div>
+                  <p className="text-base md:text-lg leading-relaxed" style={{ color: "#475569" }}>
+                    Co-create a 4-week fat-loss challenge.
+                  </p>
+                </div>
+
+                {/* Four attributes */}
+                <div
+                  className="grid grid-cols-2 gap-4 pt-8"
+                  style={{ borderTop: "1px solid rgba(15,34,41,0.08)" }}
+                >
+                  {["One product", "One checkout", "Clean revenue split", "No coordination mess"].map((label) => (
+                    <div key={label} className="flex items-center gap-3">
+                      <span
+                        className="w-1.5 h-1.5 rounded-full shrink-0"
+                        style={{ backgroundColor: "#0891b2" }}
+                      />
+                      <span
+                        className="text-sm md:text-base font-headline"
+                        style={{ color: "#0F2229", fontWeight: 700 }}
+                      >
+                        {label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </section>
 
-          {/* ── THREE PROPS — what we solve ── */}
-          <section className="px-6 py-24">
-            <div className="max-w-6xl mx-auto">
-              <div className="text-center mb-12">
-                <p className="text-xs font-headline font-bold uppercase tracking-[0.2em] mb-3"
-                   style={{ color: "#0891b2" }}>
-                  What's broken today
+          {/* ── [3] WHAT'S BROKEN TODAY — FRUSTRATION ZONE ── */}
+          <section
+            className="px-6 py-32"
+            style={{
+              backgroundColor: "#C9C2AC",
+              borderTop: "1px solid rgba(15,34,41,0.08)",
+              borderBottom: "1px solid rgba(15,34,41,0.08)",
+            }}
+          >
+            <div className="max-w-4xl mx-auto">
+              <div className="text-center mb-20">
+                <p
+                  className="text-xs uppercase tracking-[0.25em] mb-4 font-headline"
+                  style={{ color: "#FF6130", fontWeight: 700 }}
+                >
+                  What&apos;s broken today
                 </p>
-                <h2 className="text-3xl md:text-4xl font-headline font-bold tracking-tight max-w-2xl mx-auto"
-                    style={{ color: "#0F2229" }}>
-                  Two creators collaborating used to mean two of everything.
+                <h2
+                  className="text-3xl md:text-4xl lg:text-5xl font-headline tracking-tight"
+                  style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.02em" }}
+                >
+                  Why most creator collaborations don&apos;t become real products.
                 </h2>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                {[
-                  {
-                    badge: "Without INFITRA",
-                    title: "Two checkouts, two emails, two PayPal links.",
-                    fix: "INFITRA delivers it as one program. One sale. One participant experience.",
-                  },
-                  {
-                    badge: "Without INFITRA",
-                    title: "Splits via WhatsApp. Trust on faith.",
-                    fix: "Contract engine locks revenue splits up front. Both sides know the terms before launch.",
-                  },
-                  {
-                    badge: "Without INFITRA",
-                    title: "Coordination in group chats. No shared editor.",
-                    fix: "Shared workspace where both creators co-design, lock terms, and publish together.",
-                  },
-                ].map(({ badge, title, fix }) => (
+              {/* — Sub 01 — */}
+              <div className="mb-24">
+                <div className="flex items-baseline gap-5 mb-6">
+                  <span
+                    className="text-6xl md:text-7xl font-headline leading-none"
+                    style={{ color: "rgba(255,97,48,0.45)", fontWeight: 700 }}
+                  >
+                    01
+                  </span>
+                  <h3
+                    className="text-2xl md:text-3xl font-headline tracking-tight"
+                    style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.02em" }}
+                  >
+                    Creators try to do everything themselves
+                  </h3>
+                </div>
+                <div className="space-y-4 text-base md:text-lg leading-relaxed pl-0 md:pl-20" style={{ color: "#3a4046" }}>
+                  <p>
+                    A trainer adds meal plans. A nutrition coach adds workouts. Everyone tries to sell
+                    a &ldquo;complete&rdquo; program.
+                  </p>
+                  <p>But this spreads focus.</p>
+                  <p>
+                    Instead of delivering their strongest expertise, they dilute it across areas they
+                    don&apos;t fully own.
+                  </p>
                   <div
-                    key={title}
-                    className="rounded-2xl p-6"
+                    className="mt-6 p-5 rounded-2xl"
                     style={{
-                      backgroundColor: "rgba(255,255,255,0.6)",
+                      backgroundColor: "rgba(255,97,48,0.08)",
+                      border: "1px solid rgba(255,97,48,0.25)",
+                    }}
+                  >
+                    <p
+                      className="text-[10px] uppercase tracking-widest font-headline mb-2"
+                      style={{ color: "#FF6130", fontWeight: 700 }}
+                    >
+                      The result
+                    </p>
+                    <p
+                      className="text-base md:text-lg font-headline"
+                      style={{ color: "#0F2229", fontWeight: 700 }}
+                    >
+                      Programs that try to do everything — and don&apos;t stand out in anything.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* — Sub 02 — */}
+              <div className="mb-24">
+                <div className="flex items-baseline gap-5 mb-6">
+                  <span
+                    className="text-6xl md:text-7xl font-headline leading-none"
+                    style={{ color: "rgba(255,97,48,0.45)", fontWeight: 700 }}
+                  >
+                    02
+                  </span>
+                  <h3
+                    className="text-2xl md:text-3xl font-headline tracking-tight"
+                    style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.02em" }}
+                  >
+                    Collaboration already happens — but it&apos;s not real
+                  </h3>
+                </div>
+                <div className="space-y-5 text-base md:text-lg leading-relaxed pl-0 md:pl-20" style={{ color: "#3a4046" }}>
+                  <p>
+                    Creators go live together. They mention each other. They create videos together.
+                  </p>
+                  <p style={{ color: "#0F2229", fontWeight: 700 }}>But:</p>
+                  <ul className="space-y-2">
+                    {[
+                      "it's mostly for marketing and publicity",
+                      "monetization is unclear or minimal",
+                      "there is no professional setup",
+                    ].map((item) => (
+                      <li key={item} className="flex gap-3">
+                        <span className="shrink-0 mt-3 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "#0F2229" }} />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <p className="pt-3" style={{ color: "#0F2229", fontWeight: 700 }}>
+                    Behind the scenes:
+                  </p>
+                  <ul className="space-y-2">
+                    {[
+                      "WhatsApp coordination",
+                      "vague agreements",
+                      "one person collects revenue",
+                      "payouts happen on trust",
+                    ].map((item) => (
+                      <li key={item} className="flex gap-3">
+                        <span className="shrink-0 mt-3 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "#0F2229" }} />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <p
+                    className="text-base md:text-lg font-headline pt-3"
+                    style={{ color: "#0F2229", fontWeight: 700 }}
+                  >
+                    → It never becomes a real product.
+                  </p>
+                </div>
+              </div>
+
+              {/* — Sub 03 — */}
+              <div>
+                <div className="flex items-baseline gap-5 mb-6">
+                  <span
+                    className="text-6xl md:text-7xl font-headline leading-none"
+                    style={{ color: "rgba(255,97,48,0.45)", fontWeight: 700 }}
+                  >
+                    03
+                  </span>
+                  <h3
+                    className="text-2xl md:text-3xl font-headline tracking-tight"
+                    style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.02em" }}
+                  >
+                    Even when creators try to build together
+                  </h3>
+                </div>
+                <div className="pl-0 md:pl-20">
+                  <p
+                    className="text-base md:text-lg leading-relaxed mb-5"
+                    style={{ color: "#3a4046" }}
+                  >
+                    It turns into two of everything:
+                  </p>
+                  <div className="grid grid-cols-3 gap-3 md:gap-4 mb-6">
+                    {["Two landing pages", "Two checkouts", "Two separate experiences"].map((label) => (
+                      <div
+                        key={label}
+                        className="p-4 md:p-5 rounded-xl text-center"
+                        style={{
+                          backgroundColor: "rgba(15,34,41,0.06)",
+                          border: "1px solid rgba(15,34,41,0.10)",
+                        }}
+                      >
+                        <p
+                          className="text-sm md:text-base font-headline leading-tight"
+                          style={{ color: "#0F2229", fontWeight: 700 }}
+                        >
+                          {label}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                  <p
+                    className="text-lg md:text-xl font-headline italic"
+                    style={{ color: "#0F2229", fontWeight: 700 }}
+                  >
+                    It feels like two coaches taped together — not one program.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* ── [4] MANIFESTO BREAK — bridge from frustration to solution ── */}
+          <section className="px-6 py-32 text-center">
+            <div className="max-w-3xl mx-auto">
+              <p
+                className="text-[10px] uppercase tracking-[0.3em] mb-8 font-headline"
+                style={{ color: "#FF6130", fontWeight: 700 }}
+              >
+                — INFITRA —
+              </p>
+              <p
+                className="text-3xl md:text-4xl lg:text-5xl font-headline tracking-tight leading-[1.2]"
+                style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.02em" }}
+              >
+                Build a program together — and make it better than anything you can run alone.
+              </p>
+            </div>
+          </section>
+
+          {/* ── [5] INFITRA SOLUTION — clarity ───────── */}
+          <section className="px-6 py-24">
+            <div className="max-w-4xl mx-auto">
+              <div className="text-center mb-16">
+                <p
+                  className="text-xs uppercase tracking-[0.25em] mb-4 font-headline"
+                  style={{ color: "#0891b2", fontWeight: 700 }}
+                >
+                  The fix
+                </p>
+                <h2
+                  className="text-3xl md:text-4xl lg:text-5xl font-headline tracking-tight mb-8"
+                  style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.02em" }}
+                >
+                  INFITRA makes this one product.
+                </h2>
+                <p className="text-lg md:text-xl max-w-2xl mx-auto leading-relaxed" style={{ color: "#475569" }}>
+                  Each creator brings 100% of their expertise — not 50% across everything.
+                </p>
+              </div>
+
+              {/* Typography-only "stays" treatment */}
+              <div className="text-center mb-16">
+                <div className="space-y-3 mb-10">
+                  <p
+                    className="text-2xl md:text-3xl font-headline tracking-tight"
+                    style={{ color: "#FF6130", fontWeight: 700, letterSpacing: "-0.02em" }}
+                  >
+                    Training stays training.
+                  </p>
+                  <p
+                    className="text-2xl md:text-3xl font-headline tracking-tight"
+                    style={{ color: "#0891b2", fontWeight: 700, letterSpacing: "-0.02em" }}
+                  >
+                    Nutrition stays nutrition.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3 justify-center mb-8">
+                  <div className="w-10 h-px" style={{ backgroundColor: "rgba(15,34,41,0.25)" }} />
+                  <span
+                    className="text-[10px] uppercase tracking-[0.3em] font-headline"
+                    style={{ color: "#94a3b8", fontWeight: 700 }}
+                  >
+                    Together
+                  </span>
+                  <div className="w-10 h-px" style={{ backgroundColor: "rgba(15,34,41,0.25)" }} />
+                </div>
+
+                <p
+                  className="text-3xl md:text-4xl lg:text-5xl font-headline tracking-tight leading-[1.1]"
+                  style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.025em" }}
+                >
+                  One seamless program.
+                </p>
+
+                <p className="text-base md:text-lg max-w-xl mx-auto leading-relaxed mt-6" style={{ color: "#475569" }}>
+                  Clearer. Stronger. Easier to sell. More valuable for the participant. Invites continuation.
+                </p>
+              </div>
+
+              {/* What changes — confident list */}
+              <div
+                className="rounded-3xl p-8 md:p-10"
+                style={{
+                  backgroundColor: "rgba(255,255,255,0.7)",
+                  border: "1px solid rgba(15,34,41,0.08)",
+                }}
+              >
+                <p
+                  className="text-xs uppercase tracking-[0.25em] mb-6 font-headline text-center"
+                  style={{ color: "#0891b2", fontWeight: 700 }}
+                >
+                  What changes with INFITRA
+                </p>
+                <ul className="space-y-4 max-w-2xl mx-auto">
+                  {[
+                    "One product instead of fragmented offers",
+                    "One checkout instead of split payments",
+                    "One experience instead of disconnected sessions",
+                    "Locked-in revenue splits — no trust games",
+                    "Shared workspace to build together cleanly",
+                  ].map((line) => (
+                    <li key={line} className="flex items-start gap-4">
+                      {/* Cyan check */}
+                      <span
+                        className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center mt-0.5"
+                        style={{ backgroundColor: "rgba(8,145,178,0.12)" }}
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#0891b2" strokeWidth={3}>
+                          <path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </span>
+                      <span
+                        className="text-base md:text-lg font-headline"
+                        style={{ color: "#0F2229", fontWeight: 700 }}
+                      >
+                        {line}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </section>
+
+          {/* ── [6] PILOT CTA ─────────────────────────── */}
+          <section className="px-6 py-32 text-center">
+            <div className="max-w-3xl mx-auto">
+              <h2
+                className="text-4xl md:text-5xl font-headline tracking-tight mb-6"
+                style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.025em" }}
+              >
+                Be one of the first 5 pairs.
+              </h2>
+              <p className="text-base md:text-lg max-w-xl mx-auto leading-relaxed mb-10" style={{ color: "#475569" }}>
+                We&apos;re running a closed pilot with a small cohort of fitness creator pairs in DACH
+                (Switzerland, Germany, Austria).
+              </p>
+
+              {/* Three benefits — horizontal strip */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl mx-auto mb-10">
+                {[
+                  "1 joint challenge per pair",
+                  "Run live with direct support",
+                  "Fully set up with you",
+                ].map((label) => (
+                  <div
+                    key={label}
+                    className="p-5 rounded-2xl"
+                    style={{
+                      backgroundColor: "rgba(255,255,255,0.65)",
                       border: "1px solid rgba(15,34,41,0.08)",
                     }}
                   >
-                    <p className="text-[10px] font-bold uppercase tracking-widest font-headline mb-3"
-                       style={{ color: "rgba(15,34,41,0.45)" }}>
-                      {badge}
-                    </p>
-                    <p className="text-base font-headline font-bold mb-3 leading-snug" style={{ color: "#0F2229" }}>
-                      {title}
-                    </p>
-                    <p className="text-sm leading-relaxed" style={{ color: "#475569" }}>
-                      {fix}
+                    <p className="text-sm font-headline" style={{ color: "#0F2229", fontWeight: 700 }}>
+                      {label}
                     </p>
                   </div>
                 ))}
               </div>
-            </div>
-          </section>
 
-          {/* ── PILOT FRAMING + CTA REPEAT ── */}
-          <section className="px-6 py-32">
-            <div className="max-w-3xl mx-auto text-center">
-              <h2 className="text-4xl md:text-5xl font-headline font-bold tracking-tight mb-5"
-                  style={{ color: "#0F2229" }}>
-                Be one of the first 5 pairs.
-              </h2>
-              <p className="text-base md:text-lg leading-relaxed mb-3 max-w-xl mx-auto" style={{ color: "#475569" }}>
-                We're piloting with a small cohort of fitness creator pairs in DACH (Switzerland, Germany,
-                Austria). One joint challenge per pair, run live with our personal support throughout.
-              </p>
-              <p className="text-sm mb-10" style={{ color: "#94a3b8" }}>
-                Reviewed individually. Pilot launches Q3.
+              <p className="text-base md:text-lg max-w-xl mx-auto leading-relaxed mb-12" style={{ color: "#475569" }}>
+                If this works, you&apos;ll have a new way to build and sell programs — not just once,
+                but repeatedly.
               </p>
 
               <Link
                 href="/apply"
-                className="inline-block px-10 py-4 rounded-full text-white text-base font-headline font-bold tracking-wide transition-transform hover:scale-[1.03]"
+                className="inline-block px-12 py-4 rounded-full text-white text-lg font-headline tracking-wide transition-transform hover:scale-[1.03]"
                 style={{
                   backgroundColor: "#FF6130",
-                  boxShadow: "0 6px 24px rgba(255,97,48,0.35), 0 2px 8px rgba(255,97,48,0.20)",
+                  fontWeight: 700,
+                  boxShadow: "0 8px 28px rgba(255,97,48,0.35), 0 2px 10px rgba(255,97,48,0.20)",
                 }}
               >
                 Apply for the pilot
               </Link>
+              <p className="text-xs mt-5 tracking-wide" style={{ color: "#94a3b8" }}>
+                Reviewed individually. Pilot launches Q3.
+              </p>
             </div>
           </section>
         </main>
 
-        {/* ── FOOTER ── */}
+        {/* ── FOOTER — minimal ──────────────────────── */}
         <footer
           style={{
             borderTop: "1px solid rgba(15,34,41,0.08)",
             backgroundColor: "rgba(242,239,232,0.6)",
           }}
         >
-          <div className="max-w-6xl mx-auto px-6 py-10 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="max-w-6xl mx-auto px-6 py-8 flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <img src="/logo-mark.png" alt="INFITRA" width={28} height={28} className="block rounded-md" />
               <span
@@ -328,21 +654,11 @@ export default function LandingPage() {
                 INFITRA
               </span>
             </div>
-            <p className="text-xs leading-relaxed text-center md:text-left max-w-xs"
-               style={{ color: "#94a3b8" }}>
-              The collaboration platform for fitness creators.
-            </p>
             <div className="flex gap-6 text-xs" style={{ color: "#94a3b8" }}>
               <Link href="/pilot-terms" className="hover:opacity-80">Pilot Terms</Link>
               <a href="mailto:hello@infitra.fit" className="hover:opacity-80">Contact</a>
+              <span>© 2026 INFITRA</span>
             </div>
-          </div>
-          <div className="max-w-6xl mx-auto px-6 py-4"
-               style={{ borderTop: "1px solid rgba(15,34,41,0.06)" }}>
-            <p className="text-[10px] uppercase tracking-widest font-bold font-headline"
-               style={{ color: "rgba(15,34,41,0.35)" }}>
-              © 2026 INFITRA
-            </p>
           </div>
         </footer>
       </div>
