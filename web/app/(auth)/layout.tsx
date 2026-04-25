@@ -1,37 +1,43 @@
 import Link from "next/link";
-import Image from "next/image";
+import { WaveFlowingBackground } from "@/app/components/WaveFlowingBackground";
 
+/**
+ * Auth shell — same cream + wave treatment as the landing page and the
+ * rest of the production app. Replaces the prior dark navy treatment so
+ * sign-in / sign-up / beta-access feel like one continuous brand surface.
+ */
 export default function AuthLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-[#071318] flex flex-col items-center justify-center px-6 relative">
-      {/* Atmospheric glow */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-[#9CF0FF]/4 blur-[150px]" />
-      </div>
+    <div
+      className="min-h-screen relative overflow-x-clip"
+      style={{ backgroundColor: "#F2EFE8" }}
+    >
+      <WaveFlowingBackground />
 
-      {/* Logo */}
-      <Link href="/" className="relative z-10 mb-10">
-        <div className="flex items-center gap-3">
-          <div className="rounded-xl overflow-hidden">
-            <Image
-              src="/logo-mark.png"
-              alt="INFITRA"
-              width={40}
-              height={40}
-              className="block"
-            />
-          </div>
-          <span className="text-2xl font-black text-[#FF6130] tracking-tighter font-headline">
+      <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-6 py-12">
+        {/* Brand wordmark — the only chrome on auth pages */}
+        <Link href="/" className="mb-10 flex items-center gap-3">
+          <img
+            src="/logo-mark.png"
+            alt="INFITRA"
+            width={36}
+            height={36}
+            className="block rounded-lg"
+          />
+          <span
+            className="text-2xl tracking-tight font-headline leading-none"
+            style={{ color: "#FF6130", fontWeight: 700, letterSpacing: "-0.03em" }}
+          >
             INFITRA
           </span>
-        </div>
-      </Link>
+        </Link>
 
-      <div className="relative z-10 w-full max-w-md">{children}</div>
+        <div className="w-full max-w-md">{children}</div>
+      </div>
     </div>
   );
 }
