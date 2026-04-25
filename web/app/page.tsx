@@ -250,104 +250,76 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              {/* ── SYSTEM FEATURES — what makes the "one program" real ──
-                  Four cards beneath the diagram. Each one names a specific
-                  INFITRA capability that the diagram alone doesn't show:
-                  workspace (where they build), contracts (how they trust),
-                  splits (how money flows), live (how the program runs).
-                  All cyan because cyan = system in INFITRA's brand. */}
-              <div className="mt-12">
-                <p
-                  className="text-center text-[10px] uppercase tracking-[0.25em] font-headline mb-6"
-                  style={{ color: "#0891b2", fontWeight: 700 }}
-                >
-                  Built on the system
-                </p>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-                  {[
-                    {
-                      label: "Shared Workspace",
-                      caption: "Co-build in one place. No WhatsApp chaos.",
-                      icon: (
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0891b2" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
-                          <rect x="3" y="6" width="13" height="13" rx="2.5" />
-                          <rect x="8" y="3" width="13" height="13" rx="2.5" />
-                        </svg>
-                      ),
-                    },
-                    {
-                      label: "Signed Contracts",
-                      caption: "Locked terms, signed by every party.",
-                      icon: (
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0891b2" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                          <polyline points="14 2 14 8 20 8" />
-                          <path d="M9 15l2 2 4-4" />
-                        </svg>
-                      ),
-                    },
-                    {
-                      label: "Automated Splits",
-                      caption: "Revenue flows to each creator automatically.",
-                      icon: (
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0891b2" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
-                          <circle cx="12" cy="12" r="9" />
-                          <path d="M12 3v9l7.8 4.5" />
-                        </svg>
-                      ),
-                    },
-                    {
-                      label: "Live Sessions",
-                      caption: "Real-time anchors. Audiences show up together.",
-                      icon: (
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0891b2" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
-                          <circle cx="12" cy="12" r="9" />
-                          <path d="M10 9 L10 15 L15.5 12 Z" fill="#0891b2" stroke="none" />
-                        </svg>
-                      ),
-                    },
-                  ].map((feature) => (
-                    <div
-                      key={feature.label}
-                      className="rounded-2xl p-4 md:p-5 text-left"
-                      style={{
-                        backgroundColor: "rgba(255,255,255,0.78)",
-                        border: "1px solid rgba(8,145,178,0.18)",
-                      }}
+              {/* ── SYSTEM FEATURES (compact chips) — what the system gives
+                  every collaboration: workspace, contracts, splits, and
+                  clear ownership. Live sits in the experience-layer
+                  section below ("Where it comes alive"), not here. */}
+              <div className="mt-10 grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
+                {[
+                  {
+                    label: "Shared Workspace",
+                    icon: (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0891b2" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="6" width="13" height="13" rx="2.5" />
+                        <rect x="8" y="3" width="13" height="13" rx="2.5" />
+                      </svg>
+                    ),
+                  },
+                  {
+                    label: "Signed Contracts",
+                    icon: (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0891b2" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                        <path d="M9 15l2 2 4-4" />
+                      </svg>
+                    ),
+                  },
+                  {
+                    label: "Automated Splits",
+                    icon: (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0891b2" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="9" />
+                        <path d="M12 3v9l7.8 4.5" />
+                      </svg>
+                    ),
+                  },
+                  {
+                    label: "Clear Ownership",
+                    icon: (
+                      // Two stylized figures — one larger/forward (owner),
+                      // one smaller/behind (cohost). Reads as "owner + cohosts".
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0891b2" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="9" cy="8" r="3" />
+                        <path d="M3 20v-1a6 6 0 0 1 6-6h0a6 6 0 0 1 6 6v1" />
+                        <circle cx="17" cy="9" r="2.2" />
+                        <path d="M15 14a4 4 0 0 1 6 3.5v1" />
+                      </svg>
+                    ),
+                  },
+                ].map((feature) => (
+                  <div
+                    key={feature.label}
+                    className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl"
+                    style={{
+                      backgroundColor: "rgba(255,255,255,0.78)",
+                      border: "1px solid rgba(8,145,178,0.20)",
+                    }}
+                  >
+                    <span
+                      className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center"
+                      style={{ backgroundColor: "rgba(8,145,178,0.10)" }}
                     >
-                      <div
-                        className="w-10 h-10 rounded-xl flex items-center justify-center mb-3"
-                        style={{ backgroundColor: "rgba(8,145,178,0.10)" }}
-                      >
-                        {feature.icon}
-                      </div>
-                      <p
-                        className="text-sm md:text-base font-headline mb-1"
-                        style={{ color: "#0F2229", fontWeight: 700 }}
-                      >
-                        {feature.label}
-                      </p>
-                      <p
-                        className="text-[11px] md:text-xs leading-relaxed"
-                        style={{ color: "#64748b" }}
-                      >
-                        {feature.caption}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Compact reinforcement of the original outcome line */}
-                <p
-                  className="text-center mt-8 text-sm md:text-base font-headline"
-                  style={{ color: "#475569", fontWeight: 700 }}
-                >
-                  One product
-                  <span className="mx-3" style={{ color: "#94a3b8" }}>·</span>
-                  One checkout
-                  <span className="mx-3" style={{ color: "#94a3b8" }}>·</span>
-                  One brand experience
-                </p>
+                      {feature.icon}
+                    </span>
+                    <span
+                      className="text-xs md:text-[13px] font-headline leading-tight"
+                      style={{ color: "#0F2229", fontWeight: 700 }}
+                    >
+                      {feature.label}
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
           </section>
