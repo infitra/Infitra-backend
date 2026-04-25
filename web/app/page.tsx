@@ -65,72 +65,107 @@ export default function LandingPage() {
         </nav>
 
         <main>
-          {/* ── HERO ──────────────────────────────────── */}
-          <section className="relative min-h-screen flex flex-col items-center justify-center px-6 pt-28 pb-20 text-center">
+          {/* ── HERO — dark teal so the cyan logo reads as neon ── */}
+          <section
+            className="relative min-h-screen flex flex-col items-center justify-center px-6 pt-28 pb-32 text-center overflow-hidden"
+            style={{ backgroundColor: "#0F2229" }}
+          >
+            {/* Soft cyan atmospheric glow on the dark stage */}
+            <div className="absolute inset-0 pointer-events-none">
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[1000px] rounded-full bg-[#9CF0FF]/[0.06] blur-[160px]" />
+            </div>
+
+            {/* Bottom fade — hero dark dissolves into the cream wave bg below */}
+            <div
+              className="absolute left-0 right-0 bottom-0 h-32 pointer-events-none"
+              style={{
+                background: "linear-gradient(to bottom, transparent 0%, #F2EFE8 100%)",
+              }}
+            />
+
             <div className="relative max-w-4xl mx-auto w-full flex flex-col items-center">
-              {/* Pilot badge */}
+              {/* Pilot badge — cyan reads brighter on dark */}
               <div
                 className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-10"
                 style={{
-                  backgroundColor: "rgba(8, 145, 178, 0.10)",
-                  border: "1px solid rgba(8, 145, 178, 0.25)",
+                  backgroundColor: "rgba(156, 240, 255, 0.10)",
+                  border: "1px solid rgba(156, 240, 255, 0.25)",
                 }}
               >
-                <span className="w-1.5 h-1.5 rounded-full bg-[#0891b2] animate-pulse" />
+                <span className="w-1.5 h-1.5 rounded-full bg-[#9CF0FF] animate-pulse" />
                 <span
-                  className="text-[#0891b2] text-[10px] tracking-widest uppercase font-headline"
+                  className="text-[#9CF0FF] text-[10px] tracking-widest uppercase font-headline"
                   style={{ fontWeight: 700 }}
                 >
                   Closed Pilot · Applications Open
                 </span>
               </div>
 
-              {/* Floating logo mark — clean cyan glow on cream, no dark stage */}
-              <div className="relative w-[260px] h-[260px] md:w-[320px] md:h-[320px] mb-8 flex items-center justify-center">
-                <div className="absolute inset-0 scale-[1.6] rounded-full bg-[#9CF0FF]/40 blur-[90px]" />
-                <div className="absolute inset-0 scale-[1.1] rounded-full bg-[#9CF0FF]/35 blur-[40px]" />
+              {/* Floating logo mark — original dark-bg depth shaders restored
+                  so the cyan reads as proper neon. */}
+              <div className="relative w-[300px] h-[300px] md:w-[400px] md:h-[400px] mb-8 flex items-center justify-center">
+                <div className="absolute inset-0 scale-[1.8] rounded-full bg-[#9CF0FF]/[0.06] blur-[100px]" />
 
                 <div className="float-twist absolute inset-0">
-                  <div className="absolute w-[60%] h-[8%] bottom-[-6%] left-[20%] rounded-full bg-[#0F2229]/15 blur-[12px]" />
+                  {/* Ground shadow on the dark stage */}
+                  <div className="absolute w-[70%] h-[12%] bottom-[-12%] left-[15%] rounded-full bg-[#071318] blur-[20px] opacity-60" />
+
+                  {/* Deep shadow layer */}
                   <div
-                    className="absolute w-full h-full translate-y-[1px]"
+                    className="absolute w-full h-full translate-x-[4px] translate-y-[5px]"
+                    style={{ filter: "brightness(0) opacity(0.3) blur(4px)" }}
+                  >
+                    <Image src="/logo-mark-cyan.png" alt="" fill className="object-contain" aria-hidden />
+                  </div>
+
+                  {/* Dark underside */}
+                  <div
+                    className="absolute w-full h-full translate-y-[2px]"
                     style={{
-                      filter: "brightness(0.6) saturate(1.4)",
-                      maskImage: "linear-gradient(to top, black 25%, transparent 75%)",
-                      WebkitMaskImage: "linear-gradient(to top, black 25%, transparent 75%)",
+                      filter: "brightness(0.4) saturate(1.4)",
+                      maskImage: "linear-gradient(to top, black 30%, transparent 80%)",
+                      WebkitMaskImage: "linear-gradient(to top, black 30%, transparent 80%)",
                     }}
                   >
                     <Image src="/logo-mark-cyan.png" alt="" fill className="object-contain" aria-hidden />
                   </div>
+
+                  {/* Base mark — cyan core */}
                   <div className="absolute w-full h-full">
                     <Image src="/logo-mark-cyan.png" alt="" fill className="object-contain" aria-hidden />
                   </div>
+
+                  {/* Mid-tone depth */}
                   <div
                     className="absolute w-full h-full"
                     style={{
-                      maskImage: "linear-gradient(315deg, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.12) 35%, transparent 55%)",
-                      WebkitMaskImage: "linear-gradient(315deg, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.12) 35%, transparent 55%)",
-                      filter: "brightness(0.65) saturate(1.5)",
+                      maskImage: "linear-gradient(315deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.15) 35%, transparent 55%)",
+                      WebkitMaskImage: "linear-gradient(315deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.15) 35%, transparent 55%)",
+                      filter: "brightness(0.55) saturate(1.6)",
                     }}
                   >
                     <Image src="/logo-mark-cyan.png" alt="" fill className="object-contain" aria-hidden />
                   </div>
+
+                  {/* Highlight */}
                   <div
                     className="absolute w-full h-full"
                     style={{
-                      maskImage: "linear-gradient(140deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.15) 35%, transparent 55%)",
-                      WebkitMaskImage: "linear-gradient(140deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.15) 35%, transparent 55%)",
-                      filter: "brightness(1.4) saturate(0.85)",
+                      maskImage: "linear-gradient(140deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.15) 35%, transparent 55%)",
+                      WebkitMaskImage: "linear-gradient(140deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.15) 35%, transparent 55%)",
+                      filter: "brightness(1.35) saturate(0.8)",
                     }}
                   >
                     <Image src="/logo-mark-cyan.png" alt="" fill className="object-contain" aria-hidden />
                   </div>
+
+                  {/* Specular rim — bright neon edge */}
                   <div
                     className="absolute w-full h-full"
                     style={{
-                      maskImage: "linear-gradient(150deg, rgba(0,0,0,0.4) 0%, transparent 22%)",
-                      WebkitMaskImage: "linear-gradient(150deg, rgba(0,0,0,0.4) 0%, transparent 22%)",
-                      filter: "brightness(1.85) saturate(0.5)",
+                      maskImage: "linear-gradient(150deg, rgba(0,0,0,0.35) 0%, transparent 20%)",
+                      WebkitMaskImage: "linear-gradient(150deg, rgba(0,0,0,0.35) 0%, transparent 20%)",
+                      filter: "brightness(2) saturate(0.4)",
                     }}
                   >
                     <Image src="/logo-mark-cyan.png" alt="INFITRA" fill className="object-contain" />
@@ -138,15 +173,18 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              {/* Wordmark — upright, matches dashboard */}
-              <p className="text-6xl md:text-7xl lg:text-8xl font-black text-[#FF6130] tracking-tighter font-headline leading-none mb-10">
+              {/* Wordmark — orange on dark, with subtle glow */}
+              <p
+                className="text-6xl md:text-7xl lg:text-8xl font-black text-[#FF6130] tracking-tighter font-headline leading-none mb-10"
+                style={{ textShadow: "0 0 40px rgba(255,97,48,0.30)" }}
+              >
                 INFITRA
               </p>
 
-              {/* Headline — the promise */}
+              {/* Headline — light on dark */}
               <h1
-                className="text-3xl md:text-4xl lg:text-5xl font-headline tracking-tight leading-[1.1] max-w-3xl mb-6"
-                style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.025em" }}
+                className="text-3xl md:text-4xl lg:text-5xl font-headline tracking-tight leading-[1.1] max-w-3xl mb-6 text-white"
+                style={{ fontWeight: 700, letterSpacing: "-0.025em" }}
               >
                 Build a program that&apos;s better than what you can offer alone.
               </h1>
@@ -154,22 +192,22 @@ export default function LandingPage() {
               {/* Subhead */}
               <p
                 className="text-lg md:text-xl max-w-2xl mx-auto leading-relaxed mb-10"
-                style={{ color: "#475569" }}
+                style={{ color: "rgba(156,240,255,0.65)" }}
               >
                 Combine your expertise with another coach and deliver it as one seamless program
                 your audience will pay more for.
               </p>
 
-              {/* Tagline — display treatment with horizontal rules */}
+              {/* Tagline display — light treatment with cyan-tinted rules */}
               <div className="flex items-center gap-4 mb-12 max-w-3xl w-full">
-                <div className="flex-1 h-px" style={{ backgroundColor: "rgba(15,34,41,0.12)" }} />
+                <div className="flex-1 h-px" style={{ backgroundColor: "rgba(156,240,255,0.20)" }} />
                 <p
-                  className="text-xs md:text-sm uppercase tracking-[0.25em] font-headline text-center shrink-0"
-                  style={{ color: "#0F2229", fontWeight: 700 }}
+                  className="text-xs md:text-sm uppercase tracking-[0.25em] font-headline text-center shrink-0 text-white"
+                  style={{ fontWeight: 700 }}
                 >
                   One program. Multiple experts. Built and sold as one.
                 </p>
-                <div className="flex-1 h-px" style={{ backgroundColor: "rgba(15,34,41,0.12)" }} />
+                <div className="flex-1 h-px" style={{ backgroundColor: "rgba(156,240,255,0.20)" }} />
               </div>
 
               {/* CTA */}
@@ -179,12 +217,12 @@ export default function LandingPage() {
                 style={{
                   backgroundColor: "#FF6130",
                   fontWeight: 700,
-                  boxShadow: "0 8px 28px rgba(255,97,48,0.35), 0 2px 10px rgba(255,97,48,0.20)",
+                  boxShadow: "0 8px 28px rgba(255,97,48,0.45), 0 2px 10px rgba(255,97,48,0.25)",
                 }}
               >
                 Apply for the pilot
               </Link>
-              <p className="text-xs mt-5 tracking-wide" style={{ color: "#94a3b8" }}>
+              <p className="text-xs mt-5 tracking-wide" style={{ color: "rgba(156,240,255,0.4)" }}>
                 Closed cohort of 5 fitness creator pairs. Reviewed individually.
               </p>
             </div>
@@ -267,11 +305,13 @@ export default function LandingPage() {
             </div>
           </section>
 
-          {/* ── [3] WHAT'S BROKEN TODAY — FRUSTRATION ZONE ── */}
+          {/* ── [3] WHAT'S BROKEN TODAY — FRUSTRATION ZONE
+              Cool slate-gray, not the previous muddy beige. Clean
+              contrast against cream + waves, on-brand cool tone. ── */}
           <section
             className="px-6 py-32"
             style={{
-              backgroundColor: "#C9C2AC",
+              backgroundColor: "#B8C0C2",
               borderTop: "1px solid rgba(15,34,41,0.08)",
               borderBottom: "1px solid rgba(15,34,41,0.08)",
             }}
