@@ -55,11 +55,25 @@ export default async function CreatePage() {
         Launch challenges in your tribe — solo or with other creators.
       </p>
 
-      {/* ── TWO PATHS ────────────────────────────────────── */}
+      {/* ── TWO PATHS — Collaboration is the headline action ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-        {/* Solo Challenge */}
+        {/* Collaboration — primary (orange accent) */}
         <div className="rounded-2xl infitra-card overflow-hidden">
           <div className="h-1.5" style={{ background: "linear-gradient(90deg, #FF6130, rgba(255,97,48,0.3))" }} />
+          <div className="p-6">
+            <h2 className="text-lg font-black font-headline text-[#0F2229] tracking-tight mb-2">
+              Start Collaboration
+            </h2>
+            <p className="text-sm text-[#64748b] mb-5">
+              Co-create with another creator. Share sessions, split revenue, grow both tribes.
+            </p>
+            <CollabInviteFlow primary />
+          </div>
+        </div>
+
+        {/* Solo — secondary (cyan accent, calmer button) */}
+        <div className="rounded-2xl infitra-card overflow-hidden">
+          <div className="h-1.5" style={{ background: "linear-gradient(90deg, #9CF0FF, rgba(156,240,255,0.3))" }} />
           <div className="p-6">
             <h2 className="text-lg font-black font-headline text-[#0F2229] tracking-tight mb-2">
               Launch Solo
@@ -70,26 +84,16 @@ export default async function CreatePage() {
             <form action={createDraftChallenge}>
               <button
                 type="submit"
-                className="px-6 py-3 rounded-full text-white text-sm font-black font-headline w-full"
-                style={{ backgroundColor: "#FF6130", boxShadow: "0 4px 14px rgba(255,97,48,0.35)" }}
+                className="px-6 py-3 rounded-full text-sm font-black font-headline w-full"
+                style={{
+                  color: "#0891b2",
+                  border: "2px solid #9CF0FF",
+                  backgroundColor: "rgba(156,240,255,0.10)",
+                }}
               >
                 + Start Challenge
               </button>
             </form>
-          </div>
-        </div>
-
-        {/* Collaboration */}
-        <div className="rounded-2xl infitra-card overflow-hidden">
-          <div className="h-1.5" style={{ background: "linear-gradient(90deg, #9CF0FF, rgba(156,240,255,0.3))" }} />
-          <div className="p-6">
-            <h2 className="text-lg font-black font-headline text-[#0F2229] tracking-tight mb-2">
-              Start Collaboration
-            </h2>
-            <p className="text-sm text-[#64748b] mb-5">
-              Co-create with another creator. Share sessions, split revenue, grow both tribes.
-            </p>
-            <CollabInviteFlow />
           </div>
         </div>
       </div>

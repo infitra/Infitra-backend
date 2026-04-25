@@ -24,9 +24,12 @@ interface Props {
   existingChallengeId?: string;
   existingCollaboratorIds?: string[]; // IDs to exclude from search (already on the workspace)
   onSent?: () => void;
+  /** When true (used on /dashboard/create), the trigger button renders as the
+   *  filled orange primary CTA — Collaboration is the headline action there. */
+  primary?: boolean;
 }
 
-export function CollabInviteFlow({ existingChallengeId, existingCollaboratorIds, onSent }: Props) {
+export function CollabInviteFlow({ existingChallengeId, existingCollaboratorIds, onSent, primary }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -123,19 +126,26 @@ export function CollabInviteFlow({ existingChallengeId, existingCollaboratorIds,
 
   // Compact trigger button
   if (!open) {
+    // Three trigger styles:
+    //   isAdditional → small cyan ghost ("Invite more" inside an existing workspace)
+    //   primary       → filled orange CTA (Create page hero treatment)
+    //   default       → cyan outlined ghost (legacy fallback)
+    const triggerClass = isAdditional
+      ? "px-4 py-2 rounded-full text-xs font-bold font-headline text-[#0891b2]"
+      : "px-6 py-3 rounded-full text-sm font-black font-headline w-full";
+
+    const triggerStyle: React.CSSProperties = isAdditional
+      ? { border: "1px solid rgba(8,145,178,0.30)", backgroundColor: "rgba(156,240,255,0.10)" }
+      : primary
+        ? {
+            color: "#FFFFFF",
+            backgroundColor: "#FF6130",
+            boxShadow: "0 4px 14px rgba(255,97,48,0.35)",
+          }
+        : { color: "#0891b2", border: "2px solid #9CF0FF", backgroundColor: "rgba(156,240,255,0.08)" };
+
     return (
-      <button
-        onClick={() => setOpen(true)}
-        className={isAdditional
-          ? "px-4 py-2 rounded-full text-xs font-bold font-headline text-[#0891b2]"
-          : "px-6 py-3 rounded-full text-sm font-black font-headline w-full"
-        }
-        style={isAdditional ? {
-          border: "1px solid rgba(8,145,178,0.30)", backgroundColor: "rgba(156,240,255,0.10)"
-        } : {
-          color: "#0891b2", border: "2px solid #9CF0FF", backgroundColor: "rgba(156,240,255,0.08)"
-        }}
-      >
+      <button onClick={() => setOpen(true)} className={triggerClass} style={triggerStyle}>
         {isAdditional ? "+ Invite More" : "Invite Creators"}
       </button>
     );

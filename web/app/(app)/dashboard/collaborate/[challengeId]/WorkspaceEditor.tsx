@@ -362,8 +362,66 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
       ]
     : [];
 
+  // Whether there's a frozen contract document to point at. True both
+  // during the locked review state AND after publish — once a contract
+  // is locked, the snapshot exists and never goes away.
+  const hasContractDoc = !!contract;
+  const isPublished = challenge.status === "published";
+
   return (
     <div className="space-y-6">
+      {/* ── SIGNED CONTRACT LINK ─────────────────
+          Surfaces the locked snapshot as a real document creators can
+          open. After publish this is the *only* contract surface (the
+          live signature banner below disappears with status=draft). */}
+      {hasContractDoc && (
+        <a
+          href={`/dashboard/collaborate/${challenge.id}/contract`}
+          className="flex items-center gap-3 px-5 py-4 rounded-2xl group transition-colors"
+          style={
+            isPublished
+              ? {
+                  // After publish — confident green, this is the proof
+                  backgroundColor: "rgba(21,128,61,0.06)",
+                  border: "1px solid rgba(21,128,61,0.25)",
+                }
+              : {
+                  // During review — subdued, the banner below is doing the work
+                  backgroundColor: "rgba(8,145,178,0.05)",
+                  border: "1px solid rgba(8,145,178,0.18)",
+                }
+          }
+        >
+          <span
+            className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center text-base"
+            style={
+              isPublished
+                ? { backgroundColor: "rgba(21,128,61,0.12)", color: "#15803d" }
+                : { backgroundColor: "rgba(8,145,178,0.12)", color: "#0891b2" }
+            }
+          >
+            📜
+          </span>
+          <div className="flex-1 min-w-0">
+            <p
+              className="text-sm font-black font-headline truncate"
+              style={{ color: "#0F2229" }}
+            >
+              {isPublished ? "Signed & published — view contract" : "View locked contract"}
+            </p>
+            <p className="text-[11px] text-[#94a3b8] truncate">
+              The frozen agreement everyone signed. Read-only document.
+            </p>
+          </div>
+          <span
+            className="shrink-0 text-xs font-black font-headline"
+            style={{ color: isPublished ? "#15803d" : "#0891b2" }}
+          >
+            Open →
+          </span>
+        </a>
+      )}
+
       {/* ── CONTRACT STATUS BANNER (locked only) ─── */}
       {isLocked && contract && (
         <ContractStatusBanner
