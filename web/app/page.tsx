@@ -72,6 +72,20 @@ export default function LandingPage() {
           {/* ── [1] HERO — headline-dominant ───────────── */}
           <section className="relative min-h-screen flex flex-col items-center justify-center px-6 pt-28 pb-20 text-center">
             <div className="relative max-w-4xl mx-auto w-full flex flex-col items-center">
+              {/* DESCRIPTIVE LABEL — what INFITRA actually is. Small, quiet,
+                  cyan rules. Answers "what is this?" so the headline can
+                  stay punchy without losing first-time visitors. */}
+              <div className="flex items-center gap-3 mb-6 max-w-2xl w-full">
+                <div className="flex-1 h-px" style={{ backgroundColor: "rgba(8,145,178,0.30)" }} />
+                <p
+                  className="text-[10px] uppercase tracking-[0.25em] font-headline text-center shrink-0"
+                  style={{ color: "#0891b2", fontWeight: 700 }}
+                >
+                  The workspace for co-created fitness programs
+                </p>
+                <div className="flex-1 h-px" style={{ backgroundColor: "rgba(8,145,178,0.30)" }} />
+              </div>
+
               {/* Pilot badge */}
               <div
                 className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-8"
@@ -89,41 +103,28 @@ export default function LandingPage() {
                 </span>
               </div>
 
-              {/* No centered logo or wordmark — the nav already carries the
-                  brand and the wave supplies the brand atmosphere. The hero
-                  earns its weight by leading with the conversion line. */}
-
-              {/* HEADLINE — direct address, punch in tail position. Number-
-                  agnostic ("alone" implies "without help" without pinning to
-                  exactly two creators — the system supports N collaborators). */}
+              {/* HEADLINE — the punch. Vertical ("fitness") deliberately
+                  dropped here because the label above already carries it;
+                  repeating felt redundant and weakened the rhythm. */}
               <h1
                 className="text-4xl md:text-5xl lg:text-6xl font-headline tracking-tight leading-[1.05] max-w-3xl mb-6"
                 style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.025em" }}
               >
-                Build the program you couldn&apos;t build alone.
+                Build a program beyond what you can offer alone.
               </h1>
 
-              {/* Subline — names the mechanism, stays plural-friendly */}
+              {/* Subline — three benefit imperatives + the closing promise.
+                  The benefits are deliberately the three things creators
+                  *don't* have today (workspace vs WhatsApp, signed vs
+                  handshake, automated vs trust-pay). */}
               <p
-                className="text-lg md:text-xl max-w-2xl mx-auto leading-relaxed mb-8"
+                className="text-lg md:text-xl max-w-2xl mx-auto leading-relaxed mb-10"
                 style={{ color: "#475569" }}
               >
-                Combine your expertise with the creators who complement you.
-                Build it together in one workspace. Launch it as one product.
-                Split revenue cleanly.
+                Co-build in a shared workspace. Lock terms with signed
+                contracts. Split revenue automatically. Focus on the
+                program — INFITRA handles the rest.
               </p>
-
-              {/* Anchor line */}
-              <div className="flex items-center gap-4 mb-10 max-w-3xl w-full">
-                <div className="flex-1 h-px" style={{ backgroundColor: "rgba(15,34,41,0.12)" }} />
-                <p
-                  className="text-xs md:text-sm uppercase tracking-[0.25em] font-headline text-center shrink-0"
-                  style={{ color: "#0F2229", fontWeight: 700 }}
-                >
-                  One program. Multiple experts. Built and sold as one.
-                </p>
-                <div className="flex-1 h-px" style={{ backgroundColor: "rgba(15,34,41,0.12)" }} />
-              </div>
 
               {/* CTA */}
               <Link
