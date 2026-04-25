@@ -154,7 +154,7 @@ export default function LandingPage() {
           <section className="px-6 py-24">
             <div className="max-w-5xl mx-auto">
               <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr_auto_1fr] gap-6 md:gap-4 items-center">
-                {/* Left expert */}
+                {/* Left expert — Alex */}
                 <div
                   className="rounded-3xl p-8 text-center"
                   style={{
@@ -163,18 +163,29 @@ export default function LandingPage() {
                   }}
                 >
                   <div
-                    className="w-14 h-14 mx-auto rounded-full flex items-center justify-center mb-4"
-                    style={{ backgroundColor: "rgba(255,97,48,0.12)" }}
+                    className="w-20 h-20 mx-auto rounded-full overflow-hidden mb-4"
+                    style={{
+                      border: "2px solid rgba(255,97,48,0.35)",
+                      boxShadow: "0 6px 20px rgba(255,97,48,0.18)",
+                    }}
                   >
-                    <span className="text-xl font-black" style={{ color: "#FF6130" }}>
-                      F
-                    </span>
+                    <img
+                      src="/landing/avatar-alex.jpg"
+                      alt="Alex, the trainer"
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                   <p
                     className="text-base md:text-lg font-headline"
                     style={{ color: "#0F2229", fontWeight: 700 }}
                   >
-                    Fitness Coach
+                    Alex
+                  </p>
+                  <p
+                    className="text-[10px] uppercase tracking-widest font-headline mt-1"
+                    style={{ color: "#FF6130", fontWeight: 700 }}
+                  >
+                    Trainer
                   </p>
                 </div>
 
@@ -211,7 +222,7 @@ export default function LandingPage() {
                   ←
                 </div>
 
-                {/* Right expert */}
+                {/* Right expert — Mira */}
                 <div
                   className="rounded-3xl p-8 text-center"
                   style={{
@@ -220,18 +231,29 @@ export default function LandingPage() {
                   }}
                 >
                   <div
-                    className="w-14 h-14 mx-auto rounded-full flex items-center justify-center mb-4"
-                    style={{ backgroundColor: "rgba(8,145,178,0.12)" }}
+                    className="w-20 h-20 mx-auto rounded-full overflow-hidden mb-4"
+                    style={{
+                      border: "2px solid rgba(8,145,178,0.35)",
+                      boxShadow: "0 6px 20px rgba(8,145,178,0.18)",
+                    }}
                   >
-                    <span className="text-xl font-black" style={{ color: "#0891b2" }}>
-                      N
-                    </span>
+                    <img
+                      src="/landing/avatar-mira.jpg"
+                      alt="Mira, the nutritionist"
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                   <p
                     className="text-base md:text-lg font-headline"
                     style={{ color: "#0F2229", fontWeight: 700 }}
                   >
-                    Nutrition Coach
+                    Mira
+                  </p>
+                  <p
+                    className="text-[10px] uppercase tracking-widest font-headline mt-1"
+                    style={{ color: "#0891b2", fontWeight: 700 }}
+                  >
+                    Nutritionist
                   </p>
                 </div>
               </div>
@@ -444,15 +466,14 @@ export default function LandingPage() {
                       }}
                     >
                       <div
-                        className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center"
-                        style={{ backgroundColor: "rgba(255,97,48,0.18)" }}
+                        className="shrink-0 w-10 h-10 rounded-full overflow-hidden"
+                        style={{ border: "1.5px solid rgba(255,97,48,0.35)" }}
                       >
-                        <span
-                          className="text-sm font-headline"
-                          style={{ color: "#FF6130", fontWeight: 700 }}
-                        >
-                          A
-                        </span>
+                        <img
+                          src="/landing/avatar-alex.jpg"
+                          alt="Alex"
+                          className="w-full h-full object-cover"
+                        />
                       </div>
                       <div className="min-w-0">
                         <p
@@ -477,15 +498,14 @@ export default function LandingPage() {
                       }}
                     >
                       <div
-                        className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center"
-                        style={{ backgroundColor: "rgba(8,145,178,0.18)" }}
+                        className="shrink-0 w-10 h-10 rounded-full overflow-hidden"
+                        style={{ border: "1.5px solid rgba(8,145,178,0.35)" }}
                       >
-                        <span
-                          className="text-sm font-headline"
-                          style={{ color: "#0891b2", fontWeight: 700 }}
-                        >
-                          M
-                        </span>
+                        <img
+                          src="/landing/avatar-mira.jpg"
+                          alt="Mira"
+                          className="w-full h-full object-cover"
+                        />
                       </div>
                       <div className="min-w-0">
                         <p
@@ -568,19 +588,25 @@ export default function LandingPage() {
                             Kickoff — meet your coaches
                           </p>
                           <div className="flex items-center gap-1">
+                            <span className="inline-block w-5 h-5 rounded-full overflow-hidden">
+                              <img
+                                src="/landing/avatar-alex.jpg"
+                                alt="Alex"
+                                className="w-full h-full object-cover"
+                              />
+                            </span>
                             <span
-                              className="inline-block w-4 h-4 rounded-full"
-                              style={{ backgroundColor: "rgba(255,97,48,0.25)" }}
-                            />
+                              className="inline-block w-5 h-5 rounded-full overflow-hidden -ml-2"
+                              style={{ border: "1.5px solid #F8F6F0" }}
+                            >
+                              <img
+                                src="/landing/avatar-mira.jpg"
+                                alt="Mira"
+                                className="w-full h-full object-cover"
+                              />
+                            </span>
                             <span
-                              className="inline-block w-4 h-4 rounded-full -ml-1.5"
-                              style={{
-                                backgroundColor: "rgba(8,145,178,0.25)",
-                                border: "1.5px solid #FFFFFF",
-                              }}
-                            />
-                            <span
-                              className="ml-1 text-[10px] font-headline"
+                              className="ml-1.5 text-[10px] font-headline"
                               style={{ color: "#475569", fontWeight: 700 }}
                             >
                               Both
@@ -618,10 +644,13 @@ export default function LandingPage() {
                             Build your base
                           </p>
                           <div className="flex items-center gap-1.5">
-                            <span
-                              className="inline-block w-4 h-4 rounded-full"
-                              style={{ backgroundColor: "rgba(255,97,48,0.25)" }}
-                            />
+                            <span className="inline-block w-5 h-5 rounded-full overflow-hidden">
+                              <img
+                                src="/landing/avatar-alex.jpg"
+                                alt="Alex"
+                                className="w-full h-full object-cover"
+                              />
+                            </span>
                             <span
                               className="text-[10px] font-headline"
                               style={{ color: "#FF6130", fontWeight: 700 }}
@@ -661,10 +690,13 @@ export default function LandingPage() {
                             Eat for energy
                           </p>
                           <div className="flex items-center gap-1.5">
-                            <span
-                              className="inline-block w-4 h-4 rounded-full"
-                              style={{ backgroundColor: "rgba(8,145,178,0.25)" }}
-                            />
+                            <span className="inline-block w-5 h-5 rounded-full overflow-hidden">
+                              <img
+                                src="/landing/avatar-mira.jpg"
+                                alt="Mira"
+                                className="w-full h-full object-cover"
+                              />
+                            </span>
                             <span
                               className="text-[10px] font-headline"
                               style={{ color: "#0891b2", fontWeight: 700 }}
