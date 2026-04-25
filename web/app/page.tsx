@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { WaveFlowingBackground } from "./components/WaveFlowingBackground";
-import { FloatingNeonLogo } from "./components/_unused/FloatingNeonLogo";
 
 /**
  * INFITRA — pilot landing page (visual-first, low cognitive load).
@@ -90,18 +89,11 @@ export default function LandingPage() {
                 </span>
               </div>
 
-              {/* Logo — sized down so the headline dominates */}
-              <FloatingNeonLogo
-                variant="cream"
-                className="w-[180px] h-[180px] md:w-[220px] md:h-[220px] mb-6"
-              />
+              {/* No centered logo or wordmark — the nav already carries the
+                  brand and the wave supplies the brand atmosphere. The hero
+                  earns its weight by leading with the conversion line. */}
 
-              {/* Wordmark — also dialled back */}
-              <p className="text-3xl md:text-4xl font-black text-[#FF6130] tracking-tighter font-headline leading-none mb-10">
-                INFITRA
-              </p>
-
-              {/* HEADLINE — visually dominant */}
+              {/* HEADLINE — the actual moment */}
               <h1
                 className="text-4xl md:text-5xl lg:text-6xl font-headline tracking-tight leading-[1.05] max-w-3xl mb-6"
                 style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.025em" }}
