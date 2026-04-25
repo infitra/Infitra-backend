@@ -24,10 +24,7 @@ export function OnboardingForm() {
               className="block"
             />
           </div>
-          <span
-            className="text-2xl font-headline italic tracking-tight leading-none"
-            style={{ color: "#FF6130", fontWeight: 700, letterSpacing: "-0.03em" }}
-          >
+          <span className="text-2xl font-black text-[#FF6130] tracking-tighter font-headline italic">
             INFITRA
           </span>
         </div>
