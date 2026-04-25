@@ -60,10 +60,10 @@ export default function LandingPage() {
         <main>
           {/* ── HERO ── */}
           <section className="relative min-h-screen flex flex-col items-center justify-center px-6 pt-28 pb-20 text-center">
-            <div className="relative max-w-3xl mx-auto w-full flex flex-col items-center">
+            <div className="relative max-w-5xl mx-auto w-full flex flex-col items-center">
               {/* Pilot badge */}
               <div
-                className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-8"
+                className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-10"
                 style={{
                   backgroundColor: "rgba(8, 145, 178, 0.10)",
                   border: "1px solid rgba(8, 145, 178, 0.25)",
@@ -75,90 +75,128 @@ export default function LandingPage() {
                 </span>
               </div>
 
-              {/* ── Floating logo mark (kept from previous landing,
-                  depth shaders adapted for light cream background) ── */}
-              <div className="relative w-56 h-56 md:w-72 md:h-72 mb-8 flex items-center justify-center">
-                {/* Soft cyan halo */}
-                <div className="absolute inset-0 scale-[1.6] rounded-full bg-[#9CF0FF]/30 blur-[80px]" />
+              {/* ── Floating logo mark on a deep-navy spotlight stage.
+                  The cyan logo needs darkness behind it to read as "neon"
+                  the way it did on the dark previous landing. We give it a
+                  large radial-gradient backdrop in #0F2229 (Infitra deep
+                  navy) that fades into the cream — like a cosmic window
+                  punched through the page. Brand-cohesive (uses the same
+                  navy as text + dark accents elsewhere). ── */}
+              <div className="relative w-[340px] h-[340px] md:w-[480px] md:h-[480px] lg:w-[560px] lg:h-[560px] mb-8 flex items-center justify-center">
 
-                <div className="float-twist absolute inset-0">
-                  {/* Subtle ground shadow — warm gray, not the dark navy of the
-                      previous dark-bg version */}
-                  <div className="absolute w-[65%] h-[10%] bottom-[-8%] left-[17%] rounded-full bg-[#0F2229]/15 blur-[14px]" />
+                {/* Spotlight stage — the dark backdrop. Two layered radial
+                    gradients: an inner deep-navy disc + an outer soft cyan
+                    rim that bleeds into the cream. */}
+                <div
+                  className="absolute inset-0 rounded-full"
+                  style={{
+                    background:
+                      "radial-gradient(circle at 50% 52%, #0F2229 0%, #0F2229 30%, rgba(15,34,41,0.55) 50%, rgba(15,34,41,0.20) 65%, transparent 78%)",
+                  }}
+                />
+                {/* Cyan glow ring at the edge of the stage — adds the neon halo */}
+                <div
+                  className="absolute inset-0 rounded-full"
+                  style={{
+                    background:
+                      "radial-gradient(circle at 50% 52%, transparent 35%, rgba(156,240,255,0.18) 55%, transparent 75%)",
+                    filter: "blur(8px)",
+                  }}
+                />
 
-                  {/* Dark underside — keep but adjusted for light bg */}
-                  <div
-                    className="absolute w-full h-full translate-y-[1px]"
-                    style={{
-                      filter: "brightness(0.55) saturate(1.4)",
-                      maskImage: "linear-gradient(to top, black 25%, transparent 75%)",
-                      WebkitMaskImage: "linear-gradient(to top, black 25%, transparent 75%)",
-                    }}
-                  >
-                    <Image src="/logo-mark-cyan.png" alt="" fill className="object-contain" aria-hidden />
-                  </div>
+                {/* Inner halo — much brighter cyan close to the logo,
+                    becomes the "neon" you see on dark themes */}
+                <div className="absolute inset-0 scale-[0.85] rounded-full bg-[#9CF0FF]/35 blur-[60px]" />
 
-                  {/* Base mark — core cyan */}
-                  <div className="absolute w-full h-full">
-                    <Image src="/logo-mark-cyan.png" alt="" fill className="object-contain" aria-hidden />
-                  </div>
+                {/* Logo sits at ~70% of the stage size so the dark stage is
+                    visible around it */}
+                <div className="relative w-[70%] h-[70%] flex items-center justify-center">
+                  <div className="float-twist absolute inset-0">
+                    {/* Ground shadow — dark navy now that the logo is on
+                        a dark backdrop (matches the darker plane) */}
+                    <div className="absolute w-[65%] h-[12%] bottom-[-8%] left-[17%] rounded-full bg-[#040d10]/60 blur-[18px]" />
 
-                  {/* Mid-tone depth on bottom-right */}
-                  <div
-                    className="absolute w-full h-full"
-                    style={{
-                      maskImage: "linear-gradient(315deg, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.12) 35%, transparent 55%)",
-                      WebkitMaskImage: "linear-gradient(315deg, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.12) 35%, transparent 55%)",
-                      filter: "brightness(0.65) saturate(1.5)",
-                    }}
-                  >
-                    <Image src="/logo-mark-cyan.png" alt="" fill className="object-contain" aria-hidden />
-                  </div>
+                    {/* Dark underside */}
+                    <div
+                      className="absolute w-full h-full translate-y-[2px]"
+                      style={{
+                        filter: "brightness(0.5) saturate(1.4)",
+                        maskImage: "linear-gradient(to top, black 28%, transparent 78%)",
+                        WebkitMaskImage: "linear-gradient(to top, black 28%, transparent 78%)",
+                      }}
+                    >
+                      <Image src="/logo-mark-cyan.png" alt="" fill className="object-contain" aria-hidden />
+                    </div>
 
-                  {/* Highlight on top-left */}
-                  <div
-                    className="absolute w-full h-full"
-                    style={{
-                      maskImage: "linear-gradient(140deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.15) 35%, transparent 55%)",
-                      WebkitMaskImage: "linear-gradient(140deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.15) 35%, transparent 55%)",
-                      filter: "brightness(1.4) saturate(0.85)",
-                    }}
-                  >
-                    <Image src="/logo-mark-cyan.png" alt="" fill className="object-contain" aria-hidden />
-                  </div>
+                    {/* Base mark — core cyan */}
+                    <div className="absolute w-full h-full">
+                      <Image src="/logo-mark-cyan.png" alt="" fill className="object-contain" aria-hidden />
+                    </div>
 
-                  {/* Specular rim — top-left */}
-                  <div
-                    className="absolute w-full h-full"
-                    style={{
-                      maskImage: "linear-gradient(150deg, rgba(0,0,0,0.4) 0%, transparent 22%)",
-                      WebkitMaskImage: "linear-gradient(150deg, rgba(0,0,0,0.4) 0%, transparent 22%)",
-                      filter: "brightness(1.9) saturate(0.5)",
-                    }}
-                  >
-                    <Image src="/logo-mark-cyan.png" alt="INFITRA" fill className="object-contain" />
+                    {/* Mid-tone depth bottom-right */}
+                    <div
+                      className="absolute w-full h-full"
+                      style={{
+                        maskImage: "linear-gradient(315deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.15) 35%, transparent 55%)",
+                        WebkitMaskImage: "linear-gradient(315deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.15) 35%, transparent 55%)",
+                        filter: "brightness(0.55) saturate(1.6)",
+                      }}
+                    >
+                      <Image src="/logo-mark-cyan.png" alt="" fill className="object-contain" aria-hidden />
+                    </div>
+
+                    {/* Highlight top-left */}
+                    <div
+                      className="absolute w-full h-full"
+                      style={{
+                        maskImage: "linear-gradient(140deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.15) 35%, transparent 55%)",
+                        WebkitMaskImage: "linear-gradient(140deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.15) 35%, transparent 55%)",
+                        filter: "brightness(1.45) saturate(0.85)",
+                      }}
+                    >
+                      <Image src="/logo-mark-cyan.png" alt="" fill className="object-contain" aria-hidden />
+                    </div>
+
+                    {/* Specular rim top-left — bright neon edge */}
+                    <div
+                      className="absolute w-full h-full"
+                      style={{
+                        maskImage: "linear-gradient(150deg, rgba(0,0,0,0.4) 0%, transparent 22%)",
+                        WebkitMaskImage: "linear-gradient(150deg, rgba(0,0,0,0.4) 0%, transparent 22%)",
+                        filter: "brightness(2) saturate(0.45)",
+                      }}
+                    >
+                      <Image src="/logo-mark-cyan.png" alt="INFITRA" fill className="object-contain" />
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Wordmark */}
+              {/* Wordmark — large, italic, with subtle glow.
+                  Same font (font-headline = General Sans), same italic
+                  treatment, same orange — just sized to hero proportions
+                  matching the original landing. */}
               <h1
-                className="text-5xl md:text-6xl font-black font-headline italic tracking-tighter mb-6"
-                style={{ color: "#FF6130", letterSpacing: "-0.03em" }}
+                className="text-7xl md:text-8xl lg:text-9xl font-black font-headline italic tracking-tighter leading-[0.85] mb-8"
+                style={{
+                  color: "#FF6130",
+                  letterSpacing: "-0.03em",
+                  textShadow: "0 0 40px rgba(255,97,48,0.25)",
+                }}
               >
                 INFITRA
               </h1>
 
               {/* The pitch — single sentence, sharp */}
               <p
-                className="text-2xl md:text-3xl lg:text-4xl font-black font-headline tracking-tight leading-tight max-w-2xl mb-5"
-                style={{ color: "#0F2229" }}
+                className="text-3xl md:text-4xl lg:text-5xl font-black font-headline tracking-tight leading-[1.05] max-w-3xl mb-6"
+                style={{ color: "#0F2229", letterSpacing: "-0.02em" }}
               >
                 Run your next challenge with a coach your audience doesn&apos;t have.
               </p>
 
               <p
-                className="text-base md:text-lg max-w-xl mx-auto leading-relaxed mb-10"
+                className="text-lg md:text-xl max-w-2xl mx-auto leading-relaxed mb-12"
                 style={{ color: "#475569" }}
               >
                 Pair your training with complementary expertise. Co-design one program. Sell it
@@ -168,24 +206,24 @@ export default function LandingPage() {
               {/* Primary CTA */}
               <Link
                 href="/apply"
-                className="inline-block px-10 py-4 rounded-full text-white text-base font-black font-headline tracking-wide transition-transform hover:scale-[1.03]"
+                className="inline-block px-12 py-4 rounded-full text-white text-lg font-black font-headline tracking-wide transition-transform hover:scale-[1.03]"
                 style={{
                   backgroundColor: "#FF6130",
-                  boxShadow: "0 6px 24px rgba(255,97,48,0.35), 0 2px 8px rgba(255,97,48,0.20)",
+                  boxShadow: "0 8px 28px rgba(255,97,48,0.35), 0 2px 10px rgba(255,97,48,0.20)",
                 }}
               >
                 Apply for the pilot
               </Link>
 
-              <p className="text-xs mt-4 tracking-wide" style={{ color: "#94a3b8" }}>
+              <p className="text-xs mt-5 tracking-wide" style={{ color: "#94a3b8" }}>
                 Closed cohort of 5 fitness creator pairs. Reviewed individually.
               </p>
             </div>
           </section>
 
           {/* ── THE EXAMPLE — concrete, one card ── */}
-          <section className="px-6 py-24">
-            <div className="max-w-3xl mx-auto">
+          <section className="px-6 py-28">
+            <div className="max-w-4xl mx-auto">
               <div className="text-center mb-10">
                 <p className="text-xs font-black font-headline uppercase tracking-[0.2em] mb-3"
                    style={{ color: "#0891b2" }}>
@@ -220,8 +258,8 @@ export default function LandingPage() {
           </section>
 
           {/* ── THREE PROPS — what we solve ── */}
-          <section className="px-6 py-20">
-            <div className="max-w-5xl mx-auto">
+          <section className="px-6 py-24">
+            <div className="max-w-6xl mx-auto">
               <div className="text-center mb-12">
                 <p className="text-xs font-black font-headline uppercase tracking-[0.2em] mb-3"
                    style={{ color: "#0891b2" }}>
@@ -276,8 +314,8 @@ export default function LandingPage() {
           </section>
 
           {/* ── PILOT FRAMING + CTA REPEAT ── */}
-          <section className="px-6 py-28">
-            <div className="max-w-2xl mx-auto text-center">
+          <section className="px-6 py-32">
+            <div className="max-w-3xl mx-auto text-center">
               <h2 className="text-4xl md:text-5xl font-black font-headline tracking-tight mb-5"
                   style={{ color: "#0F2229" }}>
                 Be one of the first 5 pairs.
