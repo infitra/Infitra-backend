@@ -10,16 +10,15 @@ import { FloatingNeonLogo } from "./components/_unused/FloatingNeonLogo";
  *   2. Visual diagram — "2 experts → 1 program"
  *   3. Where it comes alive — typographic bridge, heartbeat ECG metaphor
  *   4. What you can build — production-style challenge preview (real images)
- *   5. ONE pain comparison — broken vs. fixed (side-by-side)
- *   6. INFITRA solution — clean checklist
- *   7. CTA
- *   8. Collapsible depth — "See why this matters" (additional pains)
- *   9. Final CTA
+ *   5. CTA
+ *   6. Collapsible depth — "See why this matters" (broken/fixed + pains)
+ *   7. Final CTA
  *   + Footer
  *
- * Top of the page is instinct + visual; depth lives in the collapsible
- * section so the page is scannable in 10 seconds without sacrificing
- * the supporting argument.
+ * Top of the page is purely visual + emotional: hero → diagram → bridge
+ * → mockup → ask. The argument (broken/fixed comparison + pain analysis)
+ * lives entirely inside the collapsible so the page is scannable in
+ * 30 seconds without sacrificing the supporting argument for skeptics.
  *
  * Cream + WaveFlowingBackground throughout — same shell as the rest
  * of the production app.
@@ -719,160 +718,7 @@ export default function LandingPage() {
             </div>
           </section>
 
-          {/* ── [4] ONE PAIN — side-by-side comparison ── */}
-          <section className="px-6 py-24">
-            <div className="max-w-5xl mx-auto">
-              <div className="text-center mb-12">
-                <p
-                  className="text-xs uppercase tracking-[0.25em] mb-3 font-headline"
-                  style={{ color: "#FF6130", fontWeight: 700 }}
-                >
-                  Without INFITRA
-                </p>
-                <h2
-                  className="text-2xl md:text-3xl lg:text-4xl font-headline tracking-tight max-w-2xl mx-auto"
-                  style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.02em" }}
-                >
-                  Even when creators try to build together — it&apos;s two of everything.
-                </h2>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {/* Broken */}
-                <div
-                  className="rounded-3xl p-8"
-                  style={{
-                    backgroundColor: "rgba(255,255,255,0.55)",
-                    border: "1px solid rgba(255,97,48,0.25)",
-                  }}
-                >
-                  <div className="flex items-center gap-3 mb-6">
-                    <span
-                      className="w-7 h-7 rounded-full flex items-center justify-center"
-                      style={{ backgroundColor: "rgba(255,97,48,0.15)" }}
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FF6130" strokeWidth={3}>
-                        <path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </span>
-                    <p
-                      className="text-[10px] uppercase tracking-widest font-headline"
-                      style={{ color: "#FF6130", fontWeight: 700 }}
-                    >
-                      Today
-                    </p>
-                  </div>
-                  <ul className="space-y-3">
-                    {["Two landing pages", "Two checkouts", "Fragmented experience"].map((item) => (
-                      <li
-                        key={item}
-                        className="text-base md:text-lg font-headline"
-                        style={{ color: "#475569", fontWeight: 700 }}
-                      >
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* Fixed */}
-                <div
-                  className="rounded-3xl p-8"
-                  style={{
-                    backgroundColor: "rgba(255,255,255,0.85)",
-                    border: "1px solid rgba(8,145,178,0.30)",
-                    boxShadow: "0 12px 40px rgba(8,145,178,0.08)",
-                  }}
-                >
-                  <div className="flex items-center gap-3 mb-6">
-                    <span
-                      className="w-7 h-7 rounded-full flex items-center justify-center"
-                      style={{ backgroundColor: "rgba(8,145,178,0.15)" }}
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0891b2" strokeWidth={3}>
-                        <path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </span>
-                    <p
-                      className="text-[10px] uppercase tracking-widest font-headline"
-                      style={{ color: "#0891b2", fontWeight: 700 }}
-                    >
-                      INFITRA
-                    </p>
-                  </div>
-                  <ul className="space-y-3">
-                    {["One product", "One checkout", "Unified experience"].map((item) => (
-                      <li
-                        key={item}
-                        className="text-base md:text-lg font-headline"
-                        style={{ color: "#0F2229", fontWeight: 700 }}
-                      >
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* ── [5] INFITRA SOLUTION — checklist ───────── */}
-          <section className="px-6 py-24">
-            <div className="max-w-3xl mx-auto">
-              <div className="text-center mb-10">
-                <p
-                  className="text-xs uppercase tracking-[0.25em] mb-3 font-headline"
-                  style={{ color: "#0891b2", fontWeight: 700 }}
-                >
-                  The fix
-                </p>
-                <h2
-                  className="text-3xl md:text-4xl lg:text-5xl font-headline tracking-tight"
-                  style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.02em" }}
-                >
-                  INFITRA makes this one product.
-                </h2>
-              </div>
-
-              <div
-                className="rounded-3xl p-8 md:p-10"
-                style={{
-                  backgroundColor: "rgba(255,255,255,0.7)",
-                  border: "1px solid rgba(15,34,41,0.08)",
-                  boxShadow: "0 12px 40px rgba(15,34,41,0.06)",
-                }}
-              >
-                <ul className="space-y-4">
-                  {[
-                    "One product",
-                    "One checkout",
-                    "One experience",
-                    "Clean revenue splits",
-                    "Shared workspace",
-                  ].map((line) => (
-                    <li key={line} className="flex items-center gap-4">
-                      <span
-                        className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center"
-                        style={{ backgroundColor: "rgba(8,145,178,0.12)" }}
-                      >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0891b2" strokeWidth={3}>
-                          <path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      </span>
-                      <span
-                        className="text-lg md:text-xl font-headline"
-                        style={{ color: "#0F2229", fontWeight: 700 }}
-                      >
-                        {line}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          </section>
-
-          {/* ── [6] CTA — primary ──────────────────────── */}
+          {/* ── [5] CTA — primary ──────────────────────── */}
           <section className="px-6 py-20 text-center">
             <Link
               href="/apply"
@@ -890,7 +736,7 @@ export default function LandingPage() {
             </p>
           </section>
 
-          {/* ── [7] COLLAPSIBLE DEPTH ──────────────────── */}
+          {/* ── [6] COLLAPSIBLE DEPTH ──────────────────── */}
           <section className="px-6 py-20">
             <div className="max-w-3xl mx-auto">
               <details className="group">
@@ -913,6 +759,78 @@ export default function LandingPage() {
                 </summary>
 
                 <div className="mt-10 space-y-6">
+                  {/* — Sub: Two of everything (broken / fixed) — */}
+                  <div
+                    className="rounded-3xl p-8"
+                    style={{
+                      backgroundColor: "rgba(255,255,255,0.55)",
+                      border: "1px solid rgba(15,34,41,0.08)",
+                    }}
+                  >
+                    <h3
+                      className="text-xl md:text-2xl font-headline tracking-tight mb-6"
+                      style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.02em" }}
+                    >
+                      Even when collaborations happen — it&apos;s two of everything
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Broken */}
+                      <div
+                        className="rounded-2xl p-5"
+                        style={{
+                          backgroundColor: "rgba(255,97,48,0.05)",
+                          border: "1px solid rgba(255,97,48,0.18)",
+                        }}
+                      >
+                        <p
+                          className="text-[10px] uppercase tracking-widest font-headline mb-3"
+                          style={{ color: "#FF6130", fontWeight: 700 }}
+                        >
+                          Today
+                        </p>
+                        <ul className="space-y-1.5">
+                          {["Two landing pages", "Two checkouts", "Fragmented experience"].map(
+                            (item) => (
+                              <li
+                                key={item}
+                                className="text-sm md:text-base font-headline"
+                                style={{ color: "#475569", fontWeight: 700 }}
+                              >
+                                {item}
+                              </li>
+                            ),
+                          )}
+                        </ul>
+                      </div>
+                      {/* Fixed */}
+                      <div
+                        className="rounded-2xl p-5"
+                        style={{
+                          backgroundColor: "rgba(8,145,178,0.06)",
+                          border: "1px solid rgba(8,145,178,0.22)",
+                        }}
+                      >
+                        <p
+                          className="text-[10px] uppercase tracking-widest font-headline mb-3"
+                          style={{ color: "#0891b2", fontWeight: 700 }}
+                        >
+                          INFITRA
+                        </p>
+                        <ul className="space-y-1.5">
+                          {["One product", "One checkout", "Unified experience"].map((item) => (
+                            <li
+                              key={item}
+                              className="text-sm md:text-base font-headline"
+                              style={{ color: "#0F2229", fontWeight: 700 }}
+                            >
+                              {item}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* — Sub: Do everything themselves — */}
                   <div
                     className="rounded-3xl p-8"
@@ -1022,7 +940,7 @@ export default function LandingPage() {
             </div>
           </section>
 
-          {/* ── [8] FINAL CTA ──────────────────────────── */}
+          {/* ── [7] FINAL CTA ──────────────────────────── */}
           <section className="px-6 py-32 text-center">
             <div className="max-w-3xl mx-auto">
               <h2
