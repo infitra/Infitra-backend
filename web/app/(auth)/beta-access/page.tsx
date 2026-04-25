@@ -29,7 +29,7 @@ function BetaForm() {
           <div className="rounded-xl overflow-hidden">
             <Image src="/logo-mark.png" alt="INFITRA" width={40} height={40} className="block" />
           </div>
-          <span className="text-2xl font-black text-[#FF6130] tracking-tighter font-headline italic">
+          <span className="text-2xl font-black text-[#FF6130] tracking-tighter font-headline">
             INFITRA
           </span>
         </div>

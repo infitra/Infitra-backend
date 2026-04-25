@@ -41,7 +41,7 @@ export default function LandingPage() {
                 className="block rounded-lg"
               />
               <span
-                className="text-[22px] tracking-tight font-headline leading-none italic"
+                className="text-[22px] tracking-tight font-headline leading-none"
                 style={{ color: "#FF6130", fontWeight: 700, letterSpacing: "-0.03em" }}
               >
                 INFITRA
@@ -147,11 +147,11 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              {/* INFITRA wordmark — uses the same chunky synthesised-italic
-                  treatment as the auth + onboarding wordmarks, scaled up
-                  for the hero. font-black + tracking-tighter is the brand
-                  feel that production has always rendered. */}
-              <p className="text-7xl md:text-8xl lg:text-9xl font-black text-[#FF6130] tracking-tighter font-headline italic leading-none mb-8">
+              {/* INFITRA wordmark — same upright treatment as the dashboard
+                  nav (no italic; italic was a legacy of the old dark theme),
+                  scaled up to hero proportions with font-black for stage
+                  presence. */}
+              <p className="text-7xl md:text-8xl lg:text-9xl font-black text-[#FF6130] tracking-tighter font-headline leading-none mb-8">
                 INFITRA
               </p>
 
@@ -322,7 +322,7 @@ export default function LandingPage() {
             <div className="flex items-center gap-3">
               <img src="/logo-mark.png" alt="INFITRA" width={28} height={28} className="block rounded-md" />
               <span
-                className="text-base tracking-tight font-headline italic"
+                className="text-base tracking-tight font-headline"
                 style={{ color: "#FF6130", fontWeight: 700, letterSpacing: "-0.03em" }}
               >
                 INFITRA

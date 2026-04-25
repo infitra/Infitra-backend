@@ -25,7 +25,7 @@ export default function AuthLayout({
               className="block"
             />
           </div>
-          <span className="text-2xl font-black text-[#FF6130] tracking-tighter font-headline italic">
+          <span className="text-2xl font-black text-[#FF6130] tracking-tighter font-headline">
             INFITRA
           </span>
         </div>
