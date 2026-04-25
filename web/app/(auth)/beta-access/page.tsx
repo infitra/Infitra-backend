@@ -1,12 +1,15 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { submitBetaCode } from "@/app/actions/beta";
-import Image from "next/image";
-import Link from "next/link";
-import { Suspense } from "react";
 
+/**
+ * Beta-access gate. Cream + wave theme — relies on the parent (auth)
+ * layout for the brand wordmark and the wave background. Form sits in
+ * a soft white card just like the login surface, so the two screens
+ * read as one continuous brand.
+ */
 function BetaForm() {
   const searchParams = useSearchParams();
   const next = searchParams.get("next") || "/login";
@@ -18,69 +21,87 @@ function BetaForm() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#071318] flex flex-col items-center justify-center px-6 relative">
-      {/* Atmospheric glow */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-[#9CF0FF]/4 blur-[150px]" />
-      </div>
-
-      <Link href="/" className="relative z-10 mb-12">
-        <div className="flex items-center gap-3">
-          <div className="rounded-xl overflow-hidden">
-            <Image src="/logo-mark.png" alt="INFITRA" width={40} height={40} className="block" />
-          </div>
-          <span className="text-2xl font-black text-[#FF6130] tracking-tighter font-headline">
-            INFITRA
+    <div
+      className="rounded-3xl p-8 md:p-10"
+      style={{
+        backgroundColor: "rgba(255,255,255,0.85)",
+        border: "1px solid rgba(15,34,41,0.08)",
+        boxShadow: "0 16px 48px rgba(15,34,41,0.06)",
+      }}
+    >
+      <div className="mb-6">
+        <div
+          className="inline-flex items-center gap-2 px-3 py-1 rounded-full mb-4"
+          style={{
+            backgroundColor: "rgba(8,145,178,0.10)",
+            border: "1px solid rgba(8,145,178,0.25)",
+          }}
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-[#0891b2] animate-pulse" />
+          <span
+            className="text-[#0891b2] text-[10px] tracking-widest uppercase font-headline"
+            style={{ fontWeight: 700 }}
+          >
+            Private Beta
           </span>
         </div>
-      </Link>
-
-      <div className="relative z-10 w-full max-w-sm">
-        <div className="bg-[#0F2229] rounded-2xl border border-[#9CF0FF]/10 p-8">
-          <div className="mb-6">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#9CF0FF]/8 border border-[#9CF0FF]/15 mb-4">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#9CF0FF] animate-pulse" />
-              <span className="text-[#9CF0FF] text-xs font-bold tracking-widest uppercase font-headline">
-                Private Beta
-              </span>
-            </div>
-            <h1 className="text-2xl font-black text-white font-headline tracking-tight">
-              Access required.
-            </h1>
-            <p className="text-sm text-[#9CF0FF]/40 mt-2">
-              Enter your access code to continue.
-            </p>
-          </div>
-
-          {state?.error && (
-            <div className="mb-4 p-3 rounded-xl bg-[#FF6130]/10 border border-[#FF6130]/20">
-              <p className="text-sm text-[#FF6130]">{state.error}</p>
-            </div>
-          )}
-
-          <form action={action} className="space-y-4">
-            <input type="hidden" name="next" value={next} />
-            <input
-              ref={inputRef}
-              id="code"
-              name="code"
-              type="text"
-              required
-              autoComplete="off"
-              spellCheck={false}
-              placeholder="Access code"
-              className="w-full px-4 py-3 rounded-xl bg-[#071318] border border-[#9CF0FF]/15 text-white placeholder-[#9CF0FF]/20 focus:outline-none focus:border-[#9CF0FF]/40 transition-colors text-sm font-mono tracking-widest"
-            />
-            <button
-              type="submit"
-              disabled={pending}
-              className="w-full py-3.5 bg-[#FF6130] text-white rounded-full font-black text-sm hover:scale-[1.02] transition-transform font-headline shadow-[0_0_20px_rgba(255,97,48,0.25)] disabled:opacity-50 disabled:hover:scale-100"
-            >
-              {pending ? "..." : "Continue"}
-            </button>
-          </form>
-        </div>
+        <h1
+          className="text-2xl font-headline tracking-tight"
+          style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.02em" }}
+        >
+          Access required.
+        </h1>
+        <p className="text-sm mt-2" style={{ color: "#64748b" }}>
+          Enter your access code to continue.
+        </p>
       </div>
+
+      {state?.error && (
+        <div
+          className="mb-4 p-3 rounded-xl"
+          style={{
+            backgroundColor: "rgba(255,97,48,0.10)",
+            border: "1px solid rgba(255,97,48,0.30)",
+          }}
+        >
+          <p className="text-sm" style={{ color: "#FF6130" }}>
+            {state.error}
+          </p>
+        </div>
+      )}
+
+      <form action={action} className="space-y-4">
+        <input type="hidden" name="next" value={next} />
+        <input
+          ref={inputRef}
+          id="code"
+          name="code"
+          type="text"
+          required
+          autoComplete="off"
+          spellCheck={false}
+          placeholder="Access code"
+          className="w-full px-4 py-3 rounded-xl text-sm font-mono tracking-widest focus:outline-none transition-colors"
+          style={{
+            backgroundColor: "rgba(255,255,255,0.78)",
+            border: "1px solid rgba(15,34,41,0.15)",
+            color: "#0F2229",
+          }}
+        />
+        <button
+          type="submit"
+          disabled={pending}
+          className="w-full py-3.5 rounded-full text-white text-sm font-headline transition-transform hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
+          style={{
+            backgroundColor: "#FF6130",
+            fontWeight: 700,
+            boxShadow:
+              "0 4px 14px rgba(255,97,48,0.35), 0 2px 6px rgba(255,97,48,0.20)",
+          }}
+        >
+          {pending ? "..." : "Continue"}
+        </button>
+      </form>
     </div>
   );
 }
