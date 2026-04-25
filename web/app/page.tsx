@@ -88,18 +88,46 @@ export default function LandingPage() {
                 </span>
               </div>
 
-              {/* Brand logo — full original mark (orange + cyan).
-                  The animated cyan-neon variant lives in
-                  components/_unused/FloatingNeonLogo.tsx if we ever want
-                  it back. */}
-              <div className="relative w-[200px] h-[200px] md:w-[260px] md:h-[260px] mb-10 flex items-center justify-center">
-                <Image
-                  src="/logo-mark.png"
-                  alt="INFITRA"
-                  fill
-                  priority
-                  className="object-contain"
+              {/* Brand logo with orange ambient glow.
+                  The wave background flows cyan → cream → orange. By
+                  thickening the orange in a soft elliptical halo behind
+                  the logo, the logo's "warmth zone" joins the orange
+                  side of the wave rather than sitting as a foreign
+                  element. A subtle cyan whisper keeps brand balance.
+                  float-twist animation = gentle breathing motion (alive,
+                  not static) without the heavy depth shaders that lived
+                  in the previous neon treatment.
+                  The original animated cyan-neon variant lives in
+                  components/_unused/FloatingNeonLogo.tsx for retrieval. */}
+              <div className="relative w-[220px] h-[220px] md:w-[280px] md:h-[280px] mb-10 flex items-center justify-center">
+                {/* Primary orange ambient ellipse — wider than tall, soft
+                    edges via heavy blur, moderate opacity. */}
+                <div
+                  className="absolute"
+                  style={{
+                    width: "200%",
+                    height: "150%",
+                    background:
+                      "radial-gradient(ellipse, rgba(255,97,48,0.35) 0%, rgba(255,97,48,0.18) 35%, rgba(255,97,48,0.05) 65%, transparent 85%)",
+                    filter: "blur(20px)",
+                  }}
                 />
+                {/* Cyan whisper — tighter, dimmer, brand-balance */}
+                <div className="absolute inset-0 scale-[1.15] rounded-full bg-[#9CF0FF]/20 blur-[45px]" />
+
+                <div className="float-twist relative w-full h-full">
+                  <Image
+                    src="/logo-mark.png"
+                    alt="INFITRA"
+                    fill
+                    priority
+                    className="object-contain"
+                    style={{
+                      filter:
+                        "drop-shadow(0 10px 24px rgba(15,34,41,0.18)) drop-shadow(0 2px 6px rgba(15,34,41,0.10))",
+                    }}
+                  />
+                </div>
               </div>
 
               {/* Wordmark — upright, matches dashboard */}
