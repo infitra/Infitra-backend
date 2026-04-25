@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { WaveFlowingBackground } from "./components/WaveFlowingBackground";
+import { FloatingNeonLogo } from "./components/_unused/FloatingNeonLogo";
 
 /**
  * INFITRA — pilot landing page (editorial treatment, Path B).
@@ -88,47 +89,14 @@ export default function LandingPage() {
                 </span>
               </div>
 
-              {/* Brand logo with orange ambient glow.
-                  The wave background flows cyan → cream → orange. By
-                  thickening the orange in a soft elliptical halo behind
-                  the logo, the logo's "warmth zone" joins the orange
-                  side of the wave rather than sitting as a foreign
-                  element. A subtle cyan whisper keeps brand balance.
-                  float-twist animation = gentle breathing motion (alive,
-                  not static) without the heavy depth shaders that lived
-                  in the previous neon treatment.
-                  The original animated cyan-neon variant lives in
-                  components/_unused/FloatingNeonLogo.tsx for retrieval. */}
-              <div className="relative w-[220px] h-[220px] md:w-[280px] md:h-[280px] mb-10 flex items-center justify-center">
-                {/* Primary orange ambient ellipse — wider than tall, soft
-                    edges via heavy blur, moderate opacity. */}
-                <div
-                  className="absolute"
-                  style={{
-                    width: "200%",
-                    height: "150%",
-                    background:
-                      "radial-gradient(ellipse, rgba(255,97,48,0.35) 0%, rgba(255,97,48,0.18) 35%, rgba(255,97,48,0.05) 65%, transparent 85%)",
-                    filter: "blur(20px)",
-                  }}
-                />
-                {/* Cyan whisper — tighter, dimmer, brand-balance */}
-                <div className="absolute inset-0 scale-[1.15] rounded-full bg-[#9CF0FF]/20 blur-[45px]" />
+              {/* Animated cyan logo mark on cream — restored from the
+                  archived component. Layered cyan halos + float-twist
+                  breathing motion + depth shaders for 3D feel. */}
+              <FloatingNeonLogo
+                variant="cream"
+                className="w-[280px] h-[280px] md:w-[340px] md:h-[340px] mb-10"
+              />
 
-                <div className="float-twist relative w-full h-full">
-                  <Image
-                    src="/logo-mark.png"
-                    alt="INFITRA"
-                    fill
-                    priority
-                    className="object-contain"
-                    style={{
-                      filter:
-                        "drop-shadow(0 10px 24px rgba(15,34,41,0.18)) drop-shadow(0 2px 6px rgba(15,34,41,0.10))",
-                    }}
-                  />
-                </div>
-              </div>
 
               {/* Wordmark — upright, matches dashboard */}
               <p className="text-6xl md:text-7xl lg:text-8xl font-black text-[#FF6130] tracking-tighter font-headline leading-none mb-10">
