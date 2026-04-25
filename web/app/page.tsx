@@ -93,21 +93,24 @@ export default function LandingPage() {
                   brand and the wave supplies the brand atmosphere. The hero
                   earns its weight by leading with the conversion line. */}
 
-              {/* HEADLINE — the actual moment */}
+              {/* HEADLINE — direct address, punch in tail position. Number-
+                  agnostic ("alone" implies "without help" without pinning to
+                  exactly two creators — the system supports N collaborators). */}
               <h1
                 className="text-4xl md:text-5xl lg:text-6xl font-headline tracking-tight leading-[1.05] max-w-3xl mb-6"
                 style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.025em" }}
               >
-                Build a program that&apos;s better than what you can offer alone.
+                Build the program you couldn&apos;t build alone.
               </h1>
 
-              {/* Subline */}
+              {/* Subline — names the mechanism, stays plural-friendly */}
               <p
                 className="text-lg md:text-xl max-w-2xl mx-auto leading-relaxed mb-8"
                 style={{ color: "#475569" }}
               >
-                Combine your expertise with another coach and deliver it as one seamless program
-                your audience will pay more for.
+                Combine your expertise with the creators who complement you.
+                Build it together in one workspace. Launch it as one product.
+                Split revenue cleanly.
               </p>
 
               {/* Anchor line */}
