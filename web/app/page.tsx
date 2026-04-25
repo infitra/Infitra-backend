@@ -81,7 +81,7 @@ export default function LandingPage() {
                   className="text-[10px] uppercase tracking-[0.25em] font-headline text-center shrink-0"
                   style={{ color: "#0891b2", fontWeight: 700 }}
                 >
-                  The workspace for co-created fitness programs
+                  The workspace for live, co-created fitness programs
                 </p>
                 <div className="flex-1 h-px" style={{ backgroundColor: "rgba(8,145,178,0.30)" }} />
               </div>
@@ -113,17 +113,15 @@ export default function LandingPage() {
                 Build a program beyond what you can offer alone.
               </h1>
 
-              {/* Subline — three benefit imperatives + the closing promise.
-                  The benefits are deliberately the three things creators
-                  *don't* have today (workspace vs WhatsApp, signed vs
-                  handshake, automated vs trust-pay). */}
+              {/* Subline — single sentence that carries mechanism (combine
+                  expertise), product (one seamless program), and the
+                  time-bound dimension (real-time, follow together). */}
               <p
                 className="text-lg md:text-xl max-w-2xl mx-auto leading-relaxed mb-10"
                 style={{ color: "#475569" }}
               >
-                Co-build in a shared workspace. Lock terms with signed
-                contracts. Split revenue automatically. Focus on the
-                program — INFITRA handles the rest.
+                Combine your expertise with another coach and deliver it
+                as one seamless program people follow together in real time.
               </p>
 
               {/* CTA */}
