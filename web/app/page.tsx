@@ -88,57 +88,18 @@ export default function LandingPage() {
                 </span>
               </div>
 
-              {/* Floating logo mark — cyan glow halos on cream */}
-              <div className="relative w-[260px] h-[260px] md:w-[320px] md:h-[320px] mb-10 flex items-center justify-center">
-                <div className="absolute inset-0 scale-[1.6] rounded-full bg-[#9CF0FF]/40 blur-[90px]" />
-                <div className="absolute inset-0 scale-[1.1] rounded-full bg-[#9CF0FF]/35 blur-[40px]" />
-
-                <div className="float-twist absolute inset-0">
-                  <div className="absolute w-[60%] h-[8%] bottom-[-6%] left-[20%] rounded-full bg-[#0F2229]/15 blur-[12px]" />
-                  <div
-                    className="absolute w-full h-full translate-y-[1px]"
-                    style={{
-                      filter: "brightness(0.6) saturate(1.4)",
-                      maskImage: "linear-gradient(to top, black 25%, transparent 75%)",
-                      WebkitMaskImage: "linear-gradient(to top, black 25%, transparent 75%)",
-                    }}
-                  >
-                    <Image src="/logo-mark-cyan.png" alt="" fill className="object-contain" aria-hidden />
-                  </div>
-                  <div className="absolute w-full h-full">
-                    <Image src="/logo-mark-cyan.png" alt="" fill className="object-contain" aria-hidden />
-                  </div>
-                  <div
-                    className="absolute w-full h-full"
-                    style={{
-                      maskImage: "linear-gradient(315deg, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.12) 35%, transparent 55%)",
-                      WebkitMaskImage: "linear-gradient(315deg, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.12) 35%, transparent 55%)",
-                      filter: "brightness(0.65) saturate(1.5)",
-                    }}
-                  >
-                    <Image src="/logo-mark-cyan.png" alt="" fill className="object-contain" aria-hidden />
-                  </div>
-                  <div
-                    className="absolute w-full h-full"
-                    style={{
-                      maskImage: "linear-gradient(140deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.15) 35%, transparent 55%)",
-                      WebkitMaskImage: "linear-gradient(140deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.15) 35%, transparent 55%)",
-                      filter: "brightness(1.4) saturate(0.85)",
-                    }}
-                  >
-                    <Image src="/logo-mark-cyan.png" alt="" fill className="object-contain" aria-hidden />
-                  </div>
-                  <div
-                    className="absolute w-full h-full"
-                    style={{
-                      maskImage: "linear-gradient(150deg, rgba(0,0,0,0.4) 0%, transparent 22%)",
-                      WebkitMaskImage: "linear-gradient(150deg, rgba(0,0,0,0.4) 0%, transparent 22%)",
-                      filter: "brightness(1.85) saturate(0.5)",
-                    }}
-                  >
-                    <Image src="/logo-mark-cyan.png" alt="INFITRA" fill className="object-contain" />
-                  </div>
-                </div>
+              {/* Brand logo — full original mark (orange + cyan).
+                  The animated cyan-neon variant lives in
+                  components/_unused/FloatingNeonLogo.tsx if we ever want
+                  it back. */}
+              <div className="relative w-[200px] h-[200px] md:w-[260px] md:h-[260px] mb-10 flex items-center justify-center">
+                <Image
+                  src="/logo-mark.png"
+                  alt="INFITRA"
+                  fill
+                  priority
+                  className="object-contain"
+                />
               </div>
 
               {/* Wordmark — upright, matches dashboard */}
@@ -471,25 +432,7 @@ export default function LandingPage() {
             </div>
           </section>
 
-          {/* ── [4] MANIFESTO BREAK — quiet typographic moment ── */}
-          <section className="px-6 py-32 text-center">
-            <div className="max-w-3xl mx-auto">
-              <p
-                className="text-[10px] uppercase tracking-[0.3em] mb-8 font-headline"
-                style={{ color: "#FF6130", fontWeight: 700 }}
-              >
-                — INFITRA —
-              </p>
-              <p
-                className="text-3xl md:text-4xl lg:text-5xl font-headline tracking-tight leading-[1.2]"
-                style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.02em" }}
-              >
-                Build a program together — and make it better than anything you can run alone.
-              </p>
-            </div>
-          </section>
-
-          {/* ── [5] INFITRA SOLUTION ────────────────────── */}
+          {/* ── [4] INFITRA SOLUTION ────────────────────── */}
           <section className="px-6 py-24">
             <div className="max-w-4xl mx-auto">
               <div className="text-center mb-16">
@@ -592,7 +535,7 @@ export default function LandingPage() {
             </div>
           </section>
 
-          {/* ── [6] PILOT CTA ───────────────────────────── */}
+          {/* ── [5] PILOT CTA ───────────────────────────── */}
           <section className="px-6 py-32 text-center">
             <div className="max-w-3xl mx-auto">
               <h2
