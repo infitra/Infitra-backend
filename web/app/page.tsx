@@ -1,560 +1,344 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Accordion } from "./components/Accordion";
-import { NetworkLoop } from "./components/NetworkLoop";
-import { MasterAccordion } from "./components/MasterAccordion";
+import { WaveFlowingBackground } from "./components/WaveFlowingBackground";
 
+/**
+ * INFITRA — pilot landing page.
+ *
+ * One-screen pitch focused on the pilot wedge: cross-discipline fitness
+ * creators running joint challenges as a single product. Invite-only.
+ * Uses the production Infitra background (cream + WaveFlowing) and keeps
+ * the floating logo-mark animation (`float-twist` keyframes in globals.css).
+ */
 export default function LandingPage() {
-  const accordionItems = [
-    {
-      title: "The INFITRA Network Loop",
-      content: <NetworkLoop />,
-    },
-    {
-      title: "The Collaboration Engine",
-      content: (
-        <div className="space-y-4">
-          <p>Every collaboration on INFITRA is contract-backed from the start. Before anything goes live, revenue splits, session ownership, and terms are defined and locked in — automatically enforced by the platform.</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
-            {[
-              { t: "Automated revenue splits", d: "Define who earns what upfront. When a session generates revenue, every collaborator is paid their share automatically." },
-              { t: "From 2 to 10 collaborators", d: "Solo-owned with guest collaborators, or fully co-owned — the contract engine handles any configuration." },
-              { t: "Defined before going live", d: "No disputes after the fact. Terms are agreed upon and locked before the first session runs." },
-              { t: "Every collab can become a community", d: "A successful collaboration can evolve into a co-owned continuing challenge community — with all terms carried forward." },
-            ].map(({ t, d }) => (
-              <div key={t} className="p-4 bg-white/3 rounded-xl border border-[#9CF0FF]/8">
-                <p className="text-white font-bold text-sm font-headline mb-1">{t}</p>
-                <p className="text-[#9CF0FF]/50 text-xs leading-relaxed">{d}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      ),
-    },
-    {
-      title: "Creator Space — Your Home Base",
-      content: (
-        <div className="space-y-4">
-          <p>Every creator, studio, or gym on INFITRA has a permanent Creator Space — their broadcast home. It&apos;s where your community lives between sessions, where you publish updates, and where new audiences discover you.</p>
-          <div className="space-y-3 mt-4">
-            {[
-              { t: "Publish updates, news & insights", d: "Share what you are building, what is coming, and what your community should know — on your schedule." },
-              { t: "Announce sessions & challenges", d: "Followers get notified the moment you launch something new or go live." },
-              { t: "Grows through every collaboration", d: "Every joint experience brings new communities into your space. Growth compounds with every shared experience." },
-            ].map(({ t, d }) => (
-              <div key={t} className="flex items-start gap-3 p-4 bg-white/3 rounded-xl border border-[#9CF0FF]/8">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#FF6130] flex-shrink-0 mt-1.5" />
-                <div>
-                  <p className="text-white font-bold text-sm font-headline mb-0.5">{t}</p>
-                  <p className="text-[#9CF0FF]/50 text-xs leading-relaxed">{d}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ),
-    },
-    {
-      title: "Challenge Communities — Where Engagement Happens",
-      content: (
-        <div className="space-y-4">
-          <p>Challenge Communities are where real participation happens. Members post progress, hold each other accountable, and push forward together. Not a dead library — a living space owned by everyone in it.</p>
-          <div className="space-y-3 mt-4">
-            {[
-              { t: "Continuing, not one-off", d: "Challenges link to the next. Momentum never dies. The community grows stronger with every cycle." },
-              { t: "Solo-owned + Guest Collaborators", d: "Run it yourself and invite specialist creators to guest-host specific sessions — without giving up ownership." },
-              { t: "Co-owned for long-term partnerships", d: "A gym and a creator, two recurring co-hosts — share full ownership with defined terms for both." },
-              { t: "Multiple communities in parallel", d: "Different goals, different levels, different collaborators. Each with its own focus and structure." },
-            ].map(({ t, d }) => (
-              <div key={t} className="flex items-start gap-3 p-4 bg-white/3 rounded-xl border border-[#9CF0FF]/8">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#9CF0FF] flex-shrink-0 mt-1.5" />
-                <div>
-                  <p className="text-white font-bold text-sm font-headline mb-0.5">{t}</p>
-                  <p className="text-[#9CF0FF]/50 text-xs leading-relaxed">{d}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ),
-    },
-    {
-      title: "How It Works — For Creators",
-      content: (
-        <div className="space-y-6 mt-2">
-          {[
-            { step: "01", title: "Create your space", desc: "Set up your permanent creator space — your broadcast home. Publish updates, build your audience, stay connected between sessions." },
-            { step: "02", title: "Build your programme", desc: "Create live sessions and challenge communities. Choose: solo, co-owned, or open to Guest Collaborators. The contract engine handles terms and revenue upfront." },
-            { step: "03", title: "Go live. Keep the cycle going.", desc: "Each challenge community deepens engagement. The next challenge brings back a stronger, more connected group. Nothing goes cold." },
-          ].map(({ step, title, desc }) => (
-            <div key={step} className="flex gap-5">
-              <div className="flex-shrink-0 w-9 h-9 rounded-full border-2 border-[#FF6130]/40 flex items-center justify-center">
-                <span className="text-xs font-black text-[#FF6130] font-headline">{step}</span>
-              </div>
-              <div>
-                <h4 className="font-bold text-white mb-1 font-headline">{title}</h4>
-                <p className="text-[#9CF0FF]/50 text-sm leading-relaxed">{desc}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      ),
-    },
-    {
-      title: "How It Works — For Participants",
-      content: (
-        <div className="space-y-6 mt-2">
-          {[
-            { step: "01", title: "Find your community", desc: "Discover communities aligned with your goals. Follow creators and join spaces built around real progress." },
-            { step: "02", title: "Join — don't just access", desc: "Step into live sessions and challenge communities. Train, engage, and stay accountable with people moving toward the same goal." },
-            { step: "03", title: "Grow together", desc: "Build momentum across challenges. Learn from multiple experts and experience training that evolves with you — and every collaboration." },
-          ].map(({ step, title, desc }) => (
-            <div key={step} className="flex gap-5">
-              <div className="flex-shrink-0 w-9 h-9 rounded-full border-2 border-[#9CF0FF]/40 flex items-center justify-center">
-                <span className="text-xs font-black text-[#9CF0FF] font-headline">{step}</span>
-              </div>
-              <div>
-                <h4 className="font-bold text-white mb-1 font-headline">{title}</h4>
-                <p className="text-[#9CF0FF]/50 text-sm leading-relaxed">{desc}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      ),
-    },
-    {
-      title: "Gym × Creator — The Institutional Play",
-      content: (
-        <div className="space-y-4">
-          <p>Your gym trainers are brilliant in person — but producing consistent digital content is a different skill. INFITRA lets gyms collaborate with specialist digital creators to serve their community at the highest level, without overloading their staff.</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
-            {[
-              { side: "The Gym Wins", accent: "text-[#FF6130]", items: ["Unlock a new digital revenue stream — without changing your core business", "Expand beyond your physical capacity", "No extra hiring or production overhead", "Your brand, your community — fully owned"] },
-              { side: "The Creator Wins", accent: "text-[#9CF0FF]", items: ["Access an established audience — without starting from zero", "Expand your reach through trusted gym brands", "Collaborate to deliver richer, multi-expert experiences", "Turn your expertise into scalable, recurring revenue"] },
-            ].map(({ side, accent, items }) => (
-              <div key={side} className="p-4 bg-white/3 rounded-xl border border-[#9CF0FF]/8">
-                <p className={`text-xs font-black font-headline ${accent} mb-3`}>{side}</p>
-                <ul className="space-y-2">
-                  {items.map((item) => (
-                    <li key={item} className="flex items-start gap-2 text-xs text-[#9CF0FF]/50 leading-relaxed">
-                      <span className="w-1 h-1 rounded-full bg-[#9CF0FF]/40 flex-shrink-0 mt-1.5" />{item}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-        </div>
-      ),
-    },
-  ];
-
   return (
-    <div className="relative overflow-x-hidden bg-[#071318]">
+    <div
+      className="min-h-screen relative overflow-x-clip"
+      style={{ backgroundColor: "#F2EFE8" }}
+    >
+      <WaveFlowingBackground />
 
-      {/* ── NAV ── */}
-      <nav className="fixed top-0 w-full z-50 bg-[#071318]/80 backdrop-blur-xl border-b border-[#9CF0FF]/10">
-        <div className="max-w-7xl mx-auto px-6 py-3.5 flex items-center justify-between">
-          <Link href="/">
-            <div className="rounded-xl overflow-hidden hover:opacity-90 transition-opacity">
-              <Image src="/logo-mark.png" alt="INFITRA" width={40} height={40} className="block" />
-            </div>
-          </Link>
-
-          <div className="hidden md:flex items-center gap-10">
-            {["About", "For Creators", "For Studios", "Early Access"].map((link) => (
-              <a key={link} href="#"
-                className="text-sm font-semibold text-[#9CF0FF]/50 hover:text-[#9CF0FF] transition-colors font-headline">
-                {link}
-              </a>
-            ))}
-          </div>
-
-          <button className="px-6 py-2.5 bg-[#FF6130] text-white text-sm font-black rounded-full hover:scale-105 transition-all font-headline shadow-[0_0_20px_rgba(255,97,48,0.35)]">
-            Request Creator Access
-          </button>
-        </div>
-      </nav>
-
-      <main>
-
-        {/* ── HERO ── */}
-        <section className="relative min-h-screen flex flex-col items-center justify-center px-6 pt-24 pb-20 overflow-hidden text-center">
-
-          {/* Deep atmospheric background glow */}
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[1000px] rounded-full bg-[#9CF0FF]/5 blur-[160px]" />
-          </div>
-
-          {/* Content — stacked: brand → neon mark → tagline → cta */}
-          <div className="relative z-10 max-w-4xl mx-auto w-full flex flex-col items-center">
-
-            {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#9CF0FF]/8 border border-[#9CF0FF]/20 mb-6">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#9CF0FF] animate-pulse" />
-              <span className="text-[#9CF0FF] text-xs font-bold tracking-widest uppercase font-headline">Private Beta — Coming Soon</span>
-            </div>
-
-            <h1 className="text-7xl md:text-8xl lg:text-9xl font-black tracking-tighter leading-[0.85] text-[#FF6130] font-headline italic mb-6"
-              style={{textShadow: "0 0 60px rgba(255,97,48,0.35)"}}>
-              INFITRA
-            </h1>
-
-            {/* ── NEON MARK — 3D centrepiece ── */}
-            <div className="relative w-64 h-64 md:w-[360px] md:h-[360px] mb-6 flex items-center justify-center">
-              {/* Far atmospheric cyan halo — stays still */}
-              <div className="absolute inset-0 scale-[1.8] rounded-full bg-[#9CF0FF]/4 blur-[90px]" />
-
-              {/* Animated container — everything inside floats and twists */}
-              <div className="float-twist absolute inset-0">
-
-              {/* Shadow on the ground — moves with the float */}
-              <div className="absolute w-[70%] h-[12%] bottom-[-12%] left-[15%] rounded-full bg-[#071318] blur-[20px] opacity-60" />
-
-              {/* Deep shadow layer — offset down-right, dark teal */}
-              <div className="absolute w-full h-full translate-x-[4px] translate-y-[5px]"
-                style={{ filter: "brightness(0) opacity(0.3) blur(4px)" }}>
-                <Image src="/logo-mark-cyan.png" alt="" fill className="object-contain" aria-hidden />
-              </div>
-
-              {/* Dark underside — darkened cyan, simulates the bottom face */}
-              <div className="absolute w-full h-full translate-y-[2px]"
-                style={{
-                  filter: "brightness(0.4) saturate(1.4)",
-                  maskImage: "linear-gradient(to top, black 30%, transparent 80%)",
-                  WebkitMaskImage: "linear-gradient(to top, black 30%, transparent 80%)",
-                }}>
-                <Image src="/logo-mark-cyan.png" alt="" fill className="object-contain" aria-hidden />
-              </div>
-
-              {/* Base mark — the core #9CF0FF */}
-              <div className="absolute w-full h-full">
-                <Image src="/logo-mark-cyan.png" alt="" fill className="object-contain" aria-hidden />
-              </div>
-
-              {/* Mid-tone depth — slightly darker on the bottom-right for volume */}
-              <div className="absolute w-full h-full"
-                style={{
-                  maskImage: "linear-gradient(315deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.15) 35%, transparent 55%)",
-                  WebkitMaskImage: "linear-gradient(315deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.15) 35%, transparent 55%)",
-                  filter: "brightness(0.55) saturate(1.6)",
-                }}>
-                <Image src="/logo-mark-cyan.png" alt="" fill className="object-contain" aria-hidden />
-              </div>
-
-              {/* Highlight — brighter top-left for lit surface, stays in the cyan family */}
-              <div className="absolute w-full h-full"
-                style={{
-                  maskImage: "linear-gradient(140deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.15) 35%, transparent 55%)",
-                  WebkitMaskImage: "linear-gradient(140deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.15) 35%, transparent 55%)",
-                  filter: "brightness(1.35) saturate(0.8)",
-                }}>
-                <Image src="/logo-mark-cyan.png" alt="" fill className="object-contain" aria-hidden />
-              </div>
-
-              {/* Specular rim — tight white-ish edge on top-left for that 3D pop */}
-              <div className="absolute w-full h-full"
-                style={{
-                  maskImage: "linear-gradient(150deg, rgba(0,0,0,0.35) 0%, transparent 20%)",
-                  WebkitMaskImage: "linear-gradient(150deg, rgba(0,0,0,0.35) 0%, transparent 20%)",
-                  filter: "brightness(2) saturate(0.4)",
-                }}>
-                <Image src="/logo-mark-cyan.png" alt="INFITRA" fill className="object-contain" />
-              </div>
-
-              </div>{/* close float-twist */}
-            </div>
-
-            {/* Tagline */}
-            <p className="text-3xl md:text-4xl lg:text-5xl font-black text-white font-headline tracking-tight mb-4">
-              Fitness beyond the Feed.
-            </p>
-
-            <p className="text-lg text-[#9CF0FF]/50 max-w-xl mx-auto leading-relaxed mb-10">
-              A new fitness network where creators collaborate, audiences engage,
-              and real communities drive results for everyone involved.
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-6 justify-center">
-              {/* Creator CTA — primary */}
-              <div className="flex flex-col items-center">
-                <button className="px-10 py-4 bg-[#FF6130] text-white rounded-full font-black text-lg hover:scale-105 transition-transform font-headline shadow-[0_0_30px_rgba(255,97,48,0.4)]">
-                  Request Creator Access
-                </button>
-                <span className="text-[#9CF0FF]/30 text-xs mt-3 tracking-wide">
-                  For creators, studios & gyms
-                </span>
-                <span className="text-[#9CF0FF]/20 text-[10px] tracking-wide">
-                  Limited onboarding
-                </span>
-              </div>
-
-              {/* Participant CTA — secondary */}
-              <div className="flex flex-col items-center">
-                <button className="px-10 py-4 bg-transparent border border-[#9CF0FF]/25 text-[#9CF0FF] rounded-full font-bold text-lg hover:bg-[#9CF0FF]/8 hover:border-[#9CF0FF]/40 transition-all font-headline">
-                  Join the Waitlist
-                </button>
-                <span className="text-[#9CF0FF]/30 text-xs mt-3 tracking-wide">
-                  Be first when INFITRA launches.
-                </span>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ── THE TEASE ── */}
-        <section className="py-32 px-6 bg-[#071318] relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-[400px] h-[400px] rounded-full bg-[#9CF0FF]/4 blur-[100px] pointer-events-none" />
-          <div className="absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full bg-[#FF6130]/4 blur-[100px] pointer-events-none" />
-
-          <div className="max-w-5xl mx-auto relative z-10 grid grid-cols-1 md:grid-cols-2 gap-6">
-            {[
-              {
-                number: "01",
-                text: "Collaboration by design.",
-                sub: "Contracts, splits, ownership — automated.",
-                accent: "#FF6130",
-              },
-              {
-                number: "02",
-                text: "Engage and grow your audience.",
-                sub: "Live experiences and communities built around shared purpose.",
-                accent: "#9CF0FF",
-              },
-              {
-                number: "03",
-                text: "Go beyond your own expertise.",
-                sub: "Collaborate to create richer, more immersive experiences.",
-                accent: "#9CF0FF",
-              },
-              {
-                number: "04",
-                text: "From solo to multi-creator.",
-                sub: "INFITRA handles the complexity — you grow through the network.",
-                accent: "#FF6130",
-              },
-            ].map(({ number, text, sub, accent }) => (
-              <div
-                key={number}
-                className="group relative"
+      <div className="relative z-10">
+        {/* ── NAV ── */}
+        <nav className="fixed top-0 w-full z-40">
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "rgba(242, 239, 232, 0.55)",
+              backdropFilter: "blur(20px) saturate(1.2)",
+              WebkitBackdropFilter: "blur(20px) saturate(1.2)",
+              borderBottom: "1px solid rgba(255, 255, 255, 0.25)",
+            }}
+          />
+          <div className="relative max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
+            <Link href="/" className="flex items-center gap-2.5">
+              <img
+                src="/logo-mark.png"
+                alt="INFITRA"
+                width={34}
+                height={34}
+                className="block rounded-lg"
+              />
+              <span
+                className="text-[22px] tracking-tight font-headline leading-none italic"
+                style={{ color: "#FF6130", fontWeight: 700, letterSpacing: "-0.03em" }}
               >
-                {/* Geometric card platform */}
-                <div
-                  className="relative p-8 md:p-10 rounded-2xl bg-[#0F2229] border border-[#9CF0FF]/10 hover:border-[#9CF0FF]/25 transition-all duration-300 overflow-hidden h-full"
-                  style={{
-                    clipPath: "polygon(0 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%)",
-                  }}
-                >
-                  {/* Corner accent triangle */}
-                  <div
-                    className="absolute top-0 right-0 w-16 h-16 opacity-20 group-hover:opacity-40 transition-opacity"
-                    style={{
-                      background: `linear-gradient(225deg, ${accent} 0%, transparent 60%)`,
-                    }}
-                  />
+                INFITRA
+              </span>
+            </Link>
+            <Link
+              href="/apply"
+              className="px-5 py-2 rounded-full text-xs font-black font-headline text-white uppercase tracking-widest"
+              style={{ backgroundColor: "#FF6130", boxShadow: "0 2px 8px rgba(255,97,48,0.3)" }}
+            >
+              Apply
+            </Link>
+          </div>
+        </nav>
 
-                  {/* Bottom-left glow on hover */}
-                  <div
-                    className="absolute bottom-0 left-0 w-32 h-32 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-                    style={{
-                      background: `radial-gradient(circle at bottom left, ${accent}15 0%, transparent 70%)`,
-                    }}
-                  />
+        <main>
+          {/* ── HERO ── */}
+          <section className="relative min-h-screen flex flex-col items-center justify-center px-6 pt-28 pb-20 text-center">
+            <div className="relative max-w-3xl mx-auto w-full flex flex-col items-center">
+              {/* Pilot badge */}
+              <div
+                className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-8"
+                style={{
+                  backgroundColor: "rgba(8, 145, 178, 0.10)",
+                  border: "1px solid rgba(8, 145, 178, 0.25)",
+                }}
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-[#0891b2] animate-pulse" />
+                <span className="text-[#0891b2] text-[10px] font-black tracking-widest uppercase font-headline">
+                  Closed Pilot · DACH · Applications Open
+                </span>
+              </div>
 
-                  {/* Number */}
-                  <span
-                    className="text-5xl md:text-6xl font-black font-headline tracking-tighter leading-none opacity-15 group-hover:opacity-25 transition-opacity absolute top-4 right-6"
-                    style={{ color: accent }}
+              {/* ── Floating logo mark (kept from previous landing,
+                  depth shaders adapted for light cream background) ── */}
+              <div className="relative w-56 h-56 md:w-72 md:h-72 mb-8 flex items-center justify-center">
+                {/* Soft cyan halo */}
+                <div className="absolute inset-0 scale-[1.6] rounded-full bg-[#9CF0FF]/30 blur-[80px]" />
+
+                <div className="float-twist absolute inset-0">
+                  {/* Subtle ground shadow — warm gray, not the dark navy of the
+                      previous dark-bg version */}
+                  <div className="absolute w-[65%] h-[10%] bottom-[-8%] left-[17%] rounded-full bg-[#0F2229]/15 blur-[14px]" />
+
+                  {/* Dark underside — keep but adjusted for light bg */}
+                  <div
+                    className="absolute w-full h-full translate-y-[1px]"
+                    style={{
+                      filter: "brightness(0.55) saturate(1.4)",
+                      maskImage: "linear-gradient(to top, black 25%, transparent 75%)",
+                      WebkitMaskImage: "linear-gradient(to top, black 25%, transparent 75%)",
+                    }}
                   >
-                    {number}
-                  </span>
-
-                  {/* Content */}
-                  <div className="relative z-10">
-                    <div
-                      className="w-8 h-[2px] mb-6 transition-all duration-300 group-hover:w-12"
-                      style={{ background: accent }}
-                    />
-                    <h3 className="text-2xl md:text-3xl font-black text-white font-headline tracking-tight leading-tight mb-3 group-hover:text-[#9CF0FF] transition-colors">
-                      {text}
-                    </h3>
-                    <p className="text-base md:text-lg text-[#9CF0FF]/40 font-headline leading-relaxed">
-                      {sub}
-                    </p>
+                    <Image src="/logo-mark-cyan.png" alt="" fill className="object-contain" aria-hidden />
                   </div>
 
-                  {/* Clipped corner visual — angled bottom-right */}
+                  {/* Base mark — core cyan */}
+                  <div className="absolute w-full h-full">
+                    <Image src="/logo-mark-cyan.png" alt="" fill className="object-contain" aria-hidden />
+                  </div>
+
+                  {/* Mid-tone depth on bottom-right */}
                   <div
-                    className="absolute bottom-0 right-0 w-[20px] h-[20px]"
+                    className="absolute w-full h-full"
                     style={{
-                      background: `linear-gradient(225deg, transparent 50%, ${accent}30 50%)`,
+                      maskImage: "linear-gradient(315deg, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.12) 35%, transparent 55%)",
+                      WebkitMaskImage: "linear-gradient(315deg, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.12) 35%, transparent 55%)",
+                      filter: "brightness(0.65) saturate(1.5)",
                     }}
-                  />
+                  >
+                    <Image src="/logo-mark-cyan.png" alt="" fill className="object-contain" aria-hidden />
+                  </div>
+
+                  {/* Highlight on top-left */}
+                  <div
+                    className="absolute w-full h-full"
+                    style={{
+                      maskImage: "linear-gradient(140deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.15) 35%, transparent 55%)",
+                      WebkitMaskImage: "linear-gradient(140deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.15) 35%, transparent 55%)",
+                      filter: "brightness(1.4) saturate(0.85)",
+                    }}
+                  >
+                    <Image src="/logo-mark-cyan.png" alt="" fill className="object-contain" aria-hidden />
+                  </div>
+
+                  {/* Specular rim — top-left */}
+                  <div
+                    className="absolute w-full h-full"
+                    style={{
+                      maskImage: "linear-gradient(150deg, rgba(0,0,0,0.4) 0%, transparent 22%)",
+                      WebkitMaskImage: "linear-gradient(150deg, rgba(0,0,0,0.4) 0%, transparent 22%)",
+                      filter: "brightness(1.9) saturate(0.5)",
+                    }}
+                  >
+                    <Image src="/logo-mark-cyan.png" alt="INFITRA" fill className="object-contain" />
+                  </div>
                 </div>
               </div>
-            ))}
-          </div>
-        </section>
 
-        {/* ── TWO SIDES ── */}
-        <section className="py-28 px-6 bg-[#0A1A1F] relative overflow-hidden">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[400px] rounded-full bg-[#9CF0FF]/5 blur-[100px] pointer-events-none" />
-          <div className="max-w-5xl mx-auto relative z-10">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-[#9CF0FF]/10 rounded-3xl overflow-hidden">
+              {/* Wordmark */}
+              <h1
+                className="text-5xl md:text-6xl font-black font-headline italic tracking-tighter mb-6"
+                style={{ color: "#FF6130", letterSpacing: "-0.03em" }}
+              >
+                INFITRA
+              </h1>
 
-              {/* Creators */}
-              <div className="bg-[#0A1A1F] p-12 md:p-16 group hover:bg-[#0F2229] transition-colors">
-                <span className="text-xs font-bold tracking-widest uppercase text-[#FF6130] font-headline block mb-6">
-                  Creators, Studios & Gyms
-                </span>
-                <h2 className="text-4xl md:text-5xl font-black text-white font-headline tracking-tight leading-tight mb-6">
-                  Build. Collaborate.
-                  <br />
-                  <span className="text-[#FF6130]">Own it.</span>
-                </h2>
-                <p className="text-[#9CF0FF]/50 leading-relaxed text-lg mb-8">
-                  Your community. Your network. Your terms.
-                  INFITRA gives you the infrastructure to collaborate
-                  with other creators and grow beyond your audience.
+              {/* The pitch — single sentence, sharp */}
+              <p
+                className="text-2xl md:text-3xl lg:text-4xl font-black font-headline tracking-tight leading-tight max-w-2xl mb-5"
+                style={{ color: "#0F2229" }}
+              >
+                Run your next challenge with a coach your audience doesn&apos;t have.
+              </p>
+
+              <p
+                className="text-base md:text-lg max-w-xl mx-auto leading-relaxed mb-10"
+                style={{ color: "#475569" }}
+              >
+                Pair your training with complementary expertise. Co-design one program. Sell it
+                as one product. Split revenue cleanly.
+              </p>
+
+              {/* Primary CTA */}
+              <Link
+                href="/apply"
+                className="inline-block px-10 py-4 rounded-full text-white text-base font-black font-headline tracking-wide transition-transform hover:scale-[1.03]"
+                style={{
+                  backgroundColor: "#FF6130",
+                  boxShadow: "0 6px 24px rgba(255,97,48,0.35), 0 2px 8px rgba(255,97,48,0.20)",
+                }}
+              >
+                Apply for the pilot
+              </Link>
+
+              <p className="text-xs mt-4 tracking-wide" style={{ color: "#94a3b8" }}>
+                Closed cohort of 5 fitness creator pairs. Reviewed individually.
+              </p>
+            </div>
+          </section>
+
+          {/* ── THE EXAMPLE — concrete, one card ── */}
+          <section className="px-6 py-24">
+            <div className="max-w-3xl mx-auto">
+              <div className="text-center mb-10">
+                <p className="text-xs font-black font-headline uppercase tracking-[0.2em] mb-3"
+                   style={{ color: "#0891b2" }}>
+                  What you can build
                 </p>
-                <div>
-                  <button className="px-8 py-3.5 bg-[#FF6130] text-white rounded-full font-black text-sm hover:scale-105 transition-transform font-headline shadow-[0_0_20px_rgba(255,97,48,0.3)]">
-                    Request Creator Access
-                  </button>
-                  <p className="text-[#9CF0FF]/25 text-xs mt-3 tracking-wide">
-                    For creators, studios & gyms
-                  </p>
-                  <p className="text-[#9CF0FF]/20 text-[10px] tracking-wide">
-                    Limited onboarding
-                  </p>
-                </div>
-              </div>
-
-              {/* Participants */}
-              <div className="bg-[#0A1A1F] p-12 md:p-16 group hover:bg-[#0F2229] transition-colors">
-                <span className="text-xs font-bold tracking-widest uppercase text-[#9CF0FF] font-headline block mb-6">
-                  Participants
-                </span>
-                <h2 className="text-4xl md:text-5xl font-black text-white font-headline tracking-tight leading-tight mb-6">
-                  Join. Participate.
-                  <br />
-                  <span className="text-[#9CF0FF]" style={{textShadow:"0 0 20px rgba(156,240,255,0.3)"}}>Stay.</span>
+                <h2 className="text-3xl md:text-4xl font-black font-headline tracking-tight"
+                    style={{ color: "#0F2229" }}>
+                  Two experts. One program. One unified experience.
                 </h2>
-                <p className="text-[#9CF0FF]/50 leading-relaxed text-lg mb-8">
-                  Join real fitness communities — participate, engage with purpose
-                  and experience training shaped by multiple experts. Access dynamic
-                  offerings, not static content.
+              </div>
+
+              <div
+                className="rounded-3xl p-8 md:p-10"
+                style={{
+                  backgroundColor: "rgba(255,255,255,0.6)",
+                  border: "1px solid rgba(15,34,41,0.08)",
+                  boxShadow: "0 8px 32px rgba(15,34,41,0.04)",
+                }}
+              >
+                <p className="text-lg md:text-xl leading-relaxed mb-6" style={{ color: "#0F2229" }}>
+                  A <span className="font-black" style={{ color: "#FF6130" }}>fitness trainer</span> teams up
+                  with a <span className="font-black" style={{ color: "#0891b2" }}>nutritionist</span> to
+                  co-create a 4-week fat-loss journey.
                 </p>
-                <div>
-                  <button className="px-8 py-3.5 bg-transparent border border-[#9CF0FF]/25 text-[#9CF0FF] rounded-full font-bold text-sm hover:bg-[#9CF0FF]/8 hover:border-[#9CF0FF]/40 transition-all font-headline">
-                    Join the Waitlist
-                  </button>
-                  <p className="text-[#9CF0FF]/25 text-xs mt-3 tracking-wide">
-                    Be first when INFITRA launches.
-                  </p>
-                </div>
+                <p className="text-base leading-relaxed" style={{ color: "#475569" }}>
+                  Their audiences each see one program — not two coaches tag-teaming.
+                  Participants buy once, get the full experience, and pay a premium because the value is holistic.
+                  Behind the scenes, INFITRA handles the workspace, the contract, the unified checkout, and the revenue split.
+                </p>
               </div>
             </div>
-          </div>
-        </section>
+          </section>
 
-        {/* ── EARLY ACCESS CTA ── */}
-        <section className="py-32 px-6 bg-[#071318] relative overflow-hidden">
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="w-[800px] h-[500px] rounded-full bg-[#9CF0FF]/6 blur-[120px]" />
-          </div>
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.04]">
-            <div className="relative w-[600px] h-[600px]">
-              <Image src="/logo-mark-cyan.png" alt="" fill className="object-contain" aria-hidden />
-            </div>
-          </div>
-
-          <div className="max-w-2xl mx-auto text-center relative z-10">
-            <h2 className="text-5xl md:text-6xl font-black text-white font-headline tracking-tight mb-4">
-              Be part of the first INFITRA network.
-            </h2>
-            <p className="text-xl text-[#9CF0FF]/50 mb-4 leading-relaxed">
-              Private Beta coming soon.
-            </p>
-            <p className="text-base text-[#9CF0FF]/35 mb-12 leading-relaxed">
-              Creators are onboarded selectively — participants can join the waitlist.
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-6 justify-center mb-4">
-              {/* Creator CTA — primary */}
-              <div className="flex flex-col items-center">
-                <button className="px-10 py-4 bg-[#FF6130] text-white rounded-full font-black text-lg hover:scale-105 transition-transform font-headline shadow-[0_0_30px_rgba(255,97,48,0.4)]">
-                  Request Creator Access
-                </button>
-                <span className="text-[#9CF0FF]/30 text-xs mt-3 tracking-wide">
-                  For creators, studios & gyms
-                </span>
-                <span className="text-[#9CF0FF]/20 text-[10px] tracking-wide">
-                  Limited onboarding
-                </span>
+          {/* ── THREE PROPS — what we solve ── */}
+          <section className="px-6 py-20">
+            <div className="max-w-5xl mx-auto">
+              <div className="text-center mb-12">
+                <p className="text-xs font-black font-headline uppercase tracking-[0.2em] mb-3"
+                   style={{ color: "#0891b2" }}>
+                  What's broken today
+                </p>
+                <h2 className="text-3xl md:text-4xl font-black font-headline tracking-tight max-w-2xl mx-auto"
+                    style={{ color: "#0F2229" }}>
+                  Two creators collaborating used to mean two of everything.
+                </h2>
               </div>
 
-              {/* Participant CTA — secondary */}
-              <div className="flex flex-col items-center">
-                <button className="px-10 py-4 bg-transparent border border-[#9CF0FF]/25 text-[#9CF0FF] rounded-full font-bold text-lg hover:bg-[#9CF0FF]/8 hover:border-[#9CF0FF]/40 transition-all font-headline">
-                  Join the Waitlist
-                </button>
-                <span className="text-[#9CF0FF]/30 text-xs mt-3 tracking-wide">
-                  Be first when INFITRA launches.
-                </span>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                {[
+                  {
+                    badge: "Without INFITRA",
+                    title: "Two checkouts, two emails, two PayPal links.",
+                    fix: "INFITRA delivers it as one program. One sale. One participant experience.",
+                  },
+                  {
+                    badge: "Without INFITRA",
+                    title: "Splits via WhatsApp. Trust on faith.",
+                    fix: "Contract engine locks revenue splits up front. Both sides know the terms before launch.",
+                  },
+                  {
+                    badge: "Without INFITRA",
+                    title: "Coordination in group chats. No shared editor.",
+                    fix: "Shared workspace where both creators co-design, lock terms, and publish together.",
+                  },
+                ].map(({ badge, title, fix }) => (
+                  <div
+                    key={title}
+                    className="rounded-2xl p-6"
+                    style={{
+                      backgroundColor: "rgba(255,255,255,0.6)",
+                      border: "1px solid rgba(15,34,41,0.08)",
+                    }}
+                  >
+                    <p className="text-[10px] font-bold uppercase tracking-widest font-headline mb-3"
+                       style={{ color: "rgba(15,34,41,0.45)" }}>
+                      {badge}
+                    </p>
+                    <p className="text-base font-black font-headline mb-3 leading-snug" style={{ color: "#0F2229" }}>
+                      {title}
+                    </p>
+                    <p className="text-sm leading-relaxed" style={{ color: "#475569" }}>
+                      {fix}
+                    </p>
+                  </div>
+                ))}
               </div>
             </div>
+          </section>
 
-            <p className="text-[#9CF0FF]/20 text-xs mt-6 tracking-wide">
-              No spam. Early access notification only.
+          {/* ── PILOT FRAMING + CTA REPEAT ── */}
+          <section className="px-6 py-28">
+            <div className="max-w-2xl mx-auto text-center">
+              <h2 className="text-4xl md:text-5xl font-black font-headline tracking-tight mb-5"
+                  style={{ color: "#0F2229" }}>
+                Be one of the first 5 pairs.
+              </h2>
+              <p className="text-base md:text-lg leading-relaxed mb-3 max-w-xl mx-auto" style={{ color: "#475569" }}>
+                We're piloting with a small cohort of fitness creator pairs in DACH (Switzerland, Germany,
+                Austria). One joint challenge per pair, run live with our personal support throughout.
+              </p>
+              <p className="text-sm mb-10" style={{ color: "#94a3b8" }}>
+                Reviewed individually. Pilot launches Q3.
+              </p>
+
+              <Link
+                href="/apply"
+                className="inline-block px-10 py-4 rounded-full text-white text-base font-black font-headline tracking-wide transition-transform hover:scale-[1.03]"
+                style={{
+                  backgroundColor: "#FF6130",
+                  boxShadow: "0 6px 24px rgba(255,97,48,0.35), 0 2px 8px rgba(255,97,48,0.20)",
+                }}
+              >
+                Apply for the pilot
+              </Link>
+            </div>
+          </section>
+        </main>
+
+        {/* ── FOOTER ── */}
+        <footer
+          style={{
+            borderTop: "1px solid rgba(15,34,41,0.08)",
+            backgroundColor: "rgba(242,239,232,0.6)",
+          }}
+        >
+          <div className="max-w-6xl mx-auto px-6 py-10 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-center gap-3">
+              <img src="/logo-mark.png" alt="INFITRA" width={28} height={28} className="block rounded-md" />
+              <span
+                className="text-base font-black tracking-tight font-headline italic"
+                style={{ color: "#FF6130" }}
+              >
+                INFITRA
+              </span>
+            </div>
+            <p className="text-xs leading-relaxed text-center md:text-left max-w-xs"
+               style={{ color: "#94a3b8" }}>
+              The collaboration platform for fitness creators.
+            </p>
+            <div className="flex gap-6 text-xs" style={{ color: "#94a3b8" }}>
+              <Link href="/pilot-terms" className="hover:opacity-80">Pilot Terms</Link>
+              <a href="mailto:hello@infitra.fit" className="hover:opacity-80">Contact</a>
+            </div>
+          </div>
+          <div className="max-w-6xl mx-auto px-6 py-4"
+               style={{ borderTop: "1px solid rgba(15,34,41,0.06)" }}>
+            <p className="text-[10px] uppercase tracking-widest font-bold font-headline"
+               style={{ color: "rgba(15,34,41,0.35)" }}>
+              © 2026 INFITRA
             </p>
           </div>
-        </section>
-
-        {/* ── INSIDE INFITRA — deep dive (collapsed by default) ── */}
-        <section className="py-24 px-6 bg-[#0A1A1F] relative overflow-hidden">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-[#9CF0FF]/3 blur-[150px] pointer-events-none" />
-
-          <div className="max-w-3xl mx-auto relative z-10">
-            <MasterAccordion
-              title="Inside INFITRA"
-              subtitle="Explore how the network works and grows."
-            >
-              <Accordion items={accordionItems} />
-            </MasterAccordion>
-          </div>
-        </section>
-
-      </main>
-
-      {/* ── FOOTER ── */}
-      <footer className="bg-[#040D10] border-t border-[#9CF0FF]/10">
-        <div className="max-w-7xl mx-auto px-8 py-12 flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
-          <div className="flex items-center gap-3">
-            <div className="rounded-xl overflow-hidden">
-              <Image src="/logo-mark.png" alt="INFITRA" width={32} height={32} className="block" />
-            </div>
-            <span className="text-lg font-black text-[#FF6130] tracking-tighter font-headline italic">INFITRA</span>
-          </div>
-          <p className="text-sm text-[#9CF0FF]/30 max-w-xs leading-relaxed">
-            Where creators, studios, and gyms build real fitness communities
-            through live experiences and collaboration.
-          </p>
-          <div className="flex gap-8">
-            {["Privacy", "Terms", "Contact"].map((link) => (
-              <a key={link} href="#" className="text-[#9CF0FF]/30 hover:text-[#9CF0FF] transition-colors text-sm">
-                {link}
-              </a>
-            ))}
-          </div>
-        </div>
-        <div className="max-w-7xl mx-auto px-8 py-5 border-t border-[#9CF0FF]/8">
-          <span className="text-[#9CF0FF]/20 text-xs uppercase tracking-widest font-bold">
-            © 2025 INFITRA — Fitness beyond the Feed.
-          </span>
-        </div>
-      </footer>
-
+        </footer>
+      </div>
     </div>
   );
 }
