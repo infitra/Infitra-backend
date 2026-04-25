@@ -25,7 +25,13 @@ export default function AuthLayout({
               className="block"
             />
           </div>
-          <span className="text-2xl font-black text-[#FF6130] tracking-tighter font-headline italic">
+          {/* Wordmark — matches dashboard nav treatment exactly:
+              fontWeight 700 (real loaded weight, not synthesized), italic,
+              -0.03em letter-spacing. */}
+          <span
+            className="text-2xl font-headline italic tracking-tight leading-none"
+            style={{ color: "#FF6130", fontWeight: 700, letterSpacing: "-0.03em" }}
+          >
             INFITRA
           </span>
         </div>

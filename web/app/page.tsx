@@ -147,11 +147,20 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              {/* The pitch IS the hero — no giant wordmark. The wordmark
-                  lives in the nav (top-left) where production puts it; the
-                  landing's headline is the value proposition. */}
+              {/* INFITRA wordmark — same exact treatment as the dashboard
+                  nav, scaled up to hero proportions. fontWeight: 700 (the
+                  heaviest real General Sans weight), italic, -0.03em
+                  letter-spacing. */}
+              <p
+                className="text-5xl md:text-6xl lg:text-7xl font-headline italic tracking-tight leading-none mb-8"
+                style={{ color: "#FF6130", fontWeight: 700, letterSpacing: "-0.03em" }}
+              >
+                INFITRA
+              </p>
+
+              {/* The pitch headline */}
               <h1
-                className="text-4xl md:text-5xl lg:text-6xl font-headline tracking-tight leading-[1.05] max-w-3xl mb-6"
+                className="text-3xl md:text-4xl lg:text-5xl font-headline tracking-tight leading-[1.05] max-w-3xl mb-6"
                 style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.025em" }}
               >
                 Run your next challenge with a coach your audience doesn&apos;t have.
