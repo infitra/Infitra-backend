@@ -10,15 +10,14 @@ import { FloatingNeonLogo } from "./components/_unused/FloatingNeonLogo";
  *   2. Visual diagram — "2 experts → 1 program"
  *   3. Where it comes alive — typographic bridge, heartbeat ECG metaphor
  *   4. What you can build — production-style challenge preview (real images)
- *   5. CTA
+ *   5. Final CTA — "Be one of the first 5 pairs"
  *   6. Collapsible depth — "See why this matters" (broken/fixed + pains)
- *   7. Final CTA
  *   + Footer
  *
- * Top of the page is purely visual + emotional: hero → diagram → bridge
- * → mockup → ask. The argument (broken/fixed comparison + pain analysis)
- * lives entirely inside the collapsible so the page is scannable in
- * 30 seconds without sacrificing the supporting argument for skeptics.
+ * Single CTA at the bottom of the visual arc — no mid-page CTA before
+ * the collapsible. Believers convert at the CTA. Skeptics scroll one
+ * more notch and open "See why this matters." The page is scannable in
+ * 30 seconds; the full argument is one click away.
  *
  * Cream + WaveFlowingBackground throughout — same shell as the rest
  * of the production app.
@@ -718,25 +717,41 @@ export default function LandingPage() {
             </div>
           </section>
 
-          {/* ── [5] CTA — primary ──────────────────────── */}
-          <section className="px-6 py-20 text-center">
-            <Link
-              href="/apply"
-              className="inline-block px-12 py-4 rounded-full text-white text-lg font-headline tracking-wide transition-transform hover:scale-[1.03]"
-              style={{
-                backgroundColor: "#FF6130",
-                fontWeight: 700,
-                boxShadow: "0 8px 28px rgba(255,97,48,0.35), 0 2px 10px rgba(255,97,48,0.20)",
-              }}
-            >
-              Apply for the pilot
-            </Link>
-            <p className="text-xs mt-4 tracking-wide" style={{ color: "#94a3b8" }}>
-              Reviewed individually. Pilot launches Q3.
-            </p>
+          {/* ── [5] FINAL CTA ──────────────────────────── */}
+          <section className="px-6 py-32 text-center">
+            <div className="max-w-3xl mx-auto">
+              <h2
+                className="text-4xl md:text-5xl font-headline tracking-tight mb-6"
+                style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.025em" }}
+              >
+                Be one of the first 5 pairs.
+              </h2>
+              <p
+                className="text-base md:text-lg max-w-xl mx-auto leading-relaxed mb-10"
+                style={{ color: "#475569" }}
+              >
+                Closed pilot with fitness creator pairs in DACH (Switzerland, Germany, Austria).
+                One joint challenge per pair, run live with direct support.
+              </p>
+
+              <Link
+                href="/apply"
+                className="inline-block px-12 py-4 rounded-full text-white text-lg font-headline tracking-wide transition-transform hover:scale-[1.03]"
+                style={{
+                  backgroundColor: "#FF6130",
+                  fontWeight: 700,
+                  boxShadow: "0 8px 28px rgba(255,97,48,0.35), 0 2px 10px rgba(255,97,48,0.20)",
+                }}
+              >
+                Apply for the pilot
+              </Link>
+              <p className="text-xs mt-4 tracking-wide" style={{ color: "#94a3b8" }}>
+                Reviewed individually. Pilot launches Q3.
+              </p>
+            </div>
           </section>
 
-          {/* ── [6] COLLAPSIBLE DEPTH ──────────────────── */}
+          {/* ── [6] COLLAPSIBLE DEPTH — quiet final beat for skeptics ── */}
           <section className="px-6 py-20">
             <div className="max-w-3xl mx-auto">
               <details className="group">
@@ -940,36 +955,6 @@ export default function LandingPage() {
             </div>
           </section>
 
-          {/* ── [7] FINAL CTA ──────────────────────────── */}
-          <section className="px-6 py-32 text-center">
-            <div className="max-w-3xl mx-auto">
-              <h2
-                className="text-4xl md:text-5xl font-headline tracking-tight mb-6"
-                style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.025em" }}
-              >
-                Be one of the first 5 pairs.
-              </h2>
-              <p className="text-base md:text-lg max-w-xl mx-auto leading-relaxed mb-10" style={{ color: "#475569" }}>
-                Closed pilot with fitness creator pairs in DACH (Switzerland, Germany, Austria).
-                One joint challenge per pair, run live with direct support.
-              </p>
-
-              <Link
-                href="/apply"
-                className="inline-block px-12 py-4 rounded-full text-white text-lg font-headline tracking-wide transition-transform hover:scale-[1.03]"
-                style={{
-                  backgroundColor: "#FF6130",
-                  fontWeight: 700,
-                  boxShadow: "0 8px 28px rgba(255,97,48,0.35), 0 2px 10px rgba(255,97,48,0.20)",
-                }}
-              >
-                Apply for the pilot
-              </Link>
-              <p className="text-xs mt-4 tracking-wide" style={{ color: "#94a3b8" }}>
-                Reviewed individually. Pilot launches Q3.
-              </p>
-            </div>
-          </section>
         </main>
 
         {/* ── FOOTER ───────────────────────────────────── */}
