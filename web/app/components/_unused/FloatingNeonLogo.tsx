@@ -42,8 +42,6 @@ export function FloatingNeonLogo({
         <div className="absolute inset-0 scale-[1.1] rounded-full bg-[#9CF0FF]/35 blur-[40px]" />
 
         <div className="float-twist absolute inset-0">
-          {/* Subtle warm-gray ground shadow. */}
-          <div className="absolute w-[60%] h-[8%] bottom-[-6%] left-[20%] rounded-full bg-[#0F2229]/15 blur-[12px]" />
           <div
             className="absolute w-full h-full translate-y-[1px]"
             style={{
