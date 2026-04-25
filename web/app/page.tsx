@@ -362,7 +362,7 @@ export default function LandingPage() {
                     className="text-sm md:text-base font-headline"
                     style={{ color: "#0F2229", fontWeight: 700 }}
                   >
-                    Progress, on your own
+                    Progress and share with challenge community
                   </p>
                 </div>
                 <div>
@@ -394,12 +394,20 @@ export default function LandingPage() {
           {/* ── [4] WHAT YOU CAN BUILD — production challenge preview ── */}
           <section className="px-6 py-24">
             <div className="max-w-3xl mx-auto">
-              <p
-                className="text-center text-xs uppercase tracking-[0.25em] mb-8 font-headline"
-                style={{ color: "#0891b2", fontWeight: 700 }}
-              >
-                What you can build
-              </p>
+              <div className="text-center mb-12">
+                <p
+                  className="text-xs uppercase tracking-[0.25em] mb-3 font-headline"
+                  style={{ color: "#0891b2", fontWeight: 700 }}
+                >
+                  An example
+                </p>
+                <h2
+                  className="text-3xl md:text-4xl lg:text-5xl font-headline tracking-tight"
+                  style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.02em" }}
+                >
+                  What you can build.
+                </h2>
+              </div>
 
               {/* The mockup card — composed to look like the real challenge view.
                   Floating treatment (heavy shadow) reinforces "this is the product." */}
@@ -412,12 +420,12 @@ export default function LandingPage() {
                     "0 30px 80px rgba(15,34,41,0.18), 0 10px 30px rgba(15,34,41,0.08)",
                 }}
               >
-                {/* Cover */}
-                <div className="relative aspect-[16/9] md:aspect-[3/1] overflow-hidden bg-[#0F2229]">
+                {/* Cover — taller aspect + anchored top so the duo stays in frame */}
+                <div className="relative aspect-[4/3] sm:aspect-[16/9] md:aspect-[2/1] overflow-hidden bg-[#0F2229]">
                   <img
                     src="/landing/challenge-cover.jpg"
                     alt="The Reset — a 4-week joint challenge"
-                    className="absolute inset-0 w-full h-full object-cover"
+                    className="absolute inset-0 w-full h-full object-cover object-top"
                   />
                   {/* Bottom gradient for legibility of overlay chips */}
                   <div
@@ -536,8 +544,6 @@ export default function LandingPage() {
                     <span>4 weeks</span>
                     <span style={{ color: "#94a3b8" }}>·</span>
                     <span>8 live sessions</span>
-                    <span style={{ color: "#94a3b8" }}>·</span>
-                    <span>CHF 240</span>
                   </div>
 
                   {/* Sessions label */}
@@ -609,7 +615,7 @@ export default function LandingPage() {
                               className="ml-1.5 text-[10px] font-headline"
                               style={{ color: "#475569", fontWeight: 700 }}
                             >
-                              Both
+                              Alex + Mira
                             </span>
                           </div>
                         </div>
