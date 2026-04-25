@@ -5,15 +5,16 @@ import { FloatingNeonLogo } from "./components/_unused/FloatingNeonLogo";
 /**
  * INFITRA — pilot landing page (visual-first, low cognitive load).
  *
- * Structure follows the redesign brief:
+ * Structure:
  *   1. Hero — clear upgrade, headline-dominant
  *   2. Visual diagram — "2 experts → 1 program"
- *   3. Product example card — looks like a real challenge preview
- *   4. ONE pain comparison — broken vs. fixed (side-by-side)
- *   5. INFITRA solution — clean checklist
- *   6. CTA
- *   7. Collapsible depth — "See why this matters" (additional pains)
- *   8. Final CTA
+ *   3. Where it comes alive — typographic bridge, heartbeat ECG metaphor
+ *   4. What you can build — production-style challenge preview (real images)
+ *   5. ONE pain comparison — broken vs. fixed (side-by-side)
+ *   6. INFITRA solution — clean checklist
+ *   7. CTA
+ *   8. Collapsible depth — "See why this matters" (additional pains)
+ *   9. Final CTA
  *   + Footer
  *
  * Top of the page is instinct + visual; depth lives in the collapsible
@@ -249,111 +250,431 @@ export default function LandingPage() {
             </div>
           </section>
 
-          {/* ── [3] PRODUCT CARD — real preview feel ───── */}
-          <section className="px-6 py-20">
-            <div className="max-w-2xl mx-auto">
+          {/* ── [3] WHERE IT COMES ALIVE — typographic bridge ── */}
+          <section className="px-6 py-24">
+            <div className="max-w-3xl mx-auto text-center">
+              {/* Beat 1: alone → together */}
               <p
-                className="text-center text-xs uppercase tracking-[0.25em] mb-6 font-headline"
+                className="text-2xl md:text-4xl font-headline tracking-tight leading-[1.15]"
+                style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.02em" }}
+              >
+                Most programs are followed alone.
+                <br />
+                <span style={{ color: "#FF6130" }}>This one isn&apos;t.</span>
+              </p>
+
+              {/* Thin cyan rule */}
+              <div
+                className="w-10 h-px mx-auto my-10"
+                style={{ backgroundColor: "rgba(8,145,178,0.55)" }}
+              />
+
+              {/* Beat 2: live sessions are the anchors */}
+              <p
+                className="text-xl md:text-2xl font-headline tracking-tight leading-snug mb-3"
+                style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.02em" }}
+              >
+                Live sessions are the anchors.
+              </p>
+              <p
+                className="text-base md:text-lg leading-relaxed max-w-xl mx-auto"
+                style={{ color: "#475569" }}
+              >
+                Show up. Train together. Get real-time guidance.
+              </p>
+
+              {/* Heartbeat ECG — the rhythm visualised */}
+              <div className="mt-12 mb-10 flex items-center justify-center">
+                <svg
+                  viewBox="0 0 600 80"
+                  className="w-full max-w-xl h-12 md:h-16"
+                  fill="none"
+                  aria-hidden
+                >
+                  {/* Flat baseline (subtle) */}
+                  <path
+                    d="M 0 40 L 600 40"
+                    stroke="rgba(15,34,41,0.10)"
+                    strokeWidth={1}
+                    strokeDasharray="2 4"
+                  />
+                  {/* The heartbeat — flat, spike1, flat, spike2, flat */}
+                  <path
+                    d="M 0 40 L 140 40 L 160 40 L 175 10 L 195 70 L 210 40 L 390 40 L 405 10 L 425 70 L 440 40 L 600 40"
+                    stroke="#0891b2"
+                    strokeWidth={2.25}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  {/* Pulsing dots at the spikes */}
+                  <circle cx="185" cy="40" r="5" fill="#0891b2">
+                    <animate
+                      attributeName="opacity"
+                      values="0.3;1;0.3"
+                      dur="2.4s"
+                      repeatCount="indefinite"
+                    />
+                  </circle>
+                  <circle cx="415" cy="40" r="5" fill="#0891b2">
+                    <animate
+                      attributeName="opacity"
+                      values="0.3;1;0.3"
+                      dur="2.4s"
+                      begin="1.2s"
+                      repeatCount="indefinite"
+                    />
+                  </circle>
+                </svg>
+              </div>
+
+              {/* Beat 3: rhythm captions */}
+              <div className="grid grid-cols-2 gap-6 max-w-md mx-auto mb-12">
+                <div>
+                  <p
+                    className="text-[10px] uppercase tracking-[0.25em] font-headline mb-1"
+                    style={{ color: "#94a3b8", fontWeight: 700 }}
+                  >
+                    Between sessions
+                  </p>
+                  <p
+                    className="text-sm md:text-base font-headline"
+                    style={{ color: "#0F2229", fontWeight: 700 }}
+                  >
+                    Progress, on your own
+                  </p>
+                </div>
+                <div>
+                  <p
+                    className="text-[10px] uppercase tracking-[0.25em] font-headline mb-1"
+                    style={{ color: "#0891b2", fontWeight: 700 }}
+                  >
+                    Live moments
+                  </p>
+                  <p
+                    className="text-sm md:text-base font-headline"
+                    style={{ color: "#0F2229", fontWeight: 700 }}
+                  >
+                    Everything comes together
+                  </p>
+                </div>
+              </div>
+
+              {/* Closing line */}
+              <p
+                className="text-xl md:text-2xl font-headline tracking-tight"
+                style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.02em" }}
+              >
+                Structure <span style={{ color: "#94a3b8" }}>+</span> peak moments.
+              </p>
+            </div>
+          </section>
+
+          {/* ── [4] WHAT YOU CAN BUILD — production challenge preview ── */}
+          <section className="px-6 py-24">
+            <div className="max-w-3xl mx-auto">
+              <p
+                className="text-center text-xs uppercase tracking-[0.25em] mb-8 font-headline"
                 style={{ color: "#0891b2", fontWeight: 700 }}
               >
                 What you can build
               </p>
 
+              {/* The mockup card — composed to look like the real challenge view.
+                  Floating treatment (heavy shadow) reinforces "this is the product." */}
               <div
                 className="rounded-3xl overflow-hidden"
                 style={{
-                  backgroundColor: "rgba(255,255,255,0.85)",
+                  backgroundColor: "#FFFFFF",
                   border: "1px solid rgba(15,34,41,0.08)",
-                  boxShadow: "0 16px 48px rgba(15,34,41,0.08)",
+                  boxShadow:
+                    "0 30px 80px rgba(15,34,41,0.18), 0 10px 30px rgba(15,34,41,0.08)",
                 }}
               >
-                {/* Card "cover" — subtle gradient instead of an image
-                    so it feels like a real challenge preview */}
-                <div
-                  className="h-32 md:h-40 relative"
-                  style={{
-                    background:
-                      "linear-gradient(135deg, rgba(255,97,48,0.18) 0%, rgba(8,145,178,0.18) 100%)",
-                  }}
-                >
+                {/* Cover */}
+                <div className="relative aspect-[16/9] md:aspect-[3/1] overflow-hidden bg-[#0F2229]">
+                  <img
+                    src="/landing/challenge-cover.jpg"
+                    alt="The Reset — a 4-week joint challenge"
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                  {/* Bottom gradient for legibility of overlay chips */}
+                  <div
+                    className="absolute inset-x-0 bottom-0 h-2/3 pointer-events-none"
+                    style={{
+                      background:
+                        "linear-gradient(to top, rgba(15,34,41,0.55) 0%, rgba(15,34,41,0) 100%)",
+                    }}
+                  />
+                  {/* Live chip top-left */}
                   <span
-                    className="absolute top-4 left-5 px-3 py-1 rounded-full text-[10px] uppercase tracking-widest font-headline"
+                    className="absolute top-4 left-4 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] uppercase tracking-widest font-headline"
                     style={{
                       backgroundColor: "rgba(15,34,41,0.85)",
-                      color: "#F2EFE8",
+                      color: "#9CF0FF",
                       fontWeight: 700,
                     }}
                   >
-                    4 weeks
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#9CF0FF] animate-pulse" />
+                    Live · 4 weeks
                   </span>
                 </div>
 
-                <div className="p-6 md:p-8">
-                  {/* Title */}
+                <div className="p-6 md:p-10">
+                  {/* Title + subtitle */}
                   <h3
-                    className="text-2xl md:text-3xl font-headline tracking-tight mb-5"
-                    style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.02em" }}
+                    className="text-2xl md:text-4xl font-headline tracking-tight"
+                    style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.025em" }}
                   >
-                    4-week Fat Loss Challenge
+                    The Reset
                   </h3>
+                  <p
+                    className="text-sm md:text-base mt-2 mb-6"
+                    style={{ color: "#475569" }}
+                  >
+                    Train smart. Eat right. Show up live, together.
+                  </p>
 
-                  {/* Two creators */}
-                  <div className="flex items-center gap-5 mb-6">
-                    <div className="flex items-center gap-2.5">
+                  {/* Two creators — visual parity, no hierarchy */}
+                  <div className="grid grid-cols-2 gap-4 mb-6">
+                    <div
+                      className="flex items-center gap-3 p-3 rounded-2xl"
+                      style={{
+                        backgroundColor: "rgba(255,97,48,0.06)",
+                        border: "1px solid rgba(255,97,48,0.18)",
+                      }}
+                    >
                       <div
-                        className="w-9 h-9 rounded-full flex items-center justify-center"
-                        style={{ backgroundColor: "rgba(255,97,48,0.12)" }}
+                        className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center"
+                        style={{ backgroundColor: "rgba(255,97,48,0.18)" }}
                       >
-                        <span className="text-xs font-black" style={{ color: "#FF6130" }}>F</span>
+                        <span
+                          className="text-sm font-headline"
+                          style={{ color: "#FF6130", fontWeight: 700 }}
+                        >
+                          A
+                        </span>
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <p
-                          className="text-xs font-headline"
+                          className="text-sm font-headline truncate"
                           style={{ color: "#0F2229", fontWeight: 700 }}
                         >
-                          Fitness Coach
+                          Alex
                         </p>
                         <p
                           className="text-[10px] uppercase tracking-widest font-headline"
                           style={{ color: "#FF6130", fontWeight: 700 }}
                         >
-                          Training
+                          Trainer
                         </p>
                       </div>
                     </div>
-                    <span style={{ color: "#94a3b8" }}>+</span>
-                    <div className="flex items-center gap-2.5">
+                    <div
+                      className="flex items-center gap-3 p-3 rounded-2xl"
+                      style={{
+                        backgroundColor: "rgba(8,145,178,0.06)",
+                        border: "1px solid rgba(8,145,178,0.18)",
+                      }}
+                    >
                       <div
-                        className="w-9 h-9 rounded-full flex items-center justify-center"
-                        style={{ backgroundColor: "rgba(8,145,178,0.12)" }}
+                        className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center"
+                        style={{ backgroundColor: "rgba(8,145,178,0.18)" }}
                       >
-                        <span className="text-xs font-black" style={{ color: "#0891b2" }}>N</span>
+                        <span
+                          className="text-sm font-headline"
+                          style={{ color: "#0891b2", fontWeight: 700 }}
+                        >
+                          M
+                        </span>
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <p
-                          className="text-xs font-headline"
+                          className="text-sm font-headline truncate"
                           style={{ color: "#0F2229", fontWeight: 700 }}
                         >
-                          Nutrition Coach
+                          Mira
                         </p>
                         <p
                           className="text-[10px] uppercase tracking-widest font-headline"
                           style={{ color: "#0891b2", fontWeight: 700 }}
                         >
-                          Nutrition
+                          Nutritionist
                         </p>
                       </div>
                     </div>
                   </div>
 
-                  {/* Footer */}
+                  {/* Facts strip */}
                   <div
-                    className="pt-5 flex items-center justify-center gap-3 text-sm font-headline"
-                    style={{ borderTop: "1px solid rgba(15,34,41,0.08)", color: "#475569", fontWeight: 700 }}
+                    className="flex items-center justify-center flex-wrap gap-x-3 gap-y-1 py-3 px-4 rounded-2xl text-xs md:text-sm font-headline mb-8"
+                    style={{
+                      backgroundColor: "rgba(15,34,41,0.04)",
+                      color: "#0F2229",
+                      fontWeight: 700,
+                    }}
                   >
-                    One product
+                    <span>4 weeks</span>
                     <span style={{ color: "#94a3b8" }}>·</span>
-                    One experience
+                    <span>8 live sessions</span>
+                    <span style={{ color: "#94a3b8" }}>·</span>
+                    <span>CHF 240</span>
+                  </div>
+
+                  {/* Sessions label */}
+                  <div className="flex items-baseline justify-between mb-4">
+                    <p
+                      className="text-[10px] uppercase tracking-[0.25em] font-headline"
+                      style={{ color: "#0F2229", fontWeight: 700 }}
+                    >
+                      Sessions
+                    </p>
+                    <p
+                      className="text-[10px] uppercase tracking-widest font-headline"
+                      style={{ color: "#94a3b8", fontWeight: 700 }}
+                    >
+                      First 3 of 8
+                    </p>
+                  </div>
+
+                  {/* Sessions row — horizontal scroll on mobile, grid on desktop */}
+                  <div className="-mx-6 md:-mx-10 px-6 md:px-10 overflow-x-auto md:overflow-visible">
+                    <div className="grid grid-cols-3 gap-3 md:gap-4 min-w-[480px] md:min-w-0">
+                      {/* Session 1 — Intro, both creators */}
+                      <div
+                        className="rounded-2xl overflow-hidden"
+                        style={{
+                          backgroundColor: "#F8F6F0",
+                          border: "1px solid rgba(15,34,41,0.06)",
+                        }}
+                      >
+                        <div className="relative aspect-[4/3] bg-[#0F2229] overflow-hidden">
+                          <img
+                            src="/landing/session-intro.jpg"
+                            alt="Kickoff session with both coaches"
+                            className="absolute inset-0 w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="p-3">
+                          <p
+                            className="text-[9px] uppercase tracking-widest font-headline mb-1"
+                            style={{ color: "#94a3b8", fontWeight: 700 }}
+                          >
+                            Week 1 · Mon
+                          </p>
+                          <p
+                            className="text-xs md:text-sm font-headline leading-snug mb-2"
+                            style={{ color: "#0F2229", fontWeight: 700 }}
+                          >
+                            Kickoff — meet your coaches
+                          </p>
+                          <div className="flex items-center gap-1">
+                            <span
+                              className="inline-block w-4 h-4 rounded-full"
+                              style={{ backgroundColor: "rgba(255,97,48,0.25)" }}
+                            />
+                            <span
+                              className="inline-block w-4 h-4 rounded-full -ml-1.5"
+                              style={{
+                                backgroundColor: "rgba(8,145,178,0.25)",
+                                border: "1.5px solid #FFFFFF",
+                              }}
+                            />
+                            <span
+                              className="ml-1 text-[10px] font-headline"
+                              style={{ color: "#475569", fontWeight: 700 }}
+                            >
+                              Both
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Session 2 — Trainer */}
+                      <div
+                        className="rounded-2xl overflow-hidden"
+                        style={{
+                          backgroundColor: "#F8F6F0",
+                          border: "1px solid rgba(15,34,41,0.06)",
+                        }}
+                      >
+                        <div className="relative aspect-[4/3] bg-[#0F2229] overflow-hidden">
+                          <img
+                            src="/landing/session-trainer.jpg"
+                            alt="Strength foundations with Alex"
+                            className="absolute inset-0 w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="p-3">
+                          <p
+                            className="text-[9px] uppercase tracking-widest font-headline mb-1"
+                            style={{ color: "#94a3b8", fontWeight: 700 }}
+                          >
+                            Week 1 · Thu
+                          </p>
+                          <p
+                            className="text-xs md:text-sm font-headline leading-snug mb-2"
+                            style={{ color: "#0F2229", fontWeight: 700 }}
+                          >
+                            Build your base
+                          </p>
+                          <div className="flex items-center gap-1.5">
+                            <span
+                              className="inline-block w-4 h-4 rounded-full"
+                              style={{ backgroundColor: "rgba(255,97,48,0.25)" }}
+                            />
+                            <span
+                              className="text-[10px] font-headline"
+                              style={{ color: "#FF6130", fontWeight: 700 }}
+                            >
+                              Alex
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Session 3 — Nutritionist */}
+                      <div
+                        className="rounded-2xl overflow-hidden"
+                        style={{
+                          backgroundColor: "#F8F6F0",
+                          border: "1px solid rgba(15,34,41,0.06)",
+                        }}
+                      >
+                        <div className="relative aspect-[4/3] bg-[#0F2229] overflow-hidden">
+                          <img
+                            src="/landing/session-nutritionist.jpg"
+                            alt="Eat for energy with Mira"
+                            className="absolute inset-0 w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="p-3">
+                          <p
+                            className="text-[9px] uppercase tracking-widest font-headline mb-1"
+                            style={{ color: "#94a3b8", fontWeight: 700 }}
+                          >
+                            Week 2 · Tue
+                          </p>
+                          <p
+                            className="text-xs md:text-sm font-headline leading-snug mb-2"
+                            style={{ color: "#0F2229", fontWeight: 700 }}
+                          >
+                            Eat for energy
+                          </p>
+                          <div className="flex items-center gap-1.5">
+                            <span
+                              className="inline-block w-4 h-4 rounded-full"
+                              style={{ backgroundColor: "rgba(8,145,178,0.25)" }}
+                            />
+                            <span
+                              className="text-[10px] font-headline"
+                              style={{ color: "#0891b2", fontWeight: 700 }}
+                            >
+                              Mira
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
