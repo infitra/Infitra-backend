@@ -147,14 +147,11 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              {/* INFITRA wordmark — same exact treatment as the dashboard
-                  nav, scaled up to hero proportions. fontWeight: 700 (the
-                  heaviest real General Sans weight), italic, -0.03em
-                  letter-spacing. */}
-              <p
-                className="text-5xl md:text-6xl lg:text-7xl font-headline italic tracking-tight leading-none mb-8"
-                style={{ color: "#FF6130", fontWeight: 700, letterSpacing: "-0.03em" }}
-              >
+              {/* INFITRA wordmark — uses the same chunky synthesised-italic
+                  treatment as the auth + onboarding wordmarks, scaled up
+                  for the hero. font-black + tracking-tighter is the brand
+                  feel that production has always rendered. */}
+              <p className="text-7xl md:text-8xl lg:text-9xl font-black text-[#FF6130] tracking-tighter font-headline italic leading-none mb-8">
                 INFITRA
               </p>
 
