@@ -438,52 +438,93 @@ export default function LandingPage() {
                 Show up. Train together. Get real-time guidance.
               </p>
 
-              {/* Heartbeat ECG — the rhythm visualised */}
-              <div className="mt-12 mb-10 flex items-center justify-center">
-                <svg
-                  viewBox="0 0 600 80"
-                  className="w-full max-w-xl h-12 md:h-16"
-                  fill="none"
-                  aria-hidden
+              {/* ── Heartbeat-calendar hybrid — the rhythm made concrete ──
+                  The existing 2-spike heartbeat evolved into 8 spikes
+                  evenly spread across a 4-week canvas. Same single visual
+                  element now does both jobs: poetic rhythm metaphor AND
+                  literal calendar structure (8 live anchors, 4 weeks).
+                  No new visual added; just one upgraded. */}
+              <div className="mt-12 mb-8">
+                <p
+                  className="text-center text-[10px] uppercase tracking-[0.25em] font-headline mb-4"
+                  style={{ color: "#0891b2", fontWeight: 700 }}
                 >
-                  {/* Flat baseline (subtle) */}
-                  <path
-                    d="M 0 40 L 600 40"
-                    stroke="rgba(15,34,41,0.10)"
-                    strokeWidth={1}
-                    strokeDasharray="2 4"
-                  />
-                  {/* The heartbeat — flat, spike1, flat, spike2, flat */}
-                  <path
-                    d="M 0 40 L 140 40 L 160 40 L 175 10 L 195 70 L 210 40 L 390 40 L 405 10 L 425 70 L 440 40 L 600 40"
-                    stroke="#0891b2"
-                    strokeWidth={2.25}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  {/* Pulsing dots at the spikes */}
-                  <circle cx="185" cy="40" r="5" fill="#0891b2">
-                    <animate
-                      attributeName="opacity"
-                      values="0.3;1;0.3"
-                      dur="2.4s"
-                      repeatCount="indefinite"
-                    />
-                  </circle>
-                  <circle cx="415" cy="40" r="5" fill="#0891b2">
-                    <animate
-                      attributeName="opacity"
-                      values="0.3;1;0.3"
-                      dur="2.4s"
-                      begin="1.2s"
-                      repeatCount="indefinite"
-                    />
-                  </circle>
-                </svg>
+                  4 Weeks · 8 Live Anchors
+                </p>
+
+                <div className="flex items-center justify-center">
+                  {(() => {
+                    // Eight anchor positions, evenly spaced across the
+                    // viewBox. Two anchors per week, four weeks total.
+                    const anchors = [50, 150, 250, 350, 450, 550, 650, 750];
+                    let path = "M 0 40";
+                    anchors.forEach((x) => {
+                      path += ` L ${x - 12} 40 L ${x - 4} 12 L ${x + 4} 68 L ${x + 12} 40`;
+                    });
+                    path += " L 800 40";
+
+                    return (
+                      <svg
+                        viewBox="0 0 800 80"
+                        className="w-full max-w-2xl h-14 md:h-20"
+                        fill="none"
+                        aria-hidden
+                      >
+                        {/* Subtle dashed baseline — the "between sessions"
+                            continuous time, with the heartbeat punctuating it */}
+                        <path
+                          d="M 0 40 L 800 40"
+                          stroke="rgba(15,34,41,0.10)"
+                          strokeWidth={1}
+                          strokeDasharray="2 4"
+                        />
+                        {/* The 8-anchor heartbeat */}
+                        <path
+                          d={path}
+                          stroke="#0891b2"
+                          strokeWidth={2.25}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        {/* Pulsing dot at each anchor — staggered so the
+                            wave moves left-to-right across the timeline.
+                            Reads as "the program moving forward in time." */}
+                        {anchors.map((x, i) => (
+                          <circle key={x} cx={x} cy={40} r={5} fill="#0891b2">
+                            <animate
+                              attributeName="opacity"
+                              values="0.4;1;0.4"
+                              dur="3.2s"
+                              begin={`${i * 0.4}s`}
+                              repeatCount="indefinite"
+                            />
+                          </circle>
+                        ))}
+                      </svg>
+                    );
+                  })()}
+                </div>
+
+                {/* Week markers — quietly anchor the calendar reading.
+                    Equally spaced beneath the heartbeat (max-w matches
+                    the SVG above so they line up with the right anchor
+                    pairs in their week). */}
+                <div className="w-full max-w-2xl mx-auto grid grid-cols-4 mt-2">
+                  {["W1", "W2", "W3", "W4"].map((w) => (
+                    <p
+                      key={w}
+                      className="text-center text-[10px] uppercase tracking-widest font-headline"
+                      style={{ color: "#94a3b8", fontWeight: 700 }}
+                    >
+                      {w}
+                    </p>
+                  ))}
+                </div>
               </div>
 
-              {/* Beat 3: rhythm captions */}
-              <div className="grid grid-cols-2 gap-6 max-w-md mx-auto mb-12">
+              {/* Beat 3: rhythm captions — what happens in the dashed
+                  baseline (between) vs the spikes (live moments). */}
+              <div className="grid grid-cols-2 gap-6 max-w-md mx-auto">
                 <div>
                   <p
                     className="text-[10px] uppercase tracking-[0.25em] font-headline mb-1"
@@ -514,13 +555,9 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              {/* Closing line */}
-              <p
-                className="text-xl md:text-2xl font-headline tracking-tight"
-                style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.02em" }}
-              >
-                Structure <span style={{ color: "#94a3b8" }}>+</span> peak moments.
-              </p>
+              {/* Closing line dropped — the heartbeat-calendar already
+                  visualises "structure + peak moments." Saying it in
+                  text after showing it visually was redundant. */}
             </div>
           </section>
 
