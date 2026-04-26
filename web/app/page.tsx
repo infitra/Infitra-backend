@@ -146,14 +146,26 @@ export default function LandingPage() {
           <section className="px-6 py-24">
             <div className="max-w-5xl mx-auto">
               <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr_auto_1fr] gap-6 md:gap-4 items-center">
-                {/* Left expert — Alex */}
+                {/* Left expert — Alex (with OWNER badge top-right) */}
                 <div
-                  className="rounded-3xl p-8 text-center"
+                  className="relative rounded-3xl p-8 text-center"
                   style={{
                     backgroundColor: "rgba(255,255,255,0.7)",
                     border: "1px solid rgba(255,97,48,0.25)",
                   }}
                 >
+                  {/* Ownership badge — makes the governance model visible */}
+                  <span
+                    className="absolute top-3 right-3 px-2 py-0.5 rounded-full text-[9px] uppercase tracking-widest font-headline"
+                    style={{
+                      color: "#FF6130",
+                      backgroundColor: "rgba(255,97,48,0.10)",
+                      border: "1px solid rgba(255,97,48,0.30)",
+                      fontWeight: 700,
+                    }}
+                  >
+                    Owner · 60%
+                  </span>
                   <div
                     className="w-20 h-20 mx-auto rounded-full overflow-hidden mb-4"
                     style={{
@@ -181,47 +193,116 @@ export default function LandingPage() {
                   </p>
                 </div>
 
-                {/* Arrow → */}
-                <div className="hidden md:flex items-center justify-center text-4xl" style={{ color: "#94a3b8" }}>
-                  →
+                {/* Arrow → (cyan SVG, replaces gray ASCII) */}
+                <div className="hidden md:flex items-center justify-center">
+                  <svg width="56" height="14" viewBox="0 0 56 14" fill="none" aria-hidden>
+                    <line x1="2" y1="7" x2="48" y2="7" stroke="#0891b2" strokeWidth={1.5} strokeLinecap="round" />
+                    <path d="M42 2 L50 7 L42 12" stroke="#0891b2" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
                 </div>
 
-                {/* Center: One Program */}
+                {/* Center: One Program — substanced.
+                    Top stripe (orange→cyan) signals "blends both creators".
+                    Overlapping mini avatars + 8 session dots + duration give
+                    the card actual visual weight, matching the expert cards
+                    on either side instead of looking like an empty label. */}
                 <div
-                  className="rounded-3xl p-8 text-center"
+                  className="rounded-3xl overflow-hidden text-center"
                   style={{
-                    background: "linear-gradient(135deg, rgba(255,97,48,0.10) 0%, rgba(8,145,178,0.10) 100%)",
+                    background: "linear-gradient(135deg, rgba(255,97,48,0.08) 0%, rgba(8,145,178,0.08) 100%)",
                     border: "1px solid rgba(15,34,41,0.10)",
                     boxShadow: "0 12px 40px rgba(15,34,41,0.06)",
                   }}
                 >
-                  <p
-                    className="text-[10px] uppercase tracking-[0.25em] font-headline mb-2"
-                    style={{ color: "#0F2229", fontWeight: 700 }}
-                  >
-                    Together
-                  </p>
-                  <p
-                    className="text-xl md:text-2xl font-headline tracking-tight"
-                    style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.02em" }}
-                  >
-                    One Program
-                  </p>
+                  {/* Cover stripe — both brand colors merging */}
+                  <div
+                    className="h-1.5"
+                    style={{
+                      background: "linear-gradient(90deg, #FF6130 0%, #9CF0FF 100%)",
+                    }}
+                  />
+                  <div className="p-6 md:p-7">
+                    {/* Mini overlapping avatars — visual focal point that
+                        balances the larger avatars in the flanking cards */}
+                    <div className="flex items-center justify-center -space-x-3 mb-4">
+                      <img
+                        src="/landing/avatar-alex.jpg"
+                        alt=""
+                        className="w-11 h-11 rounded-full object-cover relative z-10"
+                        style={{ border: "3px solid #F2EFE8" }}
+                      />
+                      <img
+                        src="/landing/avatar-mira.jpg"
+                        alt=""
+                        className="w-11 h-11 rounded-full object-cover"
+                        style={{ border: "3px solid #F2EFE8" }}
+                      />
+                    </div>
+
+                    {/* Title */}
+                    <p
+                      className="text-lg md:text-xl font-headline tracking-tight"
+                      style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.02em" }}
+                    >
+                      One Program
+                    </p>
+
+                    {/* Session dots — 8 dots with kickoff + finale highlighted.
+                        Visualises the time-bound rhythm without crowding. */}
+                    <div className="flex items-center justify-center gap-1.5 mt-4 mb-2">
+                      {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => {
+                        const isAnchor = i === 0 || i === 7;
+                        return (
+                          <span
+                            key={i}
+                            className="rounded-full"
+                            style={{
+                              width: isAnchor ? 6 : 4,
+                              height: isAnchor ? 6 : 4,
+                              backgroundColor: isAnchor ? "#0891b2" : "rgba(8,145,178,0.30)",
+                            }}
+                          />
+                        );
+                      })}
+                    </div>
+
+                    {/* Duration caption */}
+                    <p
+                      className="text-[10px] uppercase tracking-[0.25em] font-headline"
+                      style={{ color: "#0891b2", fontWeight: 700 }}
+                    >
+                      8 Sessions · 4 Weeks
+                    </p>
+                  </div>
                 </div>
 
-                {/* Arrow ← */}
-                <div className="hidden md:flex items-center justify-center text-4xl" style={{ color: "#94a3b8" }}>
-                  ←
+                {/* Arrow ← (cyan SVG, mirrored) */}
+                <div className="hidden md:flex items-center justify-center">
+                  <svg width="56" height="14" viewBox="0 0 56 14" fill="none" aria-hidden>
+                    <line x1="8" y1="7" x2="54" y2="7" stroke="#0891b2" strokeWidth={1.5} strokeLinecap="round" />
+                    <path d="M14 2 L6 7 L14 12" stroke="#0891b2" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
                 </div>
 
-                {/* Right expert — Mira */}
+                {/* Right expert — Mira (with COHOST badge top-right) */}
                 <div
-                  className="rounded-3xl p-8 text-center"
+                  className="relative rounded-3xl p-8 text-center"
                   style={{
                     backgroundColor: "rgba(255,255,255,0.7)",
                     border: "1px solid rgba(8,145,178,0.25)",
                   }}
                 >
+                  <span
+                    className="absolute top-3 right-3 px-2 py-0.5 rounded-full text-[9px] uppercase tracking-widest font-headline"
+                    style={{
+                      color: "#0891b2",
+                      backgroundColor: "rgba(8,145,178,0.10)",
+                      border: "1px solid rgba(8,145,178,0.30)",
+                      fontWeight: 700,
+                    }}
+                  >
+                    Cohost · 40%
+                  </span>
                   <div
                     className="w-20 h-20 mx-auto rounded-full overflow-hidden mb-4"
                     style={{
