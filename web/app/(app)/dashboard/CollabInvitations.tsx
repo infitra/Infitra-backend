@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { acceptCollabInvite, declineCollabInvite } from "@/app/actions/collaboration";
-import { ShareDonut } from "@/app/components/ShareDonut";
 
 interface Invite {
   id: string;
@@ -11,8 +10,17 @@ interface Invite {
   fromAvatar: string | null;
   fromTagline: string | null;
   message: string;
+  /**
+   * Suggested revenue % proposed for the recipient by the inviter.
+   * 0 (or null) is treated as "no split proposed yet" — final terms
+   * are agreed in the workspace, not on the invite card.
+   */
   splitPercent: number;
   createdAt: string;
+  /** Title the inviter actually picked. Null when still default. */
+  challengeTitle: string | null;
+  /** Cover image the inviter actually picked. Null if not set. */
+  challengeImageUrl: string | null;
 }
 
 function timeAgo(dateStr: string) {
@@ -30,7 +38,6 @@ export function CollabInvitations({ invites }: { invites: Invite[] }) {
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
 
   if (invites.length === 0) return null;
-
   const visible = invites.filter((i) => !dismissed.has(i.id));
   if (visible.length === 0) return null;
 
@@ -53,65 +60,184 @@ export function CollabInvitations({ invites }: { invites: Invite[] }) {
     <div>
       <div className="flex items-center gap-3 mb-4">
         <div className="w-1 h-6 rounded-full" style={{ backgroundColor: "#9CF0FF" }} />
-        <h2 className="text-xl font-black font-headline text-[#0F2229] tracking-tight">Collaboration Invites</h2>
+        <h2 className="text-xl font-black font-headline text-[#0F2229] tracking-tight">
+          Collaboration Invites
+        </h2>
       </div>
 
       <div className="space-y-4">
-        {visible.map((invite) => (
-          <div key={invite.id} className="rounded-2xl infitra-card p-6" style={{ border: "1px solid rgba(156,240,255,0.25)" }}>
-            <div className="flex items-start gap-4">
-              {/* Inviter avatar */}
-              {invite.fromAvatar ? (
-                <img src={invite.fromAvatar} alt="" className="w-14 h-14 rounded-full object-cover shrink-0" />
-              ) : (
-                <div className="w-14 h-14 rounded-full bg-cyan-100 flex items-center justify-center shrink-0">
-                  <span className="text-lg font-black font-headline text-cyan-700">{invite.fromName[0]}</span>
+        {visible.map((invite) => {
+          const hasSuggestedSplit = invite.splitPercent > 0 && invite.splitPercent < 100;
+          const isLoading = loading === invite.id;
+
+          return (
+            <div
+              key={invite.id}
+              className="rounded-2xl overflow-hidden infitra-card"
+              style={{ border: "1px solid rgba(156,240,255,0.30)" }}
+            >
+              {/* Cover banner — only when the inviter actually picked one */}
+              {invite.challengeImageUrl && (
+                <div
+                  className="relative w-full overflow-hidden"
+                  style={{ aspectRatio: "5 / 1", backgroundColor: "#0F2229" }}
+                >
+                  <img
+                    src={invite.challengeImageUrl}
+                    alt=""
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                  {/* Soft fade so the title (below) doesn't sit on a hard edge */}
+                  <div
+                    className="absolute inset-x-0 bottom-0 h-1/2"
+                    style={{
+                      background:
+                        "linear-gradient(to top, rgba(15,34,41,0.18) 0%, rgba(15,34,41,0) 100%)",
+                    }}
+                  />
                 </div>
               )}
 
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <h3 className="text-base font-black font-headline text-[#0F2229]">{invite.fromName}</h3>
-                  <span className="text-[10px] text-[#94a3b8]">{timeAgo(invite.createdAt)}</span>
-                </div>
-                {invite.fromTagline && (
-                  <p className="text-xs text-[#64748b] mb-2">{invite.fromTagline}</p>
-                )}
-                <p className="text-sm text-[#334155] mb-4 leading-relaxed">{invite.message}</p>
-
-                {/* Split visual + actions */}
-                <div className="flex items-center gap-6">
-                  <ShareDonut
-                    size={80}
-                    shares={[
-                      { label: "You", percent: invite.splitPercent, color: "#9CF0FF" },
-                      { label: invite.fromName, percent: 100 - invite.splitPercent, color: "#FF6130" },
-                    ]}
-                  />
-
-                  <div className="flex flex-col gap-2">
-                    <button
-                      onClick={() => handleAccept(invite.id)}
-                      disabled={loading === invite.id}
-                      className="px-6 py-2.5 rounded-full text-white text-sm font-black font-headline disabled:opacity-40"
-                      style={{ backgroundColor: "#0891b2" }}
-                    >
-                      {loading === invite.id ? "..." : "Interested"}
-                    </button>
-                    <button
-                      onClick={() => handleDecline(invite.id)}
-                      disabled={loading === invite.id}
-                      className="px-6 py-2 rounded-full text-xs font-bold font-headline text-[#94a3b8] hover:text-[#0F2229] disabled:opacity-40"
-                      style={{ border: "1px solid rgba(0,0,0,0.08)" }}
-                    >
-                      Not Now
-                    </button>
+              <div className="p-6">
+                {/* Inviter row */}
+                <div className="flex items-center gap-3 mb-4">
+                  {invite.fromAvatar ? (
+                    <img
+                      src={invite.fromAvatar}
+                      alt=""
+                      className="w-10 h-10 rounded-full object-cover shrink-0"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-cyan-100 flex items-center justify-center shrink-0">
+                      <span className="text-sm font-black font-headline text-cyan-700">
+                        {invite.fromName[0]}
+                      </span>
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-black font-headline text-[#0F2229] truncate">
+                        {invite.fromName}
+                      </p>
+                      <span className="text-[10px] text-[#94a3b8] shrink-0">
+                        · invited you {timeAgo(invite.createdAt)}
+                      </span>
+                    </div>
+                    {invite.fromTagline && (
+                      <p className="text-[11px] text-[#64748b] truncate">{invite.fromTagline}</p>
+                    )}
                   </div>
+                </div>
+
+                {/* Title — the headline of the proposal. Only if set. */}
+                {invite.challengeTitle && (
+                  <h3
+                    className="text-xl md:text-2xl font-headline tracking-tight mb-3"
+                    style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.02em" }}
+                  >
+                    {invite.challengeTitle}
+                  </h3>
+                )}
+
+                {/* Message — the inviter's actual pitch */}
+                <p
+                  className="text-sm leading-relaxed mb-5"
+                  style={{ color: "#334155" }}
+                >
+                  {invite.message}
+                </p>
+
+                {/* Suggested split — labelled as a suggestion, with the
+                    workspace-handoff caveat. Hidden entirely when no split
+                    was proposed (split === 0 → "discuss in workspace"). */}
+                {hasSuggestedSplit ? (
+                  <div
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl mb-5"
+                    style={{
+                      backgroundColor: "rgba(156,240,255,0.08)",
+                      border: "1px solid rgba(8,145,178,0.18)",
+                    }}
+                  >
+                    {/* Inline two-tone split bar — compact alternative to the
+                        donut so the visual weight matches a "suggestion" */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span
+                          className="text-[10px] uppercase tracking-widest font-headline"
+                          style={{ color: "#94a3b8", fontWeight: 700 }}
+                        >
+                          Suggested split
+                        </span>
+                        <span
+                          className="text-[11px] font-headline"
+                          style={{ color: "#0F2229", fontWeight: 700 }}
+                        >
+                          You {invite.splitPercent}% · {invite.fromName} {100 - invite.splitPercent}%
+                        </span>
+                      </div>
+                      <div
+                        className="w-full h-1.5 rounded-full overflow-hidden flex"
+                        style={{ backgroundColor: "rgba(15,34,41,0.06)" }}
+                      >
+                        <div
+                          style={{
+                            width: `${invite.splitPercent}%`,
+                            backgroundColor: "#0891b2",
+                          }}
+                        />
+                        <div
+                          style={{
+                            width: `${100 - invite.splitPercent}%`,
+                            backgroundColor: "#FF6130",
+                          }}
+                        />
+                      </div>
+                      <p className="text-[10px] mt-1.5" style={{ color: "#94a3b8" }}>
+                        Final terms agreed together in the workspace.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <p
+                    className="text-[11px] mb-5 px-4 py-2.5 rounded-xl"
+                    style={{
+                      color: "#64748b",
+                      backgroundColor: "rgba(15,34,41,0.03)",
+                      border: "1px solid rgba(15,34,41,0.06)",
+                    }}
+                  >
+                    No split proposed yet — you&apos;ll set the terms together in the workspace.
+                  </p>
+                )}
+
+                {/* Actions */}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleAccept(invite.id)}
+                    disabled={isLoading}
+                    className="px-6 py-2.5 rounded-full text-white text-sm font-headline transition-transform hover:scale-[1.02] disabled:opacity-40 disabled:hover:scale-100"
+                    style={{
+                      backgroundColor: "#0891b2",
+                      fontWeight: 700,
+                      boxShadow:
+                        "0 4px 14px rgba(8,145,178,0.30), 0 2px 6px rgba(8,145,178,0.16)",
+                    }}
+                  >
+                    {isLoading ? "..." : "Open workspace"}
+                  </button>
+                  <button
+                    onClick={() => handleDecline(invite.id)}
+                    disabled={isLoading}
+                    className="px-5 py-2.5 rounded-full text-xs font-bold font-headline text-[#94a3b8] hover:text-[#0F2229] disabled:opacity-40 transition-colors"
+                    style={{ border: "1px solid rgba(15,34,41,0.10)" }}
+                  >
+                    Not now
+                  </button>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
