@@ -39,6 +39,11 @@ export function CollabInviteFlow({ existingChallengeId, existingCollaboratorIds,
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
   const [showSplit, setShowSplit] = useState(false);
+  // Tracks whether the user has actually engaged with the split UI.
+  // splitPercent gets sent as 0 for everyone if this stays false →
+  // the dashboard then renders "no split proposed yet" instead of
+  // dressing up an arbitrary auto-default as a real proposal.
+  const [splitEngaged, setSplitEngaged] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -65,15 +70,36 @@ export function CollabInviteFlow({ existingChallengeId, existingCollaboratorIds,
   }
 
   function addInvitee(creator: CreatorResult) {
-    // When adding, split evenly across all invitees (no math required for user)
+    // Only auto-distribute splits if the user has explicitly engaged
+    // with the split UI. Otherwise leave at 0 (= "no split proposed").
     const newCount = invitees.length + 1;
-    const evenSplit = Math.floor(80 / newCount); // give each a default share out of 80% pool
-    setInvitees([
-      ...invitees.map(i => ({ ...i, splitPercent: evenSplit })),
-      { id: creator.id, display_name: creator.display_name, avatar_url: creator.avatar_url, splitPercent: evenSplit },
-    ]);
+    if (splitEngaged) {
+      const evenSplit = Math.floor(80 / newCount);
+      setInvitees([
+        ...invitees.map(i => ({ ...i, splitPercent: evenSplit })),
+        { id: creator.id, display_name: creator.display_name, avatar_url: creator.avatar_url, splitPercent: evenSplit },
+      ]);
+    } else {
+      setInvitees([
+        ...invitees,
+        { id: creator.id, display_name: creator.display_name, avatar_url: creator.avatar_url, splitPercent: 0 },
+      ]);
+    }
     setQuery("");
     setResults([]);
+  }
+
+  function toggleSplit() {
+    if (!splitEngaged) {
+      // First time the user opens the split section — populate the
+      // sliders with sensible defaults so they're not all sitting at 0.
+      // From this point, splits are part of the proposal.
+      const newCount = invitees.length;
+      const evenSplit = newCount > 0 ? Math.floor(80 / newCount) : 0;
+      setInvitees(invitees.map(i => ({ ...i, splitPercent: evenSplit })));
+      setSplitEngaged(true);
+    }
+    setShowSplit(!showSplit);
   }
 
   function removeInvitee(id: string) {
@@ -257,7 +283,7 @@ export function CollabInviteFlow({ existingChallengeId, existingCollaboratorIds,
           {/* Optional revenue split */}
           <div>
             <button
-              onClick={() => setShowSplit(!showSplit)}
+              onClick={toggleSplit}
               className="text-xs font-bold font-headline text-[#94a3b8] hover:text-[#0F2229]"
             >
               {showSplit ? "▼" : "▸"} Add suggested revenue split (optional)

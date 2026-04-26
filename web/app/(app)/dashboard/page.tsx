@@ -226,9 +226,13 @@ export default async function DashboardPage() {
   }));
 
   // ── Pending collaboration invitations ─────────────────
+  // Joined to app_challenge to surface the title + cover image the
+  // inviter actually picked — these were invisible before, which made
+  // the invite card look like a system notification instead of a real
+  // proposal from a real person.
   const { data: pendingInvites } = await supabase
     .from("app_collaboration_invite")
-    .select("id, from_id, message, initial_split_percent, created_at")
+    .select("id, from_id, message, initial_split_percent, created_at, challenge_id, app_challenge(title, image_url)")
     .eq("to_id", user!.id)
     .eq("status", "pending")
     .order("created_at", { ascending: false });
@@ -360,15 +364,23 @@ export default async function DashboardPage() {
       {/* ── COLLABORATION INVITATIONS ─────────────────────── */}
       {(pendingInvites ?? []).length > 0 && (
         <CollabInvitations
-          invites={(pendingInvites ?? []).map((i: any) => ({
-            id: i.id,
-            fromName: inviterProfiles[i.from_id]?.name ?? "Creator",
-            fromAvatar: inviterProfiles[i.from_id]?.avatar ?? null,
-            fromTagline: inviterProfiles[i.from_id]?.tagline ?? null,
-            message: i.message,
-            splitPercent: i.initial_split_percent,
-            createdAt: i.created_at,
-          }))}
+          invites={(pendingInvites ?? []).map((i: any) => {
+            const ch = i.app_challenge;
+            const rawTitle: string = ch?.title ?? "";
+            const isMeaningfulTitle =
+              rawTitle && rawTitle !== "Untitled Collaboration" && rawTitle !== "Untitled Challenge";
+            return {
+              id: i.id,
+              fromName: inviterProfiles[i.from_id]?.name ?? "Creator",
+              fromAvatar: inviterProfiles[i.from_id]?.avatar ?? null,
+              fromTagline: inviterProfiles[i.from_id]?.tagline ?? null,
+              message: i.message,
+              splitPercent: i.initial_split_percent ?? 0,
+              createdAt: i.created_at,
+              challengeTitle: isMeaningfulTitle ? rawTitle : null,
+              challengeImageUrl: ch?.image_url ?? null,
+            };
+          })}
         />
       )}
 
