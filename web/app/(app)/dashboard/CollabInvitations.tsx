@@ -73,79 +73,68 @@ export function CollabInvitations({ invites }: { invites: Invite[] }) {
           return (
             <div
               key={invite.id}
-              className="rounded-2xl overflow-hidden infitra-card"
+              className="rounded-2xl infitra-card p-6"
               style={{ border: "1px solid rgba(156,240,255,0.30)" }}
             >
-              {/* Cover banner — only when the inviter actually picked one */}
-              {invite.challengeImageUrl && (
-                <div
-                  className="relative w-full overflow-hidden"
-                  style={{ aspectRatio: "5 / 1", backgroundColor: "#0F2229" }}
-                >
+              {/* Inviter row */}
+              <div className="flex items-center gap-3 mb-5">
+                {invite.fromAvatar ? (
+                  <img
+                    src={invite.fromAvatar}
+                    alt=""
+                    className="w-10 h-10 rounded-full object-cover shrink-0"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-cyan-100 flex items-center justify-center shrink-0">
+                    <span className="text-sm font-black font-headline text-cyan-700">
+                      {invite.fromName[0]}
+                    </span>
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-black font-headline text-[#0F2229] truncate">
+                      {invite.fromName}
+                    </p>
+                    <span className="text-[10px] text-[#94a3b8] shrink-0">
+                      · invited you {timeAgo(invite.createdAt)}
+                    </span>
+                  </div>
+                  {invite.fromTagline && (
+                    <p className="text-[11px] text-[#64748b] truncate">{invite.fromTagline}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Proposal block — cover thumbnail (small, contextual) next
+                  to title + message. The cover used to be a 5:1 hero banner
+                  that pushed the actual content below the fold; now it's a
+                  64×64 thumbnail that anchors the proposal without dominating. */}
+              <div className="flex items-start gap-4 mb-5">
+                {invite.challengeImageUrl && (
                   <img
                     src={invite.challengeImageUrl}
                     alt=""
-                    className="absolute inset-0 w-full h-full object-cover"
+                    className="w-16 h-16 rounded-xl object-cover shrink-0"
                   />
-                  {/* Soft fade so the title (below) doesn't sit on a hard edge */}
-                  <div
-                    className="absolute inset-x-0 bottom-0 h-1/2"
-                    style={{
-                      background:
-                        "linear-gradient(to top, rgba(15,34,41,0.18) 0%, rgba(15,34,41,0) 100%)",
-                    }}
-                  />
-                </div>
-              )}
-
-              <div className="p-6">
-                {/* Inviter row */}
-                <div className="flex items-center gap-3 mb-4">
-                  {invite.fromAvatar ? (
-                    <img
-                      src={invite.fromAvatar}
-                      alt=""
-                      className="w-10 h-10 rounded-full object-cover shrink-0"
-                    />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-cyan-100 flex items-center justify-center shrink-0">
-                      <span className="text-sm font-black font-headline text-cyan-700">
-                        {invite.fromName[0]}
-                      </span>
-                    </div>
-                  )}
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-black font-headline text-[#0F2229] truncate">
-                        {invite.fromName}
-                      </p>
-                      <span className="text-[10px] text-[#94a3b8] shrink-0">
-                        · invited you {timeAgo(invite.createdAt)}
-                      </span>
-                    </div>
-                    {invite.fromTagline && (
-                      <p className="text-[11px] text-[#64748b] truncate">{invite.fromTagline}</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Title — the headline of the proposal. Only if set. */}
-                {invite.challengeTitle && (
-                  <h3
-                    className="text-xl md:text-2xl font-headline tracking-tight mb-3"
-                    style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.02em" }}
-                  >
-                    {invite.challengeTitle}
-                  </h3>
                 )}
-
-                {/* Message — the inviter's actual pitch */}
-                <p
-                  className="text-sm leading-relaxed mb-5"
-                  style={{ color: "#334155" }}
-                >
-                  {invite.message}
-                </p>
+                <div className="flex-1 min-w-0">
+                  {invite.challengeTitle && (
+                    <h3
+                      className="text-lg md:text-xl font-headline tracking-tight mb-1.5"
+                      style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.02em" }}
+                    >
+                      {invite.challengeTitle}
+                    </h3>
+                  )}
+                  <p
+                    className="text-sm leading-relaxed"
+                    style={{ color: "#334155" }}
+                  >
+                    {invite.message}
+                  </p>
+                </div>
+              </div>
 
                 {/* Suggested split — labelled as a suggestion, with the
                     workspace-handoff caveat. Hidden entirely when no split
@@ -234,7 +223,6 @@ export function CollabInvitations({ invites }: { invites: Invite[] }) {
                     Not now
                   </button>
                 </div>
-              </div>
             </div>
           );
         })}

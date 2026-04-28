@@ -281,14 +281,20 @@ export default async function DashboardPage() {
   }
   const myOwnedCollabs = (ownedCollabDrafts ?? []).filter((c: any) => ownedCollabIds.has(c.id));
 
-  // Cohost collab drafts — RLS on app_challenge already filters to challenges
-  // where user is owner OR cohost. So draft challenges NOT owned by user = cohost collabs.
-  const { data: cohostCollabDrafts } = await supabase
-    .from("app_challenge")
-    .select("id, title, owner_id, status, created_at")
-    .eq("status", "draft")
-    .neq("owner_id", user!.id);
-  const cohostCollabs = cohostCollabDrafts ?? [];
+  // Cohost collab drafts — go through app_challenge_cohost explicitly.
+  // (Previously this relied on RLS to filter app_challenge to "owner OR
+  // cohost" rows. We now also expose challenges to pending invitees so
+  // their dashboard invite cards can show the title + cover, which made
+  // a "select all drafts I can see" query also pick up pending invites
+  // and double-list them. Joining through cohost is the correct guard.)
+  const { data: cohostJoinRows } = await supabase
+    .from("app_challenge_cohost")
+    .select("challenge_id, app_challenge(id, title, owner_id, status, created_at)")
+    .eq("cohost_id", user!.id);
+
+  const cohostCollabs = (cohostJoinRows ?? [])
+    .map((r: any) => r.app_challenge)
+    .filter((c: any) => c && c.status === "draft" && c.owner_id !== user!.id);
 
   // All active workspaces
   const allCollabWorkspaces = [
