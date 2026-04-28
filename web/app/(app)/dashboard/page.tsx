@@ -2,7 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { GreetingRow } from "./GreetingRow";
 import { ActiveProgramCard, type ProgramStage } from "./ActiveProgramCard";
-import { PilotPulse } from "./PilotPulse";
+import { TopAlert } from "./TopAlert";
+import { CollabInvitations } from "./CollabInvitations";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Home — INFITRA" };
@@ -100,7 +101,7 @@ async function loadPilotDashboard(userId: string) {
   ] = await Promise.all([
     supabase
       .from("app_profile")
-      .select("display_name, avatar_url, role")
+      .select("display_name, avatar_url, tagline, role")
       .eq("id", userId)
       .single(),
 
@@ -162,9 +163,15 @@ async function loadPilotDashboard(userId: string) {
   } | null = null;
   let contractLockedAt: string | null = null;
 
+  // The challenge space (where buyers actually live) is created at
+  // publish-time. We need its id so the dashboard can link "Open
+  // challenge space" for live/completed programs to the correct page
+  // (not the legacy /challenges/[id] sales page).
+  let challengeSpaceId: string | null = null;
+
   if (activeChallenge) {
-    // Run pending-invite + contract queries in parallel; partner-resolution
-    // depends on the owner-vs-cohost branch and may need a follow-up query.
+    // Run pending-invite + contract + space queries in parallel;
+    // partner-resolution depends on the owner-vs-cohost branch.
     const pendingPartnerInvitePromise = supabase
       .from("app_collaboration_invite")
       .select("to_id")
@@ -181,6 +188,12 @@ async function loadPilotDashboard(userId: string) {
           .single()
       : Promise.resolve({ data: null, error: null });
 
+    const spacePromise = supabase
+      .from("app_challenge_space")
+      .select("id")
+      .eq("source_challenge_id", activeChallenge.id)
+      .maybeSingle();
+
     const ownerCohostPromise = activeChallenge.isOwner
       ? supabase
           .from("app_challenge_cohost")
@@ -194,10 +207,11 @@ async function loadPilotDashboard(userId: string) {
           .eq("id", activeChallenge.owner_id)
           .single();
 
-    const [pendingPartnerInviteResult, contractResult, partnerOrCohostResult] =
-      await Promise.all([pendingPartnerInvitePromise, contractPromise, ownerCohostPromise]);
+    const [pendingPartnerInviteResult, contractResult, spaceResult, partnerOrCohostResult] =
+      await Promise.all([pendingPartnerInvitePromise, contractPromise, spacePromise, ownerCohostPromise]);
 
     contractLockedAt = (contractResult.data as any)?.locked_at ?? null;
+    challengeSpaceId = (spaceResult.data as any)?.id ?? null;
 
     if (activeChallenge.isOwner) {
       const cohostId = (partnerOrCohostResult.data as any)?.cohost_id ?? null;
@@ -311,6 +325,7 @@ async function loadPilotDashboard(userId: string) {
     profile: {
       displayName: profile?.display_name ?? "",
       avatarUrl: profile?.avatar_url ?? null,
+      tagline: profile?.tagline ?? null,
       role: (profile?.role ?? "creator") as "creator" | "participant",
     },
     activeProgram: activeChallenge && programStage
@@ -322,6 +337,7 @@ async function loadPilotDashboard(userId: string) {
           startDate: activeChallenge.start_date,
           endDate: activeChallenge.end_date,
           isOwner: activeChallenge.isOwner,
+          spaceId: challengeSpaceId,
         }
       : null,
     partner,
@@ -350,11 +366,25 @@ export default async function DashboardPage() {
 
   const userInitial = data.profile.displayName?.[0]?.toUpperCase() ?? "?";
 
+  const hasInvites = data.pendingReceivedInvites.length > 0;
+  const hasActiveProgram = !!data.activeProgram;
+
   return (
-    <div className="py-8 max-w-4xl mx-auto">
-      {/* Layer 0 — Greeting (one line, no card) */}
+    <div className="py-8 max-w-6xl mx-auto">
+      {/* TOP ALERT — only time-critical signals (live / about-to-go-live).
+          Sits above the greeting because these are interrupts that need
+          immediate visibility regardless of whatever else is going on. */}
+      <TopAlert
+        liveSession={data.liveSession}
+        goLiveSoonSession={data.goLiveSoonSession}
+      />
+
+      {/* GREETING — identity-anchored. Avatar inline so the dashboard
+          reads as "this is your home", not a status page. */}
       <GreetingRow
         name={data.profile.displayName}
+        avatarUrl={data.profile.avatarUrl}
+        tagline={data.profile.tagline}
         programTitle={data.activeProgram?.title ?? null}
         partnerName={data.partner?.name ?? null}
         startDate={data.activeProgram?.startDate ?? null}
@@ -362,19 +392,31 @@ export default async function DashboardPage() {
         stage={data.activeProgram?.stage ?? "none"}
       />
 
-      {/* Layer A — Pulse (action surface, conditional) */}
-      <PilotPulse
-        liveSession={data.liveSession}
-        goLiveSoonSession={data.goLiveSoonSession}
-        pendingReceivedInvites={data.pendingReceivedInvites}
-      />
+      {/* If user has NO active program, show pending invites BEFORE the
+          empty-state hero — invites are the path forward to a program.
+          Once they have an active program, invites are secondary news
+          and move below the program card. */}
+      {!hasActiveProgram && hasInvites && (
+        <div className="mb-8">
+          <CollabInvitations invites={data.pendingReceivedInvites} />
+        </div>
+      )}
 
-      {/* Layer B — Active Program (the focal hero) */}
+      {/* ACTIVE PROGRAM — the focal hero of the dashboard. */}
       <ActiveProgramCard
         program={data.activeProgram}
         partner={data.partner}
         user={{ avatar: data.profile.avatarUrl, initial: userInitial }}
       />
+
+      {/* Pending invites for *secondary* collaborations — shown below the
+          active program because they're "by the way, here are other
+          things going on", not the main event. */}
+      {hasActiveProgram && hasInvites && (
+        <div className="mt-10">
+          <CollabInvitations invites={data.pendingReceivedInvites} />
+        </div>
+      )}
     </div>
   );
 }

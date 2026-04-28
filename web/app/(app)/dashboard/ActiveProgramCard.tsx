@@ -3,24 +3,28 @@ import Link from "next/link";
 /**
  * Active Program Card — the central hero of the pilot dashboard.
  *
- * One creator → one active joint challenge during the pilot. This
- * card is THE focal point of the dashboard: cover thumbnail + title
- * + partner with parity + stage-specific status + 1-3 stage-aware
- * action buttons.
+ * Visual design borrows from the section-4 mockup on the landing
+ * page: cover image as a real banner inside the card, then title +
+ * partner-with-parity + meta + actions below. Brand continuity from
+ * the public landing through to the creator's home.
  *
- * Stages it handles:
- *   - drafting-solo:           partner invited, hasn't accepted yet
- *   - drafting-jointly:        both creators in the workspace
- *   - awaiting-signatures:     contract locked, signatures pending
- *   - published-pre-launch:    published, before start_date
- *   - published-live:          between start_date and end_date
- *   - completed:               past end_date
+ * Stage-aware actions — each lifecycle stage gets the buttons that
+ * actually make sense for that stage. Critically, "Open workspace"
+ * is NOT shown for published stages: workspace is for drafting, not
+ * for managing a live program. Once published, the workspace link
+ * disappears from the dashboard. (The workspace itself still has its
+ * own lifecycle-aware affordances; that's polished separately.)
  *
- * Empty state (no program at all): replaces the card with a soft
- * "Start your first collaboration" hero featuring the user's
- * avatar + a dashed `+` placeholder for the partner-to-be — the
- * same visual scene used on /dashboard/create. Brand continuity,
- * and the empty state is itself a teaching moment.
+ *   drafting-solo:       Open workspace
+ *   drafting-jointly:    Open workspace
+ *   awaiting-signatures: Review contract
+ *   published-pre-launch: Open public page · View contract
+ *   published-live:      Open challenge space · View contract
+ *   completed:           Open challenge space · View contract
+ *
+ * Empty state (no program): replaces the banner with the avatar-
+ * parity scene from the create page — your avatar + a dashed `+`
+ * placeholder for the partner-to-be.
  */
 
 export type ProgramStage =
@@ -40,7 +44,6 @@ interface Program {
   endDate: string | null;
   isOwner: boolean;
   spaceId?: string | null;
-  // Optional metrics for live programs (Bundle 2 will populate)
   enrolledCount?: number;
   earningsCents?: number;
 }
@@ -92,7 +95,10 @@ function currentWeek(startIso: string | null): number {
   s.setHours(0, 0, 0, 0);
   const t = new Date();
   t.setHours(0, 0, 0, 0);
-  return Math.max(1, Math.floor((t.getTime() - s.getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1);
+  return Math.max(
+    1,
+    Math.floor((t.getTime() - s.getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1,
+  );
 }
 
 // ─── Empty state ─────────────────────────────────────────────
@@ -111,14 +117,16 @@ function EmptyState({ user }: { user: UserProfile }) {
       </p>
 
       <div className="flex flex-col md:flex-row md:items-center gap-6">
-        {/* Avatar parity scene — your avatar + dashed partner placeholder */}
         <div className="flex items-center -space-x-3 shrink-0">
           {user.avatar ? (
             <img
               src={user.avatar}
               alt=""
               className="w-14 h-14 rounded-full object-cover relative z-10"
-              style={{ border: "3px solid #FFFFFF", boxShadow: "0 4px 12px rgba(255,97,48,0.18)" }}
+              style={{
+                border: "3px solid #FFFFFF",
+                boxShadow: "0 4px 12px rgba(255,97,48,0.18)",
+              }}
             />
           ) : (
             <div
@@ -129,7 +137,10 @@ function EmptyState({ user }: { user: UserProfile }) {
                 boxShadow: "0 4px 12px rgba(255,97,48,0.18)",
               }}
             >
-              <span className="text-base font-headline" style={{ color: "#FF6130", fontWeight: 700 }}>
+              <span
+                className="text-base font-headline"
+                style={{ color: "#FF6130", fontWeight: 700 }}
+              >
                 {user.initial}
               </span>
             </div>
@@ -141,7 +152,15 @@ function EmptyState({ user }: { user: UserProfile }) {
               backgroundColor: "rgba(255,97,48,0.04)",
             }}
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF6130" strokeWidth={2.2} strokeLinecap="round">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#FF6130"
+              strokeWidth={2.2}
+              strokeLinecap="round"
+            >
               <path d="M12 5v14M5 12h14" />
             </svg>
           </div>
@@ -176,39 +195,43 @@ function EmptyState({ user }: { user: UserProfile }) {
   );
 }
 
-// ─── Stage-specific content ──────────────────────────────────
+// ─── Stage badge ─────────────────────────────────────────────
 
 function StageBadge({ stage }: { stage: ProgramStage }) {
-  const config: Record<ProgramStage, { label: string; bg: string; color: string; border: string }> = {
+  const config: Record<
+    ProgramStage,
+    { label: string; bg: string; color: string; border: string; pulse?: boolean }
+  > = {
     "drafting-solo": {
       label: "Awaiting partner",
       bg: "rgba(255,97,48,0.10)",
       color: "#FF6130",
-      border: "rgba(255,97,48,0.25)",
+      border: "rgba(255,97,48,0.30)",
     },
     "drafting-jointly": {
       label: "Drafting",
       bg: "rgba(8,145,178,0.10)",
       color: "#0891b2",
-      border: "rgba(8,145,178,0.25)",
+      border: "rgba(8,145,178,0.30)",
     },
     "awaiting-signatures": {
       label: "Awaiting signatures",
       bg: "rgba(8,145,178,0.10)",
       color: "#0891b2",
-      border: "rgba(8,145,178,0.25)",
+      border: "rgba(8,145,178,0.30)",
     },
     "published-pre-launch": {
       label: "Pre-launch",
       bg: "rgba(8,145,178,0.10)",
       color: "#0891b2",
-      border: "rgba(8,145,178,0.25)",
+      border: "rgba(8,145,178,0.30)",
     },
     "published-live": {
       label: "Live",
-      bg: "rgba(21,128,61,0.10)",
+      bg: "rgba(21,128,61,0.12)",
       color: "#15803d",
-      border: "rgba(21,128,61,0.25)",
+      border: "rgba(21,128,61,0.35)",
+      pulse: true,
     },
     completed: {
       label: "Completed",
@@ -220,19 +243,26 @@ function StageBadge({ stage }: { stage: ProgramStage }) {
   const c = config[stage];
   return (
     <span
-      className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] uppercase tracking-widest font-headline"
-      style={{ color: c.color, backgroundColor: c.bg, border: `1px solid ${c.border}`, fontWeight: 700 }}
+      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] uppercase tracking-widest font-headline backdrop-blur-sm"
+      style={{
+        color: c.color,
+        backgroundColor: c.bg,
+        border: `1px solid ${c.border}`,
+        fontWeight: 700,
+      }}
     >
-      {stage === "published-live" && (
+      {c.pulse ? (
         <span
-          className="w-1.5 h-1.5 rounded-full"
+          className="w-1.5 h-1.5 rounded-full animate-pulse"
           style={{ backgroundColor: c.color }}
         />
-      )}
+      ) : null}
       {c.label}
     </span>
   );
 }
+
+// ─── Meta line ───────────────────────────────────────────────
 
 function StageMetaLine({ program }: { program: Program }) {
   const parts: string[] = [];
@@ -253,22 +283,30 @@ function StageMetaLine({ program }: { program: Program }) {
     parts.push("Contract locked, signatures pending");
   }
 
-  if (program.stage === "published-live" || program.stage === "published-pre-launch") {
-    if (program.enrolledCount !== undefined) {
-      parts.push(`${program.enrolledCount} enrolled`);
-    }
+  if (
+    (program.stage === "published-live" || program.stage === "published-pre-launch") &&
+    program.enrolledCount !== undefined
+  ) {
+    parts.push(`${program.enrolledCount} enrolled`);
   }
-  if ((program.stage === "published-live" || program.stage === "completed") && program.earningsCents) {
+  if (
+    (program.stage === "published-live" || program.stage === "completed") &&
+    program.earningsCents
+  ) {
     parts.push(`${formatMoney(program.earningsCents)} earned`);
   }
 
   if (parts.length === 0) return null;
 
   return (
-    <p className="text-sm" style={{ color: "#64748b" }}>
+    <p className="text-sm md:text-base" style={{ color: "#64748b" }}>
       {parts.map((p, i) => (
         <span key={i}>
-          {i > 0 && <span className="mx-2" style={{ color: "#94a3b8" }}>·</span>}
+          {i > 0 && (
+            <span className="mx-2" style={{ color: "#94a3b8" }}>
+              ·
+            </span>
+          )}
           {p}
         </span>
       ))}
@@ -276,9 +314,9 @@ function StageMetaLine({ program }: { program: Program }) {
   );
 }
 
+// ─── Actions ─────────────────────────────────────────────────
+
 function StageActions({ program }: { program: Program }) {
-  // Map each stage to its 1-3 action buttons. Primary action first,
-  // secondaries after.
   const orange =
     "px-5 py-2.5 rounded-full text-white text-sm font-headline transition-transform hover:scale-[1.02]";
   const orangeStyle: React.CSSProperties = {
@@ -299,6 +337,9 @@ function StageActions({ program }: { program: Program }) {
   const workspaceHref = `/dashboard/collaborate/${program.id}`;
   const publicHref = `/challenges/${program.id}`;
   const contractHref = `/dashboard/collaborate/${program.id}/contract`;
+  const spaceHref = program.spaceId
+    ? `/communities/challenge/${program.spaceId}`
+    : publicHref;
 
   switch (program.stage) {
     case "drafting-solo":
@@ -319,24 +360,26 @@ function StageActions({ program }: { program: Program }) {
         </div>
       );
     case "published-pre-launch":
+      // No challenge space yet for a pre-launch program — the public
+      // sales page is the right destination for sharing.
       return (
         <div className="flex flex-wrap gap-2">
           <Link href={publicHref} className={orange} style={orangeStyle}>
             Open public page
           </Link>
-          <Link href={workspaceHref} className={cyan} style={cyanStyle}>
-            Open workspace
+          <Link href={contractHref} className={cyan} style={cyanStyle}>
+            View contract
           </Link>
         </div>
       );
     case "published-live":
+      // Live programs go to the challenge space (where buyers live);
+      // workspace is intentionally NOT shown — published programs
+      // shouldn't be "re-drafted" from the dashboard.
       return (
         <div className="flex flex-wrap gap-2">
-          <Link href={publicHref} className={orange} style={orangeStyle}>
-            Open public page
-          </Link>
-          <Link href={workspaceHref} className={cyan} style={cyanStyle}>
-            Open workspace
+          <Link href={spaceHref} className={orange} style={orangeStyle}>
+            Open challenge space
           </Link>
           <Link href={contractHref} className={cyan} style={cyanStyle}>
             View contract
@@ -346,8 +389,8 @@ function StageActions({ program }: { program: Program }) {
     case "completed":
       return (
         <div className="flex flex-wrap gap-2">
-          <Link href={publicHref} className={cyan} style={cyanStyle}>
-            Open program
+          <Link href={spaceHref} className={cyan} style={cyanStyle}>
+            Open challenge space
           </Link>
           <Link href={contractHref} className={cyan} style={cyanStyle}>
             View contract
@@ -357,7 +400,7 @@ function StageActions({ program }: { program: Program }) {
   }
 }
 
-// ─── Main component ──────────────────────────────────────────
+// ─── Main ────────────────────────────────────────────────────
 
 export function ActiveProgramCard({ program, partner, user }: Props) {
   if (!program) {
@@ -366,99 +409,116 @@ export function ActiveProgramCard({ program, partner, user }: Props) {
 
   return (
     <div
-      className="rounded-3xl p-6 md:p-7 infitra-card"
+      className="rounded-3xl overflow-hidden infitra-card"
       style={{ border: "1px solid rgba(15,34,41,0.10)" }}
     >
-      {/* Header: cover thumbnail + title block + stage badge */}
-      <div className="flex items-start gap-4 mb-5">
-        {/* Cover thumbnail */}
+      {/* Cover banner — real product hero, not a thumbnail. Same DNA
+          as the section-4 landing mockup. */}
+      <div
+        className="relative w-full overflow-hidden"
+        style={{ aspectRatio: "4 / 1", backgroundColor: "#0F2229" }}
+      >
         {program.imageUrl ? (
           <img
             src={program.imageUrl}
             alt=""
-            className="w-20 h-20 md:w-24 md:h-24 rounded-2xl object-cover shrink-0"
+            className="absolute inset-0 w-full h-full object-cover"
           />
         ) : (
+          // Branded gradient placeholder when no cover yet
           <div
-            className="w-20 h-20 md:w-24 md:h-24 rounded-2xl shrink-0 flex items-center justify-center"
+            className="absolute inset-0"
             style={{
               background:
-                "linear-gradient(135deg, rgba(255,97,48,0.18) 0%, rgba(8,145,178,0.18) 100%)",
+                "linear-gradient(135deg, rgba(255,97,48,0.45) 0%, rgba(8,145,178,0.45) 100%), #0F2229",
             }}
-          >
-            <span className="text-2xl font-headline" style={{ color: "#0F2229", fontWeight: 700 }}>
-              {program.title?.[0]?.toUpperCase() ?? "?"}
+          />
+        )}
+        {/* Soft fade so the stage badge has contrast */}
+        <div
+          className="absolute inset-x-0 top-0 h-1/2 pointer-events-none"
+          style={{
+            background:
+              "linear-gradient(to bottom, rgba(15,34,41,0.35) 0%, rgba(15,34,41,0) 100%)",
+          }}
+        />
+        <div className="absolute top-4 right-4 z-10">
+          <StageBadge stage={program.stage} />
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="p-6 md:p-8">
+        <h2
+          className="text-2xl md:text-3xl font-headline tracking-tight"
+          style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.025em" }}
+        >
+          {program.title || "Untitled"}
+        </h2>
+
+        {partner && (
+          <div className="flex items-center gap-2 mt-3">
+            {partner.avatar ? (
+              <img
+                src={partner.avatar}
+                alt=""
+                className="w-7 h-7 rounded-full object-cover"
+                style={{
+                  border: "1.5px solid #FFFFFF",
+                  opacity: partner.pendingInvite ? 0.5 : 1,
+                }}
+              />
+            ) : (
+              <div
+                className="w-7 h-7 rounded-full flex items-center justify-center"
+                style={{
+                  border: "1.5px solid #FFFFFF",
+                  backgroundColor: "rgba(8,145,178,0.18)",
+                  opacity: partner.pendingInvite ? 0.5 : 1,
+                }}
+              >
+                <span
+                  className="text-[10px] font-headline"
+                  style={{ color: "#0891b2", fontWeight: 700 }}
+                >
+                  {partner.name[0]?.toUpperCase() ?? "?"}
+                </span>
+              </div>
+            )}
+            <span
+              className="text-sm md:text-base"
+              style={{
+                color: partner.pendingInvite ? "#94a3b8" : "#475569",
+                fontWeight: 600,
+              }}
+            >
+              with{" "}
+              <span
+                style={{
+                  color: partner.pendingInvite ? "#94a3b8" : "#0F2229",
+                  fontWeight: 700,
+                }}
+              >
+                {partner.name}
+              </span>
+              {partner.pendingInvite && (
+                <span
+                  className="ml-2 text-[10px] uppercase tracking-widest"
+                  style={{ color: "#FF6130", fontWeight: 700 }}
+                >
+                  · invite pending
+                </span>
+              )}
             </span>
           </div>
         )}
 
-        {/* Title + partner row + stage */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-3 mb-2">
-            <h2
-              className="text-xl md:text-2xl font-headline tracking-tight"
-              style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.02em" }}
-            >
-              {program.title || "Untitled"}
-            </h2>
-            <div className="shrink-0">
-              <StageBadge stage={program.stage} />
-            </div>
-          </div>
-
-          {/* Partner row — visual parity */}
-          {partner && (
-            <div className="flex items-center gap-2 mt-2">
-              {partner.avatar ? (
-                <img
-                  src={partner.avatar}
-                  alt=""
-                  className="w-6 h-6 rounded-full object-cover"
-                  style={{
-                    border: "1.5px solid #FFFFFF",
-                    opacity: partner.pendingInvite ? 0.5 : 1,
-                  }}
-                />
-              ) : (
-                <div
-                  className="w-6 h-6 rounded-full flex items-center justify-center"
-                  style={{
-                    border: "1.5px solid #FFFFFF",
-                    backgroundColor: "rgba(8,145,178,0.18)",
-                    opacity: partner.pendingInvite ? 0.5 : 1,
-                  }}
-                >
-                  <span className="text-[10px] font-headline" style={{ color: "#0891b2", fontWeight: 700 }}>
-                    {partner.name[0]?.toUpperCase() ?? "?"}
-                  </span>
-                </div>
-              )}
-              <span
-                className="text-xs md:text-sm"
-                style={{ color: partner.pendingInvite ? "#94a3b8" : "#475569", fontWeight: 600 }}
-              >
-                {partner.pendingInvite ? "with" : "with"}{" "}
-                <span style={{ color: partner.pendingInvite ? "#94a3b8" : "#0F2229", fontWeight: 700 }}>
-                  {partner.name}
-                </span>
-                {partner.pendingInvite && (
-                  <span className="ml-1.5 text-[10px] uppercase tracking-widest" style={{ color: "#FF6130", fontWeight: 700 }}>
-                    · invite pending
-                  </span>
-                )}
-              </span>
-            </div>
-          )}
+        <div className="mt-5 mb-6">
+          <StageMetaLine program={program} />
         </div>
-      </div>
 
-      {/* Meta line — stage-specific summary */}
-      <div className="mb-5">
-        <StageMetaLine program={program} />
+        <StageActions program={program} />
       </div>
-
-      {/* Action buttons */}
-      <StageActions program={program} />
     </div>
   );
 }
