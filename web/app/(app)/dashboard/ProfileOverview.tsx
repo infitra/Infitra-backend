@@ -45,24 +45,6 @@ interface Props {
     tagline: string | null;
     bio: string | null;
   };
-  /**
-   * Lifetime / identity stats only. Program-specific data (Week N/M,
-   * this program's enrolled count) lives on the ActiveProgramCard so
-   * the dashboard never shows the same number twice.
-   */
-  stats: {
-    earningsCents: number;
-    sessionsDelivered: number;
-    enrolledMembers: number;
-  };
-}
-
-function formatMoney(cents: number): string {
-  return new Intl.NumberFormat("en-CH", {
-    style: "currency",
-    currency: "CHF",
-    minimumFractionDigits: 0,
-  }).format(cents / 100);
 }
 
 function timeOfDayGreeting(): string {
@@ -73,61 +55,35 @@ function timeOfDayGreeting(): string {
   return "Evening";
 }
 
-interface StatRowProps {
-  value: string;
-  label: string;
-  href?: string;
-}
-
-function StatRow({ value, label, href }: StatRowProps) {
-  const inner = (
-    <>
-      <span
-        className="font-headline tracking-tight text-base"
-        style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.01em" }}
-      >
-        {value}
-      </span>
+function ManageLink({ href, label }: { href: string; label: string }) {
+  return (
+    <Link
+      href={href}
+      className="flex items-center justify-between py-2 px-2 -mx-2 rounded-lg transition-colors hover:bg-[#0F2229]/[0.04] group"
+    >
       <span
         className="text-[11px] uppercase tracking-widest font-headline"
-        style={{ color: "#94a3b8", fontWeight: 700 }}
+        style={{ color: "#475569", fontWeight: 700 }}
       >
         {label}
-        {href ? <span className="ml-1" style={{ color: "#FF6130" }}>→</span> : null}
       </span>
-    </>
-  );
-
-  if (href) {
-    return (
-      <Link
-        href={href}
-        className="flex items-center justify-between py-2 px-2 -mx-2 rounded-lg transition-colors hover:bg-[#0F2229]/[0.03]"
+      <span
+        className="text-[11px] font-headline transition-colors"
+        style={{ color: "#94a3b8", fontWeight: 700 }}
       >
-        {inner}
-      </Link>
-    );
-  }
-  return (
-    <div className="flex items-center justify-between py-2">
-      {inner}
-    </div>
+        →
+      </span>
+    </Link>
   );
 }
 
-export function ProfileOverview({ profile, stats }: Props) {
+export function ProfileOverview({ profile }: Props) {
   const [editOpen, setEditOpen] = useState(false);
   const router = useRouter();
   const greeting = timeOfDayGreeting();
   const firstName = profile.displayName.split(" ")[0] || profile.displayName;
   const initial = (firstName[0] ?? "?").toUpperCase();
   const hasCover = !!profile.coverImageUrl;
-
-  // Hide the lifetime stats block entirely when everything is zero.
-  // Hollow "0 0 0" shouts pre-launch; absence reads as "we'll show
-  // these once they grow" without saying it.
-  const hasAnyStats =
-    stats.earningsCents > 0 || stats.sessionsDelivered > 0 || stats.enrolledMembers > 0;
 
   return (
     <>
@@ -224,51 +180,42 @@ export function ProfileOverview({ profile, stats }: Props) {
             ) : null}
           </div>
 
-          {/* Spacer pushes stats + edit toward the bottom so the
-              sidebar visually fills the column when content is light. */}
+          {/* Spacer pushes the Manage footer to the bottom so the
+              sidebar visually matches the program card height. */}
           <div className="flex-1" />
 
-          {/* Lifetime stats — only when there's something to show */}
-          {hasAnyStats ? (
-            <div
-              className="mt-5 pt-4 border-t shrink-0"
-              style={{ borderColor: "rgba(15,34,41,0.08)" }}
+          {/* Manage — quick links to dedicated pages. The dashboard
+              isn't where lifetime numbers live; those belong on their
+              own pages. This footer is just navigation. */}
+          <div
+            className="mt-5 pt-4 border-t shrink-0"
+            style={{ borderColor: "rgba(15,34,41,0.08)" }}
+          >
+            <p
+              className="text-[10px] uppercase tracking-[0.2em] font-headline mb-1"
+              style={{ color: "#94a3b8", fontWeight: 700 }}
             >
-              <p
-                className="text-[10px] uppercase tracking-[0.2em] font-headline mb-2"
+              Manage
+            </p>
+            <ManageLink href="/dashboard/earnings" label="Earnings" />
+            <button
+              onClick={() => setEditOpen(true)}
+              className="w-full flex items-center justify-between py-2 px-2 -mx-2 rounded-lg transition-colors hover:bg-[#0F2229]/[0.04]"
+            >
+              <span
+                className="text-[11px] uppercase tracking-widest font-headline"
+                style={{ color: "#475569", fontWeight: 700 }}
+              >
+                Edit profile
+              </span>
+              <span
+                className="text-[11px] font-headline"
                 style={{ color: "#94a3b8", fontWeight: 700 }}
               >
-                Lifetime
-              </p>
-              {stats.earningsCents > 0 && (
-                <StatRow
-                  value={formatMoney(stats.earningsCents)}
-                  label="Earned"
-                  href="/dashboard/earnings"
-                />
-              )}
-              {stats.sessionsDelivered > 0 && (
-                <StatRow value={String(stats.sessionsDelivered)} label="Sessions delivered" />
-              )}
-              {stats.enrolledMembers > 0 && (
-                <StatRow value={String(stats.enrolledMembers)} label="Members" />
-              )}
-            </div>
-          ) : null}
-
-          {/* Edit profile — anchored at bottom via the flex-1 spacer above */}
-          <button
-            onClick={() => setEditOpen(true)}
-            className="w-full mt-5 px-3 py-2 rounded-full text-[11px] font-headline transition-colors hover:bg-[#0F2229]/[0.03] shrink-0"
-            style={{
-              color: "#475569",
-              border: "1px solid rgba(15,34,41,0.10)",
-              backgroundColor: "rgba(255,255,255,0.55)",
-              fontWeight: 700,
-            }}
-          >
-            Edit profile
-          </button>
+                →
+              </span>
+            </button>
+          </div>
         </div>
       </div>
 

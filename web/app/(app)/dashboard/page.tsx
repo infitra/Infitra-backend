@@ -181,6 +181,10 @@ async function loadPilotDashboard(userId: string) {
   // (not the legacy /challenges/[id] sales page).
   let challengeSpaceId: string | null = null;
   let activeProgramMemberCount = 0;
+  // Next session for the active program — used as the "Next: Fri 7pm
+  // · in 3 days" anchor on the program card. Adds anticipation to
+  // what was previously a passive meta line.
+  let nextProgramSession: { id: string; title: string; startTime: string } | null = null;
 
   if (activeChallenge) {
     // Run pending-invite + contract + space queries in parallel;
@@ -212,6 +216,14 @@ async function loadPilotDashboard(userId: string) {
       .select("user_id", { count: "exact", head: true })
       .eq("challenge_id", activeChallenge.id);
 
+    // Next upcoming session linked to this challenge (any host —
+    // the partner's sessions count too). Gives the program card its
+    // anticipation anchor.
+    const nextSessionPromise = supabase
+      .from("app_challenge_session")
+      .select("session_id, app_session(id, title, start_time, status)")
+      .eq("challenge_id", activeChallenge.id);
+
     const ownerCohostPromise = activeChallenge.isOwner
       ? supabase
           .from("app_challenge_cohost")
@@ -225,18 +237,44 @@ async function loadPilotDashboard(userId: string) {
           .eq("id", activeChallenge.owner_id)
           .single();
 
-    const [pendingPartnerInviteResult, contractResult, spaceResult, memberCountResult, partnerOrCohostResult] =
-      await Promise.all([
-        pendingPartnerInvitePromise,
-        contractPromise,
-        spacePromise,
-        memberCountPromise,
-        ownerCohostPromise,
-      ]);
+    const [
+      pendingPartnerInviteResult,
+      contractResult,
+      spaceResult,
+      memberCountResult,
+      nextSessionResult,
+      partnerOrCohostResult,
+    ] = await Promise.all([
+      pendingPartnerInvitePromise,
+      contractPromise,
+      spacePromise,
+      memberCountPromise,
+      nextSessionPromise,
+      ownerCohostPromise,
+    ]);
 
     contractLockedAt = (contractResult.data as any)?.locked_at ?? null;
     challengeSpaceId = (spaceResult.data as any)?.id ?? null;
     activeProgramMemberCount = (memberCountResult as any).count ?? 0;
+
+    // Pick the soonest upcoming session linked to the active program.
+    const linkedSessions = ((nextSessionResult.data ?? []) as any[])
+      .map((r) => (Array.isArray(r.app_session) ? r.app_session[0] : r.app_session))
+      .filter((s) => s && s.status === "published" && s.start_time);
+    const nowMs = Date.now();
+    const upcoming = linkedSessions
+      .filter((s: any) => new Date(s.start_time).getTime() > nowMs)
+      .sort(
+        (a: any, b: any) =>
+          new Date(a.start_time).getTime() - new Date(b.start_time).getTime(),
+      );
+    if (upcoming[0]) {
+      nextProgramSession = {
+        id: upcoming[0].id,
+        title: upcoming[0].title,
+        startTime: upcoming[0].start_time,
+      };
+    }
 
     if (activeChallenge.isOwner) {
       const cohostId = (partnerOrCohostResult.data as any)?.cohost_id ?? null;
@@ -377,6 +415,7 @@ async function loadPilotDashboard(userId: string) {
           isOwner: activeChallenge.isOwner,
           spaceId: challengeSpaceId,
           enrolledCount: activeProgramMemberCount,
+          nextSession: nextProgramSession,
         }
       : null,
     partner,
@@ -434,7 +473,6 @@ export default async function DashboardPage() {
               tagline: data.profile.tagline,
               bio: data.profile.bio,
             }}
-            stats={data.stats}
           />
         </div>
 
