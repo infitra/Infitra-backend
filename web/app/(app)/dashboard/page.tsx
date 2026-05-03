@@ -184,7 +184,12 @@ async function loadPilotDashboard(userId: string) {
   // Next session for the active program — used as the "Next: Fri 7pm
   // · in 3 days" anchor on the program card. Adds anticipation to
   // what was previously a passive meta line.
-  let nextProgramSession: { id: string; title: string; startTime: string } | null = null;
+  let nextProgramSession: {
+    id: string;
+    title: string;
+    startTime: string;
+    imageUrl: string | null;
+  } | null = null;
 
   if (activeChallenge) {
     // Run pending-invite + contract + space queries in parallel;
@@ -218,10 +223,11 @@ async function loadPilotDashboard(userId: string) {
 
     // Next upcoming session linked to this challenge (any host —
     // the partner's sessions count too). Gives the program card its
-    // anticipation anchor.
+    // anticipation anchor. image_url surfaces as the next-session
+    // pill thumbnail so the anchor feels visceral, not informational.
     const nextSessionPromise = supabase
       .from("app_challenge_session")
-      .select("session_id, app_session(id, title, start_time, status)")
+      .select("session_id, app_session(id, title, start_time, status, image_url)")
       .eq("challenge_id", activeChallenge.id);
 
     const ownerCohostPromise = activeChallenge.isOwner
@@ -273,6 +279,7 @@ async function loadPilotDashboard(userId: string) {
         id: upcoming[0].id,
         title: upcoming[0].title,
         startTime: upcoming[0].start_time,
+        imageUrl: upcoming[0].image_url ?? null,
       };
     }
 

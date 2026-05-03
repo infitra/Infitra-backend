@@ -152,7 +152,7 @@ export function CollabInvitations({ invites }: { invites: Invite[] }) {
                       className="text-[10px] uppercase tracking-widest font-headline mb-1"
                       style={{ color: "#0891b2", fontWeight: 700 }}
                     >
-                      Invited you to collaborate on
+                      Invited you to explore collaborating on
                     </p>
                     {invite.challengeTitle ? (
                       <h3
@@ -241,29 +241,36 @@ export function CollabInvitations({ invites }: { invites: Invite[] }) {
                 )}
               </div>
 
-              {/* Actions — primary stays prominent (orange this time so it
-                  reads as the decisive yes), secondary is small/subdued. */}
-              <div className="flex items-center gap-2 px-6 pb-5">
-                <button
-                  onClick={() => handleAccept(invite.id)}
-                  disabled={isLoading}
-                  className="flex-1 sm:flex-none px-6 py-2.5 rounded-full text-white text-sm font-headline transition-transform hover:scale-[1.02] disabled:opacity-40 disabled:hover:scale-100"
-                  style={{
-                    backgroundColor: "#FF6130",
-                    fontWeight: 700,
-                    boxShadow:
-                      "0 4px 14px rgba(255,97,48,0.32), 0 2px 6px rgba(255,97,48,0.18)",
-                  }}
-                >
-                  {isLoading ? "..." : "Accept · open workspace"}
-                </button>
-                <button
-                  onClick={() => handleDecline(invite.id)}
-                  disabled={isLoading}
-                  className="px-4 py-2.5 rounded-full text-xs font-bold font-headline text-[#94a3b8] hover:text-[#0F2229] disabled:opacity-40 transition-colors"
-                >
-                  Not now
-                </button>
+              {/* Actions — the click literally just opens the workspace,
+                  the system marks the invite "interested" not "accepted",
+                  nothing is binding yet. Wording reflects that. */}
+              <div className="px-6 pb-5">
+                <div className="flex items-center gap-2 mb-2.5">
+                  <button
+                    onClick={() => handleAccept(invite.id)}
+                    disabled={isLoading}
+                    className="flex-1 sm:flex-none px-6 py-2.5 rounded-full text-white text-sm font-headline transition-transform hover:scale-[1.02] disabled:opacity-40 disabled:hover:scale-100"
+                    style={{
+                      backgroundColor: "#FF6130",
+                      fontWeight: 700,
+                      boxShadow:
+                        "0 4px 14px rgba(255,97,48,0.32), 0 2px 6px rgba(255,97,48,0.18)",
+                    }}
+                  >
+                    {isLoading ? "..." : "Open workspace"}
+                  </button>
+                  <button
+                    onClick={() => handleDecline(invite.id)}
+                    disabled={isLoading}
+                    className="px-4 py-2.5 rounded-full text-xs font-bold font-headline text-[#94a3b8] hover:text-[#0F2229] disabled:opacity-40 transition-colors"
+                  >
+                    Not now
+                  </button>
+                </div>
+                <p className="text-[11px]" style={{ color: "#94a3b8" }}>
+                  Non-binding — opens the workspace where you&apos;ll talk it through
+                  and set the terms together.
+                </p>
               </div>
             </div>
           );

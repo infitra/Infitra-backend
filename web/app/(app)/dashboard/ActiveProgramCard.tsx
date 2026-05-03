@@ -47,7 +47,12 @@ interface Program {
   enrolledCount?: number;
   earningsCents?: number;
   /** Next upcoming session linked to this program (any host). */
-  nextSession?: { id: string; title: string; startTime: string } | null;
+  nextSession?: {
+    id: string;
+    title: string;
+    startTime: string;
+    imageUrl: string | null;
+  } | null;
 }
 
 interface Partner {
@@ -256,10 +261,13 @@ function StageBadge({ stage }: { stage: ProgramStage }) {
       border: "rgba(8,145,178,0.30)",
     },
     "published-live": {
+      // Red is universal "broadcasting now" — recording dot, on-air
+      // light. Same red as TopAlert's live banner so the dashboard
+      // reads coherently across both surfaces.
       label: "Live",
-      bg: "rgba(21,128,61,0.12)",
-      color: "#15803d",
-      border: "rgba(21,128,61,0.35)",
+      bg: "rgba(239,68,68,0.10)",
+      color: "#ef4444",
+      border: "rgba(239,68,68,0.30)",
       pulse: true,
     },
     completed: {
@@ -313,41 +321,60 @@ function ProgressBar({ percent, accent }: { percent: number; accent: string }) {
 function NextSessionPill({
   session,
 }: {
-  session: { id: string; title: string; startTime: string };
+  session: { id: string; title: string; startTime: string; imageUrl: string | null };
 }) {
   const t = formatNextSessionTime(session.startTime);
   return (
     <div
-      className="flex items-center gap-2.5 px-3 py-2 rounded-xl"
+      className="flex items-center gap-3.5 p-2.5 pr-4 rounded-xl"
       style={{
         backgroundColor: "rgba(8,145,178,0.06)",
         border: "1px solid rgba(8,145,178,0.18)",
       }}
     >
-      <span
-        className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center"
-        style={{ backgroundColor: "rgba(8,145,178,0.12)" }}
-      >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0891b2" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="9" />
-          <path d="M10 9 L10 15 L15.5 12 Z" fill="#0891b2" stroke="none" />
-        </svg>
-      </span>
-      <div className="min-w-0 flex-1">
-        <p
-          className="text-[10px] uppercase tracking-widest font-headline"
-          style={{ color: "#0891b2", fontWeight: 700 }}
+      {/* Cover thumbnail when uploaded; fallback to play-icon tile */}
+      {session.imageUrl ? (
+        <img
+          src={session.imageUrl}
+          alt=""
+          className="shrink-0 w-14 h-14 rounded-lg object-cover"
+        />
+      ) : (
+        <span
+          className="shrink-0 w-14 h-14 rounded-lg flex items-center justify-center"
+          style={{ backgroundColor: "rgba(8,145,178,0.12)" }}
         >
-          Next session · {t.relative}
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0891b2" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M10 9 L10 15 L15.5 12 Z" fill="#0891b2" stroke="none" />
+          </svg>
+        </span>
+      )}
+      <div className="min-w-0 flex-1">
+        {/* Time / date — visually prominent, not buried in a meta line */}
+        <p
+          className="text-sm md:text-base font-headline tracking-tight"
+          style={{ color: "#0891b2", fontWeight: 700, letterSpacing: "-0.01em" }}
+        >
+          {t.day} · {t.time}
+          <span
+            className="ml-2 text-[10px] uppercase tracking-widest"
+            style={{ color: "#94a3b8", fontWeight: 700 }}
+          >
+            {t.relative}
+          </span>
         </p>
         <p
-          className="text-sm font-headline truncate"
+          className="text-sm font-headline truncate mt-0.5"
           style={{ color: "#0F2229", fontWeight: 700 }}
         >
-          {session.title}{" "}
-          <span style={{ color: "#64748b", fontWeight: 600 }}>
-            · {t.day} at {t.time}
-          </span>
+          {session.title}
+        </p>
+        <p
+          className="text-[10px] uppercase tracking-widest font-headline mt-0.5"
+          style={{ color: "#94a3b8", fontWeight: 700 }}
+        >
+          Next live session
         </p>
       </div>
     </div>
@@ -461,7 +488,7 @@ function StageContent({ program }: { program: Program }) {
               </p>
             )}
           </div>
-          <ProgressBar percent={percent} accent="#15803d" />
+          <ProgressBar percent={percent} accent="#0891b2" />
         </div>
 
         {/* Next session anchor */}
