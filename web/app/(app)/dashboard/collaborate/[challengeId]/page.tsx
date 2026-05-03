@@ -36,6 +36,22 @@ export default async function CollaborateWorkspacePage({
   const isCohost = !!cohostCheck;
   if (!isOwner && !isCohost) redirect("/dashboard");
 
+  // The workspace is the *drafting room*. Once a challenge is published
+  // it ceases to exist for that challenge — there is no valid edit
+  // affordance against a live program. Bounce out.
+  // - If the challenge has a space → land in the challenge space (where
+  //   buyers and the live program live)
+  // - Otherwise → back to the dashboard
+  if (challenge.status === "published") {
+    const { data: space } = await supabase
+      .from("app_challenge_space")
+      .select("id")
+      .eq("source_challenge_id", challengeId)
+      .maybeSingle();
+    if (space?.id) redirect(`/communities/challenge/${space.id}`);
+    redirect("/dashboard");
+  }
+
   // Fetch all cohosts directly
   const { data: cohostRows } = await supabase
     .from("app_challenge_cohost")
