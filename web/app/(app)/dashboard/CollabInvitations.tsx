@@ -76,10 +76,12 @@ export function CollabInvitations({ invites }: { invites: Invite[] }) {
               className="rounded-2xl infitra-card overflow-hidden relative p-6"
               style={{ border: "1px solid rgba(156,240,255,0.30)" }}
             >
-              {/* One continuous flow — no internal cards or strips.
-                  Reads as a letter: salutation → ask → message → response. */}
+              {/* Reads like a real personal message:
+                    who → what they said → what it's about → respond
+                  Not a system notification (which would lead with the
+                  thing, then the message). */}
 
-              {/* Salutation — inviter + time on a single line. */}
+              {/* Who — avatar + name + time + tagline */}
               <div className="flex items-center gap-3 mb-5">
                 {invite.fromAvatar ? (
                   <img
@@ -129,67 +131,69 @@ export function CollabInvitations({ invites }: { invites: Invite[] }) {
                 </div>
               </div>
 
-              {/* The ask — eyebrow + title. The title is the punch. */}
-              <p
-                className="text-[10px] uppercase tracking-widest font-headline mb-1.5"
-                style={{ color: "#0891b2", fontWeight: 700 }}
-              >
-                Invited you to explore
-              </p>
-              {invite.challengeTitle ? (
-                <h3
-                  className="text-xl md:text-2xl font-headline tracking-tight mb-4"
-                  style={{
-                    color: "#0F2229",
-                    fontWeight: 700,
-                    letterSpacing: "-0.02em",
-                  }}
-                >
-                  {invite.challengeTitle}
-                </h3>
-              ) : (
-                <h3
-                  className="text-xl md:text-2xl font-headline tracking-tight italic mb-4"
-                  style={{
-                    color: "#94a3b8",
-                    fontWeight: 700,
-                    letterSpacing: "-0.02em",
-                  }}
-                >
-                  an untitled program
-                </h3>
-              )}
-
-              {/* Cover banner — single visual anchor below the title.
-                  Hidden when no cover uploaded; no fabricated placeholder. */}
-              {invite.challengeImageUrl && (
-                <div
-                  className="relative w-full overflow-hidden rounded-xl mb-4"
-                  style={{ aspectRatio: "16 / 5", backgroundColor: "#0F2229" }}
-                >
-                  <img
-                    src={invite.challengeImageUrl}
-                    alt=""
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
-                </div>
-              )}
-
-              {/* The message — personal note, quoted */}
+              {/* What they said — the personal message takes the focal slot.
+                  Larger than before, cyan rule, italic. This is the moment. */}
               <blockquote
-                className="text-sm md:text-base leading-relaxed pl-4 mb-5"
+                className="text-base md:text-lg leading-relaxed pl-4 mb-6"
                 style={{
-                  color: "#334155",
-                  borderLeft: "2px solid rgba(8,145,178,0.35)",
+                  color: "#0F2229",
+                  borderLeft: "3px solid #0891b2",
                   fontStyle: "italic",
                 }}
               >
                 “{invite.message}”
               </blockquote>
 
-              {/* Suggested split — only when actually proposed. The
-                  generic "no split yet" line is gone; the non-binding
-                  caveat below covers that meaning. */}
+              {/* What it's about — compact context block. Cover is a
+                  small thumbnail (not a banner), title sits next to it,
+                  small eyebrow above. Reads as supporting info. */}
+              <div
+                className="flex items-center gap-3 mb-5 pt-4"
+                style={{ borderTop: "1px solid rgba(15,34,41,0.06)" }}
+              >
+                {invite.challengeImageUrl ? (
+                  <img
+                    src={invite.challengeImageUrl}
+                    alt=""
+                    className="w-12 h-12 rounded-lg object-cover shrink-0"
+                  />
+                ) : (
+                  <div
+                    className="w-12 h-12 rounded-lg shrink-0 flex items-center justify-center"
+                    style={{
+                      background:
+                        "linear-gradient(135deg, rgba(255,97,48,0.18), rgba(8,145,178,0.18))",
+                    }}
+                  >
+                    <span
+                      className="text-base font-headline"
+                      style={{ color: "#0F2229", fontWeight: 700 }}
+                    >
+                      {(invite.challengeTitle ?? "?")[0].toUpperCase()}
+                    </span>
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p
+                    className="text-[10px] uppercase tracking-widest font-headline"
+                    style={{ color: "#0891b2", fontWeight: 700 }}
+                  >
+                    Invited you to explore
+                  </p>
+                  <p
+                    className="text-base font-headline truncate"
+                    style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.01em" }}
+                  >
+                    {invite.challengeTitle ?? (
+                      <span className="italic" style={{ color: "#94a3b8" }}>
+                        an untitled program
+                      </span>
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              {/* Suggested split — only when actually proposed */}
               {hasSuggestedSplit && (
                 <div
                   className="px-3 py-2.5 rounded-lg mb-5"
@@ -229,7 +233,7 @@ export function CollabInvitations({ invites }: { invites: Invite[] }) {
                 </div>
               )}
 
-              {/* Response — actions + single non-binding caveat */}
+              {/* Respond */}
               <div className="flex items-center gap-2 mb-2.5">
                 <button
                   onClick={() => handleAccept(invite.id)}
@@ -249,7 +253,7 @@ export function CollabInvitations({ invites }: { invites: Invite[] }) {
                   disabled={isLoading}
                   className="px-4 py-2.5 rounded-full text-xs font-bold font-headline text-[#94a3b8] hover:text-[#0F2229] disabled:opacity-40 transition-colors"
                 >
-                  Not now
+                  Not interested
                 </button>
               </div>
               <p className="text-[11px]" style={{ color: "#94a3b8" }}>
