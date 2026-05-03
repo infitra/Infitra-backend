@@ -113,39 +113,44 @@ export function ProfileOverview({ profile }: Props) {
             bottom and the spacer grows to match the program card's height
             on desktop. */}
         <div className={`flex-1 flex flex-col ${hasCover ? "px-5 pb-5" : "p-5"}`}>
-          {/* Avatar — overlaps cover when present, sits inline otherwise */}
+          {/* Avatar — wrapped in a cyan brand-ring so it has identity
+              instead of reading as a generic profile pic. Same treatment
+              the original CreatorIdentitySection used. */}
           <div className={hasCover ? "-mt-10 mb-4 shrink-0" : "mb-4 shrink-0"}>
-            {profile.avatarUrl ? (
-              <img
-                src={profile.avatarUrl}
-                alt=""
-                className="w-20 h-20 rounded-full object-cover"
-                style={{
-                  border: hasCover ? "4px solid #FFFFFF" : "1px solid rgba(15,34,41,0.10)",
-                  boxShadow: hasCover
-                    ? "0 6px 20px rgba(15,34,41,0.18)"
-                    : "0 4px 12px rgba(15,34,41,0.08)",
-                }}
-              />
-            ) : (
-              <div
-                className="w-20 h-20 rounded-full flex items-center justify-center"
-                style={{
-                  border: hasCover ? "4px solid #FFFFFF" : "1px solid rgba(15,34,41,0.10)",
-                  backgroundColor: "rgba(255,97,48,0.18)",
-                  boxShadow: hasCover
-                    ? "0 6px 20px rgba(15,34,41,0.18)"
-                    : "0 4px 12px rgba(15,34,41,0.08)",
-                }}
-              >
-                <span
-                  className="text-2xl font-headline"
-                  style={{ color: "#FF6130", fontWeight: 700 }}
+            <div
+              className="rounded-full p-[2px]"
+              style={{
+                background: "#9CF0FF",
+                boxShadow: hasCover
+                  ? "0 6px 20px rgba(15,34,41,0.18)"
+                  : "0 4px 14px rgba(8,145,178,0.20)",
+                width: "fit-content",
+              }}
+            >
+              {profile.avatarUrl ? (
+                <img
+                  src={profile.avatarUrl}
+                  alt=""
+                  className="w-20 h-20 rounded-full object-cover block"
+                  style={{ border: "2px solid #FFFFFF" }}
+                />
+              ) : (
+                <div
+                  className="w-20 h-20 rounded-full flex items-center justify-center"
+                  style={{
+                    border: "2px solid #FFFFFF",
+                    backgroundColor: "rgba(255,97,48,0.18)",
+                  }}
                 >
-                  {initial}
-                </span>
-              </div>
-            )}
+                  <span
+                    className="text-2xl font-headline"
+                    style={{ color: "#FF6130", fontWeight: 700 }}
+                  >
+                    {initial}
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Identity */}
@@ -178,6 +183,43 @@ export function ProfileOverview({ profile }: Props) {
                 {profile.bio}
               </p>
             ) : null}
+          </div>
+
+          {/* Pilot status block — fills the middle of the card with
+              brand-meaningful content instead of empty spacer. Tells
+              the creator they're in the closed cohort, gives the card
+              actual structure, gives the pilot a sense of place. */}
+          <div
+            className="mt-5 pt-4 border-t shrink-0"
+            style={{ borderColor: "rgba(15,34,41,0.08)" }}
+          >
+            <p
+              className="text-[10px] uppercase tracking-[0.2em] font-headline mb-2"
+              style={{ color: "#94a3b8", fontWeight: 700 }}
+            >
+              Status
+            </p>
+            <div className="flex items-center gap-2">
+              <span
+                className="w-2 h-2 rounded-full animate-pulse"
+                style={{
+                  backgroundColor: "#0891b2",
+                  boxShadow: "0 0 6px rgba(8,145,178,0.55)",
+                }}
+              />
+              <p
+                className="text-sm font-headline"
+                style={{ color: "#0F2229", fontWeight: 700 }}
+              >
+                On the Pilot
+                <span
+                  className="ml-2 text-[10px] uppercase tracking-widest"
+                  style={{ color: "#94a3b8", fontWeight: 700 }}
+                >
+                  Closed cohort
+                </span>
+              </p>
+            </div>
           </div>
 
           {/* Spacer pushes the Manage footer to the bottom so the
