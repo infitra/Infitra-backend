@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { GreetingRow } from "./GreetingRow";
+import { ProfileOverview } from "./ProfileOverview";
 import { ActiveProgramCard, type ProgramStage } from "./ActiveProgramCard";
 import { TopAlert } from "./TopAlert";
 import { CollabInvitations } from "./CollabInvitations";
@@ -98,10 +98,12 @@ async function loadPilotDashboard(userId: string) {
     cohostJoinsResult,
     receivedInvitesResult,
     upcomingSessionsResult,
+    earningsResult,
+    sessionsCompletedResult,
   ] = await Promise.all([
     supabase
       .from("app_profile")
-      .select("display_name, avatar_url, tagline, role")
+      .select("display_name, avatar_url, tagline, bio, cover_image_url, role")
       .eq("id", userId)
       .single(),
 
@@ -134,6 +136,16 @@ async function loadPilotDashboard(userId: string) {
       .in("status", ["published", "ended"])
       .order("start_time", { ascending: true })
       .limit(20),
+
+    // Earnings — for the profile overview's stats row
+    supabase.from("vw_my_creator_summary").select("creator_cut_cents").maybeSingle(),
+
+    // Sessions delivered (host)
+    supabase
+      .from("app_session")
+      .select("id", { count: "exact", head: true })
+      .eq("host_id", userId)
+      .eq("status", "ended"),
   ]);
 
   const profile = profileResult.data;
@@ -168,6 +180,7 @@ async function loadPilotDashboard(userId: string) {
   // challenge space" for live/completed programs to the correct page
   // (not the legacy /challenges/[id] sales page).
   let challengeSpaceId: string | null = null;
+  let activeProgramMemberCount = 0;
 
   if (activeChallenge) {
     // Run pending-invite + contract + space queries in parallel;
@@ -194,6 +207,11 @@ async function loadPilotDashboard(userId: string) {
       .eq("source_challenge_id", activeChallenge.id)
       .maybeSingle();
 
+    const memberCountPromise = supabase
+      .from("app_challenge_member")
+      .select("user_id", { count: "exact", head: true })
+      .eq("challenge_id", activeChallenge.id);
+
     const ownerCohostPromise = activeChallenge.isOwner
       ? supabase
           .from("app_challenge_cohost")
@@ -207,11 +225,18 @@ async function loadPilotDashboard(userId: string) {
           .eq("id", activeChallenge.owner_id)
           .single();
 
-    const [pendingPartnerInviteResult, contractResult, spaceResult, partnerOrCohostResult] =
-      await Promise.all([pendingPartnerInvitePromise, contractPromise, spacePromise, ownerCohostPromise]);
+    const [pendingPartnerInviteResult, contractResult, spaceResult, memberCountResult, partnerOrCohostResult] =
+      await Promise.all([
+        pendingPartnerInvitePromise,
+        contractPromise,
+        spacePromise,
+        memberCountPromise,
+        ownerCohostPromise,
+      ]);
 
     contractLockedAt = (contractResult.data as any)?.locked_at ?? null;
     challengeSpaceId = (spaceResult.data as any)?.id ?? null;
+    activeProgramMemberCount = (memberCountResult as any).count ?? 0;
 
     if (activeChallenge.isOwner) {
       const cohostId = (partnerOrCohostResult.data as any)?.cohost_id ?? null;
@@ -321,12 +346,25 @@ async function loadPilotDashboard(userId: string) {
     ? computeStage(activeChallenge, partner?.pendingInvite ?? false, contractLockedAt)
     : null;
 
+  // Stats for the profile overview
+  const earningsCents = Number((earningsResult.data as any)?.creator_cut_cents ?? 0);
+  const sessionsDeliveredCount = Number((sessionsCompletedResult as any).count ?? 0);
+  const activeProgramsCount = activeChallenge ? 1 : 0;
+
   return {
     profile: {
       displayName: profile?.display_name ?? "",
       avatarUrl: profile?.avatar_url ?? null,
+      coverImageUrl: profile?.cover_image_url ?? null,
       tagline: profile?.tagline ?? null,
+      bio: profile?.bio ?? null,
       role: (profile?.role ?? "creator") as "creator" | "participant",
+    },
+    stats: {
+      earningsCents,
+      sessionsDelivered: sessionsDeliveredCount,
+      activePrograms: activeProgramsCount,
+      enrolledMembers: activeProgramMemberCount,
     },
     activeProgram: activeChallenge && programStage
       ? {
@@ -338,6 +376,7 @@ async function loadPilotDashboard(userId: string) {
           endDate: activeChallenge.end_date,
           isOwner: activeChallenge.isOwner,
           spaceId: challengeSpaceId,
+          enrolledCount: activeProgramMemberCount,
         }
       : null,
     partner,
@@ -370,36 +409,44 @@ export default async function DashboardPage() {
   const hasActiveProgram = !!data.activeProgram;
 
   return (
-    <div className="py-8 max-w-6xl mx-auto">
+    <div className="py-8 max-w-6xl mx-auto space-y-8">
       {/* TOP ALERT — only time-critical signals (live / about-to-go-live).
-          Sits above the greeting because these are interrupts that need
-          immediate visibility regardless of whatever else is going on. */}
+          Sits above everything else because these are interrupts. */}
       <TopAlert
         liveSession={data.liveSession}
         goLiveSoonSession={data.goLiveSoonSession}
       />
 
-      {/* GREETING — identity-anchored. Avatar inline so the dashboard
-          reads as "this is your home", not a status page. */}
-      <GreetingRow
-        name={data.profile.displayName}
-        avatarUrl={data.profile.avatarUrl}
-        tagline={data.profile.tagline}
-        programTitle={data.activeProgram?.title ?? null}
-        partnerName={data.partner?.name ?? null}
-        startDate={data.activeProgram?.startDate ?? null}
-        endDate={data.activeProgram?.endDate ?? null}
-        stage={data.activeProgram?.stage ?? "none"}
+      {/* PROFILE OVERVIEW — the personal anchor. Cover + avatar +
+          identity + key stats. Replaces the Bundle 1 inline greeting
+          with a substantial card so the dashboard reads as "this is
+          your home" with at-a-glance context. */}
+      <ProfileOverview
+        profile={{
+          displayName: data.profile.displayName,
+          avatarUrl: data.profile.avatarUrl,
+          coverImageUrl: data.profile.coverImageUrl,
+          tagline: data.profile.tagline,
+          bio: data.profile.bio,
+        }}
+        stats={data.stats}
+        activeProgram={
+          data.activeProgram
+            ? {
+                title: data.activeProgram.title,
+                stage: data.activeProgram.stage,
+                startDate: data.activeProgram.startDate,
+                endDate: data.activeProgram.endDate,
+                partnerName: data.partner?.name ?? null,
+              }
+            : null
+        }
       />
 
       {/* If user has NO active program, show pending invites BEFORE the
-          empty-state hero — invites are the path forward to a program.
-          Once they have an active program, invites are secondary news
-          and move below the program card. */}
+          empty-state hero — invites are the path forward. */}
       {!hasActiveProgram && hasInvites && (
-        <div className="mb-8">
-          <CollabInvitations invites={data.pendingReceivedInvites} />
-        </div>
+        <CollabInvitations invites={data.pendingReceivedInvites} />
       )}
 
       {/* ACTIVE PROGRAM — the focal hero of the dashboard. */}
@@ -409,13 +456,10 @@ export default async function DashboardPage() {
         user={{ avatar: data.profile.avatarUrl, initial: userInitial }}
       />
 
-      {/* Pending invites for *secondary* collaborations — shown below the
-          active program because they're "by the way, here are other
-          things going on", not the main event. */}
+      {/* Pending invites for *secondary* collaborations — below the
+          active program because they're "by the way, here's other news". */}
       {hasActiveProgram && hasInvites && (
-        <div className="mt-10">
-          <CollabInvitations invites={data.pendingReceivedInvites} />
-        </div>
+        <CollabInvitations invites={data.pendingReceivedInvites} />
       )}
     </div>
   );
