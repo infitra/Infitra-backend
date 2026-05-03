@@ -46,6 +46,8 @@ interface Program {
   spaceId?: string | null;
   enrolledCount?: number;
   earningsCents?: number;
+  /** Next upcoming session linked to this program (any host). */
+  nextSession?: { id: string; title: string; startTime: string } | null;
 }
 
 interface Partner {
@@ -99,6 +101,33 @@ function currentWeek(startIso: string | null): number {
     1,
     Math.floor((t.getTime() - s.getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1,
   );
+}
+
+function formatNextSessionTime(iso: string): { day: string; time: string; relative: string } {
+  const d = new Date(iso);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const day = new Date(d);
+  day.setHours(0, 0, 0, 0);
+  const diffDays = Math.round((day.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
+
+  let dayLabel: string;
+  if (diffDays === 0) dayLabel = "Today";
+  else if (diffDays === 1) dayLabel = "Tomorrow";
+  else if (diffDays > 1 && diffDays < 7)
+    dayLabel = d.toLocaleDateString("en-GB", { weekday: "long" });
+  else dayLabel = d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+
+  const time = d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+
+  const relative =
+    diffDays === 0
+      ? "today"
+      : diffDays === 1
+        ? "tomorrow"
+        : `in ${diffDays} days`;
+
+  return { day: dayLabel, time, relative };
 }
 
 // ─── Empty state ─────────────────────────────────────────────
@@ -264,54 +293,184 @@ function StageBadge({ stage }: { stage: ProgramStage }) {
 
 // ─── Meta line ───────────────────────────────────────────────
 
-function StageMetaLine({ program }: { program: Program }) {
-  const parts: string[] = [];
+function ProgressBar({ percent, accent }: { percent: number; accent: string }) {
+  return (
+    <div
+      className="w-full h-1.5 rounded-full overflow-hidden"
+      style={{ backgroundColor: "rgba(15,34,41,0.06)" }}
+    >
+      <div
+        className="h-full rounded-full transition-all duration-500"
+        style={{
+          width: `${Math.min(100, Math.max(0, percent))}%`,
+          backgroundColor: accent,
+        }}
+      />
+    </div>
+  );
+}
 
+function NextSessionPill({
+  session,
+}: {
+  session: { id: string; title: string; startTime: string };
+}) {
+  const t = formatNextSessionTime(session.startTime);
+  return (
+    <div
+      className="flex items-center gap-2.5 px-3 py-2 rounded-xl"
+      style={{
+        backgroundColor: "rgba(8,145,178,0.06)",
+        border: "1px solid rgba(8,145,178,0.18)",
+      }}
+    >
+      <span
+        className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center"
+        style={{ backgroundColor: "rgba(8,145,178,0.12)" }}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0891b2" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="9" />
+          <path d="M10 9 L10 15 L15.5 12 Z" fill="#0891b2" stroke="none" />
+        </svg>
+      </span>
+      <div className="min-w-0 flex-1">
+        <p
+          className="text-[10px] uppercase tracking-widest font-headline"
+          style={{ color: "#0891b2", fontWeight: 700 }}
+        >
+          Next session · {t.relative}
+        </p>
+        <p
+          className="text-sm font-headline truncate"
+          style={{ color: "#0F2229", fontWeight: 700 }}
+        >
+          {session.title}{" "}
+          <span style={{ color: "#64748b", fontWeight: 600 }}>
+            · {t.day} at {t.time}
+          </span>
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function StageContent({ program }: { program: Program }) {
+  // Drafting / awaiting-signatures — single descriptive line
+  if (
+    program.stage === "drafting-solo" ||
+    program.stage === "drafting-jointly" ||
+    program.stage === "awaiting-signatures"
+  ) {
+    const text =
+      program.stage === "drafting-solo"
+        ? "Waiting for your collaborator to accept"
+        : program.stage === "drafting-jointly"
+          ? "Drafting together in the workspace"
+          : "Contract locked, signatures pending";
+    return (
+      <p className="text-sm md:text-base" style={{ color: "#64748b" }}>
+        {text}
+      </p>
+    );
+  }
+
+  // Completed — short historical line
+  if (program.stage === "completed") {
+    const parts: string[] = [];
+    if (program.endDate) parts.push(`Ended ${formatDate(program.endDate)}`);
+    if (program.enrolledCount !== undefined && program.enrolledCount > 0)
+      parts.push(`${program.enrolledCount} participants`);
+    if (program.earningsCents) parts.push(`${formatMoney(program.earningsCents)} earned`);
+    return (
+      <p className="text-sm md:text-base" style={{ color: "#64748b" }}>
+        {parts.join(" · ")}
+      </p>
+    );
+  }
+
+  // Published-pre-launch — emphasize sharing when no buyers yet
+  if (program.stage === "published-pre-launch") {
+    const launchLine = program.startDate ? `Launches ${formatDate(program.startDate)}` : null;
+    const noBuyers = (program.enrolledCount ?? 0) === 0;
+    return (
+      <div className="space-y-3">
+        {launchLine && (
+          <p className="text-sm md:text-base" style={{ color: "#64748b" }}>
+            {launchLine}
+            {!noBuyers && program.enrolledCount !== undefined && (
+              <>
+                <span className="mx-2" style={{ color: "#94a3b8" }}>·</span>
+                {program.enrolledCount} enrolled
+              </>
+            )}
+          </p>
+        )}
+        {noBuyers && (
+          <div
+            className="px-4 py-3 rounded-xl flex items-start gap-2.5"
+            style={{
+              backgroundColor: "rgba(255,97,48,0.06)",
+              border: "1px solid rgba(255,97,48,0.20)",
+            }}
+          >
+            <span
+              className="shrink-0 mt-0.5"
+              style={{ color: "#FF6130" }}
+              aria-hidden
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="18" cy="5" r="3" />
+                <circle cx="6" cy="12" r="3" />
+                <circle cx="18" cy="19" r="3" />
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+              </svg>
+            </span>
+            <p className="text-xs md:text-sm leading-relaxed" style={{ color: "#0F2229" }}>
+              <span style={{ fontWeight: 700 }}>Share your program</span> to get your first
+              members. Open the public page below and copy the URL.
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Published-live — progress bar + next session anchor + enrolled
   if (program.stage === "published-live" && program.startDate && program.endDate) {
     const cw = currentWeek(program.startDate);
     const tw = totalWeeks(program.startDate, program.endDate);
-    parts.push(`Week ${cw} of ${tw}`);
-  } else if (program.stage === "published-pre-launch" && program.startDate) {
-    parts.push(`Launches ${formatDate(program.startDate)}`);
-  } else if (program.stage === "completed" && program.endDate) {
-    parts.push(`Ended ${formatDate(program.endDate)}`);
-  } else if (program.stage === "drafting-solo") {
-    parts.push("Waiting for your collaborator to accept");
-  } else if (program.stage === "drafting-jointly") {
-    parts.push("Drafting together in the workspace");
-  } else if (program.stage === "awaiting-signatures") {
-    parts.push("Contract locked, signatures pending");
+    const percent = (cw / tw) * 100;
+    return (
+      <div className="space-y-4">
+        {/* Week progress bar — visual journey */}
+        <div>
+          <div className="flex items-baseline justify-between mb-1.5">
+            <p
+              className="text-[10px] uppercase tracking-widest font-headline"
+              style={{ color: "#94a3b8", fontWeight: 700 }}
+            >
+              Week {cw} of {tw}
+            </p>
+            {program.enrolledCount !== undefined && (
+              <p
+                className="text-[10px] uppercase tracking-widest font-headline"
+                style={{ color: "#94a3b8", fontWeight: 700 }}
+              >
+                {program.enrolledCount} enrolled
+              </p>
+            )}
+          </div>
+          <ProgressBar percent={percent} accent="#15803d" />
+        </div>
+
+        {/* Next session anchor */}
+        {program.nextSession && <NextSessionPill session={program.nextSession} />}
+      </div>
+    );
   }
 
-  if (
-    (program.stage === "published-live" || program.stage === "published-pre-launch") &&
-    program.enrolledCount !== undefined
-  ) {
-    parts.push(`${program.enrolledCount} enrolled`);
-  }
-  if (
-    (program.stage === "published-live" || program.stage === "completed") &&
-    program.earningsCents
-  ) {
-    parts.push(`${formatMoney(program.earningsCents)} earned`);
-  }
-
-  if (parts.length === 0) return null;
-
-  return (
-    <p className="text-sm md:text-base" style={{ color: "#64748b" }}>
-      {parts.map((p, i) => (
-        <span key={i}>
-          {i > 0 && (
-            <span className="mx-2" style={{ color: "#94a3b8" }}>
-              ·
-            </span>
-          )}
-          {p}
-        </span>
-      ))}
-    </p>
-  );
+  return null;
 }
 
 // ─── Actions ─────────────────────────────────────────────────
@@ -514,7 +673,7 @@ export function ActiveProgramCard({ program, partner, user }: Props) {
         )}
 
         <div className="mt-5 mb-6">
-          <StageMetaLine program={program} />
+          <StageContent program={program} />
         </div>
 
         <StageActions program={program} />
