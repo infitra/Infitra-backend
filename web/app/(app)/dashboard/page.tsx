@@ -424,7 +424,7 @@ export default async function DashboardPage() {
             - Profile (1/3 width sidebar) carries identity + lifetime
               stats as supporting context, not a separate "section"
           No section labels — position and size do the talking. */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-start">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-stretch">
         <div className="md:col-span-1">
           <ProfileOverview
             profile={{

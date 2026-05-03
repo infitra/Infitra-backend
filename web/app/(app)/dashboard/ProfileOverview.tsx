@@ -123,15 +123,21 @@ export function ProfileOverview({ profile, stats }: Props) {
   const initial = (firstName[0] ?? "?").toUpperCase();
   const hasCover = !!profile.coverImageUrl;
 
+  // Hide the lifetime stats block entirely when everything is zero.
+  // Hollow "0 0 0" shouts pre-launch; absence reads as "we'll show
+  // these once they grow" without saying it.
+  const hasAnyStats =
+    stats.earningsCents > 0 || stats.sessionsDelivered > 0 || stats.enrolledMembers > 0;
+
   return (
     <>
       <div
-        className="rounded-3xl overflow-hidden infitra-card"
+        className="rounded-3xl overflow-hidden infitra-card h-full flex flex-col"
         style={{ border: "1px solid rgba(15,34,41,0.08)" }}
       >
         {/* Cover band — only when an actual cover image exists. */}
         {hasCover ? (
-          <div className="relative h-20 overflow-hidden bg-[#0F2229]">
+          <div className="relative h-20 overflow-hidden bg-[#0F2229] shrink-0">
             <img
               src={profile.coverImageUrl as string}
               alt=""
@@ -147,9 +153,12 @@ export function ProfileOverview({ profile, stats }: Props) {
           </div>
         ) : null}
 
-        <div className={hasCover ? "px-5 pb-5" : "p-5"}>
+        {/* Body — flex column so the edit button always anchors at the
+            bottom and the spacer grows to match the program card's height
+            on desktop. */}
+        <div className={`flex-1 flex flex-col ${hasCover ? "px-5 pb-5" : "p-5"}`}>
           {/* Avatar — overlaps cover when present, sits inline otherwise */}
-          <div className={hasCover ? "-mt-10 mb-4" : "mb-4"}>
+          <div className={hasCover ? "-mt-10 mb-4 shrink-0" : "mb-4 shrink-0"}>
             {profile.avatarUrl ? (
               <img
                 src={profile.avatarUrl}
@@ -184,56 +193,73 @@ export function ProfileOverview({ profile, stats }: Props) {
           </div>
 
           {/* Identity */}
-          <p
-            className="text-[10px] uppercase tracking-widest font-headline mb-1"
-            style={{ color: "#94a3b8", fontWeight: 700 }}
-          >
-            {greeting}, {firstName}
-          </p>
-          <h1
-            className="text-xl md:text-2xl font-headline tracking-tight leading-tight"
-            style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.02em" }}
-          >
-            {profile.displayName || firstName}
-          </h1>
-          {profile.tagline ? (
+          <div className="shrink-0">
             <p
-              className="text-sm mt-1.5"
-              style={{ color: "#475569", fontWeight: 600 }}
-            >
-              {profile.tagline}
-            </p>
-          ) : null}
-          {profile.bio ? (
-            <p
-              className="text-[13px] mt-3 leading-relaxed"
-              style={{ color: "#64748b" }}
-            >
-              {profile.bio}
-            </p>
-          ) : null}
-
-          {/* Lifetime stats — vertical labelled rows, the sidebar idiom */}
-          <div className="mt-5 pt-4 border-t" style={{ borderColor: "rgba(15,34,41,0.08)" }}>
-            <p
-              className="text-[10px] uppercase tracking-[0.2em] font-headline mb-2"
+              className="text-[10px] uppercase tracking-widest font-headline mb-1"
               style={{ color: "#94a3b8", fontWeight: 700 }}
             >
-              Lifetime
+              {greeting}, {firstName}
             </p>
-            <StatRow
-              value={formatMoney(stats.earningsCents)}
-              label="Earned"
-              href="/dashboard/earnings"
-            />
-            <StatRow value={String(stats.sessionsDelivered)} label="Sessions delivered" />
-            <StatRow value={String(stats.enrolledMembers)} label="Members" />
+            <h1
+              className="text-xl md:text-2xl font-headline tracking-tight leading-tight"
+              style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.02em" }}
+            >
+              {profile.displayName || firstName}
+            </h1>
+            {profile.tagline ? (
+              <p
+                className="text-sm mt-1.5"
+                style={{ color: "#475569", fontWeight: 600 }}
+              >
+                {profile.tagline}
+              </p>
+            ) : null}
+            {profile.bio ? (
+              <p
+                className="text-[13px] mt-3 leading-relaxed"
+                style={{ color: "#64748b" }}
+              >
+                {profile.bio}
+              </p>
+            ) : null}
           </div>
 
-          {/* Edit profile — quiet, sits at the bottom of the sidebar */}
+          {/* Spacer pushes stats + edit toward the bottom so the
+              sidebar visually fills the column when content is light. */}
+          <div className="flex-1" />
+
+          {/* Lifetime stats — only when there's something to show */}
+          {hasAnyStats ? (
+            <div
+              className="mt-5 pt-4 border-t shrink-0"
+              style={{ borderColor: "rgba(15,34,41,0.08)" }}
+            >
+              <p
+                className="text-[10px] uppercase tracking-[0.2em] font-headline mb-2"
+                style={{ color: "#94a3b8", fontWeight: 700 }}
+              >
+                Lifetime
+              </p>
+              {stats.earningsCents > 0 && (
+                <StatRow
+                  value={formatMoney(stats.earningsCents)}
+                  label="Earned"
+                  href="/dashboard/earnings"
+                />
+              )}
+              {stats.sessionsDelivered > 0 && (
+                <StatRow value={String(stats.sessionsDelivered)} label="Sessions delivered" />
+              )}
+              {stats.enrolledMembers > 0 && (
+                <StatRow value={String(stats.enrolledMembers)} label="Members" />
+              )}
+            </div>
+          ) : null}
+
+          {/* Edit profile — anchored at bottom via the flex-1 spacer above */}
           <button
             onClick={() => setEditOpen(true)}
-            className="w-full mt-5 px-3 py-2 rounded-full text-[11px] font-headline transition-colors hover:bg-[#0F2229]/[0.03]"
+            className="w-full mt-5 px-3 py-2 rounded-full text-[11px] font-headline transition-colors hover:bg-[#0F2229]/[0.03] shrink-0"
             style={{
               color: "#475569",
               border: "1px solid rgba(15,34,41,0.10)",
