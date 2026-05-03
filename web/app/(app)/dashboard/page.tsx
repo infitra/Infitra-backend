@@ -409,7 +409,7 @@ export default async function DashboardPage() {
   const hasActiveProgram = !!data.activeProgram;
 
   return (
-    <div className="py-8 max-w-6xl mx-auto space-y-8">
+    <div className="py-8 max-w-6xl mx-auto space-y-10">
       {/* TOP ALERT — only time-critical signals (live / about-to-go-live).
           Sits above everything else because these are interrupts. */}
       <TopAlert
@@ -417,50 +417,68 @@ export default async function DashboardPage() {
         goLiveSoonSession={data.goLiveSoonSession}
       />
 
-      {/* PROFILE OVERVIEW — the personal anchor. Cover + avatar +
-          identity + key stats. Replaces the Bundle 1 inline greeting
-          with a substantial card so the dashboard reads as "this is
-          your home" with at-a-glance context. */}
-      <ProfileOverview
-        profile={{
-          displayName: data.profile.displayName,
-          avatarUrl: data.profile.avatarUrl,
-          coverImageUrl: data.profile.coverImageUrl,
-          tagline: data.profile.tagline,
-          bio: data.profile.bio,
-        }}
-        stats={data.stats}
-        activeProgram={
-          data.activeProgram
-            ? {
-                title: data.activeProgram.title,
-                stage: data.activeProgram.stage,
-                startDate: data.activeProgram.startDate,
-                endDate: data.activeProgram.endDate,
-                partnerName: data.partner?.name ?? null,
-              }
-            : null
-        }
-      />
+      {/* ── OVERVIEW ────────────────────────────────────── */}
+      <section>
+        <SectionLabel>Overview</SectionLabel>
+        <ProfileOverview
+          profile={{
+            displayName: data.profile.displayName,
+            avatarUrl: data.profile.avatarUrl,
+            coverImageUrl: data.profile.coverImageUrl,
+            tagline: data.profile.tagline,
+            bio: data.profile.bio,
+          }}
+          stats={data.stats}
+        />
+      </section>
 
-      {/* If user has NO active program, show pending invites BEFORE the
-          empty-state hero — invites are the path forward. */}
+      {/* If the user has NO active program, pending invites belong
+          ABOVE the empty-state hero — invites are the path forward. */}
       {!hasActiveProgram && hasInvites && (
-        <CollabInvitations invites={data.pendingReceivedInvites} />
+        <section>
+          <SectionLabel>Invitations</SectionLabel>
+          <CollabInvitations invites={data.pendingReceivedInvites} />
+        </section>
       )}
 
-      {/* ACTIVE PROGRAM — the focal hero of the dashboard. */}
-      <ActiveProgramCard
-        program={data.activeProgram}
-        partner={data.partner}
-        user={{ avatar: data.profile.avatarUrl, initial: userInitial }}
-      />
+      {/* ── YOUR PROGRAM ────────────────────────────────── */}
+      <section>
+        <SectionLabel>{hasActiveProgram ? "Your program" : "Get started"}</SectionLabel>
+        <ActiveProgramCard
+          program={data.activeProgram}
+          partner={data.partner}
+          user={{ avatar: data.profile.avatarUrl, initial: userInitial }}
+        />
+      </section>
 
       {/* Pending invites for *secondary* collaborations — below the
           active program because they're "by the way, here's other news". */}
       {hasActiveProgram && hasInvites && (
-        <CollabInvitations invites={data.pendingReceivedInvites} />
+        <section>
+          <SectionLabel>Other invitations</SectionLabel>
+          <CollabInvitations invites={data.pendingReceivedInvites} />
+        </section>
       )}
+    </div>
+  );
+}
+
+/**
+ * Small labelled rule above each dashboard section. Same typographic
+ * vocabulary as the landing page's section labels — gives the
+ * dashboard a sense of structure ("these are sections of one
+ * dashboard", not "stack of floating widgets").
+ */
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-3 mb-3 px-1">
+      <p
+        className="text-[10px] uppercase tracking-[0.25em] font-headline shrink-0"
+        style={{ color: "#94a3b8", fontWeight: 700 }}
+      >
+        {children}
+      </p>
+      <div className="flex-1 h-px" style={{ backgroundColor: "rgba(15,34,41,0.08)" }} />
     </div>
   );
 }
