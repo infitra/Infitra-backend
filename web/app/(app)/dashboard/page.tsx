@@ -409,7 +409,7 @@ export default async function DashboardPage() {
   const hasActiveProgram = !!data.activeProgram;
 
   return (
-    <div className="py-8 max-w-6xl mx-auto space-y-10">
+    <div className="py-8 max-w-6xl mx-auto space-y-6">
       {/* TOP ALERT — only time-critical signals (live / about-to-go-live).
           Sits above everything else because these are interrupts. */}
       <TopAlert
@@ -417,68 +417,48 @@ export default async function DashboardPage() {
         goLiveSoonSession={data.goLiveSoonSession}
       />
 
-      {/* ── OVERVIEW ────────────────────────────────────── */}
-      <section>
-        <SectionLabel>Overview</SectionLabel>
-        <ProfileOverview
-          profile={{
-            displayName: data.profile.displayName,
-            avatarUrl: data.profile.avatarUrl,
-            coverImageUrl: data.profile.coverImageUrl,
-            tagline: data.profile.tagline,
-            bio: data.profile.bio,
-          }}
-          stats={data.stats}
-        />
-      </section>
+      {/* DASHBOARD COMPOSITION — 2-col on desktop, stacked on mobile.
+          Layout itself creates hierarchy:
+            - Active program (2/3 width) is the focal hero — biggest
+              visual weight, sits where the eye lands after the avatar
+            - Profile (1/3 width sidebar) carries identity + lifetime
+              stats as supporting context, not a separate "section"
+          No section labels — position and size do the talking. */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-start">
+        <div className="md:col-span-1">
+          <ProfileOverview
+            profile={{
+              displayName: data.profile.displayName,
+              avatarUrl: data.profile.avatarUrl,
+              coverImageUrl: data.profile.coverImageUrl,
+              tagline: data.profile.tagline,
+              bio: data.profile.bio,
+            }}
+            stats={data.stats}
+          />
+        </div>
 
-      {/* If the user has NO active program, pending invites belong
-          ABOVE the empty-state hero — invites are the path forward. */}
-      {!hasActiveProgram && hasInvites && (
-        <section>
-          <SectionLabel>Invitations</SectionLabel>
-          <CollabInvitations invites={data.pendingReceivedInvites} />
-        </section>
-      )}
+        <div className="md:col-span-2">
+          {/* If user has NO active program, surface pending invites in
+              the hero slot — invites are the path forward to a program. */}
+          {!hasActiveProgram && hasInvites ? (
+            <CollabInvitations invites={data.pendingReceivedInvites} />
+          ) : (
+            <ActiveProgramCard
+              program={data.activeProgram}
+              partner={data.partner}
+              user={{ avatar: data.profile.avatarUrl, initial: userInitial }}
+            />
+          )}
+        </div>
+      </div>
 
-      {/* ── YOUR PROGRAM ────────────────────────────────── */}
-      <section>
-        <SectionLabel>{hasActiveProgram ? "Your program" : "Get started"}</SectionLabel>
-        <ActiveProgramCard
-          program={data.activeProgram}
-          partner={data.partner}
-          user={{ avatar: data.profile.avatarUrl, initial: userInitial }}
-        />
-      </section>
-
-      {/* Pending invites for *secondary* collaborations — below the
-          active program because they're "by the way, here's other news". */}
+      {/* Pending invites for *secondary* collaborations — full-width
+          below the hero region. Uses CollabInvitations' own internal
+          heading; no extra wrapper label. */}
       {hasActiveProgram && hasInvites && (
-        <section>
-          <SectionLabel>Other invitations</SectionLabel>
-          <CollabInvitations invites={data.pendingReceivedInvites} />
-        </section>
+        <CollabInvitations invites={data.pendingReceivedInvites} />
       )}
-    </div>
-  );
-}
-
-/**
- * Small labelled rule above each dashboard section. Same typographic
- * vocabulary as the landing page's section labels — gives the
- * dashboard a sense of structure ("these are sections of one
- * dashboard", not "stack of floating widgets").
- */
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="flex items-center gap-3 mb-3 px-1">
-      <p
-        className="text-[10px] uppercase tracking-[0.25em] font-headline shrink-0"
-        style={{ color: "#94a3b8", fontWeight: 700 }}
-      >
-        {children}
-      </p>
-      <div className="flex-1 h-px" style={{ backgroundColor: "rgba(15,34,41,0.08)" }} />
     </div>
   );
 }
