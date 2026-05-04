@@ -46,6 +46,10 @@ interface Program {
   spaceId?: string | null;
   enrolledCount?: number;
   earningsCents?: number;
+  /** This-week deltas — populated by the loader for active programs. */
+  earningsCentsThisWeek?: number;
+  newMembersThisWeek?: number;
+  sessionsDoneThisWeek?: number;
   /** Next upcoming session linked to this program (any host). */
   nextSession?: {
     id: string;
@@ -70,6 +74,14 @@ interface Props {
   program: Program | null;
   partner: Partner | null;
   user: UserProfile;
+  /**
+   * Layout density. "hero" = full treatment (banner + insights + next
+   * session pill + multiple actions). "compact" = used when 2+ active
+   * programs are on the dashboard at once; smaller banner, single
+   * inline insights line, compact next session, single primary CTA.
+   * Defaults to "hero".
+   */
+  density?: "hero" | "compact";
 }
 
 function formatDate(iso: string | null | undefined): string {
@@ -381,6 +393,76 @@ function NextSessionPill({
   );
 }
 
+function InsightsLine({ program }: { program: Program }) {
+  const parts: string[] = [];
+  if ((program.newMembersThisWeek ?? 0) > 0)
+    parts.push(`+${program.newMembersThisWeek} new member${program.newMembersThisWeek === 1 ? "" : "s"}`);
+  if ((program.earningsCentsThisWeek ?? 0) > 0)
+    parts.push(`+${formatMoney(program.earningsCentsThisWeek!)}`);
+  if ((program.sessionsDoneThisWeek ?? 0) > 0)
+    parts.push(`${program.sessionsDoneThisWeek} session${program.sessionsDoneThisWeek === 1 ? "" : "s"} done`);
+
+  if (parts.length === 0) return null;
+  return (
+    <p
+      className="text-xs md:text-sm font-headline"
+      style={{ color: "#475569", fontWeight: 600 }}
+    >
+      <span
+        className="text-[10px] uppercase tracking-widest mr-2"
+        style={{ color: "#0891b2", fontWeight: 700 }}
+      >
+        This week
+      </span>
+      {parts.map((p, i) => (
+        <span key={i}>
+          {i > 0 && <span className="mx-2" style={{ color: "#94a3b8" }}>·</span>}
+          {p}
+        </span>
+      ))}
+    </p>
+  );
+}
+
+function CompactNextSession({
+  session,
+}: {
+  session: { id: string; title: string; startTime: string; imageUrl: string | null };
+}) {
+  const t = formatNextSessionTime(session.startTime);
+  return (
+    <div
+      className="flex items-center gap-2.5 px-3 py-2 rounded-lg"
+      style={{
+        backgroundColor: "rgba(8,145,178,0.06)",
+        border: "1px solid rgba(8,145,178,0.18)",
+      }}
+    >
+      <svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="#0891b2"
+        strokeWidth={1.8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="shrink-0"
+      >
+        <circle cx="12" cy="12" r="9" />
+        <path d="M10 9 L10 15 L15.5 12 Z" fill="#0891b2" stroke="none" />
+      </svg>
+      <p
+        className="text-xs font-headline truncate flex-1 min-w-0"
+        style={{ color: "#0F2229", fontWeight: 700 }}
+      >
+        <span style={{ color: "#0891b2" }}>{t.day} · {t.time}</span>{" "}
+        <span style={{ color: "#64748b", fontWeight: 600 }}>· {session.title}</span>
+      </p>
+    </div>
+  );
+}
+
 function StageContent({ program }: { program: Program }) {
   // Drafting / awaiting-signatures — single descriptive line
   if (
@@ -463,7 +545,7 @@ function StageContent({ program }: { program: Program }) {
     );
   }
 
-  // Published-live — progress bar + next session anchor + enrolled
+  // Published-live — progress bar + insights + next session anchor
   if (program.stage === "published-live" && program.startDate && program.endDate) {
     const cw = currentWeek(program.startDate);
     const tw = totalWeeks(program.startDate, program.endDate);
@@ -490,6 +572,9 @@ function StageContent({ program }: { program: Program }) {
           </div>
           <ProgressBar percent={percent} accent="#0891b2" />
         </div>
+
+        {/* This-week insights — operational deltas */}
+        <InsightsLine program={program} />
 
         {/* Next session anchor */}
         {program.nextSession && <NextSessionPill session={program.nextSession} />}
@@ -588,9 +673,18 @@ function StageActions({ program }: { program: Program }) {
 
 // ─── Main ────────────────────────────────────────────────────
 
-export function ActiveProgramCard({ program, partner, user }: Props) {
+export function ActiveProgramCard({ program, partner, user, density = "hero" }: Props) {
   if (!program) {
     return <EmptyState user={user} />;
+  }
+
+  const isHero = density === "hero";
+
+  // Compact: smaller banner aspect, smaller title, single inline insight
+  // line, compact next-session pill, single primary CTA. Used when 2+
+  // active programs share the dashboard.
+  if (!isHero) {
+    return <CompactProgramCard program={program} partner={partner} />;
   }
 
   return (
@@ -704,6 +798,165 @@ export function ActiveProgramCard({ program, partner, user }: Props) {
         </div>
 
         <StageActions program={program} />
+      </div>
+    </div>
+  );
+}
+
+// ─── Compact (used when 2+ active programs share the dashboard) ────
+
+function CompactProgramCard({
+  program,
+  partner,
+}: {
+  program: Program;
+  partner: Partner | null;
+}) {
+  const isLive = program.stage === "published-live";
+  const cw = isLive && program.startDate ? currentWeek(program.startDate) : null;
+  const tw =
+    isLive && program.startDate && program.endDate
+      ? totalWeeks(program.startDate, program.endDate)
+      : null;
+  const percent = cw && tw ? (cw / tw) * 100 : 0;
+
+  const primaryHref = isLive
+    ? program.spaceId
+      ? `/communities/challenge/${program.spaceId}`
+      : `/challenges/${program.id}`
+    : `/challenges/${program.id}`; // pre-launch
+  const primaryLabel = isLive ? "Open challenge space →" : "Open public page →";
+
+  return (
+    <div
+      className="rounded-2xl overflow-hidden infitra-card flex flex-col"
+      style={{ border: "1px solid rgba(15,34,41,0.10)" }}
+    >
+      {/* Cover banner — slimmer than hero (5:1) */}
+      <div
+        className="relative w-full overflow-hidden shrink-0"
+        style={{ aspectRatio: "5 / 1", backgroundColor: "#0F2229" }}
+      >
+        {program.imageUrl ? (
+          <img
+            src={program.imageUrl}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        ) : (
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "linear-gradient(135deg, rgba(255,97,48,0.45) 0%, rgba(8,145,178,0.45) 100%), #0F2229",
+            }}
+          />
+        )}
+        <div
+          className="absolute inset-x-0 top-0 h-1/2 pointer-events-none"
+          style={{
+            background:
+              "linear-gradient(to bottom, rgba(15,34,41,0.35) 0%, rgba(15,34,41,0) 100%)",
+          }}
+        />
+        <div className="absolute top-3 right-3 z-10">
+          <StageBadge stage={program.stage} />
+        </div>
+      </div>
+
+      {/* Content — flex column so the action sits at the bottom */}
+      <div className="flex-1 flex flex-col p-5">
+        <h2
+          className="text-lg md:text-xl font-headline tracking-tight"
+          style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.02em" }}
+        >
+          {program.title || "Untitled"}
+        </h2>
+
+        {partner && (
+          <div className="flex items-center gap-2 mt-2">
+            {partner.avatar ? (
+              <img
+                src={partner.avatar}
+                alt=""
+                className="w-5 h-5 rounded-full object-cover"
+                style={{ border: "1px solid #FFFFFF" }}
+              />
+            ) : (
+              <div
+                className="w-5 h-5 rounded-full flex items-center justify-center"
+                style={{ backgroundColor: "rgba(8,145,178,0.18)" }}
+              >
+                <span className="text-[9px] font-headline" style={{ color: "#0891b2", fontWeight: 700 }}>
+                  {partner.name[0]?.toUpperCase() ?? "?"}
+                </span>
+              </div>
+            )}
+            <span className="text-xs" style={{ color: "#475569" }}>
+              with{" "}
+              <span style={{ color: "#0F2229", fontWeight: 700 }}>{partner.name}</span>
+            </span>
+          </div>
+        )}
+
+        {/* Progress + insights */}
+        {isLive && cw && tw ? (
+          <div className="mt-4">
+            <div className="flex items-baseline justify-between mb-1.5">
+              <p
+                className="text-[10px] uppercase tracking-widest font-headline"
+                style={{ color: "#94a3b8", fontWeight: 700 }}
+              >
+                Week {cw} of {tw}
+              </p>
+              {program.enrolledCount !== undefined && (
+                <p
+                  className="text-[10px] uppercase tracking-widest font-headline"
+                  style={{ color: "#94a3b8", fontWeight: 700 }}
+                >
+                  {program.enrolledCount} enrolled
+                </p>
+              )}
+            </div>
+            <ProgressBar percent={percent} accent="#0891b2" />
+          </div>
+        ) : program.startDate ? (
+          <p className="text-xs mt-3" style={{ color: "#64748b" }}>
+            Launches {formatDate(program.startDate)}
+            {program.enrolledCount !== undefined && program.enrolledCount > 0 && (
+              <>
+                <span className="mx-2" style={{ color: "#94a3b8" }}>·</span>
+                {program.enrolledCount} enrolled
+              </>
+            )}
+          </p>
+        ) : null}
+
+        <div className="mt-3">
+          <InsightsLine program={program} />
+        </div>
+
+        {/* Next session — compact one-liner */}
+        {program.nextSession && (
+          <div className="mt-3">
+            <CompactNextSession session={program.nextSession} />
+          </div>
+        )}
+
+        {/* Spacer + single primary CTA at the bottom */}
+        <div className="flex-1" />
+        <Link
+          href={primaryHref}
+          className="mt-4 inline-block px-5 py-2.5 rounded-full text-white text-sm font-headline transition-transform hover:scale-[1.02] text-center"
+          style={{
+            backgroundColor: "#FF6130",
+            fontWeight: 700,
+            boxShadow:
+              "0 4px 14px rgba(255,97,48,0.32), 0 2px 6px rgba(255,97,48,0.18)",
+          }}
+        >
+          {primaryLabel}
+        </Link>
       </div>
     </div>
   );

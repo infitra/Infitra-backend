@@ -1,32 +1,40 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { ProfileOverview } from "./ProfileOverview";
 import { ActiveProgramCard, type ProgramStage } from "./ActiveProgramCard";
+import { OtherProgramCard } from "./OtherProgramCard";
 import { TopAlert } from "./TopAlert";
 import { CollabInvitations } from "./CollabInvitations";
+import { IdentityStrip } from "./IdentityStrip";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Home — INFITRA" };
 
 /**
- * Pilot dashboard — Phase 3a Bundle 1.
+ * Pilot dashboard — programs hub.
  *
- * Shape: greeting → pulse → active program. That's it (Bundles 2/3
- * will add the next-session card, buyer activity, and earnings strip).
+ * Composition:
+ *   [TopAlert when live or going-live]
+ *   [Identity strip — thin top bar with name + status + edit]
  *
- * The old dashboard had 9 sections and ran ~12 sequential awaits to
- * populate a generic "any-creator at any-stage" surface. For pilot
- * creators — each running ONE active joint challenge — that surface
- * was emotionally flat (vanity zeroes, three places sessions appeared,
- * creator-tribe community feed irrelevant). This rewrite focuses
- * ruthlessly on the joint program as the central focus, with a
- * single action card on top when something needs doing.
+ *   ACTIVE PROGRAMS zone — adaptive layout:
+ *     0 active: invite hero (if pending) OR "start your first" empty hero
+ *     1 active: full-width hero card (rich treatment — insights + next
+ *               session + multiple actions)
+ *     2 active: side-by-side cards, equal weight, compact treatment
+ *     3+ active: 3-col grid of compact cards
  *
- * Data loading is consolidated into loadPilotDashboard() with all
- * queries parallelized via Promise.all.
+ *   OTHER PROGRAMS — compact grid below, drafts/awaiting/completed
+ *
+ *   INVITATIONS — full-width section if has active program + invite
+ *
+ * Notification bell (in top nav) carries the ambient "what's
+ * happened" feed: collab events, partner DM/workspace activity,
+ * system updates. Insights here on the dashboard are the operational
+ * deltas (new members, sessions done, earnings this week).
  */
 
-// ─── Data shape ─────────────────────────────────────────────
+// ─── Types ──────────────────────────────────────────────────
 
 interface ChallengeRow {
   id: string;
@@ -38,6 +46,34 @@ interface ChallengeRow {
   owner_id: string;
   contract_id: string | null;
   created_at: string;
+}
+
+export interface ProgramSummary {
+  id: string;
+  title: string;
+  imageUrl: string | null;
+  stage: ProgramStage;
+  startDate: string | null;
+  endDate: string | null;
+  isOwner: boolean;
+  spaceId: string | null;
+  partner: {
+    id: string;
+    name: string;
+    avatar: string | null;
+    pendingInvite: boolean;
+  } | null;
+  // Filled for active programs only
+  enrolledCount?: number;
+  earningsCentsThisWeek?: number;
+  newMembersThisWeek?: number;
+  sessionsDoneThisWeek?: number;
+  nextSession?: {
+    id: string;
+    title: string;
+    startTime: string;
+    imageUrl: string | null;
+  } | null;
 }
 
 // ─── Stage computation ──────────────────────────────────────
@@ -63,280 +99,303 @@ function computeStage(
   return "completed";
 }
 
-/**
- * Score a challenge for "most active right now" — higher = more
- * deserving of being THE program shown on the dashboard. Pilot
- * creators have one program but the function still has to make
- * a decision when there are stale drafts from before the pilot.
- */
-function challengeActivenessRank(ch: ChallengeRow): number {
-  const today = new Date().toISOString().split("T")[0];
-  if (ch.status === "published") {
-    if (ch.start_date && ch.end_date && today >= ch.start_date && today <= ch.end_date) {
-      return 100; // currently live — highest priority
-    }
-    if (ch.start_date && today < ch.start_date) {
-      return 80; // pre-launch
-    }
-    return 40; // published, completed
-  }
-  if (ch.status === "draft") {
-    return 60; // drafting — beats completed but loses to live/pre-launch
-  }
-  return 10;
+function isActiveStage(s: ProgramStage): boolean {
+  return s === "published-live" || s === "published-pre-launch";
+}
+
+// Within active programs: live > pre-launch (live takes the front
+// row). Within other programs: drafting > awaiting > completed.
+function activeRank(s: ProgramStage): number {
+  if (s === "published-live") return 1;
+  if (s === "published-pre-launch") return 2;
+  return 99;
+}
+function otherRank(s: ProgramStage): number {
+  if (s === "awaiting-signatures") return 1;
+  if (s === "drafting-jointly") return 2;
+  if (s === "drafting-solo") return 3;
+  if (s === "completed") return 4;
+  return 99;
 }
 
 // ─── Data loader ────────────────────────────────────────────
 
-async function loadPilotDashboard(userId: string) {
+async function loadDashboard(userId: string) {
   const supabase = await createClient();
 
-  // Phase A: kick off all base queries in parallel.
-  const [
-    profileResult,
-    ownedResult,
-    cohostJoinsResult,
-    receivedInvitesResult,
-    upcomingSessionsResult,
-    earningsResult,
-    sessionsCompletedResult,
-  ] = await Promise.all([
-    supabase
-      .from("app_profile")
-      .select("display_name, avatar_url, tagline, bio, cover_image_url, role")
-      .eq("id", userId)
-      .single(),
-
-    supabase
-      .from("app_challenge")
-      .select("id, title, image_url, status, start_date, end_date, owner_id, contract_id, created_at")
-      .eq("owner_id", userId)
-      .order("created_at", { ascending: false }),
-
-    supabase
-      .from("app_challenge_cohost")
-      .select(
-        "challenge_id, app_challenge(id, title, image_url, status, start_date, end_date, owner_id, contract_id, created_at)",
-      )
-      .eq("cohost_id", userId),
-
-    supabase
-      .from("app_collaboration_invite")
-      .select(
-        "id, from_id, message, initial_split_percent, created_at, challenge_id, app_challenge(title, image_url)",
-      )
-      .eq("to_id", userId)
-      .eq("status", "pending")
-      .order("created_at", { ascending: false }),
-
-    supabase
-      .from("app_session")
-      .select("id, title, start_time, duration_minutes, status, live_room_id")
-      .eq("host_id", userId)
-      .in("status", ["published", "ended"])
-      .order("start_time", { ascending: true })
-      .limit(20),
-
-    // Earnings — for the profile overview's stats row
-    supabase.from("vw_my_creator_summary").select("creator_cut_cents").maybeSingle(),
-
-    // Sessions delivered (host)
-    supabase
-      .from("app_session")
-      .select("id", { count: "exact", head: true })
-      .eq("host_id", userId)
-      .eq("status", "ended"),
-  ]);
-
-  const profile = profileResult.data;
-  const ownedChallenges: ChallengeRow[] = (ownedResult.data ?? []) as ChallengeRow[];
-  // Join may come back as object or single-element array
-  const cohostChallenges: ChallengeRow[] = (cohostJoinsResult.data ?? [])
-    .map((j: any) => (Array.isArray(j.app_challenge) ? j.app_challenge[0] : j.app_challenge))
-    .filter(Boolean) as ChallengeRow[];
-
-  const allChallenges: Array<ChallengeRow & { isOwner: boolean }> = [
-    ...ownedChallenges.map((c) => ({ ...c, isOwner: true })),
-    ...cohostChallenges.map((c) => ({ ...c, isOwner: false })),
-  ];
-
-  // Pick the most-active challenge as THE program.
-  const sortedByActiveness = [...allChallenges].sort(
-    (a, b) => challengeActivenessRank(b) - challengeActivenessRank(a),
-  );
-  const activeChallenge = sortedByActiveness[0] ?? null;
-
-  // Phase B: based on active challenge, fetch its partner + contract state in parallel.
-  let partner: {
-    id: string;
-    name: string;
-    avatar: string | null;
-    pendingInvite: boolean;
-  } | null = null;
-  let contractLockedAt: string | null = null;
-
-  // The challenge space (where buyers actually live) is created at
-  // publish-time. We need its id so the dashboard can link "Open
-  // challenge space" for live/completed programs to the correct page
-  // (not the legacy /challenges/[id] sales page).
-  let challengeSpaceId: string | null = null;
-  let activeProgramMemberCount = 0;
-  // Next session for the active program — used as the "Next: Fri 7pm
-  // · in 3 days" anchor on the program card. Adds anticipation to
-  // what was previously a passive meta line.
-  let nextProgramSession: {
-    id: string;
-    title: string;
-    startTime: string;
-    imageUrl: string | null;
-  } | null = null;
-
-  if (activeChallenge) {
-    // Run pending-invite + contract + space queries in parallel;
-    // partner-resolution depends on the owner-vs-cohost branch.
-    const pendingPartnerInvitePromise = supabase
-      .from("app_collaboration_invite")
-      .select("to_id")
-      .eq("challenge_id", activeChallenge.id)
-      .eq("status", "pending")
-      .limit(1)
-      .maybeSingle();
-
-    const contractPromise = activeChallenge.contract_id
-      ? supabase
-          .from("app_collaboration_contract")
-          .select("locked_at")
-          .eq("id", activeChallenge.contract_id)
-          .single()
-      : Promise.resolve({ data: null, error: null });
-
-    const spacePromise = supabase
-      .from("app_challenge_space")
-      .select("id")
-      .eq("source_challenge_id", activeChallenge.id)
-      .maybeSingle();
-
-    const memberCountPromise = supabase
-      .from("app_challenge_member")
-      .select("user_id", { count: "exact", head: true })
-      .eq("challenge_id", activeChallenge.id);
-
-    // Next upcoming session linked to this challenge (any host —
-    // the partner's sessions count too). Gives the program card its
-    // anticipation anchor. image_url surfaces as the next-session
-    // pill thumbnail so the anchor feels visceral, not informational.
-    const nextSessionPromise = supabase
-      .from("app_challenge_session")
-      .select("session_id, app_session(id, title, start_time, status, image_url)")
-      .eq("challenge_id", activeChallenge.id);
-
-    const ownerCohostPromise = activeChallenge.isOwner
-      ? supabase
-          .from("app_challenge_cohost")
-          .select("cohost_id")
-          .eq("challenge_id", activeChallenge.id)
-          .limit(1)
-          .maybeSingle()
-      : supabase
-          .from("app_profile")
-          .select("id, display_name, avatar_url")
-          .eq("id", activeChallenge.owner_id)
-          .single();
-
-    const [
-      pendingPartnerInviteResult,
-      contractResult,
-      spaceResult,
-      memberCountResult,
-      nextSessionResult,
-      partnerOrCohostResult,
-    ] = await Promise.all([
-      pendingPartnerInvitePromise,
-      contractPromise,
-      spacePromise,
-      memberCountPromise,
-      nextSessionPromise,
-      ownerCohostPromise,
+  // Phase A — base queries in parallel
+  const [profileResult, ownedResult, cohostJoinsResult, receivedInvitesResult, upcomingSessionsResult] =
+    await Promise.all([
+      supabase
+        .from("app_profile")
+        .select("display_name, avatar_url, tagline, bio, cover_image_url, role")
+        .eq("id", userId)
+        .single(),
+      supabase
+        .from("app_challenge")
+        .select("id, title, image_url, status, start_date, end_date, owner_id, contract_id, created_at")
+        .eq("owner_id", userId)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("app_challenge_cohost")
+        .select(
+          "challenge_id, app_challenge(id, title, image_url, status, start_date, end_date, owner_id, contract_id, created_at)",
+        )
+        .eq("cohost_id", userId),
+      supabase
+        .from("app_collaboration_invite")
+        .select(
+          "id, from_id, message, initial_split_percent, created_at, challenge_id, app_challenge(title, image_url)",
+        )
+        .eq("to_id", userId)
+        .eq("status", "pending")
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("app_session")
+        .select("id, title, start_time, duration_minutes, status, live_room_id")
+        .eq("host_id", userId)
+        .in("status", ["published", "ended"])
+        .order("start_time", { ascending: true })
+        .limit(20),
     ]);
 
-    contractLockedAt = (contractResult.data as any)?.locked_at ?? null;
-    challengeSpaceId = (spaceResult.data as any)?.id ?? null;
-    activeProgramMemberCount = (memberCountResult as any).count ?? 0;
+  const profile = profileResult.data;
+  const ownedChallenges: Array<ChallengeRow & { isOwner: boolean }> = (
+    (ownedResult.data ?? []) as ChallengeRow[]
+  ).map((c) => ({ ...c, isOwner: true }));
+  const cohostChallenges: Array<ChallengeRow & { isOwner: boolean }> = (
+    cohostJoinsResult.data ?? []
+  )
+    .map((j: any) => (Array.isArray(j.app_challenge) ? j.app_challenge[0] : j.app_challenge))
+    .filter(Boolean)
+    .map((c: ChallengeRow) => ({ ...c, isOwner: false }));
 
-    // Pick the soonest upcoming session linked to the active program.
-    const linkedSessions = ((nextSessionResult.data ?? []) as any[])
-      .map((r) => (Array.isArray(r.app_session) ? r.app_session[0] : r.app_session))
-      .filter((s) => s && s.status === "published" && s.start_time);
-    const nowMs = Date.now();
-    const upcoming = linkedSessions
-      .filter((s: any) => new Date(s.start_time).getTime() > nowMs)
-      .sort(
-        (a: any, b: any) =>
-          new Date(a.start_time).getTime() - new Date(b.start_time).getTime(),
-      );
-    if (upcoming[0]) {
-      nextProgramSession = {
-        id: upcoming[0].id,
-        title: upcoming[0].title,
-        startTime: upcoming[0].start_time,
-        imageUrl: upcoming[0].image_url ?? null,
-      };
+  const allChallenges = [...ownedChallenges, ...cohostChallenges];
+  const challengeIds = allChallenges.map((c) => c.id);
+
+  // Phase B — for ALL programs: contract state, space id, cohost lookup, pending-partner-invite
+  let contractLocks: Record<string, string | null> = {};
+  let spaceIds: Record<string, string | null> = {};
+  let cohostMap: Record<string, string[]> = {};
+  let pendingPartnerInvites: Record<string, string | null> = {};
+
+  if (challengeIds.length > 0) {
+    const contractIds = allChallenges
+      .map((c) => c.contract_id)
+      .filter((x): x is string => !!x);
+
+    const [contractsResult, spacesResult, cohostsResult, partnerInvitesResult] =
+      await Promise.all([
+        contractIds.length > 0
+          ? supabase
+              .from("app_collaboration_contract")
+              .select("id, locked_at")
+              .in("id", contractIds)
+          : Promise.resolve({ data: [] as any[] }),
+        supabase
+          .from("app_challenge_space")
+          .select("id, source_challenge_id")
+          .in("source_challenge_id", challengeIds),
+        supabase
+          .from("app_challenge_cohost")
+          .select("challenge_id, cohost_id")
+          .in("challenge_id", challengeIds),
+        supabase
+          .from("app_collaboration_invite")
+          .select("challenge_id, to_id")
+          .in("challenge_id", challengeIds)
+          .eq("status", "pending"),
+      ]);
+
+    for (const ch of allChallenges) {
+      const c = (contractsResult.data ?? []).find((r: any) => r.id === ch.contract_id);
+      contractLocks[ch.id] = (c as any)?.locked_at ?? null;
     }
-
-    if (activeChallenge.isOwner) {
-      const cohostId = (partnerOrCohostResult.data as any)?.cohost_id ?? null;
-      const pendingToId = (pendingPartnerInviteResult.data as any)?.to_id ?? null;
-
-      if (cohostId) {
-        const { data: pp } = await supabase
-          .from("app_profile")
-          .select("display_name, avatar_url")
-          .eq("id", cohostId)
-          .single();
-        partner = {
-          id: cohostId,
-          name: pp?.display_name ?? "Partner",
-          avatar: pp?.avatar_url ?? null,
-          pendingInvite: false,
-        };
-      } else if (pendingToId) {
-        const { data: pp } = await supabase
-          .from("app_profile")
-          .select("display_name, avatar_url")
-          .eq("id", pendingToId)
-          .single();
-        partner = {
-          id: pendingToId,
-          name: pp?.display_name ?? "Partner",
-          avatar: pp?.avatar_url ?? null,
-          pendingInvite: true,
-        };
-      }
-    } else {
-      const ownerProfile = partnerOrCohostResult.data as any;
-      if (ownerProfile) {
-        partner = {
-          id: ownerProfile.id,
-          name: ownerProfile.display_name ?? "Partner",
-          avatar: ownerProfile.avatar_url,
-          pendingInvite: false,
-        };
-      }
+    for (const s of spacesResult.data ?? []) {
+      spaceIds[(s as any).source_challenge_id] = (s as any).id;
+    }
+    for (const c of cohostsResult.data ?? []) {
+      const id = (c as any).challenge_id;
+      cohostMap[id] = cohostMap[id] ?? [];
+      cohostMap[id].push((c as any).cohost_id);
+    }
+    for (const i of partnerInvitesResult.data ?? []) {
+      pendingPartnerInvites[(i as any).challenge_id] = (i as any).to_id;
     }
   }
 
-  // Pulse signals: live and go-live-soon sessions
-  const sessions = (upcomingSessionsResult.data ?? []) as Array<{
-    id: string;
-    title: string;
-    start_time: string;
-    status: string;
-    live_room_id: string | null;
-  }>;
+  // Phase C — partner profile lookup (everyone we need to display)
+  const partnerProfileIds = new Set<string>();
+  for (const ch of allChallenges) {
+    if (ch.isOwner) {
+      const cohostIds = cohostMap[ch.id] ?? [];
+      const pendingTo = pendingPartnerInvites[ch.id];
+      if (cohostIds[0]) partnerProfileIds.add(cohostIds[0]);
+      else if (pendingTo) partnerProfileIds.add(pendingTo);
+    } else {
+      partnerProfileIds.add(ch.owner_id);
+    }
+  }
 
+  const partnerProfiles: Record<string, { name: string; avatar: string | null }> = {};
+  if (partnerProfileIds.size > 0) {
+    const { data } = await supabase
+      .from("app_profile")
+      .select("id, display_name, avatar_url")
+      .in("id", [...partnerProfileIds]);
+    for (const p of data ?? [])
+      partnerProfiles[(p as any).id] = {
+        name: (p as any).display_name ?? "Creator",
+        avatar: (p as any).avatar_url,
+      };
+  }
+
+  // Build program summaries with stage + partner
+  const programs: ProgramSummary[] = allChallenges
+    .map((ch) => {
+      const cohostIds = cohostMap[ch.id] ?? [];
+      const pendingTo = pendingPartnerInvites[ch.id] ?? null;
+      const partnerId = ch.isOwner
+        ? cohostIds[0] ?? pendingTo ?? null
+        : ch.owner_id;
+      const partner =
+        partnerId && partnerProfiles[partnerId]
+          ? {
+              id: partnerId,
+              name: partnerProfiles[partnerId].name,
+              avatar: partnerProfiles[partnerId].avatar,
+              pendingInvite: ch.isOwner && !cohostIds[0] && !!pendingTo,
+            }
+          : null;
+      const stage = computeStage(
+        ch,
+        partner?.pendingInvite ?? false,
+        contractLocks[ch.id] ?? null,
+      );
+      return {
+        id: ch.id,
+        title: ch.title,
+        imageUrl: ch.image_url,
+        stage,
+        startDate: ch.start_date,
+        endDate: ch.end_date,
+        isOwner: ch.isOwner,
+        spaceId: spaceIds[ch.id] ?? null,
+        partner,
+      };
+    })
+    // Hide stale empty drafts (defensive — the create-page cleanup
+    // also handles this on its own visit)
+    .filter((p) => p.stage !== ("completed" as ProgramStage) || p.endDate);
+
+  // Phase D — for ACTIVE programs, enrich with insights + next session
+  const activePrograms = programs.filter((p) => isActiveStage(p.stage));
+  if (activePrograms.length > 0) {
+    const activeIds = activePrograms.map((p) => p.id);
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const nowMs = Date.now();
+
+    const [
+      memberCountsResult,
+      newMembersResult,
+      txResult,
+      sessionLinksResult,
+    ] = await Promise.all([
+      supabase
+        .from("app_challenge_member")
+        .select("challenge_id")
+        .in("challenge_id", activeIds),
+      supabase
+        .from("app_challenge_member")
+        .select("challenge_id")
+        .in("challenge_id", activeIds)
+        .gte("created_at", sevenDaysAgo),
+      supabase
+        .from("vw_my_transactions")
+        .select("challenge_id, creator_cut_cents, created_at")
+        .in("challenge_id", activeIds)
+        .gte("created_at", sevenDaysAgo),
+      supabase
+        .from("app_challenge_session")
+        .select("challenge_id, app_session(id, title, start_time, status, image_url)")
+        .in("challenge_id", activeIds),
+    ]);
+
+    // Count totals + weekly per program
+    const totalByChallenge: Record<string, number> = {};
+    for (const r of memberCountsResult.data ?? []) {
+      const id = (r as any).challenge_id;
+      totalByChallenge[id] = (totalByChallenge[id] ?? 0) + 1;
+    }
+    const weeklyMembers: Record<string, number> = {};
+    for (const r of newMembersResult.data ?? []) {
+      const id = (r as any).challenge_id;
+      weeklyMembers[id] = (weeklyMembers[id] ?? 0) + 1;
+    }
+    const weeklyEarnings: Record<string, number> = {};
+    for (const r of txResult.data ?? []) {
+      const id = (r as any).challenge_id;
+      weeklyEarnings[id] = (weeklyEarnings[id] ?? 0) + Number((r as any).creator_cut_cents ?? 0);
+    }
+
+    // Sessions: link rows include the session payload; bucket by challenge
+    const sessionsByChallenge: Record<string, Array<any>> = {};
+    for (const r of sessionLinksResult.data ?? []) {
+      const id = (r as any).challenge_id;
+      const s = Array.isArray((r as any).app_session)
+        ? (r as any).app_session[0]
+        : (r as any).app_session;
+      if (!s) continue;
+      sessionsByChallenge[id] = sessionsByChallenge[id] ?? [];
+      sessionsByChallenge[id].push(s);
+    }
+
+    for (const p of activePrograms) {
+      p.enrolledCount = totalByChallenge[p.id] ?? 0;
+      p.newMembersThisWeek = weeklyMembers[p.id] ?? 0;
+      p.earningsCentsThisWeek = weeklyEarnings[p.id] ?? 0;
+
+      const sessions = sessionsByChallenge[p.id] ?? [];
+      // Sessions completed this week = ended status + start_time within last 7d
+      p.sessionsDoneThisWeek = sessions.filter(
+        (s) =>
+          s.status === "ended" &&
+          new Date(s.start_time).getTime() >= Date.now() - 7 * 24 * 60 * 60 * 1000,
+      ).length;
+      // Next session = soonest upcoming, status=published
+      const upcoming = sessions
+        .filter((s) => s.status === "published" && new Date(s.start_time).getTime() > nowMs)
+        .sort(
+          (a, b) =>
+            new Date(a.start_time).getTime() - new Date(b.start_time).getTime(),
+        );
+      p.nextSession = upcoming[0]
+        ? {
+            id: upcoming[0].id,
+            title: upcoming[0].title,
+            startTime: upcoming[0].start_time,
+            imageUrl: upcoming[0].image_url ?? null,
+          }
+        : null;
+    }
+  }
+
+  // Sort active by activeRank then by start_date for tiebreak
+  activePrograms.sort((a, b) => {
+    const r = activeRank(a.stage) - activeRank(b.stage);
+    if (r !== 0) return r;
+    return (a.startDate ?? "").localeCompare(b.startDate ?? "");
+  });
+
+  // Other programs (drafts / awaiting / completed)
+  const otherPrograms = programs
+    .filter((p) => !isActiveStage(p.stage))
+    .sort((a, b) => otherRank(a.stage) - otherRank(b.stage));
+
+  // Pulse signals (for TopAlert)
+  const sessions = (upcomingSessionsResult.data ?? []) as Array<any>;
   const now = Date.now();
-  const liveSession =
-    sessions.find((s) => !!s.live_room_id && s.status !== "ended") ?? null;
+  const liveSession = sessions.find((s) => !!s.live_room_id && s.status !== "ended") ?? null;
   const goLiveSoonSession = !liveSession
     ? sessions.find((s) => {
         if (s.live_room_id) return false;
@@ -346,9 +405,7 @@ async function loadPilotDashboard(userId: string) {
       })
     : null;
 
-  // Pending received invites (shape for CollabInvitations).
-  // Supabase typed-result inference doesn't unwrap the joined
-  // app_challenge cleanly, so we go through `any[]` to read the join.
+  // Pending received invites
   const pendingReceivedInvites: any[] = [];
   const inviteRows = (receivedInvitesResult.data ?? []) as any[];
   if (inviteRows.length > 0) {
@@ -364,13 +421,10 @@ async function loadPilotDashboard(userId: string) {
         avatar: (p as any).avatar_url,
         tagline: (p as any).tagline,
       };
-
     for (const i of inviteRows) {
-      // app_challenge join may come back as object or single-element array
-      // depending on PostgREST inference. Normalize to object.
       const ch = Array.isArray(i.app_challenge) ? i.app_challenge[0] : i.app_challenge;
       const rawTitle = ch?.title ?? "";
-      const isMeaningfulTitle =
+      const isMeaningful =
         !!rawTitle && rawTitle !== "Untitled Collaboration" && rawTitle !== "Untitled Challenge";
       pendingReceivedInvites.push({
         id: i.id,
@@ -380,21 +434,11 @@ async function loadPilotDashboard(userId: string) {
         message: i.message,
         splitPercent: i.initial_split_percent ?? 0,
         createdAt: i.created_at,
-        challengeTitle: isMeaningfulTitle ? rawTitle : null,
+        challengeTitle: isMeaningful ? rawTitle : null,
         challengeImageUrl: ch?.image_url ?? null,
       });
     }
   }
-
-  // Compute stage now that we know contract + partner state
-  const programStage: ProgramStage | null = activeChallenge
-    ? computeStage(activeChallenge, partner?.pendingInvite ?? false, contractLockedAt)
-    : null;
-
-  // Stats for the profile overview
-  const earningsCents = Number((earningsResult.data as any)?.creator_cut_cents ?? 0);
-  const sessionsDeliveredCount = Number((sessionsCompletedResult as any).count ?? 0);
-  const activeProgramsCount = activeChallenge ? 1 : 0;
 
   return {
     profile: {
@@ -403,33 +447,11 @@ async function loadPilotDashboard(userId: string) {
       coverImageUrl: profile?.cover_image_url ?? null,
       tagline: profile?.tagline ?? null,
       bio: profile?.bio ?? null,
-      role: (profile?.role ?? "creator") as "creator" | "participant",
     },
-    stats: {
-      earningsCents,
-      sessionsDelivered: sessionsDeliveredCount,
-      activePrograms: activeProgramsCount,
-      enrolledMembers: activeProgramMemberCount,
-    },
-    activeProgram: activeChallenge && programStage
-      ? {
-          id: activeChallenge.id,
-          title: activeChallenge.title,
-          imageUrl: activeChallenge.image_url,
-          stage: programStage,
-          startDate: activeChallenge.start_date,
-          endDate: activeChallenge.end_date,
-          isOwner: activeChallenge.isOwner,
-          spaceId: challengeSpaceId,
-          enrolledCount: activeProgramMemberCount,
-          nextSession: nextProgramSession,
-        }
-      : null,
-    partner,
+    activePrograms,
+    otherPrograms,
     pendingReceivedInvites,
-    liveSession: liveSession
-      ? { id: liveSession.id, title: liveSession.title }
-      : null,
+    liveSession: liveSession ? { id: liveSession.id, title: liveSession.title } : null,
     goLiveSoonSession: goLiveSoonSession
       ? {
           id: goLiveSoonSession.id,
@@ -447,62 +469,160 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const data = await loadPilotDashboard(user.id);
-
+  const data = await loadDashboard(user.id);
   const userInitial = data.profile.displayName?.[0]?.toUpperCase() ?? "?";
-
   const hasInvites = data.pendingReceivedInvites.length > 0;
-  const hasActiveProgram = !!data.activeProgram;
+  const activeCount = data.activePrograms.length;
+  const otherCount = data.otherPrograms.length;
 
   return (
-    <div className="py-8 max-w-6xl mx-auto space-y-6">
-      {/* TOP ALERT — only time-critical signals (live / about-to-go-live).
-          Sits above everything else because these are interrupts. */}
+    <div className="py-6 max-w-6xl mx-auto space-y-6">
       <TopAlert
         liveSession={data.liveSession}
         goLiveSoonSession={data.goLiveSoonSession}
       />
 
-      {/* DASHBOARD COMPOSITION — 2-col on desktop, stacked on mobile.
-          Layout itself creates hierarchy:
-            - Active program (2/3 width) is the focal hero — biggest
-              visual weight, sits where the eye lands after the avatar
-            - Profile (1/3 width sidebar) carries identity + lifetime
-              stats as supporting context, not a separate "section"
-          No section labels — position and size do the talking. */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-stretch">
-        <div className="md:col-span-1">
-          <ProfileOverview
-            profile={{
-              displayName: data.profile.displayName,
-              avatarUrl: data.profile.avatarUrl,
-              coverImageUrl: data.profile.coverImageUrl,
-              tagline: data.profile.tagline,
-              bio: data.profile.bio,
-            }}
-          />
-        </div>
+      <IdentityStrip
+        displayName={data.profile.displayName}
+        avatarUrl={data.profile.avatarUrl}
+        tagline={data.profile.tagline}
+        bio={data.profile.bio}
+        coverImageUrl={data.profile.coverImageUrl}
+      />
 
-        <div className="md:col-span-2">
-          {/* If user has NO active program, surface pending invites in
-              the hero slot — invites are the path forward to a program. */}
-          {!hasActiveProgram && hasInvites ? (
-            <CollabInvitations invites={data.pendingReceivedInvites} />
-          ) : (
+      {/* INVITE CALLOUT — when has active program AND pending invite,
+          surface the invite at the top of the programs zone so it's not
+          buried at the bottom. The full invite card still renders below
+          (for actions). This is just a visible-above-the-fold pointer. */}
+      {activeCount > 0 && hasInvites && (
+        <Link
+          href="#invitations"
+          className="flex items-center gap-3 px-4 py-3 rounded-2xl group transition-colors"
+          style={{
+            backgroundColor: "rgba(8,145,178,0.06)",
+            border: "1px solid rgba(8,145,178,0.20)",
+          }}
+        >
+          <span
+            className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center"
+            style={{ backgroundColor: "rgba(8,145,178,0.12)" }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0891b2" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+              <polyline points="22,6 12,13 2,6" />
+            </svg>
+          </span>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-headline" style={{ color: "#0F2229", fontWeight: 700 }}>
+              {data.pendingReceivedInvites.length === 1
+                ? `${data.pendingReceivedInvites[0].fromName} invited you to explore`
+                : `${data.pendingReceivedInvites.length} pending invitations`}
+            </p>
+            <p className="text-xs" style={{ color: "#64748b" }}>
+              See it below — non-binding, just opens the workspace.
+            </p>
+          </div>
+          <span
+            className="text-[10px] uppercase tracking-widest font-headline shrink-0"
+            style={{ color: "#0891b2", fontWeight: 700 }}
+          >
+            View →
+          </span>
+        </Link>
+      )}
+
+      {/* ACTIVE PROGRAMS — adaptive zone */}
+      {activeCount === 0 && hasInvites ? (
+        // No active programs but invitations exist: invite IS the path forward
+        <div id="invitations">
+          <CollabInvitations invites={data.pendingReceivedInvites} />
+        </div>
+      ) : activeCount === 0 ? (
+        // True empty state
+        <ActiveProgramCard
+          program={null}
+          partner={null}
+          user={{ avatar: data.profile.avatarUrl, initial: userInitial }}
+          density="hero"
+        />
+      ) : activeCount === 1 ? (
+        // Single program: full hero treatment
+        <ActiveProgramCard
+          program={data.activePrograms[0]}
+          partner={data.activePrograms[0].partner}
+          user={{ avatar: data.profile.avatarUrl, initial: userInitial }}
+          density="hero"
+        />
+      ) : (
+        // 2+ active programs: equal-weight grid (adaptive cols)
+        <div
+          className={
+            activeCount === 2
+              ? "grid grid-cols-1 md:grid-cols-2 gap-5"
+              : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"
+          }
+        >
+          {data.activePrograms.map((p) => (
             <ActiveProgramCard
-              program={data.activeProgram}
-              partner={data.partner}
+              key={p.id}
+              program={p}
+              partner={p.partner}
               user={{ avatar: data.profile.avatarUrl, initial: userInitial }}
+              density="compact"
             />
-          )}
+          ))}
         </div>
-      </div>
+      )}
 
-      {/* Pending invites for *secondary* collaborations — full-width
-          below the hero region. Uses CollabInvitations' own internal
-          heading; no extra wrapper label. */}
-      {hasActiveProgram && hasInvites && (
-        <CollabInvitations invites={data.pendingReceivedInvites} />
+      {/* OTHER PROGRAMS — drafts, awaiting, completed */}
+      {otherCount > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-3 px-1">
+            <p
+              className="text-[10px] uppercase tracking-[0.25em] font-headline"
+              style={{ color: "#94a3b8", fontWeight: 700 }}
+            >
+              Other programs · {otherCount}
+            </p>
+            <Link
+              href="/dashboard/create"
+              className="text-[10px] uppercase tracking-[0.2em] font-headline transition-colors hover:text-[#FF6130]"
+              style={{ color: "#0891b2", fontWeight: 700 }}
+            >
+              + Start new
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {data.otherPrograms.map((p) => (
+              <OtherProgramCard key={p.id} program={p} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* + Start new — visible CTA when no other-programs section */}
+      {otherCount === 0 && activeCount > 0 && (
+        <div className="flex justify-center pt-2">
+          <Link
+            href="/dashboard/create"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-headline transition-colors"
+            style={{
+              color: "#0891b2",
+              border: "1.5px dashed rgba(8,145,178,0.40)",
+              backgroundColor: "rgba(156,240,255,0.06)",
+              fontWeight: 700,
+            }}
+          >
+            + Start a new program
+          </Link>
+        </div>
+      )}
+
+      {/* INVITATIONS — full card, below other programs */}
+      {activeCount > 0 && hasInvites && (
+        <div id="invitations" className="pt-2">
+          <CollabInvitations invites={data.pendingReceivedInvites} />
+        </div>
       )}
     </div>
   );
