@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
-import Image from "next/image";
 import { signOut } from "@/app/actions/auth";
 import { MobileMenu } from "@/app/components/MobileMenu";
+import { NotificationBell } from "./NotificationBell";
 
 export default async function DashboardLayout({
   children,
@@ -83,7 +83,7 @@ export default async function DashboardLayout({
             </Link>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <MobileMenu
               links={[
                 { label: "Home", href: "/dashboard" },
@@ -91,6 +91,7 @@ export default async function DashboardLayout({
                 { label: "Earnings", href: "/dashboard/earnings" },
               ]}
             />
+            <NotificationBell />
             <span
               className="text-sm font-headline font-semibold hidden md:block"
               style={{ color: "rgba(15, 34, 41, 0.50)" }}
