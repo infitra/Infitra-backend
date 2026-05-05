@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PrimaryActionPill } from "./PrimaryActionPill";
 
 /**
  * Active Program Card — the central hero of the pilot dashboard.
@@ -56,6 +57,14 @@ interface Program {
     title: string;
     startTime: string;
     imageUrl: string | null;
+  } | null;
+  /** First-buyer-just-landed milestone (drives the P4 insight). */
+  firstBuyerAt?: string | null;
+  /** Most recent session that was scheduled but never went live. */
+  missedSession?: {
+    id: string;
+    title: string;
+    startTime: string;
   } | null;
 }
 
@@ -120,6 +129,50 @@ function currentWeek(startIso: string | null): number {
   );
 }
 
+/**
+ * Hour-precision relative time. Returns "in 2h", "in 45m", "now", or
+ * day-level granularity ("today", "tomorrow", "in 5 days") for events
+ * further out. The hour-precision branch only fires within 24h —
+ * that's where urgency lives.
+ */
+function formatRelative(iso: string): string {
+  const ms = new Date(iso).getTime() - Date.now();
+  if (ms < 0) return "past";
+  const totalMin = Math.round(ms / 60000);
+  if (totalMin < 1) return "now";
+  if (totalMin < 60) return `in ${totalMin}m`;
+  const totalHours = Math.round(totalMin / 60);
+  if (totalHours < 24) return `in ${totalHours}h`;
+  // Day-level beyond 24h — calendar-day arithmetic, not 24h chunks
+  const d = new Date(iso);
+  d.setHours(0, 0, 0, 0);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const diffDays = Math.round((d.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
+  if (diffDays === 0) return "today";
+  if (diffDays === 1) return "tomorrow";
+  return `in ${diffDays} days`;
+}
+
+function daysUntil(iso: string | null | undefined): number | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  d.setHours(0, 0, 0, 0);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Math.round((d.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
+}
+
+function hoursSince(iso: string | null | undefined): number | null {
+  if (!iso) return null;
+  return (Date.now() - new Date(iso).getTime()) / (60 * 60 * 1000);
+}
+
+function firstName(name: string | null | undefined): string {
+  if (!name) return "your collaborator";
+  return name.split(" ")[0] || name;
+}
+
 function formatNextSessionTime(iso: string): { day: string; time: string; relative: string } {
   const d = new Date(iso);
   const today = new Date();
@@ -137,14 +190,269 @@ function formatNextSessionTime(iso: string): { day: string; time: string; relati
 
   const time = d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 
-  const relative =
-    diffDays === 0
-      ? "today"
-      : diffDays === 1
-        ? "tomorrow"
-        : `in ${diffDays} days`;
+  // Use hour-precision for the relative cue when the session is within 24h —
+  // "in 2h" lands harder than "today" when there's actually time pressure.
+  return { day: dayLabel, time, relative: formatRelative(iso) };
+}
 
-  return { day: dayLabel, time, relative };
+// ─── Insight system ──────────────────────────────────────────
+//
+// Every program card asks `programInsight()` what to say. The cascade
+// is ordered by urgency — first match wins. The function is pure: it
+// takes a Program + Partner and returns a tone, an interpretive line,
+// and a contextual primary action. The card is dumb — it just renders
+// what the insight says.
+//
+// Tone palette (re-used from existing "Live" badge vocabulary):
+//   urgent       — red, pulsing dot. Time-bound action.
+//   opportunity  — orange, solid dot. Action unlocks growth.
+//   blocked      — orange, solid dot. Waiting on someone external.
+//   cruise       — cyan, no dot. Healthy default.
+
+type InsightTone = "urgent" | "opportunity" | "blocked" | "cruise";
+
+interface PrimaryAction {
+  label: string;
+  /** Either navigate (href) or perform an action ("copy-link"). */
+  kind: "navigate" | "copy-link";
+  href: string;
+}
+
+interface Insight {
+  tone: InsightTone;
+  message: string;
+  primary: PrimaryAction;
+  /** Secondary chips shown in addition to the primary. The card always
+   * includes "View contract" for stages that have a contract; this
+   * lets specific insights demote the *previous* default primary
+   * (e.g. "Open challenge space") to a chip when an action overrides
+   * it. */
+  demoted?: { label: string; href: string }[];
+}
+
+function programInsight(program: Program, partner: Partner | null): Insight {
+  const partnerName = firstName(partner?.name);
+  const enrolled = program.enrolledCount ?? 0;
+  const workspaceHref = `/dashboard/collaborate/${program.id}`;
+  const publicHref = `/challenges/${program.id}`;
+  const contractHref = `/dashboard/collaborate/${program.id}/contract`;
+  const spaceHref = program.spaceId
+    ? `/communities/challenge/${program.spaceId}`
+    : publicHref;
+
+  // ── LIVE cascade ──────────────────────────────────────────
+  if (program.stage === "published-live") {
+    const minsToNext = program.nextSession
+      ? Math.round(
+          (new Date(program.nextSession.startTime).getTime() - Date.now()) /
+            60000,
+        )
+      : null;
+
+    // L1 — going live in <15min. Even for 0-buyer programs, the host
+    // might want to enter to cancel/test, so this stays at the top.
+    if (minsToNext !== null && minsToNext > 0 && minsToNext < 15) {
+      return {
+        tone: "urgent",
+        message: `Going live in ${minsToNext} min`,
+        primary: { label: "Go live", kind: "navigate", href: `/dashboard/sessions/${program.nextSession!.id}` },
+        demoted: [{ label: "Open challenge space", href: spaceHref }],
+      };
+    }
+
+    // L4 — 0 enrolled is the *biggest* problem when it's true. Missed
+    // sessions and upcoming sessions are downstream of this — without
+    // buyers, neither matters yet. Surface it before time-based rules.
+    if (enrolled === 0) {
+      return {
+        tone: "opportunity",
+        message: "No participants yet — invite people to start momentum",
+        primary: { label: "Invite participants", kind: "copy-link", href: publicHref },
+        demoted: [{ label: "Open challenge space", href: spaceHref }],
+      };
+    }
+
+    // L3 — missed session, only meaningful with actual participants
+    if (program.missedSession) {
+      return {
+        tone: "urgent",
+        message: `You missed ${program.missedSession.title} — reschedule it`,
+        primary: { label: "Reschedule", kind: "navigate", href: `/dashboard/sessions/${program.missedSession.id}` },
+        demoted: [{ label: "Open challenge space", href: spaceHref }],
+      };
+    }
+
+    // L2 — session in <24h
+    if (minsToNext !== null && minsToNext > 0 && minsToNext < 24 * 60) {
+      const rel = formatRelative(program.nextSession!.startTime);
+      return {
+        tone: "urgent",
+        message: `Next session ${rel} — you're set`,
+        primary: { label: "Prepare session", kind: "navigate", href: `/dashboard/sessions/${program.nextSession!.id}` },
+        demoted: [{ label: "Open challenge space", href: spaceHref }],
+      };
+    }
+
+    // P4 — first buyer landed in last 24h (also fires for live, since
+    // pre-launch becomes live the moment the start date passes)
+    const hoursSinceFirstBuyer = hoursSince(program.firstBuyerAt);
+    if (
+      hoursSinceFirstBuyer !== null &&
+      hoursSinceFirstBuyer < 24
+    ) {
+      return {
+        tone: "opportunity",
+        message: "First buyer · the run is real now",
+        primary: { label: "Open challenge space", kind: "navigate", href: spaceHref },
+      };
+    }
+
+    // L5 — 1+ enrolled but no session yet this week
+    if ((program.sessionsDoneThisWeek ?? 0) === 0) {
+      return {
+        tone: "opportunity",
+        message: `${enrolled} enrolled · kick this week off`,
+        primary: { label: "Open challenge space", kind: "navigate", href: spaceHref },
+      };
+    }
+
+    // L6 — default running
+    const sessions = program.sessionsDoneThisWeek ?? 0;
+    return {
+      tone: "cruise",
+      message: `${enrolled} enrolled · ${sessions} session${sessions === 1 ? "" : "s"} this week`,
+      primary: { label: "Open challenge space", kind: "navigate", href: spaceHref },
+    };
+  }
+
+  // ── PRE-LAUNCH cascade ────────────────────────────────────
+  if (program.stage === "published-pre-launch") {
+    const dToLaunch = daysUntil(program.startDate);
+    const hoursSinceFirstBuyer = hoursSince(program.firstBuyerAt);
+
+    // P4 — first buyer in last 24h takes the moment
+    if (
+      enrolled >= 1 &&
+      hoursSinceFirstBuyer !== null &&
+      hoursSinceFirstBuyer < 24
+    ) {
+      return {
+        tone: "opportunity",
+        message: "First buyer · the run is real now",
+        primary: { label: "Open challenge space", kind: "navigate", href: spaceHref },
+      };
+    }
+
+    // P1 — 0 enrolled, launches in <7 days
+    if (enrolled === 0 && dToLaunch !== null && dToLaunch < 7) {
+      return {
+        tone: "opportunity",
+        message: `Launches in ${dToLaunch} day${dToLaunch === 1 ? "" : "s"} — nobody's signed up yet`,
+        primary: { label: "Share your page", kind: "copy-link", href: publicHref },
+        demoted: [{ label: "Open public page", href: publicHref }],
+      };
+    }
+
+    // P2 — has buyers, launches soon
+    if (enrolled >= 1 && dToLaunch !== null) {
+      return {
+        tone: "cruise",
+        message: `${enrolled} enrolled · launches in ${dToLaunch} day${dToLaunch === 1 ? "" : "s"}`,
+        primary: { label: "Open public page", kind: "navigate", href: publicHref },
+      };
+    }
+
+    // P3 — 0 enrolled, launches farther out
+    return {
+      tone: "opportunity",
+      message: "Share early to build momentum before launch",
+      primary: { label: "Open public page", kind: "navigate", href: publicHref },
+    };
+  }
+
+  // ── DRAFTING cascade ──────────────────────────────────────
+  // D1/D5 (stale invite/contract): we soft-pedal to "Open workspace" until
+  // the dedicated nudge flows exist. The *insight line* still surfaces the
+  // staleness so the user knows what they're walking into.
+  if (program.stage === "drafting-solo") {
+    return {
+      tone: partner?.pendingInvite ? "blocked" : "blocked",
+      message: partner?.pendingInvite
+        ? `Waiting for ${partnerName} to accept`
+        : "Waiting for your collaborator",
+      primary: { label: "Open workspace", kind: "navigate", href: workspaceHref },
+    };
+  }
+
+  if (program.stage === "drafting-jointly") {
+    return {
+      tone: "cruise",
+      message: `Drafting together with ${partnerName}`,
+      primary: { label: "Open workspace", kind: "navigate", href: workspaceHref },
+    };
+  }
+
+  if (program.stage === "awaiting-signatures") {
+    return {
+      tone: "cruise",
+      message: `Contract sent — waiting on ${partnerName}`,
+      primary: { label: "Review contract", kind: "navigate", href: contractHref },
+    };
+  }
+
+  // ── COMPLETED ─────────────────────────────────────────────
+  if (program.stage === "completed") {
+    if (enrolled === 0) {
+      return {
+        tone: "cruise",
+        message: "Wrapped up · no buyers this run",
+        // Aspirational: there's no summary page yet, /challenges/{id} is the
+        // closest read-only "what was this" view.
+        primary: { label: "View summary", kind: "navigate", href: publicHref },
+      };
+    }
+    return {
+      tone: "cruise",
+      message: `Wrapped up · ${enrolled} completed`,
+      primary: { label: "Open challenge space", kind: "navigate", href: spaceHref },
+    };
+  }
+
+  // Fallback (shouldn't hit — exhaustive switch above)
+  return {
+    tone: "cruise",
+    message: program.title || "Untitled",
+    primary: { label: "Open challenge space", kind: "navigate", href: spaceHref },
+  };
+}
+
+const TONE_COLOR: Record<InsightTone, string> = {
+  urgent: "#ef4444",
+  opportunity: "#FF6130",
+  blocked: "#FF6130",
+  cruise: "#0891b2",
+};
+
+function InsightLine({ insight }: { insight: Insight }) {
+  const color = TONE_COLOR[insight.tone];
+  const showDot = insight.tone !== "cruise";
+  const pulse = insight.tone === "urgent";
+  return (
+    <div className="flex items-center gap-2 mb-3">
+      {showDot && (
+        <span
+          className={`w-2 h-2 rounded-full shrink-0 ${pulse ? "animate-pulse" : ""}`}
+          style={{ backgroundColor: color }}
+        />
+      )}
+      <p
+        className="text-sm md:text-[15px] font-headline"
+        style={{ color, fontWeight: 700, letterSpacing: "-0.005em" }}
+      >
+        {insight.message}
+      </p>
+    </div>
+  );
 }
 
 // ─── Empty state ─────────────────────────────────────────────
@@ -368,12 +676,15 @@ function NextSessionPill({
           className="text-sm md:text-base font-headline tracking-tight"
           style={{ color: "#0891b2", fontWeight: 700, letterSpacing: "-0.01em" }}
         >
+          <span className="text-[10px] uppercase tracking-widest mr-2" style={{ color: "#94a3b8", fontWeight: 700 }}>
+            Next:
+          </span>
           {t.day} · {t.time}
           <span
             className="ml-2 text-[10px] uppercase tracking-widest"
             style={{ color: "#94a3b8", fontWeight: 700 }}
           >
-            {t.relative}
+            ({t.relative})
           </span>
         </p>
         <p
@@ -381,12 +692,6 @@ function NextSessionPill({
           style={{ color: "#0F2229", fontWeight: 700 }}
         >
           {session.title}
-        </p>
-        <p
-          className="text-[10px] uppercase tracking-widest font-headline mt-0.5"
-          style={{ color: "#94a3b8", fontWeight: 700 }}
-        >
-          Next live session
         </p>
       </div>
     </div>
@@ -456,7 +761,11 @@ function CompactNextSession({
         className="text-xs font-headline truncate flex-1 min-w-0"
         style={{ color: "#0F2229", fontWeight: 700 }}
       >
-        <span style={{ color: "#0891b2" }}>{t.day} · {t.time}</span>{" "}
+        <span className="text-[9px] uppercase tracking-widest mr-1.5" style={{ color: "#94a3b8", fontWeight: 700 }}>
+          Next:
+        </span>
+        <span style={{ color: "#0891b2" }}>{t.day} {t.time}</span>{" "}
+        <span style={{ color: "#94a3b8", fontWeight: 600 }}>({t.relative})</span>{" "}
         <span style={{ color: "#64748b", fontWeight: 600 }}>· {session.title}</span>
       </p>
     </div>
@@ -464,32 +773,25 @@ function CompactNextSession({
 }
 
 function StageContent({ program }: { program: Program }) {
-  // Drafting / awaiting-signatures — single descriptive line
+  // Drafting / awaiting-signatures: the insight line carries the full
+  // status. Showing a second descriptive line here was redundant — the
+  // card now relies on the cascade for stage interpretation.
   if (
     program.stage === "drafting-solo" ||
     program.stage === "drafting-jointly" ||
     program.stage === "awaiting-signatures"
   ) {
-    const text =
-      program.stage === "drafting-solo"
-        ? "Waiting for your collaborator to accept"
-        : program.stage === "drafting-jointly"
-          ? "Drafting together in the workspace"
-          : "Contract locked, signatures pending";
-    return (
-      <p className="text-sm md:text-base" style={{ color: "#64748b" }}>
-        {text}
-      </p>
-    );
+    return null;
   }
 
-  // Completed — short historical line
+  // Completed — short historical line (complementary to the insight)
   if (program.stage === "completed") {
     const parts: string[] = [];
     if (program.endDate) parts.push(`Ended ${formatDate(program.endDate)}`);
     if (program.enrolledCount !== undefined && program.enrolledCount > 0)
       parts.push(`${program.enrolledCount} participants`);
     if (program.earningsCents) parts.push(`${formatMoney(program.earningsCents)} earned`);
+    if (parts.length === 0) return null;
     return (
       <p className="text-sm md:text-base" style={{ color: "#64748b" }}>
         {parts.join(" · ")}
@@ -497,51 +799,21 @@ function StageContent({ program }: { program: Program }) {
     );
   }
 
-  // Published-pre-launch — emphasize sharing when no buyers yet
+  // Published-pre-launch — launch date line. The "share" callout the
+  // old version rendered for no-buyer state is now carried by the
+  // insight line at the top of the card; we don't need it twice.
   if (program.stage === "published-pre-launch") {
-    const launchLine = program.startDate ? `Launches ${formatDate(program.startDate)}` : null;
-    const noBuyers = (program.enrolledCount ?? 0) === 0;
+    if (!program.startDate) return null;
     return (
-      <div className="space-y-3">
-        {launchLine && (
-          <p className="text-sm md:text-base" style={{ color: "#64748b" }}>
-            {launchLine}
-            {!noBuyers && program.enrolledCount !== undefined && (
-              <>
-                <span className="mx-2" style={{ color: "#94a3b8" }}>·</span>
-                {program.enrolledCount} enrolled
-              </>
-            )}
-          </p>
+      <p className="text-sm md:text-base" style={{ color: "#64748b" }}>
+        Launches {formatDate(program.startDate)}
+        {program.enrolledCount !== undefined && program.enrolledCount > 0 && (
+          <>
+            <span className="mx-2" style={{ color: "#94a3b8" }}>·</span>
+            {program.enrolledCount} enrolled
+          </>
         )}
-        {noBuyers && (
-          <div
-            className="px-4 py-3 rounded-xl flex items-start gap-2.5"
-            style={{
-              backgroundColor: "rgba(255,97,48,0.06)",
-              border: "1px solid rgba(255,97,48,0.20)",
-            }}
-          >
-            <span
-              className="shrink-0 mt-0.5"
-              style={{ color: "#FF6130" }}
-              aria-hidden
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="18" cy="5" r="3" />
-                <circle cx="6" cy="12" r="3" />
-                <circle cx="18" cy="19" r="3" />
-                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-              </svg>
-            </span>
-            <p className="text-xs md:text-sm leading-relaxed" style={{ color: "#0F2229" }}>
-              <span style={{ fontWeight: 700 }}>Share your program</span> to get your first
-              members. Open the public page below and copy the URL.
-            </p>
-          </div>
-        )}
-      </div>
+      </p>
     );
   }
 
@@ -587,88 +859,61 @@ function StageContent({ program }: { program: Program }) {
 
 // ─── Primary destinations + secondary actions ───────────────
 
-/**
- * Primary destination per stage. The whole card is clickable to this
- * URL via an absolute-positioned overlay link. Secondary actions like
- * "View contract" render above the overlay (z-20), so they get their
- * own clicks while the rest of the card routes to the primary URL.
- */
-function primaryDestinationFor(program: Program): string {
-  const workspaceHref = `/dashboard/collaborate/${program.id}`;
-  const publicHref = `/challenges/${program.id}`;
-  const spaceHref = program.spaceId
-    ? `/communities/challenge/${program.spaceId}`
-    : publicHref;
-
-  switch (program.stage) {
-    case "drafting-solo":
-    case "drafting-jointly":
-    case "awaiting-signatures":
-      return workspaceHref;
-    case "published-pre-launch":
-      return publicHref;
-    case "published-live":
-    case "completed":
-      return spaceHref;
-  }
-}
-
-function primaryActionLabel(stage: ProgramStage): string {
-  switch (stage) {
-    case "drafting-solo":
-    case "drafting-jointly":
-      return "Open workspace →";
-    case "awaiting-signatures":
-      return "Review contract →";
-    case "published-pre-launch":
-      return "Open public page →";
-    case "published-live":
-      return "Open challenge space →";
-    case "completed":
-      return "Open challenge space →";
-  }
-}
-
-/**
- * Secondary actions row — small pills for things that aren't the
- * primary card action. Currently just "View contract" for stages
- * where it's relevant. The card renders this inside a positioned
- * sibling of the overlay link, so its clicks don't go through the
- * overlay even at deep DOM nesting.
- */
-function SecondaryActions({ program }: { program: Program }) {
-  const showContract =
-    program.stage === "awaiting-signatures" ||
-    program.stage === "published-pre-launch" ||
-    program.stage === "published-live" ||
-    program.stage === "completed";
-  if (!showContract) return null;
-  const contractHref = `/dashboard/collaborate/${program.id}/contract`;
+function showsContract(stage: ProgramStage): boolean {
   return (
-    <div className="flex flex-wrap gap-2">
-      <Link
-        href={contractHref}
-        className="text-[11px] uppercase tracking-widest font-headline px-3 py-1.5 rounded-full transition-colors hover:bg-[#0F2229]/[0.05]"
-        style={{
-          color: "#0891b2",
-          border: "1px solid rgba(8,145,178,0.25)",
-          fontWeight: 700,
-          backgroundColor: "rgba(255,255,255,0.85)",
-        }}
-      >
-        View contract
-      </Link>
+    stage === "awaiting-signatures" ||
+    stage === "published-pre-launch" ||
+    stage === "published-live" ||
+    stage === "completed"
+  );
+}
+
+/**
+ * Secondary actions — small pills for things that aren't the contextual
+ * primary action. "View contract" is the canonical secondary; the cascade
+ * may also demote the previous stage default (e.g. "Open challenge space")
+ * to a chip when an action overrides it.
+ *
+ * Renders as a positioned sibling of the overlay link, so its clicks don't
+ * route through the overlay even when nested deeply.
+ */
+function SecondaryActions({
+  program,
+  insight,
+}: {
+  program: Program;
+  insight: Insight;
+}) {
+  const contractHref = `/dashboard/collaborate/${program.id}/contract`;
+  const chips: { label: string; href: string }[] = [];
+  if (insight.demoted) chips.push(...insight.demoted);
+  if (showsContract(program.stage)) {
+    chips.push({ label: "View contract", href: contractHref });
+  }
+  if (chips.length === 0) return null;
+  return (
+    <div className="flex flex-wrap gap-2 justify-end">
+      {chips.map((chip) => (
+        <Link
+          key={chip.label}
+          href={chip.href}
+          className="text-[11px] uppercase tracking-widest font-headline px-3 py-1.5 rounded-full transition-colors hover:bg-[#0F2229]/[0.05]"
+          style={{
+            color: "#0891b2",
+            border: "1px solid rgba(8,145,178,0.25)",
+            fontWeight: 700,
+            backgroundColor: "rgba(255,255,255,0.85)",
+          }}
+        >
+          {chip.label}
+        </Link>
+      ))}
     </div>
   );
 }
 
-function hasSecondaryActions(program: Program): boolean {
-  return (
-    program.stage === "awaiting-signatures" ||
-    program.stage === "published-pre-launch" ||
-    program.stage === "published-live" ||
-    program.stage === "completed"
-  );
+function hasSecondaryActions(program: Program, insight: Insight): boolean {
+  return (insight.demoted?.length ?? 0) > 0 || showsContract(program.stage);
 }
 
 // ─── Main ────────────────────────────────────────────────────
@@ -679,12 +924,13 @@ export function ActiveProgramCard({ program, partner, user, density = "hero" }: 
   }
 
   const isHero = density === "hero";
+  const insight = programInsight(program, partner);
 
   // Compact: smaller banner aspect, smaller title, single inline insight
   // line, compact next-session pill, single primary CTA. Used when 2+
   // active programs share the dashboard.
   if (!isHero) {
-    return <CompactProgramCard program={program} partner={partner} />;
+    return <CompactProgramCard program={program} partner={partner} insight={insight} />;
   }
 
   return (
@@ -726,6 +972,9 @@ export function ActiveProgramCard({ program, partner, user, density = "hero" }: 
 
       {/* Content */}
       <div className="p-6 md:p-8">
+        {/* Decision layer — interpret the state, prime the action */}
+        <InsightLine insight={insight} />
+
         <h2
           className="text-2xl md:text-3xl font-headline tracking-tight"
           style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.025em" }}
@@ -794,34 +1043,35 @@ export function ActiveProgramCard({ program, partner, user, density = "hero" }: 
           <StageContent program={program} />
         </div>
 
-        {/* Bottom row: primary action label only — SecondaryActions
-            renders below as a positioned sibling of the overlay link
-            (see end of article) so its inner Link isn't nested inside
-            the overlay's anchor. */}
-        <p
-          className="text-sm font-headline"
-          style={{ color: "#FF6130", fontWeight: 700 }}
-        >
-          {primaryActionLabel(program.stage)}
-        </p>
+        {/* Bottom row: contextual primary action. Pure visual when it's
+            a navigate (overlay handles the click); a real button when
+            it's a copy-link, since that intercepts the overlay. */}
+        <PrimaryActionPill
+          label={insight.primary.label}
+          kind={insight.primary.kind}
+          href={insight.primary.href}
+        />
       </div>
 
       {/* Click overlay — covers the whole card. Renders before
           SecondaryActions in DOM order so the absolutely-positioned
-          actions sit on top regardless of z-index. */}
+          actions sit on top regardless of z-index. For copy-link
+          primaries the overlay still routes to a sensible passive
+          destination (the same URL, here = the public page); the
+          real action is the button above. */}
       <Link
-        href={primaryDestinationFor(program)}
-        aria-label={primaryActionLabel(program.stage)}
+        href={insight.primary.href}
+        aria-label={insight.primary.label}
         className="absolute inset-0"
       >
-        <span className="sr-only">{primaryActionLabel(program.stage)}</span>
+        <span className="sr-only">{insight.primary.label}</span>
       </Link>
 
       {/* Secondary actions — sibling of the overlay, positioned over
           the bottom-right corner. Independent click target. */}
-      {hasSecondaryActions(program) && (
+      {hasSecondaryActions(program, insight) && (
         <div className="absolute bottom-6 md:bottom-8 right-6 md:right-8">
-          <SecondaryActions program={program} />
+          <SecondaryActions program={program} insight={insight} />
         </div>
       )}
     </article>
@@ -833,9 +1083,11 @@ export function ActiveProgramCard({ program, partner, user, density = "hero" }: 
 function CompactProgramCard({
   program,
   partner,
+  insight,
 }: {
   program: Program;
   partner: Partner | null;
+  insight: Insight;
 }) {
   const isLive = program.stage === "published-live";
   const cw = isLive && program.startDate ? currentWeek(program.startDate) : null;
@@ -844,9 +1096,6 @@ function CompactProgramCard({
       ? totalWeeks(program.startDate, program.endDate)
       : null;
   const percent = cw && tw ? (cw / tw) * 100 : 0;
-
-  const primaryHref = primaryDestinationFor(program);
-  const primaryLabel = primaryActionLabel(program.stage);
 
   return (
     <article
@@ -887,6 +1136,8 @@ function CompactProgramCard({
 
       {/* Content — flex column so the action sits at the bottom */}
       <div className="flex-1 flex flex-col p-5">
+        <InsightLine insight={insight} />
+
         <h2
           className="text-lg md:text-xl font-headline tracking-tight"
           style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.02em" }}
@@ -964,30 +1215,31 @@ function CompactProgramCard({
           </div>
         )}
 
-        {/* Spacer + bottom row: primary action label only.
+        {/* Spacer + bottom row: contextual primary action.
             SecondaryActions render below as a positioned sibling of
             the overlay link (see end of article). */}
         <div className="flex-1" />
-        <p
-          className="mt-4 text-sm font-headline"
-          style={{ color: "#FF6130", fontWeight: 700 }}
-        >
-          {primaryLabel}
-        </p>
+        <div className="mt-4">
+          <PrimaryActionPill
+            label={insight.primary.label}
+            kind={insight.primary.kind}
+            href={insight.primary.href}
+          />
+        </div>
       </div>
 
       {/* Click overlay — see hero variant for rationale. */}
       <Link
-        href={primaryHref}
-        aria-label={primaryLabel}
+        href={insight.primary.href}
+        aria-label={insight.primary.label}
         className="absolute inset-0"
       >
-        <span className="sr-only">{primaryLabel}</span>
+        <span className="sr-only">{insight.primary.label}</span>
       </Link>
 
-      {hasSecondaryActions(program) && (
+      {hasSecondaryActions(program, insight) && (
         <div className="absolute bottom-5 right-5">
-          <SecondaryActions program={program} />
+          <SecondaryActions program={program} insight={insight} />
         </div>
       )}
     </article>
