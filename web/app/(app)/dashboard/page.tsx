@@ -73,7 +73,15 @@ export interface ProgramSummary {
     title: string;
     startTime: string;
     imageUrl: string | null;
+    status: string;
   } | null;
+  sessions?: {
+    id: string;
+    title: string;
+    startTime: string;
+    imageUrl: string | null;
+    status: string;
+  }[];
 }
 
 // ─── Stage computation ──────────────────────────────────────
@@ -360,18 +368,30 @@ async function loadDashboard(userId: string) {
           s.status === "ended" &&
           new Date(s.start_time).getTime() >= Date.now() - 7 * 24 * 60 * 60 * 1000,
       ).length;
-      const upcoming = sessions
-        .filter((s) => s.status === "published" && new Date(s.start_time).getTime() > nowMs)
-        .sort(
-          (a, b) =>
-            new Date(a.start_time).getTime() - new Date(b.start_time).getTime(),
-        );
+
+      // Full ordered list — drives the hero-density horizontal session row.
+      const ordered = [...sessions].sort(
+        (a, b) =>
+          new Date(a.start_time).getTime() - new Date(b.start_time).getTime(),
+      );
+      p.sessions = ordered.map((s) => ({
+        id: s.id,
+        title: s.title,
+        startTime: s.start_time,
+        imageUrl: s.image_url ?? null,
+        status: s.status,
+      }));
+
+      const upcoming = ordered.filter(
+        (s) => s.status === "published" && new Date(s.start_time).getTime() > nowMs,
+      );
       p.nextSession = upcoming[0]
         ? {
             id: upcoming[0].id,
             title: upcoming[0].title,
             startTime: upcoming[0].start_time,
             imageUrl: upcoming[0].image_url ?? null,
+            status: upcoming[0].status,
           }
         : null;
     }
