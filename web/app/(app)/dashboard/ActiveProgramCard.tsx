@@ -589,10 +589,9 @@ function StageContent({ program }: { program: Program }) {
 
 /**
  * Primary destination per stage. The whole card is clickable to this
- * URL (set up by the parent Link wrapper). Secondary actions like
- * "View contract" still render as small inline pills inside the card,
- * but the bulk of the card is one big click target — like a Vercel
- * project card or Linear issue tile.
+ * URL via an absolute-positioned overlay link. Secondary actions like
+ * "View contract" render above the overlay (z-20), so they get their
+ * own clicks while the rest of the card routes to the primary URL.
  */
 function primaryDestinationFor(program: Program): string {
   const workspaceHref = `/dashboard/collaborate/${program.id}`;
@@ -633,8 +632,8 @@ function primaryActionLabel(stage: ProgramStage): string {
 /**
  * Secondary actions row — small pills for things that aren't the
  * primary card action. Currently just "View contract" for stages
- * where it's relevant. Uses stopPropagation so it doesn't trigger
- * the parent card click.
+ * where it's relevant. Sits above the card's overlay link via
+ * `relative z-20` so its own clicks aren't intercepted.
  */
 function SecondaryActions({ program }: { program: Program }) {
   const showContract =
@@ -645,10 +644,7 @@ function SecondaryActions({ program }: { program: Program }) {
   if (!showContract) return null;
   const contractHref = `/dashboard/collaborate/${program.id}/contract`;
   return (
-    <div
-      className="flex flex-wrap gap-2"
-      onClick={(e) => e.stopPropagation()}
-    >
+    <div className="relative z-20 flex flex-wrap gap-2">
       <Link
         href={contractHref}
         className="text-[11px] uppercase tracking-widest font-headline px-3 py-1.5 rounded-full transition-colors hover:bg-[#0F2229]/[0.05]"
@@ -681,9 +677,8 @@ export function ActiveProgramCard({ program, partner, user, density = "hero" }: 
   }
 
   return (
-    <Link
-      href={primaryDestinationFor(program)}
-      className="block rounded-3xl overflow-hidden infitra-card-link transition-shadow hover:shadow-2xl"
+    <article
+      className="relative rounded-3xl overflow-hidden infitra-card-link transition-shadow hover:shadow-2xl"
       style={{ border: "1px solid rgba(15,34,41,0.10)" }}
     >
       {/* Cover banner — real product hero. */}
@@ -801,7 +796,18 @@ export function ActiveProgramCard({ program, partner, user, density = "hero" }: 
           <SecondaryActions program={program} />
         </div>
       </div>
-    </Link>
+
+      {/* Click overlay — covers the whole card, sits below SecondaryActions
+          (z-20) so secondary pills still get their own clicks. Avoids
+          nesting <a> inside <a>, which breaks hydration. */}
+      <Link
+        href={primaryDestinationFor(program)}
+        aria-label={primaryActionLabel(program.stage)}
+        className="absolute inset-0 z-10"
+      >
+        <span className="sr-only">{primaryActionLabel(program.stage)}</span>
+      </Link>
+    </article>
   );
 }
 
@@ -826,9 +832,8 @@ function CompactProgramCard({
   const primaryLabel = primaryActionLabel(program.stage);
 
   return (
-    <Link
-      href={primaryHref}
-      className="block rounded-2xl overflow-hidden infitra-card-link flex flex-col transition-shadow hover:shadow-2xl"
+    <article
+      className="relative rounded-2xl overflow-hidden infitra-card-link flex flex-col transition-shadow hover:shadow-2xl"
       style={{ border: "1px solid rgba(15,34,41,0.10)" }}
     >
       {/* Cover banner — slimmer than hero (5:1) */}
@@ -955,6 +960,15 @@ function CompactProgramCard({
           <SecondaryActions program={program} />
         </div>
       </div>
-    </Link>
+
+      {/* Click overlay — see hero variant for rationale. */}
+      <Link
+        href={primaryHref}
+        aria-label={primaryLabel}
+        className="absolute inset-0 z-10"
+      >
+        <span className="sr-only">{primaryLabel}</span>
+      </Link>
+    </article>
   );
 }

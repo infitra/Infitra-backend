@@ -207,7 +207,11 @@ export function NotificationBell() {
     if (unreadIds.length > 0) {
       if (seenTimerRef.current) clearTimeout(seenTimerRef.current);
       seenTimerRef.current = setTimeout(async () => {
-        await supabase.rpc("notification_mark_read", { p_ids: unreadIds });
+        await Promise.all(
+          unreadIds.map((id) =>
+            supabase.rpc("mark_notification_read", { p_id: id }),
+          ),
+        );
         setUnreadCount(0);
       }, 1500);
     }
