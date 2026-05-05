@@ -136,7 +136,7 @@ async function loadDashboard(userId: string) {
     await Promise.all([
       supabase
         .from("app_profile")
-        .select("display_name, avatar_url, tagline, bio, cover_image_url, role")
+        .select("display_name, avatar_url, tagline, bio, cover_image_url, role, created_at")
         .eq("id", userId)
         .single(),
       supabase
@@ -464,6 +464,7 @@ async function loadDashboard(userId: string) {
       coverImageUrl: profile?.cover_image_url ?? null,
       tagline: profile?.tagline ?? null,
       bio: profile?.bio ?? null,
+      joinedAt: (profile as any)?.created_at ?? null,
     },
     activePrograms,
     otherPrograms,
@@ -495,12 +496,24 @@ export default async function DashboardPage() {
   };
   const hasInvites = data.pendingReceivedInvites.length > 0;
   const activeCount = data.activePrograms.length;
-  const otherCount = data.otherPrograms.length;
 
   // The dashboard is an attention system — at most one program holds
   // the editorial weight at any time. `pickHero` ranks by urgency and
   // hands back the rest as tier-2 cards.
   const { hero, others: tier2 } = pickHero(data.activePrograms);
+
+  // Other programs split into two honest zones: drafts (still being
+  // built) and archive (completed runs). Each gets its own section
+  // when present — no more catch-all "OTHER" label that accidentally
+  // groups drafts with completed programs.
+  const drafts = data.otherPrograms.filter(
+    (p) => p.stage !== "completed",
+  );
+  const archive = data.otherPrograms.filter(
+    (p) => p.stage === "completed",
+  );
+  const draftsCount = drafts.length;
+  const archiveCount = archive.length;
 
   return (
     <div className="py-8">
@@ -526,6 +539,7 @@ export default async function DashboardPage() {
         tagline={data.profile.tagline}
         bio={data.profile.bio}
         coverImageUrl={data.profile.coverImageUrl}
+        joinedAt={data.profile.joinedAt}
       />
       <div
         className="mt-8 mb-12 h-px"
@@ -571,25 +585,35 @@ export default async function DashboardPage() {
           </Section>
         )}
 
-        {/* OTHER PROGRAMS — drafts, awaiting, completed */}
-        {otherCount > 0 && (
+        {/* CHALLENGE DRAFTS — pre-publish (drafting + awaiting-signatures) */}
+        {draftsCount > 0 && (
           <Section
-            label="Other programs"
-            count={otherCount}
+            label="Challenge drafts"
+            count={draftsCount}
             action={{ label: "+ Start new", href: "/dashboard/create" }}
           >
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {data.otherPrograms.map((p) => (
+              {drafts.map((p) => (
                 <OtherProgramCard key={p.id} program={p} />
               ))}
             </div>
           </Section>
         )}
 
-        {/* + Start new — quiet inline CTA when no Other Programs zone
-            exists. Same nesting position as a Section, but without
-            a heading because there's nothing to label. */}
-        {otherCount === 0 && activeCount > 0 && (
+        {/* ARCHIVE — completed programs, navigable but not promoted */}
+        {archiveCount > 0 && (
+          <Section label="Archive" count={archiveCount}>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {archive.map((p) => (
+                <OtherProgramCard key={p.id} program={p} />
+              ))}
+            </div>
+          </Section>
+        )}
+
+        {/* + Start new — quiet inline CTA when there are no drafts to
+            label. Sits in the same position as a Section, sans heading. */}
+        {draftsCount === 0 && activeCount > 0 && (
           <div className="flex justify-center">
             <Link
               href="/dashboard/create"
@@ -606,9 +630,12 @@ export default async function DashboardPage() {
           </div>
         )}
 
-        {/* INVITATIONS — collab requests waiting on the user */}
+        {/* COLLABORATION INVITATIONS — collab requests waiting on the user */}
         {hasInvites && (
-          <Section label="Invitations" count={data.pendingReceivedInvites.length}>
+          <Section
+            label="Collaboration invitations"
+            count={data.pendingReceivedInvites.length}
+          >
             <div id="invitations">
               <CollabInvitations invites={data.pendingReceivedInvites} />
             </div>
