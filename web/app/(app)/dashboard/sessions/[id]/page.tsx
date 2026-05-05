@@ -114,7 +114,7 @@ export default async function SessionDetailPage({
   const isPartOfChallenge = !!challengeLink;
 
   return (
-    <div className="py-10 max-w-2xl mx-auto">
+    <div className="py-10">
       <Link
         href="/dashboard"
         className="text-xs transition-colors mb-6 flex items-center gap-1.5 font-headline"

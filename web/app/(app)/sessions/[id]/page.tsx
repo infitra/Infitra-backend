@@ -113,7 +113,7 @@ export default async function SessionPage({
       <ParticipantNav displayName={myProfile?.display_name ?? null} role={myProfile?.role} />
 
       <div className="flex-1 pt-20 px-6">
-        <div className="max-w-3xl mx-auto py-10">
+        <div className="max-w-7xl mx-auto py-10">
           {/* Back link */}
           <Link
             href="/"

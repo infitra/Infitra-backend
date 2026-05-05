@@ -213,7 +213,7 @@ export default async function CreatePage() {
     .slice(0, 8);
 
   return (
-    <div className="py-6 max-w-5xl mx-auto">
+    <div className="py-6">
       {/* ── HERO HEADER ──────────────────────────────────── */}
       <div className="mb-10">
         <div className="flex items-center gap-3 mb-2">

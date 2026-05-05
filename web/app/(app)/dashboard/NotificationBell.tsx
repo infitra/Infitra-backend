@@ -8,21 +8,26 @@ import { createClient } from "@/lib/supabase/client";
  * Notification bell — top-nav inbox.
  *
  * Backend: queries app_notification directly (RLS scopes to recipient).
- * Mark-read uses `mark_notification_read` for individual items and
- * `mark_all_notifications_read` for the bulk action.
+ * Mark-read uses `mark_notification_read` for individual items (when
+ * the user actually clicks them) and `mark_all_notifications_read`
+ * for the bulk action.
  *
- * Bundle 2.1 fixes:
- *   - On click of a notification with a destination, we await the RPC
- *     then router.push manually (was: Link with async onClick which
- *     navigated before the RPC completed → server-side state never
- *     updated → notifications kept reverting to "unread")
- *   - On dropdown open, we mark every visible notification as seen
- *     after a 1.5s glance window (standard inbox pattern). Users see
- *     "what's new" before it gets cleared.
- *   - Notification labels now enrich with the sender's name + a
- *     preview snippet, so "New message" becomes
- *     "Yves Imhasly · I added 2 sessions to Week 3"
+ * Two-state model:
+ *   - SEEN (opening the bell counts as "I've seen what's new") —
+ *     tracked client-side via a localStorage timestamp. Clearing the
+ *     count is purely a function of `created_at > lastSeen`. This is
+ *     persistent across reloads without ever mutating server state.
+ *   - READ (the user actually clicked into a notification) — the
+ *     server `read_at` column. Drives the per-item cyan/orange rule.
+ *
+ * So an unclicked notification still shows its accent rule after the
+ * bell has been opened (correct: you saw it but didn't act on it),
+ * but it no longer contributes to the unread badge after refresh.
  */
+
+const LAST_SEEN_KEY = "infitra_notification_last_seen";
+const ACCENT_INVITE = "#FF6130";   // orange — invitation needs a response
+const ACCENT_OTHER = "#0891b2";    // cyan — informational signals
 
 type NotificationRow = {
   id: string;
@@ -36,6 +41,23 @@ type EnrichedNotification = NotificationRow & {
   senderName?: string;
   senderAvatar?: string | null;
 };
+
+function readLastSeen(): string | null {
+  if (typeof window === "undefined") return null;
+  return window.localStorage.getItem(LAST_SEEN_KEY);
+}
+
+function writeLastSeen(): string {
+  const now = new Date().toISOString();
+  if (typeof window !== "undefined") {
+    window.localStorage.setItem(LAST_SEEN_KEY, now);
+  }
+  return now;
+}
+
+function accentFor(type: string): string {
+  return type === "collab_invite" ? ACCENT_INVITE : ACCENT_OTHER;
+}
 
 function timeAgo(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime();
@@ -110,16 +132,22 @@ export function NotificationBell() {
   const [items, setItems] = useState<EnrichedNotification[]>([]);
   const [loading, setLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const seenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Initial unread count fetch
+  // Initial unread count fetch — only items newer than the last time
+  // the user opened the bell. The timestamp lives in localStorage so
+  // the badge stays cleared across reloads even when the underlying
+  // notifications still have read_at = null (the user "saw" them but
+  // hasn't clicked them).
   useEffect(() => {
     let cancelled = false;
     async function load() {
-      const { count } = await supabase
+      const lastSeen = readLastSeen();
+      let q = supabase
         .from("app_notification")
         .select("id", { count: "exact", head: true })
         .is("read_at", null);
+      if (lastSeen) q = q.gt("created_at", lastSeen);
+      const { count } = await q;
       if (!cancelled) setUnreadCount(count ?? 0);
     }
     load();
@@ -143,16 +171,16 @@ export function NotificationBell() {
     return () => document.removeEventListener("mousedown", onDocClick);
   }, [open]);
 
-  // Cleanup any pending mark-as-seen timer on unmount
-  useEffect(() => {
-    return () => {
-      if (seenTimerRef.current) clearTimeout(seenTimerRef.current);
-    };
-  }, []);
-
   async function openDropdown() {
     setOpen(true);
     setLoading(true);
+
+    // Persist this open as the new "last seen" timestamp and clear the
+    // badge immediately. We do not mutate read_at server-side — that's
+    // reserved for actual click-throughs, so the per-item rule keeps
+    // showing on items the user opened but never clicked.
+    writeLastSeen();
+    setUnreadCount(0);
 
     // Step 1: fetch recent notifications
     const { data: rawItems } = await supabase
@@ -198,38 +226,13 @@ export function NotificationBell() {
 
     setItems(enriched);
     setLoading(false);
-
-    // Step 3: mark all currently-unread items as seen after a 1.5s
-    // glance window. Standard inbox UX (Twitter, Slack) — opening the
-    // bell = you've seen what's new = clear the count. Individual items
-    // can still show their unread cyan rule until next open.
-    const unreadIds = enriched.filter((i) => !i.read_at).map((i) => i.id);
-    if (unreadIds.length > 0) {
-      if (seenTimerRef.current) clearTimeout(seenTimerRef.current);
-      seenTimerRef.current = setTimeout(async () => {
-        await Promise.all(
-          unreadIds.map((id) =>
-            supabase.rpc("mark_notification_read", { p_id: id }),
-          ),
-        );
-        setUnreadCount(0);
-      }, 1500);
-    }
   }
 
   function closeDropdown() {
     setOpen(false);
-    if (seenTimerRef.current) {
-      clearTimeout(seenTimerRef.current);
-      seenTimerRef.current = null;
-    }
   }
 
   async function markAllReadNow() {
-    if (seenTimerRef.current) {
-      clearTimeout(seenTimerRef.current);
-      seenTimerRef.current = null;
-    }
     await supabase.rpc("mark_all_notifications_read");
     setUnreadCount(0);
     setItems((prev) =>
@@ -340,15 +343,20 @@ export function NotificationBell() {
               items.map((n) => {
                 const d = describeNotification(n);
                 const unread = !n.read_at;
+                const accent = accentFor(n.type);
+                const tint =
+                  accent === ACCENT_INVITE
+                    ? "rgba(255,97,48,0.05)"
+                    : "rgba(8,145,178,0.04)";
                 return (
                   <button
                     key={n.id}
                     onClick={() => handleItemClick(n)}
                     className="w-full text-left transition-colors hover:bg-[#0F2229]/[0.03]"
                     style={{
-                      backgroundColor: unread ? "rgba(8,145,178,0.04)" : "transparent",
+                      backgroundColor: unread ? tint : "transparent",
                       borderLeft: unread
-                        ? "3px solid #0891b2"
+                        ? `3px solid ${accent}`
                         : "3px solid transparent",
                     }}
                   >
