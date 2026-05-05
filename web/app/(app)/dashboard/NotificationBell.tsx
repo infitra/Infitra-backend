@@ -1,27 +1,27 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 /**
  * Notification bell — top-nav inbox.
  *
- * Fetches the user's unread count on mount, opens a dropdown of the
- * recent N notifications when clicked. Each notification renders with a
- * type-aware label + preview + time and deep-links to the right place.
- *
  * Backend: queries app_notification directly (RLS scopes to recipient).
- * Mark-read uses the existing mark_notification_read /
- * mark_all_notifications_read RPCs.
+ * Mark-read uses `mark_notification_read` for individual items and
+ * `mark_all_notifications_read` for the bulk action.
  *
- * Notification types currently wired in production:
- *   - collab_invite          (recipient = invitee)
- *   - collab_accepted        (recipient = original sender)
- *   - dm_new                 (recipient = conversation members; covers
- *                             workspace activity log + direct messages)
- *   - badge_awarded          (recipient = creator)
- *   - system                 (e.g. session time changed)
+ * Bundle 2.1 fixes:
+ *   - On click of a notification with a destination, we await the RPC
+ *     then router.push manually (was: Link with async onClick which
+ *     navigated before the RPC completed → server-side state never
+ *     updated → notifications kept reverting to "unread")
+ *   - On dropdown open, we mark every visible notification as seen
+ *     after a 1.5s glance window (standard inbox pattern). Users see
+ *     "what's new" before it gets cleared.
+ *   - Notification labels now enrich with the sender's name + a
+ *     preview snippet, so "New message" becomes
+ *     "Yves Imhasly · I added 2 sessions to Week 3"
  */
 
 type NotificationRow = {
@@ -30,6 +30,11 @@ type NotificationRow = {
   payload: Record<string, any>;
   read_at: string | null;
   created_at: string;
+};
+
+type EnrichedNotification = NotificationRow & {
+  senderName?: string;
+  senderAvatar?: string | null;
 };
 
 function timeAgo(iso: string): string {
@@ -44,69 +49,68 @@ function timeAgo(iso: string): string {
 }
 
 interface NotificationContent {
-  label: string;
-  preview: string;
+  title: string;
+  detail: string | null;
   href: string | null;
 }
 
-function describeNotification(n: NotificationRow): NotificationContent {
+function describeNotification(n: EnrichedNotification): NotificationContent {
   const p = n.payload ?? {};
+  const sender = n.senderName ?? null;
   switch (n.type) {
     case "collab_invite":
       return {
-        label: "New collaboration invitation",
-        preview: "Someone invited you to explore a program",
-        href: "/dashboard",
+        title: sender ? `${sender} invited you to collaborate` : "New collaboration invitation",
+        detail: "Open the workspace together to talk it through",
+        href: "/dashboard#invitations",
       };
     case "collab_accepted":
       return {
-        label: "Invitation accepted",
-        preview: "Your collaborator opened the workspace",
+        title: sender ? `${sender} accepted your invitation` : "Invitation accepted",
+        detail: "Workspace is ready — go meet them there",
         href: p.challenge_id ? `/dashboard/collaborate/${p.challenge_id}` : "/dashboard",
       };
-    case "dm_new":
+    case "dm_new": {
+      const preview = typeof p.preview === "string" ? p.preview : "";
       return {
-        label: "New message",
-        preview: typeof p.preview === "string" ? p.preview : "Activity in your workspace",
-        // dm_new comes from workspace chat; conversation_id is the link.
-        // The workspace lookup happens server-side; for now route to dashboard.
+        title: sender ? `${sender}` : "New message",
+        detail: preview || "New activity in your workspace",
         href: "/dashboard",
       };
+    }
     case "badge_awarded":
       return {
-        label: "Badge earned",
-        preview: typeof p.badge_label === "string" ? p.badge_label : "You earned a badge",
+        title: "Badge earned",
+        detail: typeof p.badge_label === "string" ? p.badge_label : "You earned a badge",
         href: null,
       };
     case "system":
       if (p.kind === "session_time_changed") {
         return {
-          label: "Session rescheduled",
-          preview: "A session time was updated",
+          title: "Session rescheduled",
+          detail: "A session time was updated",
           href: p.session_id ? `/dashboard/sessions/${p.session_id}` : null,
         };
       }
       return {
-        label: "System update",
-        preview: typeof p.message === "string" ? p.message : "Update from INFITRA",
+        title: "System update",
+        detail: typeof p.message === "string" ? p.message : "Update from INFITRA",
         href: null,
       };
     default:
-      return {
-        label: n.type.replace(/_/g, " "),
-        preview: "",
-        href: null,
-      };
+      return { title: n.type.replace(/_/g, " "), detail: null, href: null };
   }
 }
 
 export function NotificationBell() {
+  const router = useRouter();
   const supabase = createClient();
   const [unreadCount, setUnreadCount] = useState(0);
   const [open, setOpen] = useState(false);
-  const [items, setItems] = useState<NotificationRow[]>([]);
+  const [items, setItems] = useState<EnrichedNotification[]>([]);
   const [loading, setLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const seenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Initial unread count fetch
   useEffect(() => {
@@ -124,7 +128,7 @@ export function NotificationBell() {
     };
   }, [supabase]);
 
-  // Click-outside to close dropdown
+  // Click-outside to close
   useEffect(() => {
     if (!open) return;
     function onDocClick(e: MouseEvent) {
@@ -139,19 +143,89 @@ export function NotificationBell() {
     return () => document.removeEventListener("mousedown", onDocClick);
   }, [open]);
 
+  // Cleanup any pending mark-as-seen timer on unmount
+  useEffect(() => {
+    return () => {
+      if (seenTimerRef.current) clearTimeout(seenTimerRef.current);
+    };
+  }, []);
+
   async function openDropdown() {
     setOpen(true);
     setLoading(true);
-    const { data } = await supabase
+
+    // Step 1: fetch recent notifications
+    const { data: rawItems } = await supabase
       .from("app_notification")
       .select("id, type, payload, read_at, created_at")
       .order("created_at", { ascending: false })
       .limit(8);
-    setItems((data ?? []) as NotificationRow[]);
+
+    const rows = (rawItems ?? []) as NotificationRow[];
+
+    // Step 2: enrich with sender names (batch profile lookup for the
+    // notification types that have a sender — collab_invite,
+    // collab_accepted, dm_new). Single SELECT, no N+1.
+    const senderIds = new Set<string>();
+    for (const r of rows) {
+      const p = r.payload ?? {};
+      if (typeof p.from_id === "string") senderIds.add(p.from_id);
+      if (typeof p.actor_id === "string") senderIds.add(p.actor_id);
+    }
+    const profileMap: Record<string, { name: string; avatar: string | null }> = {};
+    if (senderIds.size > 0) {
+      const { data: profiles } = await supabase
+        .from("app_profile")
+        .select("id, display_name, avatar_url")
+        .in("id", [...senderIds]);
+      for (const p of profiles ?? [])
+        profileMap[(p as any).id] = {
+          name: (p as any).display_name ?? "Creator",
+          avatar: (p as any).avatar_url,
+        };
+    }
+
+    const enriched: EnrichedNotification[] = rows.map((r) => {
+      const p = r.payload ?? {};
+      const senderId = (p.from_id as string) ?? (p.actor_id as string) ?? null;
+      const sender = senderId ? profileMap[senderId] : null;
+      return {
+        ...r,
+        senderName: sender?.name,
+        senderAvatar: sender?.avatar ?? null,
+      };
+    });
+
+    setItems(enriched);
     setLoading(false);
+
+    // Step 3: mark all currently-unread items as seen after a 1.5s
+    // glance window. Standard inbox UX (Twitter, Slack) — opening the
+    // bell = you've seen what's new = clear the count. Individual items
+    // can still show their unread cyan rule until next open.
+    const unreadIds = enriched.filter((i) => !i.read_at).map((i) => i.id);
+    if (unreadIds.length > 0) {
+      if (seenTimerRef.current) clearTimeout(seenTimerRef.current);
+      seenTimerRef.current = setTimeout(async () => {
+        await supabase.rpc("notification_mark_read", { p_ids: unreadIds });
+        setUnreadCount(0);
+      }, 1500);
+    }
   }
 
-  async function markAllRead() {
+  function closeDropdown() {
+    setOpen(false);
+    if (seenTimerRef.current) {
+      clearTimeout(seenTimerRef.current);
+      seenTimerRef.current = null;
+    }
+  }
+
+  async function markAllReadNow() {
+    if (seenTimerRef.current) {
+      clearTimeout(seenTimerRef.current);
+      seenTimerRef.current = null;
+    }
     await supabase.rpc("mark_all_notifications_read");
     setUnreadCount(0);
     setItems((prev) =>
@@ -159,22 +233,35 @@ export function NotificationBell() {
     );
   }
 
-  async function handleItemClick(n: NotificationRow) {
+  /**
+   * Click handler for individual notification rows. Awaits the RPC
+   * BEFORE navigating so the read state actually persists. Was the
+   * cause of the "notifications go back to unread" bug — Link with
+   * async onClick navigated before the RPC could finish.
+   */
+  async function handleItemClick(n: EnrichedNotification) {
+    const d = describeNotification(n);
+
+    // Optimistic UI update
     if (!n.read_at) {
-      await supabase.rpc("mark_notification_read", { p_id: n.id });
       setUnreadCount((c) => Math.max(0, c - 1));
       setItems((prev) =>
         prev.map((i) =>
           i.id === n.id ? { ...i, read_at: new Date().toISOString() } : i,
         ),
       );
+      // Await before navigating so the RPC actually completes
+      await supabase.rpc("mark_notification_read", { p_id: n.id });
     }
+
+    closeDropdown();
+    if (d.href) router.push(d.href);
   }
 
   return (
     <div className="relative" ref={dropdownRef}>
       <button
-        onClick={() => (open ? setOpen(false) : openDropdown())}
+        onClick={() => (open ? closeDropdown() : openDropdown())}
         className="relative w-9 h-9 rounded-full flex items-center justify-center transition-colors hover:bg-[#0F2229]/[0.05]"
         style={{ border: "1px solid rgba(15,34,41,0.10)" }}
         aria-label="Notifications"
@@ -208,7 +295,7 @@ export function NotificationBell() {
 
       {open && (
         <div
-          className="absolute right-0 mt-2 w-[360px] rounded-2xl overflow-hidden z-50"
+          className="absolute right-0 mt-2 w-[380px] rounded-2xl overflow-hidden z-[60]"
           style={{
             backgroundColor: "#FFFFFF",
             border: "1px solid rgba(15,34,41,0.10)",
@@ -227,7 +314,7 @@ export function NotificationBell() {
             </p>
             {items.some((i) => !i.read_at) && (
               <button
-                onClick={markAllRead}
+                onClick={markAllReadNow}
                 className="text-[10px] uppercase tracking-widest font-headline transition-colors hover:text-[#FF6130]"
                 style={{ color: "#94a3b8", fontWeight: 700 }}
               >
@@ -249,9 +336,11 @@ export function NotificationBell() {
               items.map((n) => {
                 const d = describeNotification(n);
                 const unread = !n.read_at;
-                const inner = (
-                  <div
-                    className="px-4 py-3 transition-colors hover:bg-[#0F2229]/[0.03] cursor-pointer"
+                return (
+                  <button
+                    key={n.id}
+                    onClick={() => handleItemClick(n)}
+                    className="w-full text-left transition-colors hover:bg-[#0F2229]/[0.03]"
                     style={{
                       backgroundColor: unread ? "rgba(8,145,178,0.04)" : "transparent",
                       borderLeft: unread
@@ -259,46 +348,52 @@ export function NotificationBell() {
                         : "3px solid transparent",
                     }}
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <p
-                        className="text-xs font-headline truncate"
-                        style={{ color: "#0F2229", fontWeight: 700 }}
-                      >
-                        {d.label}
-                      </p>
-                      <span
-                        className="text-[10px] shrink-0"
-                        style={{ color: "#94a3b8" }}
-                      >
-                        {timeAgo(n.created_at)}
-                      </span>
+                    <div className="px-4 py-3 flex items-start gap-3">
+                      {/* Sender avatar (when applicable) */}
+                      {n.senderAvatar ? (
+                        <img
+                          src={n.senderAvatar}
+                          alt=""
+                          className="w-8 h-8 rounded-full object-cover shrink-0"
+                        />
+                      ) : (
+                        <div
+                          className="w-8 h-8 rounded-full shrink-0 flex items-center justify-center"
+                          style={{ backgroundColor: "rgba(8,145,178,0.12)" }}
+                        >
+                          <span
+                            className="text-xs font-headline"
+                            style={{ color: "#0891b2", fontWeight: 700 }}
+                          >
+                            {(n.senderName?.[0] ?? "•").toUpperCase()}
+                          </span>
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <p
+                            className="text-xs font-headline"
+                            style={{ color: "#0F2229", fontWeight: 700 }}
+                          >
+                            {d.title}
+                          </p>
+                          <span
+                            className="text-[10px] shrink-0"
+                            style={{ color: "#94a3b8" }}
+                          >
+                            {timeAgo(n.created_at)}
+                          </span>
+                        </div>
+                        {d.detail && (
+                          <p
+                            className="text-xs mt-0.5 line-clamp-2"
+                            style={{ color: "#64748b" }}
+                          >
+                            {d.detail}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                    {d.preview && (
-                      <p
-                        className="text-xs mt-0.5 truncate"
-                        style={{ color: "#64748b" }}
-                      >
-                        {d.preview}
-                      </p>
-                    )}
-                  </div>
-                );
-                return d.href ? (
-                  <Link
-                    key={n.id}
-                    href={d.href}
-                    onClick={() => handleItemClick(n)}
-                    className="block"
-                  >
-                    {inner}
-                  </Link>
-                ) : (
-                  <button
-                    key={n.id}
-                    onClick={() => handleItemClick(n)}
-                    className="w-full text-left"
-                  >
-                    {inner}
                   </button>
                 );
               })
