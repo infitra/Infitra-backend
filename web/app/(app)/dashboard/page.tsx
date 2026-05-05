@@ -647,9 +647,10 @@ export default async function DashboardPage() {
 }
 
 /**
- * Quiet section heading — uppercase, tracked-widest, slate. Optional
- * count (rendered after a thin middle dot) and optional right-aligned
- * action link. Same vocabulary across every dashboard zone.
+ * Section heading — uppercase, tracked-widest, slate. Subtle but
+ * present. Optional count (after a thin middle dot) and optional
+ * right-aligned action link. Same vocabulary across every dashboard
+ * zone so the page reads as one document.
  */
 function Section({
   label,
@@ -666,18 +667,18 @@ function Section({
     <section>
       <div className="flex items-center justify-between mb-5 px-1">
         <p
-          className="text-[10px] uppercase tracking-[0.25em] font-headline"
-          style={{ color: "#94a3b8", fontWeight: 700 }}
+          className="text-[11px] uppercase tracking-[0.22em] font-headline"
+          style={{ color: "#475569", fontWeight: 700 }}
         >
           {label}
           {count !== undefined && (
-            <span style={{ color: "#cbd5e1" }}> · {count}</span>
+            <span style={{ color: "#94a3b8" }}> · {count}</span>
           )}
         </p>
         {action && (
           <Link
             href={action.href}
-            className="text-[10px] uppercase tracking-[0.2em] font-headline transition-colors hover:text-[#FF6130]"
+            className="text-[11px] uppercase tracking-[0.2em] font-headline transition-colors hover:text-[#FF6130]"
             style={{ color: "#0891b2", fontWeight: 700 }}
           >
             {action.label}

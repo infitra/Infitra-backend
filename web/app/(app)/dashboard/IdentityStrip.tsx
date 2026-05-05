@@ -8,20 +8,15 @@ import { ProfileEditForm } from "@/app/components/ProfileEditForm";
 /**
  * Identity strip — the "this is you" beat at the top of the dashboard.
  *
- * Polished version (Bundle 2.9):
- *   - Cover image renders as a subtle blurred background band when
- *     the user has uploaded one. Without it, falls back to the
- *     default warm-cream surface.
- *   - Avatar grew from 48px to 64px — gives the user real presence.
- *   - Tagline lifted from light-grey to dark slate weight 600 so it
- *     reads as a real subtitle, not a footer.
- *   - "On the Pilot" pill replaced with an interpretive line:
- *     "On the pilot · N weeks in". Anchors the user in their journey
- *     rather than just badging them.
+ * Layout reads like a small personal poster:
+ *   - Greeting (the "Hello you" — H1)
+ *   - Tagline as the subtitle (text-base, slate, weight 600)
+ *   - Bio as a real paragraph (clamped to 2 lines, text-sm, slate, weight 400)
+ *   - "On the pilot · N weeks in" interpretive footer line
  *
- * Compact, single-row, no card chrome. The notification bell + name +
- * sign-out remain in the top nav (layout.tsx); this strip adds the
- * personal touch underneath.
+ * Cover image is NOT used here — it's the hero of the public-facing
+ * landing/program pages, not of a personal identity card. The strip
+ * stays on a clean cream surface with proper typography hierarchy.
  */
 
 interface Props {
@@ -29,6 +24,8 @@ interface Props {
   avatarUrl: string | null;
   tagline: string | null;
   bio: string | null;
+  /** Currently unused on the dashboard — kept on Props because the
+   * SlideOver edit form still needs it. */
   coverImageUrl: string | null;
   /** ISO timestamp of the user's profile creation. Drives the
    *  "N weeks in" interpretive line. */
@@ -75,32 +72,14 @@ export function IdentityStrip({
   return (
     <>
       <div
-        className="relative rounded-3xl overflow-hidden"
+        className="rounded-3xl px-6 py-5 md:px-8 md:py-6"
         style={{
-          // Subtle cream surface when no cover; cover image takes
-          // over when present.
-          backgroundColor: coverImageUrl ? "#0F2229" : "rgba(255,255,255,0.55)",
+          backgroundColor: "rgba(255,255,255,0.55)",
           border: "1px solid rgba(15,34,41,0.06)",
         }}
       >
-        {coverImageUrl && (
-          <>
-            <img
-              src={coverImageUrl}
-              alt=""
-              className="absolute inset-0 w-full h-full object-cover"
-              style={{ filter: "blur(24px) saturate(1.1)", transform: "scale(1.1)" }}
-            />
-            {/* Dark veil over the cover for legibility of the text on top */}
-            <div
-              className="absolute inset-0"
-              style={{ background: "rgba(15,34,41,0.55)" }}
-            />
-          </>
-        )}
-
-        <div className="relative flex items-center gap-5 px-6 py-5">
-          {/* Avatar with brand cyan ring — bigger now (64px) for real presence */}
+        <div className="flex items-start gap-5">
+          {/* Avatar — 64px with cyan ring, real presence */}
           <div className="shrink-0 rounded-full p-[2px]" style={{ background: "#9CF0FF" }}>
             {avatarUrl ? (
               <img
@@ -127,58 +106,54 @@ export function IdentityStrip({
             )}
           </div>
 
-          {/* Identity text — tighter hierarchy, more weight */}
+          {/* Identity stack — greeting · tagline · bio · pilot footer */}
           <div className="min-w-0 flex-1">
-            <p
-              className="text-lg md:text-xl font-headline tracking-tight"
-              style={{
-                color: coverImageUrl ? "#FFFFFF" : "#0F2229",
-                fontWeight: 700,
-                letterSpacing: "-0.01em",
-              }}
-            >
-              {greeting}, {firstName}
-            </p>
+            <div className="flex items-start justify-between gap-3">
+              <p
+                className="text-lg md:text-xl font-headline tracking-tight"
+                style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.01em" }}
+              >
+                {greeting}, {firstName}
+              </p>
+              <button
+                onClick={() => setEditOpen(true)}
+                className="shrink-0 px-4 py-2 rounded-full text-xs font-headline transition-colors hover:bg-[#0F2229]/[0.05]"
+                style={{
+                  color: "#475569",
+                  border: "1px solid rgba(15,34,41,0.10)",
+                  backgroundColor: "rgba(255,255,255,0.55)",
+                  fontWeight: 700,
+                }}
+              >
+                Edit profile
+              </button>
+            </div>
+
             {tagline && (
               <p
-                className="text-sm md:text-base truncate mt-0.5"
-                style={{
-                  color: coverImageUrl ? "rgba(255,255,255,0.85)" : "#475569",
-                  fontWeight: 600,
-                }}
+                className="text-sm md:text-base mt-1"
+                style={{ color: "#475569", fontWeight: 600 }}
               >
                 {tagline}
               </p>
             )}
+
+            {bio && (
+              <p
+                className="text-sm mt-2 line-clamp-2 max-w-2xl"
+                style={{ color: "#64748b", fontWeight: 400, lineHeight: 1.55 }}
+              >
+                {bio}
+              </p>
+            )}
+
             <p
-              className="text-[10px] uppercase tracking-widest font-headline mt-2"
-              style={{
-                color: coverImageUrl ? "#9CF0FF" : "#0891b2",
-                fontWeight: 700,
-              }}
+              className="text-[10px] uppercase tracking-widest font-headline mt-3"
+              style={{ color: "#0891b2", fontWeight: 700 }}
             >
               {pilotLine(joinedAt)}
             </p>
           </div>
-
-          {/* Edit profile — quiet trailing action, adapts to bg tone */}
-          <button
-            onClick={() => setEditOpen(true)}
-            className="shrink-0 px-4 py-2 rounded-full text-xs font-headline transition-colors"
-            style={{
-              color: coverImageUrl ? "#FFFFFF" : "#475569",
-              border: coverImageUrl
-                ? "1px solid rgba(255,255,255,0.40)"
-                : "1px solid rgba(15,34,41,0.10)",
-              backgroundColor: coverImageUrl
-                ? "rgba(255,255,255,0.10)"
-                : "rgba(255,255,255,0.55)",
-              fontWeight: 700,
-              backdropFilter: coverImageUrl ? "blur(8px)" : undefined,
-            }}
-          >
-            Edit profile
-          </button>
         </div>
       </div>
 
