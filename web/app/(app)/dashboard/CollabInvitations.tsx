@@ -56,15 +56,11 @@ export function CollabInvitations({ invites }: { invites: Invite[] }) {
     setLoading(null);
   }
 
+  // Section label is now rendered by the dashboard page (consistent
+  // with OTHER PROGRAMS / ACTIVE NOW). The component just renders the
+  // invitation cards themselves.
   return (
     <div>
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-1 h-6 rounded-full" style={{ backgroundColor: "#9CF0FF" }} />
-        <h2 className="text-xl font-black font-headline text-[#0F2229] tracking-tight">
-          Collaboration Invites
-        </h2>
-      </div>
-
       <div className="space-y-4">
         {visible.map((invite) => {
           const hasSuggestedSplit = invite.splitPercent > 0 && invite.splitPercent < 100;
