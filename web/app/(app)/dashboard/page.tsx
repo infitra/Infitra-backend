@@ -503,12 +503,23 @@ export default async function DashboardPage() {
   const { hero, others: tier2 } = pickHero(data.activePrograms);
 
   return (
-    <div className="py-6 space-y-6">
-      <TopAlert
-        liveSession={data.liveSession}
-        goLiveSoonSession={data.goLiveSoonSession}
-      />
+    <div className="py-8">
+      {/* TopAlert sits above everything else — global urgency signal,
+          rendered without a section heading because it speaks for
+          itself when present. */}
+      {(data.liveSession || data.goLiveSoonSession) && (
+        <div className="mb-8">
+          <TopAlert
+            liveSession={data.liveSession}
+            goLiveSoonSession={data.goLiveSoonSession}
+          />
+        </div>
+      )}
 
+      {/* Personal touchstone — greeting, name, the user's footing.
+          Below it: a hairline divider. The greeting is the "this is
+          you" beat; everything below is "your programs" — the divider
+          marks the transition. */}
       <IdentityStrip
         displayName={data.profile.displayName}
         avatarUrl={data.profile.avatarUrl}
@@ -516,100 +527,137 @@ export default async function DashboardPage() {
         bio={data.profile.bio}
         coverImageUrl={data.profile.coverImageUrl}
       />
+      <div
+        className="mt-8 mb-12 h-px"
+        style={{ backgroundColor: "rgba(15,34,41,0.08)" }}
+        aria-hidden
+      />
 
-      {/* ACTIVE PROGRAMS — tier hierarchy:
-          - Hero (one editorial card) for the program that needs
-            attention right now.
-          - Tier 2 (compact cards in a grid) for the rest of the active
-            programs — quieter, no editorial moment, just the door.
-          - Empty state covers the "no programs yet" path. */}
-      {activeCount === 0 && hasInvites ? (
-        <div id="invitations">
-          <CollabInvitations invites={data.pendingReceivedInvites} />
-        </div>
-      ) : activeCount === 0 ? (
-        <ActiveProgramCard program={null} partner={null} user={userProp} density="hero" />
-      ) : (
-        <div className="space-y-5">
-          {hero && (
-            <ActiveProgramCard
-              program={hero}
-              partner={hero.partner}
-              user={userProp}
-              density="hero"
-            />
-          )}
-          {tier2.length > 0 && (
-            // Always 2-up. A single tier-2 card sits in the left half
-            // of the row with the right half empty — the asymmetry
-            // signals "this is *also* running, but it's not what
-            // matters right now." Three or more active programs is
-            // rare; if it happens, the third wraps to a new row.
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {tier2.map((p) => (
+      {/* Section zones — each carries a quiet uppercase label so the
+          page reads as one document with consistent rhythm. The label
+          + count vocabulary is shared by all three zones (active,
+          other, invitations). */}
+      <div className="space-y-12">
+        {/* ACTIVE NOW — hero + tier-2, or empty state */}
+        {activeCount === 0 && !hasInvites && (
+          <ActiveProgramCard program={null} partner={null} user={userProp} density="hero" />
+        )}
+
+        {activeCount > 0 && (
+          <Section label="Active now" count={activeCount}>
+            <div className="space-y-5">
+              {hero && (
                 <ActiveProgramCard
-                  key={p.id}
-                  program={p}
-                  partner={p.partner}
+                  program={hero}
+                  partner={hero.partner}
                   user={userProp}
-                  density="compact"
+                  density="hero"
                 />
+              )}
+              {tier2.length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {tier2.map((p) => (
+                    <ActiveProgramCard
+                      key={p.id}
+                      program={p}
+                      partner={p.partner}
+                      user={userProp}
+                      density="compact"
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </Section>
+        )}
+
+        {/* OTHER PROGRAMS — drafts, awaiting, completed */}
+        {otherCount > 0 && (
+          <Section
+            label="Other programs"
+            count={otherCount}
+            action={{ label: "+ Start new", href: "/dashboard/create" }}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {data.otherPrograms.map((p) => (
+                <OtherProgramCard key={p.id} program={p} />
               ))}
             </div>
-          )}
-        </div>
-      )}
+          </Section>
+        )}
 
-      {/* OTHER PROGRAMS — drafts, awaiting, completed */}
-      {otherCount > 0 && (
-        <div>
-          <div className="flex items-center justify-between mb-3 px-1">
-            <p
-              className="text-[10px] uppercase tracking-[0.25em] font-headline"
-              style={{ color: "#94a3b8", fontWeight: 700 }}
-            >
-              Other programs · {otherCount}
-            </p>
+        {/* + Start new — quiet inline CTA when no Other Programs zone
+            exists. Same nesting position as a Section, but without
+            a heading because there's nothing to label. */}
+        {otherCount === 0 && activeCount > 0 && (
+          <div className="flex justify-center">
             <Link
               href="/dashboard/create"
-              className="text-[10px] uppercase tracking-[0.2em] font-headline transition-colors hover:text-[#FF6130]"
-              style={{ color: "#0891b2", fontWeight: 700 }}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-headline transition-colors"
+              style={{
+                color: "#0891b2",
+                border: "1.5px dashed rgba(8,145,178,0.40)",
+                backgroundColor: "rgba(156,240,255,0.06)",
+                fontWeight: 700,
+              }}
             >
-              + Start new
+              + Start a new program
             </Link>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {data.otherPrograms.map((p) => (
-              <OtherProgramCard key={p.id} program={p} />
-            ))}
-          </div>
-        </div>
-      )}
+        )}
 
-      {/* + Start new — visible CTA when no other-programs section */}
-      {otherCount === 0 && activeCount > 0 && (
-        <div className="flex justify-center pt-2">
-          <Link
-            href="/dashboard/create"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-headline transition-colors"
-            style={{
-              color: "#0891b2",
-              border: "1.5px dashed rgba(8,145,178,0.40)",
-              backgroundColor: "rgba(156,240,255,0.06)",
-              fontWeight: 700,
-            }}
-          >
-            + Start a new program
-          </Link>
-        </div>
-      )}
-
-      {/* INVITATIONS — full card, below other programs */}
-      {activeCount > 0 && hasInvites && (
-        <div id="invitations" className="pt-2">
-          <CollabInvitations invites={data.pendingReceivedInvites} />
-        </div>
-      )}
+        {/* INVITATIONS — collab requests waiting on the user */}
+        {hasInvites && (
+          <Section label="Invitations" count={data.pendingReceivedInvites.length}>
+            <div id="invitations">
+              <CollabInvitations invites={data.pendingReceivedInvites} />
+            </div>
+          </Section>
+        )}
+      </div>
     </div>
+  );
+}
+
+/**
+ * Quiet section heading — uppercase, tracked-widest, slate. Optional
+ * count (rendered after a thin middle dot) and optional right-aligned
+ * action link. Same vocabulary across every dashboard zone.
+ */
+function Section({
+  label,
+  count,
+  action,
+  children,
+}: {
+  label: string;
+  count?: number;
+  action?: { label: string; href: string };
+  children: React.ReactNode;
+}) {
+  return (
+    <section>
+      <div className="flex items-center justify-between mb-5 px-1">
+        <p
+          className="text-[10px] uppercase tracking-[0.25em] font-headline"
+          style={{ color: "#94a3b8", fontWeight: 700 }}
+        >
+          {label}
+          {count !== undefined && (
+            <span style={{ color: "#cbd5e1" }}> · {count}</span>
+          )}
+        </p>
+        {action && (
+          <Link
+            href={action.href}
+            className="text-[10px] uppercase tracking-[0.2em] font-headline transition-colors hover:text-[#FF6130]"
+            style={{ color: "#0891b2", fontWeight: 700 }}
+          >
+            {action.label}
+          </Link>
+        )}
+      </div>
+      {children}
+    </section>
   );
 }
