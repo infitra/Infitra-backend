@@ -632,8 +632,9 @@ function primaryActionLabel(stage: ProgramStage): string {
 /**
  * Secondary actions row — small pills for things that aren't the
  * primary card action. Currently just "View contract" for stages
- * where it's relevant. Sits above the card's overlay link via
- * `relative z-20` so its own clicks aren't intercepted.
+ * where it's relevant. The card renders this inside a positioned
+ * sibling of the overlay link, so its clicks don't go through the
+ * overlay even at deep DOM nesting.
  */
 function SecondaryActions({ program }: { program: Program }) {
   const showContract =
@@ -644,7 +645,7 @@ function SecondaryActions({ program }: { program: Program }) {
   if (!showContract) return null;
   const contractHref = `/dashboard/collaborate/${program.id}/contract`;
   return (
-    <div className="relative z-20 flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-2">
       <Link
         href={contractHref}
         className="text-[11px] uppercase tracking-widest font-headline px-3 py-1.5 rounded-full transition-colors hover:bg-[#0F2229]/[0.05]"
@@ -652,11 +653,21 @@ function SecondaryActions({ program }: { program: Program }) {
           color: "#0891b2",
           border: "1px solid rgba(8,145,178,0.25)",
           fontWeight: 700,
+          backgroundColor: "rgba(255,255,255,0.85)",
         }}
       >
         View contract
       </Link>
     </div>
+  );
+}
+
+function hasSecondaryActions(program: Program): boolean {
+  return (
+    program.stage === "awaiting-signatures" ||
+    program.stage === "published-pre-launch" ||
+    program.stage === "published-live" ||
+    program.stage === "completed"
   );
 }
 
@@ -783,30 +794,36 @@ export function ActiveProgramCard({ program, partner, user, density = "hero" }: 
           <StageContent program={program} />
         </div>
 
-        {/* Bottom row: primary action label + small secondary pill(s).
-            The whole card click goes to the primary destination — the
-            label is just a textual hint of what'll happen. */}
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <p
-            className="text-sm font-headline"
-            style={{ color: "#FF6130", fontWeight: 700 }}
-          >
-            {primaryActionLabel(program.stage)}
-          </p>
-          <SecondaryActions program={program} />
-        </div>
+        {/* Bottom row: primary action label only — SecondaryActions
+            renders below as a positioned sibling of the overlay link
+            (see end of article) so its inner Link isn't nested inside
+            the overlay's anchor. */}
+        <p
+          className="text-sm font-headline"
+          style={{ color: "#FF6130", fontWeight: 700 }}
+        >
+          {primaryActionLabel(program.stage)}
+        </p>
       </div>
 
-      {/* Click overlay — covers the whole card, sits below SecondaryActions
-          (z-20) so secondary pills still get their own clicks. Avoids
-          nesting <a> inside <a>, which breaks hydration. */}
+      {/* Click overlay — covers the whole card. Renders before
+          SecondaryActions in DOM order so the absolutely-positioned
+          actions sit on top regardless of z-index. */}
       <Link
         href={primaryDestinationFor(program)}
         aria-label={primaryActionLabel(program.stage)}
-        className="absolute inset-0 z-10"
+        className="absolute inset-0"
       >
         <span className="sr-only">{primaryActionLabel(program.stage)}</span>
       </Link>
+
+      {/* Secondary actions — sibling of the overlay, positioned over
+          the bottom-right corner. Independent click target. */}
+      {hasSecondaryActions(program) && (
+        <div className="absolute bottom-6 md:bottom-8 right-6 md:right-8">
+          <SecondaryActions program={program} />
+        </div>
+      )}
     </article>
   );
 }
@@ -947,28 +964,32 @@ function CompactProgramCard({
           </div>
         )}
 
-        {/* Spacer + bottom row: primary action label + small secondary
-            pills. Whole card is the click target. */}
+        {/* Spacer + bottom row: primary action label only.
+            SecondaryActions render below as a positioned sibling of
+            the overlay link (see end of article). */}
         <div className="flex-1" />
-        <div className="mt-4 flex items-center justify-between gap-3 flex-wrap">
-          <p
-            className="text-sm font-headline"
-            style={{ color: "#FF6130", fontWeight: 700 }}
-          >
-            {primaryLabel}
-          </p>
-          <SecondaryActions program={program} />
-        </div>
+        <p
+          className="mt-4 text-sm font-headline"
+          style={{ color: "#FF6130", fontWeight: 700 }}
+        >
+          {primaryLabel}
+        </p>
       </div>
 
       {/* Click overlay — see hero variant for rationale. */}
       <Link
         href={primaryHref}
         aria-label={primaryLabel}
-        className="absolute inset-0 z-10"
+        className="absolute inset-0"
       >
         <span className="sr-only">{primaryLabel}</span>
       </Link>
+
+      {hasSecondaryActions(program) && (
+        <div className="absolute bottom-5 right-5">
+          <SecondaryActions program={program} />
+        </div>
+      )}
     </article>
   );
 }
