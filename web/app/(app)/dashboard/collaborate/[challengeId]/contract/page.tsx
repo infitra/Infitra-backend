@@ -182,7 +182,7 @@ export default async function ContractPage({
   const isLocked = challenge.status === "draft";
 
   return (
-    <div className="py-6 max-w-3xl mx-auto">
+    <div className="py-6">
       {/* Back link */}
       <Link
         href={`/dashboard/collaborate/${challengeId}`}

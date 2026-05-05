@@ -476,7 +476,7 @@ export default async function DashboardPage() {
   const otherCount = data.otherPrograms.length;
 
   return (
-    <div className="py-6 max-w-6xl mx-auto space-y-6">
+    <div className="py-6 space-y-6">
       <TopAlert
         liveSession={data.liveSession}
         goLiveSoonSession={data.goLiveSoonSession}
@@ -489,47 +489,6 @@ export default async function DashboardPage() {
         bio={data.profile.bio}
         coverImageUrl={data.profile.coverImageUrl}
       />
-
-      {/* INVITE CALLOUT — when has active program AND pending invite,
-          surface the invite at the top of the programs zone so it's not
-          buried at the bottom. The full invite card still renders below
-          (for actions). This is just a visible-above-the-fold pointer. */}
-      {activeCount > 0 && hasInvites && (
-        <Link
-          href="#invitations"
-          className="flex items-center gap-3 px-4 py-3 rounded-2xl group transition-colors"
-          style={{
-            backgroundColor: "rgba(8,145,178,0.06)",
-            border: "1px solid rgba(8,145,178,0.20)",
-          }}
-        >
-          <span
-            className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center"
-            style={{ backgroundColor: "rgba(8,145,178,0.12)" }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0891b2" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-              <polyline points="22,6 12,13 2,6" />
-            </svg>
-          </span>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-headline" style={{ color: "#0F2229", fontWeight: 700 }}>
-              {data.pendingReceivedInvites.length === 1
-                ? `${data.pendingReceivedInvites[0].fromName} invited you to explore`
-                : `${data.pendingReceivedInvites.length} pending invitations`}
-            </p>
-            <p className="text-xs" style={{ color: "#64748b" }}>
-              See it below — non-binding, just opens the workspace.
-            </p>
-          </div>
-          <span
-            className="text-[10px] uppercase tracking-widest font-headline shrink-0"
-            style={{ color: "#0891b2", fontWeight: 700 }}
-          >
-            View →
-          </span>
-        </Link>
-      )}
 
       {/* ACTIVE PROGRAMS — adaptive zone */}
       {activeCount === 0 && hasInvites ? (
