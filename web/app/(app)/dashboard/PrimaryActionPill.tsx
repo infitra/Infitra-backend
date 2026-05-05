@@ -6,24 +6,20 @@ import { useState } from "react";
 /**
  * Primary action on an active-program card. Two flavors:
  *
- *   - kind="navigate": renders as a Link. The card's overlay will
- *     route to the same href, so this is mostly a visual cue — but
- *     keeping it as a real Link means right-click / cmd-click work.
+ *   - kind="navigate": plain text. The card's overlay link handles the
+ *     click — this is the visual hint of where the card goes.
  *
- *   - kind="copy-link": renders as a button. Clicking copies the
- *     public-page URL to clipboard, swaps the label to "Link copied"
- *     for 2s, then snaps back. Stops propagation so it doesn't
- *     trigger the card's overlay link.
- *
- * The card always renders this label inline at the bottom-left of
- * the content. It sits above the overlay link (which uses absolute
- * positioning and no z-index), so the button gets its own clicks.
+ *   - kind="share": real button. Clicking copies the public-page URL,
+ *     swaps the label to "Link copied" for 2s, then snaps back. Stops
+ *     propagation so the overlay link doesn't fire too. Falls back to
+ *     navigation if clipboard isn't available (insecure context,
+ *     older browsers, headless preview).
  */
 
 interface Props {
   label: string;
-  kind: "navigate" | "copy-link";
-  /** For navigate: the destination. For copy-link: the URL to copy. */
+  kind: "navigate" | "share";
+  /** For navigate: the destination. For share: the URL to copy. */
   href: string;
 }
 
@@ -31,11 +27,9 @@ export function PrimaryActionPill({ label, kind, href }: Props) {
   const [copied, setCopied] = useState(false);
 
   if (kind === "navigate") {
-    // Plain text — the overlay Link handles the click. Rendering it as
-    // a span avoids nesting <a> inside <a>.
     return (
       <span
-        className="text-sm font-headline"
+        className="text-sm md:text-base font-headline"
         style={{ color: "#FF6130", fontWeight: 700 }}
       >
         {label} →
@@ -55,12 +49,10 @@ export function PrimaryActionPill({ label, kind, href }: Props) {
           setCopied(true);
           setTimeout(() => setCopied(false), 2000);
         } catch {
-          // Clipboard can fail in non-secure contexts or older browsers.
-          // Fall back to navigation so the user can copy from the address bar.
           window.location.href = href;
         }
       }}
-      className="text-sm font-headline transition-colors"
+      className="text-sm md:text-base font-headline transition-colors"
       style={{
         color: copied ? "#0891b2" : "#FF6130",
         fontWeight: 700,
