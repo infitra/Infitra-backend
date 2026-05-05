@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { ActiveProgramCard, type ProgramStage } from "./ActiveProgramCard";
+import { ActiveProgramCard, pickHero, type ProgramStage } from "./ActiveProgramCard";
 import { OtherProgramCard } from "./OtherProgramCard";
 import { TopAlert } from "./TopAlert";
 import { CollabInvitations } from "./CollabInvitations";
@@ -488,9 +488,19 @@ export default async function DashboardPage() {
 
   const data = await loadDashboard(user.id);
   const userInitial = data.profile.displayName?.[0]?.toUpperCase() ?? "?";
+  const userProp = {
+    name: data.profile.displayName,
+    avatar: data.profile.avatarUrl,
+    initial: userInitial,
+  };
   const hasInvites = data.pendingReceivedInvites.length > 0;
   const activeCount = data.activePrograms.length;
   const otherCount = data.otherPrograms.length;
+
+  // The dashboard is an attention system — at most one program holds
+  // the editorial weight at any time. `pickHero` ranks by urgency and
+  // hands back the rest as tier-2 cards.
+  const { hero, others: tier2 } = pickHero(data.activePrograms);
 
   return (
     <div className="py-6 space-y-6">
@@ -507,46 +517,46 @@ export default async function DashboardPage() {
         coverImageUrl={data.profile.coverImageUrl}
       />
 
-      {/* ACTIVE PROGRAMS — adaptive zone */}
+      {/* ACTIVE PROGRAMS — tier hierarchy:
+          - Hero (one editorial card) for the program that needs
+            attention right now.
+          - Tier 2 (compact cards in a grid) for the rest of the active
+            programs — quieter, no editorial moment, just the door.
+          - Empty state covers the "no programs yet" path. */}
       {activeCount === 0 && hasInvites ? (
-        // No active programs but invitations exist: invite IS the path forward
         <div id="invitations">
           <CollabInvitations invites={data.pendingReceivedInvites} />
         </div>
       ) : activeCount === 0 ? (
-        // True empty state
-        <ActiveProgramCard
-          program={null}
-          partner={null}
-          user={{ name: data.profile.displayName, avatar: data.profile.avatarUrl, initial: userInitial }}
-          density="hero"
-        />
-      ) : activeCount === 1 ? (
-        // Single program: full hero treatment
-        <ActiveProgramCard
-          program={data.activePrograms[0]}
-          partner={data.activePrograms[0].partner}
-          user={{ name: data.profile.displayName, avatar: data.profile.avatarUrl, initial: userInitial }}
-          density="hero"
-        />
+        <ActiveProgramCard program={null} partner={null} user={userProp} density="hero" />
       ) : (
-        // 2+ active programs: equal-weight grid (adaptive cols)
-        <div
-          className={
-            activeCount === 2
-              ? "grid grid-cols-1 md:grid-cols-2 gap-5"
-              : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"
-          }
-        >
-          {data.activePrograms.map((p) => (
+        <div className="space-y-5">
+          {hero && (
             <ActiveProgramCard
-              key={p.id}
-              program={p}
-              partner={p.partner}
-              user={{ name: data.profile.displayName, avatar: data.profile.avatarUrl, initial: userInitial }}
-              density="compact"
+              program={hero}
+              partner={hero.partner}
+              user={userProp}
+              density="hero"
             />
-          ))}
+          )}
+          {tier2.length > 0 && (
+            // Always 2-up. A single tier-2 card sits in the left half
+            // of the row with the right half empty — the asymmetry
+            // signals "this is *also* running, but it's not what
+            // matters right now." Three or more active programs is
+            // rare; if it happens, the third wraps to a new row.
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {tier2.map((p) => (
+                <ActiveProgramCard
+                  key={p.id}
+                  program={p}
+                  partner={p.partner}
+                  user={userProp}
+                  density="compact"
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
 
