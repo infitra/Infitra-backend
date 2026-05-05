@@ -35,9 +35,6 @@ export function PrimaryActionPill({ label, kind, href, variant = "filled" }: Pro
   const filledStyle = {
     backgroundColor: copied ? "#0891b2" : "#FF6130",
     color: "#FFFFFF",
-    boxShadow: copied
-      ? "0 2px 8px rgba(8,145,178,0.30)"
-      : "0 2px 8px rgba(255,97,48,0.30)",
     fontWeight: 700,
   };
   const outlinedStyle = {
@@ -47,8 +44,11 @@ export function PrimaryActionPill({ label, kind, href, variant = "filled" }: Pro
     fontWeight: 700,
   };
   const style = variant === "filled" ? filledStyle : outlinedStyle;
+  // Sentence case, regular tracking — matches the landing's "Apply"
+  // button voice. Uppercase tracked-widest belongs on tertiary chrome
+  // (status chip, role labels), not on the primary CTA.
   const baseClass =
-    "inline-flex items-center justify-center px-5 py-2.5 rounded-full text-xs md:text-sm font-headline uppercase tracking-widest transition-transform hover:scale-[1.02] whitespace-nowrap";
+    "inline-flex items-center justify-center px-4 py-2 rounded-full text-sm font-headline transition-transform hover:scale-[1.02] whitespace-nowrap";
 
   if (kind === "navigate") {
     return (

@@ -345,18 +345,18 @@ const TONE_COLOR: Record<InsightTone, string> = {
 };
 
 function InsightLine({ insight }: { insight: Insight }) {
-  const color = TONE_COLOR[insight.tone];
+  const dotColor = TONE_COLOR[insight.tone];
   const pulse = insight.tone === "urgent";
+  // Insight is supporting copy, not a stage direction. Sit it in slate
+  // with a single colored dot — the dot does the tone signaling, the
+  // text just reads as a quiet sentence.
   return (
     <div className="flex items-center gap-2 mb-3">
       <span
-        className={`w-2 h-2 rounded-full shrink-0 ${pulse ? "animate-pulse" : ""}`}
-        style={{ backgroundColor: color }}
+        className={`w-1.5 h-1.5 rounded-full shrink-0 ${pulse ? "animate-pulse" : ""}`}
+        style={{ backgroundColor: dotColor }}
       />
-      <p
-        className="text-sm md:text-[15px] font-headline"
-        style={{ color, fontWeight: 700, letterSpacing: "-0.005em" }}
-      >
+      <p className="text-xs md:text-sm" style={{ color: "#475569", fontWeight: 600 }}>
         {insight.message}
       </p>
     </div>
@@ -550,8 +550,10 @@ function PersonBox({
   dim?: boolean;
 }) {
   const color = accent === "orange" ? "#FF6130" : "#0891b2";
-  const bg = accent === "orange" ? "rgba(255,97,48,0.06)" : "rgba(8,145,178,0.06)";
-  const border = accent === "orange" ? "rgba(255,97,48,0.20)" : "rgba(8,145,178,0.20)";
+  // Whisper-tinted backgrounds — the role label (small uppercase, brand
+  // color) carries the signal; the box is just a quiet container.
+  const bg = accent === "orange" ? "rgba(255,97,48,0.03)" : "rgba(8,145,178,0.03)";
+  const border = accent === "orange" ? "rgba(255,97,48,0.10)" : "rgba(8,145,178,0.10)";
   return (
     <div
       className="flex items-center gap-3 p-3 rounded-2xl min-w-0"
@@ -660,42 +662,27 @@ function dayLabel(iso: string): string {
   return new Date(iso).toLocaleDateString("en-GB", { weekday: "short" }).toUpperCase();
 }
 
-function HostAvatars({
-  user,
-  partner,
+// Moment pill shell — calm cream-on-cream by default. Urgent state
+// keeps a thin red treatment but stays cream-bg-led; the cover image
+// is the only saturated element.
+function MomentShell({
+  isUrgent = false,
+  children,
 }: {
-  user: UserProfile;
-  partner: Partner | null;
+  isUrgent?: boolean;
+  children: React.ReactNode;
 }) {
-  const avatarRing = (avatar: string | null, initial: string, color: string) => (
-    <span
-      className="w-5 h-5 rounded-full overflow-hidden inline-flex items-center justify-center"
+  return (
+    <div
+      className="flex items-stretch gap-4 p-3 rounded-2xl"
       style={{
-        border: "1.5px solid #FFFFFF",
-        backgroundColor: avatar ? "transparent" : `${color}20`,
+        backgroundColor: "#F8F6F0",
+        border: isUrgent
+          ? "1px solid rgba(239,68,68,0.30)"
+          : "1px solid rgba(15,34,41,0.06)",
       }}
     >
-      {avatar ? (
-        <img src={avatar} alt="" className="w-full h-full object-cover" />
-      ) : (
-        <span className="text-[9px] font-headline" style={{ color, fontWeight: 700 }}>
-          {initial}
-        </span>
-      )}
-    </span>
-  );
-  return (
-    <div className="flex items-center gap-1.5">
-      <span className="flex items-center -space-x-1">
-        {avatarRing(user.avatar, user.initial, "#FF6130")}
-        {partner && !partner.pendingInvite &&
-          avatarRing(partner.avatar, partner.name[0]?.toUpperCase() ?? "?", "#0891b2")}
-      </span>
-      <span className="text-[10px] uppercase tracking-widest font-headline" style={{ color: "#94a3b8", fontWeight: 700 }}>
-        {partner && !partner.pendingInvite
-          ? `${firstName(user.name)} & ${firstName(partner.name)}`
-          : firstName(user.name)}
-      </span>
+      {children}
     </div>
   );
 }
@@ -704,26 +691,16 @@ function NextSessionMoment({
   session,
   programStart,
   isUrgent,
-  user,
-  partner,
 }: {
   session: ProgramSession;
   programStart: string | null;
   isUrgent: boolean;
-  user: UserProfile;
-  partner: Partner | null;
 }) {
   const t = formatNextSessionTime(session.startTime);
   const week = weekOfSession(programStart, session.startTime);
-  const accent = isUrgent ? "#ef4444" : "#0891b2";
+  const eyebrowColor = isUrgent ? "#ef4444" : "#94a3b8";
   return (
-    <div
-      className="flex items-stretch gap-4 p-3 rounded-2xl"
-      style={{
-        backgroundColor: `${accent}08`,
-        border: `1px solid ${accent}25`,
-      }}
-    >
+    <MomentShell isUrgent={isUrgent}>
       <div
         className="shrink-0 rounded-xl overflow-hidden relative bg-[#0F2229]"
         style={{ width: 120, aspectRatio: "4 / 3" }}
@@ -731,7 +708,7 @@ function NextSessionMoment({
         {session.imageUrl ? (
           <img src={session.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${accent}45 0%, #0F2229 100%)` }}>
+          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#0891b2]/40 to-[#0F2229]">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="#FFFFFF" stroke="none">
               <path d="M10 8 L10 16 L17 12 Z" />
             </svg>
@@ -739,7 +716,7 @@ function NextSessionMoment({
         )}
       </div>
       <div className="min-w-0 flex-1 flex flex-col justify-center gap-1">
-        <p className="text-[10px] uppercase tracking-widest font-headline" style={{ color: accent, fontWeight: 700 }}>
+        <p className="text-[10px] uppercase tracking-widest font-headline" style={{ color: eyebrowColor, fontWeight: 700 }}>
           {week ? `Week ${week} · ${dayLabel(session.startTime)}` : `Next · ${dayLabel(session.startTime)}`}
         </p>
         <p
@@ -751,24 +728,17 @@ function NextSessionMoment({
         <p className="text-xs md:text-sm" style={{ color: "#475569", fontWeight: 600 }}>
           {t.day} {t.time} <span style={{ color: "#94a3b8" }}>· {t.relative}</span>
         </p>
-        <div className="mt-1">
-          <HostAvatars user={user} partner={partner} />
-        </div>
       </div>
-    </div>
+    </MomentShell>
   );
 }
 
 function LaunchMoment({
   startDate,
   imageUrl,
-  user,
-  partner,
 }: {
   startDate: string;
   imageUrl: string | null;
-  user: UserProfile;
-  partner: Partner | null;
 }) {
   const d = new Date(startDate + "T00:00:00");
   const headline = d.toLocaleDateString("en-GB", {
@@ -777,15 +747,8 @@ function LaunchMoment({
     month: "short",
   });
   const relative = formatRelative(d.toISOString());
-  const accent = "#0891b2";
   return (
-    <div
-      className="flex items-stretch gap-4 p-3 rounded-2xl"
-      style={{
-        backgroundColor: `${accent}08`,
-        border: `1px solid ${accent}25`,
-      }}
-    >
+    <MomentShell>
       <div
         className="shrink-0 rounded-xl overflow-hidden relative bg-[#0F2229]"
         style={{ width: 120, aspectRatio: "4 / 3" }}
@@ -793,7 +756,7 @@ function LaunchMoment({
         {imageUrl ? (
           <img src={imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${accent}45 0%, #0F2229 100%)` }}>
+          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#0891b2]/40 to-[#0F2229]">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth={1.8}>
               <rect x="3" y="5" width="18" height="16" rx="2" />
               <line x1="3" y1="9" x2="21" y2="9" />
@@ -804,7 +767,7 @@ function LaunchMoment({
         )}
       </div>
       <div className="min-w-0 flex-1 flex flex-col justify-center gap-1">
-        <p className="text-[10px] uppercase tracking-widest font-headline" style={{ color: accent, fontWeight: 700 }}>
+        <p className="text-[10px] uppercase tracking-widest font-headline" style={{ color: "#94a3b8", fontWeight: 700 }}>
           Launches
         </p>
         <p
@@ -813,14 +776,11 @@ function LaunchMoment({
         >
           {headline}
         </p>
-        <p className="text-xs md:text-sm" style={{ color: "#475569", fontWeight: 600 }}>
-          <span style={{ color: "#94a3b8" }}>{relative}</span>
+        <p className="text-xs md:text-sm" style={{ color: "#94a3b8", fontWeight: 600 }}>
+          {relative}
         </p>
-        <div className="mt-1">
-          <HostAvatars user={user} partner={partner} />
-        </div>
       </div>
-    </div>
+    </MomentShell>
   );
 }
 
@@ -899,20 +859,12 @@ function OtherSessionThumb({
   );
 }
 
-function SessionScroller({
-  program,
-  user,
-  partner,
-}: {
-  program: Program;
-  user: UserProfile;
-  partner: Partner | null;
-}) {
+function SessionScroller({ program }: { program: Program }) {
   const sessions = program.sessions ?? [];
   if (sessions.length === 0) {
     // No sessions yet — fall back to launch-date moment for pre-launch.
     if (program.stage === "published-pre-launch" && program.startDate) {
-      return <LaunchMoment startDate={program.startDate} imageUrl={program.imageUrl} user={user} partner={partner} />;
+      return <LaunchMoment startDate={program.startDate} imageUrl={program.imageUrl} />;
     }
     return null;
   }
@@ -929,7 +881,7 @@ function SessionScroller({
 
   return (
     <div className="space-y-3">
-      <NextSessionMoment session={next} programStart={program.startDate} isUrgent={isUrgent} user={user} partner={partner} />
+      <NextSessionMoment session={next} programStart={program.startDate} isUrgent={isUrgent} />
       {others.length > 0 && (
         <div className="-mx-1 px-1 overflow-x-auto">
           <div className="flex items-stretch gap-2 min-w-min pb-1">
@@ -953,52 +905,37 @@ function SessionScroller({
  *   - hero with sessions → SessionScroller (next pinned + scrollable rest)
  *   - compact OR no scroller → single moment pill (next session OR launch date)
  *   - drafting / awaiting / completed → null (parties row carries the body)
+ *
+ * In compact density we DO NOT render a "+N more sessions" tail — the
+ * footer's "Open challenge space" already routes to the full schedule.
  */
 function MomentBlock({
   program,
   density,
-  user,
-  partner,
 }: {
   program: Program;
   density: "hero" | "compact";
-  user: UserProfile;
-  partner: Partner | null;
 }) {
   const hasSessions = (program.sessions?.length ?? 0) > 0;
 
   if (density === "hero" && hasSessions) {
-    return <SessionScroller program={program} user={user} partner={partner} />;
+    return <SessionScroller program={program} />;
   }
 
   if (program.nextSession) {
     const minsToNext =
       (new Date(program.nextSession.startTime).getTime() - Date.now()) / 60000;
-    const moreSessions = (program.sessions?.length ?? 0) - 1;
     return (
-      <div className="space-y-2">
-        <NextSessionMoment
-          session={program.nextSession}
-          programStart={program.startDate}
-          isUrgent={minsToNext > 0 && minsToNext < 24 * 60}
-          user={user}
-          partner={partner}
-        />
-        {moreSessions > 0 && program.spaceId && (
-          <Link
-            href={`/communities/challenge/${program.spaceId}`}
-            className="block text-[11px] uppercase tracking-widest font-headline px-1 hover:text-[#0F2229] transition-colors"
-            style={{ color: "#94a3b8", fontWeight: 700 }}
-          >
-            +{moreSessions} more session{moreSessions === 1 ? "" : "s"} →
-          </Link>
-        )}
-      </div>
+      <NextSessionMoment
+        session={program.nextSession}
+        programStart={program.startDate}
+        isUrgent={minsToNext > 0 && minsToNext < 24 * 60}
+      />
     );
   }
 
   if (program.stage === "published-pre-launch" && program.startDate) {
-    return <LaunchMoment startDate={program.startDate} imageUrl={program.imageUrl} user={user} partner={partner} />;
+    return <LaunchMoment startDate={program.startDate} imageUrl={program.imageUrl} />;
   }
 
   return null;
@@ -1119,38 +1056,31 @@ export function ActiveProgramCard({ program, partner, user, density = "hero" }: 
         </div>
 
         <div className="mt-5">
-          <MomentBlock program={program} density={density} user={user} partner={partner} />
+          <MomentBlock program={program} density={density} />
         </div>
 
         <div className="flex-1" />
 
-        {/* Footer — explicit buttons. No whole-card overlay. The home
-            button is always present; the contextual action sits to its
-            right when the cascade picks something different. */}
-        <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2 flex-wrap">
-            {showContextual ? (
-              <>
-                <PrimaryActionPill
-                  label={insight.primary.label}
-                  kind={insight.primary.kind}
-                  href={insight.primary.href}
-                  variant="filled"
-                />
-                <PrimaryActionPill
-                  label={homeLabel}
-                  kind="navigate"
-                  href={home}
-                  variant="outlined"
-                />
-              </>
-            ) : (
-              <PrimaryActionPill
-                label={homeLabel}
-                kind="navigate"
+        {/* Footer — one filled button (the cascade-picked action), with
+            a quiet text link to the program home beside it only when
+            the action goes somewhere else. View-contract chip ends the
+            row when relevant. */}
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+          <div className="flex items-center gap-4 flex-wrap">
+            <PrimaryActionPill
+              label={insight.primary.label}
+              kind={insight.primary.kind}
+              href={insight.primary.href}
+              variant="filled"
+            />
+            {showContextual && (
+              <Link
                 href={home}
-                variant="filled"
-              />
+                className="text-xs md:text-sm font-headline transition-colors hover:text-[#0F2229]"
+                style={{ color: "#475569", fontWeight: 600 }}
+              >
+                {homeLabel} →
+              </Link>
             )}
           </div>
           {showsContract(program.stage) && <SecondaryActions program={program} />}
