@@ -870,9 +870,6 @@ function OtherSessionThumb({
   programStart: string | null;
 }) {
   const week = weekOfSession(programStart, session.startTime);
-  const isPast =
-    session.status === "ended" || new Date(session.startTime).getTime() < Date.now();
-  const isLive = session.status === "live";
   return (
     <Link
       href={`/dashboard/sessions/${session.id}`}
@@ -891,30 +888,10 @@ function OtherSessionThumb({
           <img
             src={session.imageUrl}
             alt=""
-            className={`absolute inset-0 w-full h-full object-cover ${isPast ? "grayscale opacity-70" : ""}`}
+            className="absolute inset-0 w-full h-full object-cover"
           />
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-[#0891b2]/30 to-[#0F2229]" />
-        )}
-        {isPast && !isLive && (
-          <span
-            className="absolute top-1.5 right-1.5 inline-flex items-center justify-center w-4 h-4 rounded-full"
-            style={{ backgroundColor: "rgba(15,34,41,0.7)" }}
-            aria-label="Done"
-          >
-            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-          </span>
-        )}
-        {isLive && (
-          <span
-            className="absolute top-1.5 left-1.5 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[8px] uppercase tracking-widest font-headline"
-            style={{ backgroundColor: "rgba(15,34,41,0.85)", color: "#ef4444", fontWeight: 700 }}
-          >
-            <span className="w-1 h-1 rounded-full animate-pulse" style={{ backgroundColor: "#ef4444" }} />
-            Live
-          </span>
         )}
       </div>
       <div className="p-2">
@@ -923,7 +900,7 @@ function OtherSessionThumb({
         </p>
         <p
           className="text-xs font-headline mt-0.5 line-clamp-2"
-          style={{ color: isPast ? "#94a3b8" : "#0F2229", fontWeight: 700, letterSpacing: "-0.01em", lineHeight: 1.25 }}
+          style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.01em", lineHeight: 1.25 }}
         >
           {session.title}
         </p>
@@ -942,23 +919,29 @@ function SessionScroller({ program }: { program: Program }) {
     return null;
   }
 
-  const nextIdx = sessions.findIndex(
-    (s) =>
-      s.status === "published" && new Date(s.startTime).getTime() > Date.now(),
+  // The dashboard surfaces only the *future* timeline. Past sessions
+  // are review work and live in the challenge space; on the dashboard
+  // they'd just walk the eye backwards through what's framed as
+  // "what's next." So filter to upcoming only — published sessions
+  // whose start_time is in the future.
+  const now = Date.now();
+  const upcoming = sessions.filter(
+    (s) => s.status === "published" && new Date(s.startTime).getTime() > now,
   );
-  const next = nextIdx >= 0 ? sessions[nextIdx] : sessions[0];
-  const others = sessions.filter((s) => s.id !== next.id);
-  const minsToNext =
-    (new Date(next.startTime).getTime() - Date.now()) / 60000;
+  if (upcoming.length === 0) return null;
+
+  const next = upcoming[0];
+  const rest = upcoming.slice(1);
+  const minsToNext = (new Date(next.startTime).getTime() - now) / 60000;
   const isUrgent = minsToNext > 0 && minsToNext < 24 * 60;
 
   return (
     <div className="space-y-3">
       <NextSessionMoment session={next} programStart={program.startDate} isUrgent={isUrgent} />
-      {others.length > 0 && (
+      {rest.length > 0 && (
         <div className="-mx-1 px-1 overflow-x-auto">
           <div className="flex items-stretch gap-2 min-w-min pb-1">
-            {others.map((s) => (
+            {rest.map((s) => (
               <OtherSessionThumb
                 key={s.id}
                 session={s}
