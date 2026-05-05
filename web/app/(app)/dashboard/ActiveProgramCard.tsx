@@ -585,29 +585,18 @@ function StageContent({ program }: { program: Program }) {
   return null;
 }
 
-// ─── Actions ─────────────────────────────────────────────────
+// ─── Primary destinations + secondary actions ───────────────
 
-function StageActions({ program }: { program: Program }) {
-  const orange =
-    "px-5 py-2.5 rounded-full text-white text-sm font-headline transition-transform hover:scale-[1.02]";
-  const orangeStyle: React.CSSProperties = {
-    backgroundColor: "#FF6130",
-    fontWeight: 700,
-    boxShadow:
-      "0 4px 14px rgba(255,97,48,0.35), 0 2px 6px rgba(255,97,48,0.20)",
-  };
-  const cyan =
-    "px-5 py-2.5 rounded-full text-sm font-headline transition-transform hover:scale-[1.02]";
-  const cyanStyle: React.CSSProperties = {
-    color: "#0891b2",
-    border: "1.5px solid #9CF0FF",
-    backgroundColor: "rgba(156,240,255,0.08)",
-    fontWeight: 700,
-  };
-
+/**
+ * Primary destination per stage. The whole card is clickable to this
+ * URL (set up by the parent Link wrapper). Secondary actions like
+ * "View contract" still render as small inline pills inside the card,
+ * but the bulk of the card is one big click target — like a Vercel
+ * project card or Linear issue tile.
+ */
+function primaryDestinationFor(program: Program): string {
   const workspaceHref = `/dashboard/collaborate/${program.id}`;
   const publicHref = `/challenges/${program.id}`;
-  const contractHref = `/dashboard/collaborate/${program.id}/contract`;
   const spaceHref = program.spaceId
     ? `/communities/challenge/${program.spaceId}`
     : publicHref;
@@ -615,60 +604,64 @@ function StageActions({ program }: { program: Program }) {
   switch (program.stage) {
     case "drafting-solo":
     case "drafting-jointly":
-      return (
-        <div className="flex flex-wrap gap-2">
-          <Link href={workspaceHref} className={orange} style={orangeStyle}>
-            Open workspace
-          </Link>
-        </div>
-      );
     case "awaiting-signatures":
-      return (
-        <div className="flex flex-wrap gap-2">
-          <Link href={workspaceHref} className={orange} style={orangeStyle}>
-            Review contract
-          </Link>
-        </div>
-      );
+      return workspaceHref;
     case "published-pre-launch":
-      // No challenge space yet for a pre-launch program — the public
-      // sales page is the right destination for sharing.
-      return (
-        <div className="flex flex-wrap gap-2">
-          <Link href={publicHref} className={orange} style={orangeStyle}>
-            Open public page
-          </Link>
-          <Link href={contractHref} className={cyan} style={cyanStyle}>
-            View contract
-          </Link>
-        </div>
-      );
+      return publicHref;
     case "published-live":
-      // Live programs go to the challenge space (where buyers live);
-      // workspace is intentionally NOT shown — published programs
-      // shouldn't be "re-drafted" from the dashboard.
-      return (
-        <div className="flex flex-wrap gap-2">
-          <Link href={spaceHref} className={orange} style={orangeStyle}>
-            Open challenge space
-          </Link>
-          <Link href={contractHref} className={cyan} style={cyanStyle}>
-            View contract
-          </Link>
-        </div>
-      );
     case "completed":
-      return (
-        <div className="flex flex-wrap gap-2">
-          <Link href={spaceHref} className={cyan} style={cyanStyle}>
-            Open challenge space
-          </Link>
-          <Link href={contractHref} className={cyan} style={cyanStyle}>
-            View contract
-          </Link>
-        </div>
-      );
+      return spaceHref;
   }
+}
+
+function primaryActionLabel(stage: ProgramStage): string {
+  switch (stage) {
+    case "drafting-solo":
+    case "drafting-jointly":
+      return "Open workspace →";
+    case "awaiting-signatures":
+      return "Review contract →";
+    case "published-pre-launch":
+      return "Open public page →";
+    case "published-live":
+      return "Open challenge space →";
+    case "completed":
+      return "Open challenge space →";
+  }
+}
+
+/**
+ * Secondary actions row — small pills for things that aren't the
+ * primary card action. Currently just "View contract" for stages
+ * where it's relevant. Uses stopPropagation so it doesn't trigger
+ * the parent card click.
+ */
+function SecondaryActions({ program }: { program: Program }) {
+  const showContract =
+    program.stage === "awaiting-signatures" ||
+    program.stage === "published-pre-launch" ||
+    program.stage === "published-live" ||
+    program.stage === "completed";
+  if (!showContract) return null;
+  const contractHref = `/dashboard/collaborate/${program.id}/contract`;
+  return (
+    <div
+      className="flex flex-wrap gap-2"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <Link
+        href={contractHref}
+        className="text-[11px] uppercase tracking-widest font-headline px-3 py-1.5 rounded-full transition-colors hover:bg-[#0F2229]/[0.05]"
+        style={{
+          color: "#0891b2",
+          border: "1px solid rgba(8,145,178,0.25)",
+          fontWeight: 700,
+        }}
+      >
+        View contract
+      </Link>
+    </div>
+  );
 }
 
 // ─── Main ────────────────────────────────────────────────────
@@ -688,12 +681,12 @@ export function ActiveProgramCard({ program, partner, user, density = "hero" }: 
   }
 
   return (
-    <div
-      className="rounded-3xl overflow-hidden infitra-card"
+    <Link
+      href={primaryDestinationFor(program)}
+      className="block rounded-3xl overflow-hidden infitra-card-link transition-shadow hover:shadow-2xl"
       style={{ border: "1px solid rgba(15,34,41,0.10)" }}
     >
-      {/* Cover banner — real product hero, not a thumbnail. Same DNA
-          as the section-4 landing mockup. */}
+      {/* Cover banner — real product hero. */}
       <div
         className="relative w-full overflow-hidden"
         style={{ aspectRatio: "4 / 1", backgroundColor: "#0F2229" }}
@@ -705,7 +698,6 @@ export function ActiveProgramCard({ program, partner, user, density = "hero" }: 
             className="absolute inset-0 w-full h-full object-cover"
           />
         ) : (
-          // Branded gradient placeholder when no cover yet
           <div
             className="absolute inset-0"
             style={{
@@ -714,7 +706,6 @@ export function ActiveProgramCard({ program, partner, user, density = "hero" }: 
             }}
           />
         )}
-        {/* Soft fade so the stage badge has contrast */}
         <div
           className="absolute inset-x-0 top-0 h-1/2 pointer-events-none"
           style={{
@@ -797,9 +788,20 @@ export function ActiveProgramCard({ program, partner, user, density = "hero" }: 
           <StageContent program={program} />
         </div>
 
-        <StageActions program={program} />
+        {/* Bottom row: primary action label + small secondary pill(s).
+            The whole card click goes to the primary destination — the
+            label is just a textual hint of what'll happen. */}
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <p
+            className="text-sm font-headline"
+            style={{ color: "#FF6130", fontWeight: 700 }}
+          >
+            {primaryActionLabel(program.stage)}
+          </p>
+          <SecondaryActions program={program} />
+        </div>
       </div>
-    </div>
+    </Link>
   );
 }
 
@@ -820,16 +822,13 @@ function CompactProgramCard({
       : null;
   const percent = cw && tw ? (cw / tw) * 100 : 0;
 
-  const primaryHref = isLive
-    ? program.spaceId
-      ? `/communities/challenge/${program.spaceId}`
-      : `/challenges/${program.id}`
-    : `/challenges/${program.id}`; // pre-launch
-  const primaryLabel = isLive ? "Open challenge space →" : "Open public page →";
+  const primaryHref = primaryDestinationFor(program);
+  const primaryLabel = primaryActionLabel(program.stage);
 
   return (
-    <div
-      className="rounded-2xl overflow-hidden infitra-card flex flex-col"
+    <Link
+      href={primaryHref}
+      className="block rounded-2xl overflow-hidden infitra-card-link flex flex-col transition-shadow hover:shadow-2xl"
       style={{ border: "1px solid rgba(15,34,41,0.10)" }}
     >
       {/* Cover banner — slimmer than hero (5:1) */}
@@ -943,21 +942,19 @@ function CompactProgramCard({
           </div>
         )}
 
-        {/* Spacer + single primary CTA at the bottom */}
+        {/* Spacer + bottom row: primary action label + small secondary
+            pills. Whole card is the click target. */}
         <div className="flex-1" />
-        <Link
-          href={primaryHref}
-          className="mt-4 inline-block px-5 py-2.5 rounded-full text-white text-sm font-headline transition-transform hover:scale-[1.02] text-center"
-          style={{
-            backgroundColor: "#FF6130",
-            fontWeight: 700,
-            boxShadow:
-              "0 4px 14px rgba(255,97,48,0.32), 0 2px 6px rgba(255,97,48,0.18)",
-          }}
-        >
-          {primaryLabel}
-        </Link>
+        <div className="mt-4 flex items-center justify-between gap-3 flex-wrap">
+          <p
+            className="text-sm font-headline"
+            style={{ color: "#FF6130", fontWeight: 700 }}
+          >
+            {primaryLabel}
+          </p>
+          <SecondaryActions program={program} />
+        </div>
       </div>
-    </div>
+    </Link>
   );
 }
