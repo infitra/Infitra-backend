@@ -74,17 +74,6 @@ export interface ProgramSummary {
     startTime: string;
     imageUrl: string | null;
   } | null;
-  /** Earliest enrollment timestamp — drives the "first buyer · run is real now"
-   * insight, which fires for ~24h after the first paid join. */
-  firstBuyerAt?: string | null;
-  /** Most recent scheduled session that should have gone live but never did
-   * (status=published, start_time in the past, no live_room_id). Drives the
-   * "you missed [title] — reschedule" urgent insight. */
-  missedSession?: {
-    id: string;
-    title: string;
-    startTime: string;
-  } | null;
 }
 
 // ─── Stage computation ──────────────────────────────────────
@@ -312,12 +301,10 @@ async function loadDashboard(userId: string) {
       txResult,
       sessionLinksResult,
     ] = await Promise.all([
-      // Total enrollment + earliest-buyer timestamp (single query, sorted asc)
       supabase
         .from("app_challenge_member")
-        .select("challenge_id, created_at")
-        .in("challenge_id", activeIds)
-        .order("created_at", { ascending: true }),
+        .select("challenge_id")
+        .in("challenge_id", activeIds),
       supabase
         .from("app_challenge_member")
         .select("challenge_id")
@@ -328,26 +315,16 @@ async function loadDashboard(userId: string) {
         .select("challenge_id, creator_cut_cents, created_at")
         .in("challenge_id", activeIds)
         .gte("created_at", sevenDaysAgo),
-      // live_room_id added so we can detect "scheduled but never went live" — a
-      // session with status=published whose start_time is in the past and
-      // never got a room is a missed session that needs rescheduling.
       supabase
         .from("app_challenge_session")
-        .select("challenge_id, app_session(id, title, start_time, status, image_url, live_room_id)")
+        .select("challenge_id, app_session(id, title, start_time, status, image_url)")
         .in("challenge_id", activeIds),
     ]);
 
-    // Count totals + capture the earliest enrollment per challenge. The first
-    // row encountered for each id wins because we sorted ascending by
-    // created_at — gives us firstBuyerAt without a second query.
     const totalByChallenge: Record<string, number> = {};
-    const firstBuyerAtByChallenge: Record<string, string> = {};
     for (const r of memberCountsResult.data ?? []) {
       const id = (r as any).challenge_id;
       totalByChallenge[id] = (totalByChallenge[id] ?? 0) + 1;
-      if (!firstBuyerAtByChallenge[id]) {
-        firstBuyerAtByChallenge[id] = (r as any).created_at;
-      }
     }
     const weeklyMembers: Record<string, number> = {};
     for (const r of newMembersResult.data ?? []) {
@@ -376,16 +353,13 @@ async function loadDashboard(userId: string) {
       p.enrolledCount = totalByChallenge[p.id] ?? 0;
       p.newMembersThisWeek = weeklyMembers[p.id] ?? 0;
       p.earningsCentsThisWeek = weeklyEarnings[p.id] ?? 0;
-      p.firstBuyerAt = firstBuyerAtByChallenge[p.id] ?? null;
 
       const sessions = sessionsByChallenge[p.id] ?? [];
-      // Sessions completed this week = ended status + start_time within last 7d
       p.sessionsDoneThisWeek = sessions.filter(
         (s) =>
           s.status === "ended" &&
           new Date(s.start_time).getTime() >= Date.now() - 7 * 24 * 60 * 60 * 1000,
       ).length;
-      // Next session = soonest upcoming, status=published
       const upcoming = sessions
         .filter((s) => s.status === "published" && new Date(s.start_time).getTime() > nowMs)
         .sort(
@@ -398,26 +372,6 @@ async function loadDashboard(userId: string) {
             title: upcoming[0].title,
             startTime: upcoming[0].start_time,
             imageUrl: upcoming[0].image_url ?? null,
-          }
-        : null;
-      // Missed session = most recent session that was scheduled to go live
-      // but didn't (status still published, start_time past, no live_room_id).
-      const missed = sessions
-        .filter(
-          (s) =>
-            s.status === "published" &&
-            new Date(s.start_time).getTime() < nowMs &&
-            !s.live_room_id,
-        )
-        .sort(
-          (a, b) =>
-            new Date(b.start_time).getTime() - new Date(a.start_time).getTime(),
-        );
-      p.missedSession = missed[0]
-        ? {
-            id: missed[0].id,
-            title: missed[0].title,
-            startTime: missed[0].start_time,
           }
         : null;
     }
@@ -544,7 +498,7 @@ export default async function DashboardPage() {
         <ActiveProgramCard
           program={null}
           partner={null}
-          user={{ avatar: data.profile.avatarUrl, initial: userInitial }}
+          user={{ name: data.profile.displayName, avatar: data.profile.avatarUrl, initial: userInitial }}
           density="hero"
         />
       ) : activeCount === 1 ? (
@@ -552,7 +506,7 @@ export default async function DashboardPage() {
         <ActiveProgramCard
           program={data.activePrograms[0]}
           partner={data.activePrograms[0].partner}
-          user={{ avatar: data.profile.avatarUrl, initial: userInitial }}
+          user={{ name: data.profile.displayName, avatar: data.profile.avatarUrl, initial: userInitial }}
           density="hero"
         />
       ) : (
@@ -569,7 +523,7 @@ export default async function DashboardPage() {
               key={p.id}
               program={p}
               partner={p.partner}
-              user={{ avatar: data.profile.avatarUrl, initial: userInitial }}
+              user={{ name: data.profile.displayName, avatar: data.profile.avatarUrl, initial: userInitial }}
               density="compact"
             />
           ))}
