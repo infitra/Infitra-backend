@@ -332,6 +332,66 @@ function programInsight(program: Program, partner: Partner | null): Insight {
   };
 }
 
+/**
+ * Among the active programs, pick the one that deserves the editorial
+ * "hero" treatment on the dashboard. Returns `{ hero, others }` so the
+ * dashboard can render a single hero card and a tier-2 row of the rest.
+ *
+ * The dashboard is an attention system, not a poster wall — exactly
+ * one program at a time gets the full editorial weight. The cascade
+ * here is layout-level (which card grows), distinct from
+ * `programInsight()` which is content-level (what each card says).
+ *
+ * Priority, top wins:
+ *   1. A session is going live in <15 min
+ *   2. A session is happening in <24h
+ *   3. Pre-launch with no buyers, launching in <7 days (share urgency)
+ *   4. Default — first by stage rank then start date (the loader's
+ *      existing ordering)
+ */
+export function pickHero<T extends Program>(programs: T[]): {
+  hero: T | null;
+  others: T[];
+} {
+  if (programs.length === 0) return { hero: null, others: [] };
+
+  const score = (p: T): number => {
+    if (p.nextSession) {
+      const mins =
+        (new Date(p.nextSession.startTime).getTime() - Date.now()) / 60000;
+      if (mins > 0 && mins < 15) return 100;
+      if (mins > 0 && mins < 24 * 60) return 80;
+    }
+    if (p.stage === "published-pre-launch" && p.startDate) {
+      const days = daysUntil(p.startDate);
+      if (
+        days !== null &&
+        days <= 7 &&
+        (p.enrolledCount ?? 0) === 0
+      ) {
+        return 60;
+      }
+    }
+    return 0;
+  };
+
+  // Find the highest-scoring program; ties resolved by the input order
+  // (which the loader has already sorted by stage rank + start date).
+  let heroIdx = 0;
+  let heroScore = score(programs[0]);
+  for (let i = 1; i < programs.length; i++) {
+    const s = score(programs[i]);
+    if (s > heroScore) {
+      heroScore = s;
+      heroIdx = i;
+    }
+  }
+  return {
+    hero: programs[heroIdx],
+    others: programs.filter((_, i) => i !== heroIdx),
+  };
+}
+
 // Color discipline:
 //   red    — urgency (live, time-bound). Pulsing dot.
 //   cyan   — information. Default for everything else (opportunity,
@@ -540,6 +600,7 @@ function PersonBox({
   name,
   role,
   accent,
+  density,
   dim = false,
 }: {
   avatar: string | null;
@@ -547,6 +608,7 @@ function PersonBox({
   name: string;
   role: string;
   accent: "orange" | "cyan";
+  density: "hero" | "compact";
   dim?: boolean;
 }) {
   const color = accent === "orange" ? "#FF6130" : "#0891b2";
@@ -554,29 +616,35 @@ function PersonBox({
   // color) carries the signal; the box is just a quiet container.
   const bg = accent === "orange" ? "rgba(255,97,48,0.03)" : "rgba(8,145,178,0.03)";
   const border = accent === "orange" ? "rgba(255,97,48,0.10)" : "rgba(8,145,178,0.10)";
+  const isHero = density === "hero";
+  const padding = isHero ? "p-3" : "px-2.5 py-1.5";
+  const radius = isHero ? "rounded-2xl" : "rounded-xl";
+  const avatarSize = isHero ? "w-10 h-10" : "w-7 h-7";
+  const nameSize = isHero ? "text-sm" : "text-xs";
+  const roleSize = isHero ? "text-[10px]" : "text-[9px]";
   return (
     <div
-      className="flex items-center gap-3 p-3 rounded-2xl min-w-0"
+      className={`flex items-center gap-${isHero ? "3" : "2"} ${padding} ${radius} min-w-0`}
       style={{ backgroundColor: bg, border: `1px solid ${border}`, opacity: dim ? 0.55 : 1 }}
     >
       <span
-        className="shrink-0 w-10 h-10 rounded-full overflow-hidden inline-flex items-center justify-center"
+        className={`shrink-0 ${avatarSize} rounded-full overflow-hidden inline-flex items-center justify-center`}
         style={{ border: `1.5px solid ${color}40`, backgroundColor: avatar ? "transparent" : `${color}20` }}
       >
         {avatar ? (
           <img src={avatar} alt="" className="w-full h-full object-cover" />
         ) : (
-          <span className="text-sm font-headline" style={{ color, fontWeight: 700 }}>
+          <span className={`${nameSize} font-headline`} style={{ color, fontWeight: 700 }}>
             {initial}
           </span>
         )}
       </span>
       <div className="min-w-0">
-        <p className="text-sm font-headline truncate" style={{ color: "#0F2229", fontWeight: 700 }}>
+        <p className={`${nameSize} font-headline truncate`} style={{ color: "#0F2229", fontWeight: 700 }}>
           {firstName(name)}
         </p>
         <p
-          className="text-[10px] uppercase tracking-widest font-headline"
+          className={`${roleSize} uppercase tracking-widest font-headline`}
           style={{ color, fontWeight: 700 }}
         >
           {role}
@@ -590,12 +658,14 @@ function PartiesRow({
   user,
   partner,
   isOwner,
+  density = "hero",
 }: {
   user: UserProfile;
   partner: Partner | null;
   /** True when the viewer is the program owner. Determines which side
    * gets the orange "OWNER" treatment. */
   isOwner: boolean;
+  density?: "hero" | "compact";
 }) {
   // Single-creator program (no partner) — show only the owner box.
   if (!partner) {
@@ -607,6 +677,7 @@ function PartiesRow({
           name={user.name}
           role="OWNER"
           accent="orange"
+          density={density}
         />
       </div>
     );
@@ -618,6 +689,7 @@ function PartiesRow({
       name={user.name}
       role={isOwner ? "OWNER" : "COHOST"}
       accent={isOwner ? "orange" : "cyan"}
+      density={density}
     />
   );
   const partnerBox = (
@@ -627,11 +699,12 @@ function PartiesRow({
       name={partner.name}
       role={partner.pendingInvite ? "PENDING" : isOwner ? "COHOST" : "OWNER"}
       accent={isOwner ? "cyan" : "orange"}
+      density={density}
       dim={partner.pendingInvite}
     />
   );
   return (
-    <div className="grid grid-cols-2 gap-3">
+    <div className={`grid grid-cols-2 ${density === "hero" ? "gap-3" : "gap-2"}`}>
       {isOwner ? userBox : partnerBox}
       {isOwner ? partnerBox : userBox}
     </div>
@@ -1040,7 +1113,10 @@ export function ActiveProgramCard({ program, partner, user, density = "hero" }: 
         </div>
       </div>
 
-      {/* Body — insight, title, parties, editorial moment. */}
+      {/* Body — insight, title, parties. Editorial moment ONLY in
+          hero density: the dashboard is an attention router, and the
+          editorial weight is reserved for the program that needs
+          attention right now. Tier-2 cards are doors, not posters. */}
       <div className={`flex-1 flex flex-col ${padding}`}>
         <InsightLine insight={insight} />
 
@@ -1051,13 +1127,15 @@ export function ActiveProgramCard({ program, partner, user, density = "hero" }: 
           {program.title || "Untitled"}
         </h2>
 
-        <div className="mt-5">
-          <PartiesRow user={user} partner={partner} isOwner={program.isOwner} />
+        <div className={isHero ? "mt-5" : "mt-4"}>
+          <PartiesRow user={user} partner={partner} isOwner={program.isOwner} density={density} />
         </div>
 
-        <div className="mt-5">
-          <MomentBlock program={program} density={density} />
-        </div>
+        {isHero && (
+          <div className="mt-5">
+            <MomentBlock program={program} density={density} />
+          </div>
+        )}
 
         <div className="flex-1" />
 
@@ -1065,7 +1143,7 @@ export function ActiveProgramCard({ program, partner, user, density = "hero" }: 
             a quiet text link to the program home beside it only when
             the action goes somewhere else. View-contract chip ends the
             row when relevant. */}
-        <div className="mt-6 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <div className={`${isHero ? "mt-6" : "mt-5"} flex flex-wrap items-center justify-between gap-x-4 gap-y-2`}>
           <div className="flex items-center gap-4 flex-wrap">
             <PrimaryActionPill
               label={insight.primary.label}
