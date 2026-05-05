@@ -760,7 +760,13 @@ function MomentShell({
   );
 }
 
-function NextSessionMoment({
+/**
+ * Featured (next) session card — vertical, cover-led 4:3, with full
+ * meta below the cover. Sits as the first card in the SessionScroller
+ * row, meaningfully larger than the smaller upcoming thumbs that
+ * follow. Same shape as the smaller cards, just at hero scale.
+ */
+function FeaturedSessionCard({
   session,
   programStart,
   isUrgent,
@@ -771,38 +777,55 @@ function NextSessionMoment({
 }) {
   const t = formatNextSessionTime(session.startTime);
   const week = weekOfSession(programStart, session.startTime);
-  const eyebrowColor = isUrgent ? "#ef4444" : "#94a3b8";
+  const eyebrowColor = isUrgent ? "#ef4444" : "#0891b2";
   return (
-    <MomentShell isUrgent={isUrgent}>
+    <Link
+      href={`/dashboard/sessions/${session.id}`}
+      className="shrink-0 block rounded-2xl overflow-hidden transition-shadow hover:shadow-md"
+      style={{
+        width: 320,
+        backgroundColor: isUrgent ? "rgba(239,68,68,0.04)" : "#F8F6F0",
+        border: isUrgent
+          ? "1px solid rgba(239,68,68,0.30)"
+          : "1px solid rgba(15,34,41,0.06)",
+      }}
+    >
       <div
-        className="shrink-0 rounded-xl overflow-hidden relative bg-[#0F2229]"
-        style={{ width: 120, aspectRatio: "4 / 3" }}
+        className="relative bg-[#0F2229] overflow-hidden"
+        style={{ aspectRatio: "4 / 3" }}
       >
         {session.imageUrl ? (
-          <img src={session.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+          <img
+            src={session.imageUrl}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover"
+          />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#0891b2]/40 to-[#0F2229]">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="#FFFFFF" stroke="none">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="#FFFFFF" stroke="none">
               <path d="M10 8 L10 16 L17 12 Z" />
             </svg>
           </div>
         )}
       </div>
-      <div className="min-w-0 flex-1 flex flex-col justify-center gap-1">
-        <p className="text-[10px] uppercase tracking-widest font-headline" style={{ color: eyebrowColor, fontWeight: 700 }}>
-          {week ? `Week ${week} · ${dayLabel(session.startTime)}` : `Next · ${dayLabel(session.startTime)}`}
+      <div className="p-4">
+        <p
+          className="text-[10px] uppercase tracking-widest font-headline"
+          style={{ color: eyebrowColor, fontWeight: 700 }}
+        >
+          {week ? `Next · Week ${week} · ${dayLabel(session.startTime)}` : `Next · ${dayLabel(session.startTime)}`}
         </p>
         <p
-          className="text-base md:text-lg font-headline tracking-tight truncate"
-          style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.01em" }}
+          className="text-base md:text-lg font-headline tracking-tight mt-1 line-clamp-2"
+          style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.01em", lineHeight: 1.25 }}
         >
           {session.title}
         </p>
-        <p className="text-xs md:text-sm" style={{ color: "#475569", fontWeight: 600 }}>
+        <p className="text-xs md:text-sm mt-1.5" style={{ color: "#475569", fontWeight: 600 }}>
           {t.day} {t.time} <span style={{ color: "#94a3b8" }}>· {t.relative}</span>
         </p>
       </div>
-    </MomentShell>
+    </Link>
   );
 }
 
@@ -873,11 +896,11 @@ function OtherSessionThumb({
   return (
     <Link
       href={`/dashboard/sessions/${session.id}`}
-      className="shrink-0 block rounded-xl overflow-hidden transition-shadow hover:shadow-md"
+      className="shrink-0 block rounded-2xl overflow-hidden transition-shadow hover:shadow-md"
       style={{
-        width: 120,
-        backgroundColor: "rgba(255,255,255,0.65)",
-        border: "1px solid rgba(15,34,41,0.08)",
+        width: 180,
+        backgroundColor: "#F8F6F0",
+        border: "1px solid rgba(15,34,41,0.06)",
       }}
     >
       <div
@@ -894,12 +917,12 @@ function OtherSessionThumb({
           <div className="absolute inset-0 bg-gradient-to-br from-[#0891b2]/30 to-[#0F2229]" />
         )}
       </div>
-      <div className="p-2">
-        <p className="text-[9px] uppercase tracking-widest font-headline" style={{ color: "#94a3b8", fontWeight: 700 }}>
+      <div className="p-3">
+        <p className="text-[10px] uppercase tracking-widest font-headline" style={{ color: "#94a3b8", fontWeight: 700 }}>
           {week ? `Week ${week} · ${dayLabel(session.startTime)}` : dayLabel(session.startTime)}
         </p>
         <p
-          className="text-xs font-headline mt-0.5 line-clamp-2"
+          className="text-sm font-headline mt-1 line-clamp-2"
           style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.01em", lineHeight: 1.25 }}
         >
           {session.title}
@@ -936,21 +959,21 @@ function SessionScroller({ program }: { program: Program }) {
   const isUrgent = minsToNext > 0 && minsToNext < 24 * 60;
 
   return (
-    <div className="space-y-3">
-      <NextSessionMoment session={next} programStart={program.startDate} isUrgent={isUrgent} />
-      {rest.length > 0 && (
-        <div className="-mx-1 px-1 overflow-x-auto">
-          <div className="flex items-stretch gap-2 min-w-min pb-1">
-            {rest.map((s) => (
-              <OtherSessionThumb
-                key={s.id}
-                session={s}
-                programStart={program.startDate}
-              />
-            ))}
-          </div>
-        </div>
-      )}
+    <div className="-mx-1 px-1 overflow-x-auto">
+      <div className="flex items-stretch gap-3 min-w-min pb-1">
+        <FeaturedSessionCard
+          session={next}
+          programStart={program.startDate}
+          isUrgent={isUrgent}
+        />
+        {rest.map((s) => (
+          <OtherSessionThumb
+            key={s.id}
+            session={s}
+            programStart={program.startDate}
+          />
+        ))}
+      </div>
     </div>
   );
 }
@@ -982,7 +1005,7 @@ function MomentBlock({
     const minsToNext =
       (new Date(program.nextSession.startTime).getTime() - Date.now()) / 60000;
     return (
-      <NextSessionMoment
+      <FeaturedSessionCard
         session={program.nextSession}
         programStart={program.startDate}
         isUrgent={minsToNext > 0 && minsToNext < 24 * 60}
