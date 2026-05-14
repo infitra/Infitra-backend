@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { WorkspaceEditor } from "./WorkspaceEditor";
 import { WorkspaceChat } from "./WorkspaceChat";
+import { RecentChangesExpander } from "./RecentChangesExpander";
 
 export const metadata = { title: "Collaboration Workspace — INFITRA" };
 
@@ -16,10 +17,13 @@ export default async function CollaborateWorkspacePage({
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  // Fetch the challenge
+  // Fetch the challenge — including the v3 engagement columns shipped
+  // in Bundle 2 (promise_text, weekly_arc, topic_ownership, intro_prompt,
+  // promise_edited_at, promise_edited_by). The new columns default to
+  // null/empty for legacy challenges so the editor renders cleanly.
   const { data: challenge } = await supabase
     .from("app_challenge")
-    .select("id, title, description, start_date, end_date, price_cents, currency, status, owner_id, contract_id, image_url")
+    .select("id, title, description, start_date, end_date, price_cents, currency, status, owner_id, contract_id, image_url, promise_text, weekly_arc, topic_ownership, intro_prompt, promise_edited_at, promise_edited_by")
     .eq("id", challengeId)
     .single();
 
@@ -200,6 +204,16 @@ export default async function CollaborateWorkspacePage({
               status: challenge.status,
               imageUrl: challenge.image_url,
               contractId: challenge.contract_id,
+              // Bundle 3 — v3 engagement fields. Defaults match the DB:
+              // null Promise/Intro, empty arrays for arc/ownership.
+              promiseText: challenge.promise_text ?? null,
+              weeklyArc: Array.isArray(challenge.weekly_arc) ? challenge.weekly_arc : [],
+              topicOwnership: Array.isArray(challenge.topic_ownership) ? challenge.topic_ownership : [],
+              introPrompt: challenge.intro_prompt ?? null,
+              promiseEditedAt: challenge.promise_edited_at ?? null,
+              promiseEditorName: challenge.promise_edited_by
+                ? profileMap[challenge.promise_edited_by]?.name ?? null
+                : null,
             }}
             isOwner={isOwner}
             currentUserId={user.id}
@@ -248,9 +262,17 @@ export default async function CollaborateWorkspacePage({
           />
         </div>
 
-        {/* Right: Chat (1/3) — sticky so it stays visible while page scrolls */}
+        {/* Right: Recent changes expander + Chat (1/3) — sticky so they
+            stay visible while the editor scrolls. The expander
+            (Bundle 3) is the audit log of field-level edits, replacing
+            the chat-thread system messages that used to bury the human
+            conversation. Chat keeps collaboration milestones only. */}
         <div className="lg:col-span-1">
           <div className="lg:sticky lg:top-24">
+            <RecentChangesExpander
+              challengeId={challenge.id}
+              profiles={profileMap}
+            />
             {dmConversationId ? (
               <WorkspaceChat
                 conversationId={dmConversationId}

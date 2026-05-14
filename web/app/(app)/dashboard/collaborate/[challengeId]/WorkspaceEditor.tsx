@@ -10,6 +10,10 @@ import { lockTerms, confirmTerms, requestChanges, reactivateDrafting, updateCoho
 import { ContractCommitmentModal } from "./ContractCommitmentModal";
 import { ContractStatusBanner } from "./ContractStatusBanner";
 import { SessionDetailModal } from "./SessionDetailModal";
+import { PromiseEditor } from "./PromiseEditor";
+import { WeeklyArcEditor, type WeeklyArcEntry } from "./WeeklyArcEditor";
+import { OwnershipEditor, type TopicOwnershipEntry } from "./OwnershipEditor";
+import { IntroPromptEditor } from "./IntroPromptEditor";
 
 interface Props {
   challenge: {
@@ -22,6 +26,13 @@ interface Props {
     status: string;
     imageUrl: string | null;
     contractId: string | null;
+    /** Bundle 3 — v3 engagement fields (Promise + Weekly Arc + Ownership + Intro). */
+    promiseText: string | null;
+    weeklyArc: WeeklyArcEntry[];
+    topicOwnership: TopicOwnershipEntry[];
+    introPrompt: string | null;
+    promiseEditedAt: string | null;
+    promiseEditorName: string | null;
   };
   isOwner: boolean;
   currentUserId: string;
@@ -77,6 +88,12 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
   const [price, setPrice] = useState(challenge.priceCents > 0 ? (challenge.priceCents / 100).toString() : "");
   const [imageUrl, setImageUrl] = useState(challenge.imageUrl);
 
+  // Bundle 3 — v3 engagement fields
+  const [promiseText, setPromiseText] = useState(challenge.promiseText ?? "");
+  const [weeklyArc, setWeeklyArc] = useState<WeeklyArcEntry[]>(challenge.weeklyArc);
+  const [topicOwnership, setTopicOwnership] = useState<TopicOwnershipEntry[]>(challenge.topicOwnership);
+  const [introPrompt, setIntroPrompt] = useState(challenge.introPrompt ?? "");
+
   // Editable cohost splits (owner only)
   const [cohostSplits, setCohostSplits] = useState<Record<string, number>>(
     () => Object.fromEntries(cohosts.map((c) => [c.id, c.splitPercent]))
@@ -95,15 +112,23 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
   const [sessCohostIds, setSessCohostIds] = useState<string[]>([]);
   const [addingSession, setAddingSession] = useState(false);
 
-  // Dirty check: only enable Save when something changed
+  // Dirty check: only enable Save when something changed.
+  // Includes the v3 engagement fields — Promise / Weekly Arc / Ownership /
+  // Intro Prompt — so editing any of them lights up the Save button.
   const initialPriceStr = challenge.priceCents > 0 ? (challenge.priceCents / 100).toString() : "";
+  const initialWeeklyArcJson = JSON.stringify(challenge.weeklyArc ?? []);
+  const initialTopicOwnershipJson = JSON.stringify(challenge.topicOwnership ?? []);
   const isDirty =
     title !== challenge.title ||
     description !== (challenge.description ?? "") ||
     startDate !== challenge.startDate ||
     endDate !== challenge.endDate ||
     price !== initialPriceStr ||
-    imageUrl !== challenge.imageUrl;
+    imageUrl !== challenge.imageUrl ||
+    promiseText !== (challenge.promiseText ?? "") ||
+    JSON.stringify(weeklyArc) !== initialWeeklyArcJson ||
+    JSON.stringify(topicOwnership) !== initialTopicOwnershipJson ||
+    introPrompt !== (challenge.introPrompt ?? "");
 
   const isDraft = challenge.status === "draft";
   const isLocked = !!contract;
@@ -139,6 +164,14 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
     formData.set("end_date", endDate);
     formData.set("price", price);
     if (imageUrl) formData.set("image_url", imageUrl);
+    // Bundle 3 — v3 engagement fields. Always send (the RPC accepts
+    // null/empty and leaves the existing value untouched when the
+    // param is the default; we want explicit overwrite when the user
+    // clears a field, so we pass the current state value verbatim).
+    formData.set("promise_text", promiseText);
+    formData.set("weekly_arc", JSON.stringify(weeklyArc));
+    formData.set("topic_ownership", JSON.stringify(topicOwnership));
+    formData.set("intro_prompt", introPrompt);
 
     const result = await updateChallenge(null, formData);
     if (result?.error) { setError(result.error); setSaving(false); return; }
@@ -561,6 +594,15 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
         )}
       </div>
 
+      {/* ── PROMISE (Bundle 3) ────────────────────── */}
+      <PromiseEditor
+        value={promiseText}
+        onChange={setPromiseText}
+        canEdit={canEditChallenge}
+        editedAt={challenge.promiseEditedAt}
+        editorName={challenge.promiseEditorName}
+      />
+
       {/* ── COLLABORATORS ─────────────────────────── */}
       <div className="rounded-2xl infitra-card p-6">
         <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -634,6 +676,35 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
         </div>
       </div>
 
+      {/* ── WHO HANDLES WHAT (Bundle 3) ──────────────── */}
+      <OwnershipEditor
+        creators={[
+          {
+            id: ownerProfile.id,
+            name: ownerProfile.name,
+            avatar: ownerProfile.avatar,
+            role: "owner",
+            sessionTitles: sessions
+              .filter((s) => s.hostId === ownerProfile.id)
+              .map((s) => s.title),
+          },
+          ...cohosts.map((c) => ({
+            id: c.id,
+            name: c.name,
+            avatar: c.avatar,
+            role: "cohost" as const,
+            sessionTitles: sessions
+              .filter((s) => s.hostId === c.id)
+              .map((s) => s.title),
+          })),
+        ]}
+        value={topicOwnership}
+        onChange={setTopicOwnership}
+        canEdit={canEditChallenge}
+        editedAt={challenge.promiseEditedAt}
+        editorName={challenge.promiseEditorName}
+      />
+
       {/* ── REVENUE SHARE ─────────────────────────── */}
       <div className="rounded-2xl infitra-card p-6">
         <h3 className="text-sm font-black font-headline text-[#94a3b8] uppercase tracking-wider mb-5">Revenue Share</h3>
@@ -705,6 +776,17 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
           </div>
         )}
       </div>
+
+      {/* ── WEEKLY ARC (Bundle 3) ─────────────────── */}
+      <WeeklyArcEditor
+        startDate={startDate}
+        endDate={endDate}
+        value={weeklyArc}
+        onChange={setWeeklyArc}
+        canEdit={canEditChallenge}
+        editedAt={challenge.promiseEditedAt}
+        editorName={challenge.promiseEditorName}
+      />
 
       {/* ── SESSIONS ─────────────────────────────── */}
       <div className="rounded-2xl infitra-card p-6">
@@ -1029,6 +1111,15 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
           <p className="text-sm text-[#94a3b8] text-center py-6">No sessions yet. Add your first session above.</p>
         )}
       </div>
+
+      {/* ── INTRO PROMPT (Bundle 3) ──────────────────── */}
+      <IntroPromptEditor
+        value={introPrompt}
+        onChange={setIntroPrompt}
+        canEdit={canEditChallenge}
+        editedAt={challenge.promiseEditedAt}
+        editorName={challenge.promiseEditorName}
+      />
 
       {/* ── SIGNING / ACTION PANEL ───────────────────
           Responsibilities split with the top banner:
