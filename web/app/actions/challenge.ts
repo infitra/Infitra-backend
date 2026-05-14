@@ -6,9 +6,13 @@ import { revalidatePath } from "next/cache";
 
 /**
  * Posts a system message into the workspace DM conversation for a challenge.
- * Best-effort: silently no-ops if no workspace conversation exists.
+ * Reserved for collaboration milestones (invite sent, contract locked,
+ * accepted, published) — events the cohost wants to see *in* the chat.
+ *
+ * Field-level edits (title, dates, sessions, etc.) go via
+ * logWorkspaceFieldEdit instead, so the chat stays purely conversational.
  */
-async function logWorkspaceActivity(
+async function logWorkspaceMilestone(
   challengeId: string | undefined,
   body: string,
 ) {
@@ -18,6 +22,31 @@ async function logWorkspaceActivity(
     p_challenge_id: challengeId,
     p_body: body,
     p_metadata: {},
+  });
+}
+
+/**
+ * Records a field-level edit in the workspace activity log
+ * (app_workspace_activity, not the chat thread). Drives the
+ * "Recent changes ▾" expander next to the workspace chat in Bundle 3.
+ *
+ * `field` is a coarse identifier ('challenge_details', 'session_added',
+ * 'session_removed', etc.). `oldValue` / `newValue` are optional —
+ * pass null if the call site doesn't have the before/after values.
+ */
+async function logWorkspaceFieldEdit(
+  challengeId: string | undefined,
+  field: string,
+  oldValue: unknown = null,
+  newValue: unknown = null,
+) {
+  if (!challengeId) return;
+  const supabase = await createClient();
+  await supabase.rpc("log_workspace_field_edit", {
+    p_challenge_id: challengeId,
+    p_field: field,
+    p_old: oldValue,
+    p_new: newValue,
   });
 }
 
@@ -84,6 +113,39 @@ export async function updateChallenge(prevState: unknown, formData: FormData) {
   const priceRaw = formData.get("price") as string;
   const priceCents = priceRaw ? Math.round(parseFloat(priceRaw) * 100) : 0;
 
+  // Bundle 2 additions — Promise + Weekly Arc + Topic Ownership + Intro
+  // prompt. The current workspace UI doesn't surface these yet (Bundle 3
+  // ships the editor), so they arrive as undefined and the RPC defaults
+  // them to null (= leave existing value untouched). Once the form posts
+  // these fields, no further server-action change is needed.
+  const promiseTextRaw = formData.get("promise_text");
+  const promiseText =
+    promiseTextRaw === null ? undefined : (promiseTextRaw as string)?.trim() || null;
+
+  const weeklyArcRaw = formData.get("weekly_arc");
+  let weeklyArc: unknown = undefined;
+  if (typeof weeklyArcRaw === "string" && weeklyArcRaw.length > 0) {
+    try {
+      weeklyArc = JSON.parse(weeklyArcRaw);
+    } catch {
+      return { error: "Weekly arc payload is malformed." };
+    }
+  }
+
+  const topicOwnershipRaw = formData.get("topic_ownership");
+  let topicOwnership: unknown = undefined;
+  if (typeof topicOwnershipRaw === "string" && topicOwnershipRaw.length > 0) {
+    try {
+      topicOwnership = JSON.parse(topicOwnershipRaw);
+    } catch {
+      return { error: "Topic ownership payload is malformed." };
+    }
+  }
+
+  const introPromptRaw = formData.get("intro_prompt");
+  const introPrompt =
+    introPromptRaw === null ? undefined : (introPromptRaw as string)?.trim() || null;
+
   if (!title || title.length < 3) {
     return { error: "Title must be at least 3 characters." };
   }
@@ -103,7 +165,10 @@ export async function updateChallenge(prevState: unknown, formData: FormData) {
     return { error: "Price cannot be negative." };
   }
 
-  const { error } = await supabase.rpc("update_challenge_workspace", {
+  // Build RPC params; only include the new fields when they were posted,
+  // so the RPC's "leave existing value" branch fires for older form
+  // versions that don't include them.
+  const rpcParams: Record<string, unknown> = {
     p_challenge_id: challengeId,
     p_title: title,
     p_description: description,
@@ -112,11 +177,19 @@ export async function updateChallenge(prevState: unknown, formData: FormData) {
     p_end_date: endDate,
     p_capacity: capacity,
     p_price_cents: priceCents,
-  });
+  };
+  if (promiseText !== undefined) rpcParams.p_promise_text = promiseText;
+  if (weeklyArc !== undefined) rpcParams.p_weekly_arc = weeklyArc;
+  if (topicOwnership !== undefined) rpcParams.p_topic_ownership = topicOwnership;
+  if (introPrompt !== undefined) rpcParams.p_intro_prompt = introPrompt;
+
+  const { error } = await supabase.rpc("update_challenge_workspace", rpcParams);
 
   if (error) return { error: humanizeUpdateError(error.message) };
 
-  await logWorkspaceActivity(challengeId, "updated the challenge details");
+  // Field-edit log goes to the activity audit, not the chat thread.
+  // Bundle 3's per-field UI will pass real before/after values.
+  await logWorkspaceFieldEdit(challengeId, "challenge_details");
   return { success: true, challengeId };
 }
 
@@ -186,7 +259,10 @@ export async function createChallengeSession(
     await supabase.from("app_session").update(updates).eq("id", sessionId);
   }
 
-  await logWorkspaceActivity(challengeId, "added a session");
+  await logWorkspaceFieldEdit(challengeId, "session_added", null, {
+    session_id: sessionId,
+    title: title.trim(),
+  });
   return { success: true, sessionId };
 }
 
@@ -226,7 +302,10 @@ export async function updateChallengeSession(
     .eq("host_id", user.id);
 
   if (error) return { error: error.message };
-  await logWorkspaceActivity(challengeId, "updated a session");
+  await logWorkspaceFieldEdit(challengeId, "session_edited", null, {
+    session_id: sessionId,
+    title: title.trim(),
+  });
   return { success: true };
 }
 
@@ -254,7 +333,7 @@ export async function removeChallengeSession(
 
   if (error) return { error: error.message };
 
-  await logWorkspaceActivity(challengeId, "removed a session");
+  await logWorkspaceFieldEdit(challengeId, "session_removed", { session_id: sessionId }, null);
   return { success: true };
 }
 
@@ -281,7 +360,9 @@ export async function publishChallenge(challengeId: string) {
     };
   }
 
-  await logWorkspaceActivity(challengeId, "published the challenge");
+  // Publish is a milestone — keep it in the chat thread (cohorts want
+  // to see this conversationally, not buried in the activity log).
+  await logWorkspaceMilestone(challengeId, "published the challenge");
   // Land on the celebration page for collaboration publishes (it handles the
   // party-membership check and renders a summary with a single CTA back to
   // the dashboard). Solo publishes also route here — the page reads fine
