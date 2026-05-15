@@ -107,7 +107,7 @@ interface Props {
   /** Bundle 3 polish — workspace activity log, kept fresh by Realtime. */
   activity: ActivityRow[];
   /** Bundle 3 polish — profile lookup for SectionAttribution chips. */
-  profileMap: Record<string, { name: string; avatar?: string | null }>;
+  profileMap: Record<string, { name: string; avatar: string | null }>;
 }
 
 const DETAILS_ATTRIBUTION_FIELDS = [

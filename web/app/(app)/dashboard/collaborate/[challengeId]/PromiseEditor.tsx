@@ -20,7 +20,7 @@ interface Props {
   onCommit: () => void;
   canEdit: boolean;
   activity: ActivityRow[];
-  profileMap: Record<string, { name: string; avatar?: string | null }>;
+  profileMap: Record<string, { name: string; avatar: string | null }>;
 }
 
 const MAX_LENGTH = 600;

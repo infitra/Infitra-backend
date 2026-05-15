@@ -62,7 +62,7 @@ interface Props {
   onCohostSplitCommit: (cohostId: string, splitPercent: number) => void;
 
   activity: ActivityRow[];
-  profileMap: Record<string, { name: string; avatar?: string | null }>;
+  profileMap: Record<string, { name: string; avatar: string | null }>;
 }
 
 const TEAM_ATTRIBUTION_FIELDS = [

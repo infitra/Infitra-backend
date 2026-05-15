@@ -15,7 +15,7 @@ import type { ActivityRow } from "./useWorkspaceRealtime";
 interface Props {
   challengeId: string;
   activity: ActivityRow[];
-  profiles: Record<string, { name: string; avatar?: string | null }>;
+  profiles: Record<string, { name: string; avatar: string | null }>;
 }
 
 const DISPLAY_LIMIT = 20;

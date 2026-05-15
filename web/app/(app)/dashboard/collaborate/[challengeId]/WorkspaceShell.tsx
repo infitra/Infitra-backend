@@ -29,7 +29,7 @@ interface Props extends WorkspaceEditorProps {
   knownSessionIds: string[];
   dmConversationId: string | null;
   currentUserId: string;
-  profileMap: Record<string, { name: string; avatar?: string | null }>;
+  profileMap: Record<string, { name: string; avatar: string | null }>;
 }
 
 export function WorkspaceShell({

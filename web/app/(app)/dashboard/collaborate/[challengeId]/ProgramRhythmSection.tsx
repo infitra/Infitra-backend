@@ -47,7 +47,7 @@ interface Props {
   addingSessionDisabled?: boolean;
 
   activity: ActivityRow[];
-  profileMap: Record<string, { name: string; avatar?: string | null }>;
+  profileMap: Record<string, { name: string; avatar: string | null }>;
 }
 
 const RHYTHM_ATTRIBUTION_FIELDS = [

@@ -20,7 +20,7 @@ import type { ActivityRow } from "./useWorkspaceRealtime";
 interface Props {
   fields: string[];
   activity: ActivityRow[];
-  profiles: Record<string, { name: string; avatar?: string | null }>;
+  profiles: Record<string, { name: string; avatar: string | null }>;
 }
 
 export function SectionAttribution({ fields, activity, profiles }: Props) {
