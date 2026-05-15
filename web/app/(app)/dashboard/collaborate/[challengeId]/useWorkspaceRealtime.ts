@@ -134,6 +134,49 @@ export function useWorkspaceRealtime({
           }
         },
       )
+      // Bundle 3 polish v2 — cohort and invite tables. The first creator's
+      // view stayed on "Awaiting" after the partner accepted because we
+      // weren't listening for INSERT on app_challenge_cohost. Now we are.
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "app_challenge_cohost",
+          filter: `challenge_id=eq.${challengeId}`,
+        },
+        () => router.refresh(),
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "app_challenge_cohost",
+          filter: `challenge_id=eq.${challengeId}`,
+        },
+        () => router.refresh(),
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "app_challenge_cohost",
+          filter: `challenge_id=eq.${challengeId}`,
+        },
+        () => router.refresh(),
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "app_collaboration_invite",
+          filter: `challenge_id=eq.${challengeId}`,
+        },
+        () => router.refresh(),
+      )
       .subscribe((status, err) => {
         if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
           // eslint-disable-next-line no-console

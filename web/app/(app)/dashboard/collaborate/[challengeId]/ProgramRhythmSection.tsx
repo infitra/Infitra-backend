@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { SectionAttribution } from "./SectionAttribution";
 import type { ActivityRow } from "./useWorkspaceRealtime";
 
@@ -227,7 +227,18 @@ function WeekRow({
   onAddSession?: () => void;
   addingSessionDisabled?: boolean;
 }) {
+  // Local-wins sync: useState only inits once, so without this the
+  // partner's focus edit never appears in the input. Adopt prop value
+  // when it changes AND the user isn't currently typing (dirty flag).
   const [focusLocal, setFocusLocal] = useState(focus);
+  const focusDirty = useRef(false);
+  const lastFocusProp = useRef(focus);
+  useEffect(() => {
+    if (focus !== lastFocusProp.current) {
+      lastFocusProp.current = focus;
+      if (!focusDirty.current) setFocusLocal(focus);
+    }
+  }, [focus]);
 
   return (
     <div
@@ -265,11 +276,15 @@ function WeekRow({
           <input
             type="text"
             value={focusLocal}
-            onChange={(e) => setFocusLocal(e.target.value)}
+            onChange={(e) => {
+              focusDirty.current = true;
+              setFocusLocal(e.target.value);
+            }}
             onBlur={() => {
               const next = focusLocal.trim();
               if (next !== focus) onFocusCommit(next);
               setFocusLocal(next);
+              focusDirty.current = false;
             }}
             maxLength={MAX_THEME_LENGTH}
             placeholder={

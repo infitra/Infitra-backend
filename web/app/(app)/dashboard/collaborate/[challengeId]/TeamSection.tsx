@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ShareDonut } from "@/app/components/ShareDonut";
 import { CollabInviteFlow } from "@/app/(app)/dashboard/create/CollabInviteFlow";
 import { SectionAttribution } from "./SectionAttribution";
@@ -145,10 +145,9 @@ export function TeamSection({
       {/* Donut at the top — quick visual of the split */}
       <div className="flex items-center gap-6 mb-6 pb-6" style={{ borderBottom: "1px solid rgba(15,34,41,0.06)" }}>
         <ShareDonut size={120} shares={shares} />
-        <div className="text-xs leading-relaxed" style={{ color: "#64748b" }}>
-          Each row below: who&apos;s on the team, what they own, and how
-          revenue splits. Topics are a soft routing signal — comma-separated,
-          your call.
+        <div className="text-sm leading-relaxed" style={{ color: "#475569" }}>
+          What each person owns and how revenue splits. Topics are tags that
+          signal who handles what — soft routing, never enforced.
         </div>
       </div>
 
@@ -209,8 +208,30 @@ function CreatorRowCard({
   onSplitCommit?: (splitPercent: number) => void;
 }) {
   const roleColor = creator.role === "owner" ? "#FF6130" : "#0891b2";
-  const [topicsLocal, setTopicsLocal] = useState(topicsToString(topics));
+
+  // Local-wins sync against partner saves arriving via prop changes.
+  // Without this, useState(...) only initialises once and the partner's
+  // edit never updates the visible input — the bug from polish v1.
+  const topicsString = topicsToString(topics);
+  const [topicsLocal, setTopicsLocal] = useState(topicsString);
+  const topicsDirty = useRef(false);
+  const lastTopicsProp = useRef(topicsString);
+  useEffect(() => {
+    if (topicsString !== lastTopicsProp.current) {
+      lastTopicsProp.current = topicsString;
+      if (!topicsDirty.current) setTopicsLocal(topicsString);
+    }
+  }, [topicsString]);
+
   const [splitLocal, setSplitLocal] = useState(displayedSplit);
+  const splitDirty = useRef(false);
+  const lastSplitProp = useRef(displayedSplit);
+  useEffect(() => {
+    if (displayedSplit !== lastSplitProp.current) {
+      lastSplitProp.current = displayedSplit;
+      if (!splitDirty.current) setSplitLocal(displayedSplit);
+    }
+  }, [displayedSplit]);
 
   return (
     <div
@@ -228,14 +249,14 @@ function CreatorRowCard({
             <img
               src={creator.avatar}
               alt=""
-              className="w-10 h-10 rounded-full object-cover shrink-0"
+              className="w-11 h-11 rounded-full object-cover shrink-0"
             />
           ) : (
             <div
-              className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+              className="w-11 h-11 rounded-full flex items-center justify-center shrink-0"
               style={{ backgroundColor: `${roleColor}20` }}
             >
-              <span className="text-sm font-black font-headline" style={{ color: roleColor }}>
+              <span className="text-base font-black font-headline" style={{ color: roleColor }}>
                 {creator.name?.[0] ?? "?"}
               </span>
             </div>
@@ -248,82 +269,108 @@ function CreatorRowCard({
               className="text-[10px] font-bold font-headline uppercase tracking-wider"
               style={{ color: roleColor }}
             >
-              {creator.role} · {displayedSplit}%
+              {creator.role}
             </p>
           </div>
         </div>
 
-        {/* Topics input + sessions chip stacked on small, side-by-side on wider */}
-        <div className="flex-1 grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3 min-w-0 items-center">
-          <div>
-            <p
-              className="text-[10px] font-bold font-headline uppercase tracking-wider mb-1"
-              style={{ color: "#94a3b8" }}
-            >
-              Topics owned
-            </p>
-            {canEdit ? (
-              <input
-                type="text"
-                value={topicsLocal}
-                onChange={(e) => setTopicsLocal(e.target.value)}
-                onBlur={() => {
-                  const next = stringToTopics(topicsLocal);
-                  if (topicsToString(next) !== topicsToString(topics)) {
-                    onTopicsCommit(next);
-                  }
-                  setTopicsLocal(topicsToString(next));
-                }}
-                placeholder="training, strength, recovery"
-                className="w-full rounded-lg p-2 text-xs font-bold font-headline focus:outline-none"
-                style={{
-                  border: "1px solid rgba(15,34,41,0.10)",
-                  color: "#0F2229",
-                  backgroundColor: "white",
-                }}
-              />
-            ) : topics.length > 0 ? (
-              <div className="flex flex-wrap gap-1">
-                {topics.map((topic, i) => (
-                  <span
-                    key={i}
-                    className="text-[11px] px-2 py-0.5 rounded-md font-bold font-headline"
-                    style={{
-                      backgroundColor: "rgba(8,145,178,0.08)",
-                      color: "#0891b2",
-                    }}
-                  >
-                    {topic}
-                  </span>
-                ))}
-              </div>
-            ) : (
-              <p className="text-[11px] italic" style={{ color: "#94a3b8" }}>
-                No topics yet
-              </p>
-            )}
-          </div>
-
-          <div
-            className="shrink-0 px-3 py-2 rounded-lg text-center"
-            style={{
-              backgroundColor: "rgba(15,34,41,0.04)",
-              minWidth: 90,
-            }}
+        {/* Topics input — middle column */}
+        <div className="flex-1 min-w-0">
+          <p
+            className="text-[10px] font-bold font-headline uppercase tracking-wider mb-1"
+            style={{ color: "#94a3b8" }}
           >
-            <p
-              className="text-base font-black font-headline"
-              style={{ color: "#0F2229" }}
-            >
-              {creator.sessionCount}
+            Topics owned
+          </p>
+          {canEdit ? (
+            <input
+              type="text"
+              value={topicsLocal}
+              onChange={(e) => {
+                topicsDirty.current = true;
+                setTopicsLocal(e.target.value);
+              }}
+              onBlur={() => {
+                const next = stringToTopics(topicsLocal);
+                if (topicsToString(next) !== topicsToString(topics)) {
+                  onTopicsCommit(next);
+                }
+                setTopicsLocal(topicsToString(next));
+                topicsDirty.current = false;
+              }}
+              placeholder="training, strength, recovery"
+              className="w-full rounded-lg p-2 text-xs font-bold font-headline focus:outline-none"
+              style={{
+                border: "1px solid rgba(15,34,41,0.10)",
+                color: "#0F2229",
+                backgroundColor: "white",
+              }}
+            />
+          ) : topics.length > 0 ? (
+            <div className="flex flex-wrap gap-1">
+              {topics.map((topic, i) => (
+                <span
+                  key={i}
+                  className="text-[11px] px-2 py-0.5 rounded-md font-bold font-headline"
+                  style={{
+                    backgroundColor: "rgba(8,145,178,0.08)",
+                    color: "#0891b2",
+                  }}
+                >
+                  {topic}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="text-[11px] italic" style={{ color: "#94a3b8" }}>
+              No topics yet
             </p>
-            <p
-              className="text-[9px] font-bold font-headline uppercase tracking-wider"
-              style={{ color: "#94a3b8" }}
-            >
-              {creator.sessionCount === 1 ? "session" : "sessions"}
-            </p>
-          </div>
+          )}
+        </div>
+
+        {/* Split percentage — load-bearing, big and color-coded */}
+        <div
+          className="shrink-0 flex flex-col items-center justify-center px-4 py-2 rounded-xl"
+          style={{
+            backgroundColor: `${roleColor}12`,
+            border: `1px solid ${roleColor}40`,
+            minWidth: 80,
+          }}
+        >
+          <p
+            className="text-2xl font-black font-headline leading-none"
+            style={{ color: roleColor }}
+          >
+            {displayedSplit}%
+          </p>
+          <p
+            className="text-[9px] font-bold font-headline uppercase tracking-wider mt-1"
+            style={{ color: roleColor, opacity: 0.7 }}
+          >
+            Revenue
+          </p>
+        </div>
+
+        {/* Sessions count — quieter chip */}
+        <div
+          className="shrink-0 flex flex-col items-center justify-center px-3 py-2 rounded-xl"
+          style={{
+            backgroundColor: "rgba(15,34,41,0.04)",
+            minWidth: 70,
+          }}
+        >
+          <p
+            className="text-xl font-black font-headline leading-none"
+            style={{ color: "#0F2229" }}
+          >
+            {creator.sessionCount}
+          </p>
+          <p
+            className="text-[9px] font-bold font-headline uppercase tracking-wider mt-1"
+            style={{ color: "#94a3b8" }}
+          >
+            {creator.sessionCount === 1 ? "session" : "sessions"}
+          </p>
         </div>
       </div>
 
@@ -344,12 +391,17 @@ function CreatorRowCard({
             min={1}
             max={99}
             value={splitLocal}
-            onChange={(e) => setSplitLocal(parseInt(e.target.value))}
+            onChange={(e) => {
+              splitDirty.current = true;
+              setSplitLocal(parseInt(e.target.value));
+            }}
             onMouseUp={() => {
               if (splitLocal !== displayedSplit) onSplitCommit(splitLocal);
+              splitDirty.current = false;
             }}
             onTouchEnd={() => {
               if (splitLocal !== displayedSplit) onSplitCommit(splitLocal);
+              splitDirty.current = false;
             }}
             className="flex-1 accent-cyan-500"
           />
