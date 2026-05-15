@@ -160,9 +160,8 @@ export function ProgramRhythmSection({
         </span>
       </div>
       <p className="text-xs mb-5 leading-relaxed" style={{ color: "#64748b" }}>
-        One short focus per week + the live sessions that land in it.
-        Sessions slot into their week automatically based on the date you
-        set.
+        Focus per week + their respective live sessions. Focus can be
+        identical and span over multiple weeks.
       </p>
 
       <div className="space-y-4">

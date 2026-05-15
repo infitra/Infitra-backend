@@ -16,6 +16,7 @@ import {
   requestChanges,
   reactivateDrafting,
   updateCohostSplit,
+  removeCohost,
   addSessionCohost,
   removeSessionCohost,
 } from "@/app/actions/collaboration";
@@ -143,7 +144,18 @@ export function WorkspaceEditor({
   const [title, setTitle, markTitleSaved] = useSyncedField(challenge.title);
   const [description, setDescription, markDescriptionSaved] = useSyncedField(challenge.description ?? "");
   const [startDate, setStartDate, markStartDateSaved] = useSyncedField(challenge.startDate);
-  const [endDate, setEndDate, markEndDateSaved] = useSyncedField(challenge.endDate);
+  // Duration is the primary input (weeks), end_date is derived. Programs
+  // are sold as "6 weeks" — letting the creator pick a non-whole-week
+  // calendar range would break that promise. Initial value derived from
+  // the existing start/end, rounded to nearest whole week (handles legacy
+  // data; new programs always start as exact weeks).
+  const initialDurationWeeks = computeWeeksBetween(challenge.startDate, challenge.endDate);
+  const [durationWeeks, setDurationWeeks, markDurationSaved] = useSyncedField(initialDurationWeeks);
+  // Derived end_date — recomputed whenever startDate or durationWeeks changes.
+  const derivedEndDate = useMemo(
+    () => computeEndDate(startDate, durationWeeks),
+    [startDate, durationWeeks],
+  );
   const [price, setPrice, markPriceSaved] = useSyncedField(
     challenge.priceCents > 0 ? (challenge.priceCents / 100).toString() : "",
   );
@@ -259,7 +271,10 @@ export function WorkspaceEditor({
     formData.set("title", override.title ?? title);
     formData.set("description", override.description ?? description);
     formData.set("start_date", override.start_date ?? startDate);
-    formData.set("end_date", override.end_date ?? endDate);
+    // end_date is derived from start_date + durationWeeks; the override
+    // can carry an explicit value (for example when commitStartDate
+    // bumps it forward in lock-step).
+    formData.set("end_date", override.end_date ?? derivedEndDate);
     formData.set("price", override.price ?? price);
     const img = override.image_url !== undefined ? override.image_url : imageUrl;
     if (img !== null && img !== undefined) {
@@ -319,19 +334,23 @@ export function WorkspaceEditor({
       setError("Start date must be in the future.");
       return;
     }
-    await saveField("start_date", { start_date: startDate });
+    // When start moves, end_date moves with it (in lock-step, preserving
+    // the duration in weeks). Send both in one save so the pair is
+    // always consistent server-side.
+    const newEndDate = computeEndDate(startDate, durationWeeks);
+    await saveField("start_date", { start_date: startDate, end_date: newEndDate });
     markStartDateSaved();
   }
 
-  async function commitEndDate() {
-    if (endDate === challenge.endDate) { markEndDateSaved(); return; }
-    if (!endDate) { setError("End date is required."); return; }
-    if (new Date(endDate) <= new Date(startDate)) {
-      setError("End date must be after start date.");
+  async function commitDurationWeeks() {
+    if (durationWeeks === initialDurationWeeks) { markDurationSaved(); return; }
+    if (durationWeeks < 1 || durationWeeks > 52) {
+      setError("Duration must be between 1 and 52 weeks.");
       return;
     }
-    await saveField("end_date", { end_date: endDate });
-    markEndDateSaved();
+    const newEndDate = computeEndDate(startDate, durationWeeks);
+    await saveField("weeks", { end_date: newEndDate });
+    markDurationSaved();
   }
 
   async function commitPrice() {
@@ -356,10 +375,11 @@ export function WorkspaceEditor({
   }
 
   async function commitWeeklyFocus(weekNum: number, theme: string) {
-    // Build the full row set (1..totalWeeks) preserving existing themes.
-    const totalWeeks = computeTotalWeeks(startDate, endDate);
+    // durationWeeks is the canonical week count now (no more derived
+    // computation from end_date). Build the full row set 1..durationWeeks
+    // preserving existing themes.
     const fullRows: WeeklyFocusEntry[] = [];
-    for (let w = 1; w <= totalWeeks; w++) {
+    for (let w = 1; w <= durationWeeks; w++) {
       if (w === weekNum) {
         fullRows.push({ week: w, theme });
       } else {
@@ -389,6 +409,16 @@ export function WorkspaceEditor({
     // collaboration.ts logWorkspaceFieldEdit helper.
     const result = await runSave(() => updateCohostSplit(challenge.id, cohostId, splitPercent));
     if (result?.error) { setError(result.error); return; }
+    refreshAfterAction();
+  }
+
+  async function commitCohostRemove(cohostId: string) {
+    setError(null);
+    const result = await runSave(() => removeCohost(challenge.id, cohostId));
+    if (result?.error) { setError(result.error); return; }
+    // Refresh local state immediately. The Realtime DELETE event on
+    // app_challenge_cohost will also fire on the partner's side and
+    // refresh their view via useWorkspaceRealtime.
     refreshAfterAction();
   }
 
@@ -766,15 +796,32 @@ export function WorkspaceEditor({
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-2">End Date</label>
+                  <label className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-2">Duration (weeks)</label>
                   <input
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    onBlur={commitEndDate}
+                    type="number"
+                    min={1}
+                    max={52}
+                    value={durationWeeks}
+                    onChange={(e) => {
+                      const n = parseInt(e.target.value, 10);
+                      setDurationWeeks(Number.isFinite(n) ? Math.max(1, Math.min(52, n)) : 1);
+                    }}
+                    onBlur={commitDurationWeeks}
                     className="w-full rounded-xl p-2.5 text-sm font-bold font-headline focus:outline-none"
                     style={{ border: "1px solid rgba(15,34,41,0.12)", color: "#0F2229" }}
                   />
+                  {/* Derived end-date display — programs are always whole
+                      weeks; this ends-on text shows what that resolves to. */}
+                  <p className="text-[10px] mt-1.5" style={{ color: "#94a3b8" }}>
+                    Ends on{" "}
+                    <span className="font-bold" style={{ color: "#475569" }}>
+                      {derivedEndDate
+                        ? new Date(derivedEndDate).toLocaleDateString("en-GB", {
+                            weekday: "short", day: "numeric", month: "short",
+                          })
+                        : "—"}
+                    </span>
+                  </p>
                 </div>
                 <div>
                   <label className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-2">Price (CHF)</label>
@@ -835,6 +882,7 @@ export function WorkspaceEditor({
           canManageCollaboration={canManageCollaboration}
           onTopicsCommit={commitTopics}
           onCohostSplitCommit={commitCohostSplit}
+          onCohostRemove={commitCohostRemove}
           activity={activity}
           profileMap={profileMap}
         />
@@ -842,7 +890,7 @@ export function WorkspaceEditor({
         {/* ── 5. PROGRAM RHYTHM ────────────────────────── */}
         <ProgramRhythmSection
           startDate={startDate}
-          endDate={endDate}
+          endDate={derivedEndDate}
           weeklyFocus={weeklyArc}
           sessions={sessions.map((s) => ({ id: s.id, startTime: s.startTime }))}
           canEdit={canAddSession}
@@ -1114,11 +1162,23 @@ export function WorkspaceEditor({
         {/* end of contract envelope */}
       </div>
 
-      {/* Read-only session detail popup. */}
+      {/* Session detail popup. Edit + Delete only show when the viewer
+          is the host (RPC-enforced) — the modal calls back to the same
+          inline-edit / delete flow as the workspace card affordances. */}
       <SessionDetailModal
         open={!!detailSession}
         session={detailSession}
         onClose={() => setDetailSession(null)}
+        onEdit={
+          detailSession && canEditSession(detailSession.hostId)
+            ? () => startEditSession(detailSession)
+            : undefined
+        }
+        onDelete={
+          detailSession && (canEditSession(detailSession.hostId) || canManageCollaboration)
+            ? () => handleDeleteSession(detailSession.id)
+            : undefined
+        }
       />
 
       {/* Cohost acceptance — signature moment #1. */}
@@ -1373,12 +1433,29 @@ export function WorkspaceEditor({
   }
 }
 
-// Helper for the WeeklyArc reshape on date change
-function computeTotalWeeks(startDate: string, endDate: string): number {
-  if (!startDate || !endDate) return 0;
+// Programs are sold by the WEEK, not by arbitrary date range. The UI
+// asks for a duration in weeks; we derive end_date from start + weeks
+// so the database column stays accurate to what was advertised.
+//
+// computeWeeksBetween: load existing programs (with potentially fractional
+// week durations) and round to nearest whole week. New programs always
+// start on an exact week count via the duration input.
+//
+// computeEndDate: given a start_date and a number of weeks, return the
+// last day of the program (start + weeks*7 - 1 days, formatted YYYY-MM-DD).
+function computeWeeksBetween(startDate: string, endDate: string): number {
+  if (!startDate || !endDate) return 4;
   const start = new Date(startDate);
   const end = new Date(endDate);
-  if (isNaN(start.getTime()) || isNaN(end.getTime()) || end <= start) return 0;
-  const days = Math.floor((end.getTime() - start.getTime()) / 86400000);
-  return Math.max(1, Math.floor(days / 7) + 1);
+  if (isNaN(start.getTime()) || isNaN(end.getTime()) || end < start) return 4;
+  const days = Math.floor((end.getTime() - start.getTime()) / 86400000) + 1;
+  return Math.max(1, Math.round(days / 7));
+}
+
+function computeEndDate(startDate: string, weeks: number): string {
+  if (!startDate || !weeks) return startDate;
+  const start = new Date(startDate);
+  if (isNaN(start.getTime())) return startDate;
+  const end = new Date(start.getTime() + (weeks * 7 - 1) * 86400000);
+  return end.toISOString().split("T")[0];
 }

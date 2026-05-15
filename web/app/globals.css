@@ -265,3 +265,39 @@ body {
   border: 2px solid #9CF0FF;
   animation: tribe-border-breathe 3.5s ease-in-out infinite;
 }
+
+/* ── Dual-colour split slider (TeamSection) ──────────────────
+   The track is hidden (rendered as a gradient div behind the input);
+   only the thumb stays visible so the user can drag. Shared cross-
+   browser styling so both Webkit and Firefox match. */
+.dual-slider::-webkit-slider-runnable-track {
+  background: transparent;
+  height: 6px;
+}
+.dual-slider::-moz-range-track {
+  background: transparent;
+  height: 6px;
+  border: none;
+}
+.dual-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: white;
+  border: 2px solid #0F2229;
+  cursor: pointer;
+  margin-top: -6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+.dual-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: white;
+  border: 2px solid #0F2229;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+

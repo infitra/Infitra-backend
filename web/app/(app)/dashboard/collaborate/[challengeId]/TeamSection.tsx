@@ -60,6 +60,8 @@ interface Props {
 
   onTopicsCommit: (creatorId: string, topics: string[]) => void;
   onCohostSplitCommit: (cohostId: string, splitPercent: number) => void;
+  /** Owner-only: remove a cohost from the challenge. */
+  onCohostRemove?: (cohostId: string) => void;
 
   activity: ActivityRow[];
   profileMap: Record<string, { name: string; avatar: string | null }>;
@@ -100,6 +102,7 @@ export function TeamSection({
   canManageCollaboration,
   onTopicsCommit,
   onCohostSplitCommit,
+  onCohostRemove,
   activity,
   profileMap,
 }: Props) {
@@ -142,12 +145,14 @@ export function TeamSection({
         )}
       </div>
 
-      {/* Donut at the top — quick visual of the split */}
-      <div className="flex items-center gap-6 mb-6 pb-6" style={{ borderBottom: "1px solid rgba(15,34,41,0.06)" }}>
-        <ShareDonut size={120} shares={shares} />
+      {/* Donut at the top — load-bearing visualization of the split */}
+      <div className="flex items-center gap-8 mb-6 pb-6" style={{ borderBottom: "1px solid rgba(15,34,41,0.06)" }}>
+        <ShareDonut size={200} shares={shares} />
         <div className="text-sm leading-relaxed" style={{ color: "#475569" }}>
-          What each person owns and how revenue splits. Topics are tags that
-          signal who handles what — soft routing, never enforced.
+          Each creator&apos;s revenue share, sessions they lead, and the topics
+          they own. Topics help participants know who to ask about what — for
+          example, training questions go to the trainer, nutrition to the
+          nutritionist. Soft routing only, never enforced.
         </div>
       </div>
 
@@ -159,12 +164,18 @@ export function TeamSection({
             creator={creator}
             topics={topicsByCreator[creator.id] ?? []}
             displayedSplit={creator.role === "owner" ? ownerSplit : creator.splitPercent}
+            ownerSplit={ownerSplit}
             canEdit={canEdit}
             canManageCollaboration={canManageCollaboration}
             onTopicsCommit={(topics) => onTopicsCommit(creator.id, topics)}
             onSplitCommit={
               creator.role === "cohost"
                 ? (split) => onCohostSplitCommit(creator.id, split)
+                : undefined
+            }
+            onRemove={
+              creator.role === "cohost" && canManageCollaboration && onCohostRemove
+                ? () => onCohostRemove(creator.id)
                 : undefined
             }
           />
@@ -194,18 +205,23 @@ function CreatorRowCard({
   creator,
   topics,
   displayedSplit,
+  ownerSplit,
   canEdit,
   canManageCollaboration,
   onTopicsCommit,
   onSplitCommit,
+  onRemove,
 }: {
   creator: CreatorRow;
   topics: string[];
   displayedSplit: number;
+  /** Owner's current %, used to render the dual-color slider track. */
+  ownerSplit: number;
   canEdit: boolean;
   canManageCollaboration: boolean;
   onTopicsCommit: (topics: string[]) => void;
   onSplitCommit?: (splitPercent: number) => void;
+  onRemove?: () => void;
 }) {
   const roleColor = creator.role === "owner" ? "#FF6130" : "#0891b2";
 
@@ -235,12 +251,30 @@ function CreatorRowCard({
 
   return (
     <div
-      className="p-4 rounded-xl"
+      className="p-4 rounded-xl relative"
       style={{
         backgroundColor: "rgba(0,0,0,0.02)",
         border: "1px solid rgba(15,34,41,0.06)",
       }}
     >
+      {/* Remove cohost — owner only, cohorts only */}
+      {onRemove && (
+        <button
+          type="button"
+          onClick={() => {
+            if (confirm(`Remove ${creator.name} from the collaboration?`)) {
+              onRemove();
+            }
+          }}
+          className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center text-[#94a3b8] hover:text-red-500 hover:bg-red-50 transition-colors"
+          title={`Remove ${creator.name}`}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+            <path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      )}
+
       <div className="flex items-start gap-4 flex-wrap">
         {/* Identity column */}
         <div className="flex items-center gap-3" style={{ minWidth: 180 }}>
@@ -374,7 +408,9 @@ function CreatorRowCard({
         </div>
       </div>
 
-      {/* Cohost split slider (owner-managed) */}
+      {/* Cohost split slider (owner-managed) — dual-colour track shows
+          the current owner/cohost balance at a glance: orange on the
+          owner's side, cyan on the cohost's side. */}
       {creator.role === "cohost" && onSplitCommit && canManageCollaboration && (
         <div
           className="mt-4 pt-3 flex items-center gap-3"
@@ -386,31 +422,55 @@ function CreatorRowCard({
           >
             Revenue split
           </p>
-          <input
-            type="range"
-            min={1}
-            max={99}
-            value={splitLocal}
-            onChange={(e) => {
-              splitDirty.current = true;
-              setSplitLocal(parseInt(e.target.value));
-            }}
-            onMouseUp={() => {
-              if (splitLocal !== displayedSplit) onSplitCommit(splitLocal);
-              splitDirty.current = false;
-            }}
-            onTouchEnd={() => {
-              if (splitLocal !== displayedSplit) onSplitCommit(splitLocal);
-              splitDirty.current = false;
-            }}
-            className="flex-1 accent-cyan-500"
-          />
-          <span
-            className="text-sm font-black font-headline shrink-0"
-            style={{ color: "#0F2229", minWidth: 40, textAlign: "right" }}
-          >
-            {splitLocal}%
-          </span>
+          <div className="relative flex-1 flex items-center" style={{ height: 24 }}>
+            {/* Visual dual-colour track. Owner's portion (orange) on the
+                left, cohost's portion (cyan) on the right. The owner's
+                share is computed as (100 - sum-of-other-cohost-splits) -
+                the splitLocal of THIS cohost; for the simple two-creator
+                pilot case this reduces to 100 - splitLocal which equals
+                ownerSplit + (displayedSplit - splitLocal). */}
+            <div
+              className="absolute inset-0 my-auto rounded-full pointer-events-none"
+              style={{
+                height: 6,
+                background: `linear-gradient(to right,
+                  #FF6130 0%,
+                  #FF6130 ${100 - splitLocal}%,
+                  #0891b2 ${100 - splitLocal}%,
+                  #0891b2 100%)`,
+              }}
+            />
+            {/* Functional input — transparent track, native thumb stays.
+                The thumb sits at splitLocal% from the left. */}
+            <input
+              type="range"
+              min={1}
+              max={99}
+              value={splitLocal}
+              onChange={(e) => {
+                splitDirty.current = true;
+                setSplitLocal(parseInt(e.target.value));
+              }}
+              onMouseUp={() => {
+                if (splitLocal !== displayedSplit) onSplitCommit(splitLocal);
+                splitDirty.current = false;
+              }}
+              onTouchEnd={() => {
+                if (splitLocal !== displayedSplit) onSplitCommit(splitLocal);
+                splitDirty.current = false;
+              }}
+              className="dual-slider absolute inset-0 w-full appearance-none bg-transparent cursor-pointer"
+              style={{ outline: "none" }}
+            />
+            {/* Native slider styles for the .dual-slider class live in
+                globals.css — hides default track, keeps the thumb. */}
+          </div>
+          {/* Two-color label: owner% / cohost% */}
+          <div className="shrink-0 flex items-baseline gap-1 font-black font-headline" style={{ minWidth: 80, justifyContent: "flex-end" }}>
+            <span className="text-sm" style={{ color: "#FF6130" }}>{100 - splitLocal}%</span>
+            <span className="text-xs" style={{ color: "#94a3b8" }}>/</span>
+            <span className="text-sm" style={{ color: "#0891b2" }}>{splitLocal}%</span>
+          </div>
         </div>
       )}
     </div>
