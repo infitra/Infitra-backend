@@ -91,10 +91,9 @@ export function useWorkspaceRealtime({
           table: "app_challenge",
           filter: `id=eq.${challengeId}`,
         },
-        () => {
-          // Server props rebuild → fields re-render with partner's saves.
-          // useSyncedField inside each editor keeps locally-dirty fields
-          // from being overwritten.
+        (payload) => {
+          // eslint-disable-next-line no-console
+          console.log("[realtime] app_challenge UPDATE", payload);
           router.refresh();
         },
       )
@@ -178,6 +177,8 @@ export function useWorkspaceRealtime({
         () => router.refresh(),
       )
       .subscribe((status, err) => {
+        // eslint-disable-next-line no-console
+        console.log("[useWorkspaceRealtime] subscription status:", status, err ?? "");
         if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
           // eslint-disable-next-line no-console
           console.warn("[useWorkspaceRealtime] subscription", status, err);
