@@ -6,21 +6,28 @@ import { createClient } from "@/lib/supabase/server";
 // ── Workspace Activity Log ──────────────────────────────
 
 /**
- * Posts a system message into the workspace DM conversation for a challenge.
- * Best-effort: silently no-ops if no conversation exists or actor isn't a member.
- * Server-side only — uses the SECURITY DEFINER post_workspace_log RPC.
+ * Records a field-level edit in the workspace activity audit log
+ * (app_workspace_activity, not the chat). The chat is reserved for
+ * collaboration milestones (invite sent, contract locked, accepted,
+ * published) — see logWorkspaceMilestone in challenge.ts.
+ *
+ * `field` is a coarse identifier matched by the per-section
+ * attribution chips and the Recent Changes expander to render
+ * human-readable descriptions.
  */
-async function logWorkspaceActivity(
+async function logWorkspaceFieldEdit(
   challengeId: string | undefined,
-  body: string,
-  metadata?: Record<string, unknown>,
+  field: string,
+  oldValue: unknown = null,
+  newValue: unknown = null,
 ) {
   if (!challengeId) return;
   const supabase = await createClient();
-  await supabase.rpc("post_workspace_log", {
+  await supabase.rpc("log_workspace_field_edit", {
     p_challenge_id: challengeId,
-    p_body: body,
-    p_metadata: metadata ?? {},
+    p_field: field,
+    p_old: oldValue,
+    p_new: newValue,
   });
 }
 
@@ -196,7 +203,7 @@ export async function addCohost(challengeId: string, cohostId: string, splitPerc
     .insert({ challenge_id: challengeId, cohost_id: cohostId, split_percent: splitPercent });
 
   if (error) return { error: error.message };
-  await logWorkspaceActivity(challengeId, "added a collaborator");
+  await logWorkspaceFieldEdit(challengeId, "cohost_added", null, { cohost_id: cohostId, split_percent: splitPercent });
   return { ok: true };
 }
 
@@ -213,7 +220,7 @@ export async function updateCohostSplit(challengeId: string, cohostId: string, s
     .eq("cohost_id", cohostId);
 
   if (error) return { error: error.message };
-  await logWorkspaceActivity(challengeId, "adjusted revenue splits");
+  await logWorkspaceFieldEdit(challengeId, "cohost_split", null, { cohost_id: cohostId, split_percent: splitPercent });
   return { ok: true };
 }
 
@@ -230,7 +237,7 @@ export async function removeCohost(challengeId: string, cohostId: string) {
     .eq("cohost_id", cohostId);
 
   if (error) return { error: error.message };
-  await logWorkspaceActivity(challengeId, "removed a collaborator");
+  await logWorkspaceFieldEdit(challengeId, "cohost_removed", { cohost_id: cohostId }, null);
   return { ok: true };
 }
 
@@ -257,7 +264,7 @@ export async function addSessionCohost(
     .insert({ session_id: sessionId, cohost_id: cohostId, split_percent: splitPercent });
 
   if (error) return { error: error.message };
-  await logWorkspaceActivity(challengeId, "added a cohost to a session");
+  await logWorkspaceFieldEdit(challengeId, "session_cohost_added", null, { session_id: sessionId, cohost_id: cohostId });
   return { ok: true };
 }
 
@@ -278,7 +285,7 @@ export async function removeSessionCohost(
     .eq("cohost_id", cohostId);
 
   if (error) return { error: error.message };
-  await logWorkspaceActivity(challengeId, "removed a cohost from a session");
+  await logWorkspaceFieldEdit(challengeId, "session_cohost_removed", { session_id: sessionId, cohost_id: cohostId }, null);
   return { ok: true };
 }
 

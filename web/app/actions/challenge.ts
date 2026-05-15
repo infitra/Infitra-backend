@@ -188,8 +188,16 @@ export async function updateChallenge(prevState: unknown, formData: FormData) {
   if (error) return { error: humanizeUpdateError(error.message) };
 
   // Field-edit log goes to the activity audit, not the chat thread.
-  // Bundle 3's per-field UI will pass real before/after values.
-  await logWorkspaceFieldEdit(challengeId, "challenge_details");
+  // The Bundle 3 polish auto-save sends a `changed_field` hint so each
+  // blur logs precisely what changed (e.g. "promise_text", "weekly_focus").
+  // Older callers without a hint fall back to the catch-all so legacy
+  // code paths keep producing some attribution.
+  const changedFieldRaw = formData.get("changed_field");
+  const changedField =
+    typeof changedFieldRaw === "string" && changedFieldRaw.length > 0
+      ? changedFieldRaw
+      : "challenge_details";
+  await logWorkspaceFieldEdit(challengeId, changedField);
   return { success: true, challengeId };
 }
 

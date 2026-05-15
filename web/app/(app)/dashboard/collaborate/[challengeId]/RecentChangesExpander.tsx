@@ -1,19 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { useState } from "react";
+import type { ActivityRow } from "./useWorkspaceRealtime";
 
 /**
  * Slim, collapsible audit log of field-level edits in the workspace.
- * Replaces the chat-thread system messages (post_workspace_log) for the
- * field-edit case — those used to bury the human conversation in
- * "X updated the title", "Y added a session" pings.
- *
- * Reads from app_workspace_activity (RLS scoped to owner + cohorts).
- * Subscribes to the same `workspace-activity` window event the chat
- * uses, so a creator's own edits appear without a manual refresh; the
- * other party picks them up via Supabase Realtime on the underlying
- * table (publication includes app_workspace_activity).
+ * Pure presentational — receives the live activity array from the
+ * shared useWorkspaceRealtime subscription owned by WorkspaceShell.
  *
  * Default state: collapsed. The summary chip ("Recent changes · 3 ▾")
  * tells you something happened without consuming visual real estate.
@@ -21,19 +14,11 @@ import { createClient } from "@/lib/supabase/client";
 
 interface Props {
   challengeId: string;
-  /** Profile lookup for actor names — already loaded by the page. */
-  profiles: Record<string, { name: string; avatar: string | null }>;
+  activity: ActivityRow[];
+  profiles: Record<string, { name: string; avatar?: string | null }>;
 }
 
-interface ActivityRow {
-  id: string;
-  actor_id: string;
-  kind: string;
-  payload: { field?: string; old?: unknown; new?: unknown } | null;
-  created_at: string;
-}
-
-const FETCH_LIMIT = 20;
+const DISPLAY_LIMIT = 20;
 
 function timeAgo(iso: string): string {
   const then = new Date(iso).getTime();
@@ -52,8 +37,30 @@ function timeAgo(iso: string): string {
 function describe(row: ActivityRow): string {
   const field = row.payload?.field;
   switch (field) {
+    case "title":
+      return "updated the title";
+    case "description":
+      return "updated the description";
+    case "start_date":
+    case "end_date":
+      return "updated the dates";
+    case "price":
+      return "updated the price";
+    case "image_url":
+      return "updated the cover image";
+    case "capacity":
+      return "updated the capacity";
     case "challenge_details":
       return "updated the challenge details";
+    case "promise_text":
+      return "updated the Promise";
+    case "weekly_focus":
+    case "weekly_arc":
+      return "updated the Weekly Focus";
+    case "topic_ownership":
+      return "updated Who Handles What";
+    case "intro_prompt":
+      return "updated the Intro Prompt";
     case "session_added": {
       const title = (row.payload?.new as { title?: string } | undefined)?.title;
       return title ? `added session "${title}"` : "added a session";
@@ -64,57 +71,33 @@ function describe(row: ActivityRow): string {
     }
     case "session_removed":
       return "removed a session";
-    case "promise_text":
-      return "updated the Promise";
-    case "weekly_arc":
-      return "updated the Weekly Arc";
-    case "topic_ownership":
-      return "updated Who Handles What";
-    case "intro_prompt":
-      return "updated the Intro Prompt";
+    case "cohost_added":
+      return "added a collaborator";
+    case "cohost_removed":
+      return "removed a collaborator";
+    case "cohost_split":
+      return "adjusted revenue splits";
+    case "session_cohost_added":
+      return "added a cohost to a session";
+    case "session_cohost_removed":
+      return "removed a cohost from a session";
     default:
       return field ? `edited ${field}` : "made a change";
   }
 }
 
-export function RecentChangesExpander({ challengeId, profiles }: Props) {
+export function RecentChangesExpander({
+  challengeId: _challengeId,
+  activity,
+  profiles,
+}: Props) {
   const [open, setOpen] = useState(false);
-  const [rows, setRows] = useState<ActivityRow[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  async function refetch() {
-    const supabase = createClient();
-    const { data } = await supabase
-      .from("app_workspace_activity")
-      .select("id, actor_id, kind, payload, created_at")
-      .eq("challenge_id", challengeId)
-      .order("created_at", { ascending: false })
-      .limit(FETCH_LIMIT);
-    if (data) setRows(data as ActivityRow[]);
-    setLoading(false);
-  }
-
-  // Initial load
-  useEffect(() => {
-    refetch();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [challengeId]);
-
-  // Local actor signal — same event the chat listens for.
-  // The acting user sees their edit reflected without a round trip.
-  useEffect(() => {
-    function handler() { refetch(); }
-    window.addEventListener("workspace-activity", handler);
-    return () => window.removeEventListener("workspace-activity", handler);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [challengeId]);
-
+  const rows = activity.slice(0, DISPLAY_LIMIT);
   const count = rows.length;
 
   return (
     <div
-      className="rounded-2xl infitra-card overflow-hidden"
-      style={{ marginBottom: 12 }}
+      className="rounded-2xl infitra-card overflow-hidden shrink-0"
     >
       <button
         type="button"
@@ -131,17 +114,15 @@ export function RecentChangesExpander({ challengeId, profiles }: Props) {
           >
             Recent changes
           </span>
-          {!loading && (
-            <span
-              className="text-[11px] font-bold font-headline px-1.5 py-0.5 rounded"
-              style={{
-                backgroundColor: count > 0 ? "rgba(8,145,178,0.10)" : "rgba(0,0,0,0.04)",
-                color: count > 0 ? "#0891b2" : "#94a3b8",
-              }}
-            >
-              {count}
-            </span>
-          )}
+          <span
+            className="text-[11px] font-bold font-headline px-1.5 py-0.5 rounded"
+            style={{
+              backgroundColor: count > 0 ? "rgba(8,145,178,0.10)" : "rgba(0,0,0,0.04)",
+              color: count > 0 ? "#0891b2" : "#94a3b8",
+            }}
+          >
+            {count}
+          </span>
         </span>
         <span
           className="text-xs"
@@ -160,11 +141,7 @@ export function RecentChangesExpander({ challengeId, profiles }: Props) {
           className="px-4 py-3 space-y-2 max-h-72 overflow-y-auto"
           style={{ borderTop: "1px solid rgba(15,34,41,0.06)" }}
         >
-          {loading ? (
-            <p className="text-xs text-center py-2" style={{ color: "#94a3b8" }}>
-              Loading…
-            </p>
-          ) : rows.length === 0 ? (
+          {rows.length === 0 ? (
             <p className="text-xs italic text-center py-2" style={{ color: "#94a3b8" }}>
               No edits yet.
             </p>

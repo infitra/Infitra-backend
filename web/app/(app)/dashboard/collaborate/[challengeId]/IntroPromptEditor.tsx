@@ -1,6 +1,7 @@
 "use client";
 
-import { EditedAttribution } from "@/app/components/EditedAttribution";
+import { SectionAttribution } from "./SectionAttribution";
+import type { ActivityRow } from "./useWorkspaceRealtime";
 
 /**
  * The intro prompt — the question that fires for each new buyer the
@@ -9,26 +10,30 @@ import { EditedAttribution } from "@/app/components/EditedAttribution";
  * when the field is empty; this is a custom version creators can
  * write to set a more program-shaped tone.
  *
- * Saved as part of the larger handleSave action in WorkspaceEditor.
+ * Auto-save: parent owns value state, onCommit fires on blur.
+ * SectionAttribution reads the workspace activity log.
  */
 
 interface Props {
   value: string;
   onChange: (value: string) => void;
+  onCommit: () => void;
   canEdit: boolean;
-  editedAt: string | null;
-  editorName: string | null;
+  activity: ActivityRow[];
+  profileMap: Record<string, { name: string; avatar?: string | null }>;
 }
 
 const DEFAULT_PLACEHOLDER = "What are you hoping to get from this program?";
 const MAX_LENGTH = 500;
+const INTRO_ATTRIBUTION_FIELDS = ["intro_prompt"];
 
 export function IntroPromptEditor({
   value,
   onChange,
+  onCommit,
   canEdit,
-  editedAt,
-  editorName,
+  activity,
+  profileMap,
 }: Props) {
   const charCount = value.length;
   const overLimit = charCount > MAX_LENGTH;
@@ -58,6 +63,7 @@ export function IntroPromptEditor({
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          onBlur={onCommit}
           maxLength={MAX_LENGTH + 50}
           placeholder={DEFAULT_PLACEHOLDER}
           className="w-full rounded-xl p-3 text-sm focus:outline-none"
@@ -76,7 +82,11 @@ export function IntroPromptEditor({
         </p>
       )}
 
-      <EditedAttribution editedAt={editedAt} editorName={editorName} />
+      <SectionAttribution
+        fields={INTRO_ATTRIBUTION_FIELDS}
+        activity={activity}
+        profiles={profileMap}
+      />
     </div>
   );
 }

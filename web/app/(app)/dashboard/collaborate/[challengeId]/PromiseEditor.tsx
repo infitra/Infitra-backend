@@ -1,6 +1,7 @@
 "use client";
 
-import { EditedAttribution } from "@/app/components/EditedAttribution";
+import { SectionAttribution } from "./SectionAttribution";
+import type { ActivityRow } from "./useWorkspaceRealtime";
 
 /**
  * The Promise — 1–3 sentences capturing what the program will do for the
@@ -8,23 +9,31 @@ import { EditedAttribution } from "@/app/components/EditedAttribution";
  * verbatim on the public buyer page (Bundle 4) and as the first line of
  * the kickoff email (Bundle 10).
  *
- * Saved as part of the larger handleSave action in WorkspaceEditor —
- * this component is a controlled input only. Visual treatment matches
- * the existing CHALLENGE DETAILS section (rounded card, uppercase header,
- * label + textarea + attribution chip).
+ * Auto-save: parent owns the value state and `onCommit` callback fires
+ * on blur. SectionAttribution chip below reads the workspace activity
+ * log and shows the latest editor.
  */
 
 interface Props {
   value: string;
   onChange: (value: string) => void;
+  onCommit: () => void;
   canEdit: boolean;
-  editedAt: string | null;
-  editorName: string | null;
+  activity: ActivityRow[];
+  profileMap: Record<string, { name: string; avatar?: string | null }>;
 }
 
 const MAX_LENGTH = 600;
+const PROMISE_ATTRIBUTION_FIELDS = ["promise_text"];
 
-export function PromiseEditor({ value, onChange, canEdit, editedAt, editorName }: Props) {
+export function PromiseEditor({
+  value,
+  onChange,
+  onCommit,
+  canEdit,
+  activity,
+  profileMap,
+}: Props) {
   const charCount = value.length;
   const overLimit = charCount > MAX_LENGTH;
 
@@ -52,6 +61,7 @@ export function PromiseEditor({ value, onChange, canEdit, editedAt, editorName }
         <textarea
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          onBlur={onCommit}
           rows={3}
           maxLength={MAX_LENGTH + 50}
           placeholder="e.g. Strong Together — eight live sessions and two coaches walking you from base fitness to lasting habits over four weeks."
@@ -72,7 +82,11 @@ export function PromiseEditor({ value, onChange, canEdit, editedAt, editorName }
         </p>
       )}
 
-      <EditedAttribution editedAt={editedAt} editorName={editorName} />
+      <SectionAttribution
+        fields={PROMISE_ATTRIBUTION_FIELDS}
+        activity={activity}
+        profiles={profileMap}
+      />
     </div>
   );
 }

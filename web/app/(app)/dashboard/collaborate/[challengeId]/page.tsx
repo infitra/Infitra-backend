@@ -1,9 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { WorkspaceEditor } from "./WorkspaceEditor";
-import { WorkspaceChat } from "./WorkspaceChat";
-import { RecentChangesExpander } from "./RecentChangesExpander";
+import { WorkspaceShell } from "./WorkspaceShell";
 
 export const metadata = { title: "Collaboration Workspace — INFITRA" };
 
@@ -167,6 +165,17 @@ export default async function CollaborateWorkspacePage({
   const cohostSplitTotal = (cohosts ?? []).reduce((sum: number, c: any) => sum + (c.split_percent ?? 0), 0);
   const ownerSplit = 100 - cohostSplitTotal;
 
+  // Bundle 3 polish — workspace activity log (powers RecentChangesExpander
+  // + per-section attribution chips). Initial load happens here on the
+  // server; useWorkspaceRealtime keeps it live client-side.
+  const { data: activityRows } = await supabase
+    .from("app_workspace_activity")
+    .select("id, actor_id, kind, payload, created_at")
+    .eq("challenge_id", challengeId)
+    .order("created_at", { ascending: false })
+    .limit(50);
+  const activity = activityRows ?? [];
+
   return (
     <div className="py-6">
       {/* Header */}
@@ -189,104 +198,80 @@ export default async function CollaborateWorkspacePage({
         </div>
       </div>
 
-      {/* Split layout: Editor + Chat */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left: Draft Editor (2/3) */}
-        <div className="lg:col-span-2">
-          <WorkspaceEditor
-            challenge={{
-              id: challenge.id,
-              title: challenge.title,
-              description: challenge.description,
-              startDate: challenge.start_date,
-              endDate: challenge.end_date,
-              priceCents: challenge.price_cents,
-              status: challenge.status,
-              imageUrl: challenge.image_url,
-              contractId: challenge.contract_id,
-              // Bundle 3 — v3 engagement fields. Defaults match the DB:
-              // null Promise/Intro, empty arrays for arc/ownership.
-              promiseText: challenge.promise_text ?? null,
-              weeklyArc: Array.isArray(challenge.weekly_arc) ? challenge.weekly_arc : [],
-              topicOwnership: Array.isArray(challenge.topic_ownership) ? challenge.topic_ownership : [],
-              introPrompt: challenge.intro_prompt ?? null,
-              promiseEditedAt: challenge.promise_edited_at ?? null,
-              promiseEditorName: challenge.promise_edited_by
-                ? profileMap[challenge.promise_edited_by]?.name ?? null
-                : null,
-            }}
-            isOwner={isOwner}
-            currentUserId={user.id}
-            ownerProfile={{ id: challenge.owner_id, ...(profileMap[challenge.owner_id] ?? { name: "Owner", avatar: null }) }}
-            ownerSplit={ownerSplit}
-            cohosts={(cohosts ?? []).map((c: any) => ({
-              id: c.cohost_id,
-              name: profileMap[c.cohost_id]?.name ?? "Creator",
-              avatar: profileMap[c.cohost_id]?.avatar ?? null,
-              tagline: profileMap[c.cohost_id]?.tagline ?? null,
-              username: profileMap[c.cohost_id]?.username ?? null,
-              splitPercent: c.split_percent,
-            }))}
-            sessions={sessions.map((s: any) => ({
-              id: s.id,
-              title: s.title,
-              startTime: s.start_time,
-              durationMinutes: s.duration_minutes,
-              hostId: s.host_id,
-              hostName: profileMap[s.host_id]?.name ?? "Host",
-              hostAvatar: profileMap[s.host_id]?.avatar ?? null,
-              imageUrl: s.image_url ?? null,
-              cohosts: (sessionCohostMap[s.id] ?? []).map((sc) => ({
-                id: sc.cohostId,
-                name: profileMap[sc.cohostId]?.name ?? "Creator",
-                avatar: profileMap[sc.cohostId]?.avatar ?? null,
-                splitPercent: sc.splitPercent,
-              })),
-            }))}
-            pendingInvites={pendingInvites.map((i: any) => ({
-              id: i.id,
-              toId: i.to_id,
-              toName: pendingInviteeProfiles[i.to_id]?.name ?? "Creator",
-              toAvatar: pendingInviteeProfiles[i.to_id]?.avatar ?? null,
-              toTagline: pendingInviteeProfiles[i.to_id]?.tagline ?? null,
-              toUsername: pendingInviteeProfiles[i.to_id]?.username ?? null,
-              splitPercent: i.initial_split_percent,
-              message: i.message,
-            }))}
-            contract={contract ? {
-              id: contract.id,
-              lockedAt: contract.locked_at,
-              acceptances,
-              declines,
-            } : null}
-          />
-        </div>
-
-        {/* Right: Recent changes expander + Chat (1/3) — sticky so they
-            stay visible while the editor scrolls. The expander
-            (Bundle 3) is the audit log of field-level edits, replacing
-            the chat-thread system messages that used to bury the human
-            conversation. Chat keeps collaboration milestones only. */}
-        <div className="lg:col-span-1">
-          <div className="lg:sticky lg:top-24">
-            <RecentChangesExpander
-              challengeId={challenge.id}
-              profiles={profileMap}
-            />
-            {dmConversationId ? (
-              <WorkspaceChat
-                conversationId={dmConversationId}
-                currentUserId={user.id}
-                profiles={profileMap}
-              />
-            ) : (
-              <div className="rounded-2xl infitra-card p-6 text-center">
-                <p className="text-sm text-[#94a3b8]">Chat will be available once the collaboration is set up.</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+      {/* Bundle 3 polish — WorkspaceShell owns the single Realtime
+          channel and the live activity array; passes both into the
+          editor (for SectionAttribution chips) and the expander.
+          Right-rail uses flex column so chat fills remaining height. */}
+      <WorkspaceShell
+        challengeId={challenge.id}
+        initialActivity={activity}
+        knownSessionIds={sessions.map((s: any) => s.id)}
+        dmConversationId={dmConversationId}
+        currentUserId={user.id}
+        profileMap={profileMap}
+        challenge={{
+          id: challenge.id,
+          title: challenge.title,
+          description: challenge.description,
+          startDate: challenge.start_date,
+          endDate: challenge.end_date,
+          priceCents: challenge.price_cents,
+          status: challenge.status,
+          imageUrl: challenge.image_url,
+          contractId: challenge.contract_id,
+          promiseText: challenge.promise_text ?? null,
+          weeklyArc: Array.isArray(challenge.weekly_arc) ? challenge.weekly_arc : [],
+          topicOwnership: Array.isArray(challenge.topic_ownership) ? challenge.topic_ownership : [],
+          introPrompt: challenge.intro_prompt ?? null,
+          promiseEditedAt: challenge.promise_edited_at ?? null,
+          promiseEditorName: challenge.promise_edited_by
+            ? profileMap[challenge.promise_edited_by]?.name ?? null
+            : null,
+        }}
+        isOwner={isOwner}
+        ownerProfile={{ id: challenge.owner_id, ...(profileMap[challenge.owner_id] ?? { name: "Owner", avatar: null }) }}
+        ownerSplit={ownerSplit}
+        cohosts={(cohosts ?? []).map((c: any) => ({
+          id: c.cohost_id,
+          name: profileMap[c.cohost_id]?.name ?? "Creator",
+          avatar: profileMap[c.cohost_id]?.avatar ?? null,
+          tagline: profileMap[c.cohost_id]?.tagline ?? null,
+          username: profileMap[c.cohost_id]?.username ?? null,
+          splitPercent: c.split_percent,
+        }))}
+        sessions={sessions.map((s: any) => ({
+          id: s.id,
+          title: s.title,
+          startTime: s.start_time,
+          durationMinutes: s.duration_minutes,
+          hostId: s.host_id,
+          hostName: profileMap[s.host_id]?.name ?? "Host",
+          hostAvatar: profileMap[s.host_id]?.avatar ?? null,
+          imageUrl: s.image_url ?? null,
+          cohosts: (sessionCohostMap[s.id] ?? []).map((sc) => ({
+            id: sc.cohostId,
+            name: profileMap[sc.cohostId]?.name ?? "Creator",
+            avatar: profileMap[sc.cohostId]?.avatar ?? null,
+            splitPercent: sc.splitPercent,
+          })),
+        }))}
+        pendingInvites={pendingInvites.map((i: any) => ({
+          id: i.id,
+          toId: i.to_id,
+          toName: pendingInviteeProfiles[i.to_id]?.name ?? "Creator",
+          toAvatar: pendingInviteeProfiles[i.to_id]?.avatar ?? null,
+          toTagline: pendingInviteeProfiles[i.to_id]?.tagline ?? null,
+          toUsername: pendingInviteeProfiles[i.to_id]?.username ?? null,
+          splitPercent: i.initial_split_percent,
+          message: i.message,
+        }))}
+        contract={contract ? {
+          id: contract.id,
+          lockedAt: contract.locked_at,
+          acceptances,
+          declines,
+        } : null}
+      />
     </div>
   );
 }

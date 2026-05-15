@@ -1,19 +1,43 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { ShareDonut } from "@/app/components/ShareDonut";
 import { ImageSelector } from "@/app/components/ImageSelector";
-import { CollabInviteFlow } from "@/app/(app)/dashboard/create/CollabInviteFlow";
-import { updateChallenge, publishChallenge, createChallengeSession, updateChallengeSession, removeChallengeSession } from "@/app/actions/challenge";
-import { lockTerms, confirmTerms, requestChanges, reactivateDrafting, updateCohostSplit, addSessionCohost, removeSessionCohost } from "@/app/actions/collaboration";
+import {
+  updateChallenge,
+  publishChallenge,
+  createChallengeSession,
+  updateChallengeSession,
+  removeChallengeSession,
+} from "@/app/actions/challenge";
+import {
+  lockTerms,
+  confirmTerms,
+  requestChanges,
+  reactivateDrafting,
+  updateCohostSplit,
+  addSessionCohost,
+  removeSessionCohost,
+} from "@/app/actions/collaboration";
 import { ContractCommitmentModal } from "./ContractCommitmentModal";
 import { ContractStatusBanner } from "./ContractStatusBanner";
 import { SessionDetailModal } from "./SessionDetailModal";
 import { PromiseEditor } from "./PromiseEditor";
-import { WeeklyArcEditor, type WeeklyArcEntry } from "./WeeklyArcEditor";
-import { OwnershipEditor, type TopicOwnershipEntry } from "./OwnershipEditor";
 import { IntroPromptEditor } from "./IntroPromptEditor";
+import { TeamSection, type CreatorRow, type PendingInviteRow } from "./TeamSection";
+import {
+  ProgramRhythmSection,
+  type WeeklyFocusEntry,
+} from "./ProgramRhythmSection";
+import { SaveStatusPill } from "./SaveStatusPill";
+import { useSaveStatus } from "./useSaveStatus";
+import { useSyncedField, type ActivityRow } from "./useWorkspaceRealtime";
+import { SectionAttribution } from "./SectionAttribution";
+
+interface TopicOwnershipEntry {
+  creator_id: string;
+  topics: string[];
+}
 
 interface Props {
   challenge: {
@@ -26,9 +50,8 @@ interface Props {
     status: string;
     imageUrl: string | null;
     contractId: string | null;
-    /** Bundle 3 — v3 engagement fields (Promise + Weekly Arc + Ownership + Intro). */
     promiseText: string | null;
-    weeklyArc: WeeklyArcEntry[];
+    weeklyArc: WeeklyFocusEntry[];
     topicOwnership: TopicOwnershipEntry[];
     introPrompt: string | null;
     promiseEditedAt: string | null;
@@ -36,19 +59,44 @@ interface Props {
   };
   isOwner: boolean;
   currentUserId: string;
-  ownerProfile: { id: string; name: string; avatar: string | null; tagline?: string | null; bio?: string | null; username?: string | null };
+  ownerProfile: {
+    id: string;
+    name: string;
+    avatar: string | null;
+    tagline?: string | null;
+    bio?: string | null;
+    username?: string | null;
+  };
   ownerSplit: number;
-  cohosts: { id: string; name: string; avatar: string | null; tagline?: string | null; username?: string | null; splitPercent: number }[];
+  cohosts: {
+    id: string;
+    name: string;
+    avatar: string | null;
+    tagline?: string | null;
+    bio?: string | null;
+    username?: string | null;
+    splitPercent: number;
+  }[];
   sessions: {
-    id: string; title: string; startTime: string; durationMinutes: number;
-    hostId: string; hostName: string; hostAvatar?: string | null;
+    id: string;
+    title: string;
+    startTime: string;
+    durationMinutes: number;
+    hostId: string;
+    hostName: string;
+    hostAvatar?: string | null;
     imageUrl?: string | null;
     cohosts: { id: string; name: string; avatar: string | null; splitPercent: number }[];
   }[];
   pendingInvites?: {
-    id: string; toId: string; toName: string; toAvatar: string | null;
-    toTagline?: string | null; toUsername?: string | null;
-    splitPercent: number; message: string;
+    id: string;
+    toId: string;
+    toName: string;
+    toAvatar: string | null;
+    toTagline?: string | null;
+    toUsername?: string | null;
+    splitPercent: number;
+    message: string;
   }[];
   contract: {
     id: string;
@@ -56,54 +104,84 @@ interface Props {
     acceptances: string[];
     declines: { cohostId: string; comment: string | null }[];
   } | null;
+  /** Bundle 3 polish — workspace activity log, kept fresh by Realtime. */
+  activity: ActivityRow[];
+  /** Bundle 3 polish — profile lookup for SectionAttribution chips. */
+  profileMap: Record<string, { name: string; avatar?: string | null }>;
 }
 
-export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfile, ownerSplit, cohosts, sessions, pendingInvites, contract }: Props) {
+const DETAILS_ATTRIBUTION_FIELDS = [
+  "title",
+  "description",
+  "start_date",
+  "end_date",
+  "price",
+  "image_url",
+  "capacity",
+  "challenge_details",
+];
+
+export function WorkspaceEditor({
+  challenge,
+  isOwner,
+  currentUserId,
+  ownerProfile,
+  ownerSplit,
+  cohosts,
+  sessions,
+  pendingInvites,
+  contract,
+  activity,
+  profileMap,
+}: Props) {
   const router = useRouter();
+  const { status: saveStatus, runSave } = useSaveStatus();
 
-  /**
-   * Run after any workspace mutation. Refreshes server components AND signals
-   * the chat panel to refetch messages so the system log appears immediately
-   * for the acting user (the other collaborator picks it up via the chat's
-   * Realtime subscription / polling fallback).
-   */
-  function refreshAfterAction() {
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new CustomEvent("workspace-activity"));
-    }
-    router.refresh();
-  }
-  const [saving, setSaving] = useState(false);
-  const [locking, setLocking] = useState(false);
-  const [confirming, setConfirming] = useState(false);
-  const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
 
-  // Editable challenge fields
-  const [title, setTitle] = useState(challenge.title);
-  const [description, setDescription] = useState(challenge.description ?? "");
-  const [startDate, setStartDate] = useState(challenge.startDate);
-  const [endDate, setEndDate] = useState(challenge.endDate);
-  const [price, setPrice] = useState(challenge.priceCents > 0 ? (challenge.priceCents / 100).toString() : "");
-  const [imageUrl, setImageUrl] = useState(challenge.imageUrl);
-
-  // Bundle 3 — v3 engagement fields
-  const [promiseText, setPromiseText] = useState(challenge.promiseText ?? "");
-  const [weeklyArc, setWeeklyArc] = useState<WeeklyArcEntry[]>(challenge.weeklyArc);
-  const [topicOwnership, setTopicOwnership] = useState<TopicOwnershipEntry[]>(challenge.topicOwnership);
-  const [introPrompt, setIntroPrompt] = useState(challenge.introPrompt ?? "");
-
-  // Editable cohost splits (owner only)
-  const [cohostSplits, setCohostSplits] = useState<Record<string, number>>(
-    () => Object.fromEntries(cohosts.map((c) => [c.id, c.splitPercent]))
+  // ── Editable fields, with local-wins sync against partner saves ──
+  const [title, setTitle, markTitleSaved] = useSyncedField(challenge.title);
+  const [description, setDescription, markDescriptionSaved] = useSyncedField(challenge.description ?? "");
+  const [startDate, setStartDate, markStartDateSaved] = useSyncedField(challenge.startDate);
+  const [endDate, setEndDate, markEndDateSaved] = useSyncedField(challenge.endDate);
+  const [price, setPrice, markPriceSaved] = useSyncedField(
+    challenge.priceCents > 0 ? (challenge.priceCents / 100).toString() : "",
   );
-  const currentOwnerSplit = 100 - Object.values(cohostSplits).reduce((a, b) => a + b, 0);
+  const [imageUrl, setImageUrl, markImageSaved] = useSyncedField(challenge.imageUrl);
 
-  // Collaborator profile popover (one open at a time)
-  const [openCollaboratorId, setOpenCollaboratorId] = useState<string | null>(null);
+  const [promiseText, setPromiseText, markPromiseSaved] = useSyncedField(challenge.promiseText ?? "");
+  const [introPrompt, setIntroPrompt, markIntroSaved] = useSyncedField(challenge.introPrompt ?? "");
+  const [weeklyArc, setWeeklyArc, markWeeklyArcSaved] = useSyncedField<WeeklyFocusEntry[]>(challenge.weeklyArc);
+  const [topicOwnership, setTopicOwnership, markTopicOwnershipSaved] = useSyncedField<TopicOwnershipEntry[]>(challenge.topicOwnership);
 
-  // Add session state
+  // Topics map per creator for fast lookup
+  const topicsByCreator: Record<string, string[]> = useMemo(() => {
+    const out: Record<string, string[]> = {};
+    for (const entry of topicOwnership) {
+      out[entry.creator_id] = entry.topics;
+    }
+    return out;
+  }, [topicOwnership]);
+
+  // Session counts per creator (for the Team section "X sessions" chip)
+  const sessionCountByCreator: Record<string, number> = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const s of sessions) {
+      counts[s.hostId] = (counts[s.hostId] ?? 0) + 1;
+    }
+    return counts;
+  }, [sessions]);
+
+  // ── Cover image: still uses an explicit auto-save effect since the
+  //    ImageSelector commits in one shot rather than on blur.
+  useEffect(() => {
+    if (!canEditChallenge()) return;
+    if (imageUrl === challenge.imageUrl) return;
+    void saveField("image_url", { image_url: imageUrl ?? null });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [imageUrl]);
+
+  // ── Session add/edit state (preserved from prior version) ──
   const [showAddSession, setShowAddSession] = useState(false);
   const [sessTitle, setSessTitle] = useState("");
   const [sessDate, setSessDate] = useState("");
@@ -112,110 +190,220 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
   const [sessCohostIds, setSessCohostIds] = useState<string[]>([]);
   const [addingSession, setAddingSession] = useState(false);
 
-  // Dirty check: only enable Save when something changed.
-  // Includes the v3 engagement fields — Promise / Weekly Arc / Ownership /
-  // Intro Prompt — so editing any of them lights up the Save button.
-  const initialPriceStr = challenge.priceCents > 0 ? (challenge.priceCents / 100).toString() : "";
-  const initialWeeklyArcJson = JSON.stringify(challenge.weeklyArc ?? []);
-  const initialTopicOwnershipJson = JSON.stringify(challenge.topicOwnership ?? []);
-  const isDirty =
-    title !== challenge.title ||
-    description !== (challenge.description ?? "") ||
-    startDate !== challenge.startDate ||
-    endDate !== challenge.endDate ||
-    price !== initialPriceStr ||
-    imageUrl !== challenge.imageUrl ||
-    promiseText !== (challenge.promiseText ?? "") ||
-    JSON.stringify(weeklyArc) !== initialWeeklyArcJson ||
-    JSON.stringify(topicOwnership) !== initialTopicOwnershipJson ||
-    introPrompt !== (challenge.introPrompt ?? "");
+  const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
+  const [editFields, setEditFields] = useState<{
+    title: string;
+    startTime: string;
+    duration: string;
+    imageUrl: string | null;
+  }>({ title: "", startTime: "", duration: "60", imageUrl: null });
+  const [savingSession, setSavingSession] = useState(false);
+  const [openCohostPicker, setOpenCohostPicker] = useState<string | null>(null);
+  const [addingCohostFor, setAddingCohostFor] = useState<string | null>(null);
+
+  // ── Contract / signing state ──
+  const [locking, setLocking] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [acceptModalOpen, setAcceptModalOpen] = useState(false);
+  const [publishModalOpen, setPublishModalOpen] = useState(false);
+  const [detailSession, setDetailSession] = useState<Props["sessions"][number] | null>(null);
 
   const isDraft = challenge.status === "draft";
   const isLocked = !!contract;
+  const isPublished = challenge.status === "published";
   const allAccepted = contract ? cohosts.every((c) => contract.acceptances.includes(c.id)) : false;
   const hasDeclines = contract ? contract.declines.length > 0 : false;
-  // Cohorts can now edit broader fields (title, description, dates, price,
-  // cover image) while drafting. The activity log makes every change
-  // transparent in chat. Backed by the update_challenge_workspace RPC,
-  // which permits owner OR cohost and locks down owner_id/status/contract_id.
-  const canEditChallenge = isDraft && !isLocked;
-  // Anyone in the collaboration can add their own sessions while drafting
-  const canAddSession = isDraft && !isLocked;
-  // Per-session: only the session host can edit/delete it + manage its cohosts
-  const canEditSession = (hostId: string) => isDraft && !isLocked && hostId === currentUserId;
-  // Owner-only governance: invite/remove cohosts, adjust splits, lock,
-  // publish, delete. Use canManageCollaboration for these gates.
-  const canManageCollaboration = isDraft && !isLocked && isOwner;
-  // Backwards-compat alias used in a few places where editing is implied
-  const canEdit = canEditChallenge;
+  const hasContractDoc = !!contract;
 
-  const shares = [
-    { label: ownerProfile.name, percent: currentOwnerSplit, color: "#FF6130" },
-    ...cohosts.map((c) => ({ label: c.name, percent: cohostSplits[c.id] ?? c.splitPercent, color: "#9CF0FF" })),
-  ];
+  function canEditChallenge() {
+    return isDraft && !isLocked;
+  }
+  const canEdit = canEditChallenge();
+  const canAddSession = canEdit;
+  const canEditSession = (hostId: string) => canEdit && hostId === currentUserId;
+  const canManageCollaboration = canEdit && isOwner;
 
-  async function handleSave() {
-    setSaving(true); setError(null);
+  // After any mutation: refresh server props + signal the chat to refetch.
+  function refreshAfterAction() {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("workspace-activity"));
+    }
+    router.refresh();
+  }
+
+  // ── Per-field auto-save ─────────────────────────────────────────
+  // The RPC takes the whole challenge state on every call (Bundle 2
+  // schema), so each field-blur sends every field's CURRENT value plus
+  // a `changed_field` hint that drives the activity log + per-section
+  // attribution chips. The useSaveStatus hook discards stale responses
+  // via its sequence counter so slow connections don't flicker.
+
+  type Override = Partial<{
+    title: string;
+    description: string;
+    start_date: string;
+    end_date: string;
+    price: string;
+    image_url: string | null;
+    promise_text: string;
+    weekly_arc: WeeklyFocusEntry[];
+    topic_ownership: TopicOwnershipEntry[];
+    intro_prompt: string;
+  }>;
+
+  async function saveField(fieldName: string, override: Override = {}) {
+    setError(null);
     const formData = new FormData();
     formData.set("challenge_id", challenge.id);
-    formData.set("title", title);
-    formData.set("description", description);
-    formData.set("start_date", startDate);
-    formData.set("end_date", endDate);
-    formData.set("price", price);
-    if (imageUrl) formData.set("image_url", imageUrl);
-    // Bundle 3 — v3 engagement fields. Always send (the RPC accepts
-    // null/empty and leaves the existing value untouched when the
-    // param is the default; we want explicit overwrite when the user
-    // clears a field, so we pass the current state value verbatim).
-    formData.set("promise_text", promiseText);
-    formData.set("weekly_arc", JSON.stringify(weeklyArc));
-    formData.set("topic_ownership", JSON.stringify(topicOwnership));
-    formData.set("intro_prompt", introPrompt);
+    formData.set("title", override.title ?? title);
+    formData.set("description", override.description ?? description);
+    formData.set("start_date", override.start_date ?? startDate);
+    formData.set("end_date", override.end_date ?? endDate);
+    formData.set("price", override.price ?? price);
+    const img = override.image_url !== undefined ? override.image_url : imageUrl;
+    if (img !== null && img !== undefined) {
+      formData.set("image_url", img);
+    } else {
+      formData.set("image_url", "");
+    }
+    formData.set("promise_text", override.promise_text ?? promiseText);
+    formData.set(
+      "weekly_arc",
+      JSON.stringify(override.weekly_arc ?? weeklyArc ?? []),
+    );
+    formData.set(
+      "topic_ownership",
+      JSON.stringify(override.topic_ownership ?? topicOwnership ?? []),
+    );
+    formData.set("intro_prompt", override.intro_prompt ?? introPrompt);
+    formData.set("changed_field", fieldName);
 
-    const result = await updateChallenge(null, formData);
-    if (result?.error) { setError(result.error); setSaving(false); return; }
-    setSuccess("Saved"); setTimeout(() => setSuccess(null), 2000);
-    setSaving(false);
+    const result = await runSave(() => updateChallenge(null, formData));
+    if (result?.error) {
+      setError(result.error);
+      return;
+    }
     refreshAfterAction();
   }
 
-  // Cover image is one discrete action — auto-save when it changes from
-  // what the server has. Everything else (title/desc/dates/price) uses
-  // the explicit Save button so we have one activity log entry per
-  // meaningful edit batch, not per field blur.
-  useEffect(() => {
-    if (!canEditChallenge) return;
-    if (imageUrl === challenge.imageUrl) return;
-    handleSave();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [imageUrl]);
+  // Per-field commit handlers — called on blur. Each one:
+  //   1. Skips if the value didn't change (no save needed)
+  //   2. Validates inline if needed (returns early on bad input)
+  //   3. Calls saveField with the right field name + override (fresh value)
+  //   4. Marks the field "saved" so the next prop update from a partner
+  //      can flow through (useSyncedField gates on dirty).
 
-  async function handleSaveCohostSplit(cohostId: string, newSplit: number) {
-    const result = await updateCohostSplit(challenge.id, cohostId, newSplit);
-    if (result.error) { setError(result.error); return; }
-    setCohostSplits((prev) => ({ ...prev, [cohostId]: newSplit }));
-    refreshAfterAction();
+  async function commitTitle() {
+    const trimmed = title.trim();
+    if (trimmed === challenge.title) { markTitleSaved(); return; }
+    if (trimmed.length < 3) {
+      setError("Title must be at least 3 characters.");
+      return;
+    }
+    setTitle(trimmed);
+    await saveField("title", { title: trimmed });
+    markTitleSaved();
   }
 
-  async function handleDeleteSession(sessionId: string) {
-    if (!confirm("Delete this session?")) return;
+  async function commitDescription() {
+    if (description === (challenge.description ?? "")) { markDescriptionSaved(); return; }
+    await saveField("description", { description });
+    markDescriptionSaved();
+  }
+
+  async function commitStartDate() {
+    if (startDate === challenge.startDate) { markStartDateSaved(); return; }
+    if (!startDate) { setError("Start date is required."); return; }
+    if (new Date(startDate) <= new Date()) {
+      setError("Start date must be in the future.");
+      return;
+    }
+    await saveField("start_date", { start_date: startDate });
+    markStartDateSaved();
+  }
+
+  async function commitEndDate() {
+    if (endDate === challenge.endDate) { markEndDateSaved(); return; }
+    if (!endDate) { setError("End date is required."); return; }
+    if (new Date(endDate) <= new Date(startDate)) {
+      setError("End date must be after start date.");
+      return;
+    }
+    await saveField("end_date", { end_date: endDate });
+    markEndDateSaved();
+  }
+
+  async function commitPrice() {
+    const initial = challenge.priceCents > 0 ? (challenge.priceCents / 100).toString() : "";
+    if (price === initial) { markPriceSaved(); return; }
+    const cents = price ? Math.round(parseFloat(price) * 100) : 0;
+    if (cents < 0) { setError("Price cannot be negative."); return; }
+    await saveField("price", { price });
+    markPriceSaved();
+  }
+
+  async function commitPromise() {
+    if (promiseText === (challenge.promiseText ?? "")) { markPromiseSaved(); return; }
+    await saveField("promise_text", { promise_text: promiseText });
+    markPromiseSaved();
+  }
+
+  async function commitIntro() {
+    if (introPrompt === (challenge.introPrompt ?? "")) { markIntroSaved(); return; }
+    await saveField("intro_prompt", { intro_prompt: introPrompt });
+    markIntroSaved();
+  }
+
+  async function commitWeeklyFocus(weekNum: number, theme: string) {
+    // Build the full row set (1..totalWeeks) preserving existing themes.
+    const totalWeeks = computeTotalWeeks(startDate, endDate);
+    const fullRows: WeeklyFocusEntry[] = [];
+    for (let w = 1; w <= totalWeeks; w++) {
+      if (w === weekNum) {
+        fullRows.push({ week: w, theme });
+      } else {
+        const existing = weeklyArc.find((e) => e.week === w);
+        fullRows.push({ week: w, theme: existing?.theme ?? "" });
+      }
+    }
+    setWeeklyArc(fullRows);
+    await saveField("weekly_focus", { weekly_arc: fullRows });
+    markWeeklyArcSaved();
+  }
+
+  async function commitTopics(creatorId: string, topics: string[]) {
+    const next = topicOwnership.filter((e) => e.creator_id !== creatorId);
+    if (topics.length > 0) {
+      next.push({ creator_id: creatorId, topics });
+    }
+    setTopicOwnership(next);
+    await saveField("topic_ownership", { topic_ownership: next });
+    markTopicOwnershipSaved();
+  }
+
+  async function commitCohostSplit(cohostId: string, splitPercent: number) {
     setError(null);
-    const result = await removeChallengeSession(challenge.id, sessionId);
+    // updateCohostSplit is a separate action targeting app_challenge_cohost
+    // directly; it logs its own field_edit ('cohost_split') via the
+    // collaboration.ts logWorkspaceFieldEdit helper.
+    const result = await runSave(() => updateCohostSplit(challenge.id, cohostId, splitPercent));
     if (result?.error) { setError(result.error); return; }
     refreshAfterAction();
   }
 
-  // Inline session editing
-  const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
-  const [editFields, setEditFields] = useState<{ title: string; startTime: string; duration: string; imageUrl: string | null }>({
-    title: "", startTime: "", duration: "60", imageUrl: null,
-  });
-  const [savingSession, setSavingSession] = useState(false);
+  // ── Session handlers (unchanged from prior version, just preserved) ──
+
+  async function handleDeleteSession(sessionId: string) {
+    if (!confirm("Delete this session?")) return;
+    setError(null);
+    const result = await runSave(() => removeChallengeSession(challenge.id, sessionId));
+    if (result?.error) { setError(result.error); return; }
+    refreshAfterAction();
+  }
 
   function startEditSession(s: Props["sessions"][number]) {
     setEditingSessionId(s.id);
-    // Convert ISO to local datetime-local format
     const dt = new Date(s.startTime);
     const tzOffset = dt.getTimezoneOffset() * 60000;
     const localISO = new Date(dt.getTime() - tzOffset).toISOString().slice(0, 16);
@@ -229,7 +417,8 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
 
   async function handleSaveSession(sessionId: string) {
     if (!editFields.title.trim() || !editFields.startTime) return;
-    setSavingSession(true); setError(null);
+    setSavingSession(true);
+    setError(null);
     const result = await updateChallengeSession(
       sessionId,
       editFields.title.trim(),
@@ -245,18 +434,13 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
     refreshAfterAction();
   }
 
-  const [openCohostPicker, setOpenCohostPicker] = useState<string | null>(null);
-  const [addingCohostFor, setAddingCohostFor] = useState<string | null>(null);
-
   async function handleAddSessionCohost(sessionId: string, cohostId: string) {
-    if (addingCohostFor) return; // prevent double-click while request in flight
+    if (addingCohostFor) return;
     setError(null);
     setAddingCohostFor(sessionId);
-    // Pass null — split_percent only matters for standalone session sales,
-    // and this session is bundled with the challenge.
     const result = await addSessionCohost(sessionId, cohostId, null, challenge.id);
     setAddingCohostFor(null);
-    setOpenCohostPicker(null); // close the picker
+    setOpenCohostPicker(null);
     if (result?.error) { setError(result.error); return; }
     refreshAfterAction();
   }
@@ -270,14 +454,14 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
 
   async function handleAddSession() {
     if (!sessTitle.trim() || !sessDate) return;
-    setAddingSession(true); setError(null);
+    setAddingSession(true);
+    setError(null);
     const result = await createChallengeSession(
-      challenge.id, sessTitle.trim(), sessDate, parseInt(sessDuration), sessImageUrl
+      challenge.id, sessTitle.trim(), sessDate, parseInt(sessDuration), sessImageUrl,
     );
     if (result?.error) { setError(result.error); setAddingSession(false); return; }
 
-    // Add selected cohosts to the new session (host_id = current user, RLS allows it)
-    const newSessionId = (result as any).sessionId;
+    const newSessionId = (result as { sessionId?: string }).sessionId;
     if (newSessionId && sessCohostIds.length > 0) {
       for (const cohostId of sessCohostIds) {
         const r = await addSessionCohost(newSessionId, cohostId, null, challenge.id);
@@ -287,27 +471,42 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
       }
     }
 
-    setSessTitle(""); setSessDate(""); setSessImageUrl(null); setSessCohostIds([]); setShowAddSession(false);
+    setSessTitle("");
+    setSessDate("");
+    setSessImageUrl(null);
+    setSessCohostIds([]);
+    setShowAddSession(false);
     setAddingSession(false);
     refreshAfterAction();
   }
+
+  // Pre-fill the add-session form to a date inside a specific week,
+  // then expand it. Called by ProgramRhythmSection's "+ Add session in
+  // Week N" button.
+  function handleAddSessionForWeek(_weekNum: number, suggestedDate: Date) {
+    // Default time = 19:00 local on the suggested date
+    const dt = new Date(suggestedDate);
+    dt.setHours(19, 0, 0, 0);
+    const tzOffset = dt.getTimezoneOffset() * 60000;
+    const localISO = new Date(dt.getTime() - tzOffset).toISOString().slice(0, 16);
+    setSessDate(localISO);
+    setShowAddSession(true);
+    // Scroll the form into view on next paint
+    setTimeout(() => {
+      const el = document.getElementById("add-session-form");
+      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 50);
+  }
+
+  // ── Contract flow (unchanged) ──
 
   async function handleLockTerms() {
     setLocking(true); setError(null);
     const result = await lockTerms(challenge.id);
     if (result.error) { setError(result.error); setLocking(false); return; }
-    // No toast: the banner appearing and the envelope tint switching is the
-    // visible confirmation. (Leaving the Save pill's `success` state alone.)
     setLocking(false);
     refreshAfterAction();
   }
-
-  // Both binding steps are gated by a deliberate commitment modal. The
-  // cohost's Accept flow and the owner's Publish flow share the same
-  // modal component — only the copy differs.
-  const [acceptModalOpen, setAcceptModalOpen] = useState(false);
-  const [publishModalOpen, setPublishModalOpen] = useState(false);
-  const [detailSession, setDetailSession] = useState<Props["sessions"][number] | null>(null);
 
   async function handleConfirm() {
     if (!contract) return;
@@ -315,7 +514,6 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
     const result = await confirmTerms(contract.id);
     if (result.error) { setError(result.error); setConfirming(false); return; }
     setAcceptModalOpen(false);
-    // Banner pill flips to "Confirmed" — no toast needed.
     setConfirming(false);
     refreshAfterAction();
   }
@@ -326,7 +524,6 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
     setConfirming(true); setError(null);
     const result = await requestChanges(contract.id, comment ?? undefined);
     if (result.error) { setError(result.error); setConfirming(false); return; }
-    // Banner headline flips to "Contract changes requested" — no toast needed.
     setConfirming(false);
     refreshAfterAction();
   }
@@ -336,8 +533,6 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
     setLocking(true); setError(null);
     const result = await reactivateDrafting(challenge.id, contract.id);
     if (result.error) { setError(result.error); setLocking(false); return; }
-    // Banner disappears and fields become editable — visual state is the
-    // confirmation. Don't write into `success` (that's the Save pill's lane).
     setLocking(false);
     refreshAfterAction();
   }
@@ -346,13 +541,9 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
     setPublishing(true); setError(null);
     const result = await publishChallenge(challenge.id);
     if (result?.error) { setError(result.error); setPublishing(false); return; }
-    // On success publishChallenge redirects via the server action, so we
-    // don't need to close the modal or reset state here.
   }
 
-  // Parties shown in the contract status banner. The owner isn't "confirming"
-  // the terms the way a cohost does — they authored them and are now holding
-  // the publish action, awaiting cohort acceptances. Status reflects that.
+  // ── Banner data ──
   const contractParties = contract
     ? [
         {
@@ -395,34 +586,73 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
       ]
     : [];
 
-  // Whether there's a frozen contract document to point at. True both
-  // during the locked review state AND after publish — once a contract
-  // is locked, the snapshot exists and never goes away.
-  const hasContractDoc = !!contract;
-  const isPublished = challenge.status === "published";
+  // ── Build TeamSection inputs ──
+  const teamCreators: CreatorRow[] = [
+    {
+      id: ownerProfile.id,
+      name: ownerProfile.name,
+      avatar: ownerProfile.avatar,
+      tagline: ownerProfile.tagline ?? null,
+      bio: ownerProfile.bio ?? null,
+      username: ownerProfile.username ?? null,
+      role: "owner",
+      sessionCount: sessionCountByCreator[ownerProfile.id] ?? 0,
+      splitPercent: ownerSplit,
+    },
+    ...cohosts.map((c) => ({
+      id: c.id,
+      name: c.name,
+      avatar: c.avatar,
+      tagline: c.tagline ?? null,
+      bio: c.bio ?? null,
+      username: c.username ?? null,
+      role: "cohost" as const,
+      sessionCount: sessionCountByCreator[c.id] ?? 0,
+      splitPercent: c.splitPercent,
+    })),
+  ];
+
+  const teamPendingInvites: PendingInviteRow[] = (pendingInvites ?? []).map((i) => ({
+    id: i.id,
+    toId: i.toId,
+    toName: i.toName,
+    toAvatar: i.toAvatar,
+    toTagline: i.toTagline ?? null,
+    toUsername: i.toUsername ?? null,
+    splitPercent: i.splitPercent,
+    message: i.message,
+  }));
 
   return (
     <div className="space-y-6">
-      {/* ── SIGNED CONTRACT LINK ─────────────────
-          Surfaces the locked snapshot as a real document creators can
-          open. After publish this is the *only* contract surface (the
-          live signature banner below disappears with status=draft). */}
+      {/* Status pill — replaces per-section Save buttons */}
+      {(saveStatus.kind !== "idle" || error) && (
+        <div className="flex justify-end">
+          {error && saveStatus.kind === "idle" && (
+            <span
+              className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-bold font-headline"
+              style={{
+                backgroundColor: "rgba(220,38,38,0.08)",
+                color: "#dc2626",
+                border: "1px solid rgba(220,38,38,0.25)",
+              }}
+            >
+              {error}
+            </span>
+          )}
+          {saveStatus.kind !== "idle" && <SaveStatusPill status={saveStatus} />}
+        </div>
+      )}
+
+      {/* ── SIGNED CONTRACT LINK ───────────────────── */}
       {hasContractDoc && (
         <a
           href={`/dashboard/collaborate/${challenge.id}/contract`}
           className="flex items-center gap-3 px-5 py-4 rounded-2xl group transition-colors"
           style={
             isPublished
-              ? {
-                  // After publish — confident green, this is the proof
-                  backgroundColor: "rgba(21,128,61,0.06)",
-                  border: "1px solid rgba(21,128,61,0.25)",
-                }
-              : {
-                  // During review — subdued, the banner below is doing the work
-                  backgroundColor: "rgba(8,145,178,0.05)",
-                  border: "1px solid rgba(8,145,178,0.18)",
-                }
+              ? { backgroundColor: "rgba(21,128,61,0.06)", border: "1px solid rgba(21,128,61,0.25)" }
+              : { backgroundColor: "rgba(8,145,178,0.05)", border: "1px solid rgba(8,145,178,0.18)" }
           }
         >
           <span
@@ -436,20 +666,14 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
             📜
           </span>
           <div className="flex-1 min-w-0">
-            <p
-              className="text-sm font-black font-headline truncate"
-              style={{ color: "#0F2229" }}
-            >
+            <p className="text-sm font-black font-headline truncate" style={{ color: "#0F2229" }}>
               {isPublished ? "Signed & published — view contract" : "View locked contract"}
             </p>
             <p className="text-[11px] text-[#94a3b8] truncate">
               The frozen agreement everyone signed. Read-only document.
             </p>
           </div>
-          <span
-            className="shrink-0 text-xs font-black font-headline"
-            style={{ color: isPublished ? "#15803d" : "#0891b2" }}
-          >
+          <span className="shrink-0 text-xs font-black font-headline" style={{ color: isPublished ? "#15803d" : "#0891b2" }}>
             Open →
           </span>
         </a>
@@ -465,347 +689,198 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
         />
       )}
 
-      {/*
-        Contract envelope (locked only). Wraps every section that is part
-        of the snapshot under review — cover, details, collaborators,
-        revenue, sessions, signing panel — in one softly tinted tray so
-        they read as a single document, not a stack of editable cards.
-        In draft mode the wrapper is invisible: just space-y-6 between
-        children, matching the previous layout.
-      */}
-      {/* Envelope color reflects the contract state:
-          - reviewing / declined → muted slate (paused mood)
-          - all signatures in → pale cyan (Infitra's brand cyan, dialled
-            down so it doesn't compete with the orange Publish button —
-            but clearly shifted from grey so the workspace *feels* ready) */}
+      {/* Contract envelope (locked only) — same tinted tray as before. */}
       <div
         className={`space-y-6 transition-colors duration-300 ${isLocked ? "rounded-3xl p-5 sm:p-6" : ""}`}
         style={
           isLocked
             ? allAccepted && !hasDeclines
-              ? {
-                  // Clearly cyan — visibly shifted from the slate "review"
-                  // tint so the ready-to-publish state is unmissable at a
-                  // glance. Still dialled down vs the bright #9CF0FF so
-                  // the Publish CTA stays the dominant orange focal point.
-                  backgroundColor: "#A8D5DC",
-                  border: "1px solid rgba(8,145,178,0.35)",
-                }
-              : {
-                  backgroundColor: "#D8DEE2",
-                  border: "1px solid rgba(15,34,41,0.1)",
-                }
+              ? { backgroundColor: "#A8D5DC", border: "1px solid rgba(8,145,178,0.35)" }
+              : { backgroundColor: "#D8DEE2", border: "1px solid rgba(15,34,41,0.1)" }
             : undefined
         }
       >
-      {/* ── COVER IMAGE ─────────────────────────── */}
-      <div className="rounded-2xl infitra-card p-6">
-        <h3 className="text-sm font-black font-headline text-[#94a3b8] uppercase tracking-wider mb-4">Cover Image</h3>
-        <div className="max-w-md">
-          {canEdit ? (
-            <ImageSelector
-              currentUrl={imageUrl}
-              title={title}
-              onSelect={(url) => setImageUrl(url)}
-              size="md"
-            />
-          ) : imageUrl ? (
-            <img src={imageUrl} alt="" className="w-full aspect-[3/2] rounded-xl object-cover" />
-          ) : (
-            <div className="w-full aspect-[3/2] rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, #0F2229, #1a3340, #2a1508)" }}>
-              <img src="/logo-mark.png" alt="" width={48} height={48} style={{ opacity: 0.15 }} />
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ── CHALLENGE DETAILS ─────────────────────── */}
-      <div className="rounded-2xl infitra-card p-6">
-        <div className="flex items-center justify-between mb-5">
-          <h3 className="text-sm font-black font-headline text-[#94a3b8] uppercase tracking-wider">Challenge Details</h3>
-          {canEdit && (
-            <button
-              onClick={handleSave}
-              disabled={saving || !isDirty}
-              className="px-5 py-2 rounded-full text-sm font-black font-headline text-white disabled:opacity-40"
-              style={{ backgroundColor: "#FF6130" }}
-            >
-              {/* Intentional: only short "Saved" belongs in the pill. Other
-                  action success messages (reactivate / lock / confirm) are
-                  conveyed by the page state changing — they don't write here. */}
-              {saving ? "Saving..." : success ?? (isDirty ? "Save Changes" : "Saved")}
-            </button>
-          )}
+        {/* ── 1. COVER IMAGE ─────────────────────────── */}
+        <div className="rounded-2xl infitra-card p-6">
+          <h3 className="text-sm font-black font-headline text-[#94a3b8] uppercase tracking-wider mb-4">Cover Image</h3>
+          <div className="max-w-md">
+            {canEdit ? (
+              <ImageSelector
+                currentUrl={imageUrl}
+                title={title}
+                onSelect={(url) => setImageUrl(url)}
+                size="md"
+              />
+            ) : imageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={imageUrl} alt="" className="w-full aspect-[3/2] rounded-xl object-cover" />
+            ) : (
+              <div className="w-full aspect-[3/2] rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, #0F2229, #1a3340, #2a1508)" }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/logo-mark.png" alt="" width={48} height={48} style={{ opacity: 0.15 }} />
+              </div>
+            )}
+          </div>
         </div>
 
-        {canEdit ? (
-          <div className="space-y-5">
-            <div>
-              <label className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-2">Title</label>
-              <input
-                value={title} onChange={(e) => setTitle(e.target.value)}
-                className="w-full rounded-xl p-3 text-base font-bold font-headline focus:outline-none"
-                style={{ border: "1px solid rgba(15,34,41,0.12)", color: "#0F2229" }}
-              />
-            </div>
-            <div>
-              <label className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-2">Description</label>
-              <textarea
-                value={description} onChange={(e) => setDescription(e.target.value)}
-                rows={3}
-                placeholder="What will participants experience?"
-                className="w-full rounded-xl p-3 text-sm focus:outline-none resize-none"
-                style={{ border: "1px solid rgba(15,34,41,0.12)", color: "#0F2229" }}
-              />
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <label className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-2">Start Date</label>
-                <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full rounded-xl p-2.5 text-sm font-bold font-headline focus:outline-none" style={{ border: "1px solid rgba(15,34,41,0.12)", color: "#0F2229" }} />
-              </div>
-              <div>
-                <label className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-2">End Date</label>
-                <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)}
-                  className="w-full rounded-xl p-2.5 text-sm font-bold font-headline focus:outline-none" style={{ border: "1px solid rgba(15,34,41,0.12)", color: "#0F2229" }} />
-              </div>
-              <div>
-                <label className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-2">Price (CHF)</label>
-                <input type="number" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="0"
-                  className="w-full rounded-xl p-2.5 text-sm font-bold font-headline focus:outline-none" style={{ border: "1px solid rgba(15,34,41,0.12)", color: "#0F2229" }} />
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div>
-            <h2 className="text-2xl font-black font-headline text-[#0F2229] tracking-tight mb-3">{challenge.title}</h2>
-            {challenge.description && <p className="text-base text-[#334155] mb-4 leading-relaxed">{challenge.description}</p>}
-            <div className="flex gap-6 text-base">
-              <div>
-                <p className="text-[10px] font-bold font-headline text-[#94a3b8] uppercase tracking-wider">Dates</p>
-                <p className="font-bold font-headline text-[#0F2229]">{challenge.startDate} → {challenge.endDate}</p>
-              </div>
-              <div>
-                <p className="text-[10px] font-bold font-headline text-[#94a3b8] uppercase tracking-wider">Price</p>
-                <p className="font-bold font-headline text-[#0F2229]">CHF {(challenge.priceCents / 100).toFixed(0)}</p>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* ── PROMISE (Bundle 3) ────────────────────── */}
-      <PromiseEditor
-        value={promiseText}
-        onChange={setPromiseText}
-        canEdit={canEditChallenge}
-        editedAt={challenge.promiseEditedAt}
-        editorName={challenge.promiseEditorName}
-      />
-
-      {/* ── COLLABORATORS ─────────────────────────── */}
-      <div className="rounded-2xl infitra-card p-6">
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <h3 className="text-sm font-black font-headline text-[#94a3b8] uppercase tracking-wider">
-            Collaborators · {cohosts.length + 1 + (pendingInvites?.length ?? 0)}
+        {/* ── 2. CHALLENGE DETAILS (auto-save on blur) ─── */}
+        <div className="rounded-2xl infitra-card p-6">
+          <h3 className="text-sm font-black font-headline text-[#94a3b8] uppercase tracking-wider mb-5">
+            Challenge Details
           </h3>
-          {canManageCollaboration && (
-            <div className="shrink-0">
-              <CollabInviteFlow
-                existingChallengeId={challenge.id}
-                existingCollaboratorIds={[
-                  ...cohosts.map((c) => c.id),
-                  ...(pendingInvites?.map((p) => p.toId) ?? []),
-                ]}
-              />
-            </div>
-          )}
-        </div>
 
-        {/* Inline collaborator chips */}
-        <div className="flex flex-wrap gap-2 mt-4">
-          {/* Owner */}
-          <CollaboratorChip
-            id={ownerProfile.id}
-            name={ownerProfile.name}
-            avatar={ownerProfile.avatar}
-            tagline={ownerProfile.tagline ?? null}
-            bio={ownerProfile.bio ?? null}
-            username={ownerProfile.username ?? null}
-            role="Owner"
-            roleColor="#FF6130"
-            open={openCollaboratorId === ownerProfile.id}
-            onToggle={() => setOpenCollaboratorId(openCollaboratorId === ownerProfile.id ? null : ownerProfile.id)}
-            onClose={() => setOpenCollaboratorId(null)}
-          />
-          {/* Confirmed cohosts */}
-          {cohosts.map((c) => (
-            <CollaboratorChip
-              key={c.id}
-              id={c.id}
-              name={c.name}
-              avatar={c.avatar}
-              tagline={c.tagline ?? null}
-              bio={null}
-              username={c.username ?? null}
-              role="Cohost"
-              roleColor="#0891b2"
-              open={openCollaboratorId === c.id}
-              onToggle={() => setOpenCollaboratorId(openCollaboratorId === c.id ? null : c.id)}
-              onClose={() => setOpenCollaboratorId(null)}
-            />
-          ))}
-          {/* Pending invites */}
-          {pendingInvites?.map((inv) => (
-            <CollaboratorChip
-              key={inv.id}
-              id={inv.toId}
-              name={inv.toName}
-              avatar={inv.toAvatar}
-              tagline={inv.toTagline ?? null}
-              bio={null}
-              username={inv.toUsername ?? null}
-              role="Pending"
-              roleColor="#94a3b8"
-              dashed
-              open={openCollaboratorId === inv.toId}
-              onToggle={() => setOpenCollaboratorId(openCollaboratorId === inv.toId ? null : inv.toId)}
-              onClose={() => setOpenCollaboratorId(null)}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* ── WHO HANDLES WHAT (Bundle 3) ──────────────── */}
-      <OwnershipEditor
-        creators={[
-          {
-            id: ownerProfile.id,
-            name: ownerProfile.name,
-            avatar: ownerProfile.avatar,
-            role: "owner",
-            sessionTitles: sessions
-              .filter((s) => s.hostId === ownerProfile.id)
-              .map((s) => s.title),
-          },
-          ...cohosts.map((c) => ({
-            id: c.id,
-            name: c.name,
-            avatar: c.avatar,
-            role: "cohost" as const,
-            sessionTitles: sessions
-              .filter((s) => s.hostId === c.id)
-              .map((s) => s.title),
-          })),
-        ]}
-        value={topicOwnership}
-        onChange={setTopicOwnership}
-        canEdit={canEditChallenge}
-        editedAt={challenge.promiseEditedAt}
-        editorName={challenge.promiseEditorName}
-      />
-
-      {/* ── REVENUE SHARE ─────────────────────────── */}
-      <div className="rounded-2xl infitra-card p-6">
-        <h3 className="text-sm font-black font-headline text-[#94a3b8] uppercase tracking-wider mb-5">Revenue Share</h3>
-
-        <div className="flex items-center gap-8 mb-5">
-          <ShareDonut size={140} shares={shares} />
-          <div className="flex-1 space-y-4">
-            {/* Owner */}
-            <div className="flex items-center gap-4">
-              {ownerProfile.avatar ? (
-                <img src={ownerProfile.avatar} alt="" className="w-14 h-14 rounded-full object-cover shrink-0" />
-              ) : (
-                <div className="w-14 h-14 rounded-full bg-orange-100 flex items-center justify-center shrink-0">
-                  <span className="text-lg font-black text-orange-700">{ownerProfile.name[0]}</span>
-                </div>
-              )}
-              <div className="flex-1">
-                <p className="text-lg font-black font-headline text-[#0F2229]">{ownerProfile.name}</p>
-                <p className="text-sm font-bold text-[#94a3b8]">Owner</p>
+          {canEdit ? (
+            <div className="space-y-5">
+              <div>
+                <label className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-2">Title</label>
+                <input
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  onBlur={commitTitle}
+                  className="w-full rounded-xl p-3 text-base font-bold font-headline focus:outline-none"
+                  style={{ border: "1px solid rgba(15,34,41,0.12)", color: "#0F2229" }}
+                />
               </div>
-              <p className="text-2xl font-black font-headline text-[#FF6130]">{currentOwnerSplit}%</p>
-            </div>
-            {/* Cohosts */}
-            {cohosts.map((c) => {
-              const split = cohostSplits[c.id] ?? c.splitPercent;
-              return (
-                <div key={c.id} className="flex items-center gap-4">
-                  {c.avatar ? (
-                    <img src={c.avatar} alt="" className="w-14 h-14 rounded-full object-cover shrink-0" />
-                  ) : (
-                    <div className="w-14 h-14 rounded-full bg-cyan-100 flex items-center justify-center shrink-0">
-                      <span className="text-lg font-black text-cyan-700">{c.name[0]}</span>
-                    </div>
-                  )}
-                  <div className="flex-1">
-                    <p className="text-lg font-black font-headline text-[#0F2229]">{c.name}</p>
-                    <p className="text-sm font-bold text-[#94a3b8]">Collaborator</p>
-                  </div>
-                  <p className="text-2xl font-black font-headline text-[#0891b2]">{split}%</p>
-                  {/* Acceptance status lives in the top Contract Status Banner now
-                      — chips stay about identity + split only. */}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Revenue split sliders — owner only (governance) */}
-        {canManageCollaboration && cohosts.length > 0 && (
-          <div className="pt-5 border-t" style={{ borderColor: "rgba(15,34,41,0.06)" }}>
-            <p className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider mb-3">Adjust Splits</p>
-            {cohosts.map((c) => {
-              const split = cohostSplits[c.id] ?? c.splitPercent;
-              return (
-                <div key={c.id} className="flex items-center gap-3 mb-2">
-                  <span className="text-sm font-bold font-headline text-[#0F2229] w-32 truncate">{c.name}</span>
+              <div>
+                <label className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-2">Description</label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  onBlur={commitDescription}
+                  rows={3}
+                  placeholder="What will participants experience?"
+                  className="w-full rounded-xl p-3 text-sm focus:outline-none resize-none"
+                  style={{ border: "1px solid rgba(15,34,41,0.12)", color: "#0F2229" }}
+                />
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-2">Start Date</label>
                   <input
-                    type="range" min={0} max={100} value={split}
-                    onChange={(e) => setCohostSplits((prev) => ({ ...prev, [c.id]: Number(e.target.value) }))}
-                    onMouseUp={(e) => handleSaveCohostSplit(c.id, Number((e.target as HTMLInputElement).value))}
-                    onTouchEnd={(e) => handleSaveCohostSplit(c.id, Number((e.target as HTMLInputElement).value))}
-                    className="flex-1 accent-[#9CF0FF]"
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    onBlur={commitStartDate}
+                    className="w-full rounded-xl p-2.5 text-sm font-bold font-headline focus:outline-none"
+                    style={{ border: "1px solid rgba(15,34,41,0.12)", color: "#0F2229" }}
                   />
-                  <span className="text-lg font-black font-headline text-[#0891b2] w-14 text-right">{split}%</span>
                 </div>
-              );
-            })}
-            <p className="text-xs text-[#94a3b8] mt-2">You keep {currentOwnerSplit}% as owner</p>
-          </div>
-        )}
-      </div>
-
-      {/* ── WEEKLY ARC (Bundle 3) ─────────────────── */}
-      <WeeklyArcEditor
-        startDate={startDate}
-        endDate={endDate}
-        value={weeklyArc}
-        onChange={setWeeklyArc}
-        canEdit={canEditChallenge}
-        editedAt={challenge.promiseEditedAt}
-        editorName={challenge.promiseEditorName}
-      />
-
-      {/* ── SESSIONS ─────────────────────────────── */}
-      <div className="rounded-2xl infitra-card p-6">
-        <div className="flex items-center justify-between mb-5">
-          <h3 className="text-sm font-black font-headline text-[#94a3b8] uppercase tracking-wider">Sessions · {sessions.length}</h3>
-          {canAddSession && (
-            <button onClick={() => setShowAddSession(!showAddSession)} className="text-sm font-black font-headline text-[#FF6130]">
-              {showAddSession ? "Cancel" : "+ Add Session"}
-            </button>
+                <div>
+                  <label className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-2">End Date</label>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    onBlur={commitEndDate}
+                    className="w-full rounded-xl p-2.5 text-sm font-bold font-headline focus:outline-none"
+                    style={{ border: "1px solid rgba(15,34,41,0.12)", color: "#0F2229" }}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-2">Price (CHF)</label>
+                  <input
+                    type="number"
+                    value={price}
+                    onChange={(e) => setPrice(e.target.value)}
+                    onBlur={commitPrice}
+                    placeholder="0"
+                    className="w-full rounded-xl p-2.5 text-sm font-bold font-headline focus:outline-none"
+                    style={{ border: "1px solid rgba(15,34,41,0.12)", color: "#0F2229" }}
+                  />
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <h2 className="text-2xl font-black font-headline text-[#0F2229] tracking-tight mb-3">{challenge.title}</h2>
+              {challenge.description && <p className="text-base text-[#334155] mb-4 leading-relaxed">{challenge.description}</p>}
+              <div className="flex gap-6 text-base">
+                <div>
+                  <p className="text-[10px] font-bold font-headline text-[#94a3b8] uppercase tracking-wider">Dates</p>
+                  <p className="font-bold font-headline text-[#0F2229]">{challenge.startDate} → {challenge.endDate}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold font-headline text-[#94a3b8] uppercase tracking-wider">Price</p>
+                  <p className="font-bold font-headline text-[#0F2229]">CHF {(challenge.priceCents / 100).toFixed(0)}</p>
+                </div>
+              </div>
+            </div>
           )}
+
+          <SectionAttribution
+            fields={DETAILS_ATTRIBUTION_FIELDS}
+            activity={activity}
+            profiles={profileMap}
+          />
         </div>
 
+        {/* ── 3. THE PROMISE ───────────────────────────── */}
+        <PromiseEditor
+          value={promiseText}
+          onChange={setPromiseText}
+          onCommit={commitPromise}
+          canEdit={canEdit}
+          activity={activity}
+          profileMap={profileMap}
+        />
+
+        {/* ── 4. THE TEAM ──────────────────────────────── */}
+        <TeamSection
+          challengeId={challenge.id}
+          creators={teamCreators}
+          pendingInvites={teamPendingInvites}
+          topicsByCreator={topicsByCreator}
+          ownerSplit={ownerSplit}
+          canEdit={canEdit}
+          canManageCollaboration={canManageCollaboration}
+          onTopicsCommit={commitTopics}
+          onCohostSplitCommit={commitCohostSplit}
+          activity={activity}
+          profileMap={profileMap}
+        />
+
+        {/* ── 5. PROGRAM RHYTHM ────────────────────────── */}
+        <ProgramRhythmSection
+          startDate={startDate}
+          endDate={endDate}
+          weeklyFocus={weeklyArc}
+          sessions={sessions.map((s) => ({ id: s.id, startTime: s.startTime }))}
+          canEdit={canAddSession}
+          onFocusCommit={commitWeeklyFocus}
+          renderSessionCard={(sessionId) => renderSessionCard(sessionId)}
+          onAddSessionForWeek={handleAddSessionForWeek}
+          addingSessionDisabled={addingSession}
+          activity={activity}
+          profileMap={profileMap}
+        />
+
+        {/* Add-session form (collapsible). Lives outside the Rhythm card
+            so its full inputs aren't cramped inside a week row. The
+            "+ Add session in Week N" button auto-scrolls here. */}
         {showAddSession && canAddSession && (
-          <div className="p-5 rounded-xl mb-4 space-y-4" style={{ border: "1px solid rgba(15,34,41,0.08)", backgroundColor: "rgba(255,255,255,0.5)" }}>
+          <div
+            id="add-session-form"
+            className="p-5 rounded-2xl space-y-4 infitra-card"
+            style={{ border: "1px solid rgba(8,145,178,0.30)" }}
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-black font-headline text-[#94a3b8] uppercase tracking-wider">
+                New Session
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowAddSession(false)}
+                className="text-xs font-bold font-headline text-[#94a3b8] hover:text-[#0F2229]"
+              >
+                Cancel
+              </button>
+            </div>
             <div>
               <label className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-2">Session Title</label>
               <input
-                value={sessTitle} onChange={(e) => setSessTitle(e.target.value)}
-                placeholder="e.g. Fat Burner 1"
+                value={sessTitle}
+                onChange={(e) => setSessTitle(e.target.value)}
+                placeholder="e.g. Foundations 1"
                 className="w-full rounded-xl p-3 text-base font-bold focus:outline-none"
                 style={{ border: "1px solid rgba(15,34,41,0.10)", color: "#0F2229" }}
               />
@@ -813,13 +888,24 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-2">Date & Time</label>
-                <input type="datetime-local" value={sessDate} onChange={(e) => setSessDate(e.target.value)}
-                  className="w-full rounded-xl p-3 text-sm focus:outline-none" style={{ border: "1px solid rgba(15,34,41,0.10)", color: "#0F2229" }} />
+                <input
+                  type="datetime-local"
+                  value={sessDate}
+                  onChange={(e) => setSessDate(e.target.value)}
+                  className="w-full rounded-xl p-3 text-sm focus:outline-none"
+                  style={{ border: "1px solid rgba(15,34,41,0.10)", color: "#0F2229" }}
+                />
               </div>
               <div>
                 <label className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-2">Duration (min)</label>
-                <input type="number" value={sessDuration} onChange={(e) => setSessDuration(e.target.value)} min="5" max="480"
-                  className="w-full rounded-xl p-3 text-sm focus:outline-none" style={{ border: "1px solid rgba(15,34,41,0.10)", color: "#0F2229" }} />
+                <input
+                  type="number"
+                  value={sessDuration}
+                  onChange={(e) => setSessDuration(e.target.value)}
+                  min="5" max="480"
+                  className="w-full rounded-xl p-3 text-sm focus:outline-none"
+                  style={{ border: "1px solid rgba(15,34,41,0.10)", color: "#0F2229" }}
+                />
               </div>
             </div>
             <div>
@@ -827,9 +913,8 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
               <ImageSelector currentUrl={sessImageUrl} title={sessTitle} onSelect={setSessImageUrl} size="sm" />
             </div>
 
-            {/* Cohost selector — pick from challenge collaborators (you'll be the host since you create the session) */}
+            {/* Cohost selector */}
             {(() => {
-              // Candidates: challenge owner + all challenge cohosts, minus the creator (who becomes host)
               const candidates: { id: string; name: string; avatar: string | null }[] = [];
               if (ownerProfile.id !== currentUserId) {
                 candidates.push({ id: ownerProfile.id, name: ownerProfile.name, avatar: ownerProfile.avatar });
@@ -863,6 +948,7 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
                           }}
                         >
                           {c.avatar ? (
+                            // eslint-disable-next-line @next/next/no-img-element
                             <img src={c.avatar} alt="" className="w-5 h-5 rounded-full object-cover" />
                           ) : (
                             <div className="w-5 h-5 rounded-full bg-cyan-100 flex items-center justify-center">
@@ -890,370 +976,82 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
           </div>
         )}
 
-        {sessions.length > 0 ? (
-          <div className="space-y-3">
-            {sessions.map((s) => {
-              // Candidates for session cohost: challenge owner + challenge cohosts, minus host + existing cohosts
-              const existingIds = new Set([s.hostId, ...s.cohosts.map(c => c.id)]);
-              const candidates = [
-                { id: ownerProfile === null ? "" : "", name: "" }, // placeholder filler
-              ].filter(() => false);
-              // Build real candidates: owner profile + challenge cohosts
-              const allCollabs = [
-                { id: s.hostId === challenge.id ? "" : "", name: "" }
-              ];
-              // Candidate list = challenge owner + all challenge cohosts, minus session host & existing session cohosts
-              const candidateList: { id: string; name: string; avatar: string | null }[] = [];
-              if (!existingIds.has(ownerProfile.id)) {
-                candidateList.push({ id: ownerProfile.id, name: ownerProfile.name, avatar: ownerProfile.avatar });
-              }
-              cohosts.forEach((cc) => {
-                if (!existingIds.has(cc.id)) candidateList.push({ id: cc.id, name: cc.name, avatar: cc.avatar });
-              });
+        {/* ── 6. INTRO PROMPT ──────────────────────────── */}
+        <IntroPromptEditor
+          value={introPrompt}
+          onChange={setIntroPrompt}
+          onCommit={commitIntro}
+          canEdit={canEdit}
+          activity={activity}
+          profileMap={profileMap}
+        />
 
-              return (
-                <div
-                  key={s.id}
-                  className={`p-4 rounded-xl ${editingSessionId === s.id ? "" : "cursor-pointer hover:bg-white/80 transition-colors"}`}
-                  style={{ backgroundColor: "rgba(255,255,255,0.5)", border: "1px solid rgba(15,34,41,0.06)" }}
-                  onClick={(e) => {
-                    // Only open the detail modal when clicking the card itself,
-                    // not when the inline edit form is mounted (the form has
-                    // its own inputs / buttons).
-                    if (editingSessionId === s.id) return;
-                    // Skip if the click originated on a button (edit/delete).
-                    const target = e.target as HTMLElement;
-                    if (target.closest("button")) return;
-                    setDetailSession(s);
-                  }}
-                >
-                  {editingSessionId === s.id ? (
-                    /* INLINE EDIT MODE */
-                    <div className="space-y-3">
-                      <div>
-                        <label className="text-[10px] font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-1">Title</label>
-                        <input
-                          value={editFields.title}
-                          onChange={(e) => setEditFields({ ...editFields, title: e.target.value })}
-                          className="w-full rounded-xl p-2.5 text-sm font-bold focus:outline-none"
-                          style={{ border: "1px solid rgba(15,34,41,0.10)", color: "#0F2229" }}
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="text-[10px] font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-1">Date & Time</label>
-                          <input
-                            type="datetime-local"
-                            value={editFields.startTime}
-                            onChange={(e) => setEditFields({ ...editFields, startTime: e.target.value })}
-                            className="w-full rounded-xl p-2.5 text-sm focus:outline-none"
-                            style={{ border: "1px solid rgba(15,34,41,0.10)", color: "#0F2229" }}
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[10px] font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-1">Duration (min)</label>
-                          <input
-                            type="number" min={5} max={480}
-                            value={editFields.duration}
-                            onChange={(e) => setEditFields({ ...editFields, duration: e.target.value })}
-                            className="w-full rounded-xl p-2.5 text-sm focus:outline-none"
-                            style={{ border: "1px solid rgba(15,34,41,0.10)", color: "#0F2229" }}
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-1">Cover Image (optional)</label>
-                        <ImageSelector currentUrl={editFields.imageUrl} title={editFields.title} onSelect={(url) => setEditFields({ ...editFields, imageUrl: url })} size="sm" />
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleSaveSession(s.id)}
-                          disabled={savingSession || !editFields.title.trim() || !editFields.startTime}
-                          className="px-4 py-2 rounded-full text-xs font-black font-headline text-white disabled:opacity-40"
-                          style={{ backgroundColor: "#FF6130" }}
-                        >
-                          {savingSession ? "Saving..." : "Save"}
-                        </button>
-                        <button
-                          onClick={() => setEditingSessionId(null)}
-                          className="px-4 py-2 rounded-full text-xs font-bold font-headline text-[#94a3b8] hover:text-[#0F2229]"
-                          style={{ border: "1px solid rgba(0,0,0,0.08)" }}
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    /* DISPLAY MODE */
-                    <div className="flex items-center gap-4">
-                      {s.imageUrl ? (
-                        <img src={s.imageUrl} alt="" className="w-14 h-14 rounded-lg object-cover shrink-0" />
-                      ) : (
-                        <div className="w-14 h-14 rounded-lg shrink-0 flex items-center justify-center" style={{ background: "linear-gradient(135deg, #0F2229, #1a3340)" }}>
-                          <img src="/logo-mark.png" alt="" width={18} height={18} style={{ opacity: 0.15 }} />
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-base font-black font-headline text-[#0F2229] truncate">{s.title}</p>
-                        <p className="text-xs font-bold text-[#94a3b8]" suppressHydrationWarning>
-                          {new Date(s.startTime).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
-                          {" · "}{s.durationMinutes} min
-                        </p>
-                      </div>
-                      {/* Host + cohosts avatars */}
-                      <div className="flex -space-x-2 shrink-0">
-                        {s.hostAvatar ? (
-                          <img src={s.hostAvatar} alt={s.hostName} title={`${s.hostName} (Host)`} className="w-8 h-8 rounded-full object-cover" style={{ border: "2px solid white", zIndex: 10 }} />
-                        ) : (
-                          <div title={`${s.hostName} (Host)`} className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center" style={{ border: "2px solid white", zIndex: 10 }}>
-                            <span className="text-[10px] font-black text-orange-700">{s.hostName[0]}</span>
-                          </div>
-                        )}
-                        {s.cohosts.map((c, idx) => (
-                          c.avatar ? (
-                            <img key={c.id} src={c.avatar} alt={c.name} title={c.name} className="w-8 h-8 rounded-full object-cover" style={{ border: "2px solid white", zIndex: 9 - idx }} />
-                          ) : (
-                            <div key={c.id} title={c.name} className="w-8 h-8 rounded-full bg-cyan-100 flex items-center justify-center" style={{ border: "2px solid white", zIndex: 9 - idx }}>
-                              <span className="text-[10px] font-black text-cyan-700">{c.name[0]}</span>
-                            </div>
-                          )
-                        ))}
-                      </div>
-                      {/* Edit + delete only for the session host (or owner can also delete) */}
-                      {canEditSession(s.hostId) && (
-                        <button
-                          onClick={() => startEditSession(s)}
-                          className="text-[#94a3b8] hover:text-[#FF6130] shrink-0"
-                          title="Edit session"
-                        >
-                          <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                            <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
-                        </button>
-                      )}
-                      {/* Delete: session host OR challenge owner (matches RPC authz) */}
-                      {(canEditSession(s.hostId) || canManageCollaboration) && (
-                        <button
-                          onClick={() => handleDeleteSession(s.id)}
-                          className="text-[#94a3b8] hover:text-red-500 shrink-0"
-                          title="Delete session"
-                        >
-                          <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                            <path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
-                        </button>
-                      )}
-                    </div>
-                  )}
+        {/* ── 7. SIGNING / ACTION PANEL ───────────────── */}
+        <div className="rounded-2xl infitra-card p-6">
+          {error && saveStatus.kind === "idle" && (
+            <p className="text-sm text-red-500 mb-4">{error}</p>
+          )}
 
-                  {/* Host + cohost names + add (hidden in edit mode) */}
-                  {editingSessionId !== s.id && (
-                  <div className="mt-3 pl-[4.5rem] flex items-center flex-wrap gap-2">
-                    <span className="text-xs text-[#94a3b8]">
-                      <span className="font-bold text-[#FF6130]">{s.hostName}</span>
-                      <span className="text-[10px] uppercase tracking-wider ml-1">Host</span>
-                    </span>
-                    {s.cohosts.map((c) => (
-                      <span key={c.id} className="text-xs text-[#94a3b8] flex items-center gap-1">
-                        · <span className="font-bold text-[#0891b2]">{c.name}</span>
-                        <span className="text-[10px] uppercase tracking-wider">Cohost</span>
-                        {canEditSession(s.hostId) && (
-                          <button
-                            onClick={() => handleRemoveSessionCohost(s.id, c.id)}
-                            className="text-[#94a3b8] hover:text-red-500 ml-0.5"
-                            title="Remove cohost"
-                          >
-                            <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                              <path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>
-                          </button>
-                        )}
-                      </span>
-                    ))}
-                    {canEditSession(s.hostId) && candidateList.length > 0 && (
-                      <div className="inline-block relative">
-                        <button
-                          onClick={() => setOpenCohostPicker(openCohostPicker === s.id ? null : s.id)}
-                          className="text-xs font-bold font-headline text-[#FF6130] cursor-pointer"
-                        >
-                          + Add Cohost
-                        </button>
-                        {openCohostPicker === s.id && (
-                          <div className="absolute top-full left-0 mt-1 min-w-[200px] rounded-xl shadow-lg z-10 overflow-hidden" style={{ backgroundColor: "white", border: "1px solid rgba(0,0,0,0.08)" }}>
-                            {candidateList.map((c) => (
-                              <button
-                                key={c.id}
-                                onClick={() => handleAddSessionCohost(s.id, c.id)}
-                                disabled={addingCohostFor === s.id}
-                                className="w-full flex items-center gap-2 p-2 hover:bg-gray-50 text-left disabled:opacity-40"
-                              >
-                                {c.avatar ? (
-                                  <img src={c.avatar} alt="" className="w-6 h-6 rounded-full object-cover shrink-0" />
-                                ) : (
-                                  <div className="w-6 h-6 rounded-full bg-cyan-100 flex items-center justify-center shrink-0">
-                                    <span className="text-[10px] font-black text-cyan-700">{c.name[0]}</span>
-                                  </div>
-                                )}
-                                <span className="text-sm font-bold text-[#0F2229]">{c.name}</span>
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <p className="text-sm text-[#94a3b8] text-center py-6">No sessions yet. Add your first session above.</p>
-        )}
-      </div>
-
-      {/* ── INTRO PROMPT (Bundle 3) ──────────────────── */}
-      <IntroPromptEditor
-        value={introPrompt}
-        onChange={setIntroPrompt}
-        canEdit={canEditChallenge}
-        editedAt={challenge.promiseEditedAt}
-        editorName={challenge.promiseEditorName}
-      />
-
-      {/* ── SIGNING / ACTION PANEL ───────────────────
-          Responsibilities split with the top banner:
-          - Banner = status + process context (who signed, freeze/reset rules)
-          - This panel = the single actionable next step for the current viewer
-          Verbiage about the contract process lives in the banner and the chat
-          log; this panel stays lean and action-focused. */}
-      <div className="rounded-2xl infitra-card p-6">
-        {error && <p className="text-sm text-red-500 mb-4">{error}</p>}
-
-        {/* Drafting: owner can lock once there's at least one cohost AND no
-            unsaved changes. Locking snapshots the DB state — if we let the
-            owner lock with a dirty form, their in-progress edits would be
-            silently discarded. */}
-        {!isLocked && isDraft && isOwner && (
-          <div>
-            <p className="text-base text-[#64748b] mb-4">
-              When you&apos;re happy with everything, lock the terms for your collaborator to review.
-            </p>
-            <button
-              onClick={handleLockTerms}
-              disabled={locking || cohosts.length === 0 || isDirty}
-              className="px-6 py-3 rounded-full text-white text-base font-black font-headline disabled:opacity-40 w-full"
-              style={{ backgroundColor: "#0891b2" }}
-            >
-              {locking ? "Locking..." : "Lock Terms for Review"}
-            </button>
-            {isDirty && (
-              <p className="text-xs font-bold text-[#FF6130] text-center mt-3">
-                Save your changes before locking.
+          {!isLocked && isDraft && isOwner && (
+            <div>
+              <p className="text-base text-[#64748b] mb-4">
+                When you&apos;re happy with everything, lock the terms for your collaborator to review.
               </p>
-            )}
-            {!isDirty && cohosts.length === 0 && (
-              <p className="text-xs font-bold text-[#94a3b8] text-center mt-3">
-                Invite at least one collaborator before locking.
-              </p>
-            )}
-          </div>
-        )}
+              <button
+                onClick={handleLockTerms}
+                disabled={locking || cohosts.length === 0 || saveStatus.kind === "saving"}
+                className="px-6 py-3 rounded-full text-white text-base font-black font-headline disabled:opacity-40 w-full"
+                style={{ backgroundColor: "#0891b2" }}
+              >
+                {locking ? "Locking..." : "Lock Terms for Review"}
+              </button>
+              {saveStatus.kind === "saving" && (
+                <p className="text-xs font-bold text-[#FF6130] text-center mt-3">
+                  Wait a moment — saves are landing.
+                </p>
+              )}
+              {cohosts.length === 0 && (
+                <p className="text-xs font-bold text-[#94a3b8] text-center mt-3">
+                  Invite at least one collaborator before locking.
+                </p>
+              )}
+            </div>
+          )}
 
-        {/* Drafting: cohost just waits */}
-        {!isLocked && isDraft && !isOwner && (
-          <p className="text-sm text-[#94a3b8] text-center">
-            Waiting for {ownerProfile.name} to finalize and lock terms.
-          </p>
-        )}
-
-        {/* Locked, cohost hasn't acted yet: accept (via modal) or request changes */}
-        {isLocked && !hasDeclines && !isOwner && !contract?.acceptances.includes(currentUserId) && (
-          <div className="flex flex-col sm:flex-row gap-3">
-            <button
-              onClick={() => setAcceptModalOpen(true)}
-              disabled={confirming}
-              className="flex-1 px-6 py-3 rounded-full text-white text-base font-black font-headline disabled:opacity-40"
-              style={{ backgroundColor: "#0891b2" }}
-            >
-              Accept Terms
-            </button>
-            <button
-              onClick={handleRequestChanges}
-              disabled={confirming}
-              className="px-6 py-3 rounded-full text-sm font-bold font-headline text-[#94a3b8] disabled:opacity-40"
-              style={{ border: "1px solid rgba(0,0,0,0.08)" }}
-            >
-              Request Changes
-            </button>
-          </div>
-        )}
-
-        {/* Locked, cohost already confirmed, waiting for the rest */}
-        {isLocked && !hasDeclines && !isOwner && contract?.acceptances.includes(currentUserId) && !allAccepted && (
-          <p className="text-sm text-[#94a3b8] text-center">
-            You&apos;ve accepted. Waiting on the remaining collaborators.
-          </p>
-        )}
-
-        {/* Locked, someone declined — only the owner can reactivate */}
-        {isLocked && hasDeclines && isOwner && (
-          <button
-            onClick={handleReactivate}
-            disabled={locking}
-            className="px-6 py-3 rounded-full text-base font-black font-headline text-[#0F2229] disabled:opacity-40 w-full"
-            style={{ border: "1px solid rgba(0,0,0,0.12)" }}
-          >
-            {locking ? "..." : "Reopen Draft"}
-          </button>
-        )}
-
-        {/* Locked, someone declined — non-owner can't act */}
-        {isLocked && hasDeclines && !isOwner && (
-          <p className="text-sm text-[#94a3b8] text-center">
-            Waiting for {ownerProfile.name} to reopen the draft.
-          </p>
-        )}
-
-        {/* Locked, all accepted, owner publishes — primary CTA, plus a
-            de-emphasised escape hatch to reopen the draft. Even at this
-            stage the owner should have a way out; it just shouldn't
-            compete with Publish visually. */}
-        {isLocked && allAccepted && isOwner && (
-          <div className="space-y-3">
-            <button
-              onClick={() => setPublishModalOpen(true)}
-              disabled={publishing}
-              className="px-6 py-3 rounded-full text-white text-base font-black font-headline disabled:opacity-40 w-full"
-              style={{ backgroundColor: "#FF6130", boxShadow: "0 4px 14px rgba(255,97,48,0.35)" }}
-            >
-              {publishing ? "Publishing..." : "Publish Challenge"}
-            </button>
-            <button
-              onClick={handleReactivate}
-              disabled={locking || publishing}
-              className="block mx-auto text-xs font-bold font-headline text-[#94a3b8] hover:text-[#0F2229] disabled:opacity-40"
-            >
-              {locking ? "…" : "Reopen draft to edit"}
-            </button>
-          </div>
-        )}
-
-        {/* Locked, all accepted, waiting for owner */}
-        {isLocked && allAccepted && !isOwner && (
-          <p className="text-sm text-[#94a3b8] text-center">
-            All signatures in. Waiting for {ownerProfile.name} to publish.
-          </p>
-        )}
-
-        {/* Locked, owner with still-pending cohosts — can wait, or reopen
-            the draft if they spot something to change. Reopening clears
-            any acceptances that already came in (see banner copy). */}
-        {isLocked && !hasDeclines && isOwner && !allAccepted && (
-          <div className="space-y-3">
+          {!isLocked && isDraft && !isOwner && (
             <p className="text-sm text-[#94a3b8] text-center">
-              Waiting for the remaining collaborators to accept.
+              Waiting for {ownerProfile.name} to finalize and lock terms.
             </p>
+          )}
+
+          {isLocked && !hasDeclines && !isOwner && !contract?.acceptances.includes(currentUserId) && (
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={() => setAcceptModalOpen(true)}
+                disabled={confirming}
+                className="flex-1 px-6 py-3 rounded-full text-white text-base font-black font-headline disabled:opacity-40"
+                style={{ backgroundColor: "#0891b2" }}
+              >
+                Accept Terms
+              </button>
+              <button
+                onClick={handleRequestChanges}
+                disabled={confirming}
+                className="px-6 py-3 rounded-full text-sm font-bold font-headline text-[#94a3b8] disabled:opacity-40"
+                style={{ border: "1px solid rgba(0,0,0,0.08)" }}
+              >
+                Request Changes
+              </button>
+            </div>
+          )}
+
+          {isLocked && !hasDeclines && !isOwner && contract?.acceptances.includes(currentUserId) && !allAccepted && (
+            <p className="text-sm text-[#94a3b8] text-center">
+              You&apos;ve accepted. Waiting on the remaining collaborators.
+            </p>
+          )}
+
+          {isLocked && hasDeclines && isOwner && (
             <button
               onClick={handleReactivate}
               disabled={locking}
@@ -1262,16 +1060,61 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
             >
               {locking ? "..." : "Reopen Draft"}
             </button>
-          </div>
-        )}
+          )}
+
+          {isLocked && hasDeclines && !isOwner && (
+            <p className="text-sm text-[#94a3b8] text-center">
+              Waiting for {ownerProfile.name} to reopen the draft.
+            </p>
+          )}
+
+          {isLocked && allAccepted && isOwner && (
+            <div className="space-y-3">
+              <button
+                onClick={() => setPublishModalOpen(true)}
+                disabled={publishing}
+                className="px-6 py-3 rounded-full text-white text-base font-black font-headline disabled:opacity-40 w-full"
+                style={{ backgroundColor: "#FF6130", boxShadow: "0 4px 14px rgba(255,97,48,0.35)" }}
+              >
+                {publishing ? "Publishing..." : "Publish Challenge"}
+              </button>
+              <button
+                onClick={handleReactivate}
+                disabled={locking || publishing}
+                className="block mx-auto text-xs font-bold font-headline text-[#94a3b8] hover:text-[#0F2229] disabled:opacity-40"
+              >
+                {locking ? "…" : "Reopen draft to edit"}
+              </button>
+            </div>
+          )}
+
+          {isLocked && allAccepted && !isOwner && (
+            <p className="text-sm text-[#94a3b8] text-center">
+              All signatures in. Waiting for {ownerProfile.name} to publish.
+            </p>
+          )}
+
+          {isLocked && !hasDeclines && isOwner && !allAccepted && (
+            <div className="space-y-3">
+              <p className="text-sm text-[#94a3b8] text-center">
+                Waiting for the remaining collaborators to accept.
+              </p>
+              <button
+                onClick={handleReactivate}
+                disabled={locking}
+                className="px-6 py-3 rounded-full text-base font-black font-headline text-[#0F2229] disabled:opacity-40 w-full"
+                style={{ border: "1px solid rgba(0,0,0,0.12)" }}
+              >
+                {locking ? "..." : "Reopen Draft"}
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* end of contract envelope */}
       </div>
 
-      {/* end of contract envelope */}
-      </div>
-
-      {/* Read-only session detail popup. Opens on any session card click,
-          in any contract state — stays in context rather than nesting out
-          to /dashboard/sessions/[id]. */}
+      {/* Read-only session detail popup. */}
       <SessionDetailModal
         open={!!detailSession}
         session={detailSession}
@@ -1296,9 +1139,7 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
         onCancel={() => setAcceptModalOpen(false)}
       />
 
-      {/* Owner publish — signature moment #2. Parallel structure to the
-          cohost's accept flow: same gravity, same friction level, owner
-          perspective. */}
+      {/* Owner publish — signature moment #2. */}
       <ContractCommitmentModal
         open={publishModalOpen}
         title="Publish the collaboration?"
@@ -1317,84 +1158,227 @@ export function WorkspaceEditor({ challenge, isOwner, currentUserId, ownerProfil
       />
     </div>
   );
-}
 
-/* ── CollaboratorChip — clickable avatar+name with profile popover ─────── */
-function CollaboratorChip({
-  id, name, avatar, tagline, bio, username, role, roleColor, dashed, open, onToggle, onClose,
-}: {
-  id: string;
-  name: string;
-  avatar: string | null;
-  tagline: string | null;
-  bio: string | null;
-  username: string | null;
-  role: string;
-  roleColor: string;
-  dashed?: boolean;
-  open: boolean;
-  onToggle: () => void;
-  onClose: () => void;
-}) {
-  return (
-    <div className="relative">
-      <button
-        onClick={onToggle}
-        className="flex items-center gap-2 px-3 py-1.5 rounded-full transition-all hover:shadow-sm"
-        style={{
-          backgroundColor: "rgba(255,255,255,0.5)",
-          border: dashed
-            ? `1px dashed ${roleColor}66`
-            : `1px solid rgba(15,34,41,0.08)`,
+  // ─────────────────────────────────────────────────────────────────
+  // renderSessionCard — passed as a render-prop into ProgramRhythmSection
+  // so each week's sessions appear inline. Preserves the existing
+  // display + inline-edit + cohost-picker UI without duplication.
+  // Closures over all the relevant local state.
+  // ─────────────────────────────────────────────────────────────────
+  function renderSessionCard(sessionId: string) {
+    const s = sessions.find((x) => x.id === sessionId);
+    if (!s) return null;
+
+    const existingIds = new Set([s.hostId, ...s.cohosts.map((c) => c.id)]);
+    const candidateList: { id: string; name: string; avatar: string | null }[] = [];
+    if (!existingIds.has(ownerProfile.id)) {
+      candidateList.push({ id: ownerProfile.id, name: ownerProfile.name, avatar: ownerProfile.avatar });
+    }
+    cohosts.forEach((cc) => {
+      if (!existingIds.has(cc.id)) candidateList.push({ id: cc.id, name: cc.name, avatar: cc.avatar });
+    });
+
+    return (
+      <div
+        className={`p-3 rounded-lg ${editingSessionId === s.id ? "" : "cursor-pointer hover:bg-white/80 transition-colors"}`}
+        style={{ backgroundColor: "rgba(255,255,255,0.7)", border: "1px solid rgba(15,34,41,0.06)" }}
+        onClick={(e) => {
+          if (editingSessionId === s.id) return;
+          const target = e.target as HTMLElement;
+          if (target.closest("button")) return;
+          setDetailSession(s);
         }}
       >
-        {avatar ? (
-          <img src={avatar} alt="" className="w-7 h-7 rounded-full object-cover" />
-        ) : (
-          <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ backgroundColor: `${roleColor}20` }}>
-            <span className="text-[11px] font-black" style={{ color: roleColor }}>{name[0]}</span>
-          </div>
-        )}
-        <div className="text-left">
-          <span className="text-sm font-bold font-headline text-[#0F2229] block leading-none">{name}</span>
-          <span className="text-[10px] font-bold font-headline uppercase tracking-wider" style={{ color: roleColor }}>{role}</span>
-        </div>
-      </button>
-
-      {open && (
-        <>
-          {/* Click-outside backdrop */}
-          <div className="fixed inset-0 z-40" onClick={onClose} />
-          {/* Popover */}
-          <div
-            className="absolute top-full left-0 mt-2 w-72 rounded-2xl shadow-xl z-50 overflow-hidden"
-            style={{ backgroundColor: "white", border: "1px solid rgba(0,0,0,0.08)" }}
-          >
-            <div className="p-5">
-              <div className="flex items-center gap-3 mb-3">
-                {avatar ? (
-                  <img src={avatar} alt="" className="w-14 h-14 rounded-full object-cover" />
-                ) : (
-                  <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ backgroundColor: `${roleColor}20` }}>
-                    <span className="text-lg font-black" style={{ color: roleColor }}>{name[0]}</span>
-                  </div>
-                )}
-                <div className="min-w-0">
-                  <p className="text-base font-black font-headline text-[#0F2229] truncate">{name}</p>
-                  <p className="text-[10px] font-bold font-headline uppercase tracking-wider" style={{ color: roleColor }}>{role}</p>
-                </div>
+        {editingSessionId === s.id ? (
+          /* INLINE EDIT MODE */
+          <div className="space-y-3">
+            <div>
+              <label className="text-[10px] font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-1">Title</label>
+              <input
+                value={editFields.title}
+                onChange={(e) => setEditFields({ ...editFields, title: e.target.value })}
+                className="w-full rounded-xl p-2.5 text-sm font-bold focus:outline-none"
+                style={{ border: "1px solid rgba(15,34,41,0.10)", color: "#0F2229" }}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[10px] font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-1">Date & Time</label>
+                <input
+                  type="datetime-local"
+                  value={editFields.startTime}
+                  onChange={(e) => setEditFields({ ...editFields, startTime: e.target.value })}
+                  className="w-full rounded-xl p-2.5 text-sm focus:outline-none"
+                  style={{ border: "1px solid rgba(15,34,41,0.10)", color: "#0F2229" }}
+                />
               </div>
-              {tagline && (
-                <p className="text-sm font-bold text-[#334155] mb-2 leading-snug">{tagline}</p>
-              )}
-              {bio && (
-                <p className="text-xs text-[#64748b] leading-relaxed line-clamp-3">{bio}</p>
-              )}
-              {/* Public creator profile route removed for pilot; name-only shown above. */}
+              <div>
+                <label className="text-[10px] font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-1">Duration (min)</label>
+                <input
+                  type="number" min={5} max={480}
+                  value={editFields.duration}
+                  onChange={(e) => setEditFields({ ...editFields, duration: e.target.value })}
+                  className="w-full rounded-xl p-2.5 text-sm focus:outline-none"
+                  style={{ border: "1px solid rgba(15,34,41,0.10)", color: "#0F2229" }}
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-[10px] font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-1">Cover Image (optional)</label>
+              <ImageSelector currentUrl={editFields.imageUrl} title={editFields.title} onSelect={(url) => setEditFields({ ...editFields, imageUrl: url })} size="sm" />
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleSaveSession(s.id)}
+                disabled={savingSession || !editFields.title.trim() || !editFields.startTime}
+                className="px-4 py-2 rounded-full text-xs font-black font-headline text-white disabled:opacity-40"
+                style={{ backgroundColor: "#FF6130" }}
+              >
+                {savingSession ? "Saving..." : "Save"}
+              </button>
+              <button
+                onClick={() => setEditingSessionId(null)}
+                className="px-4 py-2 rounded-full text-xs font-bold font-headline text-[#94a3b8] hover:text-[#0F2229]"
+                style={{ border: "1px solid rgba(0,0,0,0.08)" }}
+              >
+                Cancel
+              </button>
             </div>
           </div>
-        </>
-      )}
-    </div>
-  );
+        ) : (
+          /* DISPLAY MODE */
+          <div className="flex items-center gap-3">
+            {s.imageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={s.imageUrl} alt="" className="w-12 h-12 rounded-lg object-cover shrink-0" />
+            ) : (
+              <div className="w-12 h-12 rounded-lg shrink-0 flex items-center justify-center" style={{ background: "linear-gradient(135deg, #0F2229, #1a3340)" }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/logo-mark.png" alt="" width={16} height={16} style={{ opacity: 0.15 }} />
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-black font-headline text-[#0F2229] truncate">{s.title}</p>
+              <p className="text-[11px] font-bold text-[#94a3b8]" suppressHydrationWarning>
+                {new Date(s.startTime).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                {" · "}{s.durationMinutes} min
+              </p>
+            </div>
+            {/* Host + cohort avatars */}
+            <div className="flex -space-x-2 shrink-0">
+              {s.hostAvatar ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={s.hostAvatar} alt={s.hostName} title={`${s.hostName} (Host)`} className="w-7 h-7 rounded-full object-cover" style={{ border: "2px solid white", zIndex: 10 }} />
+              ) : (
+                <div title={`${s.hostName} (Host)`} className="w-7 h-7 rounded-full bg-orange-100 flex items-center justify-center" style={{ border: "2px solid white", zIndex: 10 }}>
+                  <span className="text-[10px] font-black text-orange-700">{s.hostName[0]}</span>
+                </div>
+              )}
+              {s.cohosts.map((c, idx) => (
+                c.avatar ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img key={c.id} src={c.avatar} alt={c.name} title={c.name} className="w-7 h-7 rounded-full object-cover" style={{ border: "2px solid white", zIndex: 9 - idx }} />
+                ) : (
+                  <div key={c.id} title={c.name} className="w-7 h-7 rounded-full bg-cyan-100 flex items-center justify-center" style={{ border: "2px solid white", zIndex: 9 - idx }}>
+                    <span className="text-[10px] font-black text-cyan-700">{c.name[0]}</span>
+                  </div>
+                )
+              ))}
+            </div>
+            {canEditSession(s.hostId) && (
+              <button
+                onClick={() => startEditSession(s)}
+                className="text-[#94a3b8] hover:text-[#FF6130] shrink-0"
+                title="Edit session"
+              >
+                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            )}
+            {(canEditSession(s.hostId) || canManageCollaboration) && (
+              <button
+                onClick={() => handleDeleteSession(s.id)}
+                className="text-[#94a3b8] hover:text-red-500 shrink-0"
+                title="Delete session"
+              >
+                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Cohost names + add (hidden in edit mode) */}
+        {editingSessionId !== s.id && (
+          <div className="mt-2 pl-[3.75rem] flex items-center flex-wrap gap-2">
+            <span className="text-[11px] text-[#94a3b8]">
+              <span className="font-bold text-[#FF6130]">{s.hostName}</span>
+              <span className="text-[9px] uppercase tracking-wider ml-1">Host</span>
+            </span>
+            {s.cohosts.map((c) => (
+              <span key={c.id} className="text-[11px] text-[#94a3b8] flex items-center gap-1">
+                · <span className="font-bold text-[#0891b2]">{c.name}</span>
+                <span className="text-[9px] uppercase tracking-wider">Cohost</span>
+                {canEditSession(s.hostId) && (
+                  <button
+                    onClick={() => handleRemoveSessionCohost(s.id, c.id)}
+                    className="text-[#94a3b8] hover:text-red-500 ml-0.5"
+                    title="Remove cohost"
+                  >
+                    <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                      <path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+                )}
+              </span>
+            ))}
+            {canEditSession(s.hostId) && candidateList.length > 0 && (
+              <div className="inline-block relative">
+                <button
+                  onClick={() => setOpenCohostPicker(openCohostPicker === s.id ? null : s.id)}
+                  className="text-[11px] font-bold font-headline text-[#FF6130] cursor-pointer"
+                >
+                  + Add Cohost
+                </button>
+                {openCohostPicker === s.id && (
+                  <div className="absolute top-full left-0 mt-1 min-w-[200px] rounded-xl shadow-lg z-10 overflow-hidden" style={{ backgroundColor: "white", border: "1px solid rgba(0,0,0,0.08)" }}>
+                    {candidateList.map((c) => (
+                      <button
+                        key={c.id}
+                        onClick={() => handleAddSessionCohost(s.id, c.id)}
+                        disabled={addingCohostFor === s.id}
+                        className="w-full flex items-center gap-2 p-2 hover:bg-gray-50 text-left disabled:opacity-40"
+                      >
+                        {c.avatar ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={c.avatar} alt="" className="w-6 h-6 rounded-full object-cover shrink-0" />
+                        ) : (
+                          <div className="w-6 h-6 rounded-full bg-cyan-100 flex items-center justify-center shrink-0">
+                            <span className="text-[10px] font-black text-cyan-700">{c.name[0]}</span>
+                          </div>
+                        )}
+                        <span className="text-sm font-bold text-[#0F2229]">{c.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
+}
+
+// Helper for the WeeklyArc reshape on date change
+function computeTotalWeeks(startDate: string, endDate: string): number {
+  if (!startDate || !endDate) return 0;
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  if (isNaN(start.getTime()) || isNaN(end.getTime()) || end <= start) return 0;
+  const days = Math.floor((end.getTime() - start.getTime()) / 86400000);
+  return Math.max(1, Math.floor(days / 7) + 1);
 }
