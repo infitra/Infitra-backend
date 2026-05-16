@@ -39,8 +39,14 @@ export function PromiseEditor({
 
   return (
     <div className="rounded-2xl infitra-card p-6">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-black font-headline text-[#94a3b8] uppercase tracking-wider">
+      <div className="flex items-baseline justify-between mb-2 flex-wrap gap-2">
+        {/* Polish v12: section title is no longer muted micro-uppercase.
+            The Promise IS the program's headline statement; treat the
+            label like a section heading, not a form field affordance. */}
+        <h3
+          className="text-xl font-black font-headline tracking-tight"
+          style={{ color: "#0F2229" }}
+        >
           The Promise
         </h3>
         {canEdit && (
@@ -52,11 +58,15 @@ export function PromiseEditor({
           </span>
         )}
       </div>
-      <p className="text-xs mb-4 leading-relaxed" style={{ color: "#64748b" }}>
+      <p className="text-xs mb-5 leading-relaxed" style={{ color: "#64748b" }}>
         One to three sentences. What this program will do for the participant —
         in your own voice, jointly written.
       </p>
 
+      {/* Polish v12: warm orange tint on the field itself so the
+          Promise reads as a weighted statement, not a neutral form
+          input. Larger type, more padding. Orange = the contract,
+          mirroring the role colour for the owner / contract surface. */}
       {canEdit ? (
         <textarea
           value={value}
@@ -65,17 +75,26 @@ export function PromiseEditor({
           rows={3}
           maxLength={MAX_LENGTH + 50}
           placeholder="e.g. Strong Together — eight live sessions and two coaches walking you from base fitness to lasting habits over four weeks."
-          className="w-full rounded-xl p-3 text-sm focus:outline-none resize-y"
+          className="w-full rounded-xl p-4 text-base font-bold leading-relaxed focus:outline-none resize-y"
           style={{
-            border: `1px solid ${overLimit ? "rgba(255,97,48,0.5)" : "rgba(15,34,41,0.12)"}`,
+            border: `1px solid ${overLimit ? "rgba(255,97,48,0.5)" : "rgba(255,97,48,0.20)"}`,
+            backgroundColor: "rgba(255,97,48,0.04)",
             color: "#0F2229",
-            minHeight: 90,
+            minHeight: 110,
           }}
         />
       ) : value ? (
-        <p className="text-base leading-relaxed" style={{ color: "#0F2229" }}>
-          {value}
-        </p>
+        <div
+          className="rounded-xl p-5"
+          style={{
+            border: "1px solid rgba(255,97,48,0.20)",
+            backgroundColor: "rgba(255,97,48,0.04)",
+          }}
+        >
+          <p className="text-lg leading-relaxed font-bold" style={{ color: "#0F2229" }}>
+            {value}
+          </p>
+        </div>
       ) : (
         <p className="text-sm italic" style={{ color: "#94a3b8" }}>
           No Promise written yet.
