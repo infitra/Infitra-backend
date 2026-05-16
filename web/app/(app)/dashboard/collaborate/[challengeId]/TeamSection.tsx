@@ -107,27 +107,60 @@ export function TeamSection({
 }: Props) {
   const totalCount = creators.length + pendingInvites.length;
 
-  // Build the donut segments. Owner first (orange), cohorts after
-  // (cyan). Same data drives the donut arc and the legend on the right.
   const ownerCreator = creators.find((c) => c.role === "owner");
-  type Segment = { id: string; name: string; role: string; percent: number; color: string };
+  const cohorts = creators.filter((c) => c.role === "cohost");
+  const singleCohort = cohorts.length === 1 ? cohorts[0] : null;
+
+  // Single-cohort case: live slider state. The slider lives directly
+  // under the donut block so dragging it updates the donut visually
+  // before the save fires (and before the partner's view refreshes).
+  // Local-wins sync against partner saves via dirty ref.
+  const [liveCohortSplit, setLiveCohortSplit] = useState(singleCohort?.splitPercent ?? 0);
+  const liveSplitDirty = useRef(false);
+  const lastLiveSplitProp = useRef(singleCohort?.splitPercent ?? 0);
+  useEffect(() => {
+    const propValue = singleCohort?.splitPercent ?? 0;
+    if (propValue !== lastLiveSplitProp.current) {
+      lastLiveSplitProp.current = propValue;
+      if (!liveSplitDirty.current) setLiveCohortSplit(propValue);
+    }
+  }, [singleCohort?.splitPercent]);
+
+  // Owner's percentage during a live drag. For multi-cohost cases it
+  // stays as the prop value (no live editing in this iteration).
+  const liveOwnerSplit = singleCohort ? 100 - liveCohortSplit : ownerSplit;
+
+  // Build the donut segments. Owner first (orange), cohorts after
+  // (cyan). Two colours per segment: visualColor for fills (donut arc,
+  // legend dot, slider track) using the bright brand cyan; color for
+  // readable text (big % number, role label) using the darker cyan.
+  type Segment = {
+    id: string;
+    name: string;
+    role: string;
+    percent: number;
+    color: string;
+    visualColor: string;
+  };
   const segments: Segment[] = [];
   if (ownerCreator) {
     segments.push({
       id: ownerCreator.id,
       name: ownerCreator.name,
       role: "Owner",
-      percent: ownerSplit,
+      percent: liveOwnerSplit,
       color: "#FF6130",
+      visualColor: "#FF6130",
     });
   }
-  for (const c of creators.filter((c) => c.role === "cohost")) {
+  for (const c of cohorts) {
     segments.push({
       id: c.id,
       name: c.name,
       role: "Cohost",
-      percent: c.splitPercent,
+      percent: singleCohort && c.id === singleCohort.id ? liveCohortSplit : c.splitPercent,
       color: "#0891b2",
+      visualColor: "#9CF0FF",
     });
   }
 
@@ -156,45 +189,107 @@ export function TeamSection({
         they own. Topics help participants know who to ask about what.
       </p>
 
-      {/* Hero donut + label panel. The donut is the load-bearing visual
-          of the split (proportional, on-brand circular shape); the right-
-          side panel labels each segment with a big percentage + name +
-          role. Rows below skip the % chip — split lives here. */}
-      <div className="flex items-center gap-8 mb-6 pb-6 flex-wrap" style={{ borderBottom: "1px solid rgba(15,34,41,0.06)" }}>
-        <TeamDonut segments={segments} totalCount={totalCount} size={240} />
-        <div className="flex-1 min-w-[200px] space-y-3">
-          {segments.map((seg) => (
-            <div key={seg.id} className="flex items-baseline gap-3">
-              <div
-                className="shrink-0 w-3 h-3 rounded-full"
-                style={{ backgroundColor: seg.color }}
-              />
-              <span
-                className="text-4xl font-black font-headline leading-none"
-                style={{ color: seg.color, minWidth: 72 }}
-              >
-                {seg.percent}%
-              </span>
-              <div className="min-w-0">
-                <p
-                  className="text-sm font-bold font-headline truncate"
-                  style={{ color: "#0F2229" }}
+      {/* Hero donut + legend + (single-cohort) slider. The donut is the
+          load-bearing visual of the split — bright brand cyan for the
+          arc, orange for owner. Legend uses the same visual cyan for
+          dots, darker cyan for readable text. For single-cohort
+          collaborations the slider lives DIRECTLY under the donut as
+          its control surface — dragging it updates the donut live. */}
+      <div className="mb-6 pb-6" style={{ borderBottom: "1px solid rgba(15,34,41,0.06)" }}>
+        <div className="flex items-center gap-8 flex-wrap">
+          <TeamDonut segments={segments} totalCount={totalCount} size={240} />
+          <div className="flex-1 min-w-[220px] space-y-4">
+            {segments.map((seg) => (
+              <div key={seg.id} className="flex items-center gap-3">
+                <div
+                  className="shrink-0 w-4 h-4 rounded-full"
+                  style={{ backgroundColor: seg.visualColor }}
+                />
+                <span
+                  className="text-4xl font-black font-headline leading-none"
+                  style={{ color: seg.color, minWidth: 88 }}
                 >
-                  {seg.name}
-                </p>
-                <p
-                  className="text-[10px] font-bold font-headline uppercase tracking-wider"
-                  style={{ color: seg.color }}
-                >
-                  {seg.role}
-                </p>
+                  {seg.percent}%
+                </span>
+                <div className="min-w-0 flex flex-col justify-center">
+                  <p
+                    className="text-sm font-bold font-headline truncate leading-tight"
+                    style={{ color: "#0F2229" }}
+                  >
+                    {seg.name}
+                  </p>
+                  <p
+                    className="text-[10px] font-bold font-headline uppercase tracking-wider mt-0.5"
+                    style={{ color: seg.color }}
+                  >
+                    {seg.role}
+                  </p>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
+
+        {/* Slider — lives under the donut+legend so the control is
+            adjacent to the visualization. Single-cohost only for now;
+            multi-cohort case will get per-cohort sliders below the
+            legend (deferred until the pilot needs >2 creator teams). */}
+        {singleCohort && canManageCollaboration && (
+          <div className="mt-6 pt-5 flex items-center gap-3" style={{ borderTop: "1px dashed rgba(15,34,41,0.10)" }}>
+            <p className="text-[10px] font-bold font-headline uppercase tracking-wider shrink-0" style={{ color: "#94a3b8", minWidth: 90 }}>
+              Adjust split
+            </p>
+            <div className="relative flex-1 flex items-center" style={{ height: 24 }}>
+              <div
+                className="absolute inset-0 my-auto rounded-full pointer-events-none"
+                style={{
+                  height: 6,
+                  background: `linear-gradient(to right,
+                    #FF6130 0%,
+                    #FF6130 ${100 - liveCohortSplit}%,
+                    #9CF0FF ${100 - liveCohortSplit}%,
+                    #9CF0FF 100%)`,
+                }}
+              />
+              <input
+                type="range"
+                min={1}
+                max={99}
+                value={100 - liveCohortSplit}
+                onChange={(e) => {
+                  liveSplitDirty.current = true;
+                  setLiveCohortSplit(100 - parseInt(e.target.value));
+                }}
+                onMouseUp={() => {
+                  if (liveCohortSplit !== singleCohort.splitPercent) {
+                    onCohostSplitCommit(singleCohort.id, liveCohortSplit);
+                  }
+                  liveSplitDirty.current = false;
+                }}
+                onTouchEnd={() => {
+                  if (liveCohortSplit !== singleCohort.splitPercent) {
+                    onCohostSplitCommit(singleCohort.id, liveCohortSplit);
+                  }
+                  liveSplitDirty.current = false;
+                }}
+                className="dual-slider absolute inset-0 w-full appearance-none bg-transparent cursor-pointer"
+                style={{ outline: "none" }}
+                aria-label={`Revenue split between owner and ${singleCohort.name}`}
+              />
+            </div>
+            <div className="shrink-0 flex items-baseline gap-1 font-black font-headline" style={{ minWidth: 90, justifyContent: "flex-end" }}>
+              <span className="text-sm" style={{ color: "#FF6130" }}>{100 - liveCohortSplit}%</span>
+              <span className="text-xs" style={{ color: "#94a3b8" }}>/</span>
+              <span className="text-sm" style={{ color: "#0891b2" }}>{liveCohortSplit}%</span>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Confirmed creators */}
+      {/* Confirmed creators — identity + topics + sessions only. The
+          slider for the single-cohort case lives in the donut block
+          above. For multi-cohort (2+) cases each row gets its own
+          inline slider via showSliderInRow=true. */}
       <div className="space-y-3">
         {creators.map((creator) => (
           <CreatorRowCard
@@ -205,6 +300,9 @@ export function TeamSection({
             ownerSplit={ownerSplit}
             canEdit={canEdit}
             canManageCollaboration={canManageCollaboration}
+            // Only render the in-row slider when there are 2+ cohorts;
+            // single-cohort case has the slider under the donut.
+            showSliderInRow={cohorts.length > 1}
             onTopicsCommit={(topics) => onTopicsCommit(creator.id, topics)}
             onSplitCommit={
               creator.role === "cohost"
@@ -246,6 +344,7 @@ function CreatorRowCard({
   ownerSplit,
   canEdit,
   canManageCollaboration,
+  showSliderInRow,
   onTopicsCommit,
   onSplitCommit,
   onRemove,
@@ -257,6 +356,10 @@ function CreatorRowCard({
   ownerSplit: number;
   canEdit: boolean;
   canManageCollaboration: boolean;
+  /** When true, render the dual-colour slider inline below this row.
+   *  Single-cohort collaborations set this to false because their
+   *  slider lives under the donut block. */
+  showSliderInRow?: boolean;
   onTopicsCommit: (topics: string[]) => void;
   onSplitCommit?: (splitPercent: number) => void;
   onRemove?: () => void;
@@ -295,9 +398,13 @@ function CreatorRowCard({
         border: "1px solid rgba(15,34,41,0.06)",
       }}
     >
-      <div className="flex items-start gap-4 flex-wrap">
+      {/* Strict 4-column grid so owner and cohost rows column-align
+          regardless of avatar type, name length, or chip width.
+          Columns: identity (200px) · topics (1fr) · sessions (80px) ·
+          ×-or-placeholder (32px). */}
+      <div className="grid items-center gap-4" style={{ gridTemplateColumns: "200px 1fr 80px 32px" }}>
         {/* Identity column */}
-        <div className="flex items-center gap-3" style={{ minWidth: 180 }}>
+        <div className="flex items-center gap-3 min-w-0">
           {creator.avatar ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -329,7 +436,7 @@ function CreatorRowCard({
         </div>
 
         {/* Topics input — middle column */}
-        <div className="flex-1 min-w-0">
+        <div className="min-w-0">
           <p
             className="text-[10px] font-bold font-headline uppercase tracking-wider mb-1"
             style={{ color: "#94a3b8" }}
@@ -382,18 +489,15 @@ function CreatorRowCard({
           )}
         </div>
 
-        {/* Sessions count — quieter chip. The % REVENUE chip that used
-            to live here was dropped in polish v5: the donut + legend
-            above carry that data, and surfacing it again on every row
-            was redundant noise. The role label (orange OWNER / cyan
-            COHOST) keeps the per-row colour anchor without restating
-            the number. */}
+        {/* Sessions count — quieter chip. Fixed 80px column so owner
+            and cohost rows align even when one has "10 sessions" and
+            the other has "1 session". The % REVENUE chip that used to
+            live here was dropped in polish v5: donut + legend carry
+            that data; the role label (orange OWNER / cyan COHOST)
+            keeps the per-row colour anchor. */}
         <div
-          className="shrink-0 flex flex-col items-center justify-center px-3 py-2 rounded-xl"
-          style={{
-            backgroundColor: "rgba(15,34,41,0.04)",
-            minWidth: 70,
-          }}
+          className="flex flex-col items-center justify-center px-3 py-2 rounded-xl"
+          style={{ backgroundColor: "rgba(15,34,41,0.04)" }}
         >
           <p
             className="text-xl font-black font-headline leading-none"
@@ -409,9 +513,9 @@ function CreatorRowCard({
           </p>
         </div>
 
-        {/* Remove cohost — its own 32px column at the row's end. To keep
-            owner and cohost rows visually aligned column-by-column, the
-            owner row gets an invisible placeholder of the same width. */}
+        {/* Remove cohost — fixed 32px column at the row's end. Owner
+            row gets an invisible placeholder of the same width so both
+            rows align column-by-column. */}
         {onRemove ? (
           <button
             type="button"
@@ -420,7 +524,7 @@ function CreatorRowCard({
                 onRemove();
               }
             }}
-            className="shrink-0 self-center w-8 h-8 rounded-full flex items-center justify-center text-[#94a3b8] hover:text-red-500 hover:bg-red-50 transition-colors"
+            className="w-8 h-8 rounded-full flex items-center justify-center text-[#94a3b8] hover:text-red-500 hover:bg-red-50 transition-colors"
             title={`Remove ${creator.name}`}
             aria-label={`Remove ${creator.name}`}
           >
@@ -429,14 +533,15 @@ function CreatorRowCard({
             </svg>
           </button>
         ) : (
-          <div className="shrink-0 self-center w-8 h-8" aria-hidden="true" />
+          <div className="w-8 h-8" aria-hidden="true" />
         )}
       </div>
 
-      {/* Cohost split slider (owner-managed) — dual-colour track shows
-          the current owner/cohost balance at a glance: orange on the
-          owner's side, cyan on the cohost's side. */}
-      {creator.role === "cohost" && onSplitCommit && canManageCollaboration && (
+      {/* In-row split slider — only shown for multi-cohort cases (2+
+          cohorts). Single-cohort case has the slider under the donut
+          block at the section level. Cyan track uses the brand cyan
+          (#9CF0FF) to match the donut arc. */}
+      {showSliderInRow && creator.role === "cohost" && onSplitCommit && canManageCollaboration && (
         <div
           className="mt-4 pt-3 flex items-center gap-3"
           style={{ borderTop: "1px solid rgba(15,34,41,0.04)" }}
@@ -448,12 +553,6 @@ function CreatorRowCard({
             Revenue split
           </p>
           <div className="relative flex-1 flex items-center" style={{ height: 24 }}>
-            {/* Dual-colour track. The owner's percentage (= 100 - cohost%)
-                is the WIDTH of the orange region on the left; cyan fills
-                the rest. The slider's value is INVERTED (owner% from left)
-                so the thumb sits exactly at the colour boundary — dragging
-                the thumb right grows orange (gives more to owner), left
-                grows cyan (gives more to cohost). Visual matches semantics. */}
             <div
               className="absolute inset-0 my-auto rounded-full pointer-events-none"
               style={{
@@ -461,16 +560,14 @@ function CreatorRowCard({
                 background: `linear-gradient(to right,
                   #FF6130 0%,
                   #FF6130 ${100 - splitLocal}%,
-                  #0891b2 ${100 - splitLocal}%,
-                  #0891b2 100%)`,
+                  #9CF0FF ${100 - splitLocal}%,
+                  #9CF0FF 100%)`,
               }}
             />
             <input
               type="range"
               min={1}
               max={99}
-              // Slider value = owner% from left, so the thumb sits at the
-              // colour boundary. State (splitLocal) still tracks cohost%.
               value={100 - splitLocal}
               onChange={(e) => {
                 splitDirty.current = true;
@@ -489,7 +586,6 @@ function CreatorRowCard({
               style={{ outline: "none" }}
             />
           </div>
-          {/* Two-color label: owner% / cohost% */}
           <div className="shrink-0 flex items-baseline gap-1 font-black font-headline" style={{ minWidth: 80, justifyContent: "flex-end" }}>
             <span className="text-sm" style={{ color: "#FF6130" }}>{100 - splitLocal}%</span>
             <span className="text-xs" style={{ color: "#94a3b8" }}>/</span>
@@ -564,7 +660,11 @@ function PendingRowCard({ invite }: { invite: PendingInviteRow }) {
 // ─────────────────────────────────────────────────────────────────
 
 interface TeamDonutProps {
-  segments: Array<{ id: string; color: string; percent: number }>;
+  /** Each segment uses `visualColor` for the arc fill (the bright
+   *  brand cyan for cohorts, orange for owner). The darker `color`
+   *  field — used for readable text in the legend — is intentionally
+   *  not consumed here. */
+  segments: Array<{ id: string; visualColor: string; percent: number }>;
   totalCount: number;
   size?: number;
 }
@@ -604,7 +704,7 @@ function TeamDonut({ segments, totalCount, size = 240 }: TeamDonutProps) {
               cy={center}
               r={radius}
               fill="none"
-              stroke={seg.color}
+              stroke={seg.visualColor}
               strokeWidth={stroke}
               strokeDasharray={`${dashLength} ${dashGap}`}
               strokeDashoffset={offset}
