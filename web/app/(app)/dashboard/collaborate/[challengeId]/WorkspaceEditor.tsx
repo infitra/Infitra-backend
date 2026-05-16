@@ -802,9 +802,22 @@ export function WorkspaceEditor({
                     min={1}
                     max={52}
                     value={durationWeeks}
+                    // Select-all on focus so typing replaces the value
+                    // instead of appending (the "1→14→52" bug from
+                    // polish v3 — without this, the cursor sat after
+                    // the current digit and the user could only add).
+                    onFocus={(e) => e.target.select()}
                     onChange={(e) => {
-                      const n = parseInt(e.target.value, 10);
-                      setDurationWeeks(Number.isFinite(n) ? Math.max(1, Math.min(52, n)) : 1);
+                      const raw = e.target.value;
+                      if (raw === "") {
+                        // Allow temporarily-empty while user is mid-edit.
+                        // Final clamp happens on blur via commitDurationWeeks.
+                        setDurationWeeks(1);
+                        return;
+                      }
+                      const n = parseInt(raw, 10);
+                      if (!Number.isFinite(n)) return;
+                      setDurationWeeks(Math.max(1, Math.min(52, n)));
                     }}
                     onBlur={commitDurationWeeks}
                     className="w-full rounded-xl p-2.5 text-sm font-bold font-headline focus:outline-none"

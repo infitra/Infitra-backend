@@ -134,6 +134,53 @@ export function useWorkspaceRealtime({
           }
         },
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "app_session",
+        },
+        (payload) => {
+          // Session deleted — filter client-side by session id from OLD row.
+          const row = payload.old as { id?: string } | null;
+          if (row?.id && sessionIdSet.has(row.id)) {
+            router.refresh();
+          }
+        },
+      )
+      // Session cohort changes — adding/removing a cohost from one session
+      // needs to flow to every workspace participant in real time. Broad
+      // subscription filtered client-side by session id (no challenge_id
+      // column on this table; the link is via app_challenge_session).
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "app_session_cohost",
+        },
+        (payload) => {
+          const row = payload.new as { session_id?: string } | null;
+          if (row?.session_id && sessionIdSet.has(row.session_id)) {
+            router.refresh();
+          }
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "app_session_cohost",
+        },
+        (payload) => {
+          const row = payload.old as { session_id?: string } | null;
+          if (row?.session_id && sessionIdSet.has(row.session_id)) {
+            router.refresh();
+          }
+        },
+      )
       // Bundle 3 polish v2 — cohort and invite tables. The first creator's
       // view stayed on "Awaiting" after the partner accepted because we
       // weren't listening for INSERT on app_challenge_cohost. Now we are.

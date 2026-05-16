@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ShareDonut } from "@/app/components/ShareDonut";
 import { CollabInviteFlow } from "@/app/(app)/dashboard/create/CollabInviteFlow";
 import { SectionAttribution } from "./SectionAttribution";
 import type { ActivityRow } from "./useWorkspaceRealtime";
@@ -108,23 +107,29 @@ export function TeamSection({
 }: Props) {
   const totalCount = creators.length + pendingInvites.length;
 
-  // ShareDonut shape. Pending invitees show as a hatched slice (we
-  // approximate by including them at their proposed split with a
-  // tertiary color so the split picture matches what's "in flight").
-  const shares = [
-    {
-      label: creators.find((c) => c.role === "owner")?.name ?? "Owner",
+  // Build the bar segments. Owner first (orange), cohorts after (cyan
+  // shades). Each segment is rendered at its percentage width so the
+  // bar visually *is* the split — the section's load-bearing visual.
+  const ownerCreator = creators.find((c) => c.role === "owner");
+  const segments: Array<{ id: string; name: string; percent: number; color: string; textColor: string }> = [];
+  if (ownerCreator) {
+    segments.push({
+      id: ownerCreator.id,
+      name: ownerCreator.name,
       percent: ownerSplit,
       color: "#FF6130",
-    },
-    ...creators
-      .filter((c) => c.role === "cohost")
-      .map((c) => ({
-        label: c.name,
-        percent: c.splitPercent,
-        color: "#9CF0FF",
-      })),
-  ];
+      textColor: "white",
+    });
+  }
+  for (const c of creators.filter((c) => c.role === "cohost")) {
+    segments.push({
+      id: c.id,
+      name: c.name,
+      percent: c.splitPercent,
+      color: "#0891b2",
+      textColor: "white",
+    });
+  }
 
   return (
     <div className="rounded-2xl infitra-card p-6">
@@ -145,16 +150,58 @@ export function TeamSection({
         )}
       </div>
 
-      {/* Donut at the top — load-bearing visualization of the split */}
-      <div className="flex items-center gap-8 mb-6 pb-6" style={{ borderBottom: "1px solid rgba(15,34,41,0.06)" }}>
-        <ShareDonut size={200} shares={shares} />
-        <div className="text-sm leading-relaxed" style={{ color: "#475569" }}>
-          Each creator&apos;s revenue share, sessions they lead, and the topics
-          they own. Topics help participants know who to ask about what — for
-          example, training questions go to the trainer, nutrition to the
-          nutritionist. Soft routing only, never enforced.
-        </div>
+      {/* Description */}
+      <p className="text-sm leading-relaxed mb-5" style={{ color: "#475569" }}>
+        Each creator&apos;s revenue share, sessions they lead, and the topics
+        they own. Topics help participants know who to ask about what.
+      </p>
+
+      {/* Load-bearing visual: a full-width stacked bar with the split
+          rendered AT the percentage widths it represents. The bar is the
+          visualization — no separate donut. Big numbers inside each
+          segment carry the visual weight the split deserves. */}
+      <div
+        className="flex w-full overflow-hidden mb-6"
+        style={{
+          height: 88,
+          borderRadius: 14,
+          boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04)",
+        }}
+      >
+        {segments.map((seg, idx) => (
+          <div
+            key={seg.id}
+            className="flex flex-col items-center justify-center relative overflow-hidden"
+            style={{
+              width: `${seg.percent}%`,
+              backgroundColor: seg.color,
+              minWidth: 0,
+            }}
+            title={`${seg.name} — ${seg.percent}%`}
+          >
+            {/* Soft separator between segments */}
+            {idx > 0 && (
+              <div
+                className="absolute left-0 top-0 bottom-0"
+                style={{ width: 1, backgroundColor: "rgba(255,255,255,0.30)" }}
+              />
+            )}
+            <span
+              className="text-3xl font-black font-headline leading-none"
+              style={{ color: seg.textColor }}
+            >
+              {seg.percent}%
+            </span>
+            <span
+              className="text-[11px] font-bold font-headline uppercase tracking-wider mt-1.5 truncate px-2"
+              style={{ color: seg.textColor, opacity: 0.85, maxWidth: "100%" }}
+            >
+              {seg.name}
+            </span>
+          </div>
+        ))}
       </div>
+      <div className="mb-6 pb-6" style={{ borderBottom: "1px solid rgba(15,34,41,0.06)" }} />
 
       {/* Confirmed creators */}
       <div className="space-y-3">
@@ -251,30 +298,12 @@ function CreatorRowCard({
 
   return (
     <div
-      className="p-4 rounded-xl relative"
+      className="p-4 rounded-xl"
       style={{
         backgroundColor: "rgba(0,0,0,0.02)",
         border: "1px solid rgba(15,34,41,0.06)",
       }}
     >
-      {/* Remove cohost — owner only, cohorts only */}
-      {onRemove && (
-        <button
-          type="button"
-          onClick={() => {
-            if (confirm(`Remove ${creator.name} from the collaboration?`)) {
-              onRemove();
-            }
-          }}
-          className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center text-[#94a3b8] hover:text-red-500 hover:bg-red-50 transition-colors"
-          title={`Remove ${creator.name}`}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
-            <path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
-      )}
-
       <div className="flex items-start gap-4 flex-wrap">
         {/* Identity column */}
         <div className="flex items-center gap-3" style={{ minWidth: 180 }}>
@@ -406,6 +435,27 @@ function CreatorRowCard({
             {creator.sessionCount === 1 ? "session" : "sessions"}
           </p>
         </div>
+
+        {/* Remove cohost — owner-only, cohorts-only. Its own column at
+            the end of the row so it never overlaps the chips. Subtle
+            gray, hover red. */}
+        {onRemove ? (
+          <button
+            type="button"
+            onClick={() => {
+              if (confirm(`Remove ${creator.name} from the collaboration?`)) {
+                onRemove();
+              }
+            }}
+            className="shrink-0 self-center w-8 h-8 rounded-full flex items-center justify-center text-[#94a3b8] hover:text-red-500 hover:bg-red-50 transition-colors"
+            title={`Remove ${creator.name}`}
+            aria-label={`Remove ${creator.name}`}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+              <path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+        ) : null}
       </div>
 
       {/* Cohost split slider (owner-managed) — dual-colour track shows
@@ -423,12 +473,12 @@ function CreatorRowCard({
             Revenue split
           </p>
           <div className="relative flex-1 flex items-center" style={{ height: 24 }}>
-            {/* Visual dual-colour track. Owner's portion (orange) on the
-                left, cohost's portion (cyan) on the right. The owner's
-                share is computed as (100 - sum-of-other-cohost-splits) -
-                the splitLocal of THIS cohost; for the simple two-creator
-                pilot case this reduces to 100 - splitLocal which equals
-                ownerSplit + (displayedSplit - splitLocal). */}
+            {/* Dual-colour track. The owner's percentage (= 100 - cohost%)
+                is the WIDTH of the orange region on the left; cyan fills
+                the rest. The slider's value is INVERTED (owner% from left)
+                so the thumb sits exactly at the colour boundary — dragging
+                the thumb right grows orange (gives more to owner), left
+                grows cyan (gives more to cohost). Visual matches semantics. */}
             <div
               className="absolute inset-0 my-auto rounded-full pointer-events-none"
               style={{
@@ -440,16 +490,17 @@ function CreatorRowCard({
                   #0891b2 100%)`,
               }}
             />
-            {/* Functional input — transparent track, native thumb stays.
-                The thumb sits at splitLocal% from the left. */}
             <input
               type="range"
               min={1}
               max={99}
-              value={splitLocal}
+              // Slider value = owner% from left, so the thumb sits at the
+              // colour boundary. State (splitLocal) still tracks cohost%.
+              value={100 - splitLocal}
               onChange={(e) => {
                 splitDirty.current = true;
-                setSplitLocal(parseInt(e.target.value));
+                const ownerPct = parseInt(e.target.value);
+                setSplitLocal(100 - ownerPct);
               }}
               onMouseUp={() => {
                 if (splitLocal !== displayedSplit) onSplitCommit(splitLocal);
@@ -462,8 +513,6 @@ function CreatorRowCard({
               className="dual-slider absolute inset-0 w-full appearance-none bg-transparent cursor-pointer"
               style={{ outline: "none" }}
             />
-            {/* Native slider styles for the .dual-slider class live in
-                globals.css — hides default track, keeps the thumb. */}
           </div>
           {/* Two-color label: owner% / cohost% */}
           <div className="shrink-0 flex items-baseline gap-1 font-black font-headline" style={{ minWidth: 80, justifyContent: "flex-end" }}>
