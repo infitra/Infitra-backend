@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { ActivityRow } from "./useWorkspaceRealtime";
 
 /**
@@ -86,14 +86,72 @@ function describe(row: ActivityRow): string {
   }
 }
 
+/**
+ * Per-workspace localStorage key for the timestamp of the last time
+ * this user expanded the Recent Changes panel. Drives the unread
+ * badge count: only entries with `created_at > lastViewedAt` are
+ * counted as unread. Per-device by design — see polish v12 notes.
+ */
+function lastViewedKey(challengeId: string): string {
+  return `infitra:workspace:${challengeId}:recentChangesLastViewed`;
+}
+
 export function RecentChangesExpander({
-  challengeId: _challengeId,
+  challengeId,
   activity,
   profiles,
 }: Props) {
   const [open, setOpen] = useState(false);
   const rows = activity.slice(0, DISPLAY_LIMIT);
-  const count = rows.length;
+
+  // Polish v12: badge counts UNREAD entries only (created after the
+  // last time this user expanded the panel) instead of the raw rolling
+  // total. State held in localStorage so the count persists across
+  // page reloads on the same device. First visit → no key yet → we
+  // seed it to "now" so the badge starts at 0; subsequent edits then
+  // raise it. This matches "you've seen everything that existed when
+  // you first opened the workspace" — the cohost doesn't get spammed
+  // with a "20" badge on every fresh visit.
+  const [lastViewedAt, setLastViewedAt] = useState<number | null>(null);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const key = lastViewedKey(challengeId);
+    const stored = window.localStorage.getItem(key);
+    if (stored) {
+      const parsed = parseInt(stored, 10);
+      if (Number.isFinite(parsed)) {
+        setLastViewedAt(parsed);
+        return;
+      }
+    }
+    // First visit: seed to now so we don't surface the entire backlog
+    // as "unread" the first time someone lands on the workspace.
+    const now = Date.now();
+    window.localStorage.setItem(key, String(now));
+    setLastViewedAt(now);
+  }, [challengeId]);
+
+  const unreadCount = useMemo(() => {
+    if (lastViewedAt === null) return 0;
+    return rows.filter((r) => new Date(r.created_at).getTime() > lastViewedAt).length;
+  }, [rows, lastViewedAt]);
+
+  function toggleOpen() {
+    setOpen((prev) => {
+      const next = !prev;
+      // Mark as viewed when the user OPENS the panel (the moment they
+      // can actually read the entries). Closing doesn't touch it — we
+      // don't want closing to be a "marked as read" gesture.
+      if (next && typeof window !== "undefined") {
+        const now = Date.now();
+        window.localStorage.setItem(lastViewedKey(challengeId), String(now));
+        setLastViewedAt(now);
+      }
+      return next;
+    });
+  }
+
+  const count = unreadCount;
 
   return (
     <div
@@ -101,7 +159,7 @@ export function RecentChangesExpander({
     >
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={toggleOpen}
         className="w-full flex items-center justify-between px-4 py-3 transition-colors"
         style={{
           backgroundColor: open ? "rgba(0,0,0,0.02)" : "transparent",
