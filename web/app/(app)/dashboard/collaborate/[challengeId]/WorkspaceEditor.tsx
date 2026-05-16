@@ -1362,7 +1362,7 @@ export function WorkspaceEditor({
 
     return (
       <div
-        className="p-3 rounded-lg cursor-pointer hover:bg-white/80 transition-colors"
+        className="p-3 rounded-xl cursor-pointer hover:bg-white/80 transition-colors"
         style={{ backgroundColor: "rgba(255,255,255,0.7)", border: "1px solid rgba(15,34,41,0.06)" }}
         onClick={(e) => {
           const target = e.target as HTMLElement;
@@ -1374,25 +1374,31 @@ export function WorkspaceEditor({
             below at the end of the editor). The session card always
             renders display mode; the pencil button opens the modal. */}
         {(() => {
-          /* DISPLAY MODE — kept verbatim from the previous render so the
-             rest of the file's grep-anchored edits stay valid. */
+          /* DISPLAY MODE — polish v12: image promoted to a left-side
+             hero (96px square, was 48px), more breathing room, larger
+             title. Reads like an editorial card rather than a chip. */
           return (
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             {s.imageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={s.imageUrl} alt="" className="w-12 h-12 rounded-lg object-cover shrink-0" />
+              <img src={s.imageUrl} alt="" className="w-24 h-24 rounded-xl object-cover shrink-0" />
             ) : (
-              <div className="w-12 h-12 rounded-lg shrink-0 flex items-center justify-center" style={{ background: "linear-gradient(135deg, #0F2229, #1a3340)" }}>
+              <div className="w-24 h-24 rounded-xl shrink-0 flex items-center justify-center" style={{ background: "linear-gradient(135deg, #0F2229, #1a3340)" }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/logo-mark.png" alt="" width={16} height={16} style={{ opacity: 0.15 }} />
+                <img src="/logo-mark.png" alt="" width={28} height={28} style={{ opacity: 0.18 }} />
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-black font-headline text-[#0F2229] truncate">{s.title}</p>
-              <p className="text-[11px] font-bold text-[#94a3b8]" suppressHydrationWarning>
+              <p className="text-base font-black font-headline text-[#0F2229] truncate leading-tight">{s.title}</p>
+              <p className="text-xs font-bold mt-1" style={{ color: "#64748b" }} suppressHydrationWarning>
                 {new Date(s.startTime).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
                 {" · "}{s.durationMinutes} min
               </p>
+              {s.description && s.description.trim() && (
+                <p className="text-xs mt-1.5 leading-relaxed line-clamp-2" style={{ color: "#475569" }}>
+                  {s.description}
+                </p>
+              )}
             </div>
             {/* Host + cohort avatars */}
             <div className="flex -space-x-2 shrink-0">
@@ -1442,9 +1448,10 @@ export function WorkspaceEditor({
         })()}
 
         {/* Cohost names + add — always shown now that the edit form
-            lives in a Dialog instead of replacing the row content. */}
+            lives in a Dialog instead of replacing the row content.
+            Indent matches the new 96px hero image + 16px gap (= 7rem). */}
         {true && (
-          <div className="mt-2 pl-[3.75rem] flex items-center flex-wrap gap-2">
+          <div className="mt-3 pl-[7rem] flex items-center flex-wrap gap-2">
             <span className="text-[11px] text-[#94a3b8]">
               <span className="font-bold text-[#FF6130]">{s.hostName}</span>
               <span className="text-[9px] uppercase tracking-wider ml-1">Host</span>
