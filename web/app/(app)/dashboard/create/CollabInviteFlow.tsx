@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { sendCollabInvites, sendAdditionalCollabInvite } from "@/app/actions/collaboration";
 import { ShareDonut } from "@/app/components/ShareDonut";
+import { Dialog } from "@/app/components/Dialog";
 
 interface CreatorResult {
   id: string;
@@ -130,6 +131,8 @@ export function CollabInviteFlow({ existingChallengeId, existingCollaboratorIds,
       setOpen(false);
       setInvitees([]);
       setMessage("");
+      setQuery("");
+      setResults([]);
       if (onSent) onSent();
       router.refresh();
     } else {
@@ -150,35 +153,44 @@ export function CollabInviteFlow({ existingChallengeId, existingCollaboratorIds,
     ...invitees.map((i, idx) => ({ label: i.display_name, percent: i.splitPercent, color: idx === 0 ? "#9CF0FF" : idx === 1 ? "#0891b2" : "#a78bfa" })),
   ];
 
-  // Compact trigger button
-  if (!open) {
-    // Three trigger styles:
-    //   isAdditional → small cyan ghost ("Invite more" inside an existing workspace)
-    //   primary       → filled orange CTA (Create page hero treatment)
-    //   default       → cyan outlined ghost (legacy fallback)
-    const triggerClass = isAdditional
-      ? "px-4 py-2 rounded-full text-xs font-bold font-headline text-[#0891b2]"
-      : "px-6 py-3 rounded-full text-sm font-black font-headline w-full";
+  // Trigger button — three styles depending on context:
+  //   isAdditional → small cyan ghost ("Invite more" inside an existing workspace)
+  //   primary       → filled orange CTA (Create page hero treatment)
+  //   default       → cyan outlined ghost (legacy fallback)
+  const triggerClass = isAdditional
+    ? "px-4 py-2 rounded-full text-xs font-bold font-headline text-[#0891b2]"
+    : "px-6 py-3 rounded-full text-sm font-black font-headline w-full";
 
-    const triggerStyle: React.CSSProperties = isAdditional
-      ? { border: "1px solid rgba(8,145,178,0.30)", backgroundColor: "rgba(156,240,255,0.10)" }
-      : primary
-        ? {
-            color: "#FFFFFF",
-            backgroundColor: "#FF6130",
-            boxShadow: "0 4px 14px rgba(255,97,48,0.35)",
-          }
-        : { color: "#0891b2", border: "2px solid #9CF0FF", backgroundColor: "rgba(156,240,255,0.08)" };
+  const triggerStyle: React.CSSProperties = isAdditional
+    ? { border: "1px solid rgba(8,145,178,0.30)", backgroundColor: "rgba(156,240,255,0.10)" }
+    : primary
+      ? {
+          color: "#FFFFFF",
+          backgroundColor: "#FF6130",
+          boxShadow: "0 4px 14px rgba(255,97,48,0.35)",
+        }
+      : { color: "#0891b2", border: "2px solid #9CF0FF", backgroundColor: "rgba(156,240,255,0.08)" };
 
-    return (
+  function closeAndReset() {
+    setOpen(false);
+    setInvitees([]);
+    setMessage("");
+    setTitle("");
+    setQuery("");
+    setResults([]);
+  }
+
+  // Polish v12: invite form now opens in a centered Dialog overlay
+  // instead of expanding inline within the parent card. The trigger
+  // stays in the parent's layout flow; the form lives in the modal
+  // portal so it can't push the workspace around or get cut off.
+  return (
+    <>
       <button onClick={() => setOpen(true)} className={triggerClass} style={triggerStyle}>
         {isAdditional ? "+ Invite More" : "Invite Creators"}
       </button>
-    );
-  }
-
-  return (
-    <div className="space-y-4">
+      <Dialog open={open} onClose={closeAndReset} closeOnBackdrop={invitees.length === 0 && !message.trim()}>
+        <div className="p-6 space-y-4">
       <div>
         <h4 className="text-sm font-black font-headline text-[#0F2229] mb-1">
           {isAdditional ? "Invite Another Collaborator" : "Invite to Collaborate"}
@@ -331,12 +343,14 @@ export function CollabInviteFlow({ existingChallengeId, existingCollaboratorIds,
           {sending ? "Sending..." : isAdditional ? "Send Invitation" : `Send ${invitees.length > 1 ? `${invitees.length} Invitations` : "Invitation"}`}
         </button>
         <button
-          onClick={() => { setOpen(false); setInvitees([]); setMessage(""); setTitle(""); }}
+          onClick={closeAndReset}
           className="text-xs text-[#94a3b8] hover:text-[#0F2229] px-3"
         >
           Cancel
         </button>
       </div>
-    </div>
+        </div>
+      </Dialog>
+    </>
   );
 }
