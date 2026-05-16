@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { ImageSelector } from "@/app/components/ImageSelector";
+import { Dialog } from "@/app/components/Dialog";
 import {
   updateChallenge,
   publishChallenge,
@@ -87,6 +88,7 @@ interface Props {
     hostName: string;
     hostAvatar?: string | null;
     imageUrl?: string | null;
+    description?: string | null;
     cohosts: { id: string; name: string; avatar: string | null; splitPercent: number }[];
   }[];
   pendingInvites?: {
@@ -199,6 +201,7 @@ export function WorkspaceEditor({
   const [sessDate, setSessDate] = useState("");
   const [sessDuration, setSessDuration] = useState("60");
   const [sessImageUrl, setSessImageUrl] = useState<string | null>(null);
+  const [sessDescription, setSessDescription] = useState("");
   const [sessCohostIds, setSessCohostIds] = useState<string[]>([]);
   const [addingSession, setAddingSession] = useState(false);
 
@@ -208,7 +211,8 @@ export function WorkspaceEditor({
     startTime: string;
     duration: string;
     imageUrl: string | null;
-  }>({ title: "", startTime: "", duration: "60", imageUrl: null });
+    description: string;
+  }>({ title: "", startTime: "", duration: "60", imageUrl: null, description: "" });
   const [savingSession, setSavingSession] = useState(false);
   const [openCohostPicker, setOpenCohostPicker] = useState<string | null>(null);
   const [addingCohostFor, setAddingCohostFor] = useState<string | null>(null);
@@ -442,6 +446,7 @@ export function WorkspaceEditor({
       startTime: localISO,
       duration: String(s.durationMinutes),
       imageUrl: s.imageUrl ?? null,
+      description: s.description ?? "",
     });
   }
 
@@ -454,7 +459,7 @@ export function WorkspaceEditor({
       editFields.title.trim(),
       new Date(editFields.startTime).toISOString(),
       parseInt(editFields.duration),
-      undefined,
+      editFields.description.trim() || null,
       editFields.imageUrl,
       challenge.id,
     );
@@ -488,6 +493,7 @@ export function WorkspaceEditor({
     setError(null);
     const result = await createChallengeSession(
       challenge.id, sessTitle.trim(), sessDate, parseInt(sessDuration), sessImageUrl,
+      sessDescription.trim() || null,
     );
     if (result?.error) { setError(result.error); setAddingSession(false); return; }
 
@@ -504,6 +510,7 @@ export function WorkspaceEditor({
     setSessTitle("");
     setSessDate("");
     setSessImageUrl(null);
+    setSessDescription("");
     setSessCohostIds([]);
     setShowAddSession(false);
     setAddingSession(false);
@@ -511,8 +518,10 @@ export function WorkspaceEditor({
   }
 
   // Pre-fill the add-session form to a date inside a specific week,
-  // then expand it. Called by ProgramRhythmSection's "+ Add session in
-  // Week N" button.
+  // then open the modal. Called by ProgramRhythmSection's "+ Add
+  // session in Week N" button. Polish v12: form opens as a centered
+  // Dialog instead of expanding inline beneath the rhythm card, so no
+  // scroll-into-view step is needed.
   function handleAddSessionForWeek(_weekNum: number, suggestedDate: Date) {
     // Default time = 19:00 local on the suggested date
     const dt = new Date(suggestedDate);
@@ -521,11 +530,15 @@ export function WorkspaceEditor({
     const localISO = new Date(dt.getTime() - tzOffset).toISOString().slice(0, 16);
     setSessDate(localISO);
     setShowAddSession(true);
-    // Scroll the form into view on next paint
-    setTimeout(() => {
-      const el = document.getElementById("add-session-form");
-      el?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, 50);
+  }
+
+  function closeAddSession() {
+    setShowAddSession(false);
+    setSessTitle("");
+    setSessDate("");
+    setSessImageUrl(null);
+    setSessDescription("");
+    setSessCohostIds([]);
   }
 
   // ── Contract flow (unchanged) ──
@@ -915,22 +928,24 @@ export function WorkspaceEditor({
           profileMap={profileMap}
         />
 
-        {/* Add-session form (collapsible). Lives outside the Rhythm card
-            so its full inputs aren't cramped inside a week row. The
-            "+ Add session in Week N" button auto-scrolls here. */}
-        {showAddSession && canAddSession && (
-          <div
-            id="add-session-form"
-            className="p-5 rounded-2xl space-y-4 infitra-card"
-            style={{ border: "1px solid rgba(8,145,178,0.30)" }}
-          >
+        {/* Add-session form — centered Dialog (polish v12). Triggered
+            by the "+ Add session in Week N" buttons on the rhythm card.
+            The form lives in a modal portal so it doesn't push the
+            workspace around or get cut off by surrounding cards. */}
+        <Dialog
+          open={showAddSession && canAddSession}
+          onClose={closeAddSession}
+          maxWidthClass="max-w-2xl"
+          closeOnBackdrop={!sessTitle.trim() && !sessDescription.trim()}
+        >
+          <div className="p-6 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-black font-headline text-[#94a3b8] uppercase tracking-wider">
+              <h3 className="text-base font-black font-headline text-[#0F2229]">
                 New Session
               </h3>
               <button
                 type="button"
-                onClick={() => setShowAddSession(false)}
+                onClick={closeAddSession}
                 className="text-xs font-bold font-headline text-[#94a3b8] hover:text-[#0F2229]"
               >
                 Cancel
@@ -968,6 +983,17 @@ export function WorkspaceEditor({
                   style={{ border: "1px solid rgba(15,34,41,0.10)", color: "#0F2229" }}
                 />
               </div>
+            </div>
+            <div>
+              <label className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-2">Description (optional)</label>
+              <textarea
+                value={sessDescription}
+                onChange={(e) => setSessDescription(e.target.value)}
+                placeholder="What participants will do, what to expect, what to bring…"
+                rows={3}
+                className="w-full rounded-xl p-3 text-sm focus:outline-none resize-y"
+                style={{ border: "1px solid rgba(15,34,41,0.10)", color: "#0F2229" }}
+              />
             </div>
             <div>
               <label className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-2">Cover Image (optional)</label>
@@ -1035,7 +1061,7 @@ export function WorkspaceEditor({
               {addingSession ? "Adding..." : "Add Session"}
             </button>
           </div>
-        )}
+        </Dialog>
 
         {/* ── 6. INTRO PROMPT ──────────────────────────── */}
         <IntroPromptEditor
@@ -1175,9 +1201,92 @@ export function WorkspaceEditor({
         {/* end of contract envelope */}
       </div>
 
+      {/* Polish v12: session edit lives in its own Dialog now (no
+          longer inline inside the rhythm card row). Triggered by the
+          pencil button on each session card OR the Edit button in
+          SessionDetailModal. Shares state with the add-session form
+          via `editFields` / `editingSessionId`. */}
+      <Dialog
+        open={editingSessionId !== null}
+        onClose={() => setEditingSessionId(null)}
+        maxWidthClass="max-w-2xl"
+        closeOnBackdrop={false}
+      >
+        <div className="p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-base font-black font-headline text-[#0F2229]">
+              Edit Session
+            </h3>
+            <button
+              type="button"
+              onClick={() => setEditingSessionId(null)}
+              className="text-xs font-bold font-headline text-[#94a3b8] hover:text-[#0F2229]"
+            >
+              Cancel
+            </button>
+          </div>
+          <div>
+            <label className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-2">Title</label>
+            <input
+              value={editFields.title}
+              onChange={(e) => setEditFields({ ...editFields, title: e.target.value })}
+              className="w-full rounded-xl p-3 text-base font-bold focus:outline-none"
+              style={{ border: "1px solid rgba(15,34,41,0.10)", color: "#0F2229" }}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-2">Date & Time</label>
+              <input
+                type="datetime-local"
+                value={editFields.startTime}
+                onChange={(e) => setEditFields({ ...editFields, startTime: e.target.value })}
+                className="w-full rounded-xl p-3 text-sm focus:outline-none"
+                style={{ border: "1px solid rgba(15,34,41,0.10)", color: "#0F2229" }}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-2">Duration (min)</label>
+              <input
+                type="number" min={5} max={480}
+                value={editFields.duration}
+                onChange={(e) => setEditFields({ ...editFields, duration: e.target.value })}
+                className="w-full rounded-xl p-3 text-sm focus:outline-none"
+                style={{ border: "1px solid rgba(15,34,41,0.10)", color: "#0F2229" }}
+              />
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-2">Description (optional)</label>
+            <textarea
+              value={editFields.description}
+              onChange={(e) => setEditFields({ ...editFields, description: e.target.value })}
+              placeholder="What participants will do, what to expect, what to bring…"
+              rows={3}
+              className="w-full rounded-xl p-3 text-sm focus:outline-none resize-y"
+              style={{ border: "1px solid rgba(15,34,41,0.10)", color: "#0F2229" }}
+            />
+          </div>
+          <div>
+            <label className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-2">Cover Image (optional)</label>
+            <ImageSelector currentUrl={editFields.imageUrl} title={editFields.title} onSelect={(url) => setEditFields({ ...editFields, imageUrl: url })} size="sm" />
+          </div>
+          <div className="flex gap-2 pt-2">
+            <button
+              onClick={() => editingSessionId && handleSaveSession(editingSessionId)}
+              disabled={savingSession || !editFields.title.trim() || !editFields.startTime}
+              className="px-5 py-2.5 rounded-full text-sm font-black font-headline text-white disabled:opacity-40"
+              style={{ backgroundColor: "#FF6130" }}
+            >
+              {savingSession ? "Saving..." : "Save Changes"}
+            </button>
+          </div>
+        </div>
+      </Dialog>
+
       {/* Session detail popup. Edit + Delete only show when the viewer
           is the host (RPC-enforced) — the modal calls back to the same
-          inline-edit / delete flow as the workspace card affordances. */}
+          edit / delete flow as the workspace card affordances. */}
       <SessionDetailModal
         open={!!detailSession}
         session={detailSession}
@@ -1253,73 +1362,21 @@ export function WorkspaceEditor({
 
     return (
       <div
-        className={`p-3 rounded-lg ${editingSessionId === s.id ? "" : "cursor-pointer hover:bg-white/80 transition-colors"}`}
+        className="p-3 rounded-lg cursor-pointer hover:bg-white/80 transition-colors"
         style={{ backgroundColor: "rgba(255,255,255,0.7)", border: "1px solid rgba(15,34,41,0.06)" }}
         onClick={(e) => {
-          if (editingSessionId === s.id) return;
           const target = e.target as HTMLElement;
           if (target.closest("button")) return;
           setDetailSession(s);
         }}
       >
-        {editingSessionId === s.id ? (
-          /* INLINE EDIT MODE */
-          <div className="space-y-3">
-            <div>
-              <label className="text-[10px] font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-1">Title</label>
-              <input
-                value={editFields.title}
-                onChange={(e) => setEditFields({ ...editFields, title: e.target.value })}
-                className="w-full rounded-xl p-2.5 text-sm font-bold focus:outline-none"
-                style={{ border: "1px solid rgba(15,34,41,0.10)", color: "#0F2229" }}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-[10px] font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-1">Date & Time</label>
-                <input
-                  type="datetime-local"
-                  value={editFields.startTime}
-                  onChange={(e) => setEditFields({ ...editFields, startTime: e.target.value })}
-                  className="w-full rounded-xl p-2.5 text-sm focus:outline-none"
-                  style={{ border: "1px solid rgba(15,34,41,0.10)", color: "#0F2229" }}
-                />
-              </div>
-              <div>
-                <label className="text-[10px] font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-1">Duration (min)</label>
-                <input
-                  type="number" min={5} max={480}
-                  value={editFields.duration}
-                  onChange={(e) => setEditFields({ ...editFields, duration: e.target.value })}
-                  className="w-full rounded-xl p-2.5 text-sm focus:outline-none"
-                  style={{ border: "1px solid rgba(15,34,41,0.10)", color: "#0F2229" }}
-                />
-              </div>
-            </div>
-            <div>
-              <label className="text-[10px] font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-1">Cover Image (optional)</label>
-              <ImageSelector currentUrl={editFields.imageUrl} title={editFields.title} onSelect={(url) => setEditFields({ ...editFields, imageUrl: url })} size="sm" />
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleSaveSession(s.id)}
-                disabled={savingSession || !editFields.title.trim() || !editFields.startTime}
-                className="px-4 py-2 rounded-full text-xs font-black font-headline text-white disabled:opacity-40"
-                style={{ backgroundColor: "#FF6130" }}
-              >
-                {savingSession ? "Saving..." : "Save"}
-              </button>
-              <button
-                onClick={() => setEditingSessionId(null)}
-                className="px-4 py-2 rounded-full text-xs font-bold font-headline text-[#94a3b8] hover:text-[#0F2229]"
-                style={{ border: "1px solid rgba(0,0,0,0.08)" }}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        ) : (
-          /* DISPLAY MODE */
+        {/* Polish v12: edit form lives in a top-level Dialog (rendered
+            below at the end of the editor). The session card always
+            renders display mode; the pencil button opens the modal. */}
+        {(() => {
+          /* DISPLAY MODE — kept verbatim from the previous render so the
+             rest of the file's grep-anchored edits stay valid. */
+          return (
           <div className="flex items-center gap-3">
             {s.imageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -1381,10 +1438,12 @@ export function WorkspaceEditor({
               </button>
             )}
           </div>
-        )}
+          );
+        })()}
 
-        {/* Cohost names + add (hidden in edit mode) */}
-        {editingSessionId !== s.id && (
+        {/* Cohost names + add — always shown now that the edit form
+            lives in a Dialog instead of replacing the row content. */}
+        {true && (
           <div className="mt-2 pl-[3.75rem] flex items-center flex-wrap gap-2">
             <span className="text-[11px] text-[#94a3b8]">
               <span className="font-bold text-[#FF6130]">{s.hostName}</span>

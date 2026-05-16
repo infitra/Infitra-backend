@@ -80,7 +80,7 @@ export default async function CollaborateWorkspacePage({
   // Fetch linked sessions (include image_url)
   const { data: sessionLinks } = await supabase
     .from("app_challenge_session")
-    .select("session_id, app_session(id, title, start_time, duration_minutes, host_id, status, image_url)")
+    .select("session_id, app_session(id, title, start_time, duration_minutes, host_id, status, image_url, description)")
     .eq("challenge_id", challengeId);
 
   const sessions = (sessionLinks ?? [])
@@ -248,6 +248,7 @@ export default async function CollaborateWorkspacePage({
           hostName: profileMap[s.host_id]?.name ?? "Host",
           hostAvatar: profileMap[s.host_id]?.avatar ?? null,
           imageUrl: s.image_url ?? null,
+          description: s.description ?? null,
           cohosts: (sessionCohostMap[s.id] ?? []).map((sc) => ({
             id: sc.cohostId,
             name: profileMap[sc.cohostId]?.name ?? "Creator",

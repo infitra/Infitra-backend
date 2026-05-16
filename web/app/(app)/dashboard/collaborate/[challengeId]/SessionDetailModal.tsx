@@ -11,6 +11,7 @@ interface SessionDetail {
   hostName: string;
   hostAvatar?: string | null;
   imageUrl?: string | null;
+  description?: string | null;
   cohosts: { id: string; name: string; avatar: string | null }[];
 }
 
@@ -77,13 +78,23 @@ export function SessionDetailModal({ open, session, onClose, onEdit, onDelete }:
           </h2>
 
           {/* Schedule */}
-          <div className="flex items-center gap-2 text-sm font-bold text-[#64748b] mb-6" suppressHydrationWarning>
+          <div className="flex items-center gap-2 text-sm font-bold text-[#64748b] mb-4" suppressHydrationWarning>
             <span>{startDate.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}</span>
             <span>·</span>
             <span>{startDate.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</span>
             <span>·</span>
             <span>{session.durationMinutes} min</span>
           </div>
+
+          {/* Description (optional) — polish v12 */}
+          {session.description && session.description.trim() && (
+            <p
+              className="text-sm leading-relaxed mb-6 whitespace-pre-wrap"
+              style={{ color: "#475569" }}
+            >
+              {session.description}
+            </p>
+          )}
 
           {/* Host + cohosts */}
           <div className="space-y-2.5 mb-2">
