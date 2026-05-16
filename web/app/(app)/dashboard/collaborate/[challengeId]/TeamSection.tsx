@@ -199,9 +199,15 @@ export function TeamSection({
           lives DIRECTLY under the donut+legend as its control surface
           — dragging it updates the donut live. */}
       <div className="mb-6 pb-6" style={{ borderBottom: "1px solid rgba(15,34,41,0.06)" }}>
-        <div className="flex items-center gap-8 flex-wrap">
+        {/* `justify-evenly` (instead of left-anchoring with `flex-1` on
+            the legend) distributes the donut and legend symmetrically
+            across the card width — the cluster reads as centered and
+            the two components have visible breathing room from each
+            other and from the card edges. `gap-y-8` keeps spacing
+            sensible when the row wraps on narrow viewports. */}
+        <div className="flex items-center justify-evenly flex-wrap gap-y-8">
           <TeamDonut segments={segments} size={240} />
-          <div className="flex-1 min-w-[220px] space-y-5">
+          <div className="min-w-[260px] space-y-5">
             {segments.map((seg) => (
               <div key={seg.id} className="flex items-center gap-4">
                 <span
