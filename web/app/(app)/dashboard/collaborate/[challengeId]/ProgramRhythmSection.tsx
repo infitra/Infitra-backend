@@ -164,8 +164,13 @@ export function ProgramRhythmSection({
         identical and span over multiple weeks.
       </p>
 
-      <div className="space-y-4">
-        {Array.from({ length: totalWeeks }, (_, i) => i + 1).map((weekNum) => {
+      {/* Polish v12: weeks are no longer individually-bordered cards.
+          They share a single seamless program flow, separated by thin
+          dividers. The week label has more visual weight; sessions
+          indent under their week so the relationship reads
+          structurally without needing a hard container. */}
+      <div>
+        {Array.from({ length: totalWeeks }, (_, i) => i + 1).map((weekNum, idx) => {
           const range = weekRange(startDate, weekNum);
           const focus = weeklyFocus.find((f) => f.week === weekNum)?.theme ?? "";
           const weekSessions = sessionsByWeek.get(weekNum) ?? [];
@@ -185,6 +190,7 @@ export function ProgramRhythmSection({
                   : undefined
               }
               addingSessionDisabled={addingSessionDisabled}
+              isFirst={idx === 0}
             />
           );
         })}
@@ -215,6 +221,7 @@ function WeekRow({
   renderSessionCard,
   onAddSession,
   addingSessionDisabled,
+  isFirst,
 }: {
   weekNum: number;
   range: { start: Date; end: Date };
@@ -225,6 +232,9 @@ function WeekRow({
   renderSessionCard: (sessionId: string) => ReactNode;
   onAddSession?: () => void;
   addingSessionDisabled?: boolean;
+  /** Suppresses the top divider on the very first week so the
+   *  rhythm section doesn't open with a horizontal line. */
+  isFirst?: boolean;
 }) {
   // Local-wins sync: useState only inits once, so without this the
   // partner's focus edit never appears in the input. Adopt prop value
@@ -241,34 +251,30 @@ function WeekRow({
 
   return (
     <div
-      className="rounded-xl"
+      className="py-5"
       style={{
-        backgroundColor: "rgba(255,255,255,0.5)",
-        border: "1px solid rgba(15,34,41,0.06)",
+        borderTop: isFirst ? undefined : "1px solid rgba(15,34,41,0.08)",
       }}
     >
-      {/* Week header — focus input, week label */}
-      <div
-        className="flex items-center gap-3 p-3"
-        style={{ borderBottom: sessionIds.length > 0 ? "1px solid rgba(15,34,41,0.04)" : undefined }}
-      >
-        <div
-          className="shrink-0 flex flex-col items-center justify-center px-3 py-2 rounded-lg"
-          style={{
-            backgroundColor: "rgba(8,145,178,0.08)",
-            border: "1px solid rgba(8,145,178,0.18)",
-            minWidth: 100,
-          }}
-        >
-          <span
-            className="text-[10px] font-bold font-headline uppercase tracking-wider"
-            style={{ color: "#0891b2" }}
+      {/* Week header — bigger label + visible date, focus input next to it.
+          The label is no longer wrapped in a tinted pill; it sits as
+          editorial type so the eye reads "Week 1 — Foundations" as one
+          phrase rather than "[chip][input]". */}
+      <div className="flex items-baseline gap-4 mb-3 flex-wrap">
+        <div className="shrink-0">
+          <p
+            className="text-base font-black font-headline tracking-tight"
+            style={{ color: "#0F2229" }}
           >
             Week {weekNum}
-          </span>
-          <span className="text-[10px] mt-0.5" style={{ color: "#94a3b8" }}>
+          </p>
+          <p
+            className="text-[11px] font-bold font-headline mt-0.5"
+            style={{ color: "#475569" }}
+            suppressHydrationWarning
+          >
             {formatRange(range.start, range.end)}
-          </span>
+          </p>
         </div>
 
         {canEdit ? (
@@ -291,7 +297,7 @@ function WeekRow({
                 ? "Weekly focus — e.g. Foundations"
                 : "Weekly focus…"
             }
-            className="flex-1 rounded-lg p-2 text-sm font-bold font-headline focus:outline-none"
+            className="flex-1 min-w-[200px] rounded-lg p-2.5 text-sm font-bold font-headline focus:outline-none self-center"
             style={{
               border: "1px solid rgba(15,34,41,0.10)",
               color: "#0F2229",
@@ -299,18 +305,21 @@ function WeekRow({
             }}
           />
         ) : focus ? (
-          <p className="flex-1 text-sm font-bold font-headline" style={{ color: "#0F2229" }}>
+          <p className="flex-1 text-base font-bold font-headline self-center" style={{ color: "#0F2229" }}>
             {focus}
           </p>
         ) : (
-          <p className="flex-1 text-sm italic" style={{ color: "#94a3b8" }}>
+          <p className="flex-1 text-sm italic self-center" style={{ color: "#94a3b8" }}>
             No focus set
           </p>
         )}
       </div>
 
-      {/* Sessions in this week + add button */}
-      <div className="p-3 pt-2 space-y-2">
+      {/* Sessions in this week + add button — indented to read as
+          "belonging to" the week above. No background fill (the parent
+          rhythm card carries that), no border (avoids the hard
+          container the user wanted to drop). */}
+      <div className="pl-4 space-y-2">
         {sessionIds.map((id) => (
           <div key={id}>{renderSessionCard(id)}</div>
         ))}
