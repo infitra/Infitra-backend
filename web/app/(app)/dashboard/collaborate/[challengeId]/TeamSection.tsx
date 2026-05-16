@@ -111,24 +111,33 @@ export function TeamSection({
   const cohorts = creators.filter((c) => c.role === "cohost");
   const singleCohort = cohorts.length === 1 ? cohorts[0] : null;
 
-  // Single-cohort case: live slider state. The slider lives directly
-  // under the donut block so dragging it updates the donut visually
-  // before the save fires (and before the partner's view refreshes).
-  // Local-wins sync against partner saves via dirty ref.
-  const [liveCohortSplit, setLiveCohortSplit] = useState(singleCohort?.splitPercent ?? 0);
-  const liveSplitDirty = useRef(false);
-  const lastLiveSplitProp = useRef(singleCohort?.splitPercent ?? 0);
+  // Single-cohost slider state. Only the owner can drag the slider, so
+  // most renders have NO local state — the donut/legend read directly
+  // from the `splitPercent` prop (which the parent updates via
+  // Realtime when the partner side changes). During an active drag the
+  // owner gets smooth feedback by overriding with `draggedSplit`; once
+  // the round-tripped server value catches up to the dragged value we
+  // clear the override and resume reading from the prop.
+  //
+  // Why not the previous useSyncedField-style ref pattern? On the
+  // cohost side it created a window where local state could get out
+  // of sync with the prop, and the dep-array sync wasn't always
+  // catching up — partner-driven changes weren't reflected in the
+  // donut/legend on the cohost side. Keeping local state scoped to
+  // the active-drag interaction removes the entire class of bug.
+  const [draggedSplit, setDraggedSplit] = useState<number | null>(null);
   useEffect(() => {
-    const propValue = singleCohort?.splitPercent ?? 0;
-    if (propValue !== lastLiveSplitProp.current) {
-      lastLiveSplitProp.current = propValue;
-      if (!liveSplitDirty.current) setLiveCohortSplit(propValue);
+    // Once the prop value matches the dragged value, the round-trip
+    // is complete — clear the override.
+    if (draggedSplit !== null && singleCohort?.splitPercent === draggedSplit) {
+      setDraggedSplit(null);
     }
-  }, [singleCohort?.splitPercent]);
+  }, [singleCohort?.splitPercent, draggedSplit]);
 
-  // Owner's percentage during a live drag. For multi-cohost cases it
-  // stays as the prop value (no live editing in this iteration).
-  const liveOwnerSplit = singleCohort ? 100 - liveCohortSplit : ownerSplit;
+  const cohortSplit = draggedSplit ?? singleCohort?.splitPercent ?? 0;
+  // Owner's percentage during a live drag (single-cohost only). For
+  // multi-cohost cases the owner share comes straight from the prop.
+  const liveOwnerSplit = singleCohort ? 100 - cohortSplit : ownerSplit;
 
   // Build the donut segments. Owner first (orange), cohorts after
   // (cyan). Two colours per segment: visualColor for fills (donut arc,
@@ -158,7 +167,7 @@ export function TeamSection({
       id: c.id,
       name: c.name,
       role: "Cohost",
-      percent: singleCohort && c.id === singleCohort.id ? liveCohortSplit : c.splitPercent,
+      percent: singleCohort && c.id === singleCohort.id ? cohortSplit : c.splitPercent,
       color: "#0891b2",
       visualColor: "#9CF0FF",
     });
@@ -251,8 +260,8 @@ export function TeamSection({
                   height: 6,
                   background: `linear-gradient(to right,
                     #FF6130 0%,
-                    #FF6130 ${100 - liveCohortSplit}%,
-                    #9CF0FF ${100 - liveCohortSplit}%,
+                    #FF6130 ${100 - cohortSplit}%,
+                    #9CF0FF ${100 - cohortSplit}%,
                     #9CF0FF 100%)`,
                 }}
               />
@@ -260,22 +269,17 @@ export function TeamSection({
                 type="range"
                 min={1}
                 max={99}
-                value={100 - liveCohortSplit}
-                onChange={(e) => {
-                  liveSplitDirty.current = true;
-                  setLiveCohortSplit(100 - parseInt(e.target.value));
-                }}
+                value={100 - cohortSplit}
+                onChange={(e) => setDraggedSplit(100 - parseInt(e.target.value))}
                 onMouseUp={() => {
-                  if (liveCohortSplit !== singleCohort.splitPercent) {
-                    onCohostSplitCommit(singleCohort.id, liveCohortSplit);
+                  if (draggedSplit !== null && draggedSplit !== singleCohort.splitPercent) {
+                    onCohostSplitCommit(singleCohort.id, draggedSplit);
                   }
-                  liveSplitDirty.current = false;
                 }}
                 onTouchEnd={() => {
-                  if (liveCohortSplit !== singleCohort.splitPercent) {
-                    onCohostSplitCommit(singleCohort.id, liveCohortSplit);
+                  if (draggedSplit !== null && draggedSplit !== singleCohort.splitPercent) {
+                    onCohostSplitCommit(singleCohort.id, draggedSplit);
                   }
-                  liveSplitDirty.current = false;
                 }}
                 className="dual-slider absolute inset-0 w-full appearance-none bg-transparent cursor-pointer"
                 style={{ outline: "none" }}
@@ -283,9 +287,9 @@ export function TeamSection({
               />
             </div>
             <div className="shrink-0 flex items-baseline gap-1 font-black font-headline" style={{ minWidth: 90, justifyContent: "flex-end" }}>
-              <span className="text-sm" style={{ color: "#FF6130" }}>{100 - liveCohortSplit}%</span>
+              <span className="text-sm" style={{ color: "#FF6130" }}>{100 - cohortSplit}%</span>
               <span className="text-xs" style={{ color: "#94a3b8" }}>/</span>
-              <span className="text-sm" style={{ color: "#0891b2" }}>{liveCohortSplit}%</span>
+              <span className="text-sm" style={{ color: "#0891b2" }}>{cohortSplit}%</span>
             </div>
           </div>
         )}
