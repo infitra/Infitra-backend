@@ -191,20 +191,19 @@ export function TeamSection({
 
       {/* Hero donut + legend + (single-cohort) slider. The donut is the
           load-bearing visual of the split — bright brand cyan for the
-          arc, orange for owner. Legend uses the same visual cyan for
-          dots, darker cyan for readable text. For single-cohort
-          collaborations the slider lives DIRECTLY under the donut as
-          its control surface — dragging it updates the donut live. */}
+          arc, orange for owner. Legend has NO dot: the bright-cyan dot
+          next to a darker-cyan number read as a colour mismatch
+          (polish v7). The big % number, the role label below the name,
+          and the donut arc itself together carry enough colour anchor
+          per segment. For single-cohort collaborations the slider
+          lives DIRECTLY under the donut+legend as its control surface
+          — dragging it updates the donut live. */}
       <div className="mb-6 pb-6" style={{ borderBottom: "1px solid rgba(15,34,41,0.06)" }}>
         <div className="flex items-center gap-8 flex-wrap">
-          <TeamDonut segments={segments} totalCount={totalCount} size={240} />
-          <div className="flex-1 min-w-[220px] space-y-4">
+          <TeamDonut segments={segments} size={240} />
+          <div className="flex-1 min-w-[220px] space-y-5">
             {segments.map((seg) => (
-              <div key={seg.id} className="flex items-center gap-3">
-                <div
-                  className="shrink-0 w-4 h-4 rounded-full"
-                  style={{ backgroundColor: seg.visualColor }}
-                />
+              <div key={seg.id} className="flex items-center gap-4">
                 <span
                   className="text-4xl font-black font-headline leading-none"
                   style={{ color: seg.color, minWidth: 88 }}
@@ -213,13 +212,13 @@ export function TeamSection({
                 </span>
                 <div className="min-w-0 flex flex-col justify-center">
                   <p
-                    className="text-sm font-bold font-headline truncate leading-tight"
+                    className="text-base font-bold font-headline truncate leading-tight"
                     style={{ color: "#0F2229" }}
                   >
                     {seg.name}
                   </p>
                   <p
-                    className="text-[10px] font-bold font-headline uppercase tracking-wider mt-0.5"
+                    className="text-[10px] font-bold font-headline uppercase tracking-wider mt-1"
                     style={{ color: seg.color }}
                   >
                     {seg.role}
@@ -655,8 +654,10 @@ function PendingRowCard({ invite }: { invite: PendingInviteRow }) {
 // TeamDonut — hero visual for The Team section. A weighty circular
 // chart with the split rendered as proportional arcs in role colours.
 // Built inline (not via the generic ShareDonut component) so we can
-// scale the radius / stroke properly at size 240 and put a "TEAM · N"
-// anchor in the centre. Legend lives outside the donut in TeamSection.
+// scale the radius / stroke properly at size 240 and put a "REVENUE
+// SHARE" label in the centre. Legend lives outside the donut in
+// TeamSection. The creator count used to live in the centre but was
+// dropped in polish v7: it's redundant with the legend on the right.
 // ─────────────────────────────────────────────────────────────────
 
 interface TeamDonutProps {
@@ -665,11 +666,10 @@ interface TeamDonutProps {
    *  field — used for readable text in the legend — is intentionally
    *  not consumed here. */
   segments: Array<{ id: string; visualColor: string; percent: number }>;
-  totalCount: number;
   size?: number;
 }
 
-function TeamDonut({ segments, totalCount, size = 240 }: TeamDonutProps) {
+function TeamDonut({ segments, size = 240 }: TeamDonutProps) {
   const center = size / 2;
   const stroke = Math.round(size * 0.13); // proportional weight; 240 → 31
   const radius = (size - stroke) / 2;
@@ -713,32 +713,40 @@ function TeamDonut({ segments, totalCount, size = 240 }: TeamDonutProps) {
             />
           );
         })}
-        {/* Centre anchor — "N" big, "creators" small below */}
+        {/* Centre label — "REVENUE / SHARE" stacked. The big creator
+            count that used to live here was dropped in polish v7: the
+            legend on the right shows the creators by name + role, so
+            counting them in the donut centre was redundant. The label
+            now NAMES what the donut is showing, which is the revenue
+            split. Both lines use the same muted label style; the
+            donut is allowed to be the visual headline on its own. */}
         <text
           x={center}
-          y={center - 4}
+          y={center - Math.round(size * 0.015)}
           textAnchor="middle"
           style={{
-            fontWeight: 900,
-            fontSize: Math.round(size * 0.2),
-            fill: "#0F2229",
-          }}
-        >
-          {totalCount}
-        </text>
-        <text
-          x={center}
-          y={center + Math.round(size * 0.1)}
-          textAnchor="middle"
-          style={{
-            fontWeight: 700,
-            fontSize: Math.round(size * 0.05),
+            fontWeight: 800,
+            fontSize: Math.round(size * 0.07),
             fill: "#94a3b8",
-            letterSpacing: "0.15em",
+            letterSpacing: "0.18em",
             textTransform: "uppercase",
           }}
         >
-          {totalCount === 1 ? "creator" : "creators"}
+          Revenue
+        </text>
+        <text
+          x={center}
+          y={center + Math.round(size * 0.085)}
+          textAnchor="middle"
+          style={{
+            fontWeight: 800,
+            fontSize: Math.round(size * 0.07),
+            fill: "#94a3b8",
+            letterSpacing: "0.18em",
+            textTransform: "uppercase",
+          }}
+        >
+          Share
         </text>
       </svg>
     </div>
