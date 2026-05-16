@@ -40,14 +40,8 @@ export function IntroPromptEditor({
 
   return (
     <div className="rounded-2xl infitra-card p-6">
-      <div className="flex items-baseline justify-between mb-2 flex-wrap gap-2">
-        {/* Polish v12: match the upgraded hierarchy from PromiseEditor.
-            The Intro Prompt is the conversation starter for every new
-            participant — it deserves a section heading, not a label. */}
-        <h3
-          className="text-xl font-black font-headline tracking-tight"
-          style={{ color: "#0F2229" }}
-        >
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-black font-headline text-[#94a3b8] uppercase tracking-wider">
           Intro Prompt
         </h3>
         {canEdit && (
@@ -59,14 +53,11 @@ export function IntroPromptEditor({
           </span>
         )}
       </div>
-      <p className="text-xs mb-5 leading-relaxed" style={{ color: "#64748b" }}>
+      <p className="text-xs mb-4 leading-relaxed" style={{ color: "#64748b" }}>
         Fires for each new participant the first time they open the cohort
         space. Leave blank to use the default question.
       </p>
 
-      {/* Polish v12: cool cyan tint on the field — Intro Prompt is the
-          opening conversation (cyan = collaboration / cohost colour
-          family), in contrast to the Promise's warm orange. */}
       {canEdit ? (
         <input
           type="text"
@@ -75,25 +66,16 @@ export function IntroPromptEditor({
           onBlur={onCommit}
           maxLength={MAX_LENGTH + 50}
           placeholder={DEFAULT_PLACEHOLDER}
-          className="w-full rounded-xl p-4 text-base font-bold focus:outline-none"
+          className="w-full rounded-xl p-3 text-sm focus:outline-none"
           style={{
-            border: `1px solid ${overLimit ? "rgba(255,97,48,0.5)" : "rgba(8,145,178,0.20)"}`,
-            backgroundColor: "rgba(156,240,255,0.06)",
+            border: `1px solid ${overLimit ? "rgba(255,97,48,0.5)" : "rgba(15,34,41,0.12)"}`,
             color: "#0F2229",
           }}
         />
       ) : value ? (
-        <div
-          className="rounded-xl p-5"
-          style={{
-            border: "1px solid rgba(8,145,178,0.20)",
-            backgroundColor: "rgba(156,240,255,0.06)",
-          }}
-        >
-          <p className="text-lg font-bold" style={{ color: "#0F2229" }}>
-            {value}
-          </p>
-        </div>
+        <p className="text-base" style={{ color: "#0F2229" }}>
+          {value}
+        </p>
       ) : (
         <p className="text-sm italic" style={{ color: "#94a3b8" }}>
           Default: &ldquo;{DEFAULT_PLACEHOLDER}&rdquo;
