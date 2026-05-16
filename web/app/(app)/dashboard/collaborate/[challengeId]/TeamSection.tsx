@@ -111,6 +111,14 @@ export function TeamSection({
   const cohorts = creators.filter((c) => c.role === "cohost");
   const singleCohort = cohorts.length === 1 ? cohorts[0] : null;
 
+  // TEMP polish v11 diag: log the cohost split prop on every render.
+  // Compare against the [realtime] log to see if router.refresh is
+  // actually pulling new data through. Remove once verified.
+  if (typeof window !== "undefined") {
+    // eslint-disable-next-line no-console
+    console.log("[TeamSection render] singleCohort.splitPercent =", singleCohort?.splitPercent, "ownerSplit =", ownerSplit);
+  }
+
   // Single-cohost slider state. Only the owner can drag the slider, so
   // most renders have NO local state — the donut/legend read directly
   // from the `splitPercent` prop (which the parent updates via
