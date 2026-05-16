@@ -107,27 +107,27 @@ export function TeamSection({
 }: Props) {
   const totalCount = creators.length + pendingInvites.length;
 
-  // Build the bar segments. Owner first (orange), cohorts after (cyan
-  // shades). Each segment is rendered at its percentage width so the
-  // bar visually *is* the split — the section's load-bearing visual.
+  // Build the donut segments. Owner first (orange), cohorts after
+  // (cyan). Same data drives the donut arc and the legend on the right.
   const ownerCreator = creators.find((c) => c.role === "owner");
-  const segments: Array<{ id: string; name: string; percent: number; color: string; textColor: string }> = [];
+  type Segment = { id: string; name: string; role: string; percent: number; color: string };
+  const segments: Segment[] = [];
   if (ownerCreator) {
     segments.push({
       id: ownerCreator.id,
       name: ownerCreator.name,
+      role: "Owner",
       percent: ownerSplit,
       color: "#FF6130",
-      textColor: "white",
     });
   }
   for (const c of creators.filter((c) => c.role === "cohost")) {
     segments.push({
       id: c.id,
       name: c.name,
+      role: "Cohost",
       percent: c.splitPercent,
       color: "#0891b2",
-      textColor: "white",
     });
   }
 
@@ -151,57 +151,48 @@ export function TeamSection({
       </div>
 
       {/* Description */}
-      <p className="text-sm leading-relaxed mb-5" style={{ color: "#475569" }}>
+      <p className="text-sm leading-relaxed mb-6" style={{ color: "#475569" }}>
         Each creator&apos;s revenue share, sessions they lead, and the topics
         they own. Topics help participants know who to ask about what.
       </p>
 
-      {/* Load-bearing visual: a full-width stacked bar with the split
-          rendered AT the percentage widths it represents. The bar is the
-          visualization — no separate donut. Big numbers inside each
-          segment carry the visual weight the split deserves. */}
-      <div
-        className="flex w-full overflow-hidden mb-6"
-        style={{
-          height: 88,
-          borderRadius: 14,
-          boxShadow: "0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04)",
-        }}
-      >
-        {segments.map((seg, idx) => (
-          <div
-            key={seg.id}
-            className="flex flex-col items-center justify-center relative overflow-hidden"
-            style={{
-              width: `${seg.percent}%`,
-              backgroundColor: seg.color,
-              minWidth: 0,
-            }}
-            title={`${seg.name} — ${seg.percent}%`}
-          >
-            {/* Soft separator between segments */}
-            {idx > 0 && (
+      {/* Hero donut + label panel. The donut is the load-bearing visual
+          of the split (proportional, on-brand circular shape); the right-
+          side panel labels each segment with a big percentage + name +
+          role. Rows below skip the % chip — split lives here. */}
+      <div className="flex items-center gap-8 mb-6 pb-6 flex-wrap" style={{ borderBottom: "1px solid rgba(15,34,41,0.06)" }}>
+        <TeamDonut segments={segments} totalCount={totalCount} size={240} />
+        <div className="flex-1 min-w-[200px] space-y-3">
+          {segments.map((seg) => (
+            <div key={seg.id} className="flex items-baseline gap-3">
               <div
-                className="absolute left-0 top-0 bottom-0"
-                style={{ width: 1, backgroundColor: "rgba(255,255,255,0.30)" }}
+                className="shrink-0 w-3 h-3 rounded-full"
+                style={{ backgroundColor: seg.color }}
               />
-            )}
-            <span
-              className="text-3xl font-black font-headline leading-none"
-              style={{ color: seg.textColor }}
-            >
-              {seg.percent}%
-            </span>
-            <span
-              className="text-[11px] font-bold font-headline uppercase tracking-wider mt-1.5 truncate px-2"
-              style={{ color: seg.textColor, opacity: 0.85, maxWidth: "100%" }}
-            >
-              {seg.name}
-            </span>
-          </div>
-        ))}
+              <span
+                className="text-4xl font-black font-headline leading-none"
+                style={{ color: seg.color, minWidth: 72 }}
+              >
+                {seg.percent}%
+              </span>
+              <div className="min-w-0">
+                <p
+                  className="text-sm font-bold font-headline truncate"
+                  style={{ color: "#0F2229" }}
+                >
+                  {seg.name}
+                </p>
+                <p
+                  className="text-[10px] font-bold font-headline uppercase tracking-wider"
+                  style={{ color: seg.color }}
+                >
+                  {seg.role}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
-      <div className="mb-6 pb-6" style={{ borderBottom: "1px solid rgba(15,34,41,0.06)" }} />
 
       {/* Confirmed creators */}
       <div className="space-y-3">
@@ -391,30 +382,12 @@ function CreatorRowCard({
           )}
         </div>
 
-        {/* Split percentage — load-bearing, big and color-coded */}
-        <div
-          className="shrink-0 flex flex-col items-center justify-center px-4 py-2 rounded-xl"
-          style={{
-            backgroundColor: `${roleColor}12`,
-            border: `1px solid ${roleColor}40`,
-            minWidth: 80,
-          }}
-        >
-          <p
-            className="text-2xl font-black font-headline leading-none"
-            style={{ color: roleColor }}
-          >
-            {displayedSplit}%
-          </p>
-          <p
-            className="text-[9px] font-bold font-headline uppercase tracking-wider mt-1"
-            style={{ color: roleColor, opacity: 0.7 }}
-          >
-            Revenue
-          </p>
-        </div>
-
-        {/* Sessions count — quieter chip */}
+        {/* Sessions count — quieter chip. The % REVENUE chip that used
+            to live here was dropped in polish v5: the donut + legend
+            above carry that data, and surfacing it again on every row
+            was redundant noise. The role label (orange OWNER / cyan
+            COHOST) keeps the per-row colour anchor without restating
+            the number. */}
         <div
           className="shrink-0 flex flex-col items-center justify-center px-3 py-2 rounded-xl"
           style={{
@@ -436,9 +409,9 @@ function CreatorRowCard({
           </p>
         </div>
 
-        {/* Remove cohost — owner-only, cohorts-only. Its own column at
-            the end of the row so it never overlaps the chips. Subtle
-            gray, hover red. */}
+        {/* Remove cohost — its own 32px column at the row's end. To keep
+            owner and cohost rows visually aligned column-by-column, the
+            owner row gets an invisible placeholder of the same width. */}
         {onRemove ? (
           <button
             type="button"
@@ -455,7 +428,9 @@ function CreatorRowCard({
               <path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
-        ) : null}
+        ) : (
+          <div className="shrink-0 self-center w-8 h-8" aria-hidden="true" />
+        )}
       </div>
 
       {/* Cohost split slider (owner-managed) — dual-colour track shows
@@ -579,3 +554,94 @@ function PendingRowCard({ invite }: { invite: PendingInviteRow }) {
     </div>
   );
 }
+
+// ─────────────────────────────────────────────────────────────────
+// TeamDonut — hero visual for The Team section. A weighty circular
+// chart with the split rendered as proportional arcs in role colours.
+// Built inline (not via the generic ShareDonut component) so we can
+// scale the radius / stroke properly at size 240 and put a "TEAM · N"
+// anchor in the centre. Legend lives outside the donut in TeamSection.
+// ─────────────────────────────────────────────────────────────────
+
+interface TeamDonutProps {
+  segments: Array<{ id: string; color: string; percent: number }>;
+  totalCount: number;
+  size?: number;
+}
+
+function TeamDonut({ segments, totalCount, size = 240 }: TeamDonutProps) {
+  const center = size / 2;
+  const stroke = Math.round(size * 0.13); // proportional weight; 240 → 31
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+
+  // SVG circle dasharray + offset trick: each segment is a partially-
+  // visible stroked circle, rotated by the running sum of prior
+  // percentages so they butt up cleanly. Start at 12 o'clock.
+  let runningOffset = 0;
+
+  return (
+    <div className="shrink-0" style={{ width: size, height: size }}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        {/* Soft background ring — visible behind any rounding gaps */}
+        <circle
+          cx={center}
+          cy={center}
+          r={radius}
+          fill="none"
+          stroke="rgba(15,34,41,0.05)"
+          strokeWidth={stroke}
+        />
+        {segments.map((seg) => {
+          const dashLength = (seg.percent / 100) * circumference;
+          const dashGap = circumference - dashLength;
+          const offset = -runningOffset * (circumference / 100) + circumference * 0.25;
+          runningOffset += seg.percent;
+          return (
+            <circle
+              key={seg.id}
+              cx={center}
+              cy={center}
+              r={radius}
+              fill="none"
+              stroke={seg.color}
+              strokeWidth={stroke}
+              strokeDasharray={`${dashLength} ${dashGap}`}
+              strokeDashoffset={offset}
+              strokeLinecap="butt"
+              style={{ transition: "stroke-dasharray 0.3s ease, stroke-dashoffset 0.3s ease" }}
+            />
+          );
+        })}
+        {/* Centre anchor — "N" big, "creators" small below */}
+        <text
+          x={center}
+          y={center - 4}
+          textAnchor="middle"
+          style={{
+            fontWeight: 900,
+            fontSize: Math.round(size * 0.2),
+            fill: "#0F2229",
+          }}
+        >
+          {totalCount}
+        </text>
+        <text
+          x={center}
+          y={center + Math.round(size * 0.1)}
+          textAnchor="middle"
+          style={{
+            fontWeight: 700,
+            fontSize: Math.round(size * 0.05),
+            fill: "#94a3b8",
+            letterSpacing: "0.15em",
+            textTransform: "uppercase",
+          }}
+        >
+          {totalCount === 1 ? "creator" : "creators"}
+        </text>
+      </svg>
+    </div>
+  );
+}
+
