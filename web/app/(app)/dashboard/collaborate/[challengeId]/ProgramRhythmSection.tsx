@@ -318,8 +318,12 @@ function WeekRow({
         )}
       </div>
 
-      {/* Sessions in this week + add button */}
-      <div className="p-3 pt-2 space-y-2">
+      {/* Sessions in this week + add button. Polish v12 revised:
+          space-y-3 (was space-y-2) — now that each session card has
+          a clean self-contained bottom edge, neighbouring sessions
+          need a touch more breathing room to read as distinct items
+          while still grouping under one week. */}
+      <div className="p-3 pt-2 space-y-3">
         {sessionIds.map((id) => (
           <div key={id}>{renderSessionCard(id)}</div>
         ))}

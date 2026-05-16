@@ -1373,140 +1373,136 @@ export function WorkspaceEditor({
         {/* Polish v12: edit form lives in a top-level Dialog (rendered
             below at the end of the editor). The session card always
             renders display mode; the pencil button opens the modal. */}
-        {(() => {
-          /* DISPLAY MODE — polish v12: image promoted to a left-side
-             hero (96px square, was 48px), more breathing room, larger
-             title. Reads like an editorial card rather than a chip. */
-          return (
-          <div className="flex items-center gap-4">
-            {s.imageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={s.imageUrl} alt="" className="w-24 h-24 rounded-xl object-cover shrink-0" />
-            ) : (
-              <div className="w-24 h-24 rounded-xl shrink-0 flex items-center justify-center" style={{ background: "linear-gradient(135deg, #0F2229, #1a3340)" }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/logo-mark.png" alt="" width={28} height={28} style={{ opacity: 0.18 }} />
-              </div>
-            )}
-            <div className="flex-1 min-w-0">
-              <p className="text-base font-black font-headline text-[#0F2229] truncate leading-tight">{s.title}</p>
-              <p className="text-xs font-bold mt-1" style={{ color: "#64748b" }} suppressHydrationWarning>
-                {new Date(s.startTime).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
-                {" · "}{s.durationMinutes} min
-              </p>
-              {s.description && s.description.trim() && (
-                <p className="text-xs mt-1.5 leading-relaxed line-clamp-2" style={{ color: "#475569" }}>
-                  {s.description}
-                </p>
-              )}
+        {/* DISPLAY MODE — polish v12 (revised): host/cohost names row
+            is now INSIDE the right-side text column instead of a
+            separate indented row below. This means the card height
+            hugs the 96px hero image instead of extending below it,
+            and `items-center` vertically centers the text column
+            against the image — equal breathing room above and below. */}
+        <div className="flex items-center gap-4">
+          {s.imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={s.imageUrl} alt="" className="w-24 h-24 rounded-xl object-cover shrink-0" />
+          ) : (
+            <div className="w-24 h-24 rounded-xl shrink-0 flex items-center justify-center" style={{ background: "linear-gradient(135deg, #0F2229, #1a3340)" }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logo-mark.png" alt="" width={28} height={28} style={{ opacity: 0.18 }} />
             </div>
-            {/* Host + cohort avatars */}
-            <div className="flex -space-x-2 shrink-0">
-              {s.hostAvatar ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={s.hostAvatar} alt={s.hostName} title={`${s.hostName} (Host)`} className="w-7 h-7 rounded-full object-cover" style={{ border: "2px solid white", zIndex: 10 }} />
-              ) : (
-                <div title={`${s.hostName} (Host)`} className="w-7 h-7 rounded-full bg-orange-100 flex items-center justify-center" style={{ border: "2px solid white", zIndex: 10 }}>
-                  <span className="text-[10px] font-black text-orange-700">{s.hostName[0]}</span>
+          )}
+          <div className="flex-1 min-w-0">
+            <p className="text-base font-black font-headline text-[#0F2229] truncate leading-tight">{s.title}</p>
+            <p className="text-xs font-bold mt-1" style={{ color: "#64748b" }} suppressHydrationWarning>
+              {new Date(s.startTime).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+              {" · "}{s.durationMinutes} min
+            </p>
+            {s.description && s.description.trim() && (
+              <p className="text-xs mt-1.5 leading-relaxed line-clamp-2" style={{ color: "#475569" }}>
+                {s.description}
+              </p>
+            )}
+            {/* Host / cohost names row — moved into the text column so
+                the card stays visually contained within the image's
+                vertical band. */}
+            <div className="mt-2 flex items-center flex-wrap gap-x-2 gap-y-1">
+              <span className="text-[11px] text-[#94a3b8]">
+                <span className="font-bold text-[#FF6130]">{s.hostName}</span>
+                <span className="text-[9px] uppercase tracking-wider ml-1">Host</span>
+              </span>
+              {s.cohosts.map((c) => (
+                <span key={c.id} className="text-[11px] text-[#94a3b8] flex items-center gap-1">
+                  · <span className="font-bold text-[#0891b2]">{c.name}</span>
+                  <span className="text-[9px] uppercase tracking-wider">Cohost</span>
+                  {canEditSession(s.hostId) && (
+                    <button
+                      onClick={() => handleRemoveSessionCohost(s.id, c.id)}
+                      className="text-[#94a3b8] hover:text-red-500 ml-0.5"
+                      title="Remove cohost"
+                    >
+                      <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                        <path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </button>
+                  )}
+                </span>
+              ))}
+              {canEditSession(s.hostId) && candidateList.length > 0 && (
+                <div className="inline-block relative">
+                  <button
+                    onClick={() => setOpenCohostPicker(openCohostPicker === s.id ? null : s.id)}
+                    className="text-[11px] font-bold font-headline text-[#FF6130] cursor-pointer"
+                  >
+                    + Add Cohost
+                  </button>
+                  {openCohostPicker === s.id && (
+                    <div className="absolute top-full left-0 mt-1 min-w-[200px] rounded-xl shadow-lg z-10 overflow-hidden" style={{ backgroundColor: "white", border: "1px solid rgba(0,0,0,0.08)" }}>
+                      {candidateList.map((c) => (
+                        <button
+                          key={c.id}
+                          onClick={() => handleAddSessionCohost(s.id, c.id)}
+                          disabled={addingCohostFor === s.id}
+                          className="w-full flex items-center gap-2 p-2 hover:bg-gray-50 text-left disabled:opacity-40"
+                        >
+                          {c.avatar ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={c.avatar} alt="" className="w-6 h-6 rounded-full object-cover shrink-0" />
+                          ) : (
+                            <div className="w-6 h-6 rounded-full bg-cyan-100 flex items-center justify-center shrink-0">
+                              <span className="text-[10px] font-black text-cyan-700">{c.name[0]}</span>
+                            </div>
+                          )}
+                          <span className="text-sm font-bold text-[#0F2229]">{c.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
-              {s.cohosts.map((c, idx) => (
-                c.avatar ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img key={c.id} src={c.avatar} alt={c.name} title={c.name} className="w-7 h-7 rounded-full object-cover" style={{ border: "2px solid white", zIndex: 9 - idx }} />
-                ) : (
-                  <div key={c.id} title={c.name} className="w-7 h-7 rounded-full bg-cyan-100 flex items-center justify-center" style={{ border: "2px solid white", zIndex: 9 - idx }}>
-                    <span className="text-[10px] font-black text-cyan-700">{c.name[0]}</span>
-                  </div>
-                )
-              ))}
             </div>
-            {canEditSession(s.hostId) && (
-              <button
-                onClick={() => startEditSession(s)}
-                className="text-[#94a3b8] hover:text-[#FF6130] shrink-0"
-                title="Edit session"
-              >
-                <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                  <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
-            )}
-            {(canEditSession(s.hostId) || canManageCollaboration) && (
-              <button
-                onClick={() => handleDeleteSession(s.id)}
-                className="text-[#94a3b8] hover:text-red-500 shrink-0"
-                title="Delete session"
-              >
-                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                  <path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
-            )}
           </div>
-          );
-        })()}
-
-        {/* Cohost names + add — always shown now that the edit form
-            lives in a Dialog instead of replacing the row content.
-            Indent matches the new 96px hero image + 16px gap (= 7rem). */}
-        {true && (
-          <div className="mt-3 pl-[7rem] flex items-center flex-wrap gap-2">
-            <span className="text-[11px] text-[#94a3b8]">
-              <span className="font-bold text-[#FF6130]">{s.hostName}</span>
-              <span className="text-[9px] uppercase tracking-wider ml-1">Host</span>
-            </span>
-            {s.cohosts.map((c) => (
-              <span key={c.id} className="text-[11px] text-[#94a3b8] flex items-center gap-1">
-                · <span className="font-bold text-[#0891b2]">{c.name}</span>
-                <span className="text-[9px] uppercase tracking-wider">Cohost</span>
-                {canEditSession(s.hostId) && (
-                  <button
-                    onClick={() => handleRemoveSessionCohost(s.id, c.id)}
-                    className="text-[#94a3b8] hover:text-red-500 ml-0.5"
-                    title="Remove cohost"
-                  >
-                    <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                      <path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </button>
-                )}
-              </span>
-            ))}
-            {canEditSession(s.hostId) && candidateList.length > 0 && (
-              <div className="inline-block relative">
-                <button
-                  onClick={() => setOpenCohostPicker(openCohostPicker === s.id ? null : s.id)}
-                  className="text-[11px] font-bold font-headline text-[#FF6130] cursor-pointer"
-                >
-                  + Add Cohost
-                </button>
-                {openCohostPicker === s.id && (
-                  <div className="absolute top-full left-0 mt-1 min-w-[200px] rounded-xl shadow-lg z-10 overflow-hidden" style={{ backgroundColor: "white", border: "1px solid rgba(0,0,0,0.08)" }}>
-                    {candidateList.map((c) => (
-                      <button
-                        key={c.id}
-                        onClick={() => handleAddSessionCohost(s.id, c.id)}
-                        disabled={addingCohostFor === s.id}
-                        className="w-full flex items-center gap-2 p-2 hover:bg-gray-50 text-left disabled:opacity-40"
-                      >
-                        {c.avatar ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={c.avatar} alt="" className="w-6 h-6 rounded-full object-cover shrink-0" />
-                        ) : (
-                          <div className="w-6 h-6 rounded-full bg-cyan-100 flex items-center justify-center shrink-0">
-                            <span className="text-[10px] font-black text-cyan-700">{c.name[0]}</span>
-                          </div>
-                        )}
-                        <span className="text-sm font-bold text-[#0F2229]">{c.name}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
+          {/* Host + cohort avatars (small stack on the right) */}
+          <div className="flex -space-x-2 shrink-0">
+            {s.hostAvatar ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={s.hostAvatar} alt={s.hostName} title={`${s.hostName} (Host)`} className="w-7 h-7 rounded-full object-cover" style={{ border: "2px solid white", zIndex: 10 }} />
+            ) : (
+              <div title={`${s.hostName} (Host)`} className="w-7 h-7 rounded-full bg-orange-100 flex items-center justify-center" style={{ border: "2px solid white", zIndex: 10 }}>
+                <span className="text-[10px] font-black text-orange-700">{s.hostName[0]}</span>
               </div>
             )}
+            {s.cohosts.map((c, idx) => (
+              c.avatar ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img key={c.id} src={c.avatar} alt={c.name} title={c.name} className="w-7 h-7 rounded-full object-cover" style={{ border: "2px solid white", zIndex: 9 - idx }} />
+              ) : (
+                <div key={c.id} title={c.name} className="w-7 h-7 rounded-full bg-cyan-100 flex items-center justify-center" style={{ border: "2px solid white", zIndex: 9 - idx }}>
+                  <span className="text-[10px] font-black text-cyan-700">{c.name[0]}</span>
+                </div>
+              )
+            ))}
           </div>
-        )}
+          {canEditSession(s.hostId) && (
+            <button
+              onClick={() => startEditSession(s)}
+              className="text-[#94a3b8] hover:text-[#FF6130] shrink-0"
+              title="Edit session"
+            >
+              <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          )}
+          {(canEditSession(s.hostId) || canManageCollaboration) && (
+            <button
+              onClick={() => handleDeleteSession(s.id)}
+              className="text-[#94a3b8] hover:text-red-500 shrink-0"
+              title="Delete session"
+            >
+              <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          )}
+        </div>
       </div>
     );
   }
