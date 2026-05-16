@@ -207,7 +207,7 @@ export function TeamSection({
             sensible when the row wraps on narrow viewports. */}
         <div className="flex items-center justify-evenly flex-wrap gap-y-8">
           <TeamDonut segments={segments} size={240} />
-          <div className="min-w-[260px] space-y-5">
+          <div className="min-w-[260px] space-y-10">
             {segments.map((seg) => (
               <div key={seg.id} className="flex items-center gap-4">
                 <span
