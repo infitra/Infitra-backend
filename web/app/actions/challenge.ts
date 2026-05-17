@@ -219,6 +219,37 @@ function humanizeUpdateError(code: string): string {
   return map[key] ?? code;
 }
 
+/**
+ * Polish v12.J: server-side guardrail — a session's `start_time` must
+ * fall within its parent challenge's [start_date 00:00 UTC,
+ * end_date 23:59:59.999 UTC] window. Defence in depth alongside the
+ * client-side `min` / `max` on the datetime input. (A DB trigger on
+ * `app_session` referencing the challenge dates is the canonical
+ * non-bypassable guardrail per SR-I1 — flagged as a follow-up.)
+ */
+async function assertSessionWithinChallengeWindow(
+  supabase: any,
+  challengeId: string,
+  startTime: string,
+): Promise<string | null> {
+  const { data: challenge } = await supabase
+    .from("app_challenge")
+    .select("start_date, end_date")
+    .eq("id", challengeId)
+    .single();
+  if (!challenge?.start_date || !challenge?.end_date) return null;
+  const value = new Date(startTime).getTime();
+  if (Number.isNaN(value)) return "Invalid session date.";
+  const min = new Date(`${challenge.start_date}T00:00:00Z`).getTime();
+  const max = new Date(`${challenge.end_date}T23:59:59.999Z`).getTime();
+  if (value < min || value > max) {
+    const fmt = (iso: string) =>
+      new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+    return `Session must fall within the program window (${fmt(challenge.start_date)} – ${fmt(challenge.end_date)}).`;
+  }
+  return null;
+}
+
 /** Creates a session inline within a challenge via create_challenge_session RPC. */
 export async function createChallengeSession(
   challengeId: string,
@@ -244,6 +275,9 @@ export async function createChallengeSession(
   if (!durationMinutes || durationMinutes < 5 || durationMinutes > 480) {
     return { error: "Duration must be between 5 and 480 minutes." };
   }
+
+  const windowError = await assertSessionWithinChallengeWindow(supabase, challengeId, startTime);
+  if (windowError) return { error: windowError };
 
   const { data, error } = await supabase.rpc("create_challenge_session", {
     p_challenge_id: challengeId,
@@ -293,6 +327,17 @@ export async function updateChallengeSession(
 
   if (!title?.trim() || title.trim().length < 3) {
     return { error: "Session title must be at least 3 characters." };
+  }
+
+  // Polish v12.J: defence-in-depth guardrail. If the caller passed a
+  // challengeId we can look up its [start_date, end_date] and refuse
+  // out-of-range start_times. Without challengeId we'd have to join
+  // through app_challenge_session — skipped here since the workspace
+  // always passes it (and a stricter DB trigger is the right home for
+  // the can't-bypass version, planned as a follow-up).
+  if (challengeId) {
+    const windowError = await assertSessionWithinChallengeWindow(supabase, challengeId, startTime);
+    if (windowError) return { error: windowError };
   }
 
   const updates: Record<string, any> = {

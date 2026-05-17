@@ -158,6 +158,34 @@ export function WorkspaceEditor({
     () => computeEndDate(startDate, durationWeeks),
     [startDate, durationWeeks],
   );
+
+  // Polish v12.J: sessions are guard-railed to fall within the program's
+  // [start_date 00:00 local, end_date 23:59 local] window. These bounds
+  // drive (a) the `min` / `max` attributes on the session datetime
+  // inputs so the picker physically can't reach out-of-range dates, and
+  // (b) a local validator that disables Save + shows an inline error
+  // if the value is somehow out of range (typed in manually, or the
+  // program dates changed after a session was created).
+  const sessionMinDateTime = startDate ? `${startDate}T00:00` : undefined;
+  const sessionMaxDateTime = derivedEndDate ? `${derivedEndDate}T23:59` : undefined;
+
+  function isSessionDateOutOfRange(localDateTime: string): boolean {
+    if (!localDateTime || !startDate || !derivedEndDate) return false;
+    const value = new Date(localDateTime).getTime();
+    if (Number.isNaN(value)) return false;
+    // Local-midnight for start; local end-of-day for end (sessions ON
+    // the end_date are valid until 23:59:59.999 that day).
+    const min = new Date(`${startDate}T00:00:00`).getTime();
+    const max = new Date(`${derivedEndDate}T23:59:59.999`).getTime();
+    return value < min || value > max;
+  }
+
+  const sessionRangeLabel = useMemo(() => {
+    if (!startDate || !derivedEndDate) return null;
+    const fmt = (iso: string) =>
+      new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+    return `${fmt(startDate)} – ${fmt(derivedEndDate)}`;
+  }, [startDate, derivedEndDate]);
   const [price, setPrice, markPriceSaved] = useSyncedField(
     challenge.priceCents > 0 ? (challenge.priceCents / 100).toString() : "",
   );
@@ -452,6 +480,10 @@ export function WorkspaceEditor({
 
   async function handleSaveSession(sessionId: string) {
     if (!editFields.title.trim() || !editFields.startTime) return;
+    if (isSessionDateOutOfRange(editFields.startTime)) {
+      setError(`Session must fall within the program window (${sessionRangeLabel ?? ""}).`);
+      return;
+    }
     setSavingSession(true);
     setError(null);
     const result = await updateChallengeSession(
@@ -489,6 +521,10 @@ export function WorkspaceEditor({
 
   async function handleAddSession() {
     if (!sessTitle.trim() || !sessDate) return;
+    if (isSessionDateOutOfRange(sessDate)) {
+      setError(`Session must fall within the program window (${sessionRangeLabel ?? ""}).`);
+      return;
+    }
     setAddingSession(true);
     setError(null);
     const result = await createChallengeSession(
@@ -968,9 +1004,23 @@ export function WorkspaceEditor({
                   type="datetime-local"
                   value={sessDate}
                   onChange={(e) => setSessDate(e.target.value)}
+                  min={sessionMinDateTime}
+                  max={sessionMaxDateTime}
                   className="w-full rounded-xl p-3 text-sm focus:outline-none"
-                  style={{ border: "1px solid rgba(15,34,41,0.10)", color: "#0F2229" }}
+                  style={{
+                    border: `1px solid ${isSessionDateOutOfRange(sessDate) ? "rgba(220,38,38,0.40)" : "rgba(15,34,41,0.10)"}`,
+                    color: "#0F2229",
+                  }}
                 />
+                {isSessionDateOutOfRange(sessDate) ? (
+                  <p className="text-[11px] font-bold mt-1.5" style={{ color: "#dc2626" }}>
+                    Outside the program window ({sessionRangeLabel}).
+                  </p>
+                ) : sessionRangeLabel ? (
+                  <p className="text-[11px] mt-1.5" style={{ color: "#94a3b8" }}>
+                    Program runs {sessionRangeLabel}.
+                  </p>
+                ) : null}
               </div>
               <div>
                 <label className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-2">Duration (min)</label>
@@ -1054,7 +1104,7 @@ export function WorkspaceEditor({
 
             <button
               onClick={handleAddSession}
-              disabled={addingSession || !sessTitle.trim() || !sessDate}
+              disabled={addingSession || !sessTitle.trim() || !sessDate || isSessionDateOutOfRange(sessDate)}
               className="px-5 py-2.5 rounded-full text-sm font-black font-headline text-white disabled:opacity-40"
               style={{ backgroundColor: "#0891b2" }}
             >
@@ -1241,9 +1291,23 @@ export function WorkspaceEditor({
                 type="datetime-local"
                 value={editFields.startTime}
                 onChange={(e) => setEditFields({ ...editFields, startTime: e.target.value })}
+                min={sessionMinDateTime}
+                max={sessionMaxDateTime}
                 className="w-full rounded-xl p-3 text-sm focus:outline-none"
-                style={{ border: "1px solid rgba(15,34,41,0.10)", color: "#0F2229" }}
+                style={{
+                  border: `1px solid ${isSessionDateOutOfRange(editFields.startTime) ? "rgba(220,38,38,0.40)" : "rgba(15,34,41,0.10)"}`,
+                  color: "#0F2229",
+                }}
               />
+              {isSessionDateOutOfRange(editFields.startTime) ? (
+                <p className="text-[11px] font-bold mt-1.5" style={{ color: "#dc2626" }}>
+                  Outside the program window ({sessionRangeLabel}).
+                </p>
+              ) : sessionRangeLabel ? (
+                <p className="text-[11px] mt-1.5" style={{ color: "#94a3b8" }}>
+                  Program runs {sessionRangeLabel}.
+                </p>
+              ) : null}
             </div>
             <div>
               <label className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-2">Duration (min)</label>
@@ -1274,7 +1338,7 @@ export function WorkspaceEditor({
           <div className="flex gap-2 pt-2">
             <button
               onClick={() => editingSessionId && handleSaveSession(editingSessionId)}
-              disabled={savingSession || !editFields.title.trim() || !editFields.startTime}
+              disabled={savingSession || !editFields.title.trim() || !editFields.startTime || isSessionDateOutOfRange(editFields.startTime)}
               className="px-5 py-2.5 rounded-full text-sm font-black font-headline text-white disabled:opacity-40"
               style={{ backgroundColor: "#FF6130" }}
             >
