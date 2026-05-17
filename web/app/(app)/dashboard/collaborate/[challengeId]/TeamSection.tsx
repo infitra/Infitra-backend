@@ -411,7 +411,7 @@ function CreatorRowCard({
     <div
       className="p-4 rounded-xl"
       style={{
-        backgroundColor: "rgba(0,0,0,0.02)",
+        backgroundColor: "rgba(255,255,255,0.92)",
         border: "1px solid rgba(15,34,41,0.06)",
       }}
     >
@@ -623,7 +623,7 @@ function PendingRowCard({ invite }: { invite: PendingInviteRow }) {
     <div
       className="p-4 rounded-xl flex items-center gap-3"
       style={{
-        backgroundColor: "rgba(255,255,255,0.4)",
+        backgroundColor: "rgba(255,255,255,0.92)",
         border: "1px dashed rgba(8,145,178,0.30)",
       }}
     >

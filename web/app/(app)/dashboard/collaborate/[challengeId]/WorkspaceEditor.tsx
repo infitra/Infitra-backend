@@ -1363,7 +1363,7 @@ export function WorkspaceEditor({
     return (
       <div
         className="p-3 rounded-xl cursor-pointer hover:bg-white/80 transition-colors"
-        style={{ backgroundColor: "rgba(255,255,255,0.7)", border: "1px solid rgba(15,34,41,0.06)" }}
+        style={{ backgroundColor: "rgba(255,255,255,0.92)", border: "1px solid rgba(15,34,41,0.06)" }}
         onClick={(e) => {
           const target = e.target as HTMLElement;
           if (target.closest("button")) return;
