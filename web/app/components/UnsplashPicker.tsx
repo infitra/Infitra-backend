@@ -14,35 +14,109 @@ interface UnsplashPickerProps {
   onClose: () => void;
 }
 
+// Polish v12.K — quick-pick keyword chips. Two purposes:
+//   (a) reduces typing for the common case (most creators are
+//       fitness/wellness adjacent so the obvious queries should be
+//       one click)
+//   (b) gives an "I don't know what I want" affordance — clicking a
+//       chip starts a search instead of staring at an empty modal
+// Mix of fitness-specific + broader-mood keywords so the picker
+// doesn't keep returning the same dumbbells-and-treadmills loop.
+const QUICK_QUERIES = [
+  "fitness", "yoga", "running", "strength",
+  "stretching", "outdoors", "calm", "nature",
+  "ocean", "mountain", "urban", "abstract",
+];
+
+const PER_PAGE = 30; // Unsplash max — was 20, +50% per fetch for free.
+
 /**
  * UnsplashPicker — search and select free images from Unsplash.
  * Requires NEXT_PUBLIC_UNSPLASH_ACCESS_KEY environment variable.
  * Attribution is included per Unsplash API terms.
+ *
+ * Polish v12.K behaviour:
+ * - First search for a query fetches page 1 (Unsplash relevance-ranked,
+ *   so the most "obvious" matches show up first).
+ * - "Show more" picks a RANDOM unseen page from [1..total_pages] and
+ *   appends results, deduped by photo ID. Random (vs sequential page
+ *   2 → 3 → 4) because sequential paging just gives you increasingly
+ *   obscure photos; random jumps surface variety from across the full
+ *   result space.
  */
 export function UnsplashPicker({ onSelect, onClose }: UnsplashPickerProps) {
   const [query, setQuery] = useState("");
   const [photos, setPhotos] = useState<UnsplashPhoto[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [searched, setSearched] = useState(false);
+  const [seenPages, setSeenPages] = useState<Set<number>>(new Set());
+  const [totalPages, setTotalPages] = useState(0);
 
   const accessKey = process.env.NEXT_PUBLIC_UNSPLASH_ACCESS_KEY;
 
-  const search = useCallback(async () => {
-    if (!query.trim() || !accessKey) return;
-    setLoading(true);
-    setSearched(true);
+  async function fetchPage(searchQuery: string, pageNum: number): Promise<{
+    photos: UnsplashPhoto[];
+    totalPages: number;
+  } | null> {
+    if (!searchQuery.trim() || !accessKey) return null;
     try {
       const res = await fetch(
-        `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=20&orientation=landscape`,
+        `https://api.unsplash.com/search/photos?query=${encodeURIComponent(searchQuery)}&per_page=${PER_PAGE}&page=${pageNum}&orientation=landscape`,
         { headers: { Authorization: `Client-ID ${accessKey}` } }
       );
       const data = await res.json();
-      setPhotos(data.results ?? []);
+      return {
+        photos: data.results ?? [],
+        totalPages: data.total_pages ?? 0,
+      };
     } catch {
+      return null;
+    }
+  }
+
+  const search = useCallback(async (overrideQuery?: string) => {
+    const q = overrideQuery ?? query;
+    if (!q.trim() || !accessKey) return;
+    if (overrideQuery !== undefined) setQuery(overrideQuery);
+    setLoading(true);
+    setSearched(true);
+    setPhotos([]);
+    setSeenPages(new Set());
+    setTotalPages(0);
+    const result = await fetchPage(q, 1);
+    if (result) {
+      setPhotos(result.photos);
+      setSeenPages(new Set([1]));
+      setTotalPages(result.totalPages);
+    } else {
       setPhotos([]);
     }
     setLoading(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, accessKey]);
+
+  async function showMore() {
+    if (loadingMore || totalPages <= 1) return;
+    // Random unseen page. If we've seen all pages already, bail.
+    const candidates: number[] = [];
+    for (let i = 1; i <= totalPages; i++) {
+      if (!seenPages.has(i)) candidates.push(i);
+    }
+    if (candidates.length === 0) return;
+    const nextPage = candidates[Math.floor(Math.random() * candidates.length)];
+    setLoadingMore(true);
+    const result = await fetchPage(query, nextPage);
+    if (result) {
+      // Dedupe by photo ID — random pages CAN overlap with already-loaded
+      // results (Unsplash results aren't strictly disjoint across pages).
+      const existingIds = new Set(photos.map((p) => p.id));
+      const fresh = result.photos.filter((p) => !existingIds.has(p.id));
+      setPhotos([...photos, ...fresh]);
+      setSeenPages(new Set([...seenPages, nextPage]));
+    }
+    setLoadingMore(false);
+  }
 
   function handleSelect(photo: UnsplashPhoto) {
     // Trigger download endpoint per Unsplash API guidelines
@@ -56,6 +130,8 @@ export function UnsplashPicker({ onSelect, onClose }: UnsplashPickerProps) {
       link: photo.user.links.html,
     });
   }
+
+  const moreAvailable = totalPages > seenPages.size;
 
   return (
     <div className="fixed inset-0 z-[90] flex items-center justify-center">
@@ -78,7 +154,7 @@ export function UnsplashPicker({ onSelect, onClose }: UnsplashPickerProps) {
         </div>
 
         {/* Search */}
-        <div className="px-6 py-4">
+        <div className="px-6 py-4 space-y-3">
           <div className="flex gap-2">
             <input
               type="text"
@@ -91,13 +167,27 @@ export function UnsplashPicker({ onSelect, onClose }: UnsplashPickerProps) {
               autoFocus
             />
             <button
-              onClick={search}
+              onClick={() => search()}
               disabled={loading}
               className="px-5 py-2.5 rounded-xl text-sm font-bold font-headline text-white disabled:opacity-50"
               style={{ backgroundColor: "#FF6130" }}
             >
               {loading ? "..." : "Search"}
             </button>
+          </div>
+          {/* Quick-pick chips — polish v12.K */}
+          <div className="flex flex-wrap gap-1.5">
+            {QUICK_QUERIES.map((q) => (
+              <button
+                key={q}
+                onClick={() => search(q)}
+                disabled={loading}
+                className="px-2.5 py-1 rounded-full text-[11px] font-bold font-headline text-[#9CF0FF] hover:text-white hover:bg-[#9CF0FF]/10 transition-colors disabled:opacity-40"
+                style={{ border: "1px solid rgba(156,240,255,0.20)" }}
+              >
+                {q}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -136,8 +226,25 @@ export function UnsplashPicker({ onSelect, onClose }: UnsplashPickerProps) {
                   </button>
                 ))}
               </div>
+              {/* Show more — random unseen page. Hidden when we've
+                  exhausted the result space (totalPages == seenPages). */}
+              {moreAvailable && (
+                <div className="flex justify-center mt-5">
+                  <button
+                    onClick={showMore}
+                    disabled={loadingMore}
+                    className="px-5 py-2 rounded-full text-xs font-bold font-headline text-[#9CF0FF] hover:text-white hover:bg-[#9CF0FF]/10 transition-colors disabled:opacity-50"
+                    style={{ border: "1px solid rgba(156,240,255,0.30)" }}
+                  >
+                    {loadingMore ? "Loading…" : "Show more"}
+                  </button>
+                </div>
+              )}
               <p className="text-center text-[10px] text-[#9CF0FF]/30 mt-4">
-                Photos by <a href="https://unsplash.com" target="_blank" rel="noopener noreferrer" className="underline">Unsplash</a>
+                {photos.length} photo{photos.length === 1 ? "" : "s"}
+                {totalPages > 0 && ` · ${seenPages.size}/${totalPages} pages loaded`} ·
+                Photos by{" "}
+                <a href="https://unsplash.com" target="_blank" rel="noopener noreferrer" className="underline">Unsplash</a>
               </p>
             </>
           )}
@@ -145,7 +252,7 @@ export function UnsplashPicker({ onSelect, onClose }: UnsplashPickerProps) {
           {!loading && !searched && (
             <div className="text-center py-16">
               <p className="text-sm text-[#9CF0FF]/50 mb-2">Search for free professional photos</p>
-              <p className="text-xs text-[#9CF0FF]/30">Try: fitness, workout, yoga, running, gym, strength</p>
+              <p className="text-xs text-[#9CF0FF]/30">Type a query above or tap a quick-pick keyword.</p>
             </div>
           )}
         </div>
