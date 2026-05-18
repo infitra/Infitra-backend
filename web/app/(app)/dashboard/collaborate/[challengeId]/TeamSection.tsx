@@ -215,60 +215,50 @@ export function TeamSection({
           to the previous vertical row layout. */}
       <div className="space-y-3">
         {creators.length === 2 ? (
-          /* Polish v12.N (revised): the previous gradient was too
-             subtle to register as a connection. Three changes to
-             make the team band actually read as one piece:
-             - Gradient opacity bumped from 0.05/0.07 → 0.14/0.18 so
-               the orange→cyan band is visibly present.
-             - Wrapper padding p-3 → p-5 and inner gap gap-3 → gap-6
-               so the band has visible breathing space around AND
-               between the cards.
-             - A "connector ribbon" — a 3px horizontal gradient line
-               drawn BEHIND the cards at vertical midpoint, edge to
-               edge. The 92%-opaque cards mostly veil it where they
-               cover, but in the gap between them the ribbon is
-               clearly visible, reading as "two cards holding hands."
-          */
-          <div
-            className="relative rounded-2xl p-5"
-            style={{
-              background:
-                "linear-gradient(to right, rgba(255,97,48,0.14), rgba(156,240,255,0.18))",
-            }}
-          >
-            {/* Connector ribbon — behind the cards, visible in the gap */}
+          /* Polish v12.P: the gradient-background-plus-faded-ribbon
+             approach read as atmospheric noise rather than intentional
+             design. Dropped the wrapper background entirely (it was
+             fighting the v12.I stronger-white-cards principle anyway)
+             and replaced the faded full-width ribbon with a single
+             SOLID orange→cyan line that ONLY spans the gap between
+             the two cards (with a small overlap into each card's edge
+             so it reads as "attached," not floating).
+
+             One bold visible element doing the connection work, no
+             fade, no layered subtlety. */}
+          <div className="relative grid grid-cols-2 gap-6">
+            {/* Connector — 2px solid gradient line, ~40px wide,
+                centered in the gap. Pure orange on the owner side
+                fading to brand cyan on the cohost side. */}
             <div
               aria-hidden="true"
               className="absolute pointer-events-none"
               style={{
                 top: "50%",
-                left: 20,
-                right: 20,
-                height: 3,
-                transform: "translateY(-50%)",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+                width: 40,
+                height: 2,
                 borderRadius: 999,
                 background: "linear-gradient(to right, #FF6130, #9CF0FF)",
-                opacity: 0.7,
-                zIndex: 0,
+                zIndex: 1,
               }}
             />
-            <div className="grid grid-cols-2 gap-6 relative" style={{ zIndex: 1 }}>
-              {creators.map((creator) => (
-                <CreatorPortraitCard
-                  key={creator.id}
-                  creator={creator}
-                  topics={topicsByCreator[creator.id] ?? []}
-                  canEdit={canEdit}
-                  canManageCollaboration={canManageCollaboration}
-                  onTopicsCommit={(topics) => onTopicsCommit(creator.id, topics)}
-                  onRemove={
-                    creator.role === "cohost" && canManageCollaboration && onCohostRemove
-                      ? () => onCohostRemove(creator.id)
-                      : undefined
-                  }
-                />
-              ))}
-            </div>
+            {creators.map((creator) => (
+              <CreatorPortraitCard
+                key={creator.id}
+                creator={creator}
+                topics={topicsByCreator[creator.id] ?? []}
+                canEdit={canEdit}
+                canManageCollaboration={canManageCollaboration}
+                onTopicsCommit={(topics) => onTopicsCommit(creator.id, topics)}
+                onRemove={
+                  creator.role === "cohost" && canManageCollaboration && onCohostRemove
+                    ? () => onCohostRemove(creator.id)
+                    : undefined
+                }
+              />
+            ))}
           </div>
         ) : (
           creators.map((creator) => (
