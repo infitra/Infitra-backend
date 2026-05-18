@@ -186,6 +186,29 @@ export function WorkspaceEditor({
       new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
     return `${fmt(startDate)} – ${fmt(derivedEndDate)}`;
   }, [startDate, derivedEndDate]);
+
+  // Polish v12.L.2: split the single datetime-local field into two
+  // separate Date + Start time inputs for clearer affordances (the
+  // native datetime-local widget looks like one field but contains
+  // two pickers, which users miss). Internal state stays as the
+  // combined `YYYY-MM-DDTHH:MM` ISO string so the save handler and
+  // range validator don't need to change — these helpers just edit
+  // one half of the ISO string at a time.
+  function splitIso(iso: string): { date: string; time: string } {
+    if (!iso) return { date: "", time: "" };
+    const [d = "", t = ""] = iso.split("T");
+    return { date: d, time: t };
+  }
+  function setDatePart(setter: (next: string) => void, currentIso: string, newDate: string) {
+    const { time } = splitIso(currentIso);
+    if (!newDate) { setter(""); return; }
+    setter(`${newDate}T${time || "19:00"}`);
+  }
+  function setTimePart(setter: (next: string) => void, currentIso: string, newTime: string) {
+    const { date } = splitIso(currentIso);
+    if (!date) return; // can't set a time without a date
+    setter(`${date}T${newTime || "19:00"}`);
+  }
   const [price, setPrice, markPriceSaved] = useSyncedField(
     challenge.priceCents > 0 ? (challenge.priceCents / 100).toString() : "",
   );
@@ -997,30 +1020,35 @@ export function WorkspaceEditor({
                 style={{ border: "1px solid rgba(15,34,41,0.10)", color: "#0F2229" }}
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            {/* Polish v12.L.2: Date, Start time, Duration split into
+                three real inputs so users actually see they can pick
+                the time, not just the date. The validator + save still
+                read from `sessDate` (the combined ISO string). */}
+            <div className="grid grid-cols-3 gap-3">
               <div>
-                <label className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-2">Date & Time</label>
+                <label className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-2">Date</label>
                 <input
-                  type="datetime-local"
-                  value={sessDate}
-                  onChange={(e) => setSessDate(e.target.value)}
-                  min={sessionMinDateTime}
-                  max={sessionMaxDateTime}
+                  type="date"
+                  value={splitIso(sessDate).date}
+                  onChange={(e) => setDatePart(setSessDate, sessDate, e.target.value)}
+                  min={startDate || undefined}
+                  max={derivedEndDate || undefined}
                   className="w-full rounded-xl p-3 text-sm focus:outline-none"
                   style={{
                     border: `1px solid ${isSessionDateOutOfRange(sessDate) ? "rgba(220,38,38,0.40)" : "rgba(15,34,41,0.10)"}`,
                     color: "#0F2229",
                   }}
                 />
-                {isSessionDateOutOfRange(sessDate) ? (
-                  <p className="text-[11px] font-bold mt-1.5" style={{ color: "#dc2626" }}>
-                    Outside the program window ({sessionRangeLabel}).
-                  </p>
-                ) : sessionRangeLabel ? (
-                  <p className="text-[11px] mt-1.5" style={{ color: "#94a3b8" }}>
-                    Program runs {sessionRangeLabel}.
-                  </p>
-                ) : null}
+              </div>
+              <div>
+                <label className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-2">Start time</label>
+                <input
+                  type="time"
+                  value={splitIso(sessDate).time}
+                  onChange={(e) => setTimePart(setSessDate, sessDate, e.target.value)}
+                  className="w-full rounded-xl p-3 text-sm focus:outline-none"
+                  style={{ border: "1px solid rgba(15,34,41,0.10)", color: "#0F2229" }}
+                />
               </div>
               <div>
                 <label className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-2">Duration (min)</label>
@@ -1034,6 +1062,15 @@ export function WorkspaceEditor({
                 />
               </div>
             </div>
+            {isSessionDateOutOfRange(sessDate) ? (
+              <p className="text-[11px] font-bold" style={{ color: "#dc2626" }}>
+                Outside the program window ({sessionRangeLabel}).
+              </p>
+            ) : sessionRangeLabel ? (
+              <p className="text-[11px]" style={{ color: "#94a3b8" }}>
+                Program runs {sessionRangeLabel}.
+              </p>
+            ) : null}
             <div>
               <label className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-2">Description (optional)</label>
               <textarea
@@ -1284,30 +1321,40 @@ export function WorkspaceEditor({
               style={{ border: "1px solid rgba(15,34,41,0.10)", color: "#0F2229" }}
             />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          {/* Polish v12.L.2: split into Date / Start time / Duration. */}
+          <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-2">Date & Time</label>
+              <label className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-2">Date</label>
               <input
-                type="datetime-local"
-                value={editFields.startTime}
-                onChange={(e) => setEditFields({ ...editFields, startTime: e.target.value })}
-                min={sessionMinDateTime}
-                max={sessionMaxDateTime}
+                type="date"
+                value={splitIso(editFields.startTime).date}
+                onChange={(e) => setDatePart(
+                  (next) => setEditFields({ ...editFields, startTime: next }),
+                  editFields.startTime,
+                  e.target.value,
+                )}
+                min={startDate || undefined}
+                max={derivedEndDate || undefined}
                 className="w-full rounded-xl p-3 text-sm focus:outline-none"
                 style={{
                   border: `1px solid ${isSessionDateOutOfRange(editFields.startTime) ? "rgba(220,38,38,0.40)" : "rgba(15,34,41,0.10)"}`,
                   color: "#0F2229",
                 }}
               />
-              {isSessionDateOutOfRange(editFields.startTime) ? (
-                <p className="text-[11px] font-bold mt-1.5" style={{ color: "#dc2626" }}>
-                  Outside the program window ({sessionRangeLabel}).
-                </p>
-              ) : sessionRangeLabel ? (
-                <p className="text-[11px] mt-1.5" style={{ color: "#94a3b8" }}>
-                  Program runs {sessionRangeLabel}.
-                </p>
-              ) : null}
+            </div>
+            <div>
+              <label className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-2">Start time</label>
+              <input
+                type="time"
+                value={splitIso(editFields.startTime).time}
+                onChange={(e) => setTimePart(
+                  (next) => setEditFields({ ...editFields, startTime: next }),
+                  editFields.startTime,
+                  e.target.value,
+                )}
+                className="w-full rounded-xl p-3 text-sm focus:outline-none"
+                style={{ border: "1px solid rgba(15,34,41,0.10)", color: "#0F2229" }}
+              />
             </div>
             <div>
               <label className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-2">Duration (min)</label>
@@ -1320,6 +1367,15 @@ export function WorkspaceEditor({
               />
             </div>
           </div>
+          {isSessionDateOutOfRange(editFields.startTime) ? (
+            <p className="text-[11px] font-bold" style={{ color: "#dc2626" }}>
+              Outside the program window ({sessionRangeLabel}).
+            </p>
+          ) : sessionRangeLabel ? (
+            <p className="text-[11px]" style={{ color: "#94a3b8" }}>
+              Program runs {sessionRangeLabel}.
+            </p>
+          ) : null}
           <div>
             <label className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-2">Description (optional)</label>
             <textarea
