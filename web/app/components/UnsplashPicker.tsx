@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { createPortal } from "react-dom";
 
 interface UnsplashPhoto {
   id: string;
@@ -133,7 +134,16 @@ export function UnsplashPicker({ onSelect, onClose }: UnsplashPickerProps) {
 
   const moreAvailable = totalPages > seenPages.size;
 
-  return (
+  // Polish v12.L.1: portal to body so the picker isn't clipped or
+  // re-positioned by any ancestor's transform / filter context (it
+  // opens from within ImageSelector, which is itself nested inside
+  // the Dialog primitive — without portaling, fixed positioning was
+  // unreliable).
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  if (!mounted) return null;
+
+  return createPortal(
     <div className="fixed inset-0 z-[90] flex items-center justify-center">
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
@@ -257,6 +267,7 @@ export function UnsplashPicker({ onSelect, onClose }: UnsplashPickerProps) {
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 
 interface DialogProps {
   open: boolean;
@@ -21,12 +22,19 @@ interface DialogProps {
  * Backdrop + ESC-to-close + body-scroll-lock + click-outside-to-close
  * (opt-out via `closeOnBackdrop=false`). The card itself is intentionally
  * NOT styled here — pass any header/body/footer structure as children.
- * Polish v12 extracted this from SessionDetailModal so it could be
- * reused for the invite-collaborator flow and the session add/edit flow.
  *
- * z-index 50 matches the existing SessionDetailModal so they don't fight.
- * Backdrop colour `rgba(15,34,41,0.5)` matches the brand text colour at
- * 50% — neutral but warm enough to not feel like a gray scrim.
+ * Polish v12.L.1 hardening:
+ * - **Portaled to `document.body`** via React portal so the dialog
+ *   escapes any ancestor with `transform`, `filter`, `backdrop-filter`,
+ *   `perspective`, or `will-change` — those create a new containing
+ *   block for `position: fixed`, which was causing the backdrop to be
+ *   sized to the parent card (not the viewport) and leak the original
+ *   page background at the bottom of taller modals.
+ * - **Backdrop is its own sibling element**, not the same node as the
+ *   scroll container. Backdrop is a static `fixed inset-0` colour
+ *   layer that always covers the viewport; the scroll container floats
+ *   on top of it and handles overflow independently. Scrolling a tall
+ *   form no longer affects backdrop coverage.
  */
 export function Dialog({
   open,
@@ -35,6 +43,12 @@ export function Dialog({
   closeOnBackdrop = true,
   children,
 }: DialogProps) {
+  // Portal mounts post-hydration only — `document` doesn't exist on
+  // the server. `mounted` gates the createPortal call so SSR/RSC
+  // returns null and the client takes over on mount.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const handleKey = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -53,23 +67,37 @@ export function Dialog({
     };
   }, [open, handleKey]);
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto"
-      style={{ backgroundColor: "rgba(15,34,41,0.5)" }}
-      onClick={closeOnBackdrop ? onClose : undefined}
-      aria-modal="true"
-      role="dialog"
-    >
+  return createPortal(
+    <>
+      {/* Backdrop — its own static layer, always covers viewport,
+          never scrolls, never resizes with content. */}
       <div
-        className={`${maxWidthClass} w-full rounded-2xl overflow-hidden infitra-card my-auto`}
-        style={{ backgroundColor: "#FFFFFF" }}
-        onClick={(e) => e.stopPropagation()}
+        className="fixed inset-0 z-50"
+        style={{ backgroundColor: "rgba(15,34,41,0.5)" }}
+        onClick={closeOnBackdrop ? onClose : undefined}
+        aria-hidden="true"
+      />
+      {/* Scroll container — sits on top of the backdrop. Click on the
+          empty area around the card (= container itself) closes the
+          dialog when `closeOnBackdrop`; click on the card stops
+          propagation. */}
+      <div
+        className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 overflow-y-auto"
+        onClick={closeOnBackdrop ? onClose : undefined}
+        role="dialog"
+        aria-modal="true"
       >
-        {children}
+        <div
+          className={`${maxWidthClass} w-full rounded-2xl overflow-hidden infitra-card my-auto`}
+          style={{ backgroundColor: "#FFFFFF" }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {children}
+        </div>
       </div>
-    </div>
+    </>,
+    document.body,
   );
 }
