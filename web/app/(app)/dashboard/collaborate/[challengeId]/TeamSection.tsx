@@ -206,25 +206,55 @@ export function TeamSection({
         they own. Topics help participants know who to ask about what.
       </p>
 
-      {/* Hero donut + legend + (single-cohort) slider. The donut is the
-          load-bearing visual of the split — bright brand cyan for the
-          arc, orange for owner. Legend has NO dot: the bright-cyan dot
-          next to a darker-cyan number read as a colour mismatch
-          (polish v7). The big % number, the role label below the name,
-          and the donut arc itself together carry enough colour anchor
-          per segment. For single-cohort collaborations the slider
-          lives DIRECTLY under the donut+legend as its control surface
-          — dragging it updates the donut live. */}
-      <div className="mb-6 pb-6" style={{ borderBottom: "1px solid rgba(15,34,41,0.06)" }}>
-        {/* `justify-evenly` (instead of left-anchoring with `flex-1` on
-            the legend) distributes the donut and legend symmetrically
-            across the card width — the cluster reads as centered and
-            the two components have visible breathing room from each
-            other and from the card edges. `gap-y-8` keeps spacing
-            sensible when the row wraps on narrow viewports. */}
+      {/* Polish v12.L.4: creator rows come FIRST now — people before
+          money. The rows establish who is who (owner / cohost via the
+          role label inside each row + the role-coloured details);
+          THEN the donut block below shows the split. This way by the
+          time the legend appears, the user already knows who's who,
+          so the legend drops its "OWNER / COHOST" sub-labels and just
+          shows `[%] [name]`. */}
+      <div className="space-y-3">
+        {creators.map((creator) => (
+          <CreatorRowCard
+            key={creator.id}
+            creator={creator}
+            topics={topicsByCreator[creator.id] ?? []}
+            displayedSplit={creator.role === "owner" ? ownerSplit : creator.splitPercent}
+            ownerSplit={ownerSplit}
+            canEdit={canEdit}
+            canManageCollaboration={canManageCollaboration}
+            // Only render the in-row slider when there are 2+ cohorts;
+            // single-cohort case has the slider under the donut.
+            showSliderInRow={cohorts.length > 1}
+            onTopicsCommit={(topics) => onTopicsCommit(creator.id, topics)}
+            onSplitCommit={
+              creator.role === "cohost"
+                ? (split) => onCohostSplitCommit(creator.id, split)
+                : undefined
+            }
+            onRemove={
+              creator.role === "cohost" && canManageCollaboration && onCohostRemove
+                ? () => onCohostRemove(creator.id)
+                : undefined
+            }
+          />
+        ))}
+
+        {/* Pending invitees — display only */}
+        {pendingInvites.map((invite) => (
+          <PendingRowCard key={invite.id} invite={invite} />
+        ))}
+      </div>
+
+      {/* Donut + simplified legend + (single-cohort) slider.
+          Sits BELOW the rows now (polish v12.L.4). Legend dropped the
+          OWNER / COHOST sub-labels — the rows above already establish
+          that. % stays colour-coded (orange for owner, dark cyan for
+          cohost) so the visual tie back to the rows is preserved. */}
+      <div className="mt-6 pt-6" style={{ borderTop: "1px solid rgba(15,34,41,0.06)" }}>
         <div className="flex items-center justify-evenly flex-wrap gap-y-8">
           <TeamDonut segments={segments} size={240} />
-          <div className="min-w-[260px] space-y-10">
+          <div className="min-w-[260px] space-y-6">
             {segments.map((seg) => (
               <div key={seg.id} className="flex items-center gap-4">
                 <span
@@ -233,20 +263,12 @@ export function TeamSection({
                 >
                   {seg.percent}%
                 </span>
-                <div className="min-w-0 flex flex-col justify-center">
-                  <p
-                    className="text-base font-bold font-headline truncate leading-tight"
-                    style={{ color: "#0F2229" }}
-                  >
-                    {seg.name}
-                  </p>
-                  <p
-                    className="text-[10px] font-bold font-headline uppercase tracking-wider mt-1"
-                    style={{ color: seg.color }}
-                  >
-                    {seg.role}
-                  </p>
-                </div>
+                <p
+                  className="text-base font-bold font-headline truncate leading-none"
+                  style={{ color: "#0F2229" }}
+                >
+                  {seg.name}
+                </p>
               </div>
             ))}
           </div>
@@ -254,8 +276,8 @@ export function TeamSection({
 
         {/* Slider — lives under the donut+legend so the control is
             adjacent to the visualization. Single-cohost only for now;
-            multi-cohort case will get per-cohort sliders below the
-            legend (deferred until the pilot needs >2 creator teams). */}
+            multi-cohort case will get per-cohort sliders in the rows
+            (deferred until the pilot needs >2 creator teams). */}
         {singleCohort && canManageCollaboration && (
           <div className="mt-6 pt-5 flex items-center gap-3" style={{ borderTop: "1px dashed rgba(15,34,41,0.10)" }}>
             <p className="text-[10px] font-bold font-headline uppercase tracking-wider shrink-0" style={{ color: "#94a3b8", minWidth: 90 }}>
@@ -301,43 +323,6 @@ export function TeamSection({
             </div>
           </div>
         )}
-      </div>
-
-      {/* Confirmed creators — identity + topics + sessions only. The
-          slider for the single-cohort case lives in the donut block
-          above. For multi-cohort (2+) cases each row gets its own
-          inline slider via showSliderInRow=true. */}
-      <div className="space-y-3">
-        {creators.map((creator) => (
-          <CreatorRowCard
-            key={creator.id}
-            creator={creator}
-            topics={topicsByCreator[creator.id] ?? []}
-            displayedSplit={creator.role === "owner" ? ownerSplit : creator.splitPercent}
-            ownerSplit={ownerSplit}
-            canEdit={canEdit}
-            canManageCollaboration={canManageCollaboration}
-            // Only render the in-row slider when there are 2+ cohorts;
-            // single-cohort case has the slider under the donut.
-            showSliderInRow={cohorts.length > 1}
-            onTopicsCommit={(topics) => onTopicsCommit(creator.id, topics)}
-            onSplitCommit={
-              creator.role === "cohost"
-                ? (split) => onCohostSplitCommit(creator.id, split)
-                : undefined
-            }
-            onRemove={
-              creator.role === "cohost" && canManageCollaboration && onCohostRemove
-                ? () => onCohostRemove(creator.id)
-                : undefined
-            }
-          />
-        ))}
-
-        {/* Pending invitees — display only */}
-        {pendingInvites.map((invite) => (
-          <PendingRowCard key={invite.id} invite={invite} />
-        ))}
       </div>
 
       <SectionAttribution
