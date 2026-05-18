@@ -421,11 +421,15 @@ function CreatorRowCard({
         border: "1px solid rgba(15,34,41,0.06)",
       }}
     >
-      {/* Strict 4-column grid so owner and cohost rows column-align
-          regardless of avatar type, name length, or chip width.
-          Columns: identity (200px) · topics (1fr) · sessions (80px) ·
-          ×-or-placeholder (32px). */}
-      <div className="grid items-center gap-4" style={{ gridTemplateColumns: "200px 1fr 80px 32px" }}>
+      {/* Polish v12.M.3: row restructured to feel more like a person,
+          less like a table cell.
+          - Bigger avatar (w-11 → w-16) so faces register as humans.
+          - Role label sits inline with "Leads N sessions" as one
+            verbal phrase ("OWNER · Leads 4 sessions") instead of a
+            separate loud sessions chip on the right.
+          - Grid collapses from 4 cols to 3 cols (identity / topics
+            / ×) — the dedicated sessions chip column is gone. */}
+      <div className="grid items-center gap-4" style={{ gridTemplateColumns: "260px 1fr 32px" }}>
         {/* Identity column */}
         <div className="flex items-center gap-3 min-w-0">
           {creator.avatar ? (
@@ -433,27 +437,28 @@ function CreatorRowCard({
             <img
               src={creator.avatar}
               alt=""
-              className="w-11 h-11 rounded-full object-cover shrink-0"
+              className="w-16 h-16 rounded-full object-cover shrink-0"
             />
           ) : (
             <div
-              className="w-11 h-11 rounded-full flex items-center justify-center shrink-0"
+              className="w-16 h-16 rounded-full flex items-center justify-center shrink-0"
               style={{ backgroundColor: `${roleColor}20` }}
             >
-              <span className="text-base font-black font-headline" style={{ color: roleColor }}>
+              <span className="text-xl font-black font-headline" style={{ color: roleColor }}>
                 {creator.name?.[0] ?? "?"}
               </span>
             </div>
           )}
           <div className="min-w-0">
-            <p className="text-sm font-bold font-headline truncate" style={{ color: "#0F2229" }}>
+            <p className="text-base font-bold font-headline truncate leading-tight" style={{ color: "#0F2229" }}>
               {creator.name}
             </p>
-            <p
-              className="text-[10px] font-bold font-headline uppercase tracking-wider"
-              style={{ color: roleColor }}
-            >
-              {creator.role}
+            <p className="text-[10px] font-bold font-headline uppercase tracking-wider mt-1">
+              <span style={{ color: roleColor }}>{creator.role}</span>
+              <span style={{ color: "#cbd5e1" }}>{" · "}</span>
+              <span style={{ color: "#94a3b8" }}>
+                Leads {creator.sessionCount} {creator.sessionCount === 1 ? "session" : "sessions"}
+              </span>
             </p>
           </div>
         </div>
@@ -512,29 +517,10 @@ function CreatorRowCard({
           )}
         </div>
 
-        {/* Sessions count — quieter chip. Fixed 80px column so owner
-            and cohost rows align even when one has "10 sessions" and
-            the other has "1 session". The % REVENUE chip that used to
-            live here was dropped in polish v5: donut + legend carry
-            that data; the role label (orange OWNER / cyan COHOST)
-            keeps the per-row colour anchor. */}
-        <div
-          className="flex flex-col items-center justify-center px-3 py-2 rounded-xl"
-          style={{ backgroundColor: "rgba(15,34,41,0.04)" }}
-        >
-          <p
-            className="text-xl font-black font-headline leading-none"
-            style={{ color: "#0F2229" }}
-          >
-            {creator.sessionCount}
-          </p>
-          <p
-            className="text-[9px] font-bold font-headline uppercase tracking-wider mt-1"
-            style={{ color: "#94a3b8" }}
-          >
-            {creator.sessionCount === 1 ? "session" : "sessions"}
-          </p>
-        </div>
+        {/* (Sessions chip removed in polish v12.M.3 — session count is
+            now part of the identity column's verbal role phrase:
+            "OWNER · Leads 4 sessions". Frees the row from feeling
+            like a roster table cell.) */}
 
         {/* Remove cohost — fixed 32px column at the row's end. Owner
             row gets an invisible placeholder of the same width so both
