@@ -111,14 +111,6 @@ export function TeamSection({
   const cohorts = creators.filter((c) => c.role === "cohost");
   const singleCohort = cohorts.length === 1 ? cohorts[0] : null;
 
-  // TEMP polish v11 diag: log the cohost split prop on every render.
-  // Compare against the [realtime] log to see if router.refresh is
-  // actually pulling new data through. Remove once verified.
-  if (typeof window !== "undefined") {
-    // eslint-disable-next-line no-console
-    console.log("[TeamSection render] singleCohort.splitPercent =", singleCohort?.splitPercent, "ownerSplit =", ownerSplit);
-  }
-
   // Single-cohost slider state. Only the owner can drag the slider, so
   // most renders have NO local state — the donut/legend read directly
   // from the `splitPercent` prop (which the parent updates via
@@ -151,9 +143,14 @@ export function TeamSection({
   // (cyan). Two colours per segment: visualColor for fills (donut arc,
   // legend dot, slider track) using the bright brand cyan; color for
   // readable text (big % number, role label) using the darker cyan.
+  // Polish v12.M.2: avatar carried on the segment so the legend can
+  // show [%] [avatar] [name in role colour] — instantly links the
+  // visual share to a face, and the role-coloured name carries the
+  // role meaning without the OWNER/COHOST sub-label.
   type Segment = {
     id: string;
     name: string;
+    avatar: string | null;
     role: string;
     percent: number;
     color: string;
@@ -164,6 +161,7 @@ export function TeamSection({
     segments.push({
       id: ownerCreator.id,
       name: ownerCreator.name,
+      avatar: ownerCreator.avatar ?? null,
       role: "Owner",
       percent: liveOwnerSplit,
       color: "#FF6130",
@@ -174,6 +172,7 @@ export function TeamSection({
     segments.push({
       id: c.id,
       name: c.name,
+      avatar: c.avatar ?? null,
       role: "Cohost",
       percent: singleCohort && c.id === singleCohort.id ? cohortSplit : c.splitPercent,
       color: "#0891b2",
@@ -250,11 +249,14 @@ export function TeamSection({
           Sits BELOW the rows now (polish v12.L.4). Legend dropped the
           OWNER / COHOST sub-labels — the rows above already establish
           that. % stays colour-coded (orange for owner, dark cyan for
-          cohost) so the visual tie back to the rows is preserved. */}
-      <div className="mt-6 pt-6" style={{ borderTop: "1px solid rgba(15,34,41,0.06)" }}>
-        <div className="flex items-center justify-evenly flex-wrap gap-y-8">
+          cohost) so the visual tie back to the rows is preserved.
+          Polish v12.M.1: more breathing room around the block
+          (mt-6 pt-6 → mt-10 pt-10, plus py-4 around the cluster) so
+          the donut doesn't crowd the rows above or the section edge. */}
+      <div className="mt-10 pt-10 pb-2" style={{ borderTop: "1px solid rgba(15,34,41,0.06)" }}>
+        <div className="flex items-center justify-evenly flex-wrap gap-x-10 gap-y-8 py-2">
           <TeamDonut segments={segments} size={240} />
-          <div className="min-w-[260px] space-y-6">
+          <div className="min-w-[280px] space-y-6">
             {segments.map((seg) => (
               <div key={seg.id} className="flex items-center gap-4">
                 <span
@@ -263,9 +265,28 @@ export function TeamSection({
                 >
                   {seg.percent}%
                 </span>
+                {/* Polish v12.M.2: avatar between % and name. Faces ground
+                    the percentage in a person, not an abstract slice. */}
+                {seg.avatar ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={seg.avatar}
+                    alt=""
+                    className="w-8 h-8 rounded-full object-cover shrink-0"
+                  />
+                ) : (
+                  <div
+                    className="w-8 h-8 rounded-full shrink-0 flex items-center justify-center"
+                    style={{ backgroundColor: `${seg.color}20` }}
+                  >
+                    <span className="text-xs font-black" style={{ color: seg.color }}>{seg.name[0]}</span>
+                  </div>
+                )}
+                {/* Name colour-matched to the percentage — visually
+                    grouped as one statement: "59% Yves 2" in orange. */}
                 <p
                   className="text-base font-bold font-headline truncate leading-none"
-                  style={{ color: "#0F2229" }}
+                  style={{ color: seg.color }}
                 >
                   {seg.name}
                 </p>

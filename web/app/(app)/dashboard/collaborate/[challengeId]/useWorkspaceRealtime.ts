@@ -212,18 +212,7 @@ export function useWorkspaceRealtime({
           table: "app_challenge_cohost",
           filter: `challenge_id=eq.${challengeId}`,
         },
-        (payload) => {
-          // TEMP polish v11 diag: log split UPDATE events to confirm
-          // realtime delivery on the cohost side. Remove once we
-          // verify the chain.
-          // eslint-disable-next-line no-console
-          console.log("[realtime] app_challenge_cohost UPDATE", {
-            new: payload.new,
-            old: payload.old,
-            time: new Date().toISOString(),
-          });
-          router.refresh();
-        },
+        () => router.refresh(),
       )
       .on(
         "postgres_changes",
