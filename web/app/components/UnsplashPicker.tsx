@@ -26,7 +26,7 @@ interface UnsplashPickerProps {
 const QUICK_QUERIES = [
   "fitness", "yoga", "running", "strength",
   "stretching", "outdoors", "calm", "nature",
-  "ocean", "mountain", "urban", "abstract",
+  "mountain", "abstract",
 ];
 
 const PER_PAGE = 30; // Unsplash max — was 20, +50% per fetch for free.
