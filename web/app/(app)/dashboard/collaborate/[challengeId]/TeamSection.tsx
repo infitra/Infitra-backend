@@ -215,14 +215,44 @@ export function TeamSection({
           to the previous vertical row layout. */}
       <div className="space-y-3">
         {creators.length === 2 ? (
+          /* Polish v12.N (revised): the previous gradient was too
+             subtle to register as a connection. Three changes to
+             make the team band actually read as one piece:
+             - Gradient opacity bumped from 0.05/0.07 → 0.14/0.18 so
+               the orange→cyan band is visibly present.
+             - Wrapper padding p-3 → p-5 and inner gap gap-3 → gap-6
+               so the band has visible breathing space around AND
+               between the cards.
+             - A "connector ribbon" — a 3px horizontal gradient line
+               drawn BEHIND the cards at vertical midpoint, edge to
+               edge. The 92%-opaque cards mostly veil it where they
+               cover, but in the gap between them the ribbon is
+               clearly visible, reading as "two cards holding hands."
+          */
           <div
-            className="rounded-2xl p-3"
+            className="relative rounded-2xl p-5"
             style={{
               background:
-                "linear-gradient(to right, rgba(255,97,48,0.05), rgba(156,240,255,0.07))",
+                "linear-gradient(to right, rgba(255,97,48,0.14), rgba(156,240,255,0.18))",
             }}
           >
-            <div className="grid grid-cols-2 gap-3">
+            {/* Connector ribbon — behind the cards, visible in the gap */}
+            <div
+              aria-hidden="true"
+              className="absolute pointer-events-none"
+              style={{
+                top: "50%",
+                left: 20,
+                right: 20,
+                height: 3,
+                transform: "translateY(-50%)",
+                borderRadius: 999,
+                background: "linear-gradient(to right, #FF6130, #9CF0FF)",
+                opacity: 0.7,
+                zIndex: 0,
+              }}
+            />
+            <div className="grid grid-cols-2 gap-6 relative" style={{ zIndex: 1 }}>
               {creators.map((creator) => (
                 <CreatorPortraitCard
                   key={creator.id}
@@ -378,11 +408,16 @@ export function TeamSection({
         )}
       </div>
 
-      <SectionAttribution
-        fields={TEAM_ATTRIBUTION_FIELDS}
-        activity={activity}
-        profiles={profileMap}
-      />
+      {/* Polish v12.O: breathing room between donut block and the
+          "edited at" attribution underneath — was sitting too close,
+          felt cramped against the donut. */}
+      <div className="mt-6">
+        <SectionAttribution
+          fields={TEAM_ATTRIBUTION_FIELDS}
+          activity={activity}
+          profiles={profileMap}
+        />
+      </div>
     </div>
   );
 }
