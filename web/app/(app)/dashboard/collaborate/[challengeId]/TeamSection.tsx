@@ -205,41 +205,73 @@ export function TeamSection({
         they own. Topics help participants know who to ask about what.
       </p>
 
-      {/* Polish v12.L.4: creator rows come FIRST now — people before
-          money. The rows establish who is who (owner / cohost via the
-          role label inside each row + the role-coloured details);
-          THEN the donut block below shows the split. This way by the
-          time the legend appears, the user already knows who's who,
-          so the legend drops its "OWNER / COHOST" sub-labels and just
-          shows `[%] [name]`. */}
+      {/* Polish v12.N: when there are exactly 2 creators (the common
+          pilot shape: owner + 1 cohost), display them SIDE-BY-SIDE
+          as portrait cards on a shared orange→cyan gradient band.
+          The gradient unifies the two halves into one team band
+          without needing an explicit connector character; each card
+          is the full portrait of one person.
+          For 1 creator (solo draft) or 3+ creators (rare), fall back
+          to the previous vertical row layout. */}
       <div className="space-y-3">
-        {creators.map((creator) => (
-          <CreatorRowCard
-            key={creator.id}
-            creator={creator}
-            topics={topicsByCreator[creator.id] ?? []}
-            displayedSplit={creator.role === "owner" ? ownerSplit : creator.splitPercent}
-            ownerSplit={ownerSplit}
-            canEdit={canEdit}
-            canManageCollaboration={canManageCollaboration}
-            // Only render the in-row slider when there are 2+ cohorts;
-            // single-cohort case has the slider under the donut.
-            showSliderInRow={cohorts.length > 1}
-            onTopicsCommit={(topics) => onTopicsCommit(creator.id, topics)}
-            onSplitCommit={
-              creator.role === "cohost"
-                ? (split) => onCohostSplitCommit(creator.id, split)
-                : undefined
-            }
-            onRemove={
-              creator.role === "cohost" && canManageCollaboration && onCohostRemove
-                ? () => onCohostRemove(creator.id)
-                : undefined
-            }
-          />
-        ))}
+        {creators.length === 2 ? (
+          <div
+            className="rounded-2xl p-3"
+            style={{
+              background:
+                "linear-gradient(to right, rgba(255,97,48,0.05), rgba(156,240,255,0.07))",
+            }}
+          >
+            <div className="grid grid-cols-2 gap-3">
+              {creators.map((creator) => (
+                <CreatorPortraitCard
+                  key={creator.id}
+                  creator={creator}
+                  topics={topicsByCreator[creator.id] ?? []}
+                  canEdit={canEdit}
+                  canManageCollaboration={canManageCollaboration}
+                  onTopicsCommit={(topics) => onTopicsCommit(creator.id, topics)}
+                  onRemove={
+                    creator.role === "cohost" && canManageCollaboration && onCohostRemove
+                      ? () => onCohostRemove(creator.id)
+                      : undefined
+                  }
+                />
+              ))}
+            </div>
+          </div>
+        ) : (
+          creators.map((creator) => (
+            <CreatorRowCard
+              key={creator.id}
+              creator={creator}
+              topics={topicsByCreator[creator.id] ?? []}
+              displayedSplit={creator.role === "owner" ? ownerSplit : creator.splitPercent}
+              ownerSplit={ownerSplit}
+              canEdit={canEdit}
+              canManageCollaboration={canManageCollaboration}
+              // Only render the in-row slider when there are 2+ cohorts;
+              // single-cohort case has the slider under the donut.
+              showSliderInRow={cohorts.length > 1}
+              onTopicsCommit={(topics) => onTopicsCommit(creator.id, topics)}
+              onSplitCommit={
+                creator.role === "cohost"
+                  ? (split) => onCohostSplitCommit(creator.id, split)
+                  : undefined
+              }
+              onRemove={
+                creator.role === "cohost" && canManageCollaboration && onCohostRemove
+                  ? () => onCohostRemove(creator.id)
+                  : undefined
+              }
+            />
+          ))
+        )}
 
-        {/* Pending invitees — display only */}
+        {/* Pending invitees — stacked below, dashed-border treatment
+            signals "not in the team yet, hovering at the door." Always
+            vertical regardless of how the confirmed creators above
+            are laid out. */}
         {pendingInvites.map((invite) => (
           <PendingRowCard key={invite.id} invite={invite} />
         ))}
@@ -457,7 +489,7 @@ function CreatorRowCard({
               <span style={{ color: roleColor }}>{creator.role}</span>
               <span style={{ color: "#cbd5e1" }}>{" · "}</span>
               <span style={{ color: "#94a3b8" }}>
-                Leads {creator.sessionCount} {creator.sessionCount === 1 ? "session" : "sessions"}
+                {creator.sessionCount} {creator.sessionCount === 1 ? "session" : "sessions"} assigned
               </span>
             </p>
           </div>
@@ -602,6 +634,167 @@ function CreatorRowCard({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────
+// CreatorPortraitCard — vertical portrait of one creator. Used in
+// the 2-creator side-by-side layout (polish v12.N) so each card
+// gets full width for its topics input and the row block reads as
+// "two halves of one team" on the shared gradient band.
+//
+// Does NOT carry the in-row split slider — the 2-creator case is
+// always the single-cohost case, and that slider lives in the
+// donut block at the section level.
+// ─────────────────────────────────────────────────────────────────
+
+function CreatorPortraitCard({
+  creator,
+  topics,
+  canEdit,
+  canManageCollaboration: _canManageCollaboration,
+  onTopicsCommit,
+  onRemove,
+}: {
+  creator: CreatorRow;
+  topics: string[];
+  canEdit: boolean;
+  canManageCollaboration: boolean;
+  onTopicsCommit: (topics: string[]) => void;
+  onRemove?: () => void;
+}) {
+  const roleColor = creator.role === "owner" ? "#FF6130" : "#0891b2";
+
+  // Topics local-wins sync (same shape as CreatorRowCard).
+  const topicsString = topicsToString(topics);
+  const [topicsLocal, setTopicsLocal] = useState(topicsString);
+  const topicsDirty = useRef(false);
+  const lastTopicsProp = useRef(topicsString);
+  useEffect(() => {
+    if (topicsString !== lastTopicsProp.current) {
+      lastTopicsProp.current = topicsString;
+      if (!topicsDirty.current) setTopicsLocal(topicsString);
+    }
+  }, [topicsString]);
+
+  return (
+    <div
+      className="p-4 rounded-xl relative"
+      style={{
+        backgroundColor: "rgba(255,255,255,0.92)",
+        border: "1px solid rgba(15,34,41,0.06)",
+      }}
+    >
+      {/* Remove button — top-right corner. Only rendered for cohost
+          rows where the viewer has manage permission. Owner card has
+          empty space here, which is fine — the gradient band ties
+          both cards visually so missing the × doesn't read as
+          asymmetric. */}
+      {onRemove && (
+        <button
+          type="button"
+          onClick={() => {
+            if (confirm(`Remove ${creator.name} from the collaboration?`)) {
+              onRemove();
+            }
+          }}
+          className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center text-[#94a3b8] hover:text-red-500 hover:bg-red-50 transition-colors"
+          title={`Remove ${creator.name}`}
+          aria-label={`Remove ${creator.name}`}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+            <path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      )}
+
+      {/* Identity stack — avatar + name + role · sessions-assigned */}
+      <div className="flex items-center gap-3">
+        {creator.avatar ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={creator.avatar}
+            alt=""
+            className="w-20 h-20 rounded-full object-cover shrink-0"
+          />
+        ) : (
+          <div
+            className="w-20 h-20 rounded-full flex items-center justify-center shrink-0"
+            style={{ backgroundColor: `${roleColor}20` }}
+          >
+            <span className="text-2xl font-black font-headline" style={{ color: roleColor }}>
+              {creator.name?.[0] ?? "?"}
+            </span>
+          </div>
+        )}
+        <div className="min-w-0 flex-1">
+          <p className="text-base font-bold font-headline truncate leading-tight" style={{ color: "#0F2229" }}>
+            {creator.name}
+          </p>
+          <p className="text-[10px] font-bold font-headline uppercase tracking-wider mt-1">
+            <span style={{ color: roleColor }}>{creator.role}</span>
+            <span style={{ color: "#cbd5e1" }}>{" · "}</span>
+            <span style={{ color: "#94a3b8" }}>
+              {creator.sessionCount} {creator.sessionCount === 1 ? "session" : "sessions"} assigned
+            </span>
+          </p>
+        </div>
+      </div>
+
+      {/* Topics — full card width below the identity. */}
+      <div className="mt-4">
+        <p
+          className="text-[10px] font-bold font-headline uppercase tracking-wider mb-1.5"
+          style={{ color: "#94a3b8" }}
+        >
+          Topics owned
+        </p>
+        {canEdit ? (
+          <input
+            type="text"
+            value={topicsLocal}
+            onChange={(e) => {
+              topicsDirty.current = true;
+              setTopicsLocal(e.target.value);
+            }}
+            onBlur={() => {
+              const next = stringToTopics(topicsLocal);
+              if (topicsToString(next) !== topicsToString(topics)) {
+                onTopicsCommit(next);
+              }
+              setTopicsLocal(topicsToString(next));
+              topicsDirty.current = false;
+            }}
+            placeholder="training, strength, recovery"
+            className="w-full rounded-lg p-2.5 text-sm font-bold font-headline focus:outline-none"
+            style={{
+              border: "1px solid rgba(15,34,41,0.10)",
+              color: "#0F2229",
+              backgroundColor: "white",
+            }}
+          />
+        ) : topics.length > 0 ? (
+          <div className="flex flex-wrap gap-1">
+            {topics.map((topic, i) => (
+              <span
+                key={i}
+                className="text-[11px] px-2 py-0.5 rounded-md font-bold font-headline"
+                style={{
+                  backgroundColor: `${roleColor}15`,
+                  color: roleColor,
+                }}
+              >
+                {topic}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p className="text-[11px] italic" style={{ color: "#94a3b8" }}>
+            No topics yet
+          </p>
+        )}
+      </div>
     </div>
   );
 }
