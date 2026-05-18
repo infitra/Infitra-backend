@@ -225,7 +225,7 @@ export function TeamSection({
              so it reads as "attached," not floating).
 
              One bold visible element doing the connection work, no
-             fade, no layered subtlety. */}
+             fade, no layered subtlety. */
           <div className="relative grid grid-cols-2 gap-6">
             {/* Connector — 2px solid gradient line, ~40px wide,
                 centered in the gap. Pure orange on the owner side
