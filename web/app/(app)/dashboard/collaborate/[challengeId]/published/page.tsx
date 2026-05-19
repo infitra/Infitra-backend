@@ -1,15 +1,30 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { PublicChallengeHero } from "@/app/(app)/challenges/[id]/PublicChallengeHero";
+import { PublicPromiseBlock } from "@/app/(app)/challenges/[id]/PublicPromiseBlock";
+import { PublicCreatorsBlock } from "@/app/(app)/challenges/[id]/PublicCreatorsBlock";
+import { PublicProgramRhythm } from "@/app/(app)/challenges/[id]/PublicProgramRhythm";
+import { PublishedShareBar } from "./PublishedShareBar";
 
 export const metadata = { title: "Collaboration Published — INFITRA" };
 
 /**
- * Post-publish celebration page. The owner lands here right after hitting
- * Publish; cohosts can also navigate here to see the same summary. Purely
- * celebratory: no edit affordances, no deep links into session overviews,
- * one clear CTA back to the dashboard. Avoids the "nested" feeling the
- * generic challenge preview page had right after publish.
+ * Post-publish celebration / preview page.
+ *
+ * Bundle 4: replaces the legacy "you published, here are some stats"
+ * confirmation card with a full preview of the public buyer page that
+ * participants will see. The creator gets a celebratory header on top,
+ * a copyable share link bar (sticky on scroll), and the same
+ * components used at /challenges/[id] composed inline so they see
+ * exactly what buyers see.
+ *
+ * Single source of truth for the buyer experience: PublicChallengeHero,
+ * PublicPromiseBlock, PublicCreatorsBlock, PublicProgramRhythm all
+ * come from /challenges/[id]/ and are reused here. No PublicCommitBlock
+ * because a creator isn't going to buy their own program — instead the
+ * commit footer is replaced with a "Share this with your community"
+ * block.
  */
 export default async function PublishedCelebrationPage({
   params,
@@ -18,19 +33,22 @@ export default async function PublishedCelebrationPage({
 }) {
   const { challengeId } = await params;
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: challenge } = await supabase
-    .from("app_challenge")
-    .select("id, title, description, start_date, end_date, price_cents, currency, status, owner_id, image_url")
-    .eq("id", challengeId)
-    .single();
+  // Buyer view — same source as the public page (single source of truth)
+  const { data: buyerView } = await supabase
+    .from("vw_challenge_buyer_view")
+    .select("*")
+    .eq("challenge_id", challengeId)
+    .maybeSingle();
 
-  if (!challenge) redirect("/dashboard");
+  if (!buyerView) redirect("/dashboard");
 
-  // Viewer must be a party to the collaboration.
-  const isOwner = challenge.owner_id === user.id;
+  // Viewer must be a party to the collaboration (owner or cohost).
+  const isOwner = buyerView.owner_id === user.id;
   const { data: cohostRow } = await supabase
     .from("app_challenge_cohost")
     .select("cohost_id")
@@ -39,143 +57,184 @@ export default async function PublishedCelebrationPage({
     .maybeSingle();
   if (!isOwner && !cohostRow) redirect("/dashboard");
 
-  // If somehow we land here before the publish actually completed, bounce
-  // back to the workspace — otherwise the celebration would be a lie.
-  if (challenge.status !== "published") {
+  // If publish hasn't actually completed yet, bounce back to the workspace.
+  if (buyerView.status !== "published") {
     redirect(`/dashboard/collaborate/${challengeId}`);
   }
 
-  // Parties (for the "signed by" row)
+  // All cohorts + profiles (for the creator block)
   const { data: cohostRows } = await supabase
     .from("app_challenge_cohost")
-    .select("cohost_id, split_percent")
+    .select("cohost_id")
     .eq("challenge_id", challengeId);
-  const cohosts = cohostRows ?? [];
-  const partyIds = [challenge.owner_id, ...cohosts.map((c: any) => c.cohost_id)];
-  const { data: profiles } = await supabase
+  const cohostIds: string[] = (cohostRows ?? []).map((c: { cohost_id: string }) => c.cohost_id);
+
+  const allCreatorIds = [buyerView.owner_id, ...cohostIds];
+  const { data: creatorProfiles } = await supabase
     .from("app_profile")
-    .select("id, display_name, avatar_url")
-    .in("id", partyIds);
-  const profileMap: Record<string, { name: string; avatar: string | null }> = {};
-  for (const p of profiles ?? []) profileMap[p.id] = { name: p.display_name ?? "Creator", avatar: p.avatar_url };
+    .select("id, display_name, avatar_url, bio, tagline, username")
+    .in("id", allCreatorIds);
 
-  // Session count (display only; no links out)
-  const { data: sessionLinks } = await supabase
+  const profileById = new Map<string, {
+    id: string;
+    display_name: string | null;
+    avatar_url: string | null;
+    bio: string | null;
+    tagline: string | null;
+    username: string | null;
+  }>();
+  for (const p of creatorProfiles ?? []) {
+    profileById.set((p as any).id, p as any);
+  }
+
+  const owner = profileById.get(buyerView.owner_id);
+  const cohostProfiles = cohostIds
+    .map((cid) => profileById.get(cid))
+    .filter((p): p is NonNullable<typeof p> => !!p);
+
+  const creators = [
+    ...(owner ? [{ ...owner, role: "owner" as const }] : []),
+    ...cohostProfiles.map((p) => ({ ...p, role: "cohost" as const })),
+  ];
+
+  // Sessions with cover + description
+  const { data: sessionRows } = await supabase
     .from("app_challenge_session")
-    .select("session_id")
+    .select(
+      "session_id, app_session(id, title, description, image_url, start_time, duration_minutes)",
+    )
     .eq("challenge_id", challengeId);
-  const sessionCount = sessionLinks?.length ?? 0;
 
-  const priceCHF = (challenge.price_cents ?? 0) / 100;
-  const startDate = new Date(challenge.start_date + "T00:00:00");
-  const endDate = new Date(challenge.end_date + "T00:00:00");
+  const sessions = ((sessionRows ?? [])
+    .map((r: any) => r.app_session)
+    .filter(Boolean) as Array<{
+      id: string;
+      title: string;
+      description: string | null;
+      image_url: string | null;
+      start_time: string;
+      duration_minutes: number;
+    }>)
+    .sort(
+      (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime(),
+    );
+
+  const topicsByCreator: Record<string, string[]> =
+    (buyerView.topic_ownership as Record<string, string[]>) ?? {};
 
   return (
-    <div className="py-16 max-w-2xl mx-auto px-4">
-      {/* Celebration hero */}
-      <div className="text-center mb-10">
-        {/* Live-dot animation — calm, not confetti-loud */}
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6"
-             style={{ backgroundColor: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.3)" }}>
-          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-xs font-black font-headline uppercase tracking-wider" style={{ color: "#047857" }}>
-            Now Live
-          </span>
-        </div>
-
-        <h1 className="text-4xl md:text-5xl font-black font-headline text-[#0F2229] tracking-tight leading-tight mb-3">
-          Your collaboration is<br />out in the world.
-        </h1>
-        <p className="text-base text-[#64748b] max-w-lg mx-auto">
-          Everyone&apos;s signed, and <span className="font-bold text-[#0F2229]">{challenge.title}</span> is now visible to participants.
-        </p>
-      </div>
-
-      {/* Challenge summary card — mirrors the tone of the locked envelope
-          but in the "done!" color family. */}
-      <div className="rounded-3xl overflow-hidden mb-8" style={{
-        backgroundColor: "#A8D5DC",
-        border: "1px solid rgba(8,145,178,0.3)",
-      }}>
-        {challenge.image_url && (
-          <div className="aspect-[3/1] w-full overflow-hidden">
-            <img src={challenge.image_url} alt="" className="w-full h-full object-cover" />
-          </div>
-        )}
-
-        <div className="p-6 bg-white">
-          <h2 className="text-2xl font-black font-headline text-[#0F2229] tracking-tight mb-4">
-            {challenge.title}
-          </h2>
-
-          {/* Key facts — no session links, just the shape of the collab */}
-          <div className="grid grid-cols-2 gap-3 mb-6">
-            <div className="px-4 py-3 rounded-xl" style={{ backgroundColor: "rgba(15,34,41,0.04)" }}>
-              <p className="text-[10px] font-bold font-headline uppercase tracking-wider mb-1" style={{ color: "rgba(15,34,41,0.45)" }}>Runs</p>
-              <p className="text-sm font-bold font-headline text-[#0F2229]" suppressHydrationWarning>
-                {startDate.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
-                {" → "}
-                {endDate.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
-              </p>
-            </div>
-            <div className="px-4 py-3 rounded-xl" style={{ backgroundColor: "rgba(15,34,41,0.04)" }}>
-              <p className="text-[10px] font-bold font-headline uppercase tracking-wider mb-1" style={{ color: "rgba(15,34,41,0.45)" }}>Sessions</p>
-              <p className="text-sm font-bold font-headline text-[#0F2229]">{sessionCount}</p>
-            </div>
-            <div className="px-4 py-3 rounded-xl" style={{ backgroundColor: "rgba(15,34,41,0.04)" }}>
-              <p className="text-[10px] font-bold font-headline uppercase tracking-wider mb-1" style={{ color: "rgba(15,34,41,0.45)" }}>Price</p>
-              <p className="text-sm font-bold font-headline text-[#0F2229]">
-                {priceCHF > 0 ? `${challenge.currency} ${priceCHF.toFixed(2)}` : "Free"}
-              </p>
-            </div>
-            <div className="px-4 py-3 rounded-xl" style={{ backgroundColor: "rgba(15,34,41,0.04)" }}>
-              <p className="text-[10px] font-bold font-headline uppercase tracking-wider mb-1" style={{ color: "rgba(15,34,41,0.45)" }}>Collaborators</p>
-              <p className="text-sm font-bold font-headline text-[#0F2229]">{cohosts.length + 1}</p>
-            </div>
-          </div>
-
-          {/* Signed by row */}
-          <div>
-            <p className="text-[10px] font-bold font-headline text-[#94a3b8] uppercase tracking-wider mb-2">Signed by</p>
-            <div className="flex items-center gap-2 flex-wrap">
-              {/* Owner */}
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full" style={{ backgroundColor: "rgba(255,97,48,0.08)" }}>
-                {profileMap[challenge.owner_id]?.avatar ? (
-                  <img src={profileMap[challenge.owner_id]!.avatar!} alt="" className="w-5 h-5 rounded-full object-cover" />
-                ) : (
-                  <div className="w-5 h-5 rounded-full bg-orange-100 flex items-center justify-center">
-                    <span className="text-[9px] font-black text-orange-700">{profileMap[challenge.owner_id]?.name[0] ?? "?"}</span>
-                  </div>
-                )}
-                <span className="text-xs font-bold text-[#0F2229]">{profileMap[challenge.owner_id]?.name}</span>
-              </div>
-              {cohosts.map((c: any) => (
-                <div key={c.cohost_id} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full" style={{ backgroundColor: "rgba(8,145,178,0.08)" }}>
-                  {profileMap[c.cohost_id]?.avatar ? (
-                    <img src={profileMap[c.cohost_id]!.avatar!} alt="" className="w-5 h-5 rounded-full object-cover" />
-                  ) : (
-                    <div className="w-5 h-5 rounded-full bg-cyan-100 flex items-center justify-center">
-                      <span className="text-[9px] font-black text-cyan-700">{profileMap[c.cohost_id]?.name[0] ?? "?"}</span>
-                    </div>
-                  )}
-                  <span className="text-xs font-bold text-[#0F2229]">{profileMap[c.cohost_id]?.name}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* CTA — exactly one, unambiguous, back to dashboard. */}
-      <div className="flex justify-center">
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#FCFAF6" }}>
+      {/* Celebratory header strip — sits above the public preview.
+          Sticky share bar takes over once the user scrolls past it. */}
+      <header className="px-6 lg:px-12 py-10 lg:py-14 text-center">
         <Link
           href="/dashboard"
-          className="inline-block px-8 py-3.5 rounded-full text-white text-base font-black font-headline"
-          style={{ backgroundColor: "#FF6130", boxShadow: "0 4px 14px rgba(255,97,48,0.35)" }}
+          className="text-xs font-bold font-headline mb-4 inline-block hover:underline"
+          style={{ color: "#94a3b8" }}
         >
-          Back to Dashboard
+          ← Back to dashboard
         </Link>
-      </div>
+        <p
+          className="text-[11px] font-bold font-headline uppercase tracking-[0.25em] mb-3"
+          style={{ color: "#FF6130" }}
+        >
+          Published
+        </p>
+        <h1
+          className="text-3xl sm:text-4xl lg:text-5xl font-black font-headline tracking-tight"
+          style={{ color: "#0F2229" }}
+        >
+          You&apos;re live.
+        </h1>
+        <p
+          className="text-base lg:text-lg mt-4 max-w-xl mx-auto leading-relaxed"
+          style={{ color: "#475569" }}
+        >
+          This is what participants will see. Share the link with your community.
+        </p>
+      </header>
+
+      {/* Sticky share bar — visible while the creator scrolls through
+          the preview, gives them a constant copyable link + view
+          public page action. */}
+      <PublishedShareBar challengeId={challengeId} title={buyerView.title} />
+
+      {/* The actual public preview — same components as /challenges/[id] */}
+      <main className="flex-1">
+        <PublicChallengeHero
+          title={buyerView.title}
+          imageUrl={buyerView.image_url}
+          startDate={buyerView.start_date}
+          endDate={buyerView.end_date}
+          sessionCount={sessions.length}
+          creators={creators}
+        />
+
+        {buyerView.promise_text && buyerView.promise_text.trim() && (
+          <PublicPromiseBlock
+            promise={buyerView.promise_text}
+            creators={creators}
+          />
+        )}
+
+        <PublicCreatorsBlock
+          creators={creators}
+          topicsByCreator={topicsByCreator}
+        />
+
+        <PublicProgramRhythm
+          startDate={buyerView.start_date}
+          endDate={buyerView.end_date}
+          weeklyArc={(buyerView.weekly_arc as Array<{ week: number; theme: string }>) ?? []}
+          sessions={sessions}
+        />
+      </main>
+
+      {/* Creator-only commit-replacement footer: "Share this" block
+          instead of a buy CTA. Mirrors the buyer page's commit beat
+          spacing so the page rhythm is preserved. */}
+      <section
+        className="px-6 lg:px-12 py-16 lg:py-24"
+        style={{
+          background:
+            "linear-gradient(180deg, #FCFAF6 0%, rgba(255,97,48,0.04) 100%)",
+        }}
+      >
+        <div className="max-w-2xl mx-auto text-center">
+          <p
+            className="text-[10px] font-bold font-headline uppercase tracking-[0.25em] mb-3"
+            style={{ color: "#94a3b8" }}
+          >
+            Next step
+          </p>
+          <h2
+            className="text-3xl lg:text-4xl font-black font-headline tracking-tight mb-4"
+            style={{ color: "#0F2229" }}
+          >
+            Get the word out
+          </h2>
+          <p
+            className="text-base lg:text-lg leading-relaxed mb-8"
+            style={{ color: "#475569" }}
+          >
+            Your program lives at the link above. Share it in your community,
+            DMs, or wherever your people are.
+          </p>
+          <Link
+            href={`/challenges/${challengeId}`}
+            className="inline-block px-6 py-3.5 rounded-full text-white text-sm font-black font-headline transition-transform hover:scale-[1.01]"
+            style={{
+              backgroundColor: "#FF6130",
+              boxShadow:
+                "0 6px 20px rgba(255,97,48,0.40), 0 2px 6px rgba(255,97,48,0.20)",
+            }}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Open public page ↗
+          </Link>
+        </div>
+      </section>
     </div>
   );
 }
