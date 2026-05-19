@@ -420,10 +420,24 @@ function SignatureRow({
   signedAt: string | null;
   avatar: string | null;
 }) {
+  // Polish v12.T: branch on whether this party has actually signed.
+  // Previously the green "✓ Signed" label rendered unconditionally and
+  // `signedAt` only conditioned the timestamp underneath — so a cohost
+  // with no acceptance still showed as "Signed", which contradicted
+  // the workspace's "0/1 SIGNATURES · Pending" state. Now the row's
+  // background, border, and status pill all switch on signedAt:
+  //   signed   → green tile + "✓ Signed" + timestamp
+  //   pending  → yellow/amber tile + "⏳ Pending" (matches the
+  //              workspace's ContractStatusBanner so both views agree)
+  const isSigned = !!signedAt;
+  const tile = isSigned
+    ? { bg: "rgba(21,128,61,0.04)", border: "rgba(21,128,61,0.15)" }
+    : { bg: "rgba(234,179,8,0.06)", border: "rgba(234,179,8,0.20)" };
+
   return (
     <div
       className="flex items-center gap-3 p-3 rounded-xl"
-      style={{ backgroundColor: "rgba(21,128,61,0.04)", border: "1px solid rgba(21,128,61,0.15)" }}
+      style={{ backgroundColor: tile.bg, border: `1px solid ${tile.border}` }}
     >
       {avatar ? (
         <img src={avatar} alt="" className="w-9 h-9 rounded-full object-cover shrink-0" />
@@ -439,14 +453,24 @@ function SignatureRow({
         </p>
       </div>
       <div className="shrink-0 text-right">
-        <p
-          className="inline-flex items-center gap-1 text-[11px] font-black font-headline"
-          style={{ color: "#15803d" }}
-        >
-          ✓ Signed
-        </p>
-        {signedAt && (
-          <p className="text-[10px] text-[#94a3b8] mt-0.5">{formatDateTime(signedAt)}</p>
+        {isSigned ? (
+          <>
+            <p
+              className="inline-flex items-center gap-1 text-[11px] font-black font-headline"
+              style={{ color: "#15803d" }}
+            >
+              ✓ Signed
+            </p>
+            <p className="text-[10px] text-[#94a3b8] mt-0.5">{formatDateTime(signedAt!)}</p>
+          </>
+        ) : (
+          <p
+            className="inline-flex items-center gap-1 text-[11px] font-black font-headline"
+            style={{ color: "#a16207" }}
+          >
+            <span>⏳</span>
+            <span>Pending</span>
+          </p>
         )}
       </div>
     </div>
