@@ -19,6 +19,14 @@
 - **Collab invite card polish + pending-invitee RLS + split-default fix**
 - **Bundle 2.11** — identity flows, session weight, invite splits
 - **Bundle 2.12** — challenge space palette inversion to match dashboard
+- **Bundle 3** — workspace restructure: Promise, Weekly Arc (Program Rhythm), Who Handles What (Topics), Intro Prompt, edit-log split UI all shipped
+- **Bundle 3 polish v1-v12.AC** — heavy iteration on the workspace surface based on dogfooding feedback. Notable: dual-color split slider, Realtime cohost+session propagation, side-by-side team portraits with role-coloured details, hero session images, locked workspace = the contract (deleted `/contract` route), accept/decline flow with prominent decline-reason callout, celebratory all-signatures-in state with per-card orange edges. Four propagation paths added during v12.U-v12.Z as band-aids for lock-state realtime unreliability — these get removed in Bundle 3.5 Phase 6.
+
+### What's next: Bundle 3.5 — workspace live-collab refactor
+
+Bundle 3 shipped functionally but the live-collab architecture underneath is band-aided. Adding more `router.refresh()` propagation paths doesn't fix the root cause: every realtime event triggers a full server re-render with ~10 sequential queries. Bundle 3.5 rearchitects this to client-state-as-live-cache with Zustand + direct payload mutation + optimistic UI. Same pattern then inherited natively by Bundle 5 (cohort space) and Bundle 8 (live session UI).
+
+Not blocking pilot ship — current architecture works, just slowly. Doing it now because: (a) workspace is the most state-heavy page and we'd refactor anyway, (b) cohort space (Bundle 5+) NEEDS this pattern from day one, (c) easier to build with the right architecture than retrofit later. Frontend phases zero backend risk; backend phase (RPC simplification) is separate and only attempted after frontend phases validated in production.
 
 ### What's still open from v1 (now folded into v3)
 
@@ -1207,6 +1215,251 @@ Render functions in SQL (`render_session_reminder_html`, etc.) populate the HTML
 
 ---
 
+### Bundle 3.5 — Workspace live-collab refactor
+
+**Scope:** End-to-end rearchitecture of how the workspace handles live collaboration state. Replaces the current `router.refresh()`-on-every-event pattern with a client-state-as-live-cache model: realtime payloads mutate React state directly, mutations are optimistic for the actor, and a state container (Zustand) owns the local truth. Backend lock RPC simplification shipped as a separate cautious phase. Not blocking pilot ship (current architecture works, just slowly) but a prerequisite for cohort space (Bundle 5+), which inherits this pattern.
+
+#### Why this exists
+
+After Bundle 3 polish (v12.A-AC), the workspace shipped functionally but with significant live-collab latency issues:
+
+- Lock action: 5-30s perceived (server RPC heavy + cold start + 10 sequential queries on refresh)
+- Cohost-side propagation: unreliable; 4 band-aid realtime paths (app_challenge UPDATE, app_collaboration_contract INSERT, chat system message via window event, page-visibility refresh) all eventually hitting the same expensive `router.refresh()` re-fetch
+- Owner experience: every click waits for the server before any UI feedback
+- Channel health: stale WebSockets silently logged but not reconnected
+
+Adding more propagation paths doesn't fix the root cause — every path calls `router.refresh()` which re-runs the whole page server component and re-fetches ~10 queries. We're throwing away the changed row that realtime hands us in the payload, then re-fetching all data.
+
+#### Architectural shift
+
+**From:** server-state-only — page.tsx server component is source of truth, `router.refresh()` to propagate every change
+**To:** client-state-as-live-cache — server seeds initial state, realtime payloads mutate Zustand state directly, server consulted only on first load + reconciliation
+
+This is the standard pattern for collaborative apps (Linear, Figma, Notion). The realtime payload IS the change — read it directly into local state, sub-100ms perceived latency, no wasted server round-trip.
+
+#### Architecture rules (so this stays inside the "thin frontend" principle)
+
+- **Backend remains source of truth.** All business rules (who can lock, split caps, status transitions) stay in DB constraints / RLS / RPCs.
+- **Frontend may PREDICT backend behavior for UX speed, never DECIDE.** Optimistic UI encodes "this should succeed" — if server rejects, rollback. Same trade-off accepted in v12.J's session-window guard: frontend predicts for UX, backend enforces.
+- **No business logic creep.** State container is plumbing/cache. Realtime → state mapping is plumbing. Optimistic actions encode expected server behavior only for instant feedback.
+- **Server wins disputes.** When local prediction diverges from server reality (RPC error, reconciliation mismatch), server data takes over.
+
+#### Tech choice — Zustand
+
+State container: **Zustand** (~1.2kb, MIT, no dep on any service).
+
+Rationale (vs `useReducer + Context`):
+- Selector-based subscriptions: only components reading the changed slice re-render. Workspace already has ~7-15 consumers; cohort space (Bundle 5) will have 20-50 (chat, presence, reactions, action items). Context-based re-render cascade becomes a real problem at cohort-space scale.
+- Less boilerplate per slice (no action-type union, no reducer switch, no Context provider).
+- Devtools support for diagnosing realtime issues.
+- Established library (~3M weekly downloads, pmndrs collective, used in production by Coinbase + others). MIT license, free forever, no SaaS lock-in, no accounts.
+
+The 1.2kb + ~30min learning curve is a cheap one-time cost vs the alternative of refactoring later when state surface doubles.
+
+#### Scope rules — where this pattern applies
+
+| Page | Apply pattern? | Why |
+|---|---|---|
+| Workspace (Bundle 3) | **Yes** (this bundle) | Heavy live collab, 2-3 concurrent creators editing |
+| Cohort space (Bundle 5+) | **Yes** (build natively when shipping Bundle 5) | Heaviest live collab: 10-50 participants, chat, presence, reactions |
+| Live session UI (Bundle 8) | **Yes** (build natively when shipping Bundle 8) | Real-time reactions, presence, host actions |
+| `/dashboard` (home) | **No** | Read-mostly, rare updates, server-rendered fine |
+| `/challenges/[id]` (public buyer) | **No** | Largely static, no live updates |
+| `/dashboard/sessions/[id]` (session detail) | **No** | Light updates, single realtime subscription is enough |
+| Earnings / payments | **No** | Read-mostly, rare webhook-driven updates |
+
+Pattern reusable utilities (`useChannelHealth`, store-creation helpers, optimistic-mutation patterns) land in `/lib` during this bundle so Bundles 5 + 8 inherit them cheaply.
+
+#### Phase-by-phase plan
+
+Each phase ships as its own commit. Phases 1-4 are frontend-only (zero backend risk, zero migration). Phase 5 is the backend change, surgical, only after 1-4 validated in production. Phase 6 is cleanup.
+
+##### Phase 1 — State container plumbing (no behavior change)
+
+**Effort:** 2-3 hours
+
+**Files to CREATE:**
+- `web/lib/workspace/store.ts` — Zustand store factory, `WorkspaceState` type, slice definitions (challenge, sessions, cohorts, contract, acceptances, declines, activity, profileMap, ui state)
+- `web/lib/workspace/initFromServerProps.ts` — converts server-rendered props to initial store state
+
+**Files to MODIFY:**
+- `web/app/(app)/dashboard/collaborate/[challengeId]/WorkspaceShell.tsx` — instantiate store from initial props, provide via store hook (no Context needed — Zustand stores are accessed via hook directly)
+
+**Files unchanged in this phase:** every consumer component still reads from props. The store exists but isn't consumed yet. This is pure plumbing.
+
+**Install:** `npm install zustand` (single dep, no peer deps).
+
+**Verification:**
+- `npx tsc --noEmit` clean
+- Workspace still renders correctly (no behavioral change)
+- Store is populated correctly from initial props (verify via React DevTools or temporary console log)
+
+##### Phase 2 — Realtime handlers → store dispatches
+
+**Effort:** 4-6 hours
+
+**Files to MODIFY:**
+- `web/app/(app)/dashboard/collaborate/[challengeId]/useWorkspaceRealtime.ts` — each `postgres_changes` handler stops calling `router.refresh()` and instead calls a typed store mutator (e.g., `useWorkspaceStore.getState().applyContractInsert(payload.new)`)
+
+**Specific handler refactors:**
+- `app_workspace_activity` INSERT → `applyActivityInsert(row)`
+- `app_challenge` UPDATE → `applyChallengeUpdate(row)`
+- `app_challenge_session` INSERT/DELETE → `applySessionAdded/applySessionRemoved`
+- `app_session` UPDATE/DELETE → `applySessionUpdate/applySessionRemoved` (client-side filter still applies)
+- `app_session_cohost` INSERT/DELETE → `applySessionCohostChange`
+- `app_challenge_cohost` INSERT/UPDATE/DELETE → `applyCohostChange`
+- `app_collaboration_invite` UPDATE → `applyInviteUpdate`
+- `app_collaboration_contract` INSERT → `applyContractLocked`
+- `app_collaboration_acceptance` INSERT → `applyAcceptanceAdded`
+- `app_collaboration_decline` INSERT → `applyDeclineAdded`
+
+**Files to MODIFY (consumers — read from store instead of props):**
+- `web/app/(app)/dashboard/collaborate/[challengeId]/WorkspaceEditor.tsx` — replace prop reads with `useWorkspaceStore(state => ...)` selectors
+- `TeamSection.tsx`, `ProgramRhythmSection.tsx`, `WorkspaceChat.tsx`, `RecentChangesExpander.tsx`, `ContractStatusBanner.tsx` — same pattern, one component per commit
+
+**Backward-compat during refactor:** for the migration window, the store consumes initial props on mount AND realtime events update it. Server-render props become a one-shot seed. After Phase 2 commits, `router.refresh()` is no longer called from any realtime handler.
+
+**Verification:**
+- Two-browser test: every realtime event must update the partner's UI within sub-second without a full page re-render
+- No regressions in any of: field edit propagation, session add/remove, cohost add/remove, lock/accept/decline/publish
+- Network tab on cohost: no full page re-fetch on partner's edits (just the realtime event payload)
+
+##### Phase 3 — Optimistic mutations
+
+**Effort:** 6-8 hours
+
+**Pattern:** every commit handler in `WorkspaceEditor.tsx` becomes:
+```typescript
+async function commitX(value) {
+  // 1. Optimistic local update
+  const prevState = useWorkspaceStore.getState().captureSnapshot(); // for rollback
+  useWorkspaceStore.getState().applyXOptimistic(value);
+
+  // 2. Server call in background
+  const result = await serverActionX(value);
+
+  // 3. On error, rollback
+  if (result.error) {
+    useWorkspaceStore.getState().restoreSnapshot(prevState);
+    setError(result.error);
+    return;
+  }
+  // 4. On success: no-op (state already reflects truth; realtime echo will reconcile if needed)
+}
+```
+
+**Mutations to make optimistic:**
+- Field edits (title, description, dates, weeks, price, image, promise, weekly_arc, topic_ownership, intro_prompt) — partially optimistic today via `useSyncedField`; formalize through store
+- `lockTerms` → owner sees `Locking…` for split-second then immediately the locked banner + read-only cards. Server runs in background.
+- `confirmTerms` (cohost accept) → cohost sees their row flip to ✓ instantly
+- `requestChanges` (cohost decline) → cohost sees banner flip to "Changes requested", owner gets it via realtime
+- `reactivateDrafting` (owner reopen) → owner sees editable cards instantly
+- `publishChallenge` → owner sees redirect-to-published state instantly
+- `addCohost` / `removeCohost` / `updateCohostSplit`
+- `createChallengeSession` / `updateChallengeSession` / `removeChallengeSession`
+- `addSessionCohost` / `removeSessionCohost`
+
+**Verification per mutation:**
+- Click → UI feedback within 50ms
+- Server takes longer → no visible wait for the actor
+- Server rejects → state rolls back, error surfaces inline
+- Partner browser → realtime echo arrives, state already matches (no-op), no flicker
+
+##### Phase 4 — Channel health + reconnect + reconciliation
+
+**Effort:** 2-4 hours
+
+**Files to CREATE:**
+- `web/lib/realtime/useChannelHealth.ts` — wraps a Supabase channel with status monitoring, exponential-backoff auto-reconnect, exposes `{status, reconnectCount}` for UI indicators
+- `web/lib/workspace/reconcile.ts` — single targeted query to verify local state matches server (run on reconnect + on visibility return + on mount); diff and apply corrections
+
+**Files to MODIFY:**
+- `useWorkspaceRealtime.ts` — wrap subscription with `useChannelHealth`, run reconciliation on reconnect and visibility return
+- `WorkspaceShell.tsx` — small "Reconnecting…" / "Out of sync" pill when channel health degraded; auto-clears when reconnected
+
+**Verification:**
+- Disconnect network for 30s, reconnect → workspace catches up via reconciliation
+- Kill the WebSocket via DevTools → status pill appears, auto-reconnect within seconds
+- Tab in background for hours → on return, reconciliation pulls fresh state without full page re-fetch
+
+##### Phase 5 — Backend lock RPC simplification (surgical, careful)
+
+**Effort:** 3-4 hours plus careful verification
+
+**Only attempted after Phases 1-4 validated in production for at least one full dogfood cycle.**
+
+**Files to CREATE:**
+- `migrations/YYYYMMDD_v3_b3_5_lock_rpc_async_snapshot.sql`
+
+**Migration content:**
+- Add `snapshot_status text` column to `app_collaboration_contract` (default `'pending'`, becomes `'ready'` when snapshot computed)
+- Simplify `lock_contract` to insert the contract row with `snapshot_json = '{}'::jsonb`, `snapshot_text = NULL`, `sha256 = NULL`, `snapshot_status = 'pending'`
+- New `AFTER INSERT` trigger on `app_collaboration_contract` that computes the snapshot JSON + text + sha256 asynchronously and updates the row, flipping status to `'ready'`
+- Migration includes the rollback SQL inline as a comment so it's trivially revertible
+
+**Frontend handling for the brief "pending" window:**
+- Contract banner shows "Finalizing contract..." while `snapshot_status = 'pending'` (typically <500ms)
+- Lock action returns immediately after the INSERT — owner sees locked state without waiting for snapshot
+- Publish action blocked until `snapshot_status = 'ready'` (publish_challenge already validates)
+
+**Caution rules:**
+- Apply migration with rollback SQL prepared first
+- Verify existing contract rows still parse correctly (default `snapshot_status` to `'ready'` for them)
+- Test path: lock → cohost accept → owner publish (with snapshot still pending briefly)
+- Test rollback path: revert migration, verify old behavior restored
+
+**Verification:**
+- Lock action server-side latency: <500ms (was 2-5s)
+- Frontend perceived: instant via optimistic UI from Phase 3 (was 5-30s)
+- Snapshot computation: arrives async, banner indicator confirms when ready
+
+##### Phase 6 — Cleanup / remove band-aids
+
+**Effort:** 1-2 hours
+
+**Files to MODIFY:**
+- `useWorkspaceRealtime.ts` — remove the visibility-change refresh (superseded by Phase 4 reconciliation), remove the `workspace-contract-event` window-event listener (superseded by Phase 2 direct state mutation), remove the secondary `app_collaboration_contract` INSERT subscription IF the primary `app_challenge` UPDATE handler is now reliable via the new architecture
+- `WorkspaceChat.tsx` — stop dispatching `workspace-contract-event` (no longer consumed)
+- `page.tsx` — `export const dynamic = "force-dynamic"` can stay (defensive, no cost) or be removed if the new architecture makes it unnecessary
+
+**Verification:**
+- Full two-browser test pass after band-aid removal — confirms the proper architecture stands on its own without the v12.U / v12.Y / v12.Z safety nets
+
+#### Verification gates between phases
+
+After EACH phase, before moving to the next:
+- `npx tsc --noEmit` clean
+- Vercel deploy succeeds
+- Two-browser test: owner locks → cohost sees locked within 1s; cohost accepts → owner sees acceptance within 1s; owner publishes → both redirect
+- No regressions in chat, recent changes expander, notifications
+
+#### Out of scope (explicit)
+
+- **Concurrent edit conflict resolution (CRDT/OT).** Last-write-wins remains acceptable for workspace text fields. Real co-editing is a separate workstream.
+- **Offline-first / sync queue.** No IndexedDB persistence, no offline mutation queue. Optimistic UI rollback is the only failure mode.
+- **Cross-tab state sync.** If a user opens the workspace in two tabs, each has its own state. Realtime keeps them roughly aligned but not guaranteed coherent.
+- **Push notifications when app closed.** Service worker / web push is separate work.
+
+#### Scaling envelope (what this architecture supports)
+
+Workspace specifically, after Phases 1-5:
+- 2-3 concurrent users per workspace: trivial
+- 5-10 concurrent users: comfortable
+- 20-30 concurrent users (eventual): fine, realtime fan-out negligible
+- 50+ concurrent users: would need broadcast channels for ephemeral state (presence, typing) — but workspace is creator+cohosts, never has 50+ users
+
+System-wide ceiling: ~10,000 active creators in workspaces concurrently before Supabase Pro tier limits become the binding constraint (not architecture). Sufficient for pilot → first year+ post-launch.
+
+#### Reusable artifacts this bundle produces
+
+For Bundle 5 (cohort space) and Bundle 8 (live session) to inherit:
+- `web/lib/realtime/useChannelHealth.ts` — channel monitoring + auto-reconnect hook
+- `web/lib/realtime/reconcile.ts` — reconciliation pattern (parameterized)
+- `web/lib/workspace/store.ts` — reference implementation of a Zustand store with realtime + optimistic patterns; cohort space follows same shape
+- Documented patterns: optimistic mutation lifecycle, payload-to-state mapping, channel resubscription on dep changes
+
+---
+
 ### Bundle 4 — Public buyer page rewrite
 
 **Scope:** Replace the current "info grid + flat session list" with the Promise/Arc/Ownership spine.
@@ -1632,27 +1885,39 @@ These render minimal HTML reading challenge / session / Promise / Weekly Arc dat
 
 ```
 Week 1
-├─ Bundle 1 — Outreach unblock              (1 day, parallel-able)
-├─ Bundle 2 — Schema foundation             (2 days, foundational, blocks B3-B10)
-└─ Bundle 3 — Workspace restructure         (3 days, depends on B2)
+├─ Bundle 1 — Outreach unblock              (1 day, parallel-able)        ✅ done
+├─ Bundle 2 — Schema foundation             (2 days, foundational)         ✅ done
+└─ Bundle 3 — Workspace restructure         (3 days)                       ✅ done (incl. polish v1-v12.AC)
 
 Week 2
-├─ Bundle 4 — Public buyer page rewrite     (2 days, depends on B2/B3)
-└─ Bundle 5 — Cohort space + routing        (3 days, depends on B2)
+├─ Bundle 3.5 — Workspace live-collab refactor (2.5-3 days frontend +
+│                0.5-1 day backend = ~4 days total)                         ← NEXT
+│     Phases 1-4 frontend-only (zero backend risk).
+│     Phase 5 backend (lock RPC + async snapshot trigger) is SURGICAL,
+│     only after 1-4 validated in production.
+│     Phase 6 cleanup (remove v12.U-Z band-aids).
+└─ Bundle 4 — Public buyer page rewrite     (2 days, depends on B2/B3)
 
-Week 3 — these four parallelize
-├─ Bundle 6 — Pre-pulse                     (2 days, depends on B5)
+Week 3
+├─ Bundle 5 — Cohort space + routing        (3 days, depends on B2)
+│            ← inherits Bundle 3.5's Zustand/realtime/optimistic patterns natively
+└─ Bundle 6 — Pre-pulse                     (2 days, depends on B5)
+
+Week 4 — these three parallelize
 ├─ Bundle 7 — Post-reflection               (2 days, depends on B5)
 ├─ Bundle 8 — Intro + onboarding            (1 day, depends on B5)
+│            ← also inherits Bundle 3.5's patterns for live session UI
 └─ Bundle 9 — Directed Q&A                  (3 days, depends on B5)
 
-Week 4
+Week 5
 ├─ Bundle 10 — Emails                       (2 days, parallel with B6-B9)
 ├─ Bundle 11 — Verification + dogfooding    (2-3 days, depends on B6-B10)
 └─ Bundle 12 — Demo + outreach              (2 days, depends on B11)
 ```
 
-Total: ~4 weeks of focused work.
+Total: ~5 weeks of focused work (was 4; added Bundle 3.5).
+
+**Why Bundle 3.5 slots here and not later:** the workspace pattern becomes the template that Bundle 5 (cohort space) and Bundle 8 (live session UI) inherit. Refactoring AFTER those bundles ship would mean retrofitting two more pages instead of one. Compounding cost increases the longer we wait.
 
 ### Outreach gating
 
@@ -1684,6 +1949,10 @@ Total: ~4 weeks of focused work.
 - **Don't depend on cron timing for in-app surfaces** — `vw_action_items_for_user` is the source of truth; cron is best-effort push.
 - **Don't add backward-compat shims for renamed routes / RPCs / functions** — pre-pilot, deletion is clean.
 - **Don't open beyond the pilot cohort** — 5 creator pairs is the cap until learning lands.
+- **Don't use `router.refresh()` as the propagation mechanism for live collaboration** (post-Bundle 3.5). It re-runs the page server component and re-fetches every query. Realtime hands us the changed row in the payload — read it directly into the store. `router.refresh()` is for action-triggered server data invalidation (e.g., after a form submit on a non-live page), not for partner-edit propagation.
+- **Don't pile on more realtime propagation paths to mask reliability issues** (this is the lesson from v12.U-v12.Z). If realtime is unreliable, fix the architecture (state container + reconciliation + channel health) — don't add a fourth or fifth path that all eventually call the same expensive `router.refresh()`.
+- **Don't pre-refactor read-mostly pages to client-state-as-cache** (`/dashboard`, `/challenges/[id]`, `/dashboard/sessions/[id]`, earnings, etc.). The pattern is only worth it where live collaboration is happening — workspace, cohort space, live session UI. Read-mostly pages stay server-rendered.
+- **Don't put business rules (only) on the frontend.** Optimistic UI may PREDICT what the server will accept for instant feedback, but the canonical rule must still live in DB constraints / RLS / RPCs. Frontend prediction is a UX hint, not authority. When server rejects, frontend rolls back.
 
 ---
 
