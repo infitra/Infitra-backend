@@ -92,6 +92,38 @@ function describeNotification(n: EnrichedNotification): NotificationContent {
         detail: "Workspace is ready — go meet them there",
         href: p.challenge_id ? `/dashboard/collaborate/${p.challenge_id}` : "/dashboard",
       };
+    // Polish v12.U.2: contract-flow + publish notifications. Previously
+    // these fell through to the default case which just rendered the
+    // raw type string ("contract locked"). Now each gets a real human
+    // sentence, an actionable detail, and a deep link.
+    case "contract_locked":
+      return {
+        title: sender ? `${sender} locked the contract` : "Contract locked for review",
+        detail: "Review terms and accept or request changes",
+        href: p.challenge_id ? `/dashboard/collaborate/${p.challenge_id}` : "/dashboard",
+      };
+    case "contract_accepted":
+      return {
+        title: sender ? `${sender} accepted the terms` : "Terms accepted",
+        detail: "When everyone has accepted, you can publish the collaboration",
+        href: p.challenge_id ? `/dashboard/collaborate/${p.challenge_id}` : "/dashboard",
+      };
+    case "contract_declined":
+      return {
+        title: sender ? `${sender} requested changes` : "Changes requested",
+        detail: typeof p.comment === "string" && p.comment.trim()
+          ? p.comment
+          : "Reopen the draft to revise the terms",
+        href: p.challenge_id ? `/dashboard/collaborate/${p.challenge_id}` : "/dashboard",
+      };
+    case "challenge_published":
+      return {
+        title: sender
+          ? `${sender} published ${typeof p.title === "string" ? `"${p.title}"` : "the collaboration"}`
+          : "Collaboration published",
+        detail: "Your program is live — participants can now join",
+        href: p.challenge_id ? `/dashboard/collaborate/${p.challenge_id}` : "/dashboard",
+      };
     case "dm_new": {
       const preview = typeof p.preview === "string" ? p.preview : "";
       return {
