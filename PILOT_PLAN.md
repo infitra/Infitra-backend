@@ -1503,6 +1503,19 @@ For Bundle 5 (cohort space) and Bundle 8 (live session) to inherit:
 - Sticky CTA is always tappable
 - Authenticated enrolled user hitting `/challenges/[id]` redirects to `/challenges/[id]/space`
 - After publish, the success page shows the public view inline (creator sees exactly what participants see), with a celebratory frame and a copyable share link
+- URL is shareable to strangers without beta gate / login (proxy.ts has `/challenges/` in `PUBLIC_PREFIXES`)
+
+**Post-pilot evolution (NOT in scope for v1, documented for later):**
+
+The current buyer page is built for the pilot reality: each URL is a singular, focused offer that fills the whole page. Outreach is creator-paste-link-in-DM, recipient lands on a focused product page, they decide. That's right for pilot.
+
+Post-pilot, when INFITRA has 10s-100s of published programs and the brand is a catalog of offers (not a single pilot product), the buyer page evolves:
+- Top: a real INFITRA nav (browse other programs, search, sign in, etc.) replacing the current minimal logo-only header
+- Bottom: "More from INFITRA" / "Related programs" carousel pulling adjacent programs (same creator(s), similar topics, similar dates)
+- Footer: full marketing footer with browse links, creator directory, sign in, about, etc.
+- The buyer page becomes ONE product detail page inside a fuller infitra storefront — not THE infitra.
+
+For pilot: defer entirely. Buyer page = focused product page. Catalog conversion lives in a future bundle once there are multiple programs to browse and a meaningful "more from INFITRA" experience to surface.
 
 ---
 
