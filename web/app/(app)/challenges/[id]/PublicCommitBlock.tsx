@@ -72,8 +72,12 @@ export function PublicCommitBlock({
     <section
       className="px-6 lg:px-12 py-16 lg:py-24"
       style={{
+        // Transparent at the top so the (app) layout's cream + wave
+        // background shines through; warms toward the orange CTA at
+        // the bottom. Page integrates into the INFITRA shell instead
+        // of covering it with a solid bg.
         background:
-          "linear-gradient(180deg, #FCFAF6 0%, rgba(255,97,48,0.04) 100%)",
+          "linear-gradient(180deg, rgba(242,239,232,0) 0%, rgba(255,97,48,0.05) 100%)",
       }}
     >
       <div className="max-w-2xl mx-auto">
