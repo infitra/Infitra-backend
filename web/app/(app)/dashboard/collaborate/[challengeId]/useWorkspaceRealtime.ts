@@ -80,6 +80,29 @@ export function useWorkspaceRealtime({
     return () => window.removeEventListener("workspace-contract-event", handler);
   }, [router]);
 
+  // Polish v12.Z: page-visibility refresh. The most reliable failure
+  // mode for the cohost's lock-state propagation is a silently
+  // dropped WebSocket — events fire on the DB, the broadcast goes
+  // out, but the cohost's channel is in a stale CLOSED/TIMED_OUT
+  // state from a tab being backgrounded or a network blip. Today
+  // the subscribe callbacks log warnings but don't reconnect.
+  //
+  // When the user switches back to the tab (visibility -> 'visible')
+  // we force a router.refresh() to catch up on anything missed
+  // while we weren't watching. Cheap, near-zero cost when the user
+  // is actively on the page (visibilitychange doesn't fire on
+  // every render — only on actual focus transitions).
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    function onVisible() {
+      if (document.visibilityState === "visible") {
+        router.refresh();
+      }
+    }
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [router]);
+
   useEffect(() => {
     const supabase = createClient();
     const sessionIdSet = new Set(knownSessionIds);
