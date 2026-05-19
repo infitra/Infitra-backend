@@ -291,6 +291,23 @@ export function WorkspaceEditor({
   const canEditSession = (hostId: string) => canEdit && hostId === currentUserId;
   const canManageCollaboration = canEdit && isOwner;
 
+  // Polish v12.U.1: hard guard for every commit handler. Even if
+  // realtime hasn't repainted the UI to read-only mode yet, this
+  // blocks the save and surfaces an immediate error so the user
+  // knows their change can't go through. Belt-and-suspenders with
+  // the per-editor `canEdit` prop.
+  function assertEditable(): boolean {
+    if (isLocked) {
+      setError("Terms are locked for review. Reopen the draft to make changes.");
+      return false;
+    }
+    if (!isDraft) {
+      setError("Program is no longer in draft.");
+      return false;
+    }
+    return true;
+  }
+
   // After any mutation: refresh server props + signal the chat to refetch.
   function refreshAfterAction() {
     if (typeof window !== "undefined") {
@@ -320,6 +337,7 @@ export function WorkspaceEditor({
   }>;
 
   async function saveField(fieldName: string, override: Override = {}) {
+    if (!assertEditable()) return;
     setError(null);
     const formData = new FormData();
     formData.set("challenge_id", challenge.id);
@@ -458,6 +476,7 @@ export function WorkspaceEditor({
   }
 
   async function commitCohostSplit(cohostId: string, splitPercent: number) {
+    if (!assertEditable()) return;
     setError(null);
     // updateCohostSplit is a separate action targeting app_challenge_cohost
     // directly; it logs its own field_edit ('cohost_split') via the
@@ -468,6 +487,7 @@ export function WorkspaceEditor({
   }
 
   async function commitCohostRemove(cohostId: string) {
+    if (!assertEditable()) return;
     setError(null);
     const result = await runSave(() => removeCohost(challenge.id, cohostId));
     if (result?.error) { setError(result.error); return; }
@@ -480,6 +500,7 @@ export function WorkspaceEditor({
   // ── Session handlers (unchanged from prior version, just preserved) ──
 
   async function handleDeleteSession(sessionId: string) {
+    if (!assertEditable()) return;
     if (!confirm("Delete this session?")) return;
     setError(null);
     const result = await runSave(() => removeChallengeSession(challenge.id, sessionId));
@@ -502,6 +523,7 @@ export function WorkspaceEditor({
   }
 
   async function handleSaveSession(sessionId: string) {
+    if (!assertEditable()) return;
     if (!editFields.title.trim() || !editFields.startTime) return;
     if (isSessionDateOutOfRange(editFields.startTime)) {
       setError(`Session must fall within the program window (${sessionRangeLabel ?? ""}).`);
@@ -525,6 +547,7 @@ export function WorkspaceEditor({
   }
 
   async function handleAddSessionCohost(sessionId: string, cohostId: string) {
+    if (!assertEditable()) return;
     if (addingCohostFor) return;
     setError(null);
     setAddingCohostFor(sessionId);
@@ -536,6 +559,7 @@ export function WorkspaceEditor({
   }
 
   async function handleRemoveSessionCohost(sessionId: string, cohostId: string) {
+    if (!assertEditable()) return;
     setError(null);
     const result = await removeSessionCohost(sessionId, cohostId, challenge.id);
     if (result?.error) { setError(result.error); return; }
@@ -543,6 +567,7 @@ export function WorkspaceEditor({
   }
 
   async function handleAddSession() {
+    if (!assertEditable()) return;
     if (!sessTitle.trim() || !sessDate) return;
     if (isSessionDateOutOfRange(sessDate)) {
       setError(`Session must fall within the program window (${sessionRangeLabel ?? ""}).`);

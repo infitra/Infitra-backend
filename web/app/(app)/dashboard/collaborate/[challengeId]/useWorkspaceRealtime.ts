@@ -224,6 +224,31 @@ export function useWorkspaceRealtime({
         },
         () => router.refresh(),
       )
+      // Polish v12.U.1: second propagation path for the lock event.
+      // The primary path is app_challenge.contract_id UPDATE, but the
+      // cohost was reportedly still able to edit for a window after
+      // the owner locked. Subscribing to the contract INSERT itself
+      // gives a more direct "a contract was just locked for this
+      // challenge" signal — either event arriving triggers refresh.
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "app_collaboration_contract",
+        },
+        (payload) => {
+          // Broad subscription (target_id isn't filterable across
+          // session+challenge variants) — filter client-side.
+          const row = payload.new as {
+            target_type?: string;
+            target_id?: string;
+          } | null;
+          if (row?.target_type === "challenge" && row?.target_id === challengeId) {
+            router.refresh();
+          }
+        },
+      )
       .subscribe((status, err) => {
         if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
           // eslint-disable-next-line no-console
