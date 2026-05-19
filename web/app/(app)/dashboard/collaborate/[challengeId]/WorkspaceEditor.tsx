@@ -820,18 +820,19 @@ export function WorkspaceEditor({
           isLocked
             ? allAccepted && !hasDeclines
               ? {
-                  // Polish v12.AA: "all signatures in — ready to publish"
-                  // state. Previous treatment was a muted desaturated
-                  // cyan (#A8D5DC) that felt dirty/foggy rather than
-                  // celebratory. Now: a subtle warm orange→cyan gradient
-                  // that represents the union of the two creators ready
-                  // to ship together, with an orange-tinted border that
-                  // visually points the eye at the orange publish button
-                  // sitting in the action panel below.
+                  // Polish v12.AB: "all signatures in — ready to publish"
+                  // state. v12.AA tried a subtle warm gradient at 0.07
+                  // opacity which read as invisible. Going bold: a
+                  // proper warm sunrise gradient (0.18 → 0.06 orange),
+                  // a stronger orange border, and an outer glow that
+                  // makes the whole envelope feel like it's lit from
+                  // within. The eye lands on the orange publish CTA
+                  // below as the natural next step.
                   background:
-                    "linear-gradient(135deg, rgba(255,97,48,0.07), rgba(156,240,255,0.10))",
-                  border: "1px solid rgba(255,97,48,0.25)",
-                  boxShadow: "0 0 0 1px rgba(255,97,48,0.08) inset",
+                    "linear-gradient(135deg, rgba(255,97,48,0.18), rgba(255,97,48,0.06))",
+                  border: "1px solid rgba(255,97,48,0.45)",
+                  boxShadow:
+                    "0 8px 32px rgba(255,97,48,0.12), 0 0 0 1px rgba(255,97,48,0.10) inset",
                 }
               : { backgroundColor: "#D8DEE2", border: "1px solid rgba(15,34,41,0.1)" }
             : undefined

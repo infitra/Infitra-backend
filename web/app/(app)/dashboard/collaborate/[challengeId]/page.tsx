@@ -187,19 +187,32 @@ export default async function CollaborateWorkspacePage({
 
   return (
     <div className="py-6">
-      {/* Header */}
+      {/* Header — polish v12.AB: restyled to match the muted subtitle
+          treatment used inside the workspace cards ("COVER IMAGE",
+          "CHALLENGE DETAILS", etc.) instead of a chunky h1 with a
+          coloured rail. The page title shouldn't compete with the
+          actual content; just orient the user that they're in the
+          collaboration workspace. */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <Link href="/dashboard/create" className="text-xs font-bold font-headline text-[#94a3b8] hover:text-[#0F2229] mb-2 block">
             ← Back to Create
           </Link>
-          <div className="flex items-center gap-3">
-            <div className="w-1 h-7 rounded-full" style={{ backgroundColor: "#9CF0FF" }} />
-            <h1 className="text-xl font-black font-headline text-[#0F2229] tracking-tight">
+          <div className="flex items-center gap-2.5">
+            <h1
+              className="text-sm font-black font-headline uppercase tracking-wider"
+              style={{ color: "#94a3b8" }}
+            >
               Collaboration Workspace
             </h1>
             {challenge.status === "draft" && (
-              <span className="px-2.5 py-1 rounded-full text-[10px] font-bold font-headline text-[#94a3b8]" style={{ border: "1px solid rgba(0,0,0,0.08)" }}>
+              <span
+                className="px-2 py-0.5 rounded-full text-[10px] font-bold font-headline uppercase tracking-wider"
+                style={{
+                  border: "1px solid rgba(0,0,0,0.08)",
+                  color: "#94a3b8",
+                }}
+              >
                 Draft
               </span>
             )}
