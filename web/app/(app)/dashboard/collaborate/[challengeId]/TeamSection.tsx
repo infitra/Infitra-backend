@@ -215,35 +215,15 @@ export function TeamSection({
           to the previous vertical row layout. */}
       <div className="space-y-3">
         {creators.length === 2 ? (
-          /* Polish v12.P: the gradient-background-plus-faded-ribbon
-             approach read as atmospheric noise rather than intentional
-             design. Dropped the wrapper background entirely (it was
-             fighting the v12.I stronger-white-cards principle anyway)
-             and replaced the faded full-width ribbon with a single
-             SOLID orange→cyan line that ONLY spans the gap between
-             the two cards (with a small overlap into each card's edge
-             so it reads as "attached," not floating).
-
-             One bold visible element doing the connection work, no
-             fade, no layered subtlety. */
-          <div className="relative grid grid-cols-2 gap-6">
-            {/* Connector — 2px solid gradient line, ~40px wide,
-                centered in the gap. Pure orange on the owner side
-                fading to brand cyan on the cohost side. */}
-            <div
-              aria-hidden="true"
-              className="absolute pointer-events-none"
-              style={{
-                top: "50%",
-                left: "50%",
-                transform: "translate(-50%, -50%)",
-                width: 40,
-                height: 2,
-                borderRadius: 999,
-                background: "linear-gradient(to right, #FF6130, #9CF0FF)",
-                zIndex: 1,
-              }}
-            />
+          /* Polish v12.Q: no connector, no wrapper background. Two
+             clean side-by-side cards in a grid. The team-unity
+             message is carried by the donut + legend below — which
+             already shows both creators with avatars on ONE shared
+             chart. Forcing the rows to ALSO say "team" via a floating
+             line was visual redundancy and ended up looking
+             decorative. Cards do "two distinct people"; donut does
+             "one team." Each component does one job well. */
+          <div className="grid grid-cols-2 gap-4">
             {creators.map((creator) => (
               <CreatorPortraitCard
                 key={creator.id}
