@@ -629,13 +629,27 @@ export function WorkspaceEditor({
     setSessCohostIds([]);
   }
 
-  // ── Contract flow (unchanged) ──
+  // ── Contract flow ──
+
+  // Polish v12.X: keep `locking` true until the new lock state
+  // actually arrives via the server prop. The previous code reset
+  // `locking` to false immediately after the server action returned,
+  // BEFORE the router.refresh round-trip had pulled the new contract
+  // row through. Result: the button text flipped back to "Lock Terms
+  // for Review" for ~5s while the actual lock-state transition was
+  // still in flight. Users thought it failed and double-clicked.
+  // This effect resets `locking` only when `isLocked` actually flips
+  // (works for both directions — lock AND reopen).
+  useEffect(() => {
+    setLocking(false);
+  }, [isLocked]);
 
   async function handleLockTerms() {
     setLocking(true); setError(null);
     const result = await lockTerms(challenge.id);
     if (result.error) { setError(result.error); setLocking(false); return; }
-    setLocking(false);
+    // Do NOT reset `locking` here — the useEffect above clears it
+    // when `isLocked` flips true (server state has caught up).
     refreshAfterAction();
   }
 
@@ -668,7 +682,9 @@ export function WorkspaceEditor({
     setLocking(true); setError(null);
     const result = await reactivateDrafting(challenge.id, contract.id);
     if (result.error) { setError(result.error); setLocking(false); return; }
-    setLocking(false);
+    // Do NOT reset `locking` here — the useEffect above (watching
+    // `isLocked`) clears it when the unlock state arrives via prop.
+    // Button stays "Reopening Draft…" until then.
     refreshAfterAction();
   }
 
@@ -1238,7 +1254,7 @@ export function WorkspaceEditor({
               className="px-6 py-3 rounded-full text-base font-black font-headline text-[#0F2229] disabled:opacity-40 w-full"
               style={{ border: "1px solid rgba(0,0,0,0.12)" }}
             >
-              {locking ? "..." : "Reopen Draft"}
+              {locking ? "Reopening draft…" : "Reopen Draft"}
             </button>
           )}
 
@@ -1263,7 +1279,7 @@ export function WorkspaceEditor({
                 disabled={locking || publishing}
                 className="block mx-auto text-xs font-bold font-headline text-[#94a3b8] hover:text-[#0F2229] disabled:opacity-40"
               >
-                {locking ? "…" : "Reopen draft to edit"}
+                {locking ? "Reopening draft…" : "Reopen draft to edit"}
               </button>
             </div>
           )}
@@ -1285,7 +1301,7 @@ export function WorkspaceEditor({
                 className="px-6 py-3 rounded-full text-base font-black font-headline text-[#0F2229] disabled:opacity-40 w-full"
                 style={{ border: "1px solid rgba(0,0,0,0.12)" }}
               >
-                {locking ? "..." : "Reopen Draft"}
+                {locking ? "Reopening draft…" : "Reopen Draft"}
               </button>
             </div>
           )}

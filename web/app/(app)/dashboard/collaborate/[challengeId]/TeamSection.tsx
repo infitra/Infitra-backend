@@ -199,10 +199,12 @@ export function TeamSection({
         )}
       </div>
 
-      {/* Description */}
+      {/* Description — polish v12.X: clarify that only the owner can
+          change the revenue split (cohorts read-only). */}
       <p className="text-sm leading-relaxed mb-6" style={{ color: "#475569" }}>
         Each creator&apos;s revenue share, sessions they lead, and the topics
-        they own. Topics help participants know who to ask about what.
+        they own. Only the owner can adjust the revenue split. Topics help
+        participants know who to ask about what.
       </p>
 
       {/* Polish v12.N: when there are exactly 2 creators (the common
@@ -378,10 +380,23 @@ export function TeamSection({
         )}
       </div>
 
+      {/* Polish v12.X: footnote tied to the "*" on the donut's
+          "Share *" label. Quiet meta line so creators understand the
+          shown percentages are of NET (after-platform-fee) revenue,
+          not gross. Sits between the donut block and the "edited at"
+          attribution. */}
+      <p
+        className="text-[11px] mt-4 leading-relaxed"
+        style={{ color: "#94a3b8" }}
+      >
+        * Percentages represent each creator&apos;s share of net revenue,
+        after INFITRA&apos;s platform fee.
+      </p>
+
       {/* Polish v12.O: breathing room between donut block and the
           "edited at" attribution underneath — was sitting too close,
           felt cramped against the donut. */}
-      <div className="mt-6">
+      <div className="mt-4">
         <SectionAttribution
           fields={TEAM_ATTRIBUTION_FIELDS}
           activity={activity}
@@ -954,7 +969,7 @@ function TeamDonut({ segments, size = 240 }: TeamDonutProps) {
             textTransform: "uppercase",
           }}
         >
-          Share
+          Share *
         </text>
       </svg>
     </div>
