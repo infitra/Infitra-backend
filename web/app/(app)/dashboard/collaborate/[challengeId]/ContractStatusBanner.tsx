@@ -51,11 +51,14 @@ export function ContractStatusBanner({ ownerName, lockedAt, parties, hasDeclines
   const totalToSign = signingParties.length;
   const confirmedCount = signingParties.filter((p) => p.status === "confirmed").length;
 
+  // Polish v12.U.3: workspace IS the contract review surface now (the
+  // separate /contract page was deleted). Headline reads like a
+  // locked-agreement stamp rather than "we're somewhere else."
   const headline = hasDeclines
-    ? "Contract changes requested"
+    ? "Changes requested — agreement on hold"
     : totalToSign > 0 && confirmedCount === totalToSign
       ? "All signatures in — ready to publish"
-      : "Contract under review";
+      : "Locked agreement — under review";
 
   const accent = hasDeclines ? "#FF6130" : confirmedCount === totalToSign ? "#15803d" : "#0891b2";
 

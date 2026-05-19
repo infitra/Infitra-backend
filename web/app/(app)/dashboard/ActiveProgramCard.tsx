@@ -231,7 +231,10 @@ function programInsight(program: Program, partner: Partner | null): Insight {
   const enrolled = program.enrolledCount ?? 0;
   const workspaceHref = `/dashboard/collaborate/${program.id}`;
   const publicHref = `/challenges/${program.id}`;
-  const contractHref = `/dashboard/collaborate/${program.id}/contract`;
+  // Polish v12.U: the separate /contract route was deleted — the
+  // workspace IS the contract review surface now. CTAs that used to
+  // deep-link to /contract now route to the workspace.
+  const contractHref = workspaceHref;
   const home = cardHomeHref(program);
 
   // ── LIVE ──────────────────────────────────────────────────
@@ -1042,10 +1045,13 @@ function showsContract(stage: ProgramStage): boolean {
  */
 function SecondaryActions({ program }: { program: Program }) {
   if (!showsContract(program.stage)) return null;
-  const contractHref = `/dashboard/collaborate/${program.id}/contract`;
+  // Polish v12.U: route to the workspace (which is the contract
+  // surface now). Label changed from "View contract" to "Review
+  // terms" so it matches the action the user is going to take.
+  const href = `/dashboard/collaborate/${program.id}`;
   return (
     <Link
-      href={contractHref}
+      href={href}
       className="text-[11px] uppercase tracking-widest font-headline px-3 py-1.5 rounded-full transition-colors hover:bg-[#0F2229]/[0.05]"
       style={{
         color: "#0891b2",
@@ -1054,7 +1060,7 @@ function SecondaryActions({ program }: { program: Program }) {
         backgroundColor: "rgba(255,255,255,0.85)",
       }}
     >
-      View contract
+      Review terms
     </Link>
   );
 }

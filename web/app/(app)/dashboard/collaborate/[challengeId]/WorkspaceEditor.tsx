@@ -281,7 +281,6 @@ export function WorkspaceEditor({
   const isPublished = challenge.status === "published";
   const allAccepted = contract ? cohosts.every((c) => contract.acceptances.includes(c.id)) : false;
   const hasDeclines = contract ? contract.declines.length > 0 : false;
-  const hasContractDoc = !!contract;
 
   function canEditChallenge() {
     return isDraft && !isLocked;
@@ -771,40 +770,13 @@ export function WorkspaceEditor({
         </div>
       )}
 
-      {/* ── SIGNED CONTRACT LINK ───────────────────── */}
-      {hasContractDoc && (
-        <a
-          href={`/dashboard/collaborate/${challenge.id}/contract`}
-          className="flex items-center gap-3 px-5 py-4 rounded-2xl group transition-colors"
-          style={
-            isPublished
-              ? { backgroundColor: "rgba(21,128,61,0.06)", border: "1px solid rgba(21,128,61,0.25)" }
-              : { backgroundColor: "rgba(8,145,178,0.05)", border: "1px solid rgba(8,145,178,0.18)" }
-          }
-        >
-          <span
-            className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center text-base"
-            style={
-              isPublished
-                ? { backgroundColor: "rgba(21,128,61,0.12)", color: "#15803d" }
-                : { backgroundColor: "rgba(8,145,178,0.12)", color: "#0891b2" }
-            }
-          >
-            📜
-          </span>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-black font-headline truncate" style={{ color: "#0F2229" }}>
-              {isPublished ? "Signed & published — view contract" : "View locked contract"}
-            </p>
-            <p className="text-[11px] text-[#94a3b8] truncate">
-              The frozen agreement everyone signed. Read-only document.
-            </p>
-          </div>
-          <span className="shrink-0 text-xs font-black font-headline" style={{ color: isPublished ? "#15803d" : "#0891b2" }}>
-            Open →
-          </span>
-        </a>
-      )}
+      {/* Polish v12.U: the "View locked contract" link was removed.
+          The workspace itself IS the locked agreement surface — the
+          ContractStatusBanner below acts as the lock stamp, all
+          cards transform to read-only via canEdit, and accept /
+          publish / reopen actions live at the bottom. One coherent
+          surface; no parallel "frozen document" page to mislabel
+          who's signed. */}
 
       {/* ── CONTRACT STATUS BANNER (locked only) ─── */}
       {isLocked && contract && (
