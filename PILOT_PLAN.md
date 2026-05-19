@@ -22,11 +22,23 @@
 - **Bundle 3** — workspace restructure: Promise, Weekly Arc (Program Rhythm), Who Handles What (Topics), Intro Prompt, edit-log split UI all shipped
 - **Bundle 3 polish v1-v12.AC** — heavy iteration on the workspace surface based on dogfooding feedback. Notable: dual-color split slider, Realtime cohost+session propagation, side-by-side team portraits with role-coloured details, hero session images, locked workspace = the contract (deleted `/contract` route), accept/decline flow with prominent decline-reason callout, celebratory all-signatures-in state with per-card orange edges. Four propagation paths added during v12.U-v12.Z as band-aids for lock-state realtime unreliability — these get removed in Bundle 3.5 Phase 6.
 
-### What's next: Bundle 3.5 — workspace live-collab refactor
+### Publish flow verified end-to-end
+
+Publish action tested two-browser after Bundle 3 polish v12.AC. Worked: action succeeds, owner redirects to success page, all signatures recorded, `challenge_published` notification fires correctly (v12.S allow-list addition), `ensure_challenge_space_for_published_challenge` runs cleanly. Lag noted (same workspace propagation issue as lock/reopen) — accepted as known and queued for Bundle 3.5 fix.
+
+Surfacing the post-publish success page as ugly / legacy / lacking detail is the trigger for promoting Bundle 4 ahead of Bundle 3.5.
+
+### What's next: Bundle 4 — public buyer page + post-publish success page upgrade
+
+Reordered ahead of Bundle 3.5 (was: Bundle 3.5 then 4). Rationale: Bundle 4 is read-only / server-rendered and doesn't share Bundle 3.5's live-collab patterns, so the architectural ordering is preserved (Bundle 3.5 still ships before Bundle 5 which IS the live-collab page that needs it). Bundle 4 delivers user-perceived value sooner — the success page upgrade is mostly a free side-effect of building the public buyer components (they get reused inline in the success page wrapped in a celebratory frame).
+
+Pre-bundle design step: sketch the participant view layout end-to-end in chat before writing component files. See Bundle 4 spec for what needs deciding.
+
+### Then: Bundle 3.5 — workspace live-collab refactor (deferred ~2-3 days, slotted right after Bundle 4)
 
 Bundle 3 shipped functionally but the live-collab architecture underneath is band-aided. Adding more `router.refresh()` propagation paths doesn't fix the root cause: every realtime event triggers a full server re-render with ~10 sequential queries. Bundle 3.5 rearchitects this to client-state-as-live-cache with Zustand + direct payload mutation + optimistic UI. Same pattern then inherited natively by Bundle 5 (cohort space) and Bundle 8 (live session UI).
 
-Not blocking pilot ship — current architecture works, just slowly. Doing it now because: (a) workspace is the most state-heavy page and we'd refactor anyway, (b) cohort space (Bundle 5+) NEEDS this pattern from day one, (c) easier to build with the right architecture than retrofit later. Frontend phases zero backend risk; backend phase (RPC simplification) is separate and only attempted after frontend phases validated in production.
+Not blocking pilot ship — current architecture works, just slowly. Doing it before Bundle 5 because: (a) workspace is the most state-heavy page and we'd refactor anyway, (b) cohort space (Bundle 5+) NEEDS this pattern from day one, (c) easier to build with the right architecture than retrofit later. Frontend phases zero backend risk; backend phase (RPC simplification) is separate and only attempted after frontend phases validated in production.
 
 ### What's still open from v1 (now folded into v3)
 
@@ -1460,12 +1472,13 @@ For Bundle 5 (cohort space) and Bundle 8 (live session) to inherit:
 
 ---
 
-### Bundle 4 — Public buyer page rewrite
+### Bundle 4 — Public buyer page rewrite + post-publish success page upgrade
 
-**Scope:** Replace the current "info grid + flat session list" with the Promise/Arc/Ownership spine.
+**Scope:** Replace the current "info grid + flat session list" with the Promise/Arc/Ownership spine. Also upgrade the post-publish success page (currently a legacy confirmation card with date/sessions/price/collaborators) to preview the new public buyer view — so the moment after publish, the creator sees exactly what their participants will see and can share the URL confidently.
 
 **Files to MODIFY:**
 - `web/app/(app)/challenges/[id]/page.tsx` — full rewrite; loads from `vw_challenge_buyer_view`; redirects authenticated enrolled users + creators to `/challenges/[id]/space`
+- `web/app/(app)/dashboard/collaborate/[challengeId]/published/page.tsx` — replace the legacy success card with a celebratory header ("Your collaboration is live — here's what participants see") + the same public components composed inline as a preview + "Share this link" + "View public page" CTAs
 
 **Files to CREATE:**
 - `web/app/(app)/challenges/[id]/PublicChallengeHero.tsx` — title, both creator avatars in parity, dates strip
@@ -1475,11 +1488,21 @@ For Bundle 5 (cohort space) and Bundle 8 (live session) to inherit:
 - `web/app/(app)/challenges/[id]/PublicSessionTimeline.tsx` — collapsed by default, expandable
 - `web/app/(app)/challenges/[id]/StickyJoinCTA.tsx` — sticky bottom-bar CTA on mobile
 
+**Success page composition:** the published page in `dashboard/collaborate/[challengeId]/published/page.tsx` reuses the SAME public components (PublicChallengeHero, PublicPromiseBlock, PublicWeeklyArc, PublicOwnershipTable, PublicSessionTimeline) — wrapped in a celebratory header and with a "Share" action above and "View public page" link. Single source of truth for the buyer experience; success page is just the same view in a different frame.
+
+**Pre-Bundle-4 design step (before writing components):**
+- Sketch the participant view layout end-to-end (Promise → Arc → Who Handles What → Sessions → CTA)
+- Decide hero treatment (cover image full-width vs split with creators, etc.)
+- Decide weekly arc visual (vertical timeline vs horizontal cards vs week-by-week stacked)
+- Decide whether Promise gets its own hero treatment or sits within the main scroll
+- Discuss in chat before any component file is created
+
 **Verification:**
 - A friend who's never heard of INFITRA sees the URL and understands the offer in 30 seconds
 - Mobile renders cleanly
 - Sticky CTA is always tappable
 - Authenticated enrolled user hitting `/challenges/[id]` redirects to `/challenges/[id]/space`
+- After publish, the success page shows the public view inline (creator sees exactly what participants see), with a celebratory frame and a copyable share link
 
 ---
 
@@ -1890,16 +1913,23 @@ Week 1
 └─ Bundle 3 — Workspace restructure         (3 days)                       ✅ done (incl. polish v1-v12.AC)
 
 Week 2
-├─ Bundle 3.5 — Workspace live-collab refactor (2.5-3 days frontend +
-│                0.5-1 day backend = ~4 days total)                         ← NEXT
-│     Phases 1-4 frontend-only (zero backend risk).
-│     Phase 5 backend (lock RPC + async snapshot trigger) is SURGICAL,
-│     only after 1-4 validated in production.
-│     Phase 6 cleanup (remove v12.U-Z band-aids).
-└─ Bundle 4 — Public buyer page rewrite     (2 days, depends on B2/B3)
+├─ Bundle 4 — Public buyer page rewrite +
+│             post-publish success-page upgrade    (2-3 days)               ← NEXT
+│     Reordered ahead of Bundle 3.5 (was: Bundle 3.5 then 4). Rationale:
+│     Bundle 4 is read-only / server-rendered and doesn't share Bundle 3.5's
+│     live-collab patterns, so the architectural ordering is preserved
+│     (Bundle 3.5 still ships before Bundle 5). Bundle 4 delivers user-
+│     perceived value sooner (success page after publish + outreach-ready
+│     public URL) while workspace lag is acceptable in the interim.
+└─ Bundle 3.5 — Workspace live-collab refactor (2.5-3 days frontend +
+                 0.5-1 day backend = ~4 days total)
+      Phases 1-4 frontend-only (zero backend risk).
+      Phase 5 backend (lock RPC + async snapshot trigger) is SURGICAL,
+      only after 1-4 validated in production.
+      Phase 6 cleanup (remove v12.U-Z band-aids).
 
 Week 3
-├─ Bundle 5 — Cohort space + routing        (3 days, depends on B2)
+├─ Bundle 5 — Cohort space + routing        (3 days, depends on B2 + B3.5)
 │            ← inherits Bundle 3.5's Zustand/realtime/optimistic patterns natively
 └─ Bundle 6 — Pre-pulse                     (2 days, depends on B5)
 
