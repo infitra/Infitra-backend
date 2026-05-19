@@ -38,7 +38,10 @@ export function WorkspaceChat({ conversationId, currentUserId, profiles }: Props
 
   // Centralized refetch — initial load + local "activity" signal from
   // WorkspaceEditor after mutations. Idempotent; compares by id/length.
-  async function refetchMessages(scroll: boolean = false) {
+  // (Scroll-on-update is now centralized in a useEffect below, so the
+  // `scroll` arg is gone — every state change that grows the messages
+  // list triggers an auto-scroll after React commits.)
+  async function refetchMessages() {
     const supabase = createClient();
     const { data } = await supabase.rpc("list_dm_messages", {
       p_conversation_id: conversationId,
@@ -49,9 +52,6 @@ export function WorkspaceChat({ conversationId, currentUserId, profiles }: Props
       if (prev.length === data.length && prev.every((m, i) => m.id === data[i].id)) {
         return prev;
       }
-      if (scroll) {
-        setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
-      }
       return data;
     });
   }
@@ -59,11 +59,33 @@ export function WorkspaceChat({ conversationId, currentUserId, profiles }: Props
   // Initial load
   useEffect(() => {
     (async () => {
-      await refetchMessages(true);
+      await refetchMessages();
       setLoading(false);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId]);
+
+  // Polish v12.R: centralized scroll-to-bottom on messages growth.
+  // The previous approach scattered `setTimeout(() => scroll(), 50)`
+  // across handleSend / refetch / realtime handlers, but 50ms was
+  // racing React's commit phase — the scroll fired BEFORE the new
+  // message rendered, so bottomRef pointed to the old bottom and the
+  // new message ended up below the viewport. Result: the sender
+  // didn't see their own message until something else triggered
+  // another scroll (a cohost message arriving was enough, because
+  // its 100ms timer happened to land after the next commit).
+  //
+  // useEffect runs AFTER React commits, so the new message is in the
+  // DOM when we scroll. Guaranteed correct ordering, no timeouts.
+  const prevMessageCountRef = useRef(0);
+  useEffect(() => {
+    if (messages.length > prevMessageCountRef.current) {
+      bottomRef.current?.scrollIntoView({
+        behavior: prevMessageCountRef.current === 0 ? "auto" : "smooth",
+      });
+    }
+    prevMessageCountRef.current = messages.length;
+  }, [messages.length]);
 
   // Realtime subscription — the scalable path for the remote party.
   // Table is in supabase_realtime publication with REPLICA IDENTITY FULL.
@@ -87,7 +109,7 @@ export function WorkspaceChat({ conversationId, currentUserId, profiles }: Props
             if (prev.some((m) => m.id === msg.id)) return prev;
             return [...prev, msg];
           });
-          setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+          // Scroll handled by the centralized useEffect on messages.length.
         }
       )
       .subscribe((status, err) => {
@@ -105,7 +127,7 @@ export function WorkspaceChat({ conversationId, currentUserId, profiles }: Props
   // after every mutation so the acting user sees their own system message
   // land without a round trip over Realtime. Zero network cost.
   useEffect(() => {
-    function handler() { refetchMessages(true); }
+    function handler() { refetchMessages(); }
     window.addEventListener("workspace-activity", handler);
     return () => window.removeEventListener("workspace-activity", handler);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -127,14 +149,17 @@ export function WorkspaceChat({ conversationId, currentUserId, profiles }: Props
       console.error("dm_send failed:", error.message);
     }
 
-    // Fetch fresh in case Realtime didn't fire yet
+    // Fetch fresh in case Realtime didn't fire yet. Scroll-on-update
+    // is handled by the centralized useEffect on messages.length, so
+    // we don't try to scroll inline here (the old setTimeout(50) was
+    // racing React's commit phase and was the root cause of the
+    // "sender doesn't see their own message" bug).
     const { data } = await supabase.rpc("list_dm_messages", {
       p_conversation_id: conversationId,
       p_limit: 100,
     });
     if (data) {
       setMessages(data);
-      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
     }
 
     setSending(false);
