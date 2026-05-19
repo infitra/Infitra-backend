@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { ParticipantNav } from "@/app/components/ParticipantNav";
 import { PublicChallengeHero } from "./PublicChallengeHero";
 import { PublicPromiseBlock } from "./PublicPromiseBlock";
 import { PublicCreatorsBlock } from "./PublicCreatorsBlock";
@@ -101,6 +102,8 @@ export default async function ChallengePage({
   // User state (only if authenticated; page is public)
   let hasPurchased = false;
   let isCreator = false;
+  let viewerDisplayName: string | null = null;
+  let viewerRole: string | undefined = undefined;
   if (user) {
     const { data: membership } = await supabase
       .from("app_challenge_member")
@@ -111,6 +114,17 @@ export default async function ChallengePage({
     hasPurchased = !!membership;
     isCreator =
       user.id === buyerView.owner_id || cohostIds.includes(user.id);
+
+    // Fetch viewer profile for the app-style nav (display_name + role
+    // drive whether ParticipantNav shows creator links like Home /
+    // Earnings / + Create or just the participant version).
+    const { data: viewerProfile } = await supabase
+      .from("app_profile")
+      .select("display_name, role")
+      .eq("id", user.id)
+      .maybeSingle();
+    viewerDisplayName = viewerProfile?.display_name ?? null;
+    viewerRole = viewerProfile?.role ?? undefined;
   }
 
   // topic_ownership shape: { [creator_profile_id]: string[] }
@@ -119,50 +133,57 @@ export default async function ChallengePage({
 
   return (
     <>
-      {/* INFITRA marketing-style top nav — same fixed glass-blur
-          treatment as the landing page. Auth-aware CTA: Sign in for
-          anonymous visitors (the common case via DM share), Dashboard
-          for authenticated. Matches the landing-page nav pattern so
-          the buyer page reads as "an INFITRA page about this program"
-          rather than a separated microsite. The (app) layout above
-          provides the cream + WaveFlowingBackground shell. */}
-      <nav className="fixed top-0 w-full z-40">
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            background: "rgba(242, 239, 232, 0.55)",
-            backdropFilter: "blur(20px) saturate(1.2)",
-            WebkitBackdropFilter: "blur(20px) saturate(1.2)",
-            borderBottom: "1px solid rgba(255, 255, 255, 0.25)",
-          }}
-        />
-        <div className="relative max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/logo-mark.png"
-              alt="INFITRA"
-              width={34}
-              height={34}
-              className="block rounded-lg"
-            />
-            <span
-              className="text-[22px] tracking-tight font-headline leading-none"
-              style={{ color: "#FF6130", fontWeight: 700, letterSpacing: "-0.03em" }}
+      {/* Chrome — auth-aware:
+          • Authenticated viewers (the common case for creators viewing
+            their own page, participants browsing, and anyone returning
+            after sign-in) see the full app nav (ParticipantNav). Home /
+            Earnings / Create for creators; Sign out + user menu for
+            everyone. Reads as "you are in INFITRA, this is a program
+            inside it" — not a separate marketing page.
+          • Anonymous viewers (stranger landing from a DM share) see a
+            minimal marketing-style nav: logo + Sign-in CTA. They're
+            discovering the offer, not navigating the app. */}
+      {user ? (
+        <ParticipantNav displayName={viewerDisplayName} role={viewerRole} />
+      ) : (
+        <nav className="fixed top-0 w-full z-40">
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "rgba(242, 239, 232, 0.55)",
+              backdropFilter: "blur(20px) saturate(1.2)",
+              WebkitBackdropFilter: "blur(20px) saturate(1.2)",
+              borderBottom: "1px solid rgba(255, 255, 255, 0.25)",
+            }}
+          />
+          <div className="relative max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
+            <Link href="/" className="flex items-center gap-2.5">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/logo-mark.png"
+                alt="INFITRA"
+                width={34}
+                height={34}
+                className="block rounded-lg"
+              />
+              <span
+                className="text-[22px] tracking-tight font-headline leading-none"
+                style={{ color: "#FF6130", fontWeight: 700, letterSpacing: "-0.03em" }}
+              >
+                INFITRA
+              </span>
+            </Link>
+            <Link
+              href={`/login?returnTo=/challenges/${id}`}
+              className="px-5 py-2 rounded-full text-xs font-headline font-bold text-white uppercase tracking-widest"
+              style={{ backgroundColor: "#FF6130", boxShadow: "0 2px 8px rgba(255,97,48,0.3)" }}
             >
-              INFITRA
-            </span>
-          </Link>
-          <Link
-            href={user ? "/dashboard" : `/login?returnTo=/challenges/${id}`}
-            className="px-5 py-2 rounded-full text-xs font-headline font-bold text-white uppercase tracking-widest"
-            style={{ backgroundColor: "#FF6130", boxShadow: "0 2px 8px rgba(255,97,48,0.3)" }}
-          >
-            {user ? "Dashboard" : "Sign in"}
-          </Link>
-        </div>
-      </nav>
+              Sign in
+            </Link>
+          </div>
+        </nav>
+      )}
 
       <main>
         <PublicChallengeHero
