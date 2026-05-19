@@ -4,11 +4,31 @@ import { updateSession } from "@/lib/supabase/proxy";
 // Routes that are always public — no beta gate, no auth required
 const PUBLIC_ROUTES = ["/", "/beta-access", "/auth/callback", "/test-wave-light"];
 
+// Public prefixes — any path starting with one of these is treated
+// as public (no beta gate, no auth required). Used for routes that
+// have dynamic IDs and need to be shareable to anyone (including
+// strangers landing from a DM/social-shared link).
+//
+// /challenges/ → public buyer page (Bundle 4). Creators paste this
+// URL into their networks; if it requires beta access or login,
+// outreach is broken. The page itself is auth-aware (Sign-in CTA
+// for anonymous, Join for authenticated, Preview for the creator).
+//
+// When Bundle 5 ships the cohort space at /challenges/[id]/space,
+// that page's own server component will handle auth + entitlement
+// checks — the proxy stays simple.
+const PUBLIC_PREFIXES = ["/challenges/"];
+
+function isPublic(pathname: string): boolean {
+  if (PUBLIC_ROUTES.includes(pathname)) return true;
+  return PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Always allow static assets and truly public routes
-  if (PUBLIC_ROUTES.includes(pathname)) {
+  if (isPublic(pathname)) {
     return NextResponse.next();
   }
 
