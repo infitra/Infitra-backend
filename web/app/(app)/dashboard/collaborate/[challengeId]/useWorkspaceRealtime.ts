@@ -41,12 +41,17 @@ interface Params {
   challengeId: string;
   initialActivity: ActivityRow[];
   knownSessionIds: string[];
+  /** Current contract id (null when the challenge isn't locked yet).
+   *  Used to filter acceptance/decline INSERT events client-side so
+   *  the owner reacts only to responses for the active contract. */
+  contractId?: string | null;
 }
 
 export function useWorkspaceRealtime({
   challengeId,
   initialActivity,
   knownSessionIds,
+  contractId,
 }: Params): { activity: ActivityRow[] } {
   const router = useRouter();
   const [activity, setActivity] = useState<ActivityRow[]>(initialActivity);
@@ -249,6 +254,42 @@ export function useWorkspaceRealtime({
           }
         },
       )
+      // Polish v12.W: cohost accept / decline propagation. Without
+      // this, the owner's banner stayed on "Locked agreement — under
+      // review" after the cohost responded; only a refresh (or the
+      // chat system message arriving) hinted that anything happened.
+      // Broad subscription filtered client-side by `contractId` (the
+      // currently-locked contract). Either INSERT triggers refresh —
+      // the workspace's banner re-derives status from the freshly
+      // pulled acceptance/decline rows.
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "app_collaboration_acceptance",
+        },
+        (payload) => {
+          const row = payload.new as { contract_id?: string } | null;
+          if (contractId && row?.contract_id === contractId) {
+            router.refresh();
+          }
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "app_collaboration_decline",
+        },
+        (payload) => {
+          const row = payload.new as { contract_id?: string } | null;
+          if (contractId && row?.contract_id === contractId) {
+            router.refresh();
+          }
+        },
+      )
       .subscribe((status, err) => {
         if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
           // eslint-disable-next-line no-console
@@ -262,7 +303,7 @@ export function useWorkspaceRealtime({
     // Re-subscribe if challengeId or session set changes
     // (the broad app_session listener relies on the latest sessionIdSet).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [challengeId, knownSessionIds.join(",")]);
+  }, [challengeId, knownSessionIds.join(","), contractId ?? ""]);
 
   return { activity };
 }

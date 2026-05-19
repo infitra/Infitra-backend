@@ -41,10 +41,16 @@ export function WorkspaceShell({
   profileMap,
   ...editorProps
 }: Props) {
+  // Polish v12.W: thread the active contract id down to the realtime
+  // hook so it can filter acceptance/decline INSERT events to this
+  // contract only (broad subscription, client-side filter).
+  const contractId = (editorProps as { contract?: { id?: string } | null }).contract?.id ?? null;
+
   const { activity } = useWorkspaceRealtime({
     challengeId,
     initialActivity,
     knownSessionIds,
+    contractId,
   });
 
   return (
