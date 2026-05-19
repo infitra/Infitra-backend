@@ -816,24 +816,20 @@ export function WorkspaceEditor({
       {/* Contract envelope (locked only) — same tinted tray as before. */}
       <div
         className={`space-y-6 transition-colors duration-300 ${isLocked ? "rounded-3xl p-5 sm:p-6" : ""}`}
+        // Polish v12.AC: in the all-signed / ready-to-publish state,
+        // drop the envelope background entirely (the foggy gradient
+        // looked washed no matter the opacity — cards on top of low-
+        // opacity tints always lose) and instead mark the envelope
+        // with `data-state="ready"`. globals.css applies an orange
+        // edge + subtle outer glow to every `.infitra-card` descendant
+        // via that attribute, so the "ready" signal is distributed
+        // across every card the eye scans — high-contrast borders
+        // do the work, not faded backdrops.
+        data-state={isLocked && allAccepted && !hasDeclines ? "ready" : undefined}
         style={
           isLocked
             ? allAccepted && !hasDeclines
-              ? {
-                  // Polish v12.AB: "all signatures in — ready to publish"
-                  // state. v12.AA tried a subtle warm gradient at 0.07
-                  // opacity which read as invisible. Going bold: a
-                  // proper warm sunrise gradient (0.18 → 0.06 orange),
-                  // a stronger orange border, and an outer glow that
-                  // makes the whole envelope feel like it's lit from
-                  // within. The eye lands on the orange publish CTA
-                  // below as the natural next step.
-                  background:
-                    "linear-gradient(135deg, rgba(255,97,48,0.18), rgba(255,97,48,0.06))",
-                  border: "1px solid rgba(255,97,48,0.45)",
-                  boxShadow:
-                    "0 8px 32px rgba(255,97,48,0.12), 0 0 0 1px rgba(255,97,48,0.10) inset",
-                }
+              ? undefined // no envelope bg — cards carry the signal via [data-state="ready"] in globals.css
               : { backgroundColor: "#D8DEE2", border: "1px solid rgba(15,34,41,0.1)" }
             : undefined
         }

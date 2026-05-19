@@ -238,6 +238,22 @@ body {
     0 20px 56px rgba(0, 0, 0, 0.07);
 }
 
+/* Polish v12.AC — ready-to-publish state.
+   When a workspace envelope is marked `data-state="ready"` (= all
+   signatures in, ready to publish), every infitra-card descendant
+   gets an orange edge + subtle outer glow. Distributed signal: the
+   whole workspace reads as warmed up, every card carries the "ready"
+   energy. The publish CTA stays the visual centrepiece via its bold
+   solid orange fill + stronger glow — these card edges are the
+   supporting chorus, not the lead. */
+[data-state="ready"] .infitra-card {
+  border-color: rgba(255, 97, 48, 0.45);
+  box-shadow:
+    0 0 0 1px rgba(255, 97, 48, 0.10),
+    0 4px 20px rgba(255, 97, 48, 0.14),
+    0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
 /* Noise overlay removed — clean gradients against deep dark, no grain */
 
 /* ── Glow Accents ──────────────────────────────────────── */
