@@ -157,15 +157,68 @@ export function ContractStatusBanner({ ownerName, lockedAt, parties, hasDeclines
             </div>
           </div>
         ))}
-        {/* Decline comments surface below the row they belong to */}
-        {parties
-          .filter((p) => p.status === "declined" && p.declineComment)
-          .map((p) => (
-            <p key={`cmt-${p.id}`} className="text-xs text-[#c2410c] ml-12 italic">
-              “{p.declineComment}” — {p.name}
-            </p>
-          ))}
       </div>
+
+      {/* Polish v12.V: decline reasons get a proper callout block
+          (was a small italic line that easily got missed). When a
+          cohost requests changes, the owner needs to clearly see
+          WHAT they asked for — the workspace's job is to make that
+          unmistakable. Falls back to a quieter "no note provided"
+          line if the cohost declined without text. */}
+      {parties.some((p) => p.status === "declined") && (
+        <div
+          className="mb-5 p-4 rounded-xl"
+          style={{
+            backgroundColor: "rgba(255,97,48,0.06)",
+            border: "1px solid rgba(255,97,48,0.20)",
+          }}
+        >
+          <p
+            className="text-[10px] font-bold font-headline uppercase tracking-wider mb-2"
+            style={{ color: "#c2410c" }}
+          >
+            Requested changes
+          </p>
+          <div className="space-y-2">
+            {parties
+              .filter((p) => p.status === "declined")
+              .map((p) => (
+                <div key={`note-${p.id}`} className="flex items-start gap-2">
+                  {p.avatar ? (
+                    <img
+                      src={p.avatar}
+                      alt=""
+                      className="w-6 h-6 rounded-full object-cover shrink-0 mt-0.5"
+                    />
+                  ) : (
+                    <div className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center shrink-0 mt-0.5">
+                      <span className="text-[10px] font-black text-orange-700">
+                        {p.name[0]}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold font-headline" style={{ color: "#0F2229" }}>
+                      {p.name}
+                    </p>
+                    {p.declineComment && p.declineComment.trim() ? (
+                      <p
+                        className="text-sm leading-relaxed mt-0.5 whitespace-pre-wrap"
+                        style={{ color: "#0F2229" }}
+                      >
+                        {p.declineComment}
+                      </p>
+                    ) : (
+                      <p className="text-xs italic mt-0.5" style={{ color: "#94a3b8" }}>
+                        Asked to revisit the terms — no note provided.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
 
       {/* Procedural note + scroll invitation */}
       <div className="pt-4 border-t" style={{ borderColor: "rgba(15,34,41,0.06)" }}>

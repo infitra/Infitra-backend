@@ -274,6 +274,11 @@ export function WorkspaceEditor({
   const [publishing, setPublishing] = useState(false);
   const [acceptModalOpen, setAcceptModalOpen] = useState(false);
   const [publishModalOpen, setPublishModalOpen] = useState(false);
+  // Polish v12.V: Request Changes flow used to fire the native
+  // browser `prompt()` — janky look, unclear feedback when submitted.
+  // Replaced with a proper Dialog with a textarea below.
+  const [requestChangesOpen, setRequestChangesOpen] = useState(false);
+  const [requestChangesComment, setRequestChangesComment] = useState("");
   const [detailSession, setDetailSession] = useState<Props["sessions"][number] | null>(null);
 
   const isDraft = challenge.status === "draft";
@@ -644,12 +649,16 @@ export function WorkspaceEditor({
     refreshAfterAction();
   }
 
-  async function handleRequestChanges() {
+  async function handleSubmitRequestChanges() {
     if (!contract) return;
-    const comment = prompt("What changes would you like? (optional)");
     setConfirming(true); setError(null);
-    const result = await requestChanges(contract.id, comment ?? undefined);
+    const comment = requestChangesComment.trim() || undefined;
+    const result = await requestChanges(contract.id, comment);
     if (result.error) { setError(result.error); setConfirming(false); return; }
+    // Close + reset BEFORE refresh so the dialog doesn't briefly
+    // show a stale state during the re-render.
+    setRequestChangesOpen(false);
+    setRequestChangesComment("");
     setConfirming(false);
     refreshAfterAction();
   }
@@ -1206,7 +1215,7 @@ export function WorkspaceEditor({
                 Accept Terms
               </button>
               <button
-                onClick={handleRequestChanges}
+                onClick={() => setRequestChangesOpen(true)}
                 disabled={confirming}
                 className="px-6 py-3 rounded-full text-sm font-bold font-headline text-[#94a3b8] disabled:opacity-40"
                 style={{ border: "1px solid rgba(0,0,0,0.08)" }}
@@ -1455,6 +1464,86 @@ export function WorkspaceEditor({
         onConfirm={handlePublish}
         onCancel={() => setPublishModalOpen(false)}
       />
+
+      {/* Polish v12.V: Request Changes — replaces the native prompt().
+          The comment is OPTIONAL but strongly encouraged ("what should
+          change?") because the owner needs context to reopen and
+          revise. Surfaces directly in the ContractStatusBanner on the
+          owner's side once submitted, and in the contract_declined
+          notification's detail line. */}
+      <Dialog
+        open={requestChangesOpen}
+        onClose={() => {
+          if (confirming) return;
+          setRequestChangesOpen(false);
+        }}
+        maxWidthClass="max-w-lg"
+        closeOnBackdrop={!confirming && !requestChangesComment.trim()}
+      >
+        <div className="p-6 space-y-4">
+          <div>
+            <h3 className="text-base font-black font-headline text-[#0F2229] mb-1">
+              Request changes to the terms
+            </h3>
+            <p className="text-xs text-[#64748b] leading-relaxed">
+              What needs to change before you can accept? {ownerProfile.name} will
+              see this note alongside the request and can reopen the draft to
+              revise.
+            </p>
+          </div>
+          <div>
+            <label
+              className="text-[10px] font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-1.5"
+              htmlFor="rc-comment"
+            >
+              Your note (optional)
+            </label>
+            <textarea
+              id="rc-comment"
+              value={requestChangesComment}
+              onChange={(e) => setRequestChangesComment(e.target.value)}
+              placeholder="e.g. let's adjust the split to 40/60, and I'd like to swap session 3 to a Saturday morning."
+              rows={4}
+              maxLength={500}
+              className="w-full rounded-xl p-3 text-sm focus:outline-none resize-y"
+              style={{
+                border: "1px solid rgba(15,34,41,0.10)",
+                color: "#0F2229",
+                minHeight: 100,
+              }}
+              autoFocus
+            />
+            <p className="text-[10px] text-[#94a3b8] mt-1 text-right">
+              {requestChangesComment.length}/500
+            </p>
+          </div>
+          {error && (
+            <p className="text-xs font-bold" style={{ color: "#dc2626" }}>
+              {error}
+            </p>
+          )}
+          <div className="flex items-center gap-2 pt-2">
+            <button
+              onClick={handleSubmitRequestChanges}
+              disabled={confirming}
+              className="flex-1 px-5 py-2.5 rounded-full text-white text-sm font-black font-headline disabled:opacity-40"
+              style={{ backgroundColor: "#FF6130" }}
+            >
+              {confirming ? "Sending…" : "Send request"}
+            </button>
+            <button
+              onClick={() => {
+                setRequestChangesOpen(false);
+                setRequestChangesComment("");
+              }}
+              disabled={confirming}
+              className="px-4 py-2.5 rounded-full text-xs font-bold font-headline text-[#94a3b8] hover:text-[#0F2229] disabled:opacity-40"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </Dialog>
     </div>
   );
 
