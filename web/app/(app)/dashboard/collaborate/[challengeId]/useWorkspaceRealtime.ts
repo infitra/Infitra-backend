@@ -62,6 +62,24 @@ export function useWorkspaceRealtime({
     setActivity(initialActivity);
   }, [initialActivity]);
 
+  // Polish v12.Y: third propagation path for contract state changes.
+  // Chat realtime is proven reliable (system messages reliably reach
+  // the cohost). WorkspaceChat dispatches a `workspace-contract-event`
+  // when ANY system message arrives — lock / reopen / accept / decline
+  // / join all post system messages, and they're the cases where the
+  // workspace state needs to refresh. This sits alongside the two
+  // direct realtime subscriptions on app_challenge UPDATE and
+  // app_collaboration_contract INSERT below; any one firing triggers
+  // the refresh.
+  useEffect(() => {
+    function handler() {
+      router.refresh();
+    }
+    if (typeof window === "undefined") return;
+    window.addEventListener("workspace-contract-event", handler);
+    return () => window.removeEventListener("workspace-contract-event", handler);
+  }, [router]);
+
   useEffect(() => {
     const supabase = createClient();
     const sessionIdSet = new Set(knownSessionIds);

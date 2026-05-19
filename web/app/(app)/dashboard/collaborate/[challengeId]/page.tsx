@@ -5,6 +5,15 @@ import { WorkspaceShell } from "./WorkspaceShell";
 
 export const metadata = { title: "Collaboration Workspace — INFITRA" };
 
+// Polish v12.Y: explicit dynamic rendering. The page reads cookies
+// (auth.getUser) which should already mark it dynamic by default,
+// but being explicit defends against any Next.js 16 caching edge
+// case that might serve a stale snapshot on router.refresh() — the
+// cohost was reportedly not seeing the locked state arrive after
+// the owner locked, and any caching layer that intercepts the
+// refresh re-fetch would explain it.
+export const dynamic = "force-dynamic";
+
 export default async function CollaborateWorkspacePage({
   params,
 }: {

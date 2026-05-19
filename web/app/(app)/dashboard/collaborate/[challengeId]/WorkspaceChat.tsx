@@ -110,6 +110,19 @@ export function WorkspaceChat({ conversationId, currentUserId, profiles }: Props
             return [...prev, msg];
           });
           // Scroll handled by the centralized useEffect on messages.length.
+
+          // Polish v12.Y: chat realtime is proven to fire reliably
+          // (this very handler running is the proof). System messages
+          // are posted by the same RPCs that change contract state
+          // (lock, reopen, accept, decline). When one arrives,
+          // dispatch a window event so the workspace can use chat-
+          // realtime as a third propagation path for lock-state
+          // changes — in addition to the two existing direct paths
+          // on app_challenge UPDATE and app_collaboration_contract
+          // INSERT, which haven't been firing reliably for the cohost.
+          if (msg.kind === "system" && typeof window !== "undefined") {
+            window.dispatchEvent(new CustomEvent("workspace-contract-event"));
+          }
         }
       )
       .subscribe((status, err) => {
