@@ -60,7 +60,16 @@ export function ContractStatusBanner({ ownerName, lockedAt, parties, hasDeclines
       ? "All signatures in — ready to publish"
       : "Locked agreement — under review";
 
-  const accent = hasDeclines ? "#FF6130" : confirmedCount === totalToSign ? "#15803d" : "#0891b2";
+  // Polish v12.AA: when all signatures are in, switch the banner
+  // accent from green (#15803d, success/utility) to brand orange
+  // (#FF6130 — the publish action colour). Makes the whole "ready"
+  // state visually point at the orange Publish CTA in the action
+  // panel. Green felt formal/checkbox; orange feels like "go time".
+  const accent = hasDeclines
+    ? "#c2410c"  // warmer red for "needs attention" (was the same orange as ready — confusing)
+    : totalToSign > 0 && confirmedCount === totalToSign
+      ? "#FF6130"  // ready to publish — matches the publish CTA
+      : "#0891b2"; // under review — calm cyan
 
   return (
     <div

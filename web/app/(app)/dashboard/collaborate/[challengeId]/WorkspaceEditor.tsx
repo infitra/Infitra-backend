@@ -819,7 +819,20 @@ export function WorkspaceEditor({
         style={
           isLocked
             ? allAccepted && !hasDeclines
-              ? { backgroundColor: "#A8D5DC", border: "1px solid rgba(8,145,178,0.35)" }
+              ? {
+                  // Polish v12.AA: "all signatures in — ready to publish"
+                  // state. Previous treatment was a muted desaturated
+                  // cyan (#A8D5DC) that felt dirty/foggy rather than
+                  // celebratory. Now: a subtle warm orange→cyan gradient
+                  // that represents the union of the two creators ready
+                  // to ship together, with an orange-tinted border that
+                  // visually points the eye at the orange publish button
+                  // sitting in the action panel below.
+                  background:
+                    "linear-gradient(135deg, rgba(255,97,48,0.07), rgba(156,240,255,0.10))",
+                  border: "1px solid rgba(255,97,48,0.25)",
+                  boxShadow: "0 0 0 1px rgba(255,97,48,0.08) inset",
+                }
               : { backgroundColor: "#D8DEE2", border: "1px solid rgba(15,34,41,0.1)" }
             : undefined
         }
@@ -1269,8 +1282,16 @@ export function WorkspaceEditor({
               <button
                 onClick={() => setPublishModalOpen(true)}
                 disabled={publishing}
-                className="px-6 py-3 rounded-full text-white text-base font-black font-headline disabled:opacity-40 w-full"
-                style={{ backgroundColor: "#FF6130", boxShadow: "0 4px 14px rgba(255,97,48,0.35)" }}
+                className="px-6 py-3.5 rounded-full text-white text-base font-black font-headline disabled:opacity-40 w-full transition-transform hover:scale-[1.01]"
+                style={{
+                  // Polish v12.AA: stronger glow on the publish CTA in
+                  // the all-signed state so the eye gravitates to it.
+                  // Was a single moderate shadow; now layered glow that
+                  // lifts the button off the warm envelope below it.
+                  backgroundColor: "#FF6130",
+                  boxShadow:
+                    "0 6px 20px rgba(255,97,48,0.40), 0 2px 6px rgba(255,97,48,0.20)",
+                }}
               >
                 {publishing ? "Publishing..." : "Publish Challenge"}
               </button>
