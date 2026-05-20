@@ -1,17 +1,29 @@
 /**
- * PublicProgramRhythm — "How it actually works" beat.
+ * PublicProgramRhythm — Bundle 4.2 rewrite.
  *
- * Vertical week-by-week timeline. Each week: number + date range + theme
- * (from weekly_arc), followed by that week's sessions inline (image
- * thumb + title + time + duration).
+ * Vertical cyan-spine timeline. The week markers are punctuation along
+ * a continuous line — the spine itself reads as the program's
+ * continuous presence (the cohort space, always alive), with live
+ * moments highlighted as the points where the cohort comes together.
  *
- * Buyer scans top-to-bottom and gets a concrete sense of: when each
- * session lands, what the focus is week by week, what's actually in
- * the program.
+ * The previous version treated weeks as a 2-column "left rail / right
+ * content" grid with no continuous visual connection between weeks. That
+ * read as "stacked weeks" — list-like, no flow, no momentum. The new
+ * spine treatment reads as a journey: your eye travels down the cyan
+ * line, picking up themes and session cards along the way.
  *
- * Reads as marketing — generous spacing, no editing affordances, but
- * the visual rhythm mirrors the workspace's so creators recognize
- * their own design.
+ * Always-on signaling:
+ *   - Spine is SOLID cyan throughout (not dashed in-between).
+ *     Visual metaphor: continuity, not absence.
+ *   - Small orange "ALWAYS ON · cohort space" tag at the top of the
+ *     spine pins the always-on dimension once.
+ *   - Section subtitle says it in words: "Live coaching weaves into
+ *     your week. Between sessions, your cohort stays alive."
+ *   - The dedicated selling of always-on lives in the next block
+ *     (PublicBeyondLiveBlock), not repeated here.
+ *
+ * First week's marker is orange (#FF6130) instead of cyan — "start here"
+ * visual signal. All subsequent week markers are cyan.
  */
 
 interface SessionLite {
@@ -98,144 +110,189 @@ export function PublicProgramRhythm({
     sessionsByWeek.get(w)!.push(s);
   }
   for (const arr of sessionsByWeek.values()) {
-    arr.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+    arr.sort(
+      (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime(),
+    );
   }
 
   return (
-    <section
-      className="px-6 lg:px-12 py-16 lg:py-24"
-      style={{ backgroundColor: "rgba(15,34,41,0.025)" }}
-    >
-      <div className="max-w-4xl mx-auto">
-        {/* Section eyebrow + heading */}
+    <section className="px-6 lg:px-12 py-16 lg:py-24">
+      <div className="max-w-3xl mx-auto">
+        {/* Section header */}
         <p
-          className="text-[10px] font-bold font-headline uppercase tracking-[0.25em] mb-3 text-center"
-          style={{ color: "#94a3b8" }}
+          className="text-[11px] font-bold font-headline uppercase tracking-[0.25em] mb-3 text-center"
+          style={{ color: "#FF6130" }}
         >
-          The Program
+          The Journey
         </p>
         <h2
-          className="text-3xl lg:text-4xl font-black font-headline tracking-tight text-center mb-3"
-          style={{ color: "#0F2229" }}
+          className="text-3xl lg:text-5xl font-black font-headline tracking-tight text-center mb-4"
+          style={{ color: "#0F2229", letterSpacing: "-0.02em" }}
         >
-          {totalWeeks} {totalWeeks === 1 ? "week" : "weeks"} of structure
+          {totalWeeks} {totalWeeks === 1 ? "week" : "weeks"}, week by week
         </h2>
         <p
-          className="text-sm sm:text-base text-center mb-12 lg:mb-16 max-w-2xl mx-auto leading-relaxed"
-          style={{ color: "#64748b" }}
+          className="text-sm sm:text-base text-center mb-16 lg:mb-20 max-w-xl mx-auto leading-relaxed"
+          style={{ color: "#475569" }}
         >
-          {sessions.length} live {sessions.length === 1 ? "session" : "sessions"} woven
-          into a {totalWeeks}-week rhythm. Each week has a focus and its own
-          live moments.
+          Live coaching weaves into your week. Between sessions, your
+          cohort stays alive.
         </p>
 
-        {/* Weekly timeline */}
-        <div className="space-y-10 lg:space-y-12">
-          {Array.from({ length: totalWeeks }, (_, i) => i + 1).map((weekNum) => {
-            const range = weekRange(startDate, weekNum);
-            const focus = weeklyArc.find((f) => f.week === weekNum)?.theme;
-            const weekSessions = sessionsByWeek.get(weekNum) ?? [];
+        {/* The spine itself + content. Spine is positioned via absolute
+            inside a relative container; content uses padding-left to
+            clear it. */}
+        <div className="relative">
+          {/* The cyan spine — solid line from top of first week marker
+              to bottom of last. Sits at left 16px (mobile) / 24px (desktop).
+              Single element with responsive `left`. Always-on tag pinned
+              at the top of the spine. */}
+          <div
+            className="absolute top-12 bottom-4 w-[3px] rounded-full left-4 lg:left-6"
+            style={{ backgroundColor: "#9CF0FF" }}
+            aria-hidden
+          />
 
-            return (
-              <div key={weekNum} className="flex gap-5 lg:gap-8">
-                {/* Left rail: week number + range */}
-                <div className="shrink-0 w-20 lg:w-28 pt-1">
+          {/* Always-on tag — pinned at the top of the spine */}
+          <div className="relative pl-10 lg:pl-16 mb-10 lg:mb-14">
+            <span
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold font-headline uppercase tracking-[0.2em]"
+              style={{
+                backgroundColor: "rgba(255,97,48,0.10)",
+                color: "#c2410c",
+                border: "1px solid rgba(255,97,48,0.20)",
+              }}
+            >
+              <span
+                className="inline-block w-1.5 h-1.5 rounded-full"
+                style={{ backgroundColor: "#FF6130" }}
+              />
+              Always on · cohort space
+            </span>
+          </div>
+
+          {/* Weeks */}
+          <div className="space-y-12 lg:space-y-16">
+            {Array.from({ length: totalWeeks }, (_, i) => i + 1).map((weekNum) => {
+              const range = weekRange(startDate, weekNum);
+              const focus = weeklyArc.find((f) => f.week === weekNum)?.theme;
+              const weekSessions = sessionsByWeek.get(weekNum) ?? [];
+              const isFirst = weekNum === 1;
+
+              return (
+                <div key={weekNum} className="relative pl-10 lg:pl-16">
+                  {/* Week marker — orange for first week ("start here"
+                      signal), cyan for the rest. Centered on the spine
+                      via responsive left positioning. Single element. */}
                   <div
-                    className="text-[11px] font-bold font-headline uppercase tracking-widest"
+                    className="absolute w-4 h-4 rounded-full left-[9px] lg:left-[17px] top-2"
+                    style={{
+                      backgroundColor: isFirst ? "#FF6130" : "#9CF0FF",
+                      border: "3px solid #F2EFE8",
+                      boxShadow: isFirst
+                        ? "0 0 0 1px rgba(255,97,48,0.30), 0 2px 8px rgba(255,97,48,0.25)"
+                        : "0 0 0 1px rgba(8,145,178,0.20)",
+                    }}
+                    aria-hidden
+                  />
+
+                  {/* Week label */}
+                  <div
+                    className="text-[11px] font-bold font-headline uppercase tracking-[0.2em] mb-2"
                     style={{ color: "#0891b2" }}
                   >
-                    Week {weekNum}
+                    Week {weekNum} <span style={{ color: "#cbd5e1" }}>·</span>{" "}
+                    <span style={{ color: "#94a3b8" }}>
+                      {formatWeekRange(range.start, range.end)}
+                    </span>
                   </div>
-                  <div
-                    className="text-[11px] font-bold font-headline mt-1"
-                    style={{ color: "#94a3b8" }}
+
+                  {/* Week theme as chapter heading. If empty, fall back
+                      to "Week N" — never leave a bare row. */}
+                  <h3
+                    className="font-black font-headline tracking-tight leading-[1.05] mb-6 lg:mb-7"
+                    style={{
+                      color: "#0F2229",
+                      fontSize: "clamp(1.5rem, 4vw, 2.25rem)",
+                      letterSpacing: "-0.02em",
+                    }}
                   >
-                    {formatWeekRange(range.start, range.end)}
-                  </div>
-                </div>
+                    {focus && focus.trim() ? focus : `Week ${weekNum}`}
+                  </h3>
 
-                {/* Right side: theme + sessions */}
-                <div className="flex-1 min-w-0">
-                  {focus ? (
-                    <h3
-                      className="text-xl lg:text-2xl font-black font-headline tracking-tight leading-tight mb-4"
-                      style={{ color: "#0F2229" }}
-                    >
-                      {focus}
-                    </h3>
-                  ) : (
-                    <h3
-                      className="text-xl lg:text-2xl font-bold font-headline tracking-tight leading-tight mb-4 italic"
-                      style={{ color: "#94a3b8" }}
-                    >
-                      Focus coming
-                    </h3>
-                  )}
-
-                  {weekSessions.length === 0 ? (
-                    <p className="text-xs italic" style={{ color: "#94a3b8" }}>
-                      No sessions this week
-                    </p>
-                  ) : (
+                  {/* Sessions for this week */}
+                  {weekSessions.length > 0 && (
                     <div className="space-y-3">
                       {weekSessions.map((s) => (
-                        <div
-                          key={s.id}
-                          className="flex items-start gap-4 p-3 rounded-xl"
-                          style={{
-                            backgroundColor: "#FFFFFF",
-                            border: "1px solid rgba(15,34,41,0.06)",
-                          }}
-                        >
-                          {s.image_url ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              src={s.image_url}
-                              alt=""
-                              className="w-20 h-20 lg:w-24 lg:h-24 rounded-lg object-cover shrink-0"
-                            />
-                          ) : (
-                            <div
-                              className="w-20 h-20 lg:w-24 lg:h-24 rounded-lg shrink-0 flex items-center justify-center"
-                              style={{ background: "linear-gradient(135deg, #0F2229, #1a3340)" }}
-                            >
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src="/logo-mark.png" alt="" width={20} height={20} style={{ opacity: 0.18 }} />
-                            </div>
-                          )}
-                          <div className="flex-1 min-w-0 pt-1">
-                            <h4
-                              className="text-sm lg:text-base font-black font-headline leading-tight"
-                              style={{ color: "#0F2229" }}
-                            >
-                              {s.title}
-                            </h4>
-                            <p
-                              className="text-[11px] lg:text-xs font-bold mt-1.5"
-                              style={{ color: "#64748b" }}
-                              suppressHydrationWarning
-                            >
-                              {formatSessionDay(s.start_time)} · {formatSessionTime(s.start_time)} · {formatDuration(s.duration_minutes)}
-                            </p>
-                            {s.description && s.description.trim() && (
-                              <p
-                                className="text-xs mt-2 leading-relaxed line-clamp-2"
-                                style={{ color: "#475569" }}
-                              >
-                                {s.description}
-                              </p>
-                            )}
-                          </div>
-                        </div>
+                        <SessionCard key={s.id} session={s} />
                       ))}
                     </div>
                   )}
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </div>
     </section>
+  );
+}
+
+function SessionCard({ session }: { session: SessionLite }) {
+  return (
+    <div
+      className="flex items-start gap-4 p-3.5 rounded-2xl"
+      style={{
+        backgroundColor: "#FFFFFF",
+        border: "1px solid rgba(15,34,41,0.06)",
+        boxShadow: "0 1px 2px rgba(15,34,41,0.03)",
+      }}
+    >
+      {session.image_url ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={session.image_url}
+          alt=""
+          className="w-16 h-16 lg:w-20 lg:h-20 rounded-lg object-cover shrink-0"
+        />
+      ) : (
+        <div
+          className="w-16 h-16 lg:w-20 lg:h-20 rounded-lg shrink-0 flex items-center justify-center"
+          style={{
+            background: "linear-gradient(135deg, rgba(156,240,255,0.40), rgba(255,97,48,0.20))",
+          }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo-mark.png" alt="" width={20} height={20} style={{ opacity: 0.35 }} />
+        </div>
+      )}
+      <div className="flex-1 min-w-0 pt-0.5">
+        <h4
+          className="text-sm lg:text-base font-black font-headline leading-tight"
+          style={{ color: "#0F2229" }}
+        >
+          {session.title}
+        </h4>
+        <p
+          className="text-[11px] lg:text-xs font-bold mt-1.5"
+          style={{ color: "#64748b" }}
+          suppressHydrationWarning
+        >
+          {formatSessionDay(session.start_time)}
+          <span style={{ color: "#cbd5e1" }}> · </span>
+          {formatSessionTime(session.start_time)}
+          <span style={{ color: "#cbd5e1" }}> · </span>
+          {formatDuration(session.duration_minutes)}
+        </p>
+        {session.description && session.description.trim() && (
+          <p
+            className="text-xs mt-2 leading-relaxed line-clamp-2"
+            style={{ color: "#475569" }}
+          >
+            {session.description}
+          </p>
+        )}
+      </div>
+    </div>
   );
 }

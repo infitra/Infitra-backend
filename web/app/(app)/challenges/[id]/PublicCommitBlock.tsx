@@ -90,30 +90,33 @@ export function PublicCommitBlock({
       }}
     >
       <div className="max-w-2xl mx-auto">
-        {/* Time-commitment confirmation — sets the buyer mood for committing */}
+        {/* Bundle 4.2: drop the restated title and "Are you in?" eyebrow.
+            By the time the reader is here, they know what this is — the
+            page should accelerate, not restart. The commit block is the
+            moment, not a recap. */}
         <p
-          className="text-[10px] font-bold font-headline uppercase tracking-[0.25em] mb-3 text-center"
-          style={{ color: "#94a3b8" }}
+          className="text-[11px] font-bold font-headline uppercase tracking-[0.25em] mb-3 text-center"
+          style={{ color: "#FF6130" }}
         >
-          Are you in?
+          Commit
         </p>
         <h2
-          className="text-3xl lg:text-4xl font-black font-headline tracking-tight text-center mb-5"
-          style={{ color: "#0F2229" }}
+          className="text-3xl lg:text-5xl font-black font-headline tracking-tight text-center mb-5"
+          style={{ color: "#0F2229", letterSpacing: "-0.02em" }}
         >
-          {title}
+          Lock it in
         </h2>
         <p
-          className="text-base lg:text-lg text-center mb-12 leading-relaxed"
+          className="text-base lg:text-lg text-center mb-12 leading-relaxed max-w-lg mx-auto"
           style={{ color: "#475569" }}
         >
-          This program runs{" "}
+          The program runs{" "}
           <span className="font-bold" style={{ color: "#0F2229" }}>
             {formatLongDate(startDate)} → {formatLongDate(endDate)}
           </span>
           . Block out the {sessionCount}{" "}
-          {sessionCount === 1 ? "session" : "sessions"} on your calendar so
-          you can show up live.
+          {sessionCount === 1 ? "live moment" : "live moments"} so you can
+          show up.
         </p>
 
         {/* Price + inventory + CTA card */}
@@ -217,7 +220,7 @@ export function PublicCommitBlock({
             <PurchaseButton
               kind="challenge"
               targetId={challengeId}
-              label={`Join — ${price}`}
+              label={`Commit — ${price}`}
             />
           ) : (
             <div className="text-center">
@@ -235,7 +238,7 @@ export function PublicCommitBlock({
                     "0 6px 20px rgba(255,97,48,0.40), 0 2px 6px rgba(255,97,48,0.20)",
                 }}
               >
-                Join — {price}
+                Commit — {price}
               </Link>
               <p
                 className="text-[11px] mt-3"

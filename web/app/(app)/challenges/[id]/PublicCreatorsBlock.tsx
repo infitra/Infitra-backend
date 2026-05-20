@@ -33,25 +33,32 @@ export function PublicCreatorsBlock({ creators, topicsByCreator }: Props) {
   return (
     <section className="px-6 lg:px-12 py-16 lg:py-24">
       <div className="max-w-5xl mx-auto">
-        {/* Section eyebrow + heading */}
+        {/* Section eyebrow + heading. Bundle 4.2: eyebrow now orange
+            (consistent with other section labels), display size for H2
+            (matches the rest of the page's typographic ladder). */}
         <p
-          className="text-[10px] font-bold font-headline uppercase tracking-[0.25em] mb-3 text-center"
-          style={{ color: "#94a3b8" }}
+          className="text-[11px] font-bold font-headline uppercase tracking-[0.25em] mb-3 text-center"
+          style={{ color: "#FF6130" }}
         >
           Your Coaches
         </p>
         <h2
-          className="text-3xl lg:text-4xl font-black font-headline tracking-tight text-center mb-3"
-          style={{ color: "#0F2229" }}
+          className="text-3xl lg:text-5xl font-black font-headline tracking-tight text-center mb-4"
+          style={{ color: "#0F2229", letterSpacing: "-0.02em" }}
         >
-          {creators.length === 2 ? "Two coaches, one program" : "Coaching team"}
+          {creators.length === 1
+            ? "Led by"
+            : creators.length === 2
+              ? "Two coaches, one program"
+              : "Your coaching team"}
         </h2>
         <p
-          className="text-sm sm:text-base text-center mb-12 lg:mb-16 max-w-2xl mx-auto leading-relaxed"
-          style={{ color: "#64748b" }}
+          className="text-sm sm:text-base text-center mb-12 lg:mb-16 max-w-xl mx-auto leading-relaxed"
+          style={{ color: "#475569" }}
         >
-          Designed and led together. Different strengths, one program,
-          shared accountability for your results.
+          {creators.length === 1
+            ? "Designed around your goals — focused attention, one program, one coach."
+            : "Designed and led together. Different strengths, one program, shared accountability for your results."}
         </p>
 
         {/* Cards: side-by-side on desktop, stacked on mobile */}
