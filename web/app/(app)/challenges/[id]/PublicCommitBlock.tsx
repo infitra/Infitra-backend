@@ -19,6 +19,10 @@ import { PurchaseButton } from "@/app/components/PurchaseButton";
 
 interface Props {
   challengeId: string;
+  /** Resolved cohort space ID for the "Open space" door. Null if no
+   *  space exists yet (rare — every published challenge gets one) or
+   *  the viewer doesn't have access. */
+  spaceId: string | null;
   title: string;
   priceCents: number;
   currency: string;
@@ -54,6 +58,7 @@ function weeksBetween(start: string, end: string): number {
 
 export function PublicCommitBlock({
   challengeId,
+  spaceId,
   title,
   priceCents,
   currency,
@@ -165,8 +170,12 @@ export function PublicCommitBlock({
             </div>
           ) : hasPurchased ? (
             <div className="text-center">
+              {/* The door into the cohort community uses the SPACE id,
+                  not the challenge id (they're different rows). If the
+                  space hasn't been provisioned yet, fall back to /me
+                  so the user lands somewhere sensible. */}
               <Link
-                href={`/communities/challenge/${challengeId}`}
+                href={spaceId ? `/communities/challenge/${spaceId}` : "/me"}
                 className="inline-block px-6 py-3.5 rounded-full text-white text-sm font-black font-headline transition-transform hover:scale-[1.01]"
                 style={{
                   backgroundColor: "#0891b2",
@@ -184,8 +193,13 @@ export function PublicCommitBlock({
             />
           ) : (
             <div className="text-center">
+              {/* intent=buy:challenge:[id] triggers the server to call
+                  create_checkout_session right after auth, redirecting
+                  the user straight to Stripe — no second click required.
+                  returnTo is the fallback if checkout fails for any
+                  reason (already purchased, capacity, rate limit). */}
               <Link
-                href={`/login?returnTo=/challenges/${challengeId}`}
+                href={`/login?intent=buy:challenge:${challengeId}&returnTo=/challenges/${challengeId}`}
                 className="inline-block w-full py-3.5 rounded-full text-white text-sm font-black font-headline transition-transform hover:scale-[1.01]"
                 style={{
                   backgroundColor: "#FF6130",
@@ -193,13 +207,13 @@ export function PublicCommitBlock({
                     "0 6px 20px rgba(255,97,48,0.40), 0 2px 6px rgba(255,97,48,0.20)",
                 }}
               >
-                Sign in to join
+                Join — {price}
               </Link>
               <p
                 className="text-[11px] mt-3"
                 style={{ color: "#94a3b8" }}
               >
-                Quick sign-up, then complete checkout
+                Quick sign-up, straight to checkout
               </p>
             </div>
           )}

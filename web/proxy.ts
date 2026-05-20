@@ -68,7 +68,11 @@ export async function proxy(request: NextRequest) {
       pathname.startsWith("/challenges") ||
       pathname.startsWith("/communities") ||
       pathname.startsWith("/creators") ||
-      pathname.startsWith("/profile"))
+      pathname.startsWith("/profile") ||
+      // Participant home (Bundle 4.1) — lists "My programs" with door
+      // into each cohort space. Seed of the post-pilot participant
+      // dashboard (analytics, achievements, active purchases).
+      pathname.startsWith("/me"))
   ) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
@@ -90,7 +94,9 @@ export async function proxy(request: NextRequest) {
     } else if (profile.role === "creator" || profile.role === "admin") {
       url.pathname = "/dashboard";
     } else {
-      url.pathname = "/discover";
+      // Participant home (Bundle 4.1). /discover doesn't exist yet —
+      // /me is the actual landing for participants.
+      url.pathname = "/me";
     }
     return NextResponse.redirect(url);
   }

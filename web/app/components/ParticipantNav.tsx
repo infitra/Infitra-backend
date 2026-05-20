@@ -10,20 +10,24 @@ export function ParticipantNav({
   role?: string;
 }) {
   const isCreator = role === "creator" || role === "admin";
-  // Pilot: participants have no dedicated home; they arrive via challenge URLs.
-  // Creators go to their dashboard.
-  const homeHref = isCreator ? "/dashboard" : "/";
+  // Bundle 4.1: participants now have a home at /me — "My programs"
+  // lists their purchases with a door into each cohort space. Creators
+  // still go to /dashboard. This makes the logo (and post-login landing)
+  // actually meaningful for participants instead of dropping them on the
+  // marketing landing page.
+  const homeHref = isCreator ? "/dashboard" : "/me";
 
-  // Creator links mirror the dashboard layout nav (post-Tribes removal).
-  // Participant nav has no links — they're contextually on a challenge page
-  // and don't need platform-level navigation.
+  // Creator links mirror the dashboard layout nav.
+  // Participant links are intentionally minimal for the pilot — just the
+  // "My programs" doorway. Post-pilot this is where Discover, Achievements,
+  // etc. will live.
   const links = isCreator
     ? [
         { label: "Home", href: "/dashboard" },
         { label: "Create", href: "/dashboard/create" },
         { label: "Earnings", href: "/dashboard/earnings" },
       ]
-    : [];
+    : [{ label: "My programs", href: "/me" }];
 
   return (
     <nav className="fixed top-0 w-full z-50">

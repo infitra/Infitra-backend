@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useActionState } from "react";
+import { useSearchParams } from "next/navigation";
 import { signIn, signUp } from "@/app/actions/auth";
 
 type Mode = "signin" | "signup";
@@ -11,9 +12,30 @@ type SignupStep = 1 | 2;
  * page and the rest of the production app. Card sits on cream with a
  * soft white fill + hairline border so the wave glows through the
  * margins. Inputs are white-on-slate, accents stay brand orange / cyan.
+ *
+ * Bundle 4.1 — buy-flow variant:
+ *   When the URL carries ?intent=buy:* (set by the buyer-page sign-in
+ *   CTA), the signup form collapses to *just email + password*.
+ *   Role + display name are derived server-side (role=participant,
+ *   name=email-prefix) — both are correct defaults at the moment of
+ *   purchase and the user can change the name later from inside the
+ *   cohort space. This removes every field that doesn't matter when
+ *   someone has hit "Buy" and is one step from paying.
+ *
+ *   The full 2-step signup (role picker + display name) is preserved
+ *   for users who arrive at /login directly (e.g. to sign up as a
+ *   creator) — those flows aren't on the buy path.
  */
 export function LoginForm() {
-  const [mode, setMode] = useState<Mode>("signin");
+  const searchParams = useSearchParams();
+  const intent = searchParams.get("intent");
+  const returnTo = searchParams.get("returnTo");
+  const isBuyFlow = intent?.startsWith("buy:") ?? false;
+
+  // In the buy flow, default to signup — most strangers landing here
+  // from a DM share don't have an INFITRA account yet, and the form
+  // is now short enough that signing up doesn't feel like a chore.
+  const [mode, setMode] = useState<Mode>(isBuyFlow ? "signup" : "signin");
   const [signupStep, setSignupStep] = useState<SignupStep>(1);
   const [selectedRole, setSelectedRole] = useState<"creator" | "participant" | null>(null);
   const [displayName, setDisplayName] = useState("");
@@ -53,6 +75,30 @@ export function LoginForm() {
         boxShadow: "0 16px 48px rgba(15,34,41,0.06)",
       }}
     >
+      {/* Buy-flow header — sets context so the user knows what they're
+          about to do. Without this, the bare auth form feels detached
+          from the "I just clicked Buy" moment. */}
+      {isBuyFlow && (
+        <div
+          className="mb-6 p-4 rounded-2xl"
+          style={{
+            background:
+              "linear-gradient(135deg, rgba(255,97,48,0.10) 0%, rgba(156,240,255,0.10) 100%)",
+            border: "1px solid rgba(255,97,48,0.20)",
+          }}
+        >
+          <p
+            className="text-[10px] font-bold font-headline uppercase tracking-[0.18em] mb-1"
+            style={{ color: "#c2410c" }}
+          >
+            One step to checkout
+          </p>
+          <p className="text-sm" style={{ color: "#0F2229" }}>
+            Create your account, then go straight to secure payment.
+          </p>
+        </div>
+      )}
+
       {/* Tab switcher */}
       <div
         className="flex mb-8 rounded-full p-1"
@@ -122,6 +168,11 @@ export function LoginForm() {
           )}
 
           <form action={signInAction} className="space-y-4">
+            {/* Thread the intent + returnTo through the action so the
+                server can decide where to land the user (Stripe if
+                intent=buy, the offer page otherwise). */}
+            {intent && <input type="hidden" name="intent" value={intent} />}
+            {returnTo && <input type="hidden" name="returnTo" value={returnTo} />}
             <div>
               <label htmlFor="email" className={labelClass} style={labelStyle}>
                 Email
@@ -163,14 +214,101 @@ export function LoginForm() {
                   "0 4px 14px rgba(255,97,48,0.35), 0 2px 6px rgba(255,97,48,0.20)",
               }}
             >
-              {signInPending ? "..." : "Sign In"}
+              {signInPending ? "..." : isBuyFlow ? "Sign In & Continue" : "Sign In"}
             </button>
           </form>
         </>
       )}
 
-      {/* ── SIGN UP — Step 1: Role + Name ── */}
-      {mode === "signup" && signupStep === 1 && (
+      {/* ── SIGN UP — BUY-FLOW VARIANT (collapsed, single step) ── */}
+      {mode === "signup" && isBuyFlow && (
+        <>
+          <h1
+            className="text-2xl font-headline tracking-tight mb-2"
+            style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.02em" }}
+          >
+            Create your account.
+          </h1>
+          <p className="text-sm mb-8" style={{ color: "#64748b" }}>
+            Just email and password — you can fill in the rest later.
+          </p>
+
+          {signUpState?.error && (
+            <div
+              className="mb-6 p-3 rounded-xl"
+              style={{
+                backgroundColor: "rgba(255,97,48,0.10)",
+                border: "1px solid rgba(255,97,48,0.30)",
+              }}
+            >
+              <p className="text-sm" style={{ color: "#FF6130" }}>
+                {signUpState.error}
+              </p>
+            </div>
+          )}
+
+          <form action={signUpAction} className="space-y-4">
+            {/* Intent + returnTo so signUp action knows to go to Stripe.
+                Role + display_name are computed server-side in the
+                buy-flow branch — no hidden fields needed for them. */}
+            <input type="hidden" name="intent" value={intent!} />
+            {returnTo && <input type="hidden" name="returnTo" value={returnTo} />}
+
+            <div>
+              <label htmlFor="buy_signup_email" className={labelClass} style={labelStyle}>
+                Email
+              </label>
+              <input
+                id="buy_signup_email"
+                name="email"
+                type="email"
+                required
+                autoComplete="email"
+                placeholder="you@example.com"
+                className={inputClass}
+                style={inputStyle}
+              />
+            </div>
+            <div>
+              <label htmlFor="buy_signup_password" className={labelClass} style={labelStyle}>
+                Password
+              </label>
+              <input
+                id="buy_signup_password"
+                name="password"
+                type="password"
+                required
+                autoComplete="new-password"
+                placeholder="Min. 8 characters"
+                minLength={8}
+                className={inputClass}
+                style={inputStyle}
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={signUpPending}
+              className="w-full mt-2 py-3.5 rounded-full text-white text-sm font-headline transition-transform hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
+              style={{
+                backgroundColor: "#FF6130",
+                fontWeight: 700,
+                boxShadow:
+                  "0 4px 14px rgba(255,97,48,0.35), 0 2px 6px rgba(255,97,48,0.20)",
+              }}
+            >
+              {signUpPending ? "..." : "Continue to Checkout"}
+            </button>
+
+            <p className="text-[11px] text-center pt-1" style={{ color: "#94a3b8" }}>
+              By continuing you agree to INFITRA&apos;s terms of use.
+            </p>
+          </form>
+        </>
+      )}
+
+      {/* ── SIGN UP — STANDARD Step 1: Role + Name (not buy flow) ── */}
+      {mode === "signup" && !isBuyFlow && signupStep === 1 && (
         <>
           <h1
             className="text-2xl font-headline tracking-tight mb-2"
@@ -279,8 +417,8 @@ export function LoginForm() {
         </>
       )}
 
-      {/* ── SIGN UP — Step 2: Email + Password ── */}
-      {mode === "signup" && signupStep === 2 && (
+      {/* ── SIGN UP — STANDARD Step 2: Email + Password (not buy flow) ── */}
+      {mode === "signup" && !isBuyFlow && signupStep === 2 && (
         <>
           <button
             type="button"
@@ -331,6 +469,10 @@ export function LoginForm() {
             {/* Hidden fields — role and display_name set in step 1 */}
             <input type="hidden" name="role" value={selectedRole ?? ""} />
             <input type="hidden" name="display_name" value={displayName} />
+            {/* No intent in the non-buy-flow path, but pass returnTo
+                if it happens to be present (e.g. signing up to view a
+                draft someone shared). */}
+            {returnTo && <input type="hidden" name="returnTo" value={returnTo} />}
 
             <div>
               <label htmlFor="signup_email" className={labelClass} style={labelStyle}>

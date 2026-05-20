@@ -21,10 +21,13 @@ export const metadata = {
 
 export default async function ChallengePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ checkout_error?: string }>;
 }) {
   const { id } = await params;
+  const { checkout_error: checkoutError } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -104,6 +107,11 @@ export default async function ChallengePage({
   let isCreator = false;
   let viewerDisplayName: string | null = null;
   let viewerRole: string | undefined = undefined;
+  // spaceId is the door into the cohort community (/communities/challenge/[spaceId]).
+  // Bundle 4.1 bug fix: previously the "Open challenge space" links passed
+  // challengeId directly, but app_challenge_space.id !== source_challenge_id —
+  // those links were broken. Resolve the space here and pass its ID down.
+  let spaceId: string | null = null;
   if (user) {
     const { data: membership } = await supabase
       .from("app_challenge_member")
@@ -114,6 +122,15 @@ export default async function ChallengePage({
     hasPurchased = !!membership;
     isCreator =
       user.id === buyerView.owner_id || cohostIds.includes(user.id);
+
+    if (hasPurchased || isCreator) {
+      const { data: space } = await supabase
+        .from("app_challenge_space")
+        .select("id")
+        .eq("source_challenge_id", id)
+        .maybeSingle();
+      spaceId = space?.id ?? null;
+    }
 
     // Fetch viewer profile for the app-style nav (display_name + role
     // drive whether ParticipantNav shows creator links like Home /
@@ -186,6 +203,37 @@ export default async function ChallengePage({
       )}
 
       <main>
+        {/* Buy-flow recovery banner — Bundle 4.1.
+            When intent=buy:* lands the user back here instead of on
+            Stripe (already purchased, capacity, rate limit, network
+            error), the post-auth helper appends ?checkout_error=...
+            so we can explain what happened in-context rather than
+            silently dropping them on the page. */}
+        {checkoutError && (
+          <div className="pt-24 px-6 max-w-2xl mx-auto">
+            <div
+              className="rounded-2xl p-4"
+              style={{
+                backgroundColor: "rgba(255,97,48,0.08)",
+                border: "1px solid rgba(255,97,48,0.25)",
+              }}
+            >
+              <p
+                className="text-[10px] font-bold font-headline uppercase tracking-[0.18em] mb-1"
+                style={{ color: "#c2410c" }}
+              >
+                Checkout didn&apos;t open
+              </p>
+              <p className="text-sm" style={{ color: "#0F2229" }}>
+                {checkoutError === "ALREADY_PURCHASED"
+                  ? "You're already enrolled in this program — open the cohort space below."
+                  : checkoutError === "CHALLENGE_FULL"
+                    ? "This program is at capacity right now. Check back soon or message the creators."
+                    : "We couldn't open Stripe checkout. Try the Join button below, or reload the page."}
+              </p>
+            </div>
+          </div>
+        )}
         <PublicChallengeHero
           title={buyerView.title}
           imageUrl={buyerView.image_url}
@@ -216,6 +264,7 @@ export default async function ChallengePage({
 
         <PublicCommitBlock
           challengeId={id}
+          spaceId={spaceId}
           title={buyerView.title}
           priceCents={buyerView.price_cents}
           currency={buyerView.currency}
@@ -231,6 +280,7 @@ export default async function ChallengePage({
 
       <StickyJoinCTA
         challengeId={id}
+        spaceId={spaceId}
         priceCents={buyerView.price_cents}
         currency={buyerView.currency}
         isAuthenticated={!!user}

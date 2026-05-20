@@ -20,6 +20,8 @@ import { PurchaseButton } from "@/app/components/PurchaseButton";
 
 interface Props {
   challengeId: string;
+  /** Cohort space ID (door into community). Distinct from challengeId. */
+  spaceId: string | null;
   priceCents: number;
   currency: string;
   isAuthenticated: boolean;
@@ -29,6 +31,7 @@ interface Props {
 
 export function StickyJoinCTA({
   challengeId,
+  spaceId,
   priceCents,
   currency,
   isAuthenticated,
@@ -91,7 +94,7 @@ export function StickyJoinCTA({
         <div className="flex-1">
           {hasPurchased ? (
             <Link
-              href={`/communities/challenge/${challengeId}`}
+              href={spaceId ? `/communities/challenge/${spaceId}` : "/me"}
               className="block w-full text-center py-3 rounded-full text-white text-sm font-black font-headline"
               style={{
                 backgroundColor: "#0891b2",
@@ -108,15 +111,17 @@ export function StickyJoinCTA({
               className="block w-full text-center py-3 rounded-full text-white text-sm font-black font-headline bg-[#FF6130] shadow-[0_4px_14px_rgba(255,97,48,0.35)] transition-transform hover:scale-[1.01] disabled:opacity-70"
             />
           ) : (
+            // intent=buy:* sends the user straight to Stripe after auth;
+            // returnTo is the fallback if checkout can't be created.
             <Link
-              href={`/login?returnTo=/challenges/${challengeId}`}
+              href={`/login?intent=buy:challenge:${challengeId}&returnTo=/challenges/${challengeId}`}
               className="block w-full text-center py-3 rounded-full text-white text-sm font-black font-headline transition-transform hover:scale-[1.01]"
               style={{
                 backgroundColor: "#FF6130",
                 boxShadow: "0 4px 14px rgba(255,97,48,0.35)",
               }}
             >
-              Sign in to join
+              Join program
             </Link>
           )}
         </div>
