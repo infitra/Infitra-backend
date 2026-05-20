@@ -272,6 +272,7 @@ export default async function ChallengePage({
           endDate={buyerView.end_date}
           sessionCount={sessions.length}
           creatorCount={creators.length}
+          spotsLeft={buyerView.spots_left ?? null}
           isAuthenticated={!!user}
           hasPurchased={hasPurchased}
           isCreator={isCreator}

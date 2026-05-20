@@ -30,7 +30,7 @@ export default async function CollaborateWorkspacePage({
   // null/empty for legacy challenges so the editor renders cleanly.
   const { data: challenge } = await supabase
     .from("app_challenge")
-    .select("id, title, description, start_date, end_date, price_cents, currency, status, owner_id, contract_id, image_url, promise_text, weekly_arc, topic_ownership, intro_prompt, promise_edited_at, promise_edited_by")
+    .select("id, title, description, start_date, end_date, price_cents, currency, capacity, status, owner_id, contract_id, image_url, promise_text, weekly_arc, topic_ownership, intro_prompt, promise_edited_at, promise_edited_by")
     .eq("id", challengeId)
     .single();
 
@@ -238,6 +238,7 @@ export default async function CollaborateWorkspacePage({
           startDate: challenge.start_date,
           endDate: challenge.end_date,
           priceCents: challenge.price_cents,
+          capacity: challenge.capacity ?? null,
           status: challenge.status,
           imageUrl: challenge.image_url,
           contractId: challenge.contract_id,

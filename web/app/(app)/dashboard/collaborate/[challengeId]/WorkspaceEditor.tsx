@@ -49,6 +49,10 @@ interface Props {
     startDate: string;
     endDate: string;
     priceCents: number;
+    /** Optional max participant cap. null = no cap. Bundle 4.1 — surfaced
+     *  in the workspace so creators can set a cap when they want to keep
+     *  the cohort small (or run a waitlist later). */
+    capacity: number | null;
     status: string;
     imageUrl: string | null;
     contractId: string | null;
@@ -212,6 +216,13 @@ export function WorkspaceEditor({
   const [price, setPrice, markPriceSaved] = useSyncedField(
     challenge.priceCents > 0 ? (challenge.priceCents / 100).toString() : "",
   );
+  // Capacity is the optional max-participants cap. Stored as a string in
+  // local state because "" represents "no cap" (vs 0 which would mean a
+  // cap of zero — different intent). commitCapacity parses + sends null
+  // for empty.
+  const [capacity, setCapacity, markCapacitySaved] = useSyncedField(
+    challenge.capacity !== null ? String(challenge.capacity) : "",
+  );
   const [imageUrl, setImageUrl, markImageSaved] = useSyncedField(challenge.imageUrl);
 
   const [promiseText, setPromiseText, markPromiseSaved] = useSyncedField(challenge.promiseText ?? "");
@@ -333,6 +344,7 @@ export function WorkspaceEditor({
     start_date: string;
     end_date: string;
     price: string;
+    capacity: string;
     image_url: string | null;
     promise_text: string;
     weekly_arc: WeeklyFocusEntry[];
@@ -353,6 +365,9 @@ export function WorkspaceEditor({
     // bumps it forward in lock-step).
     formData.set("end_date", override.end_date ?? derivedEndDate);
     formData.set("price", override.price ?? price);
+    // Capacity is optional; empty string serializes to "" which the
+    // server action interprets as null (no cap).
+    formData.set("capacity", override.capacity ?? capacity);
     const img = override.image_url !== undefined ? override.image_url : imageUrl;
     if (img !== null && img !== undefined) {
       formData.set("image_url", img);
@@ -437,6 +452,27 @@ export function WorkspaceEditor({
     if (cents < 0) { setError("Price cannot be negative."); return; }
     await saveField("price", { price });
     markPriceSaved();
+  }
+
+  async function commitCapacity() {
+    const initial = challenge.capacity !== null ? String(challenge.capacity) : "";
+    if (capacity === initial) { markCapacitySaved(); return; }
+    // "" or "0" both mean "no cap" — coerce both to empty so the
+    // server action sends null.
+    const trimmed = capacity.trim();
+    if (trimmed !== "") {
+      const n = parseInt(trimmed, 10);
+      if (!Number.isFinite(n) || n < 1 || n > 10000) {
+        setError("Capacity must be a whole number between 1 and 10,000 (or empty for no cap).");
+        return;
+      }
+      setCapacity(String(n));
+      await saveField("capacity", { capacity: String(n) });
+    } else {
+      setCapacity("");
+      await saveField("capacity", { capacity: "" });
+    }
+    markCapacitySaved();
   }
 
   async function commitPromise() {
@@ -953,6 +989,33 @@ export function WorkspaceEditor({
                   />
                 </div>
               </div>
+              {/* Capacity — optional cap. Separate row from the start/duration/price
+                  grid because it's conceptually different (optional vs. required) and
+                  needs a helper line explaining the "blank = unlimited" semantics.
+                  Bundle 4.1. */}
+              <div className="mt-3 grid grid-cols-3 gap-3">
+                <div>
+                  <label className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-2">
+                    Capacity <span className="font-normal normal-case tracking-normal" style={{ color: "#cbd5e1" }}>(optional)</span>
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={10000}
+                    value={capacity}
+                    onChange={(e) => setCapacity(e.target.value)}
+                    onBlur={commitCapacity}
+                    placeholder="Unlimited"
+                    className="w-full rounded-xl p-2.5 text-sm font-bold font-headline focus:outline-none"
+                    style={{ border: "1px solid rgba(15,34,41,0.12)", color: "#0F2229" }}
+                  />
+                  <p className="text-[10px] mt-1.5" style={{ color: "#94a3b8" }}>
+                    {capacity
+                      ? `Max ${capacity} participant${parseInt(capacity, 10) === 1 ? "" : "s"} can join.`
+                      : "Leave blank for no cap."}
+                  </p>
+                </div>
+              </div>
             </div>
           ) : (
             <div>
@@ -966,6 +1029,12 @@ export function WorkspaceEditor({
                 <div>
                   <p className="text-[10px] font-bold font-headline text-[#94a3b8] uppercase tracking-wider">Price</p>
                   <p className="font-bold font-headline text-[#0F2229]">CHF {(challenge.priceCents / 100).toFixed(0)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold font-headline text-[#94a3b8] uppercase tracking-wider">Capacity</p>
+                  <p className="font-bold font-headline text-[#0F2229]">
+                    {challenge.capacity !== null ? `${challenge.capacity} max` : "Unlimited"}
+                  </p>
                 </div>
               </div>
             </div>

@@ -30,6 +30,9 @@ interface Props {
   endDate: string;
   sessionCount: number;
   creatorCount: number;
+  /** Capacity remaining (null = no cap set). When set + small, we render
+   *  a "Only N spots left" urgency line under the price. Bundle 4.1. */
+  spotsLeft: number | null;
   isAuthenticated: boolean;
   hasPurchased: boolean;
   isCreator: boolean;
@@ -66,6 +69,7 @@ export function PublicCommitBlock({
   endDate,
   sessionCount,
   creatorCount,
+  spotsLeft,
   isAuthenticated,
   hasPurchased,
   isCreator,
@@ -136,6 +140,30 @@ export function PublicCommitBlock({
             >
               For the full {weeks}-{weeks === 1 ? "week" : "week"} program
             </p>
+            {/* Spots-left urgency line — only shown when a cap is set
+                (spotsLeft !== null) and there are few enough remaining
+                to matter. Bundle 4.1. */}
+            {spotsLeft !== null && spotsLeft > 0 && spotsLeft <= 10 && (
+              <p
+                className="text-[11px] font-bold font-headline uppercase tracking-[0.18em] mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full"
+                style={{
+                  color: "#c2410c",
+                  backgroundColor: "rgba(255,97,48,0.10)",
+                }}
+              >
+                <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "#FF6130" }} />
+                Only {spotsLeft} spot{spotsLeft === 1 ? "" : "s"} left
+              </p>
+            )}
+            {spotsLeft === 0 && (
+              <p
+                className="text-[11px] font-bold font-headline uppercase tracking-[0.18em] mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full"
+                style={{ color: "#475569", backgroundColor: "rgba(15,34,41,0.06)" }}
+              >
+                <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "#94a3b8" }} />
+                Sold out
+              </p>
+            )}
           </div>
 
           {/* What's included */}
