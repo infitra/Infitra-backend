@@ -176,7 +176,6 @@ export function WeeklyJourneyCarousel({ weeks }: Props) {
           scrollSnapType: "x mandatory",
           WebkitOverflowScrolling: "touch",
           scrollbarWidth: "none",
-          // @ts-expect-error vendor prefix for Webkit scrollbar
           msOverflowStyle: "none",
         }}
       >
