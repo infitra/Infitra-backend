@@ -49,53 +49,49 @@ interface Props {
 export function WeeklyJourneyCarousel({ weeks }: Props) {
   const [activeIndex, setActiveIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
-  // Distinguishes scroll caused by dot-tap (don't fight ourselves) vs
-  // scroll caused by user swipe (update active index from scrollLeft).
-  const programmaticScrollRef = useRef(false);
 
-  // Sync the scroll position when activeIndex changes from a dot tap
+  // Single source of truth: the DOM scroll position. activeIndex is
+  // *derived* from scrollLeft via the scroll listener. No flag, no
+  // timing races between programmatic scroll and user scroll —
+  // whichever causes the scroll, the listener picks it up and updates
+  // state accordingly. (Bundle 4.2.5 had a programmatic/user-scroll
+  // flag with a 600ms timer that drifted out of sync with iOS smooth-
+  // scroll, causing dot indicator and slide content to land one apart.)
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-    if (!programmaticScrollRef.current) return;
-    const slideWidth = container.clientWidth;
-    container.scrollTo({
-      left: slideWidth * activeIndex,
-      behavior: "smooth",
-    });
-    const t = setTimeout(() => {
-      programmaticScrollRef.current = false;
-    }, 600);
-    return () => clearTimeout(t);
-  }, [activeIndex]);
-
-  // Detect manual scroll → update active index
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-    let scrollTimer: ReturnType<typeof setTimeout> | null = null;
+    let timer: ReturnType<typeof setTimeout> | null = null;
 
     function onScroll() {
-      if (programmaticScrollRef.current) return;
-      if (scrollTimer) clearTimeout(scrollTimer);
-      scrollTimer = setTimeout(() => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
         if (!container) return;
         const slideWidth = container.clientWidth;
+        if (slideWidth === 0) return;
         const idx = Math.round(container.scrollLeft / slideWidth);
-        setActiveIndex(idx);
-      }, 120);
+        setActiveIndex((prev) => (prev === idx ? prev : idx));
+      }, 80);
     }
 
     container.addEventListener("scroll", onScroll, { passive: true });
     return () => {
       container.removeEventListener("scroll", onScroll);
-      if (scrollTimer) clearTimeout(scrollTimer);
+      if (timer) clearTimeout(timer);
     };
   }, []);
 
   function jumpTo(index: number) {
-    programmaticScrollRef.current = true;
-    setActiveIndex(index);
+    const container = containerRef.current;
+    if (!container) return;
+    const slideWidth = container.clientWidth;
+    container.scrollTo({
+      left: slideWidth * index,
+      behavior: "smooth",
+    });
+    // No setState here — the scroll listener will update activeIndex
+    // as the smooth scroll progresses. Indicator literally tracks the
+    // scroll position, which gives a nice "dot travelling along the
+    // track" effect as you skip multiple weeks.
   }
 
   if (weeks.length === 0) return null;
@@ -134,8 +130,8 @@ export function WeeklyJourneyCarousel({ weeks }: Props) {
         {weeks.map((week, i) => (
           <div
             key={week.weekNumber}
-            className="min-w-full shrink-0"
-            style={{ scrollSnapAlign: "center" }}
+            className="w-full shrink-0"
+            style={{ scrollSnapAlign: "start" }}
             role="group"
             aria-roledescription="slide"
             aria-label={`Week ${week.weekNumber} of ${weeks.length}`}

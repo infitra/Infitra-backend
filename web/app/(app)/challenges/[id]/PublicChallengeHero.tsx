@@ -190,11 +190,12 @@ export function PublicChallengeHero({
 
           <Divider className="mt-7 lg:mt-9 mb-7 lg:mb-9" />
 
-          {/* SPEC block — dates lead, metrics support.
-              Different visual shape from the identity block above:
-              dates are the prominent moment; metrics are a small-caps
-              support line; tribe is a tagline. No portrait, no headline-
-              with-subtitle echo. */}
+          {/* SPEC block — Bundle 4.2.6 hierarchy swap. Metrics lead
+              ("5 weeks · 7 live sessions") because that's WHAT YOU BUY;
+              tribe line supports the metrics in the same "offer" group;
+              dates are below as the smaller "when it happens" detail.
+              Bigger gap between the offer group and the date line
+              visually separates the two beats. */}
           <div className="text-center">
             <p
               className="font-black font-headline tracking-tight"
@@ -205,21 +206,21 @@ export function PublicChallengeHero({
                 lineHeight: 1.1,
               }}
             >
-              {dateRange}
-            </p>
-            <p
-              className="text-[11px] lg:text-xs font-bold font-headline uppercase tracking-[0.2em] mt-3"
-              style={{ color: "#94a3b8" }}
-            >
               {totalWeeks} {totalWeeks === 1 ? "week" : "weeks"}
               <span style={{ color: "#cbd5e1" }}> · </span>
               {sessionCount} live {sessionCount === 1 ? "session" : "sessions"}
             </p>
             <p
-              className="text-xs lg:text-sm text-center mt-4 font-medium"
+              className="text-sm lg:text-base text-center mt-3 font-medium"
               style={{ color: "#475569" }}
             >
               Plus your tribe — momentum that lasts
+            </p>
+            <p
+              className="text-[11px] lg:text-xs font-bold font-headline uppercase tracking-[0.2em] mt-6 lg:mt-7"
+              style={{ color: "#94a3b8" }}
+            >
+              {dateRange}
             </p>
           </div>
 
