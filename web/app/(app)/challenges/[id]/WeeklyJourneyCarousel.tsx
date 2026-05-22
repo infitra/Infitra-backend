@@ -1,34 +1,27 @@
 "use client";
 
 /**
- * WeeklyJourneyCarousel — Bundle 4.2.4.
+ * WeeklyJourneyCarousel — Bundle 4.2.5.
  *
- * Lives INSIDE the product card (PublicChallengeHero), positioned
- * between the tribe momentum line and the price tag. It's the
- * "what's actually in the box" preview of the bundled offer.
+ * Lives INSIDE the product card (PublicChallengeHero), between the
+ * spec block and the price-as-CTA. The "what's actually in the box"
+ * preview of the bundled offer.
  *
- * Two key shape changes from 4.2.3:
+ * 4.2.5 changes from 4.2.4:
+ *  - Auto-rotate DROPPED. Buyer controls their own pace. Editorial
+ *    content needs dwell time; auto-rotate fought that. Manual swipe
+ *    + dot-tap navigation only.
+ *  - Sessions render with MAGAZINE/EDITORIAL weight again: large 16:9
+ *    image, ~22-28px display title, generous metadata, full-weight
+ *    description (no line-clamp). Multi-session weeks stack vertically
+ *    with editorial weight per session.
+ *  - All slides match the tallest slide's height (CSS flex stretch).
+ *    Shorter weeks have whitespace at the bottom — that's editorial
+ *    visual rest, not waste.
  *
- *  1. Journey track at the TOP of the carousel, not the bottom.
- *     The structure ("you're looking at 5 weeks") must be visible
- *     BEFORE the content, otherwise slides feel like random session
- *     images cycling. The track is now the stepped-progress
- *     indicator: dots connected by a cyan line, week numbers above,
- *     active week enlarged + glowed, first week always orange.
- *
- *  2. Sessions render as compact rows (small thumbnail + title +
- *     metadata + 1-line description) instead of magazine-weight
- *     editorial spreads. This lets multi-session weeks (e.g. 3
- *     sessions in week 4) show ALL sessions without scrolling
- *     within the slide. Compact > editorial when the carousel
- *     itself is the editorial layer.
- *
- * Behavior unchanged from 4.2.3:
- *   - Auto-rotates every 5s after a 1.5s grace period
- *   - Pauses permanently on any user interaction
- *   - Respects prefers-reduced-motion
- *   - Native CSS scroll-snap for swipe
- *   - ARIA: live region announces active week
+ * Journey track at the TOP stays from 4.2.4 — stepped progress
+ * indicator with W1-W5 labels, active dot enlarged + glow ring,
+ * first week orange ("start here"). Tap a dot to jump.
  */
 
 import { useEffect, useRef, useState } from "react";
@@ -53,43 +46,14 @@ interface Props {
   weeks: WeekData[];
 }
 
-const AUTO_ROTATE_INTERVAL_MS = 5000;
-const AUTO_ROTATE_DELAY_MS = 1500;
-
 export function WeeklyJourneyCarousel({ weeks }: Props) {
   const [activeIndex, setActiveIndex] = useState(0);
-  const [autoRotateOn, setAutoRotateOn] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
+  // Distinguishes scroll caused by dot-tap (don't fight ourselves) vs
+  // scroll caused by user swipe (update active index from scrollLeft).
   const programmaticScrollRef = useRef(false);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (mq.matches) setAutoRotateOn(false);
-    const onChange = (e: MediaQueryListEvent) => {
-      if (e.matches) setAutoRotateOn(false);
-    };
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, []);
-
-  useEffect(() => {
-    if (!autoRotateOn) return;
-    if (weeks.length <= 1) return;
-    const start = setTimeout(() => {
-      const interval = setInterval(() => {
-        programmaticScrollRef.current = true;
-        setActiveIndex((prev) => (prev + 1) % weeks.length);
-      }, AUTO_ROTATE_INTERVAL_MS);
-      (start as unknown as { i?: number }).i = interval as unknown as number;
-    }, AUTO_ROTATE_DELAY_MS);
-    return () => {
-      clearTimeout(start);
-      const stashed = (start as unknown as { i?: number }).i;
-      if (stashed) clearInterval(stashed);
-    };
-  }, [autoRotateOn, weeks.length]);
-
+  // Sync the scroll position when activeIndex changes from a dot tap
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -105,6 +69,7 @@ export function WeeklyJourneyCarousel({ weeks }: Props) {
     return () => clearTimeout(t);
   }, [activeIndex]);
 
+  // Detect manual scroll → update active index
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -121,26 +86,14 @@ export function WeeklyJourneyCarousel({ weeks }: Props) {
       }, 120);
     }
 
-    function pause() {
-      setAutoRotateOn(false);
-    }
-
     container.addEventListener("scroll", onScroll, { passive: true });
-    container.addEventListener("touchstart", pause, { passive: true });
-    container.addEventListener("mousedown", pause);
-    container.addEventListener("mouseenter", pause);
-
     return () => {
       container.removeEventListener("scroll", onScroll);
-      container.removeEventListener("touchstart", pause);
-      container.removeEventListener("mousedown", pause);
-      container.removeEventListener("mouseenter", pause);
       if (scrollTimer) clearTimeout(scrollTimer);
     };
   }, []);
 
   function jumpTo(index: number) {
-    setAutoRotateOn(false);
     programmaticScrollRef.current = true;
     setActiveIndex(index);
   }
@@ -153,19 +106,19 @@ export function WeeklyJourneyCarousel({ weeks }: Props) {
       aria-roledescription="carousel"
       aria-label="Weekly journey of the program"
     >
-      {/* Journey track — at the TOP. The stepped-progress indicator
-          establishes structure BEFORE the slide content. Buyer sees
-          5 dots and knows "I'm looking at 5 weeks." */}
+      {/* Journey track — TOP of the carousel. Stepped progress with
+          W-labels above each dot. Active dot enlarged + glow ring. */}
       <JourneyTrack
         totalWeeks={weeks.length}
         activeIndex={activeIndex}
         onJump={jumpTo}
       />
 
-      {/* Carousel container — native scroll-snap. */}
+      {/* Carousel — native scroll-snap. All slides share the tallest
+          height (flex stretch). User swipes; no auto-advance. */}
       <div
         ref={containerRef}
-        className="flex overflow-x-auto journey-carousel mt-6 lg:mt-7"
+        className="flex overflow-x-auto journey-carousel mt-7 lg:mt-9"
         style={{
           scrollSnapType: "x mandatory",
           WebkitOverflowScrolling: "touch",
@@ -200,13 +153,14 @@ export function WeeklyJourneyCarousel({ weeks }: Props) {
   );
 }
 
-/** A single week's slide — week label, theme, compact session rows. */
+/** A single week's slide — week label, theme, editorial session features. */
 function WeekSlide({ week }: { week: WeekData }) {
   return (
     <div className="px-1">
-      <div className="text-center mb-5 lg:mb-6">
+      {/* Week header */}
+      <div className="text-center mb-7 lg:mb-9">
         <p
-          className="text-[10px] font-bold font-headline uppercase tracking-[0.22em] mb-2"
+          className="text-[10px] font-bold font-headline uppercase tracking-[0.22em] mb-2.5"
           style={{ color: "#0891b2" }}
         >
           Week {week.weekNumber}
@@ -214,11 +168,11 @@ function WeekSlide({ week }: { week: WeekData }) {
           <span style={{ color: "#94a3b8" }}>{week.weekRange}</span>
         </p>
         <h3
-          className="font-black font-headline tracking-tight leading-[1.1]"
+          className="font-black font-headline tracking-tight leading-[1.05]"
           style={{
             color: "#0F2229",
-            fontSize: "clamp(1.25rem, 4vw, 1.625rem)",
-            letterSpacing: "-0.015em",
+            fontSize: "clamp(1.5rem, 4.5vw, 2rem)",
+            letterSpacing: "-0.02em",
           }}
         >
           {week.theme && week.theme.trim() ? week.theme : `Week ${week.weekNumber}`}
@@ -226,14 +180,14 @@ function WeekSlide({ week }: { week: WeekData }) {
       </div>
 
       {week.sessions.length > 0 ? (
-        <ul className="space-y-3 lg:space-y-4">
+        <div className="space-y-9 lg:space-y-12">
           {week.sessions.map((s) => (
-            <SessionRow key={s.id} session={s} />
+            <SessionFeature key={s.id} session={s} />
           ))}
-        </ul>
+        </div>
       ) : (
         <p
-          className="text-xs text-center italic py-4"
+          className="text-sm text-center italic py-6"
           style={{ color: "#94a3b8" }}
         >
           Tribe-space time — no live session this week.
@@ -244,85 +198,69 @@ function WeekSlide({ week }: { week: WeekData }) {
 }
 
 /**
- * SessionRow — compact horizontal row. Small thumbnail (left) + title,
- * metadata, optional 1-line description (right). Designed to fit
- * multiple sessions in one slide without scroll.
+ * SessionFeature — magazine/editorial weight session.
+ *   - Large 16:9 image (full content width)
+ *   - ~22-28px display title (font-black)
+ *   - Small-caps metadata strip
+ *   - Full-weight description body when present (no line-clamp)
  */
-function SessionRow({ session }: { session: SessionLite }) {
+function SessionFeature({ session }: { session: SessionLite }) {
   return (
-    <li
-      className="flex items-start gap-3.5"
-      style={{
-        backgroundColor: "rgba(15,34,41,0.03)",
-        border: "1px solid rgba(15,34,41,0.05)",
-        borderRadius: "0.875rem",
-        padding: "0.625rem",
-      }}
-    >
+    <article>
       {session.image_url ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={session.image_url}
           alt=""
-          className="w-14 h-14 lg:w-16 lg:h-16 rounded-lg object-cover shrink-0"
-        />
-      ) : (
-        <div
-          className="w-14 h-14 lg:w-16 lg:h-16 rounded-lg shrink-0 flex items-center justify-center"
+          className="w-full mb-4 lg:mb-5"
           style={{
-            background:
-              "linear-gradient(135deg, rgba(156,240,255,0.40), rgba(255,97,48,0.20))",
+            aspectRatio: "16 / 9",
+            objectFit: "cover",
+            borderRadius: "1.125rem",
+            boxShadow:
+              "0 1px 2px rgba(15,34,41,0.04), 0 8px 24px rgba(15,34,41,0.08)",
           }}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/logo-mark.png"
-            alt=""
-            width={16}
-            height={16}
-            style={{ opacity: 0.35 }}
-          />
-        </div>
-      )}
-      <div className="flex-1 min-w-0 pt-0.5">
-        <h4
-          className="text-[13px] lg:text-sm font-black font-headline leading-tight"
-          style={{ color: "#0F2229" }}
-        >
-          {session.title}
-        </h4>
+        />
+      ) : null}
+      <h4
+        className="font-black font-headline tracking-tight text-center"
+        style={{
+          color: "#0F2229",
+          fontSize: "clamp(1.25rem, 4vw, 1.625rem)",
+          letterSpacing: "-0.015em",
+          lineHeight: 1.15,
+        }}
+      >
+        {session.title}
+      </h4>
+      <p
+        className="text-[11px] lg:text-xs font-bold font-headline uppercase tracking-[0.18em] text-center mt-2.5"
+        style={{ color: "#94a3b8" }}
+        suppressHydrationWarning
+      >
+        {formatSessionDay(session.start_time)}
+        <span style={{ color: "#cbd5e1" }}> · </span>
+        {formatSessionTime(session.start_time)}
+        <span style={{ color: "#cbd5e1" }}> · </span>
+        {formatDuration(session.duration_minutes)}
+      </p>
+      {session.description && session.description.trim() && (
         <p
-          className="text-[10px] lg:text-[11px] font-bold font-headline uppercase tracking-[0.15em] mt-1"
-          style={{ color: "#94a3b8" }}
-          suppressHydrationWarning
+          className="text-sm lg:text-[15px] mt-3.5 leading-relaxed text-center max-w-md mx-auto"
+          style={{ color: "#475569" }}
         >
-          {formatSessionDay(session.start_time)}
-          <span style={{ color: "#cbd5e1" }}> · </span>
-          {formatSessionTime(session.start_time)}
-          <span style={{ color: "#cbd5e1" }}> · </span>
-          {formatDuration(session.duration_minutes)}
+          {session.description}
         </p>
-        {session.description && session.description.trim() && (
-          <p
-            className="text-[12px] mt-1.5 leading-snug line-clamp-1"
-            style={{ color: "#64748b" }}
-          >
-            {session.description}
-          </p>
-        )}
-      </div>
-    </li>
+      )}
+    </article>
   );
 }
 
 /**
- * JourneyTrack — stepped progress indicator. The 5 weeks shown as 5
- * dots connected by a cyan line, week numbers above each dot. The
- * active week's dot is enlarged with a soft glow ring. First week is
- * always orange (start signal); the rest cyan.
- *
- * Sits at the TOP of the carousel so the structure is unmistakable
- * before any slide content loads.
+ * JourneyTrack — stepped progress indicator. Week-number labels (W1, W2,
+ * ...) above the dots; dots connected by a thin cyan line; active dot
+ * enlarged with a soft glow ring; first dot always orange ("start
+ * here"). Tapping a dot jumps to that week.
  */
 function JourneyTrack({
   totalWeeks,
@@ -335,7 +273,6 @@ function JourneyTrack({
 }) {
   return (
     <div className="relative">
-      {/* Week-number labels above the dots */}
       <div className="flex items-end justify-between mb-2 px-3">
         {Array.from({ length: totalWeeks }).map((_, i) => {
           const isActive = i === activeIndex;
@@ -353,15 +290,12 @@ function JourneyTrack({
         })}
       </div>
 
-      {/* The dot-and-line track */}
       <div className="relative h-6 flex items-center px-3">
-        {/* Cyan connecting line */}
         <div
           className="absolute left-3 right-3 top-1/2 -translate-y-1/2 h-[2px]"
           style={{ backgroundColor: "rgba(156,240,255,0.55)" }}
           aria-hidden
         />
-        {/* Dots row */}
         <div className="relative flex items-center justify-between w-full">
           {Array.from({ length: totalWeeks }).map((_, i) => {
             const isFirst = i === 0;

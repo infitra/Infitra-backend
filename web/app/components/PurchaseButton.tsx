@@ -6,11 +6,23 @@ import { createClient } from "@/lib/supabase/client";
 interface Props {
   kind: "session" | "challenge";
   targetId: string;
-  label: string;
+  /** Simple text label — used when `children` is not provided. */
+  label?: string;
+  /** Rich button content (e.g. price + supporting text + action verb).
+   *  Takes precedence over `label` when both are provided. Added Bundle
+   *  4.2.5 so the buyer-page hero card can use a structured price-as-CTA
+   *  block instead of a single-line label. */
+  children?: React.ReactNode;
   className?: string;
 }
 
-export function PurchaseButton({ kind, targetId, label, className }: Props) {
+export function PurchaseButton({
+  kind,
+  targetId,
+  label,
+  children,
+  className,
+}: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -81,7 +93,7 @@ export function PurchaseButton({ kind, targetId, label, className }: Props) {
               }
         }
       >
-        {loading ? "Redirecting to checkout..." : label}
+        {loading ? "Redirecting to checkout..." : (children ?? label)}
       </button>
       {error && (
         <p

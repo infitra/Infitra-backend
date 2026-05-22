@@ -4,7 +4,6 @@ import Link from "next/link";
 import { ParticipantNav } from "@/app/components/ParticipantNav";
 import { CoverImageBand } from "./CoverImageBand";
 import { PublicChallengeHero } from "./PublicChallengeHero";
-import { PublicProgramRhythm } from "./PublicProgramRhythm";
 import { PublicCreatorsBlock } from "./PublicCreatorsBlock";
 import { PublicBeyondLiveBlock } from "./PublicBeyondLiveBlock";
 import { PublicCommitBlock } from "./PublicCommitBlock";
@@ -247,28 +246,32 @@ export default async function ChallengePage({
             </div>
           </div>
         )}
-        {/* Bundle 4.2.2 architecture — two acts, two CTAs:
+        {/* Bundle 4.2.5 architecture — self-contained card + section 2:
 
-              SECTION 1 — THE PRODUCT BUNDLE
+              SECTION 1 — THE PRODUCT BUNDLE (one self-contained card)
               ├── Cover image (optional, only when set)
-              ├── Hero card (offer summary, no CTA inside)
-              ├── Journey (spine emerges from card, magazine sessions)
-              └── First CTA — "I'm in" (lives inside PublicProgramRhythm)
+              └── Hero card containing the entire offer:
+                  • eyebrow / promise
+                  • portraits + caption
+                  • dates lead + metrics + tribe line
+                  • journey carousel (manual swipe, editorial sessions)
+                  • price-as-CTA (the buy button IS the price display)
 
               SECTION 2 — WHO + INSIDE THE PROGRAM
               ├── Meet your Experts (bios + topic chips)
               ├── Inside the program (tribe selling)
               └── Second CTA — "Commit" (lives inside PublicCommitBlock)
 
-            The "Why you'll join" block from 4.2 is cut — its job is now
-            done by the card (summary), spine (concrete sessions), and
-            Inside-the-program block (tribe). PromiseBlock was cut in 4.2
-            — promise is the H1 in the card. */}
+            PublicProgramRhythm was deleted in 4.2.5 — the first CTA
+            moved INSIDE the card as the price-as-CTA. PromiseBlock was
+            cut in 4.2 — promise is the H1 inside the card. */}
 
         {/* SECTION 1 */}
         <CoverImageBand imageUrl={buyerView.image_url} />
 
         <PublicChallengeHero
+          challengeId={id}
+          spaceId={spaceId}
           title={buyerView.title}
           promise={buyerView.promise_text}
           startDate={buyerView.start_date}
@@ -278,13 +281,6 @@ export default async function ChallengePage({
           currency={buyerView.currency}
           creators={creators}
           weeks={weeks}
-        />
-
-        <PublicProgramRhythm
-          challengeId={id}
-          spaceId={spaceId}
-          priceCents={buyerView.price_cents}
-          currency={buyerView.currency}
           isAuthenticated={!!user}
           hasPurchased={hasPurchased}
           isCreator={isCreator}

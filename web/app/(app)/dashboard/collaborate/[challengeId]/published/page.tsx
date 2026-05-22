@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { CoverImageBand } from "@/app/(app)/challenges/[id]/CoverImageBand";
 import { PublicChallengeHero } from "@/app/(app)/challenges/[id]/PublicChallengeHero";
-import { PublicProgramRhythm } from "@/app/(app)/challenges/[id]/PublicProgramRhythm";
 import { PublicCreatorsBlock } from "@/app/(app)/challenges/[id]/PublicCreatorsBlock";
 import { PublicBeyondLiveBlock } from "@/app/(app)/challenges/[id]/PublicBeyondLiveBlock";
 import { PublishedShareBar } from "./PublishedShareBar";
@@ -22,11 +21,11 @@ export const metadata = { title: "Collaboration Published — INFITRA" };
  * exactly what buyers see.
  *
  * Single source of truth for the buyer experience: CoverImageBand,
- * PublicChallengeHero, PublicProgramRhythm, PublicCreatorsBlock,
- * PublicBeyondLiveBlock all come from /challenges/[id]/ and are reused
- * here. No PublicCommitBlock because a creator isn't going to buy
- * their own program — instead the commit footer is replaced with a
- * "Share this with your community" block.
+ * PublicChallengeHero, PublicCreatorsBlock, PublicBeyondLiveBlock all
+ * come from /challenges/[id]/ and are reused here. No PublicCommitBlock
+ * because a creator isn't going to buy their own program — instead the
+ * commit footer is replaced with a "Share this with your community"
+ * block.
  */
 export default async function PublishedCelebrationPage({
   params,
@@ -178,18 +177,20 @@ export default async function PublishedCelebrationPage({
       <PublishedShareBar challengeId={challengeId} title={buyerView.title} />
 
       {/* The actual public preview — same architecture as /challenges/[id].
-          Bundle 4.2.2: two-section layout
-            SECTION 1 — Cover image / Hero card / Journey + first CTA
+          Bundle 4.2.5: self-contained card + section 2.
+            SECTION 1 — Cover image (optional) + self-contained product
+                        card (the price-as-CTA inside the card renders
+                        as a preview badge because isCreator=true)
             SECTION 2 — Experts / Inside the program
 
-          The first CTA inside PublicProgramRhythm renders the preview
-          badge because isCreator=true. PublicCommitBlock is replaced by
-          the "Share this" footer below — creators don't buy their own
-          programs. */}
+          PublicCommitBlock is replaced by the "Share this" footer below —
+          creators don't buy their own programs. */}
       <main className="flex-1">
         <CoverImageBand imageUrl={buyerView.image_url} />
 
         <PublicChallengeHero
+          challengeId={challengeId}
+          spaceId={null}
           title={buyerView.title}
           promise={buyerView.promise_text}
           startDate={buyerView.start_date}
@@ -199,13 +200,6 @@ export default async function PublishedCelebrationPage({
           currency={buyerView.currency}
           creators={creators}
           weeks={weeks}
-        />
-
-        <PublicProgramRhythm
-          challengeId={challengeId}
-          spaceId={null}
-          priceCents={buyerView.price_cents}
-          currency={buyerView.currency}
           isAuthenticated={true}
           hasPurchased={false}
           isCreator={true}
