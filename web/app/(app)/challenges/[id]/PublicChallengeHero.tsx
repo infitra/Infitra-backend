@@ -224,9 +224,11 @@ export function PublicChallengeHero({
             </p>
           </div>
 
-          <Divider className="mt-7 lg:mt-9 mb-6 lg:mb-8" />
+          <Divider className="mt-7 lg:mt-9 mb-8 lg:mb-10" />
 
-          {/* WEEKLY JOURNEY CAROUSEL */}
+          {/* WEEKLY JOURNEY CAROUSEL — Bundle 4.2.7: more breath above
+              the journey track so it lands cleanly as the chapter
+              opener for the week-by-week section. */}
           <WeeklyJourneyCarousel weeks={weeks} />
 
           {/* PRICE-AS-CTA — the buy moment is the price display.

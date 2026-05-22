@@ -149,14 +149,21 @@ export function WeeklyJourneyCarousel({ weeks }: Props) {
   );
 }
 
-/** A single week's slide — week label, theme, editorial session features. */
+/** A single week's slide — week label, theme, editorial session features.
+ *
+ *  Bundle 4.2.7: multi-session weeks now use SessionSeparator between
+ *  sessions to create clear within-week structure (numbered + day-
+ *  labeled). Single-session weeks render without separators (one
+ *  session doesn't need numbering). */
 function WeekSlide({ week }: { week: WeekData }) {
+  const isMultiSession = week.sessions.length > 1;
+
   return (
     <div className="px-1">
       {/* Week header */}
-      <div className="text-center mb-7 lg:mb-9">
+      <div className="text-center mb-8 lg:mb-10">
         <p
-          className="text-[10px] font-bold font-headline uppercase tracking-[0.22em] mb-2.5"
+          className="text-[11px] font-bold font-headline uppercase tracking-[0.22em] mb-2.5"
           style={{ color: "#0891b2" }}
         >
           Week {week.weekNumber}
@@ -176,9 +183,26 @@ function WeekSlide({ week }: { week: WeekData }) {
       </div>
 
       {week.sessions.length > 0 ? (
-        <div className="space-y-9 lg:space-y-12">
-          {week.sessions.map((s) => (
-            <SessionFeature key={s.id} session={s} />
+        <div>
+          {week.sessions.map((s, idx) => (
+            <div
+              key={s.id}
+              // Spacing rhythm: tighter between separator and its
+              // session content; more breathing room between session
+              // content and the next separator below.
+              className={idx > 0 ? "mt-10 lg:mt-12" : undefined}
+            >
+              {isMultiSession && (
+                <SessionSeparator
+                  number={idx + 1}
+                  dateLabel={formatSessionDay(s.start_time)}
+                />
+              )}
+              <SessionFeature
+                session={s}
+                showDayInMeta={!isMultiSession}
+              />
+            </div>
           ))}
         </div>
       ) : (
@@ -194,13 +218,64 @@ function WeekSlide({ week }: { week: WeekData }) {
 }
 
 /**
+ * SessionSeparator — within-week structural marker.
+ *
+ * Same visual language as the W1-W5 journey track at the carousel
+ * level (thin cyan line + small-caps text), but at the session scope.
+ * The number gives sequential structure ("1, 2, 3"); the day label
+ * places the session in the week's calendar without echoing the
+ * date-time metadata below.
+ */
+function SessionSeparator({
+  number,
+  dateLabel,
+}: {
+  number: number;
+  dateLabel: string;
+}) {
+  return (
+    <div className="flex items-center gap-3 mb-4 lg:mb-5">
+      <div
+        className="flex-1 h-[1.5px] rounded-full"
+        style={{ backgroundColor: "rgba(156,240,255,0.55)" }}
+        aria-hidden
+      />
+      <span
+        className="text-[11px] font-bold font-headline uppercase tracking-[0.2em] shrink-0"
+        style={{ color: "#0891b2" }}
+      >
+        {number}
+        <span style={{ color: "#cbd5e1" }}> · </span>
+        <span style={{ color: "#94a3b8" }}>{dateLabel}</span>
+      </span>
+      <div
+        className="flex-1 h-[1.5px] rounded-full"
+        style={{ backgroundColor: "rgba(156,240,255,0.55)" }}
+        aria-hidden
+      />
+    </div>
+  );
+}
+
+/**
  * SessionFeature — magazine/editorial weight session.
  *   - Large 16:9 image (full content width)
  *   - ~22-28px display title (font-black)
  *   - Small-caps metadata strip
  *   - Full-weight description body when present (no line-clamp)
+ *
+ * showDayInMeta controls whether the metadata line includes the day
+ * (e.g. "FRI 12 JUN · 19:00 · 1H"). For multi-session weeks the day
+ * is already in the SessionSeparator above, so we drop it from the
+ * metadata to avoid redundancy — just "19:00 · 1H" remains.
  */
-function SessionFeature({ session }: { session: SessionLite }) {
+function SessionFeature({
+  session,
+  showDayInMeta,
+}: {
+  session: SessionLite;
+  showDayInMeta: boolean;
+}) {
   return (
     <article>
       {session.image_url ? (
@@ -234,8 +309,12 @@ function SessionFeature({ session }: { session: SessionLite }) {
         style={{ color: "#94a3b8" }}
         suppressHydrationWarning
       >
-        {formatSessionDay(session.start_time)}
-        <span style={{ color: "#cbd5e1" }}> · </span>
+        {showDayInMeta && (
+          <>
+            {formatSessionDay(session.start_time)}
+            <span style={{ color: "#cbd5e1" }}> · </span>
+          </>
+        )}
         {formatSessionTime(session.start_time)}
         <span style={{ color: "#cbd5e1" }}> · </span>
         {formatDuration(session.duration_minutes)}
@@ -269,13 +348,13 @@ function JourneyTrack({
 }) {
   return (
     <div className="relative">
-      <div className="flex items-end justify-between mb-2 px-3">
+      <div className="flex items-end justify-between mb-2.5 px-3">
         {Array.from({ length: totalWeeks }).map((_, i) => {
           const isActive = i === activeIndex;
           return (
             <span
               key={i}
-              className="text-[10px] font-bold font-headline uppercase tracking-[0.18em] transition-colors"
+              className="text-[11px] lg:text-xs font-bold font-headline uppercase tracking-[0.2em] transition-colors"
               style={{
                 color: isActive ? "#0F2229" : "#cbd5e1",
               }}
@@ -286,7 +365,7 @@ function JourneyTrack({
         })}
       </div>
 
-      <div className="relative h-6 flex items-center px-3">
+      <div className="relative h-7 flex items-center px-3">
         <div
           className="absolute left-3 right-3 top-1/2 -translate-y-1/2 h-[2px]"
           style={{ backgroundColor: "rgba(156,240,255,0.55)" }}
@@ -305,7 +384,7 @@ function JourneyTrack({
                 key={i}
                 type="button"
                 onClick={() => onJump(i)}
-                className="relative flex items-center justify-center w-6 h-6 rounded-full transition-transform active:scale-90"
+                className="relative flex items-center justify-center w-7 h-7 rounded-full transition-transform active:scale-90"
                 aria-label={`Week ${i + 1}${isActive ? " (current)" : ""}`}
                 aria-current={isActive ? "true" : undefined}
               >
@@ -313,10 +392,10 @@ function JourneyTrack({
                   className="block rounded-full transition-all"
                   style={{
                     backgroundColor: dotColor,
-                    width: isActive ? "14px" : "9px",
-                    height: isActive ? "14px" : "9px",
+                    width: isActive ? "16px" : "10px",
+                    height: isActive ? "16px" : "10px",
                     boxShadow: isActive
-                      ? `0 0 0 5px ${glowColor}, 0 1px 3px rgba(15,34,41,0.10)`
+                      ? `0 0 0 6px ${glowColor}, 0 1px 3px rgba(15,34,41,0.10)`
                       : "0 1px 2px rgba(15,34,41,0.06)",
                   }}
                 />
