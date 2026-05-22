@@ -1,37 +1,24 @@
 /**
- * PublicProgramRhythm — Bundle 4.2.2 (centered spine + editorial sessions).
+ * PublicProgramRhythm — Bundle 4.2.3 (carousel-based).
  *
- * Section 1's second half. The spine VISUALLY EMERGES from the product
- * card above (alpha coupling per the design discussion) — its top dot
- * sits at the same X coordinate as the card's bottom-center docking dot,
- * making them feel like one continuous object.
+ * Section 1's second beat. The vertical cyan spine was a "list of weeks"
+ * stretched too far vertically — the journey metaphor didn't land. This
+ * version is a compact horizontal carousel: one week per slide, with
+ * a "journey track" pagination indicator beneath that finally embodies
+ * the spine in a form that works (compact, glanceable, the buyer's
+ * position is explicit).
  *
- * Spine architecture:
- *   - Centered (not left-aligned like 4.2.0/4.2.1)
- *   - Solid cyan from top of section to bottom
- *   - Tiny "ALWAYS ON · YOUR TRIBE" tag pinned at the top
- *   - Week markers as cyan filled circles, first marker orange ("start here")
- *   - Week themes as chapter-title display type
- *   - Sessions as MAGAZINE-WEIGHT features hanging from each week
+ * The carousel is a client component (WeeklyJourneyCarousel) because it
+ * needs auto-rotate + scroll-snap state. This wrapper stays server-side
+ * so the data fetching and CTA logic don't need to ship to the client.
  *
- * Session treatment (editorial weight):
- *   - Image: large, ~16:9 contained within the centered content column.
- *     Strong shadow, rounded corners. The image carries real weight as
- *     a feature photo, not a thumbnail.
- *   - Title: editorial display, ~24-28px font-black
- *   - Metadata: small caps, slate tertiary
- *   - Description: when set, 2-3 lines with readable body weight
- *
- * No "THE JOURNEY" eyebrow header anymore — the visual connection to the
- * card above makes the section's identity self-evident. The journey is
- * NOT a separate marketing beat; it's the unfold of the product card.
- *
- * First CTA — "I'm in" — sits at the end of this block as the natural
- * decision moment after the buyer has seen the entire offer.
+ * First CTA — "I'm in" — sits at the end of this section as the natural
+ * decision moment after the buyer has watched the journey unfold.
  */
 
 import Link from "next/link";
 import { PurchaseButton } from "@/app/components/PurchaseButton";
+import { WeeklyJourneyCarousel } from "./WeeklyJourneyCarousel";
 
 interface SessionLite {
   id: string;
@@ -87,27 +74,6 @@ function sessionWeekNumber(startDate: string, totalWeeks: number, sessionIso: st
   return Math.max(1, Math.min(totalWeeks, Math.floor(days / 7) + 1));
 }
 
-function formatSessionDay(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleDateString("en-GB", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-  });
-}
-
-function formatSessionTime(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
-}
-
-function formatDuration(minutes: number): string {
-  if (minutes < 60) return `${minutes} min`;
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  return m > 0 ? `${h}h ${m}m` : `${h}h`;
-}
-
 function formatPrice(cents: number, currency: string): string {
   return `${currency} ${(cents / 100).toFixed(0)}`;
 }
@@ -128,6 +94,7 @@ export function PublicProgramRhythm({
   const totalWeeks = computeTotalWeeks(startDate, endDate);
   if (totalWeeks === 0) return null;
 
+  // Bucket sessions by week + sort within each week
   const sessionsByWeek = new Map<number, SessionLite[]>();
   for (const s of sessions) {
     const w = sessionWeekNumber(startDate, totalWeeks, s.start_time);
@@ -140,116 +107,27 @@ export function PublicProgramRhythm({
     );
   }
 
+  // Build the weeks array the carousel consumes
+  const weeks = Array.from({ length: totalWeeks }, (_, i) => i + 1).map((n) => {
+    const range = weekRange(startDate, n);
+    return {
+      weekNumber: n,
+      weekRange: formatWeekRange(range.start, range.end),
+      theme: weeklyArc.find((f) => f.week === n)?.theme ?? null,
+      sessions: sessionsByWeek.get(n) ?? [],
+    };
+  });
+
   const priceLabel = formatPrice(priceCents, currency);
 
   return (
-    <section className="px-6 lg:px-12 pt-0 pb-16 lg:pb-24">
-      <div className="max-w-2xl mx-auto relative">
-        {/* The cyan spine — centered, solid, runs from top (just below
-            the card's docking dot) to the bottom of the last session.
-            Same X-axis as the card's docking dot so visually they feel
-            like one continuous element. */}
-        <div
-          className="absolute left-1/2 -translate-x-1/2 w-[3px] rounded-full"
-          style={{
-            top: "0",
-            bottom: "120px", // ends above the first CTA
-            backgroundColor: "#9CF0FF",
-          }}
-          aria-hidden
-        />
+    <section className="px-4 lg:px-12 pt-10 lg:pt-14 pb-16 lg:pb-24">
+      <div className="max-w-2xl mx-auto">
+        <WeeklyJourneyCarousel weeks={weeks} />
 
-        {/* Always-on tag — pinned at the top of the spine, just below
-            where the card ends. */}
-        <div className="relative pt-16 lg:pt-20 pb-12 lg:pb-16 flex justify-center">
-          <span
-            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full text-[10px] font-bold font-headline uppercase tracking-[0.2em] relative z-10"
-            style={{
-              backgroundColor: "#F2EFE8",
-              color: "#c2410c",
-              border: "1px solid rgba(255,97,48,0.25)",
-              boxShadow: "0 1px 3px rgba(15,34,41,0.04)",
-            }}
-          >
-            <span
-              className="inline-block w-1.5 h-1.5 rounded-full"
-              style={{ backgroundColor: "#FF6130" }}
-            />
-            Always on · your tribe
-          </span>
-        </div>
-
-        {/* Weeks — each is a centered chapter with the marker on the
-            spine, theme as chapter title, sessions as magazine-weight
-            feature spreads below. */}
-        <div className="space-y-16 lg:space-y-20">
-          {Array.from({ length: totalWeeks }, (_, i) => i + 1).map((weekNum) => {
-            const range = weekRange(startDate, weekNum);
-            const focus = weeklyArc.find((f) => f.week === weekNum)?.theme;
-            const weekSessions = sessionsByWeek.get(weekNum) ?? [];
-            const isFirst = weekNum === 1;
-
-            return (
-              <div key={weekNum} className="relative">
-                {/* Week marker — centered on the spine. First week is
-                    orange ("start here"); the rest are cyan. */}
-                <div
-                  className="absolute left-1/2 -translate-x-1/2 w-5 h-5 rounded-full z-10"
-                  style={{
-                    top: "0",
-                    backgroundColor: isFirst ? "#FF6130" : "#9CF0FF",
-                    border: "4px solid #F2EFE8",
-                    boxShadow: isFirst
-                      ? "0 0 0 1px rgba(255,97,48,0.30), 0 4px 14px rgba(255,97,48,0.25)"
-                      : "0 0 0 1px rgba(8,145,178,0.20)",
-                  }}
-                  aria-hidden
-                />
-
-                {/* Week label — centered, beneath the marker */}
-                <div className="text-center pt-10 lg:pt-12">
-                  <div
-                    className="text-[11px] font-bold font-headline uppercase tracking-[0.2em] mb-3"
-                    style={{ color: "#0891b2" }}
-                  >
-                    Week {weekNum}{" "}
-                    <span style={{ color: "#cbd5e1" }}>·</span>{" "}
-                    <span style={{ color: "#94a3b8" }}>
-                      {formatWeekRange(range.start, range.end)}
-                    </span>
-                  </div>
-
-                  {/* Week theme as chapter title */}
-                  <h3
-                    className="font-black font-headline tracking-tight leading-[1.05] mb-8 lg:mb-10"
-                    style={{
-                      color: "#0F2229",
-                      fontSize: "clamp(1.75rem, 5vw, 2.5rem)",
-                      letterSpacing: "-0.02em",
-                    }}
-                  >
-                    {focus && focus.trim() ? focus : `Week ${weekNum}`}
-                  </h3>
-                </div>
-
-                {/* Sessions for this week — magazine-weight feature
-                    spreads. Large image + display title + metadata. */}
-                {weekSessions.length > 0 && (
-                  <div className="space-y-10 lg:space-y-14">
-                    {weekSessions.map((s) => (
-                      <SessionFeature key={s.id} session={s} />
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        {/* First CTA — the decision moment after the entire offer has
-            been laid out. Lives at the end of section 1, just below
-            the spine. */}
-        <div className="mt-20 lg:mt-24 flex justify-center">
+        {/* First CTA — the decision moment after the journey has played.
+            Anchors the end of section 1. */}
+        <div className="mt-12 lg:mt-16 flex justify-center">
           <FirstCTA
             challengeId={challengeId}
             spaceId={spaceId}
@@ -265,66 +143,8 @@ export function PublicProgramRhythm({
 }
 
 /**
- * SessionFeature — magazine-weight session card. Image is prominent
- * (16:9), title is editorial display, metadata is small. Description
- * gets readable body weight when present.
- */
-function SessionFeature({ session }: { session: SessionLite }) {
-  return (
-    <article className="max-w-xl mx-auto">
-      {session.image_url ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={session.image_url}
-          alt=""
-          className="w-full mb-5 lg:mb-6"
-          style={{
-            aspectRatio: "16 / 9",
-            objectFit: "cover",
-            borderRadius: "1.25rem",
-            boxShadow:
-              "0 1px 2px rgba(15,34,41,0.04), 0 8px 24px rgba(15,34,41,0.08)",
-          }}
-        />
-      ) : null}
-      <h4
-        className="font-black font-headline tracking-tight text-center"
-        style={{
-          color: "#0F2229",
-          fontSize: "clamp(1.25rem, 3.5vw, 1.75rem)",
-          letterSpacing: "-0.015em",
-          lineHeight: 1.15,
-        }}
-      >
-        {session.title}
-      </h4>
-      <p
-        className="text-[11px] lg:text-xs font-bold font-headline uppercase tracking-[0.18em] text-center mt-3"
-        style={{ color: "#94a3b8" }}
-        suppressHydrationWarning
-      >
-        {formatSessionDay(session.start_time)}
-        <span style={{ color: "#cbd5e1" }}> · </span>
-        {formatSessionTime(session.start_time)}
-        <span style={{ color: "#cbd5e1" }}> · </span>
-        {formatDuration(session.duration_minutes)}
-      </p>
-      {session.description && session.description.trim() && (
-        <p
-          className="text-sm lg:text-[15px] mt-4 leading-relaxed text-center max-w-md mx-auto"
-          style={{ color: "#475569" }}
-        >
-          {session.description}
-        </p>
-      )}
-    </article>
-  );
-}
-
-/**
  * First CTA — auth-aware. Lives at the end of section 1 as the
- * decision moment after card + spine. "I'm in" wording — emotional
- * intent, the moment the buyer commits in their head.
+ * decision moment after card + carousel.
  */
 function FirstCTA({
   challengeId,

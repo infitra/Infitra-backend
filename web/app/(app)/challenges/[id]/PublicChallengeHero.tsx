@@ -1,15 +1,16 @@
 /**
- * PublicChallengeHero — Bundle 4.2.2 (product card).
+ * PublicChallengeHero — Bundle 4.2.3 (product card, carousel below).
  *
- * The hero is now a defined PRODUCT CARD — a card-shaped offer summary
- * that floats on the cream + wave background. The card is "the thing
- * you're buying." Spine + sessions follow immediately below as section 1's
- * second half, visually coupled via a docking point at the card's
- * bottom-center.
+ * The hero is a defined PRODUCT CARD — a card-shaped offer summary
+ * that floats on the cream + wave background. Below the card sits
+ * the WeeklyJourneyCarousel (in PublicProgramRhythm) as section 1's
+ * second beat. Card and carousel are coupled by adjacency and shared
+ * cyan vocabulary — the docking-dot from 4.2.2 was dropped now that
+ * the carousel replaces the vertical spine.
  *
  * No CTA inside the card. The card is the offer summary; the first CTA
- * lives at the end of section 1 (after the spine + sessions). The price
- * is shown prominently in the card as a price tag, not a button.
+ * lives at the end of section 1 (after the carousel). The price is
+ * shown prominently in the card as a price tag, not a button.
  *
  * Composition (inside the card):
  *   1. Eyebrow:              program name in orange caps
@@ -23,9 +24,6 @@
  *   7. Stats inline:         "5 weeks · 7 live sessions"
  *   8. Tribe momentum line:  "Plus your tribe — momentum that lasts"
  *   9. Price tag:            "CHF 287 / for the full program"
- *  10. Docking point:        small cyan dot at bottom-center — the
- *                            spine in PublicProgramRhythm visually
- *                            emerges from this dot
  *
  * Robustness:
  *   - No avatar uploaded → initial letter on role-tinted circle
@@ -109,9 +107,12 @@ export function PublicChallengeHero({
 
   return (
     <section className="px-6 lg:px-12 pt-10 lg:pt-14 pb-0">
-      {/* The card itself. Relative position so the docking dot at the
-          bottom can be absolutely positioned outside its bounds. */}
-      <div className="max-w-2xl mx-auto relative">
+      {/* The card itself. Bundle 4.2.3: docking-dot dropped — the
+          journey is now a carousel below (not a vertical spine), so
+          there's nothing for the dot to physically connect to. Card
+          and carousel are coupled by adjacency + cyan vocabulary on
+          both surfaces. */}
+      <div className="max-w-2xl mx-auto">
         <div
           className="rounded-[28px] lg:rounded-[32px] px-7 lg:px-12 py-10 lg:py-14"
           style={{
@@ -209,20 +210,6 @@ export function PublicChallengeHero({
             </p>
           </div>
         </div>
-
-        {/* Docking dot — the spine in the journey block emerges from
-            here. Half outside the card (translate-y-1/2 visually).
-            Solid cyan; matches the spine's color exactly. */}
-        <div
-          className="absolute left-1/2 -translate-x-1/2 w-4 h-4 rounded-full z-10"
-          style={{
-            bottom: "-8px",
-            backgroundColor: "#9CF0FF",
-            border: "3px solid #F2EFE8",
-            boxShadow: "0 0 0 1px rgba(8,145,178,0.20)",
-          }}
-          aria-hidden
-        />
       </div>
     </section>
   );
