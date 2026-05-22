@@ -1,20 +1,24 @@
 /**
- * PublicBeyondLiveBlock — Bundle 4.2 new block.
+ * PublicBeyondLiveBlock — Bundle 4.2.2 ("Inside the program").
  *
- * Sells the always-on cohort dimension as a distinct beat AFTER the
- * Journey. The Journey shows the live moments; this block expands on
- * what runs alongside them and what stays open after the program ends.
+ * Section 2's second beat. After buyers have met the Experts in the
+ * previous block, this block tells them what the *ongoing experience*
+ * feels like. The live moments are the punctuation; the tribe is the
+ * continuous experience.
  *
- * Visual shape is intentionally different from the 4-card grid of
- * PublicValuePropsBlock — a single panel with three mini-headings —
- * so the page doesn't read as "another row of identical cards."
+ * Heading: "Inside the program" (renamed from "Beyond the live moments"
+ * per Bundle 4.2.2 — more declarative, less "marketing voice").
  *
- * Three points (all auto-generated, no creator copy needed):
- *   1. Direct access to your coaches between sessions
- *   2. Cohort moving with you in the private space
- *   3. Community that stays — the cohort space persists after the
- *      final session, so the relationships you build don't end on
- *      a calendar date.
+ * Copy frame:
+ *   - "Join for the goals. Stay for the momentum."
+ *   - "Your tribe stays beyond the final session."
+ *
+ * Three bullets that unfold the claim:
+ *   1. Direct access to your Experts
+ *   2. A tribe moving with you
+ *   3. The bonds keep growing (beyond program end)
+ *
+ * Vocabulary: "tribe" not "cohort" / "community." "Experts" not "coaches."
  */
 
 interface Bullet {
@@ -25,21 +29,21 @@ interface Bullet {
 
 const BULLETS: Bullet[] = [
   {
-    title: "Direct access to your coaches",
+    title: "Direct access to your Experts",
     body:
-      "Ask questions, get coached, share blockers — your coaches are in the cohort space between sessions, not just on session days.",
+      "Ask questions, get coached, share blockers — your Experts are in the tribe space between sessions, not just on session days.",
     icon: <IconChat />,
   },
   {
-    title: "A cohort moving with you",
+    title: "A tribe moving with you",
     body:
-      "Daily check-ins, shared wins, and mutual accountability in your private cohort space. You're not training alone — even when you're training alone.",
+      "Daily check-ins, shared wins, and mutual accountability in your private tribe space. You're not training alone — even when you're training alone.",
     icon: <IconUsers />,
   },
   {
-    title: "Community that stays after the program ends",
+    title: "The bonds keep growing",
     body:
-      "The cohort space stays open beyond the final session. The relationships you build here don't end on a calendar date.",
+      "The tribe stays open beyond the final session. The relationships you build here don't end on a calendar date.",
     icon: <IconInfinity />,
   },
 ];
@@ -52,14 +56,21 @@ export function PublicBeyondLiveBlock() {
           className="text-[11px] font-bold font-headline uppercase tracking-[0.25em] mb-3 text-center"
           style={{ color: "#FF6130" }}
         >
-          Beyond the live moments
+          Inside the program
         </p>
         <h2
-          className="text-3xl lg:text-5xl font-black font-headline tracking-tight text-center mb-12 lg:mb-14"
+          className="text-3xl lg:text-5xl font-black font-headline tracking-tight text-center mb-5"
           style={{ color: "#0F2229", letterSpacing: "-0.02em" }}
         >
-          Your cohort space — always open
+          Join for the goals. <br className="hidden sm:block" />
+          Stay for the momentum.
         </h2>
+        <p
+          className="text-base lg:text-lg text-center mb-12 lg:mb-14 max-w-xl mx-auto leading-relaxed"
+          style={{ color: "#475569" }}
+        >
+          Your tribe stays beyond the final session.
+        </p>
 
         <div
           className="rounded-3xl p-7 lg:p-10"
@@ -70,17 +81,6 @@ export function PublicBeyondLiveBlock() {
               "0 1px 2px rgba(15,34,41,0.03), 0 16px 40px rgba(15,34,41,0.05)",
           }}
         >
-          <p
-            className="text-base lg:text-lg leading-relaxed mb-8 lg:mb-10"
-            style={{ color: "#475569" }}
-          >
-            Live moments are the punctuation. Your cohort space is the{" "}
-            <span className="font-bold" style={{ color: "#0F2229" }}>
-              continuous experience
-            </span>
-            .
-          </p>
-
           <ul className="space-y-7 lg:space-y-8">
             {BULLETS.map((b, i) => (
               <li key={i} className="flex items-start gap-4 lg:gap-5">
@@ -113,7 +113,7 @@ export function PublicBeyondLiveBlock() {
   );
 }
 
-/* ── Icons — same visual language as PublicValuePropsBlock ──────── */
+/* ── Icons ──────────────────────────────────────────────────────── */
 
 const ICON_PROPS = {
   width: 18,

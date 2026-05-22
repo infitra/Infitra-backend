@@ -1,42 +1,41 @@
 /**
- * PublicChallengeHero — Bundle 4.2.1 rewrite (creator-led).
+ * PublicChallengeHero — Bundle 4.2.2 (product card).
  *
- * The hero is now CREATOR-LED. INFITRA's brand differentiator is
- * multi-creator collaboration — "two experts in one program." Every
- * other cohort platform leads with a cover image and reduces creators
- * to a footnote. We lead with the humans because the humans are the
- * product.
+ * The hero is now a defined PRODUCT CARD — a card-shaped offer summary
+ * that floats on the cream + wave background. The card is "the thing
+ * you're buying." Spine + sessions follow immediately below as section 1's
+ * second half, visually coupled via a docking point at the card's
+ * bottom-center.
  *
- * Composition (centered, top to bottom):
- *   1. Eyebrow:           program name in orange caps
- *   2. H1:                the promise (no quote marks — this is the offer)
- *   3. Coach portraits:   128px (mobile) / 160px (desktop) circles, side-by-side,
- *                         each with name + role-accented tagline beneath
- *   4. Connective line:   "Two coaches, one program" (or singular for solo)
- *   5. Stat strip:        2 big numbers (weeks · live sessions) with cyan divider.
- *                         Coach count dropped from stats — the portraits already
- *                         say "2" visually.
- *   6. CTA:               "I'm in — CHF X →"
+ * No CTA inside the card. The card is the offer summary; the first CTA
+ * lives at the end of section 1 (after the spine + sessions). The price
+ * is shown prominently in the card as a price tag, not a button.
  *
- * No backdrop wash. The hero territory is defined by composition,
- * typography, and spacing — past attempts at color washes on cream
- * came out muddy and unintentional. Clean cream surface only.
- *
- * Cover image is NOT in the hero anymore. It moved to the Journey
- * section as a cinematic chapter-cover band. The hero's visual core
- * is the two humans behind the program.
+ * Composition (inside the card):
+ *   1. Eyebrow:              program name in orange caps
+ *   2. H1:                   the promise as the offer's headline
+ *   3. Divider
+ *   4. Portraits row:        96-112px circular photos, side-by-side,
+ *                            each with name + role-accented tagline
+ *   5. Connective lines:     "Two Experts — One Program"
+ *                            "Followed together in realtime"
+ *   6. Divider
+ *   7. Stats inline:         "5 weeks · 7 live sessions"
+ *   8. Tribe momentum line:  "Plus your tribe — momentum that lasts"
+ *   9. Price tag:            "CHF 287 / for the full program"
+ *  10. Docking point:        small cyan dot at bottom-center — the
+ *                            spine in PublicProgramRhythm visually
+ *                            emerges from this dot
  *
  * Robustness:
- *   - No avatar uploaded → initial letter on role-colored circle
- *     (fallback flagged for workspace preview coaching in Bundle 4.3)
- *   - No tagline → name renders alone, no placeholder
- *   - Solo creator → singular language + single centered portrait
- *   - No promise → fallback to synthesized line (view-coalesced description
- *     handles the first fallback layer; resolveHeadline handles the rest)
+ *   - No avatar uploaded → initial letter on role-tinted circle
+ *   - No tagline → name renders alone
+ *   - Solo creator → "One Expert — One Program" / "Followed in realtime"
+ *   - No promise → falls back via resolveHeadline
+ *
+ * Brand language: "Expert" not "coach" (Bundle 4.2.2 rename). Capitalized
+ * as a noun when referring to the people, lowercase as adjective.
  */
-
-import Link from "next/link";
-import { PurchaseButton } from "@/app/components/PurchaseButton";
 
 interface Creator {
   id: string;
@@ -47,11 +46,8 @@ interface Creator {
 }
 
 interface Props {
-  challengeId: string;
-  spaceId: string | null;
   title: string;
-  /** Promise text — view already coalesces description as fallback.
-   *  Null only when both promise_text and description are empty. */
+  /** Promise text — view already coalesces description as fallback. */
   promise: string | null;
   startDate: string;
   endDate: string;
@@ -59,9 +55,6 @@ interface Props {
   priceCents: number;
   currency: string;
   creators: Creator[];
-  isAuthenticated: boolean;
-  hasPurchased: boolean;
-  isCreator: boolean;
 }
 
 function weeksBetween(start: string, end: string): number {
@@ -91,8 +84,6 @@ function resolveHeadline(
 }
 
 export function PublicChallengeHero({
-  challengeId,
-  spaceId,
   title,
   promise,
   startDate,
@@ -101,119 +92,181 @@ export function PublicChallengeHero({
   priceCents,
   currency,
   creators,
-  isAuthenticated,
-  hasPurchased,
-  isCreator,
 }: Props) {
   const weeks = weeksBetween(startDate, endDate);
   const headline = resolveHeadline(promise, weeks, creators);
   const priceLabel = formatPrice(priceCents, currency);
   const solo = creators.length === 1;
-  const connectiveLine = solo
-    ? "Personal coaching"
+
+  const connective1 = solo
+    ? "One Expert — One Program"
     : creators.length === 2
-      ? "Two coaches, one program"
-      : `${creators.length} coaches, one program`;
+      ? "Two Experts — One Program"
+      : `${creators.length} Experts — One Program`;
+  const connective2 = solo
+    ? "Followed in realtime"
+    : "Followed together in realtime";
 
   return (
-    <section className="px-6 lg:px-12 pt-24 lg:pt-32 pb-12 lg:pb-20">
-      <div className="max-w-3xl mx-auto text-center">
-        {/* Eyebrow — program name, demoted from H1 to identifier */}
-        <p
-          className="text-[11px] font-bold font-headline uppercase tracking-[0.25em] mb-6 lg:mb-8"
-          style={{ color: "#FF6130" }}
-        >
-          {title}
-        </p>
-
-        {/* H1 — the promise as the offer's headline */}
-        <h1
-          className="font-black font-headline mb-12 lg:mb-16"
+    <section className="px-6 lg:px-12 pt-10 lg:pt-14 pb-0">
+      {/* The card itself. Relative position so the docking dot at the
+          bottom can be absolutely positioned outside its bounds. */}
+      <div className="max-w-2xl mx-auto relative">
+        <div
+          className="rounded-[28px] lg:rounded-[32px] px-7 lg:px-12 py-10 lg:py-14"
           style={{
-            color: "#0F2229",
-            fontSize: "clamp(2.5rem, 7.5vw, 4.5rem)",
-            lineHeight: 1.02,
-            letterSpacing: "-0.025em",
+            backgroundColor: "#FFFFFF",
+            border: "1px solid rgba(15,34,41,0.06)",
+            boxShadow:
+              "0 1px 3px rgba(15,34,41,0.04), 0 24px 64px rgba(15,34,41,0.06)",
           }}
         >
-          {headline}
-        </h1>
+          {/* Eyebrow — program name in orange caps */}
+          <p
+            className="text-[11px] font-bold font-headline uppercase tracking-[0.25em] mb-5 lg:mb-7 text-center"
+            style={{ color: "#FF6130" }}
+          >
+            {title}
+          </p>
 
-        {/* Coach portraits — the visual core of the hero. Big enough
-            to feel human, not avatar-sized. flex-wrap so 3+ creators
-            (rare) flow to a second row gracefully. */}
-        <div className="flex items-start justify-center gap-5 lg:gap-10 flex-wrap mb-5 lg:mb-7">
-          {creators.map((c) => (
-            <CoachPortrait key={c.id} creator={c} />
-          ))}
+          {/* H1 — the promise as the offer's headline. Sized to fit
+              within the card width (no clamp jump to massive sizes). */}
+          <h1
+            className="font-black font-headline text-center"
+            style={{
+              color: "#0F2229",
+              fontSize: "clamp(1.75rem, 5.5vw, 2.75rem)",
+              lineHeight: 1.05,
+              letterSpacing: "-0.02em",
+            }}
+          >
+            {headline}
+          </h1>
+
+          <Divider className="mt-8 lg:mt-10 mb-8 lg:mb-10" />
+
+          {/* Expert portraits — the visual core of the offer */}
+          <div className="flex items-start justify-center gap-5 lg:gap-8 flex-wrap mb-5">
+            {creators.map((c) => (
+              <ExpertPortrait key={c.id} creator={c} />
+            ))}
+          </div>
+
+          {/* Connective lines — "Two Experts — One Program / Followed
+              together in realtime." The brand differentiator stated
+              explicitly. */}
+          <p
+            className="text-sm lg:text-base text-center font-black font-headline tracking-tight"
+            style={{ color: "#0F2229", letterSpacing: "-0.01em" }}
+          >
+            {connective1}
+          </p>
+          <p
+            className="text-xs lg:text-sm text-center mt-1.5 font-medium"
+            style={{ color: "#475569" }}
+          >
+            {connective2}
+          </p>
+
+          <Divider className="mt-8 lg:mt-10 mb-8 lg:mb-10" />
+
+          {/* Stats inline + tribe momentum line */}
+          <p
+            className="text-base lg:text-lg text-center font-black font-headline tracking-tight"
+            style={{ color: "#0F2229", letterSpacing: "-0.01em" }}
+          >
+            {weeks} {weeks === 1 ? "week" : "weeks"}
+            <span className="mx-3" style={{ color: "#cbd5e1" }}>·</span>
+            {sessionCount} live {sessionCount === 1 ? "session" : "sessions"}
+          </p>
+          <p
+            className="text-xs lg:text-sm text-center mt-2 font-medium"
+            style={{ color: "#475569" }}
+          >
+            Plus your tribe — momentum that lasts
+          </p>
+
+          {/* Price tag — not a button. Just the price displayed
+              prominently as a product price. The buy action lives at
+              the end of section 1, after the journey. */}
+          <div className="mt-9 lg:mt-12 text-center">
+            <div
+              className="font-black font-headline tracking-tight"
+              style={{
+                color: "#0F2229",
+                fontSize: "clamp(2.5rem, 8vw, 3.5rem)",
+                letterSpacing: "-0.03em",
+                lineHeight: 1,
+              }}
+            >
+              {priceLabel}
+            </div>
+            <p
+              className="text-[11px] font-bold font-headline uppercase tracking-[0.18em] mt-2"
+              style={{ color: "#94a3b8" }}
+            >
+              For the full program
+            </p>
+          </div>
         </div>
 
-        {/* Connective line — names the brand differentiator literally.
-            Sits between the portraits (who) and the stats (how much). */}
-        <p
-          className="text-sm lg:text-base mb-12 lg:mb-16 font-medium"
-          style={{ color: "#475569" }}
-        >
-          {connectiveLine}
-        </p>
-
-        {/* Stat strip — 2 columns. Coach count dropped because the
-            portraits above already answer "how many coaches" visually.
-            These two stats are the time-commitment evidence. */}
-        <div className="flex items-stretch justify-center mb-12 lg:mb-14 max-w-md mx-auto">
-          <Stat number={weeks} label={weeks === 1 ? "week" : "weeks"} />
-          <div
-            className="w-px mx-8 lg:mx-12 self-stretch"
-            style={{ backgroundColor: "rgba(8,145,178,0.30)" }}
-            aria-hidden
-          />
-          <Stat
-            number={sessionCount}
-            label={sessionCount === 1 ? "live session" : "live sessions"}
-          />
-        </div>
-
-        {/* CTA */}
-        <HeroCTA
-          challengeId={challengeId}
-          spaceId={spaceId}
-          priceLabel={priceLabel}
-          isAuthenticated={isAuthenticated}
-          hasPurchased={hasPurchased}
-          isCreator={isCreator}
+        {/* Docking dot — the spine in the journey block emerges from
+            here. Half outside the card (translate-y-1/2 visually).
+            Solid cyan; matches the spine's color exactly. */}
+        <div
+          className="absolute left-1/2 -translate-x-1/2 w-4 h-4 rounded-full z-10"
+          style={{
+            bottom: "-8px",
+            backgroundColor: "#9CF0FF",
+            border: "3px solid #F2EFE8",
+            boxShadow: "0 0 0 1px rgba(8,145,178,0.20)",
+          }}
+          aria-hidden
         />
       </div>
     </section>
   );
 }
 
+function Divider({ className }: { className?: string }) {
+  return (
+    <div
+      className={className}
+      style={{ height: "1px", backgroundColor: "rgba(15,34,41,0.06)" }}
+      aria-hidden
+    />
+  );
+}
+
 /**
- * Coach portrait — circular photo + name + role-accented tagline.
- * 128px on mobile, 160px on desktop. The visual centerpiece of the hero.
+ * Expert portrait — 96px on mobile, 112px on desktop (scaled down from
+ * the open-layout 128/160 because they live inside a card now and need
+ * to be proportional to the container). Photo + name + role-accented
+ * tagline.
  */
-function CoachPortrait({ creator }: { creator: Creator }) {
+function ExpertPortrait({ creator }: { creator: Creator }) {
   const roleColor = creator.role === "owner" ? "#FF6130" : "#0891b2";
 
   return (
     <div
       className="flex flex-col items-center min-w-0"
-      style={{ maxWidth: "180px" }}
+      style={{ maxWidth: "150px" }}
     >
       {creator.avatar_url ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={creator.avatar_url}
-          alt={creator.display_name ?? "Coach"}
-          className="w-32 h-32 lg:w-40 lg:h-40 rounded-full object-cover"
+          alt={creator.display_name ?? "Expert"}
+          className="w-24 h-24 lg:w-28 lg:h-28 rounded-full object-cover"
           style={{
             border: "3px solid #FFFFFF",
             boxShadow:
-              "0 1px 2px rgba(15,34,41,0.04), 0 8px 24px rgba(15,34,41,0.10)",
+              "0 1px 2px rgba(15,34,41,0.04), 0 6px 16px rgba(15,34,41,0.08)",
           }}
         />
       ) : (
         <div
-          className="w-32 h-32 lg:w-40 lg:h-40 rounded-full flex items-center justify-center"
+          className="w-24 h-24 lg:w-28 lg:h-28 rounded-full flex items-center justify-center"
           style={{
             backgroundColor:
               creator.role === "owner"
@@ -221,11 +274,11 @@ function CoachPortrait({ creator }: { creator: Creator }) {
                 : "rgba(8,145,178,0.12)",
             border: "3px solid #FFFFFF",
             boxShadow:
-              "0 1px 2px rgba(15,34,41,0.04), 0 8px 24px rgba(15,34,41,0.10)",
+              "0 1px 2px rgba(15,34,41,0.04), 0 6px 16px rgba(15,34,41,0.08)",
           }}
         >
           <span
-            className="text-4xl lg:text-5xl font-black font-headline"
+            className="text-3xl lg:text-4xl font-black font-headline"
             style={{ color: roleColor }}
           >
             {(creator.display_name ?? "?")[0]?.toUpperCase()}
@@ -233,124 +286,19 @@ function CoachPortrait({ creator }: { creator: Creator }) {
         </div>
       )}
       <h2
-        className="mt-4 lg:mt-5 text-base lg:text-lg font-black font-headline tracking-tight leading-tight text-center"
+        className="mt-3 lg:mt-4 text-sm lg:text-base font-black font-headline tracking-tight leading-tight text-center"
         style={{ color: "#0F2229", letterSpacing: "-0.01em" }}
       >
-        {creator.display_name ?? "Coach"}
+        {creator.display_name ?? "Expert"}
       </h2>
       {creator.tagline && creator.tagline.trim() && (
         <p
-          className="mt-1.5 text-xs lg:text-sm font-bold font-headline text-center leading-snug line-clamp-2"
+          className="mt-1 text-[11px] lg:text-xs font-bold font-headline text-center leading-snug line-clamp-2"
           style={{ color: roleColor }}
         >
           {creator.tagline}
         </p>
       )}
     </div>
-  );
-}
-
-/**
- * Stat block — single number on top, label beneath. Used in the
- * 2-column stat strip. Numbers use the page's Billboard tier; labels
- * use the eyebrow tier.
- */
-function Stat({ number, label }: { number: number; label: string }) {
-  return (
-    <div className="flex flex-col items-center min-w-0">
-      <span
-        className="font-black font-headline leading-none"
-        style={{
-          color: "#0F2229",
-          fontSize: "clamp(3rem, 11vw, 5rem)",
-          letterSpacing: "-0.04em",
-        }}
-      >
-        {number}
-      </span>
-      <span
-        className="mt-2.5 text-[11px] font-bold font-headline uppercase tracking-[0.18em]"
-        style={{ color: "#94a3b8" }}
-      >
-        {label}
-      </span>
-    </div>
-  );
-}
-
-/**
- * Hero CTA — auth-aware. Same logic as PublicCommitBlock but with
- * hero wording ("I'm in" — emotional intent, not transactional).
- */
-function HeroCTA({
-  challengeId,
-  spaceId,
-  priceLabel,
-  isAuthenticated,
-  hasPurchased,
-  isCreator,
-}: {
-  challengeId: string;
-  spaceId: string | null;
-  priceLabel: string;
-  isAuthenticated: boolean;
-  hasPurchased: boolean;
-  isCreator: boolean;
-}) {
-  if (isCreator) {
-    return (
-      <div
-        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-bold font-headline"
-        style={{
-          backgroundColor: "rgba(255,97,48,0.10)",
-          color: "#c2410c",
-          border: "1px solid rgba(255,97,48,0.20)",
-        }}
-      >
-        <span>👀</span>
-        <span>Preview — you&apos;re a coach on this program</span>
-      </div>
-    );
-  }
-
-  if (hasPurchased) {
-    return (
-      <Link
-        href={spaceId ? `/communities/challenge/${spaceId}` : "/me"}
-        className="inline-block px-7 py-4 rounded-full text-white text-base font-black font-headline transition-transform hover:scale-[1.01]"
-        style={{
-          backgroundColor: "#0891b2",
-          boxShadow:
-            "0 6px 20px rgba(8,145,178,0.30), 0 2px 6px rgba(8,145,178,0.20)",
-        }}
-      >
-        You&apos;re in — open your space →
-      </Link>
-    );
-  }
-
-  if (isAuthenticated) {
-    return (
-      <PurchaseButton
-        kind="challenge"
-        targetId={challengeId}
-        label={`I'm in — ${priceLabel} →`}
-        className="inline-block px-7 py-4 rounded-full text-white text-base font-black font-headline transition-transform hover:scale-[1.01] disabled:opacity-70 bg-[#FF6130] shadow-[0_6px_20px_rgba(255,97,48,0.40),0_2px_6px_rgba(255,97,48,0.20)]"
-      />
-    );
-  }
-
-  return (
-    <Link
-      href={`/login?intent=buy:challenge:${challengeId}&returnTo=/challenges/${challengeId}`}
-      className="inline-block px-7 py-4 rounded-full text-white text-base font-black font-headline transition-transform hover:scale-[1.01]"
-      style={{
-        backgroundColor: "#FF6130",
-        boxShadow:
-          "0 6px 20px rgba(255,97,48,0.40), 0 2px 6px rgba(255,97,48,0.20)",
-      }}
-    >
-      I&apos;m in — {priceLabel} →
-    </Link>
   );
 }

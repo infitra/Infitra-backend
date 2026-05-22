@@ -1,30 +1,37 @@
 /**
- * PublicProgramRhythm — Bundle 4.2 rewrite.
+ * PublicProgramRhythm — Bundle 4.2.2 (centered spine + editorial sessions).
  *
- * Vertical cyan-spine timeline. The week markers are punctuation along
- * a continuous line — the spine itself reads as the program's
- * continuous presence (the cohort space, always alive), with live
- * moments highlighted as the points where the cohort comes together.
+ * Section 1's second half. The spine VISUALLY EMERGES from the product
+ * card above (alpha coupling per the design discussion) — its top dot
+ * sits at the same X coordinate as the card's bottom-center docking dot,
+ * making them feel like one continuous object.
  *
- * The previous version treated weeks as a 2-column "left rail / right
- * content" grid with no continuous visual connection between weeks. That
- * read as "stacked weeks" — list-like, no flow, no momentum. The new
- * spine treatment reads as a journey: your eye travels down the cyan
- * line, picking up themes and session cards along the way.
+ * Spine architecture:
+ *   - Centered (not left-aligned like 4.2.0/4.2.1)
+ *   - Solid cyan from top of section to bottom
+ *   - Tiny "ALWAYS ON · YOUR TRIBE" tag pinned at the top
+ *   - Week markers as cyan filled circles, first marker orange ("start here")
+ *   - Week themes as chapter-title display type
+ *   - Sessions as MAGAZINE-WEIGHT features hanging from each week
  *
- * Always-on signaling:
- *   - Spine is SOLID cyan throughout (not dashed in-between).
- *     Visual metaphor: continuity, not absence.
- *   - Small orange "ALWAYS ON · cohort space" tag at the top of the
- *     spine pins the always-on dimension once.
- *   - Section subtitle says it in words: "Live coaching weaves into
- *     your week. Between sessions, your cohort stays alive."
- *   - The dedicated selling of always-on lives in the next block
- *     (PublicBeyondLiveBlock), not repeated here.
+ * Session treatment (editorial weight):
+ *   - Image: large, ~16:9 contained within the centered content column.
+ *     Strong shadow, rounded corners. The image carries real weight as
+ *     a feature photo, not a thumbnail.
+ *   - Title: editorial display, ~24-28px font-black
+ *   - Metadata: small caps, slate tertiary
+ *   - Description: when set, 2-3 lines with readable body weight
  *
- * First week's marker is orange (#FF6130) instead of cyan — "start here"
- * visual signal. All subsequent week markers are cyan.
+ * No "THE JOURNEY" eyebrow header anymore — the visual connection to the
+ * card above makes the section's identity self-evident. The journey is
+ * NOT a separate marketing beat; it's the unfold of the product card.
+ *
+ * First CTA — "I'm in" — sits at the end of this block as the natural
+ * decision moment after the buyer has seen the entire offer.
  */
+
+import Link from "next/link";
+import { PurchaseButton } from "@/app/components/PurchaseButton";
 
 interface SessionLite {
   id: string;
@@ -36,15 +43,17 @@ interface SessionLite {
 }
 
 interface Props {
+  challengeId: string;
+  spaceId: string | null;
   startDate: string;
   endDate: string;
   weeklyArc: Array<{ week: number; theme: string }>;
   sessions: SessionLite[];
-  /** Optional cover image — Bundle 4.2.1: moved here from the hero.
-   *  Renders as a cinematic chapter-cover band at the top of the
-   *  Journey section, introducing the program's experiential arc.
-   *  Falls back gracefully to nothing when no image is set. */
-  coverImageUrl?: string | null;
+  priceCents: number;
+  currency: string;
+  isAuthenticated: boolean;
+  hasPurchased: boolean;
+  isCreator: boolean;
 }
 
 function weekRange(startDate: string, weekNumber: number): { start: Date; end: Date } {
@@ -99,12 +108,22 @@ function formatDuration(minutes: number): string {
   return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
 
+function formatPrice(cents: number, currency: string): string {
+  return `${currency} ${(cents / 100).toFixed(0)}`;
+}
+
 export function PublicProgramRhythm({
+  challengeId,
+  spaceId,
   startDate,
   endDate,
   weeklyArc,
   sessions,
-  coverImageUrl,
+  priceCents,
+  currency,
+  isAuthenticated,
+  hasPurchased,
+  isCreator,
 }: Props) {
   const totalWeeks = computeTotalWeeks(startDate, endDate);
   if (totalWeeks === 0) return null;
@@ -121,207 +140,261 @@ export function PublicProgramRhythm({
     );
   }
 
+  const priceLabel = formatPrice(priceCents, currency);
+
   return (
-    <section className="px-6 lg:px-12 py-16 lg:py-24">
-      <div className="max-w-3xl mx-auto">
-        {/* Cover image as cinematic chapter band — Bundle 4.2.1. Moved
-            from the hero to here, where it introduces the program's
-            experiential arc instead of competing with the creator
-            portraits up top. 16:9 contained, rounded, subtle elevation. */}
-        {coverImageUrl && (
-          <div
-            className="relative overflow-hidden mb-12 lg:mb-16"
+    <section className="px-6 lg:px-12 pt-0 pb-16 lg:pb-24">
+      <div className="max-w-2xl mx-auto relative">
+        {/* The cyan spine — centered, solid, runs from top (just below
+            the card's docking dot) to the bottom of the last session.
+            Same X-axis as the card's docking dot so visually they feel
+            like one continuous element. */}
+        <div
+          className="absolute left-1/2 -translate-x-1/2 w-[3px] rounded-full"
+          style={{
+            top: "0",
+            bottom: "120px", // ends above the first CTA
+            backgroundColor: "#9CF0FF",
+          }}
+          aria-hidden
+        />
+
+        {/* Always-on tag — pinned at the top of the spine, just below
+            where the card ends. */}
+        <div className="relative pt-16 lg:pt-20 pb-12 lg:pb-16 flex justify-center">
+          <span
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full text-[10px] font-bold font-headline uppercase tracking-[0.2em] relative z-10"
             style={{
-              aspectRatio: "16 / 9",
-              borderRadius: "1.5rem",
-              boxShadow:
-                "0 1px 2px rgba(15,34,41,0.04), 0 12px 40px rgba(15,34,41,0.08)",
+              backgroundColor: "#F2EFE8",
+              color: "#c2410c",
+              border: "1px solid rgba(255,97,48,0.25)",
+              boxShadow: "0 1px 3px rgba(15,34,41,0.04)",
             }}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={coverImageUrl}
-              alt=""
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-          </div>
-        )}
-
-        {/* Section header */}
-        <p
-          className="text-[11px] font-bold font-headline uppercase tracking-[0.25em] mb-3 text-center"
-          style={{ color: "#FF6130" }}
-        >
-          The Journey
-        </p>
-        <h2
-          className="text-3xl lg:text-5xl font-black font-headline tracking-tight text-center mb-4"
-          style={{ color: "#0F2229", letterSpacing: "-0.02em" }}
-        >
-          {totalWeeks} {totalWeeks === 1 ? "week" : "weeks"}, week by week
-        </h2>
-        <p
-          className="text-sm sm:text-base text-center mb-16 lg:mb-20 max-w-xl mx-auto leading-relaxed"
-          style={{ color: "#475569" }}
-        >
-          Live coaching weaves into your week. Between sessions, your
-          cohort stays alive.
-        </p>
-
-        {/* The spine itself + content. Spine is positioned via absolute
-            inside a relative container; content uses padding-left to
-            clear it. */}
-        <div className="relative">
-          {/* The cyan spine — solid line from top of first week marker
-              to bottom of last. Sits at left 16px (mobile) / 24px (desktop).
-              Single element with responsive `left`. Always-on tag pinned
-              at the top of the spine. */}
-          <div
-            className="absolute top-12 bottom-4 w-[3px] rounded-full left-4 lg:left-6"
-            style={{ backgroundColor: "#9CF0FF" }}
-            aria-hidden
-          />
-
-          {/* Always-on tag — pinned at the top of the spine */}
-          <div className="relative pl-10 lg:pl-16 mb-10 lg:mb-14">
             <span
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-bold font-headline uppercase tracking-[0.2em]"
-              style={{
-                backgroundColor: "rgba(255,97,48,0.10)",
-                color: "#c2410c",
-                border: "1px solid rgba(255,97,48,0.20)",
-              }}
-            >
-              <span
-                className="inline-block w-1.5 h-1.5 rounded-full"
-                style={{ backgroundColor: "#FF6130" }}
-              />
-              Always on · cohort space
-            </span>
-          </div>
+              className="inline-block w-1.5 h-1.5 rounded-full"
+              style={{ backgroundColor: "#FF6130" }}
+            />
+            Always on · your tribe
+          </span>
+        </div>
 
-          {/* Weeks */}
-          <div className="space-y-12 lg:space-y-16">
-            {Array.from({ length: totalWeeks }, (_, i) => i + 1).map((weekNum) => {
-              const range = weekRange(startDate, weekNum);
-              const focus = weeklyArc.find((f) => f.week === weekNum)?.theme;
-              const weekSessions = sessionsByWeek.get(weekNum) ?? [];
-              const isFirst = weekNum === 1;
+        {/* Weeks — each is a centered chapter with the marker on the
+            spine, theme as chapter title, sessions as magazine-weight
+            feature spreads below. */}
+        <div className="space-y-16 lg:space-y-20">
+          {Array.from({ length: totalWeeks }, (_, i) => i + 1).map((weekNum) => {
+            const range = weekRange(startDate, weekNum);
+            const focus = weeklyArc.find((f) => f.week === weekNum)?.theme;
+            const weekSessions = sessionsByWeek.get(weekNum) ?? [];
+            const isFirst = weekNum === 1;
 
-              return (
-                <div key={weekNum} className="relative pl-10 lg:pl-16">
-                  {/* Week marker — orange for first week ("start here"
-                      signal), cyan for the rest. Centered on the spine
-                      via responsive left positioning. Single element. */}
+            return (
+              <div key={weekNum} className="relative">
+                {/* Week marker — centered on the spine. First week is
+                    orange ("start here"); the rest are cyan. */}
+                <div
+                  className="absolute left-1/2 -translate-x-1/2 w-5 h-5 rounded-full z-10"
+                  style={{
+                    top: "0",
+                    backgroundColor: isFirst ? "#FF6130" : "#9CF0FF",
+                    border: "4px solid #F2EFE8",
+                    boxShadow: isFirst
+                      ? "0 0 0 1px rgba(255,97,48,0.30), 0 4px 14px rgba(255,97,48,0.25)"
+                      : "0 0 0 1px rgba(8,145,178,0.20)",
+                  }}
+                  aria-hidden
+                />
+
+                {/* Week label — centered, beneath the marker */}
+                <div className="text-center pt-10 lg:pt-12">
                   <div
-                    className="absolute w-4 h-4 rounded-full left-[9px] lg:left-[17px] top-2"
-                    style={{
-                      backgroundColor: isFirst ? "#FF6130" : "#9CF0FF",
-                      border: "3px solid #F2EFE8",
-                      boxShadow: isFirst
-                        ? "0 0 0 1px rgba(255,97,48,0.30), 0 2px 8px rgba(255,97,48,0.25)"
-                        : "0 0 0 1px rgba(8,145,178,0.20)",
-                    }}
-                    aria-hidden
-                  />
-
-                  {/* Week label */}
-                  <div
-                    className="text-[11px] font-bold font-headline uppercase tracking-[0.2em] mb-2"
+                    className="text-[11px] font-bold font-headline uppercase tracking-[0.2em] mb-3"
                     style={{ color: "#0891b2" }}
                   >
-                    Week {weekNum} <span style={{ color: "#cbd5e1" }}>·</span>{" "}
+                    Week {weekNum}{" "}
+                    <span style={{ color: "#cbd5e1" }}>·</span>{" "}
                     <span style={{ color: "#94a3b8" }}>
                       {formatWeekRange(range.start, range.end)}
                     </span>
                   </div>
 
-                  {/* Week theme as chapter heading. If empty, fall back
-                      to "Week N" — never leave a bare row. */}
+                  {/* Week theme as chapter title */}
                   <h3
-                    className="font-black font-headline tracking-tight leading-[1.05] mb-6 lg:mb-7"
+                    className="font-black font-headline tracking-tight leading-[1.05] mb-8 lg:mb-10"
                     style={{
                       color: "#0F2229",
-                      fontSize: "clamp(1.5rem, 4vw, 2.25rem)",
+                      fontSize: "clamp(1.75rem, 5vw, 2.5rem)",
                       letterSpacing: "-0.02em",
                     }}
                   >
                     {focus && focus.trim() ? focus : `Week ${weekNum}`}
                   </h3>
-
-                  {/* Sessions for this week */}
-                  {weekSessions.length > 0 && (
-                    <div className="space-y-3">
-                      {weekSessions.map((s) => (
-                        <SessionCard key={s.id} session={s} />
-                      ))}
-                    </div>
-                  )}
                 </div>
-              );
-            })}
-          </div>
+
+                {/* Sessions for this week — magazine-weight feature
+                    spreads. Large image + display title + metadata. */}
+                {weekSessions.length > 0 && (
+                  <div className="space-y-10 lg:space-y-14">
+                    {weekSessions.map((s) => (
+                      <SessionFeature key={s.id} session={s} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* First CTA — the decision moment after the entire offer has
+            been laid out. Lives at the end of section 1, just below
+            the spine. */}
+        <div className="mt-20 lg:mt-24 flex justify-center">
+          <FirstCTA
+            challengeId={challengeId}
+            spaceId={spaceId}
+            priceLabel={priceLabel}
+            isAuthenticated={isAuthenticated}
+            hasPurchased={hasPurchased}
+            isCreator={isCreator}
+          />
         </div>
       </div>
     </section>
   );
 }
 
-function SessionCard({ session }: { session: SessionLite }) {
+/**
+ * SessionFeature — magazine-weight session card. Image is prominent
+ * (16:9), title is editorial display, metadata is small. Description
+ * gets readable body weight when present.
+ */
+function SessionFeature({ session }: { session: SessionLite }) {
   return (
-    <div
-      className="flex items-start gap-4 p-3.5 rounded-2xl"
-      style={{
-        backgroundColor: "#FFFFFF",
-        border: "1px solid rgba(15,34,41,0.06)",
-        boxShadow: "0 1px 2px rgba(15,34,41,0.03)",
-      }}
-    >
+    <article className="max-w-xl mx-auto">
       {session.image_url ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={session.image_url}
           alt=""
-          className="w-16 h-16 lg:w-20 lg:h-20 rounded-lg object-cover shrink-0"
-        />
-      ) : (
-        <div
-          className="w-16 h-16 lg:w-20 lg:h-20 rounded-lg shrink-0 flex items-center justify-center"
+          className="w-full mb-5 lg:mb-6"
           style={{
-            background: "linear-gradient(135deg, rgba(156,240,255,0.40), rgba(255,97,48,0.20))",
+            aspectRatio: "16 / 9",
+            objectFit: "cover",
+            borderRadius: "1.25rem",
+            boxShadow:
+              "0 1px 2px rgba(15,34,41,0.04), 0 8px 24px rgba(15,34,41,0.08)",
           }}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo-mark.png" alt="" width={20} height={20} style={{ opacity: 0.35 }} />
-        </div>
-      )}
-      <div className="flex-1 min-w-0 pt-0.5">
-        <h4
-          className="text-sm lg:text-base font-black font-headline leading-tight"
-          style={{ color: "#0F2229" }}
-        >
-          {session.title}
-        </h4>
+        />
+      ) : null}
+      <h4
+        className="font-black font-headline tracking-tight text-center"
+        style={{
+          color: "#0F2229",
+          fontSize: "clamp(1.25rem, 3.5vw, 1.75rem)",
+          letterSpacing: "-0.015em",
+          lineHeight: 1.15,
+        }}
+      >
+        {session.title}
+      </h4>
+      <p
+        className="text-[11px] lg:text-xs font-bold font-headline uppercase tracking-[0.18em] text-center mt-3"
+        style={{ color: "#94a3b8" }}
+        suppressHydrationWarning
+      >
+        {formatSessionDay(session.start_time)}
+        <span style={{ color: "#cbd5e1" }}> · </span>
+        {formatSessionTime(session.start_time)}
+        <span style={{ color: "#cbd5e1" }}> · </span>
+        {formatDuration(session.duration_minutes)}
+      </p>
+      {session.description && session.description.trim() && (
         <p
-          className="text-[11px] lg:text-xs font-bold mt-1.5"
-          style={{ color: "#64748b" }}
-          suppressHydrationWarning
+          className="text-sm lg:text-[15px] mt-4 leading-relaxed text-center max-w-md mx-auto"
+          style={{ color: "#475569" }}
         >
-          {formatSessionDay(session.start_time)}
-          <span style={{ color: "#cbd5e1" }}> · </span>
-          {formatSessionTime(session.start_time)}
-          <span style={{ color: "#cbd5e1" }}> · </span>
-          {formatDuration(session.duration_minutes)}
+          {session.description}
         </p>
-        {session.description && session.description.trim() && (
-          <p
-            className="text-xs mt-2 leading-relaxed line-clamp-2"
-            style={{ color: "#475569" }}
-          >
-            {session.description}
-          </p>
-        )}
+      )}
+    </article>
+  );
+}
+
+/**
+ * First CTA — auth-aware. Lives at the end of section 1 as the
+ * decision moment after card + spine. "I'm in" wording — emotional
+ * intent, the moment the buyer commits in their head.
+ */
+function FirstCTA({
+  challengeId,
+  spaceId,
+  priceLabel,
+  isAuthenticated,
+  hasPurchased,
+  isCreator,
+}: {
+  challengeId: string;
+  spaceId: string | null;
+  priceLabel: string;
+  isAuthenticated: boolean;
+  hasPurchased: boolean;
+  isCreator: boolean;
+}) {
+  if (isCreator) {
+    return (
+      <div
+        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-bold font-headline"
+        style={{
+          backgroundColor: "rgba(255,97,48,0.10)",
+          color: "#c2410c",
+          border: "1px solid rgba(255,97,48,0.20)",
+        }}
+      >
+        <span>👀</span>
+        <span>Preview — you&apos;re an Expert on this program</span>
       </div>
-    </div>
+    );
+  }
+
+  if (hasPurchased) {
+    return (
+      <Link
+        href={spaceId ? `/communities/challenge/${spaceId}` : "/me"}
+        className="inline-block px-7 py-4 rounded-full text-white text-base font-black font-headline transition-transform hover:scale-[1.01]"
+        style={{
+          backgroundColor: "#0891b2",
+          boxShadow:
+            "0 6px 20px rgba(8,145,178,0.30), 0 2px 6px rgba(8,145,178,0.20)",
+        }}
+      >
+        You&apos;re in — open your tribe space →
+      </Link>
+    );
+  }
+
+  if (isAuthenticated) {
+    return (
+      <PurchaseButton
+        kind="challenge"
+        targetId={challengeId}
+        label={`I'm in — ${priceLabel} →`}
+        className="inline-block px-7 py-4 rounded-full text-white text-base font-black font-headline transition-transform hover:scale-[1.01] disabled:opacity-70 bg-[#FF6130] shadow-[0_6px_20px_rgba(255,97,48,0.40),0_2px_6px_rgba(255,97,48,0.20)]"
+      />
+    );
+  }
+
+  return (
+    <Link
+      href={`/login?intent=buy:challenge:${challengeId}&returnTo=/challenges/${challengeId}`}
+      className="inline-block px-7 py-4 rounded-full text-white text-base font-black font-headline transition-transform hover:scale-[1.01]"
+      style={{
+        backgroundColor: "#FF6130",
+        boxShadow:
+          "0 6px 20px rgba(255,97,48,0.40), 0 2px 6px rgba(255,97,48,0.20)",
+      }}
+    >
+      I&apos;m in — {priceLabel} →
+    </Link>
   );
 }

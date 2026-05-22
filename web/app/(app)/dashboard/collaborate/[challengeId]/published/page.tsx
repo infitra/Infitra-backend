@@ -1,11 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { CoverImageBand } from "@/app/(app)/challenges/[id]/CoverImageBand";
 import { PublicChallengeHero } from "@/app/(app)/challenges/[id]/PublicChallengeHero";
-import { PublicValuePropsBlock } from "@/app/(app)/challenges/[id]/PublicValuePropsBlock";
 import { PublicProgramRhythm } from "@/app/(app)/challenges/[id]/PublicProgramRhythm";
-import { PublicBeyondLiveBlock } from "@/app/(app)/challenges/[id]/PublicBeyondLiveBlock";
 import { PublicCreatorsBlock } from "@/app/(app)/challenges/[id]/PublicCreatorsBlock";
+import { PublicBeyondLiveBlock } from "@/app/(app)/challenges/[id]/PublicBeyondLiveBlock";
 import { PublishedShareBar } from "./PublishedShareBar";
 
 export const metadata = { title: "Collaboration Published — INFITRA" };
@@ -20,9 +20,9 @@ export const metadata = { title: "Collaboration Published — INFITRA" };
  * components used at /challenges/[id] composed inline so they see
  * exactly what buyers see.
  *
- * Single source of truth for the buyer experience: PublicChallengeHero,
- * PublicValuePropsBlock, PublicProgramRhythm, PublicBeyondLiveBlock,
- * PublicCreatorsBlock all come from /challenges/[id]/ and are reused
+ * Single source of truth for the buyer experience: CoverImageBand,
+ * PublicChallengeHero, PublicProgramRhythm, PublicCreatorsBlock,
+ * PublicBeyondLiveBlock all come from /challenges/[id]/ and are reused
  * here. No PublicCommitBlock because a creator isn't going to buy
  * their own program — instead the commit footer is replaced with a
  * "Share this with your community" block.
@@ -168,17 +168,18 @@ export default async function PublishedCelebrationPage({
       <PublishedShareBar challengeId={challengeId} title={buyerView.title} />
 
       {/* The actual public preview — same architecture as /challenges/[id].
-          Bundle 4.2: matches the new 6-block layout (Hero / Why you'll
-          join / Journey / Beyond the live / Coaches). PublicCommitBlock
-          is replaced by the "Share this" footer below since a creator
-          isn't going to buy their own program.
+          Bundle 4.2.2: two-section layout
+            SECTION 1 — Cover image / Hero card / Journey + first CTA
+            SECTION 2 — Experts / Inside the program
 
-          isCreator forced true so the Hero CTA renders the preview
-          badge instead of a buy button. */}
+          The first CTA inside PublicProgramRhythm renders the preview
+          badge because isCreator=true. PublicCommitBlock is replaced by
+          the "Share this" footer below — creators don't buy their own
+          programs. */}
       <main className="flex-1">
+        <CoverImageBand imageUrl={buyerView.image_url} />
+
         <PublicChallengeHero
-          challengeId={challengeId}
-          spaceId={null}
           title={buyerView.title}
           promise={buyerView.promise_text}
           startDate={buyerView.start_date}
@@ -187,31 +188,28 @@ export default async function PublishedCelebrationPage({
           priceCents={buyerView.price_cents}
           currency={buyerView.currency}
           creators={creators}
+        />
+
+        <PublicProgramRhythm
+          challengeId={challengeId}
+          spaceId={null}
+          startDate={buyerView.start_date}
+          endDate={buyerView.end_date}
+          weeklyArc={(buyerView.weekly_arc as Array<{ week: number; theme: string }>) ?? []}
+          sessions={sessions}
+          priceCents={buyerView.price_cents}
+          currency={buyerView.currency}
           isAuthenticated={true}
           hasPurchased={false}
           isCreator={true}
         />
 
-        <PublicValuePropsBlock
-          sessionCount={sessions.length}
-          weekCount={computeWeeksLocal(buyerView.start_date, buyerView.end_date)}
-          creatorCount={creators.length}
-        />
-
-        <PublicProgramRhythm
-          startDate={buyerView.start_date}
-          endDate={buyerView.end_date}
-          weeklyArc={(buyerView.weekly_arc as Array<{ week: number; theme: string }>) ?? []}
-          sessions={sessions}
-          coverImageUrl={buyerView.image_url}
-        />
-
-        <PublicBeyondLiveBlock />
-
         <PublicCreatorsBlock
           creators={creators}
           topicsByCreator={topicsByCreator}
         />
+
+        <PublicBeyondLiveBlock />
       </main>
 
       {/* Creator-only commit-replacement footer: "Share this" block
@@ -264,13 +262,3 @@ export default async function PublishedCelebrationPage({
   );
 }
 
-/** Whole-week count between start_date and end_date. Mirrors the helper
- *  in /challenges/[id]/page.tsx so the value passed to PublicValuePropsBlock
- *  stays consistent. */
-function computeWeeksLocal(startDate: string, endDate: string): number {
-  const s = new Date(startDate + "T00:00:00");
-  const e = new Date(endDate + "T00:00:00");
-  if (isNaN(s.getTime()) || isNaN(e.getTime()) || e <= s) return 1;
-  const days = Math.round((e.getTime() - s.getTime()) / 86400000) + 1;
-  return Math.max(1, Math.ceil(days / 7));
-}

@@ -20,7 +20,7 @@ import { PurchaseButton } from "@/app/components/PurchaseButton";
 
 interface Props {
   challengeId: string;
-  /** Cohort space ID (door into community). Distinct from challengeId. */
+  /** Tribe space ID (door into the cohort). Distinct from challengeId. */
   spaceId: string | null;
   priceCents: number;
   currency: string;

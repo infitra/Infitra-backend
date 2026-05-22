@@ -2,11 +2,11 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ParticipantNav } from "@/app/components/ParticipantNav";
+import { CoverImageBand } from "./CoverImageBand";
 import { PublicChallengeHero } from "./PublicChallengeHero";
-import { PublicValuePropsBlock } from "./PublicValuePropsBlock";
 import { PublicProgramRhythm } from "./PublicProgramRhythm";
-import { PublicBeyondLiveBlock } from "./PublicBeyondLiveBlock";
 import { PublicCreatorsBlock } from "./PublicCreatorsBlock";
+import { PublicBeyondLiveBlock } from "./PublicBeyondLiveBlock";
 import { PublicCommitBlock } from "./PublicCommitBlock";
 import { StickyJoinCTA } from "./StickyJoinCTA";
 
@@ -227,28 +227,36 @@ export default async function ChallengePage({
               </p>
               <p className="text-sm" style={{ color: "#0F2229" }}>
                 {checkoutError === "ALREADY_PURCHASED"
-                  ? "You're already enrolled in this program — open the cohort space below."
+                  ? "You're already enrolled in this program — open your tribe space below."
                   : checkoutError === "CHALLENGE_FULL"
-                    ? "This program is at capacity right now. Check back soon or message the creators."
-                    : "We couldn't open Stripe checkout. Try the Join button below, or reload the page."}
+                    ? "This program is at capacity right now. Check back soon or message the Experts."
+                    : "We couldn't open Stripe checkout. Try the Commit button below, or reload the page."}
               </p>
             </div>
           </div>
         )}
-        {/* Bundle 4.2 architecture — six blocks, six jobs:
-              1. Hero            — hook (promise + commitment shape + co-led + CTA)
-              2. Why you'll join — concrete LIVE coaching inclusions
-              3. The Journey     — visualize the 5-week arc (cyan spine)
-              4. Beyond the live — always-on cohort selling
-              5. Meet your coaches — credibility (bios + topic chips)
-              6. Commit          — final CTA moment
+        {/* Bundle 4.2.2 architecture — two acts, two CTAs:
 
-            PromiseBlock removed — the promise now lives in the Hero as
-            the H1 headline (where it belongs). */}
+              SECTION 1 — THE PRODUCT BUNDLE
+              ├── Cover image (optional, only when set)
+              ├── Hero card (offer summary, no CTA inside)
+              ├── Journey (spine emerges from card, magazine sessions)
+              └── First CTA — "I'm in" (lives inside PublicProgramRhythm)
+
+              SECTION 2 — WHO + INSIDE THE PROGRAM
+              ├── Meet your Experts (bios + topic chips)
+              ├── Inside the program (tribe selling)
+              └── Second CTA — "Commit" (lives inside PublicCommitBlock)
+
+            The "Why you'll join" block from 4.2 is cut — its job is now
+            done by the card (summary), spine (concrete sessions), and
+            Inside-the-program block (tribe). PromiseBlock was cut in 4.2
+            — promise is the H1 in the card. */}
+
+        {/* SECTION 1 */}
+        <CoverImageBand imageUrl={buyerView.image_url} />
 
         <PublicChallengeHero
-          challengeId={id}
-          spaceId={spaceId}
           title={buyerView.title}
           promise={buyerView.promise_text}
           startDate={buyerView.start_date}
@@ -257,42 +265,38 @@ export default async function ChallengePage({
           priceCents={buyerView.price_cents}
           currency={buyerView.currency}
           creators={creators}
+        />
+
+        <PublicProgramRhythm
+          challengeId={id}
+          spaceId={spaceId}
+          startDate={buyerView.start_date}
+          endDate={buyerView.end_date}
+          weeklyArc={(buyerView.weekly_arc as Array<{ week: number; theme: string }>) ?? []}
+          sessions={sessions}
+          priceCents={buyerView.price_cents}
+          currency={buyerView.currency}
           isAuthenticated={!!user}
           hasPurchased={hasPurchased}
           isCreator={isCreator}
         />
 
-        <PublicValuePropsBlock
-          sessionCount={sessions.length}
-          weekCount={computeWeeks(buyerView.start_date, buyerView.end_date)}
-          creatorCount={creators.length}
-        />
-
-        <PublicProgramRhythm
-          startDate={buyerView.start_date}
-          endDate={buyerView.end_date}
-          weeklyArc={(buyerView.weekly_arc as Array<{ week: number; theme: string }>) ?? []}
-          sessions={sessions}
-          coverImageUrl={buyerView.image_url}
-        />
-
-        <PublicBeyondLiveBlock />
-
+        {/* SECTION 2 */}
         <PublicCreatorsBlock
           creators={creators}
           topicsByCreator={topicsByCreator}
         />
 
+        <PublicBeyondLiveBlock />
+
         <PublicCommitBlock
           challengeId={id}
           spaceId={spaceId}
-          title={buyerView.title}
           priceCents={buyerView.price_cents}
           currency={buyerView.currency}
           startDate={buyerView.start_date}
           endDate={buyerView.end_date}
           sessionCount={sessions.length}
-          creatorCount={creators.length}
           spotsLeft={buyerView.spots_left ?? null}
           isAuthenticated={!!user}
           hasPurchased={hasPurchased}
@@ -313,13 +317,3 @@ export default async function ChallengePage({
   );
 }
 
-/** Whole-week count between start_date and end_date. Mirrors the helper
- *  used inside PublicChallengeHero / PublicProgramRhythm so the value
- *  passed down stays consistent across blocks. */
-function computeWeeks(startDate: string, endDate: string): number {
-  const s = new Date(startDate + "T00:00:00");
-  const e = new Date(endDate + "T00:00:00");
-  if (isNaN(s.getTime()) || isNaN(e.getTime()) || e <= s) return 1;
-  const days = Math.round((e.getTime() - s.getTime()) / 86400000) + 1;
-  return Math.max(1, Math.ceil(days / 7));
-}
