@@ -40,6 +40,11 @@ interface Props {
   endDate: string;
   weeklyArc: Array<{ week: number; theme: string }>;
   sessions: SessionLite[];
+  /** Optional cover image — Bundle 4.2.1: moved here from the hero.
+   *  Renders as a cinematic chapter-cover band at the top of the
+   *  Journey section, introducing the program's experiential arc.
+   *  Falls back gracefully to nothing when no image is set. */
+  coverImageUrl?: string | null;
 }
 
 function weekRange(startDate: string, weekNumber: number): { start: Date; end: Date } {
@@ -99,6 +104,7 @@ export function PublicProgramRhythm({
   endDate,
   weeklyArc,
   sessions,
+  coverImageUrl,
 }: Props) {
   const totalWeeks = computeTotalWeeks(startDate, endDate);
   if (totalWeeks === 0) return null;
@@ -118,6 +124,29 @@ export function PublicProgramRhythm({
   return (
     <section className="px-6 lg:px-12 py-16 lg:py-24">
       <div className="max-w-3xl mx-auto">
+        {/* Cover image as cinematic chapter band — Bundle 4.2.1. Moved
+            from the hero to here, where it introduces the program's
+            experiential arc instead of competing with the creator
+            portraits up top. 16:9 contained, rounded, subtle elevation. */}
+        {coverImageUrl && (
+          <div
+            className="relative overflow-hidden mb-12 lg:mb-16"
+            style={{
+              aspectRatio: "16 / 9",
+              borderRadius: "1.5rem",
+              boxShadow:
+                "0 1px 2px rgba(15,34,41,0.04), 0 12px 40px rgba(15,34,41,0.08)",
+            }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={coverImageUrl}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          </div>
+        )}
+
         {/* Section header */}
         <p
           className="text-[11px] font-bold font-headline uppercase tracking-[0.25em] mb-3 text-center"

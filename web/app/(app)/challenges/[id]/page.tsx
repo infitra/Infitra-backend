@@ -251,7 +251,6 @@ export default async function ChallengePage({
           spaceId={spaceId}
           title={buyerView.title}
           promise={buyerView.promise_text}
-          imageUrl={buyerView.image_url}
           startDate={buyerView.start_date}
           endDate={buyerView.end_date}
           sessionCount={sessions.length}
@@ -274,6 +273,7 @@ export default async function ChallengePage({
           endDate={buyerView.end_date}
           weeklyArc={(buyerView.weekly_arc as Array<{ week: number; theme: string }>) ?? []}
           sessions={sessions}
+          coverImageUrl={buyerView.image_url}
         />
 
         <PublicBeyondLiveBlock />

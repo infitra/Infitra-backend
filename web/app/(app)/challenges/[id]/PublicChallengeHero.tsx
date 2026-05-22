@@ -1,25 +1,38 @@
 /**
- * PublicChallengeHero — Bundle 4.2 rewrite.
+ * PublicChallengeHero — Bundle 4.2.1 rewrite (creator-led).
  *
- * Typography-led hero. The cover image is supporting, not load-bearing —
- * a contained 16:9 band when present, gracefully absent when not.
+ * The hero is now CREATOR-LED. INFITRA's brand differentiator is
+ * multi-creator collaboration — "two experts in one program." Every
+ * other cohort platform leads with a cover image and reduces creators
+ * to a footnote. We lead with the humans because the humans are the
+ * product.
  *
- * Composition (top to bottom):
- *   - Optional cover image (contained, rounded)
- *   - Eyebrow:  program name in brand orange (was the H1 before)
- *   - H1:       the promise as billboard display type (was a quoted block)
- *   - Stats:    weeks · sessions · co-led by [Y][Y] Names — inline
- *   - CTA:      "I'm in — CHF 287 →" (auth-aware)
+ * Composition (centered, top to bottom):
+ *   1. Eyebrow:           program name in orange caps
+ *   2. H1:                the promise (no quote marks — this is the offer)
+ *   3. Coach portraits:   128px (mobile) / 160px (desktop) circles, side-by-side,
+ *                         each with name + role-accented tagline beneath
+ *   4. Connective line:   "Two coaches, one program" (or singular for solo)
+ *   5. Stat strip:        2 big numbers (weeks · live sessions) with cyan divider.
+ *                         Coach count dropped from stats — the portraits already
+ *                         say "2" visually.
+ *   6. CTA:               "I'm in — CHF X →"
+ *
+ * No backdrop wash. The hero territory is defined by composition,
+ * typography, and spacing — past attempts at color washes on cream
+ * came out muddy and unintentional. Clean cream surface only.
+ *
+ * Cover image is NOT in the hero anymore. It moved to the Journey
+ * section as a cinematic chapter-cover band. The hero's visual core
+ * is the two humans behind the program.
  *
  * Robustness:
- *   - No cover image → hero just starts with the eyebrow on cream.
- *     No placeholder gradient (looks like a missing asset, worse than nothing).
- *   - No promise text → falls back to description, then to a synthesized line.
- *   - Solo creator → singular language ("led by", one avatar).
- *
- * The CTA wording escalates across the page: "I'm in" here, "Join program"
- * in the sticky bar, "Commit — CHF 287" at the final commit block. Same
- * destination, different emotional moment.
+ *   - No avatar uploaded → initial letter on role-colored circle
+ *     (fallback flagged for workspace preview coaching in Bundle 4.3)
+ *   - No tagline → name renders alone, no placeholder
+ *   - Solo creator → singular language + single centered portrait
+ *   - No promise → fallback to synthesized line (view-coalesced description
+ *     handles the first fallback layer; resolveHeadline handles the rest)
  */
 
 import Link from "next/link";
@@ -29,6 +42,7 @@ interface Creator {
   id: string;
   display_name: string | null;
   avatar_url: string | null;
+  tagline: string | null;
   role: "owner" | "cohost";
 }
 
@@ -36,11 +50,9 @@ interface Props {
   challengeId: string;
   spaceId: string | null;
   title: string;
-  /** Promise (already coalesced with description by vw_challenge_buyer_view —
-   *  when promise_text is empty the view substitutes description). May still
-   *  be null if both fields are empty. */
+  /** Promise text — view already coalesces description as fallback.
+   *  Null only when both promise_text and description are empty. */
   promise: string | null;
-  imageUrl: string | null;
   startDate: string;
   endDate: string;
   sessionCount: number;
@@ -63,11 +75,6 @@ function formatPrice(cents: number, currency: string): string {
   return `${currency} ${(cents / 100).toFixed(0)}`;
 }
 
-/**
- * Pick the hero headline. The promise prop already includes description as
- * a fallback (coalesced server-side by vw_challenge_buyer_view). When both
- * are empty we synthesize a line from the data so the hero stays composed.
- */
 function resolveHeadline(
   promise: string | null,
   weeks: number,
@@ -88,7 +95,6 @@ export function PublicChallengeHero({
   spaceId,
   title,
   promise,
-  imageUrl,
   startDate,
   endDate,
   sessionCount,
@@ -103,46 +109,29 @@ export function PublicChallengeHero({
   const headline = resolveHeadline(promise, weeks, creators);
   const priceLabel = formatPrice(priceCents, currency);
   const solo = creators.length === 1;
+  const connectiveLine = solo
+    ? "Personal coaching"
+    : creators.length === 2
+      ? "Two coaches, one program"
+      : `${creators.length} coaches, one program`;
 
   return (
     <section className="px-6 lg:px-12 pt-24 lg:pt-32 pb-12 lg:pb-20">
-      <div className="max-w-4xl mx-auto">
-        {/* Cover image — contained band, rounded, fixed 16:9. Only renders
-            when an image is set; no fallback gradient (looks like a broken
-            asset, worse than just being absent). */}
-        {imageUrl && (
-          <div
-            className="mb-10 lg:mb-14 rounded-3xl overflow-hidden relative"
-            style={{
-              aspectRatio: "16 / 9",
-              boxShadow:
-                "0 1px 2px rgba(15,34,41,0.04), 0 12px 40px rgba(15,34,41,0.08)",
-            }}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={imageUrl}
-              alt=""
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-          </div>
-        )}
-
-        {/* Eyebrow — program name in orange, demoted from H1 to context */}
+      <div className="max-w-3xl mx-auto text-center">
+        {/* Eyebrow — program name, demoted from H1 to identifier */}
         <p
-          className="text-[11px] font-bold font-headline uppercase tracking-[0.25em] mb-5 lg:mb-7"
+          className="text-[11px] font-bold font-headline uppercase tracking-[0.25em] mb-6 lg:mb-8"
           style={{ color: "#FF6130" }}
         >
           {title}
         </p>
 
-        {/* H1 — the promise as billboard display type. Drop the quote
-            marks: this is the offer, not a testimonial. */}
+        {/* H1 — the promise as the offer's headline */}
         <h1
-          className="font-black font-headline tracking-tight mb-7 lg:mb-9"
+          className="font-black font-headline mb-12 lg:mb-16"
           style={{
             color: "#0F2229",
-            fontSize: "clamp(2.5rem, 7vw, 4.5rem)",
+            fontSize: "clamp(2.5rem, 7.5vw, 4.5rem)",
             lineHeight: 1.02,
             letterSpacing: "-0.025em",
           }}
@@ -150,41 +139,41 @@ export function PublicChallengeHero({
           {headline}
         </h1>
 
-        {/* Stats + creators inline. Mini avatars in the line so co-led
-            identity is established without a dedicated "Led by" block. */}
-        <div
-          className="flex items-center gap-x-3 gap-y-2 flex-wrap text-sm lg:text-base mb-9 lg:mb-12"
-          style={{ color: "#475569" }}
-        >
-          <span className="font-medium">
-            {weeks} {weeks === 1 ? "week" : "weeks"}
-          </span>
-          <span style={{ color: "#cbd5e1" }}>·</span>
-          <span className="font-medium">
-            {sessionCount} live {sessionCount === 1 ? "session" : "sessions"}
-          </span>
-          <span style={{ color: "#cbd5e1" }}>·</span>
-          <span className="font-medium">{solo ? "led by" : "co-led by"}</span>
-          <div className="flex items-center gap-1.5">
-            <div className="flex -space-x-1.5">
-              {creators.map((c) => (
-                <MiniAvatar key={c.id} creator={c} />
-              ))}
-            </div>
-            <span
-              className="font-bold font-headline ml-1"
-              style={{ color: "#0F2229" }}
-            >
-              {creators
-                .map((c) => c.display_name ?? "Creator")
-                .join(" & ")}
-            </span>
-          </div>
+        {/* Coach portraits — the visual core of the hero. Big enough
+            to feel human, not avatar-sized. flex-wrap so 3+ creators
+            (rare) flow to a second row gracefully. */}
+        <div className="flex items-start justify-center gap-5 lg:gap-10 flex-wrap mb-5 lg:mb-7">
+          {creators.map((c) => (
+            <CoachPortrait key={c.id} creator={c} />
+          ))}
         </div>
 
-        {/* Primary CTA — auth-aware, matches the rest of the page's logic.
-            Hero copy: "I'm in" (emotional intent). Sticky uses "Join program",
-            commit block uses "Commit — CHF X" — escalating across the scroll. */}
+        {/* Connective line — names the brand differentiator literally.
+            Sits between the portraits (who) and the stats (how much). */}
+        <p
+          className="text-sm lg:text-base mb-12 lg:mb-16 font-medium"
+          style={{ color: "#475569" }}
+        >
+          {connectiveLine}
+        </p>
+
+        {/* Stat strip — 2 columns. Coach count dropped because the
+            portraits above already answer "how many coaches" visually.
+            These two stats are the time-commitment evidence. */}
+        <div className="flex items-stretch justify-center mb-12 lg:mb-14 max-w-md mx-auto">
+          <Stat number={weeks} label={weeks === 1 ? "week" : "weeks"} />
+          <div
+            className="w-px mx-8 lg:mx-12 self-stretch"
+            style={{ backgroundColor: "rgba(8,145,178,0.30)" }}
+            aria-hidden
+          />
+          <Stat
+            number={sessionCount}
+            label={sessionCount === 1 ? "live session" : "live sessions"}
+          />
+        </div>
+
+        {/* CTA */}
         <HeroCTA
           challengeId={challengeId}
           spaceId={spaceId}
@@ -198,42 +187,100 @@ export function PublicChallengeHero({
   );
 }
 
-function MiniAvatar({ creator }: { creator: Creator }) {
-  if (creator.avatar_url) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={creator.avatar_url}
-        alt={creator.display_name ?? "Creator"}
-        className="w-7 h-7 rounded-full object-cover"
-        style={{
-          border: "2px solid #F2EFE8",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-        }}
-      />
-    );
-  }
-  const bg = creator.role === "owner" ? "#FF6130" : "#9CF0FF";
-  const fg = creator.role === "owner" ? "#FFFFFF" : "#0F2229";
+/**
+ * Coach portrait — circular photo + name + role-accented tagline.
+ * 128px on mobile, 160px on desktop. The visual centerpiece of the hero.
+ */
+function CoachPortrait({ creator }: { creator: Creator }) {
+  const roleColor = creator.role === "owner" ? "#FF6130" : "#0891b2";
+
   return (
     <div
-      className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-black font-headline"
-      style={{
-        backgroundColor: bg,
-        color: fg,
-        border: "2px solid #F2EFE8",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-      }}
+      className="flex flex-col items-center min-w-0"
+      style={{ maxWidth: "180px" }}
     >
-      {(creator.display_name ?? "?")[0]}
+      {creator.avatar_url ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={creator.avatar_url}
+          alt={creator.display_name ?? "Coach"}
+          className="w-32 h-32 lg:w-40 lg:h-40 rounded-full object-cover"
+          style={{
+            border: "3px solid #FFFFFF",
+            boxShadow:
+              "0 1px 2px rgba(15,34,41,0.04), 0 8px 24px rgba(15,34,41,0.10)",
+          }}
+        />
+      ) : (
+        <div
+          className="w-32 h-32 lg:w-40 lg:h-40 rounded-full flex items-center justify-center"
+          style={{
+            backgroundColor:
+              creator.role === "owner"
+                ? "rgba(255,97,48,0.12)"
+                : "rgba(8,145,178,0.12)",
+            border: "3px solid #FFFFFF",
+            boxShadow:
+              "0 1px 2px rgba(15,34,41,0.04), 0 8px 24px rgba(15,34,41,0.10)",
+          }}
+        >
+          <span
+            className="text-4xl lg:text-5xl font-black font-headline"
+            style={{ color: roleColor }}
+          >
+            {(creator.display_name ?? "?")[0]?.toUpperCase()}
+          </span>
+        </div>
+      )}
+      <h2
+        className="mt-4 lg:mt-5 text-base lg:text-lg font-black font-headline tracking-tight leading-tight text-center"
+        style={{ color: "#0F2229", letterSpacing: "-0.01em" }}
+      >
+        {creator.display_name ?? "Coach"}
+      </h2>
+      {creator.tagline && creator.tagline.trim() && (
+        <p
+          className="mt-1.5 text-xs lg:text-sm font-bold font-headline text-center leading-snug line-clamp-2"
+          style={{ color: roleColor }}
+        >
+          {creator.tagline}
+        </p>
+      )}
     </div>
   );
 }
 
 /**
- * Hero CTA — mirrors PublicCommitBlock's auth-aware logic but with hero
- * wording ("I'm in" instead of "Commit"). The duplication is intentional:
- * each CTA on the page has its own emotional register.
+ * Stat block — single number on top, label beneath. Used in the
+ * 2-column stat strip. Numbers use the page's Billboard tier; labels
+ * use the eyebrow tier.
+ */
+function Stat({ number, label }: { number: number; label: string }) {
+  return (
+    <div className="flex flex-col items-center min-w-0">
+      <span
+        className="font-black font-headline leading-none"
+        style={{
+          color: "#0F2229",
+          fontSize: "clamp(3rem, 11vw, 5rem)",
+          letterSpacing: "-0.04em",
+        }}
+      >
+        {number}
+      </span>
+      <span
+        className="mt-2.5 text-[11px] font-bold font-headline uppercase tracking-[0.18em]"
+        style={{ color: "#94a3b8" }}
+      >
+        {label}
+      </span>
+    </div>
+  );
+}
+
+/**
+ * Hero CTA — auth-aware. Same logic as PublicCommitBlock but with
+ * hero wording ("I'm in" — emotional intent, not transactional).
  */
 function HeroCTA({
   challengeId,
