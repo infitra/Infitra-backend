@@ -1,39 +1,45 @@
 /**
- * PublicChallengeHero — Bundle 4.2.3 (product card, carousel below).
+ * PublicChallengeHero — Bundle 4.2.4 (carousel inside the card).
  *
- * The hero is a defined PRODUCT CARD — a card-shaped offer summary
- * that floats on the cream + wave background. Below the card sits
- * the WeeklyJourneyCarousel (in PublicProgramRhythm) as section 1's
- * second beat. Card and carousel are coupled by adjacency and shared
- * cyan vocabulary — the docking-dot from 4.2.2 was dropped now that
- * the carousel replaces the vertical spine.
+ * The product card now contains the entire offer: header, Experts,
+ * stats, tribe momentum line, weekly journey carousel, and price tag.
+ * The card IS the product — one defined object that holds everything
+ * the buyer needs to decide.
  *
- * No CTA inside the card. The card is the offer summary; the first CTA
- * lives at the end of section 1 (after the carousel). The price is
- * shown prominently in the card as a price tag, not a button.
+ * The carousel sits between the tribe line and the price tag. Journey
+ * track at the TOP of the carousel makes the 5-week structure
+ * unmistakable before any slide content loads. Sessions render as
+ * compact rows so multi-session weeks (e.g. 3 sessions in week 4)
+ * show all sessions without internal scroll.
+ *
+ * The first CTA lives OUTSIDE the card, immediately below it. The
+ * card is the offer; the CTA is the action.
  *
  * Composition (inside the card):
  *   1. Eyebrow:              program name in orange caps
- *   2. H1:                   the promise as the offer's headline
+ *   2. H1:                   the promise
  *   3. Divider
- *   4. Portraits row:        96-112px circular photos, side-by-side,
- *                            each with name + role-accented tagline
+ *   4. Portraits row:        Experts with names + role-accented taglines
  *   5. Connective lines:     "Two Experts — One Program"
  *                            "Followed together in realtime"
  *   6. Divider
  *   7. Stats inline:         "5 weeks · 7 live sessions"
  *   8. Tribe momentum line:  "Plus your tribe — momentum that lasts"
- *   9. Price tag:            "CHF 287 / for the full program"
+ *   9. Divider
+ *  10. Weekly journey carousel: stepped journey track + week slides
+ *  11. Divider
+ *  12. Price tag:            "CHF 287 / for the full program"
  *
  * Robustness:
  *   - No avatar uploaded → initial letter on role-tinted circle
  *   - No tagline → name renders alone
  *   - Solo creator → "One Expert — One Program" / "Followed in realtime"
  *   - No promise → falls back via resolveHeadline
- *
- * Brand language: "Expert" not "coach" (Bundle 4.2.2 rename). Capitalized
- * as a noun when referring to the people, lowercase as adjective.
+ *   - No sessions → carousel renders the week labels + "tribe space" empty
+ *     state per slide; still structurally complete
  */
+
+import { WeeklyJourneyCarousel } from "./WeeklyJourneyCarousel";
 
 interface Creator {
   id: string;
@@ -43,9 +49,24 @@ interface Creator {
   role: "owner" | "cohost";
 }
 
+interface SessionLite {
+  id: string;
+  title: string;
+  description: string | null;
+  image_url: string | null;
+  start_time: string;
+  duration_minutes: number;
+}
+
+interface WeekData {
+  weekNumber: number;
+  weekRange: string;
+  theme: string | null;
+  sessions: SessionLite[];
+}
+
 interface Props {
   title: string;
-  /** Promise text — view already coalesces description as fallback. */
   promise: string | null;
   startDate: string;
   endDate: string;
@@ -53,6 +74,7 @@ interface Props {
   priceCents: number;
   currency: string;
   creators: Creator[];
+  weeks: WeekData[];
 }
 
 function weeksBetween(start: string, end: string): number {
@@ -90,9 +112,10 @@ export function PublicChallengeHero({
   priceCents,
   currency,
   creators,
+  weeks,
 }: Props) {
-  const weeks = weeksBetween(startDate, endDate);
-  const headline = resolveHeadline(promise, weeks, creators);
+  const totalWeeks = weeksBetween(startDate, endDate);
+  const headline = resolveHeadline(promise, totalWeeks, creators);
   const priceLabel = formatPrice(priceCents, currency);
   const solo = creators.length === 1;
 
@@ -107,14 +130,9 @@ export function PublicChallengeHero({
 
   return (
     <section className="px-6 lg:px-12 pt-10 lg:pt-14 pb-0">
-      {/* The card itself. Bundle 4.2.3: docking-dot dropped — the
-          journey is now a carousel below (not a vertical spine), so
-          there's nothing for the dot to physically connect to. Card
-          and carousel are coupled by adjacency + cyan vocabulary on
-          both surfaces. */}
       <div className="max-w-2xl mx-auto">
         <div
-          className="rounded-[28px] lg:rounded-[32px] px-7 lg:px-12 py-10 lg:py-14"
+          className="rounded-[28px] lg:rounded-[32px] px-6 lg:px-10 py-10 lg:py-12"
           style={{
             backgroundColor: "#FFFFFF",
             border: "1px solid rgba(15,34,41,0.06)",
@@ -122,7 +140,7 @@ export function PublicChallengeHero({
               "0 1px 3px rgba(15,34,41,0.04), 0 24px 64px rgba(15,34,41,0.06)",
           }}
         >
-          {/* Eyebrow — program name in orange caps */}
+          {/* Eyebrow */}
           <p
             className="text-[11px] font-bold font-headline uppercase tracking-[0.25em] mb-5 lg:mb-7 text-center"
             style={{ color: "#FF6130" }}
@@ -130,8 +148,7 @@ export function PublicChallengeHero({
             {title}
           </p>
 
-          {/* H1 — the promise as the offer's headline. Sized to fit
-              within the card width (no clamp jump to massive sizes). */}
+          {/* H1 — promise */}
           <h1
             className="font-black font-headline text-center"
             style={{
@@ -144,18 +161,16 @@ export function PublicChallengeHero({
             {headline}
           </h1>
 
-          <Divider className="mt-8 lg:mt-10 mb-8 lg:mb-10" />
+          <Divider className="mt-7 lg:mt-9 mb-7 lg:mb-9" />
 
-          {/* Expert portraits — the visual core of the offer */}
+          {/* Expert portraits */}
           <div className="flex items-start justify-center gap-5 lg:gap-8 flex-wrap mb-5">
             {creators.map((c) => (
               <ExpertPortrait key={c.id} creator={c} />
             ))}
           </div>
 
-          {/* Connective lines — "Two Experts — One Program / Followed
-              together in realtime." The brand differentiator stated
-              explicitly. */}
+          {/* Connective lines */}
           <p
             className="text-sm lg:text-base text-center font-black font-headline tracking-tight"
             style={{ color: "#0F2229", letterSpacing: "-0.01em" }}
@@ -169,14 +184,14 @@ export function PublicChallengeHero({
             {connective2}
           </p>
 
-          <Divider className="mt-8 lg:mt-10 mb-8 lg:mb-10" />
+          <Divider className="mt-7 lg:mt-9 mb-7 lg:mb-9" />
 
-          {/* Stats inline + tribe momentum line */}
+          {/* Stats + tribe momentum line */}
           <p
             className="text-base lg:text-lg text-center font-black font-headline tracking-tight"
             style={{ color: "#0F2229", letterSpacing: "-0.01em" }}
           >
-            {weeks} {weeks === 1 ? "week" : "weeks"}
+            {totalWeeks} {totalWeeks === 1 ? "week" : "weeks"}
             <span className="mx-3" style={{ color: "#cbd5e1" }}>·</span>
             {sessionCount} live {sessionCount === 1 ? "session" : "sessions"}
           </p>
@@ -187,10 +202,17 @@ export function PublicChallengeHero({
             Plus your tribe — momentum that lasts
           </p>
 
-          {/* Price tag — not a button. Just the price displayed
-              prominently as a product price. The buy action lives at
-              the end of section 1, after the journey. */}
-          <div className="mt-9 lg:mt-12 text-center">
+          <Divider className="mt-7 lg:mt-9 mb-6 lg:mb-7" />
+
+          {/* WEEKLY JOURNEY CAROUSEL — the in-card preview of what's
+              inside the offer. Journey track at the top establishes
+              "5 weeks" structure before slide content loads. */}
+          <WeeklyJourneyCarousel weeks={weeks} />
+
+          <Divider className="mt-7 lg:mt-9 mb-7 lg:mb-9" />
+
+          {/* Price tag */}
+          <div className="text-center">
             <div
               className="font-black font-headline tracking-tight"
               style={{
@@ -226,10 +248,8 @@ function Divider({ className }: { className?: string }) {
 }
 
 /**
- * Expert portrait — 96px on mobile, 112px on desktop (scaled down from
- * the open-layout 128/160 because they live inside a card now and need
- * to be proportional to the container). Photo + name + role-accented
- * tagline.
+ * Expert portrait — 96px on mobile, 112px on desktop. Photo + name +
+ * role-accented tagline.
  */
 function ExpertPortrait({ creator }: { creator: Creator }) {
   const roleColor = creator.role === "owner" ? "#FF6130" : "#0891b2";

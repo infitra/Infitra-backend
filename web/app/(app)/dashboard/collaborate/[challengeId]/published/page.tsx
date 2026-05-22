@@ -7,6 +7,7 @@ import { PublicProgramRhythm } from "@/app/(app)/challenges/[id]/PublicProgramRh
 import { PublicCreatorsBlock } from "@/app/(app)/challenges/[id]/PublicCreatorsBlock";
 import { PublicBeyondLiveBlock } from "@/app/(app)/challenges/[id]/PublicBeyondLiveBlock";
 import { PublishedShareBar } from "./PublishedShareBar";
+import { buildWeeks } from "@/lib/challenges/buildWeeks";
 
 export const metadata = { title: "Collaboration Published — INFITRA" };
 
@@ -123,6 +124,15 @@ export default async function PublishedCelebrationPage({
   const topicsByCreator: Record<string, string[]> =
     (buyerView.topic_ownership as Record<string, string[]>) ?? {};
 
+  // Bundle 4.2.4: weeks array consumed by the in-card carousel
+  const weeklyArc = (buyerView.weekly_arc as Array<{ week: number; theme: string }>) ?? [];
+  const weeks = buildWeeks(
+    buyerView.start_date,
+    buyerView.end_date,
+    weeklyArc,
+    sessions,
+  );
+
   return (
     <>
       {/* Dashboard layout (/(app)/dashboard/layout.tsx) already
@@ -188,15 +198,12 @@ export default async function PublishedCelebrationPage({
           priceCents={buyerView.price_cents}
           currency={buyerView.currency}
           creators={creators}
+          weeks={weeks}
         />
 
         <PublicProgramRhythm
           challengeId={challengeId}
           spaceId={null}
-          startDate={buyerView.start_date}
-          endDate={buyerView.end_date}
-          weeklyArc={(buyerView.weekly_arc as Array<{ week: number; theme: string }>) ?? []}
-          sessions={sessions}
           priceCents={buyerView.price_cents}
           currency={buyerView.currency}
           isAuthenticated={true}

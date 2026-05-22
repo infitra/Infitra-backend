@@ -1,77 +1,27 @@
 /**
- * PublicProgramRhythm — Bundle 4.2.3 (carousel-based).
+ * PublicProgramRhythm — Bundle 4.2.4 (reduced to first CTA).
  *
- * Section 1's second beat. The vertical cyan spine was a "list of weeks"
- * stretched too far vertically — the journey metaphor didn't land. This
- * version is a compact horizontal carousel: one week per slide, with
- * a "journey track" pagination indicator beneath that finally embodies
- * the spine in a form that works (compact, glanceable, the buyer's
- * position is explicit).
+ * The weekly journey content was absorbed INTO the product card
+ * (PublicChallengeHero) in 4.2.4. This module now exists only to
+ * render the first CTA immediately below the card — the decision
+ * moment after the buyer has seen the entire offer.
  *
- * The carousel is a client component (WeeklyJourneyCarousel) because it
- * needs auto-rotate + scroll-snap state. This wrapper stays server-side
- * so the data fetching and CTA logic don't need to ship to the client.
- *
- * First CTA — "I'm in" — sits at the end of this section as the natural
- * decision moment after the buyer has watched the journey unfold.
+ * Kept as a named component (instead of inlining in page.tsx) so the
+ * auth-aware CTA logic has one canonical home that's reused on the
+ * published celebration page.
  */
 
 import Link from "next/link";
 import { PurchaseButton } from "@/app/components/PurchaseButton";
-import { WeeklyJourneyCarousel } from "./WeeklyJourneyCarousel";
-
-interface SessionLite {
-  id: string;
-  title: string;
-  description: string | null;
-  image_url: string | null;
-  start_time: string;
-  duration_minutes: number;
-}
 
 interface Props {
   challengeId: string;
   spaceId: string | null;
-  startDate: string;
-  endDate: string;
-  weeklyArc: Array<{ week: number; theme: string }>;
-  sessions: SessionLite[];
   priceCents: number;
   currency: string;
   isAuthenticated: boolean;
   hasPurchased: boolean;
   isCreator: boolean;
-}
-
-function weekRange(startDate: string, weekNumber: number): { start: Date; end: Date } {
-  const programStart = new Date(startDate + "T00:00:00");
-  const start = new Date(programStart.getTime() + (weekNumber - 1) * 7 * 86400000);
-  const end = new Date(start.getTime() + 6 * 86400000);
-  return { start, end };
-}
-
-function formatWeekRange(start: Date, end: Date): string {
-  const fmt = (d: Date) =>
-    d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
-  return `${fmt(start)} – ${fmt(end)}`;
-}
-
-function computeTotalWeeks(startDate: string, endDate: string): number {
-  if (!startDate || !endDate) return 0;
-  const s = new Date(startDate + "T00:00:00");
-  const e = new Date(endDate + "T00:00:00");
-  if (isNaN(s.getTime()) || isNaN(e.getTime()) || e <= s) return 0;
-  const days = Math.floor((e.getTime() - s.getTime()) / 86400000);
-  return Math.max(1, Math.floor(days / 7) + 1);
-}
-
-function sessionWeekNumber(startDate: string, totalWeeks: number, sessionIso: string): number {
-  const programStart = new Date(startDate + "T00:00:00");
-  const sStart = new Date(sessionIso);
-  if (isNaN(programStart.getTime()) || isNaN(sStart.getTime())) return 1;
-  const days = Math.floor((sStart.getTime() - programStart.getTime()) / 86400000);
-  if (days < 0) return 1;
-  return Math.max(1, Math.min(totalWeeks, Math.floor(days / 7) + 1));
 }
 
 function formatPrice(cents: number, currency: string): string {
@@ -81,71 +31,30 @@ function formatPrice(cents: number, currency: string): string {
 export function PublicProgramRhythm({
   challengeId,
   spaceId,
-  startDate,
-  endDate,
-  weeklyArc,
-  sessions,
   priceCents,
   currency,
   isAuthenticated,
   hasPurchased,
   isCreator,
 }: Props) {
-  const totalWeeks = computeTotalWeeks(startDate, endDate);
-  if (totalWeeks === 0) return null;
-
-  // Bucket sessions by week + sort within each week
-  const sessionsByWeek = new Map<number, SessionLite[]>();
-  for (const s of sessions) {
-    const w = sessionWeekNumber(startDate, totalWeeks, s.start_time);
-    if (!sessionsByWeek.has(w)) sessionsByWeek.set(w, []);
-    sessionsByWeek.get(w)!.push(s);
-  }
-  for (const arr of sessionsByWeek.values()) {
-    arr.sort(
-      (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime(),
-    );
-  }
-
-  // Build the weeks array the carousel consumes
-  const weeks = Array.from({ length: totalWeeks }, (_, i) => i + 1).map((n) => {
-    const range = weekRange(startDate, n);
-    return {
-      weekNumber: n,
-      weekRange: formatWeekRange(range.start, range.end),
-      theme: weeklyArc.find((f) => f.week === n)?.theme ?? null,
-      sessions: sessionsByWeek.get(n) ?? [],
-    };
-  });
-
   const priceLabel = formatPrice(priceCents, currency);
 
   return (
-    <section className="px-4 lg:px-12 pt-10 lg:pt-14 pb-16 lg:pb-24">
-      <div className="max-w-2xl mx-auto">
-        <WeeklyJourneyCarousel weeks={weeks} />
-
-        {/* First CTA — the decision moment after the journey has played.
-            Anchors the end of section 1. */}
-        <div className="mt-12 lg:mt-16 flex justify-center">
-          <FirstCTA
-            challengeId={challengeId}
-            spaceId={spaceId}
-            priceLabel={priceLabel}
-            isAuthenticated={isAuthenticated}
-            hasPurchased={hasPurchased}
-            isCreator={isCreator}
-          />
-        </div>
+    <section className="px-6 lg:px-12 pt-8 lg:pt-10 pb-16 lg:pb-24">
+      <div className="flex justify-center">
+        <FirstCTA
+          challengeId={challengeId}
+          spaceId={spaceId}
+          priceLabel={priceLabel}
+          isAuthenticated={isAuthenticated}
+          hasPurchased={hasPurchased}
+          isCreator={isCreator}
+        />
       </div>
     </section>
   );
 }
 
-/**
- * First CTA — auth-aware. Lives at the end of section 1 as the
- * decision moment after card + carousel.
- */
 function FirstCTA({
   challengeId,
   spaceId,

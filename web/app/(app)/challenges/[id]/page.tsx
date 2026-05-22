@@ -9,6 +9,7 @@ import { PublicCreatorsBlock } from "./PublicCreatorsBlock";
 import { PublicBeyondLiveBlock } from "./PublicBeyondLiveBlock";
 import { PublicCommitBlock } from "./PublicCommitBlock";
 import { StickyJoinCTA } from "./StickyJoinCTA";
+import { buildWeeks } from "@/lib/challenges/buildWeeks";
 
 export const metadata = {
   title: "Challenge — INFITRA",
@@ -102,6 +103,17 @@ export default async function ChallengePage({
     .sort(
       (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime(),
     );
+
+  // Build the weeks array that the in-card carousel consumes. Bundle
+  // 4.2.4: the weekly journey lives INSIDE the product card; we
+  // compute the structure here once and hand it down.
+  const weeklyArc = (buyerView.weekly_arc as Array<{ week: number; theme: string }>) ?? [];
+  const weeks = buildWeeks(
+    buyerView.start_date,
+    buyerView.end_date,
+    weeklyArc,
+    sessions,
+  );
 
   // User state (only if authenticated; page is public)
   let hasPurchased = false;
@@ -265,15 +277,12 @@ export default async function ChallengePage({
           priceCents={buyerView.price_cents}
           currency={buyerView.currency}
           creators={creators}
+          weeks={weeks}
         />
 
         <PublicProgramRhythm
           challengeId={id}
           spaceId={spaceId}
-          startDate={buyerView.start_date}
-          endDate={buyerView.end_date}
-          weeklyArc={(buyerView.weekly_arc as Array<{ week: number; theme: string }>) ?? []}
-          sessions={sessions}
           priceCents={buyerView.price_cents}
           currency={buyerView.currency}
           isAuthenticated={!!user}
@@ -316,4 +325,5 @@ export default async function ChallengePage({
     </>
   );
 }
+
 
