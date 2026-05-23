@@ -110,27 +110,50 @@ export function WeeklyJourneyCarousel({ weeks }: Props) {
         onJump={jumpTo}
       />
 
-      {/* Constants layer — Bundle 4.2.9. The W-track above shows the
-          PEAKS (discrete live sessions per week). This pill names the
-          CONSTANTS (continuous access running through all weeks). It
-          is persistent — doesn't change when the user swipes between
-          weeks — because it lives in the carousel chrome, not the
-          slides. Orange-tinted ("warmth, always-on") contrasts with
-          the cyan W-track ("structured, peaks"). */}
-      <div className="mt-5 lg:mt-6 flex justify-center">
-        <span
-          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[10px] lg:text-[11px] font-bold font-headline uppercase tracking-[0.2em]"
-          style={{
-            backgroundColor: "rgba(255, 97, 48, 0.08)",
-            border: "1px solid rgba(255, 97, 48, 0.22)",
-            color: "#c2410c",
-          }}
+      {/* Constants layer — Bundle 4.2.10.
+          The W-track ABOVE shows the PEAKS (discrete live sessions).
+          The orange arrow BELOW shows the CONTINUOUS layer that runs
+          through all weeks AND keeps going past the final session
+          (the tribe + Expert access don't end when the program does).
+          Same horizontal width as the W-track, with an arrowhead
+          extending slightly past the right edge to visualize "going
+          beyond." Persistent — lives in the carousel chrome, doesn't
+          change as the user swipes weeks. */}
+      <div className="mt-5 lg:mt-6 flex flex-col items-center">
+        <svg
+          viewBox="0 0 340 14"
+          preserveAspectRatio="xMidYMid meet"
+          className="w-full max-w-[340px] block"
+          aria-hidden
         >
-          <span
-            className="w-1.5 h-1.5 rounded-full"
-            style={{ backgroundColor: "#FF6130" }}
-            aria-hidden
+          {/* Origin dot at the left — matches the orange "first marker"
+              motif from the W-track ("start here"). */}
+          <circle cx="7" cy="7" r="5" fill="#FF6130" />
+          {/* Continuous line */}
+          <line
+            x1="12"
+            y1="7"
+            x2="310"
+            y2="7"
+            stroke="#FF6130"
+            strokeWidth="2.5"
+            strokeLinecap="round"
           />
+          {/* Arrowhead — extends past where the line ends, pointing
+              forward to imply "this continues past the program." */}
+          <polyline
+            points="302,1 320,7 302,13"
+            fill="none"
+            stroke="#FF6130"
+            strokeWidth="2.5"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          />
+        </svg>
+        <span
+          className="mt-2.5 text-[10px] lg:text-[11px] font-bold font-headline uppercase tracking-[0.22em]"
+          style={{ color: "#c2410c" }}
+        >
           Always on · Expert access · Tribe
         </span>
       </div>
@@ -182,19 +205,25 @@ export function WeeklyJourneyCarousel({ weeks }: Props) {
   );
 }
 
-/** A single week's slide — week label, theme, editorial session features.
+/** A single week's slide — week header (umbrella) over indented sessions.
  *
- *  Bundle 4.2.7: multi-session weeks now use SessionSeparator between
- *  sessions to create clear within-week structure (numbered + day-
- *  labeled). Single-session weeks render without separators (one
- *  session doesn't need numbering). */
+ *  Bundle 4.2.10: the week is now visually the UMBRELLA over its
+ *  sessions. The centered week header (date label + theme) sits at top.
+ *  Below it, a thin cyan vertical rail runs down the LEFT side of the
+ *  session area, with sessions indented to the right of the rail. The
+ *  rail visualizes "everything below this is INSIDE this week."
+ *
+ *  Bundle 4.2.7 carryover: multi-session weeks get SessionSeparator
+ *  numbering; single-session weeks omit the separator (one session
+ *  doesn't need numbering). */
 function WeekSlide({ week }: { week: WeekData }) {
   const isMultiSession = week.sessions.length > 1;
 
   return (
     <div className="px-1">
-      {/* Week header */}
-      <div className="text-center mb-8 lg:mb-10">
+      {/* Week header — the umbrella. Centered, more prominent than
+          individual sessions below. */}
+      <div className="text-center mb-6 lg:mb-8">
         <p
           className="text-[11px] font-bold font-headline uppercase tracking-[0.22em] mb-2.5"
           style={{ color: "#0891b2" }}
@@ -216,13 +245,33 @@ function WeekSlide({ week }: { week: WeekData }) {
       </div>
 
       {week.sessions.length > 0 ? (
-        <div>
+        // Rail-and-sessions container. The left rail visually nests
+        // sessions under the week header. Origin dot at the top of the
+        // rail visually anchors it to "where the week begins."
+        <div className="relative pl-6 lg:pl-7">
+          {/* Left rail */}
+          <div
+            className="absolute left-2 lg:left-2.5 top-0 bottom-0 w-0.5 rounded-full"
+            style={{ backgroundColor: "rgba(156, 240, 255, 0.55)" }}
+            aria-hidden
+          >
+            {/* Origin dot — straddles the top of the rail to anchor it
+                visually as "the start of this week's content." */}
+            <span
+              className="absolute -left-[5px] -top-[6px] block w-3 h-3 rounded-full"
+              style={{
+                backgroundColor: "#9CF0FF",
+                border: "3px solid #FAF7F1",
+                boxShadow: "0 0 0 1px rgba(8,145,178,0.20)",
+              }}
+              aria-hidden
+            />
+          </div>
+
+          {/* Sessions */}
           {week.sessions.map((s, idx) => (
             <div
               key={s.id}
-              // Spacing rhythm tightened for 4.2.8 compact rows: gap
-              // between session rows is now ~28-32px (was ~40-48px),
-              // since each row is much shorter vertically.
               className={idx > 0 ? "mt-7 lg:mt-9" : undefined}
             >
               {isMultiSession && (

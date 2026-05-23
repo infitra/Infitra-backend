@@ -155,7 +155,7 @@ export function PublicChallengeHero({
     : "Followed together in realtime.";
 
   return (
-    <section className="px-6 lg:px-12 pt-10 lg:pt-14 pb-0">
+    <section className="px-6 lg:px-12 pt-16 lg:pt-14 pb-0">
       <div className="max-w-2xl mx-auto">
         <div
           className="rounded-[28px] lg:rounded-[32px] px-6 lg:px-10 pt-10 lg:pt-12 overflow-hidden"
@@ -166,17 +166,18 @@ export function PublicChallengeHero({
               "0 1px 3px rgba(15,34,41,0.04), 0 24px 64px rgba(15,34,41,0.06)",
           }}
         >
-          {/* H1 — promise. Bundle 4.2.9: stands alone at the top of
-              the card (no eyebrow above). The program name was demoted
-              from eyebrow and relocated as a kicker above the
-              description, where it anchors the description block. */}
+          {/* H1 — promise. Bundle 4.2.10: rendered in ALL CAPS for
+              editorial campaign-cover treatment (Vogue/Wired-style).
+              Same large display size; tighter letter-spacing tuned for
+              uppercase (uppercase needs slightly more breath than
+              sentence case at this weight). */}
           <h1
-            className="font-black font-headline text-center"
+            className="font-black font-headline text-center uppercase"
             style={{
               color: "#0F2229",
               fontSize: "clamp(1.75rem, 5.5vw, 2.75rem)",
               lineHeight: 1.05,
-              letterSpacing: "-0.02em",
+              letterSpacing: "-0.01em",
             }}
           >
             {headline}
