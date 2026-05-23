@@ -95,13 +95,27 @@ function formatPrice(cents: number, currency: string): string {
   return `${currency} ${(cents / 100).toFixed(0)}`;
 }
 
-function formatProgramDateRange(start: string, end: string): string {
-  const fmt = (iso: string) =>
-    new Date(iso + "T00:00:00").toLocaleDateString("en-GB", {
+/**
+ * Format the program's start-to-end date range with year baked in
+ * (Bundle 4.2.11). When both dates fall in the same year, the year
+ * is shown once at the end. When the program crosses a year boundary,
+ * both ends get their own year.
+ */
+function formatProgramDateRangeWithYear(start: string, end: string): string {
+  const s = new Date(start + "T00:00:00");
+  const e = new Date(end + "T00:00:00");
+  const fmtNoYear = (d: Date) =>
+    d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  const fmtWithYear = (d: Date) =>
+    d.toLocaleDateString("en-GB", {
       day: "numeric",
       month: "short",
+      year: "numeric",
     });
-  return `${fmt(start)} → ${fmt(end)}`;
+  if (s.getFullYear() === e.getFullYear()) {
+    return `${fmtNoYear(s)} → ${fmtWithYear(e)}`;
+  }
+  return `${fmtWithYear(s)} → ${fmtWithYear(e)}`;
 }
 
 function resolveHeadline(
@@ -140,7 +154,7 @@ export function PublicChallengeHero({
   const totalWeeks = weeksBetween(startDate, endDate);
   const headline = resolveHeadline(promise, totalWeeks, creators);
   const priceLabel = formatPrice(priceCents, currency);
-  const dateRange = formatProgramDateRange(startDate, endDate);
+  const dateRangeWithYear = formatProgramDateRangeWithYear(startDate, endDate);
   const solo = creators.length === 1;
 
   // Caption split into two lines for stronger hierarchy (Bundle 4.2.9).
@@ -257,15 +271,21 @@ export function PublicChallengeHero({
 
           <Divider className="mt-7 lg:mt-9 mb-7 lg:mb-9" />
 
-          {/* SPEC block — Bundle 4.2.9 pills. Three "spec chips" in a
-              row: weeks, sessions, dates. Each pill has cyan-tinted
-              background + hairline border + small-caps text — they
-              read as concrete "what you buy" inclusions instead of
-              data floating in text. Wraps on narrow viewports
-              (typically the date pill drops to a second line). Below
-              the pills, the tribe momentum line quietly ties them
-              together. */}
+          {/* PROGRAM RHYTHM block — Bundle 4.2.11 restructure.
+              Section eyebrow labels the beat. Two data pills (weeks +
+              sessions) on the first row, then a single wide pill
+              naming the always-on layer (replaces the previous "Plus
+              your tribe — momentum that lasts" tagline with a
+              concrete inclusion). Below the pills, the program dates
+              with year as a big display element — the "when" anchor
+              for the buyer's commitment. */}
           <div className="text-center">
+            <p
+              className="text-[11px] font-bold font-headline uppercase tracking-[0.25em] mb-5 lg:mb-6"
+              style={{ color: "#FF6130" }}
+            >
+              Program Rhythm
+            </p>
             <div className="flex flex-wrap justify-center gap-2.5">
               <SpecPill>
                 {totalWeeks} {totalWeeks === 1 ? "week" : "weeks"}
@@ -273,13 +293,20 @@ export function PublicChallengeHero({
               <SpecPill>
                 {sessionCount} live {sessionCount === 1 ? "session" : "sessions"}
               </SpecPill>
-              <SpecPill>{dateRange}</SpecPill>
+            </div>
+            <div className="flex justify-center mt-2.5">
+              <SpecPill>Tribe Space and Expert Access throughout</SpecPill>
             </div>
             <p
-              className="text-sm lg:text-base text-center mt-5 font-medium"
-              style={{ color: "#475569" }}
+              className="font-black font-headline tracking-tight mt-7 lg:mt-9"
+              style={{
+                color: "#0F2229",
+                fontSize: "clamp(1.375rem, 4.5vw, 1.875rem)",
+                letterSpacing: "-0.015em",
+                lineHeight: 1.1,
+              }}
             >
-              Plus your tribe — momentum that lasts
+              {dateRangeWithYear}
             </p>
           </div>
 

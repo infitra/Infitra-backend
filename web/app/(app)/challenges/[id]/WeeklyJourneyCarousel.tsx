@@ -110,92 +110,66 @@ export function WeeklyJourneyCarousel({ weeks }: Props) {
         onJump={jumpTo}
       />
 
-      {/* Constants layer — Bundle 4.2.10.
-          The W-track ABOVE shows the PEAKS (discrete live sessions).
-          The orange arrow BELOW shows the CONTINUOUS layer that runs
-          through all weeks AND keeps going past the final session
-          (the tribe + Expert access don't end when the program does).
-          Same horizontal width as the W-track, with an arrowhead
-          extending slightly past the right edge to visualize "going
-          beyond." Persistent — lives in the carousel chrome, doesn't
-          change as the user swipes weeks. */}
-      <div className="mt-5 lg:mt-6 flex flex-col items-center">
-        <svg
-          viewBox="0 0 340 14"
-          preserveAspectRatio="xMidYMid meet"
-          className="w-full max-w-[340px] block"
-          aria-hidden
-        >
-          {/* Origin dot at the left — matches the orange "first marker"
-              motif from the W-track ("start here"). */}
-          <circle cx="7" cy="7" r="5" fill="#FF6130" />
-          {/* Continuous line */}
-          <line
-            x1="12"
-            y1="7"
-            x2="310"
-            y2="7"
-            stroke="#FF6130"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-          />
-          {/* Arrowhead — extends past where the line ends, pointing
-              forward to imply "this continues past the program." */}
-          <polyline
-            points="302,1 320,7 302,13"
-            fill="none"
-            stroke="#FF6130"
-            strokeWidth="2.5"
-            strokeLinejoin="round"
-            strokeLinecap="round"
-          />
-        </svg>
-        <span
-          className="mt-2.5 text-[10px] lg:text-[11px] font-bold font-headline uppercase tracking-[0.22em]"
-          style={{ color: "#c2410c" }}
-        >
-          Always on · Expert access · Tribe
-        </span>
-      </div>
-
-      {/* Carousel — native scroll-snap. All slides share the tallest
-          height (flex stretch). User swipes; no auto-advance. */}
+      {/* Subtle divider line below the spine — Bundle 4.2.11.
+          Replaces the previous orange constants arrow + label. The
+          always-on layer is now described by the "Tribe Space + Expert
+          Access throughout" pill in the spec block above the cream
+          region; the carousel area is purely navigation + content.
+          The divider separates the navigation (spine) from the
+          content (inner week card below). */}
       <div
-        ref={containerRef}
-        className="flex overflow-x-auto journey-carousel mt-8 lg:mt-10"
+        className="h-px mt-6 lg:mt-7 mx-3"
+        style={{ backgroundColor: "rgba(8, 145, 178, 0.18)" }}
+        aria-hidden
+      />
+
+      {/* Inner WEEK card — Bundle 4.2.11.
+          Wraps the swipable scroll container as a white card floating
+          on the cream outer region. Each slide inside contains one
+          week's content (header + theme + rail + sessions). The
+          card's edges stay fixed while slides swipe horizontally
+          within it. */}
+      <div
+        className="rounded-2xl overflow-hidden mt-6 lg:mt-7"
         style={{
-          scrollSnapType: "x mandatory",
-          WebkitOverflowScrolling: "touch",
-          scrollbarWidth: "none",
-          msOverflowStyle: "none",
+          backgroundColor: "#FFFFFF",
+          border: "1px solid rgba(15, 34, 41, 0.06)",
+          boxShadow:
+            "0 1px 2px rgba(15, 34, 41, 0.03), 0 4px 14px rgba(15, 34, 41, 0.05)",
         }}
       >
-        <style>{`
-          .journey-carousel::-webkit-scrollbar {
-            display: none;
-          }
-        `}</style>
-        {weeks.map((week, i) => (
-          <div
-            key={week.weekNumber}
-            className="w-full shrink-0"
-            style={{
-              scrollSnapAlign: "start",
-              // Bundle 4.2.8: force a snap-stop at every slide so a hard
-              // swipe / fling can't skip past multiple weeks. iOS Safari
-              // is particularly aggressive about momentum scrolling
-              // through scroll-snap mandatory; "always" stops at each
-              // snap point regardless of velocity.
-              scrollSnapStop: "always",
-            }}
-            role="group"
-            aria-roledescription="slide"
-            aria-label={`Week ${week.weekNumber} of ${weeks.length}`}
-            aria-hidden={i !== activeIndex}
-          >
-            <WeekSlide week={week} />
-          </div>
-        ))}
+        <div
+          ref={containerRef}
+          className="flex overflow-x-auto journey-carousel"
+          style={{
+            scrollSnapType: "x mandatory",
+            WebkitOverflowScrolling: "touch",
+            scrollbarWidth: "none",
+            msOverflowStyle: "none",
+          }}
+        >
+          <style>{`
+            .journey-carousel::-webkit-scrollbar {
+              display: none;
+            }
+          `}</style>
+          {weeks.map((week, i) => (
+            <div
+              key={week.weekNumber}
+              className="w-full shrink-0"
+              style={{
+                scrollSnapAlign: "start",
+                scrollSnapStop: "always",
+              }}
+              role="group"
+              aria-roledescription="slide"
+              aria-label={`Week ${week.weekNumber} of ${weeks.length}`}
+              aria-hidden={i !== activeIndex}
+            >
+              <WeekSlide week={week} />
+            </div>
+          ))}
+        </div>
       </div>
 
       <p className="sr-only" aria-live="polite" aria-atomic="true">
@@ -220,28 +194,35 @@ function WeekSlide({ week }: { week: WeekData }) {
   const isMultiSession = week.sessions.length > 1;
 
   return (
-    <div className="px-1">
-      {/* Week header — the umbrella. Centered, more prominent than
-          individual sessions below. */}
+    // Slide-level padding for the inner card (Bundle 4.2.11). The
+    // slide content has clean breath from the inner card's edges.
+    <div className="px-4 lg:px-5 py-5 lg:py-6">
+      {/* Week header — Bundle 4.2.11 hierarchy swap.
+          The week-with-dates is now the BIG uppercase header (anchor
+          for which slide you're on); the theme is the subtitle below.
+          Inverted from previous treatment where theme was the display
+          element and week-date was a small caps label. */}
       <div className="text-center mb-6 lg:mb-8">
-        <p
-          className="text-[11px] font-bold font-headline uppercase tracking-[0.22em] mb-2.5"
-          style={{ color: "#0891b2" }}
+        <h3
+          className="font-black font-headline uppercase tracking-tight leading-[1.1]"
+          style={{
+            color: "#0F2229",
+            fontSize: "clamp(1.125rem, 3.8vw, 1.5rem)",
+            letterSpacing: "-0.015em",
+          }}
         >
           Week {week.weekNumber}
           <span style={{ color: "#cbd5e1" }}> · </span>
-          <span style={{ color: "#94a3b8" }}>{week.weekRange}</span>
-        </p>
-        <h3
-          className="font-black font-headline tracking-tight leading-[1.05]"
-          style={{
-            color: "#0F2229",
-            fontSize: "clamp(1.5rem, 4.5vw, 2rem)",
-            letterSpacing: "-0.02em",
-          }}
-        >
-          {week.theme && week.theme.trim() ? week.theme : `Week ${week.weekNumber}`}
+          {week.weekRange}
         </h3>
+        {week.theme && week.theme.trim() && (
+          <p
+            className="text-base lg:text-lg mt-2 font-medium"
+            style={{ color: "#475569" }}
+          >
+            {week.theme}
+          </p>
+        )}
       </div>
 
       {week.sessions.length > 0 ? (
@@ -256,12 +237,14 @@ function WeekSlide({ week }: { week: WeekData }) {
             aria-hidden
           >
             {/* Origin dot — straddles the top of the rail to anchor it
-                visually as "the start of this week's content." */}
+                visually as "the start of this week's content."
+                Bundle 4.2.11: ring color changed from cream to white
+                because the rail now lives inside the inner white card. */}
             <span
               className="absolute -left-[5px] -top-[6px] block w-3 h-3 rounded-full"
               style={{
                 backgroundColor: "#9CF0FF",
-                border: "3px solid #FAF7F1",
+                border: "3px solid #FFFFFF",
                 boxShadow: "0 0 0 1px rgba(8,145,178,0.20)",
               }}
               aria-hidden
@@ -362,16 +345,14 @@ function SessionFeature({
   return (
     <article
       className="flex items-start gap-3.5 lg:gap-5 rounded-2xl p-3.5 lg:p-4"
-      // Bundle 4.2.9: each session now lives in its own white card,
-      // floating on the cream carousel region. Gives each session
-      // visual weight + clear separation, while the carousel still
-      // connects them as a week sequence. Hairline border + subtle
-      // shadow for premium card feel.
+      // Bundle 4.2.11: session cards now use a cream tint (echoes the
+      // outer cream region) so they stand out from the WHITE inner
+      // week card that surrounds them. Without this echo the white
+      // session cards would disappear into the white inner card.
+      // Hairline border kept for clean edge definition.
       style={{
-        backgroundColor: "#FFFFFF",
-        border: "1px solid rgba(15,34,41,0.06)",
-        boxShadow:
-          "0 1px 2px rgba(15,34,41,0.03), 0 4px 12px rgba(15,34,41,0.04)",
+        backgroundColor: "#FAF7F1",
+        border: "1px solid rgba(15,34,41,0.05)",
       }}
     >
       {/* Image — left column. Fixed width so layout is predictable
