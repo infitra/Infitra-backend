@@ -2,7 +2,6 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ParticipantNav } from "@/app/components/ParticipantNav";
-import { CoverImageBand } from "./CoverImageBand";
 import { PublicChallengeHero } from "./PublicChallengeHero";
 import { PublicCreatorsBlock } from "./PublicCreatorsBlock";
 import { PublicBeyondLiveBlock } from "./PublicBeyondLiveBlock";
@@ -34,7 +33,12 @@ export default async function ChallengePage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Buyer view — consolidated challenge data from vw_challenge_buyer_view
+  // Buyer view — consolidated challenge data from vw_challenge_buyer_view.
+  // NOTE: vw_challenge_buyer_view.promise_text is coalesced with description
+  // server-side. For Bundle 4.2.8 we also want the RAW promise_text and
+  // description as separate fields so the hero card can render both
+  // (promise as H1, description as the explanatory paragraph below the
+  // cover image). Hence the extra query below.
   const { data: buyerView } = await supabase
     .from("vw_challenge_buyer_view")
     .select("*")
@@ -43,6 +47,20 @@ export default async function ChallengePage({
 
   if (!buyerView) notFound();
   if (buyerView.status !== "published") notFound();
+
+  // Raw promise + description for the hero card's two-beat treatment.
+  const { data: challengeDetails } = await supabase
+    .from("app_challenge")
+    .select("promise_text, description")
+    .eq("id", id)
+    .maybeSingle();
+  const rawPromise = challengeDetails?.promise_text?.trim() || null;
+  const rawDescription = challengeDetails?.description?.trim() || null;
+  // If promise is set, both can be shown. If only description is set,
+  // description becomes the H1 (existing fallback in the hero) and there's
+  // no separate description block (it would duplicate the H1).
+  const heroPromise = rawPromise ?? rawDescription;
+  const heroDescription = rawPromise ? rawDescription : null;
 
   // Cohorts → IDs
   const { data: cohostRows } = await supabase
@@ -266,14 +284,15 @@ export default async function ChallengePage({
             moved INSIDE the card as the price-as-CTA. PromiseBlock was
             cut in 4.2 — promise is the H1 inside the card. */}
 
-        {/* SECTION 1 */}
-        <CoverImageBand imageUrl={buyerView.image_url} />
-
+        {/* SECTION 1 — cover image is now inside the hero card (4.2.8),
+            no separate page-top band. */}
         <PublicChallengeHero
           challengeId={id}
           spaceId={spaceId}
           title={buyerView.title}
-          promise={buyerView.promise_text}
+          promise={heroPromise}
+          description={heroDescription}
+          imageUrl={buyerView.image_url}
           startDate={buyerView.start_date}
           endDate={buyerView.end_date}
           sessionCount={sessions.length}

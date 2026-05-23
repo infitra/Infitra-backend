@@ -131,7 +131,15 @@ export function WeeklyJourneyCarousel({ weeks }: Props) {
           <div
             key={week.weekNumber}
             className="w-full shrink-0"
-            style={{ scrollSnapAlign: "start" }}
+            style={{
+              scrollSnapAlign: "start",
+              // Bundle 4.2.8: force a snap-stop at every slide so a hard
+              // swipe / fling can't skip past multiple weeks. iOS Safari
+              // is particularly aggressive about momentum scrolling
+              // through scroll-snap mandatory; "always" stops at each
+              // snap point regardless of velocity.
+              scrollSnapStop: "always",
+            }}
             role="group"
             aria-roledescription="slide"
             aria-label={`Week ${week.weekNumber} of ${weeks.length}`}
@@ -187,10 +195,10 @@ function WeekSlide({ week }: { week: WeekData }) {
           {week.sessions.map((s, idx) => (
             <div
               key={s.id}
-              // Spacing rhythm: tighter between separator and its
-              // session content; more breathing room between session
-              // content and the next separator below.
-              className={idx > 0 ? "mt-10 lg:mt-12" : undefined}
+              // Spacing rhythm tightened for 4.2.8 compact rows: gap
+              // between session rows is now ~28-32px (was ~40-48px),
+              // since each row is much shorter vertically.
+              className={idx > 0 ? "mt-7 lg:mt-9" : undefined}
             >
               {isMultiSession && (
                 <SessionSeparator
@@ -258,16 +266,17 @@ function SessionSeparator({
 }
 
 /**
- * SessionFeature — magazine/editorial weight session.
- *   - Large 16:9 image (full content width)
- *   - ~22-28px display title (font-black)
- *   - Small-caps metadata strip
- *   - Full-weight description body when present (no line-clamp)
+ * SessionFeature — Bundle 4.2.8 compact horizontal row.
  *
- * showDayInMeta controls whether the metadata line includes the day
- * (e.g. "FRI 12 JUN · 19:00 · 1H"). For multi-session weeks the day
- * is already in the SessionSeparator above, so we drop it from the
- * metadata to avoid redundancy — just "19:00 · 1H" remains.
+ * "Editorial in principle, compact in execution." Each session keeps
+ * its own image, strong typographic title, metadata, and description —
+ * but in a horizontal layout (image left, content right) that's ~120-
+ * 160px tall instead of ~400px. Multi-session weeks now fit all
+ * sessions on one slide without internal scroll.
+ *
+ * showDayInMeta — when false (multi-session week), the day is already
+ * in the SessionSeparator above, so the metadata drops it ("19:00 · 1H"
+ * instead of "FRI 12 JUN · 19:00 · 1H").
  */
 function SessionFeature({
   session,
@@ -277,56 +286,87 @@ function SessionFeature({
   showDayInMeta: boolean;
 }) {
   return (
-    <article>
-      {session.image_url ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={session.image_url}
-          alt=""
-          className="w-full mb-4 lg:mb-5"
-          style={{
-            aspectRatio: "16 / 9",
-            objectFit: "cover",
-            borderRadius: "1.125rem",
-            boxShadow:
-              "0 1px 2px rgba(15,34,41,0.04), 0 8px 24px rgba(15,34,41,0.08)",
-          }}
-        />
-      ) : null}
-      <h4
-        className="font-black font-headline tracking-tight text-center"
-        style={{
-          color: "#0F2229",
-          fontSize: "clamp(1.25rem, 4vw, 1.625rem)",
-          letterSpacing: "-0.015em",
-          lineHeight: 1.15,
-        }}
-      >
-        {session.title}
-      </h4>
-      <p
-        className="text-[11px] lg:text-xs font-bold font-headline uppercase tracking-[0.18em] text-center mt-2.5"
-        style={{ color: "#94a3b8" }}
-        suppressHydrationWarning
-      >
-        {showDayInMeta && (
-          <>
-            {formatSessionDay(session.start_time)}
-            <span style={{ color: "#cbd5e1" }}> · </span>
-          </>
+    <article className="flex items-start gap-3.5 lg:gap-5">
+      {/* Image — left column. Fixed width so layout is predictable
+          regardless of image content. 16:9 aspect, rounded, subtle
+          shadow to give it a "feature image" feel. */}
+      <div className="shrink-0 w-32 lg:w-40">
+        {session.image_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={session.image_url}
+            alt=""
+            style={{
+              width: "100%",
+              aspectRatio: "16 / 9",
+              objectFit: "cover",
+              borderRadius: "0.75rem",
+              boxShadow:
+                "0 1px 2px rgba(15,34,41,0.04), 0 4px 12px rgba(15,34,41,0.06)",
+            }}
+          />
+        ) : (
+          <div
+            className="flex items-center justify-center"
+            style={{
+              width: "100%",
+              aspectRatio: "16 / 9",
+              borderRadius: "0.75rem",
+              background:
+                "linear-gradient(135deg, rgba(156,240,255,0.40), rgba(255,97,48,0.20))",
+            }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo-mark.png"
+              alt=""
+              width={18}
+              height={18}
+              style={{ opacity: 0.35 }}
+            />
+          </div>
         )}
-        {formatSessionTime(session.start_time)}
-        <span style={{ color: "#cbd5e1" }}> · </span>
-        {formatDuration(session.duration_minutes)}
-      </p>
-      {session.description && session.description.trim() && (
-        <p
-          className="text-sm lg:text-[15px] mt-3.5 leading-relaxed text-center max-w-md mx-auto"
-          style={{ color: "#475569" }}
+      </div>
+
+      {/* Content — right column. Left-aligned for readability inside
+          the row (contrasts cleanly with the centered week header
+          and centered SessionSeparator above). */}
+      <div className="flex-1 min-w-0 text-left">
+        <h4
+          className="font-black font-headline tracking-tight"
+          style={{
+            color: "#0F2229",
+            fontSize: "clamp(0.95rem, 3.5vw, 1.0625rem)",
+            letterSpacing: "-0.01em",
+            lineHeight: 1.2,
+          }}
         >
-          {session.description}
+          {session.title}
+        </h4>
+        <p
+          className="text-[10px] lg:text-[11px] font-bold font-headline uppercase tracking-[0.18em] mt-1.5"
+          style={{ color: "#94a3b8" }}
+          suppressHydrationWarning
+        >
+          {showDayInMeta && (
+            <>
+              {formatSessionDay(session.start_time)}
+              <span style={{ color: "#cbd5e1" }}> · </span>
+            </>
+          )}
+          {formatSessionTime(session.start_time)}
+          <span style={{ color: "#cbd5e1" }}> · </span>
+          {formatDuration(session.duration_minutes)}
         </p>
-      )}
+        {session.description && session.description.trim() && (
+          <p
+            className="text-[12px] lg:text-[13px] mt-2 leading-snug line-clamp-2"
+            style={{ color: "#64748b" }}
+          >
+            {session.description}
+          </p>
+        )}
+      </div>
     </article>
   );
 }

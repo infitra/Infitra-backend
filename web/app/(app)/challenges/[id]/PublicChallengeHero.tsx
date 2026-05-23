@@ -62,7 +62,16 @@ interface Props {
   challengeId: string;
   spaceId: string | null;
   title: string;
+  /** Resolved promise text (may fall back to description if promise_text empty).
+   *  Becomes the H1 inside the card. */
   promise: string | null;
+  /** Raw description, ONLY when distinct from the promise. Renders as a
+   *  paragraph under the cover image to explain HOW the promise is delivered.
+   *  When the promise itself was a description-fallback, this is null. */
+  description: string | null;
+  /** Cover image — Bundle 4.2.8 lives INSIDE the card now, edge-to-edge
+   *  between the H1 promise and the description paragraph. Skipped if null. */
+  imageUrl: string | null;
   startDate: string;
   endDate: string;
   sessionCount: number;
@@ -115,6 +124,8 @@ export function PublicChallengeHero({
   spaceId,
   title,
   promise,
+  description,
+  imageUrl,
   startDate,
   endDate,
   sessionCount,
@@ -170,6 +181,47 @@ export function PublicChallengeHero({
           >
             {headline}
           </h1>
+
+          {/* Cover image — Bundle 4.2.8. Edge-to-edge inside the card
+              (negative margins escape the card's content padding). The
+              card's overflow-hidden + rounded corners clip the image
+              left/right so it follows the card's shape. 16:9 keeps it
+              wide-but-not-tall ("covering left to right" per direction).
+              Skipped entirely if no image set. */}
+          {imageUrl && (
+            <div className="-mx-6 lg:-mx-10 mt-7 lg:mt-9">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={imageUrl}
+                alt=""
+                style={{
+                  width: "100%",
+                  aspectRatio: "16 / 9",
+                  objectFit: "cover",
+                  display: "block",
+                }}
+              />
+            </div>
+          )}
+
+          {/* Description paragraph — explains HOW the promise gets
+              delivered. Bundle 4.2.8. Centered, narrow max-width, body
+              weight. Only renders when description is distinct from the
+              promise (no duplication when promise_text was empty and
+              description was the H1 fallback). */}
+          {description && description.trim() && (
+            <p
+              className="text-center mx-auto leading-relaxed"
+              style={{
+                color: "#475569",
+                fontSize: "0.9375rem",
+                maxWidth: "32rem",
+                marginTop: imageUrl ? "1.75rem" : "1.75rem",
+              }}
+            >
+              {description}
+            </p>
+          )}
 
           <Divider className="mt-7 lg:mt-9 mb-7 lg:mb-9" />
 

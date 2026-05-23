@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { CoverImageBand } from "@/app/(app)/challenges/[id]/CoverImageBand";
 import { PublicChallengeHero } from "@/app/(app)/challenges/[id]/PublicChallengeHero";
 import { PublicCreatorsBlock } from "@/app/(app)/challenges/[id]/PublicCreatorsBlock";
 import { PublicBeyondLiveBlock } from "@/app/(app)/challenges/[id]/PublicBeyondLiveBlock";
@@ -20,12 +19,11 @@ export const metadata = { title: "Collaboration Published — INFITRA" };
  * components used at /challenges/[id] composed inline so they see
  * exactly what buyers see.
  *
- * Single source of truth for the buyer experience: CoverImageBand,
- * PublicChallengeHero, PublicCreatorsBlock, PublicBeyondLiveBlock all
- * come from /challenges/[id]/ and are reused here. No PublicCommitBlock
- * because a creator isn't going to buy their own program — instead the
- * commit footer is replaced with a "Share this with your community"
- * block.
+ * Single source of truth for the buyer experience: PublicChallengeHero,
+ * PublicCreatorsBlock, PublicBeyondLiveBlock all come from
+ * /challenges/[id]/ and are reused here. No PublicCommitBlock because
+ * a creator isn't going to buy their own program — instead the commit
+ * footer is replaced with a "Share this with your community" block.
  */
 export default async function PublishedCelebrationPage({
   params,
@@ -62,6 +60,18 @@ export default async function PublishedCelebrationPage({
   if (buyerView.status !== "published") {
     redirect(`/dashboard/collaborate/${challengeId}`);
   }
+
+  // Raw promise + description for the hero card's two-beat treatment
+  // (Bundle 4.2.8). Same logic as /challenges/[id]/page.tsx.
+  const { data: challengeDetails } = await supabase
+    .from("app_challenge")
+    .select("promise_text, description")
+    .eq("id", challengeId)
+    .maybeSingle();
+  const rawPromise = challengeDetails?.promise_text?.trim() || null;
+  const rawDescription = challengeDetails?.description?.trim() || null;
+  const heroPromise = rawPromise ?? rawDescription;
+  const heroDescription = rawPromise ? rawDescription : null;
 
   // All cohorts + profiles (for the creator block)
   const { data: cohostRows } = await supabase
@@ -186,13 +196,13 @@ export default async function PublishedCelebrationPage({
           PublicCommitBlock is replaced by the "Share this" footer below —
           creators don't buy their own programs. */}
       <main className="flex-1">
-        <CoverImageBand imageUrl={buyerView.image_url} />
-
         <PublicChallengeHero
           challengeId={challengeId}
           spaceId={null}
           title={buyerView.title}
-          promise={buyerView.promise_text}
+          promise={heroPromise}
+          description={heroDescription}
+          imageUrl={buyerView.image_url}
           startDate={buyerView.start_date}
           endDate={buyerView.end_date}
           sessionCount={sessions.length}
