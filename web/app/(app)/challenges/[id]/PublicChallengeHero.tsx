@@ -295,7 +295,9 @@ export function PublicChallengeHero({
               </SpecPill>
             </div>
             <div className="flex justify-center mt-2.5">
-              <SpecPill>Tribe Space and Expert Access throughout</SpecPill>
+              <SpecPill>
+                Always on — Tribe Space + Expert Access
+              </SpecPill>
             </div>
             <p
               className="font-black font-headline tracking-tight mt-7 lg:mt-9"
@@ -370,7 +372,7 @@ function Divider({ className }: { className?: string }) {
 function SpecPill({ children }: { children: React.ReactNode }) {
   return (
     <span
-      className="inline-flex items-center px-3.5 py-2 rounded-full text-[11px] lg:text-xs font-bold font-headline uppercase tracking-[0.18em] whitespace-nowrap"
+      className="inline-flex items-center px-3 lg:px-3.5 py-2 rounded-full text-[10px] lg:text-xs font-bold font-headline uppercase tracking-[0.16em] lg:tracking-[0.18em] text-center"
       style={{
         backgroundColor: "rgba(156, 240, 255, 0.20)",
         border: "1px solid rgba(8, 145, 178, 0.22)",

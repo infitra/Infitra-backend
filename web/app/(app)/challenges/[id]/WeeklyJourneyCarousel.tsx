@@ -51,32 +51,35 @@ export function WeeklyJourneyCarousel({ weeks }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Single source of truth: the DOM scroll position. activeIndex is
-  // *derived* from scrollLeft via the scroll listener. No flag, no
-  // timing races between programmatic scroll and user scroll —
-  // whichever causes the scroll, the listener picks it up and updates
-  // state accordingly. (Bundle 4.2.5 had a programmatic/user-scroll
-  // flag with a 600ms timer that drifted out of sync with iOS smooth-
-  // scroll, causing dot indicator and slide content to land one apart.)
+  // *derived* from scrollLeft via the scroll listener.
+  //
+  // Bundle 4.2.12: switched from setTimeout debounce (80ms) to
+  // requestAnimationFrame. The debounce was visible as the dot
+  // indicator "lagging" behind the user's swipe — the index updated
+  // after the swipe settled, not as it progressed. rAF runs once per
+  // frame (~16ms), and the (prev === idx) early return prevents
+  // pointless re-renders when the rounded index hasn't actually
+  // changed. The indicator now follows the swipe smoothly.
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-    let timer: ReturnType<typeof setTimeout> | null = null;
+    let rafId: number | null = null;
 
     function onScroll() {
-      if (timer) clearTimeout(timer);
-      timer = setTimeout(() => {
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
         if (!container) return;
         const slideWidth = container.clientWidth;
         if (slideWidth === 0) return;
         const idx = Math.round(container.scrollLeft / slideWidth);
         setActiveIndex((prev) => (prev === idx ? prev : idx));
-      }, 80);
+      });
     }
 
     container.addEventListener("scroll", onScroll, { passive: true });
     return () => {
       container.removeEventListener("scroll", onScroll);
-      if (timer) clearTimeout(timer);
+      if (rafId !== null) cancelAnimationFrame(rafId);
     };
   }, []);
 
@@ -102,35 +105,13 @@ export function WeeklyJourneyCarousel({ weeks }: Props) {
       aria-roledescription="carousel"
       aria-label="Weekly journey of the program"
     >
-      {/* Journey track — TOP of the carousel. Stepped progress with
-          W-labels above each dot. Active dot enlarged + glow ring. */}
-      <JourneyTrack
-        totalWeeks={weeks.length}
-        activeIndex={activeIndex}
-        onJump={jumpTo}
-      />
-
-      {/* Subtle divider line below the spine — Bundle 4.2.11.
-          Replaces the previous orange constants arrow + label. The
-          always-on layer is now described by the "Tribe Space + Expert
-          Access throughout" pill in the spec block above the cream
-          region; the carousel area is purely navigation + content.
-          The divider separates the navigation (spine) from the
-          content (inner week card below). */}
+      {/* Inner WEEK card — Bundle 4.2.12.
+          The W-track is now INSIDE this card (was outside, on cream).
+          The card holds the whole journey beat: navigation (spine) at
+          top, divider, then the swipable slides below. The cream outer
+          region around it still provides ambient breathing room. */}
       <div
-        className="h-px mt-6 lg:mt-7 mx-3"
-        style={{ backgroundColor: "rgba(8, 145, 178, 0.18)" }}
-        aria-hidden
-      />
-
-      {/* Inner WEEK card — Bundle 4.2.11.
-          Wraps the swipable scroll container as a white card floating
-          on the cream outer region. Each slide inside contains one
-          week's content (header + theme + rail + sessions). The
-          card's edges stay fixed while slides swipe horizontally
-          within it. */}
-      <div
-        className="rounded-2xl overflow-hidden mt-6 lg:mt-7"
+        className="rounded-2xl overflow-hidden"
         style={{
           backgroundColor: "#FFFFFF",
           border: "1px solid rgba(15, 34, 41, 0.06)",
@@ -138,6 +119,26 @@ export function WeeklyJourneyCarousel({ weeks }: Props) {
             "0 1px 2px rgba(15, 34, 41, 0.03), 0 4px 14px rgba(15, 34, 41, 0.05)",
         }}
       >
+        {/* Journey track — sits inside the white card at the top.
+            Padding around it for breath; the cyan dots POP against
+            white (they were under-contrasted on cream). */}
+        <div className="px-4 lg:px-5 pt-6 lg:pt-7 pb-4 lg:pb-5">
+          <JourneyTrack
+            totalWeeks={weeks.length}
+            activeIndex={activeIndex}
+            onJump={jumpTo}
+          />
+        </div>
+
+        {/* Subtle divider — inside the card, between the navigation
+            (spine) above and the swipable content below. */}
+        <div
+          className="h-px mx-4 lg:mx-5"
+          style={{ backgroundColor: "rgba(8, 145, 178, 0.18)" }}
+          aria-hidden
+        />
+
+        {/* Swipable slides */}
         <div
           ref={containerRef}
           className="flex overflow-x-auto journey-carousel"
@@ -226,32 +227,13 @@ function WeekSlide({ week }: { week: WeekData }) {
       </div>
 
       {week.sessions.length > 0 ? (
-        // Rail-and-sessions container. The left rail visually nests
-        // sessions under the week header. Origin dot at the top of the
-        // rail visually anchors it to "where the week begins."
-        <div className="relative pl-6 lg:pl-7">
-          {/* Left rail */}
-          <div
-            className="absolute left-2 lg:left-2.5 top-0 bottom-0 w-0.5 rounded-full"
-            style={{ backgroundColor: "rgba(156, 240, 255, 0.55)" }}
-            aria-hidden
-          >
-            {/* Origin dot — straddles the top of the rail to anchor it
-                visually as "the start of this week's content."
-                Bundle 4.2.11: ring color changed from cream to white
-                because the rail now lives inside the inner white card. */}
-            <span
-              className="absolute -left-[5px] -top-[6px] block w-3 h-3 rounded-full"
-              style={{
-                backgroundColor: "#9CF0FF",
-                border: "3px solid #FFFFFF",
-                boxShadow: "0 0 0 1px rgba(8,145,178,0.20)",
-              }}
-              aria-hidden
-            />
-          </div>
-
-          {/* Sessions */}
+        // Bundle 4.2.12: rail removed (read as noise). The inner white
+        // card already creates the umbrella around the week — a
+        // vertical rail inside it was redundant. Sessions stack
+        // vertically across the full slide width; the separator and
+        // session card are properly centered/aligned without the
+        // rail's left offset.
+        <div>
           {week.sessions.map((s, idx) => (
             <div
               key={s.id}
@@ -344,42 +326,32 @@ function SessionFeature({
 }) {
   return (
     <article
-      className="flex items-start gap-3.5 lg:gap-5 rounded-2xl p-3.5 lg:p-4"
-      // Bundle 4.2.11: session cards now use a cream tint (echoes the
-      // outer cream region) so they stand out from the WHITE inner
-      // week card that surrounds them. Without this echo the white
-      // session cards would disappear into the white inner card.
-      // Hairline border kept for clean edge definition.
+      // Bundle 4.2.12: items-stretch lets the image column fill the
+      // card height edge-to-edge (top, left, bottom). overflow-hidden
+      // + rounded-2xl on the card clips the image to the card's
+      // rounded corners. Image flush to card edges; text has padding
+      // on right + top + bottom only.
+      className="flex items-stretch gap-3.5 lg:gap-5 rounded-2xl overflow-hidden"
       style={{
         backgroundColor: "#FAF7F1",
         border: "1px solid rgba(15,34,41,0.05)",
       }}
     >
-      {/* Image — left column. Fixed width so layout is predictable
-          regardless of image content. 16:9 aspect, rounded, subtle
-          shadow to give it a "feature image" feel. */}
-      <div className="shrink-0 w-32 lg:w-40">
+      {/* Image — left column, flush to card edges. Relative wrapper +
+          absolute image lets it stretch to match content column height
+          while preserving aspect-correct cropping via object-cover. */}
+      <div className="shrink-0 w-32 lg:w-40 relative">
         {session.image_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={session.image_url}
             alt=""
-            style={{
-              width: "100%",
-              aspectRatio: "16 / 9",
-              objectFit: "cover",
-              borderRadius: "0.75rem",
-              boxShadow:
-                "0 1px 2px rgba(15,34,41,0.04), 0 4px 12px rgba(15,34,41,0.06)",
-            }}
+            className="absolute inset-0 w-full h-full object-cover"
           />
         ) : (
           <div
-            className="flex items-center justify-center"
+            className="absolute inset-0 flex items-center justify-center"
             style={{
-              width: "100%",
-              aspectRatio: "16 / 9",
-              borderRadius: "0.75rem",
               background:
                 "linear-gradient(135deg, rgba(156,240,255,0.40), rgba(255,97,48,0.20))",
             }}
@@ -396,10 +368,9 @@ function SessionFeature({
         )}
       </div>
 
-      {/* Content — right column. Left-aligned for readability inside
-          the row (contrasts cleanly with the centered week header
-          and centered SessionSeparator above). */}
-      <div className="flex-1 min-w-0 text-left">
+      {/* Content — right column. Padded on right + top + bottom
+          (the image-side has no padding because the image fills it). */}
+      <div className="flex-1 min-w-0 text-left py-3.5 lg:py-4 pr-3.5 lg:pr-4">
         <h4
           className="font-black font-headline tracking-tight"
           style={{
@@ -411,9 +382,14 @@ function SessionFeature({
         >
           {session.title}
         </h4>
+        {/* Metadata — Bundle 4.2.12 bump.
+            Was: 10-11px in slate tertiary (#94a3b8) → whispered.
+            Now: 11-12px in slate secondary (#475569) with slightly
+            tighter tracking. Same small-caps treatment, clearly
+            readable without dominating the title. */}
         <p
-          className="text-[10px] lg:text-[11px] font-bold font-headline uppercase tracking-[0.18em] mt-1.5"
-          style={{ color: "#94a3b8" }}
+          className="text-[11px] lg:text-[12px] font-bold font-headline uppercase tracking-[0.15em] mt-2"
+          style={{ color: "#475569" }}
           suppressHydrationWarning
         >
           {showDayInMeta && (
@@ -481,12 +457,13 @@ function JourneyTrack({
         />
         <div className="relative flex items-center justify-between w-full">
           {Array.from({ length: totalWeeks }).map((_, i) => {
-            const isFirst = i === 0;
             const isActive = i === activeIndex;
-            const dotColor = isFirst ? "#FF6130" : "#9CF0FF";
-            const glowColor = isFirst
-              ? "rgba(255,97,48,0.28)"
-              : "rgba(8,145,178,0.28)";
+            // Bundle 4.2.12: orange now means "you are here" (active),
+            // not "start of program" (first week). The dot moves with
+            // the swipe — active dot is orange and larger; inactive
+            // dots are cyan and smaller. Cleaner indicator semantics.
+            const dotColor = isActive ? "#FF6130" : "#9CF0FF";
+            const glowColor = "rgba(255,97,48,0.28)";
             return (
               <button
                 key={i}
