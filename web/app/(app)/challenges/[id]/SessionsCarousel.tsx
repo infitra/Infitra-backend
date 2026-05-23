@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * SessionsCarousel — Bundle 4.2.15.
+ * SessionsCarousel — Bundle 4.2.16.
  *
  * Flat horizontal carousel of all sessions in chronological order —
  * landing-page pattern. Each session is a vertical card with image on
@@ -10,17 +10,28 @@
  * program-rhythm spec block above the carousel carries the "5 WEEKS"
  * framing.
  *
- * Bundle 4.2.15 polish:
+ * Bundle 4.2.16 polish (on top of 4.2.15's drop-inner-container):
+ *   - FIX: pagination count was reading children[0] / children[1] of
+ *     the scroll container to derive cardWidth, but the scrollbar-hide
+ *     <style> tag was children[0], producing a ~24px phantom width and
+ *     a runaway count ("19 of 7"). Moved <style> outside the scroll
+ *     container so children is purely SessionCards.
+ *   - Bumped carousel internal padding (px-6 → px-8 mobile, px-10 →
+ *     px-12 lg) so the first card has visible breath from the hero
+ *     card's edge instead of sitting flush against it.
+ *   - Scaled up card hierarchy now that cards have more horizontal
+ *     room: title 16–18 → 20–22px, time line de-capped to 14–15px
+ *     sentence-case (no longer competes with WEEK eyebrow), avatar
+ *     24 → 36px with a "Led by" mini-label, host/description both
+ *     14–15px, card padding p-4/5 → p-5/6, inter-block spacing
+ *     opened up.
+ *
+ * Bundle 4.2.15 polish (kept):
  *   - Dropped the inner white container that wrapped the section
  *     header + carousel. Header and carousel sit directly inside the
  *     parent cream region — one fewer nested surface.
  *   - Inverted card color from cream (#FAF7F1) to white (#FFFFFF) so
- *     each card pops against the cream region instead of disappearing
- *     into a cream-on-cream-inside-white sandwich.
- *   - Carousel scroll track now bleeds with -mx-6 lg:-mx-10 + matching
- *     px-6 lg:px-10 padding so cards align with the cream region's
- *     content edge on the left and can scroll fully into view on the
- *     right without butting against the cream region's padding.
+ *     each card pops against the cream region.
  *
  * Why this carousel and not a weekly one (revert path: see 4.2.13):
  *   - Nested navigation (swipe weeks → scan sessions) was wrong for the
@@ -131,16 +142,29 @@ export function SessionsCarousel({ sessions }: Props) {
         </p>
       </div>
 
+      {/* Scrollbar-hide rule — kept OUTSIDE the scroll container.
+          Bundle 4.2.16: was inside as the first child, which made it
+          children[0] in the activeIndex calculation, producing a tiny
+          (~24px) phantom cardWidth and a runaway pagination count
+          ("19 of 7"). Moving it here makes container.children purely
+          SessionCards. */}
+      <style>{`
+        .sessions-carousel::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
+
       {/* Carousel — horizontal scroll, snap-mandatory.
-          Card width is ~85% on mobile so the next card peeks on the
+          Card width is ~82% on mobile so the next card peeks on the
           right edge (swipe affordance); wider screens show more cards.
-          Negative-margin + matching padding bleeds the scroll track to
-          the cream region's edges, so cards line up with the section
-          header on the left and the last card can scroll fully into
-          view without butting against the cream region's right padding. */}
+          Negative-margin bleeds the scroll track out to the cream
+          region's outer edges; the slightly-deeper internal padding
+          (px-8 vs cream's px-6) indents the first card a few px past
+          the section header so it has visible breath from the hero
+          card's edge. */}
       <div
         ref={containerRef}
-        className="flex overflow-x-auto gap-3 lg:gap-4 sessions-carousel -mx-6 lg:-mx-10 px-6 lg:px-10"
+        className="flex overflow-x-auto gap-3 lg:gap-4 sessions-carousel -mx-6 lg:-mx-10 px-8 lg:px-12"
         style={{
           scrollSnapType: "x mandatory",
           WebkitOverflowScrolling: "touch",
@@ -148,11 +172,6 @@ export function SessionsCarousel({ sessions }: Props) {
           msOverflowStyle: "none",
         }}
       >
-        <style>{`
-          .sessions-carousel::-webkit-scrollbar {
-            display: none;
-          }
-        `}</style>
         {sessions.map((s) => (
           <SessionCard
             key={s.id}
@@ -241,8 +260,12 @@ function SessionCard({
         )}
       </div>
 
-      {/* Content */}
-      <div className="p-4 lg:p-5 flex-1 flex flex-col">
+      {/* Content — Bundle 4.2.16: scaled-up hierarchy.
+          The card was originally sized for a narrower inside-the-
+          white-container context; now that it sits on cream with
+          more horizontal room, every line goes bigger so the card
+          reads as a billboard, not a metadata strip. */}
+      <div className="p-5 lg:p-6 flex-1 flex flex-col">
         <p
           className="text-[10px] lg:text-[11px] font-bold font-headline uppercase tracking-[0.2em]"
           style={{ color: "#0891b2" }}
@@ -251,47 +274,68 @@ function SessionCard({
           <span style={{ color: "#cbd5e1" }}> · </span>
           {dayLabel}
         </p>
+
+        {/* Title — the card's billboard. Clamp 1.25–1.375rem so it
+            scales smoothly on the in-between widths. */}
         <h4
-          className="font-black font-headline tracking-tight mt-2"
+          className="font-black font-headline tracking-tight mt-2.5"
           style={{
             color: "#0F2229",
-            fontSize: "clamp(1rem, 3.5vw, 1.125rem)",
-            letterSpacing: "-0.01em",
+            fontSize: "clamp(1.25rem, 4.2vw, 1.375rem)",
+            letterSpacing: "-0.015em",
             lineHeight: 1.2,
           }}
         >
           {session.title}
         </h4>
+
+        {/* Time + duration — demoted from tiny-uppercase-tracked
+            (which competed with the WEEK eyebrow) to a calmer
+            sentence-case font-bold info line. Reads as data, not
+            a second label. */}
         <p
-          className="text-[11px] lg:text-[12px] font-bold font-headline uppercase tracking-[0.15em] mt-1.5"
-          style={{ color: "#475569" }}
+          className="text-[14px] lg:text-[15px] font-bold font-headline mt-2.5"
+          style={{ color: "#475569", letterSpacing: "-0.005em" }}
           suppressHydrationWarning
         >
           {timeLabel}
-          <span style={{ color: "#cbd5e1" }}> · </span>
+          <span style={{ color: "#cbd5e1" }}>{"  ·  "}</span>
           {durLabel}
         </p>
 
-        {/* Coach attribution */}
+        {/* Coach attribution — bigger avatar (was 24px, now 36px)
+            with a "Led by" mini-label so the role of the person is
+            unambiguous, and the name itself reads at proper body
+            weight rather than as a tiny tag. */}
         {session.host && (
-          <div className="flex items-center gap-2 mt-3.5">
+          <div className="flex items-center gap-3 mt-5">
             <HostAvatar host={session.host} />
-            <span
-              className="text-[12px] lg:text-[13px] font-bold font-headline"
-              style={{
-                color:
-                  session.host.role === "owner" ? "#FF6130" : "#0891b2",
-              }}
-            >
-              {session.host.display_name ?? "Expert"}
-            </span>
+            <div className="min-w-0">
+              <p
+                className="text-[10px] font-bold font-headline uppercase tracking-[0.2em]"
+                style={{ color: "#94a3b8" }}
+              >
+                Led by
+              </p>
+              <p
+                className="text-[14px] lg:text-[15px] font-black font-headline mt-0.5 truncate"
+                style={{
+                  color:
+                    session.host.role === "owner" ? "#FF6130" : "#0891b2",
+                }}
+              >
+                {session.host.display_name ?? "Expert"}
+              </p>
+            </div>
           </div>
         )}
 
-        {/* Description preview */}
+        {/* Description preview — bumped to 14-15px with relaxed
+            leading for actual readability. line-clamp-2 still
+            caps it at two lines. */}
         {session.description && session.description.trim() && (
           <p
-            className="text-[12px] lg:text-[13px] mt-3 leading-snug line-clamp-2"
+            className="text-[14px] lg:text-[15px] mt-5 leading-relaxed line-clamp-2"
             style={{ color: "#64748b" }}
           >
             {session.description}
@@ -302,7 +346,7 @@ function SessionCard({
         <button
           type="button"
           onClick={onOpenDetail}
-          className="mt-auto pt-3.5 text-left text-[11px] lg:text-[12px] font-bold font-headline transition-opacity hover:opacity-70 active:opacity-50 self-start"
+          className="mt-auto pt-5 text-left text-[13px] lg:text-[14px] font-bold font-headline transition-opacity hover:opacity-70 active:opacity-50 self-start"
           style={{ color: "#FF6130" }}
         >
           See details →
@@ -313,16 +357,19 @@ function SessionCard({
 }
 
 function HostAvatar({ host }: { host: HostLite }) {
+  // Bundle 4.2.16: bumped 24px → 36px so the avatar actually
+  // registers on the card. Matched the initial-letter fallback
+  // to the new size so empty-avatar cards stay readable.
   if (host.avatar_url) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
         src={host.avatar_url}
         alt={host.display_name ?? "Expert"}
-        className="w-6 h-6 rounded-full object-cover"
+        className="w-9 h-9 rounded-full object-cover shrink-0"
         style={{
           border: "1.5px solid #FFFFFF",
-          boxShadow: "0 1px 2px rgba(15,34,41,0.10)",
+          boxShadow: "0 1px 3px rgba(15,34,41,0.12)",
         }}
       />
     );
@@ -330,16 +377,17 @@ function HostAvatar({ host }: { host: HostLite }) {
   const isOwner = host.role === "owner";
   return (
     <div
-      className="w-6 h-6 rounded-full flex items-center justify-center"
+      className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
       style={{
         backgroundColor: isOwner
           ? "rgba(255,97,48,0.15)"
           : "rgba(8,145,178,0.15)",
         border: "1.5px solid #FFFFFF",
+        boxShadow: "0 1px 3px rgba(15,34,41,0.08)",
       }}
     >
       <span
-        className="text-[10px] font-black font-headline"
+        className="text-[13px] font-black font-headline"
         style={{ color: isOwner ? "#FF6130" : "#0891b2" }}
       >
         {(host.display_name ?? "?")[0]?.toUpperCase()}
