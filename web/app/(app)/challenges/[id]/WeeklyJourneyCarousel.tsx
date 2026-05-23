@@ -1,27 +1,39 @@
 "use client";
 
 /**
- * WeeklyJourneyCarousel — Bundle 4.2.5.
+ * WeeklyJourneyCarousel — Bundle 4.2.13.
  *
- * Lives INSIDE the product card (PublicChallengeHero), between the
- * spec block and the price-as-CTA. The "what's actually in the box"
- * preview of the bundled offer.
+ * Lives INSIDE the product card (PublicChallengeHero). Contains the
+ * whole "journey" beat: a W1-W5 navigation track + swipable week
+ * content. Cyan dots represent live peaks; the rest of the always-on
+ * layer is described by the spec block above the carousel (the
+ * "Always on — Tribe Space + Expert Access" pill).
  *
- * 4.2.5 changes from 4.2.4:
- *  - Auto-rotate DROPPED. Buyer controls their own pace. Editorial
- *    content needs dwell time; auto-rotate fought that. Manual swipe
- *    + dot-tap navigation only.
- *  - Sessions render with MAGAZINE/EDITORIAL weight again: large 16:9
- *    image, ~22-28px display title, generous metadata, full-weight
- *    description (no line-clamp). Multi-session weeks stack vertically
- *    with editorial weight per session.
- *  - All slides match the tallest slide's height (CSS flex stretch).
- *    Shorter weeks have whitespace at the bottom — that's editorial
- *    visual rest, not waste.
+ * 4.2.13 changes from 4.2.12:
  *
- * Journey track at the TOP stays from 4.2.4 — stepped progress
- * indicator with W1-W5 labels, active dot enlarged + glow ring,
- * first week orange ("start here"). Tap a dot to jump.
+ *  - Spine breathing room: more pt/pb around the W-track inside the
+ *    inner white card.
+ *
+ *  - SessionSeparator dropped entirely. The previous numbered separator
+ *    ("1 · Sat 13 Jun") between sessions was extra UI noise. All
+ *    sessions now use the same layout regardless of whether the week
+ *    has one or many — including the same two-line metadata format
+ *    (day on top, time/duration below) — so the visual rhythm stays
+ *    consistent. Sessions stack with a tighter vertical gap.
+ *
+ *  - Session card layout: SQUARE image (1:1 aspect, fixed size). With
+ *    items-center, the image always dominates row height — every
+ *    session ends up the same size regardless of content. The 16:9
+ *    cinematic version is preserved for the modal (See details).
+ *
+ *  - Description kept inline with line-clamp-2 + ellipsis, plus a
+ *    small orange "See details →" action. Tapping the button opens a
+ *    modal with the full session detail (large image + full
+ *    description) on the same page.
+ *
+ * Other carryovers from 4.2.12: rAF-based scroll listener for smooth
+ * indicator tracking; active dot = orange (moves with swipe); no
+ * umbrella rail; W-track INSIDE the white inner card.
  */
 
 import { useEffect, useRef, useState } from "react";
@@ -48,18 +60,10 @@ interface Props {
 
 export function WeeklyJourneyCarousel({ weeks }: Props) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [openSessionId, setOpenSessionId] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Single source of truth: the DOM scroll position. activeIndex is
-  // *derived* from scrollLeft via the scroll listener.
-  //
-  // Bundle 4.2.12: switched from setTimeout debounce (80ms) to
-  // requestAnimationFrame. The debounce was visible as the dot
-  // indicator "lagging" behind the user's swipe — the index updated
-  // after the swipe settled, not as it progressed. rAF runs once per
-  // frame (~16ms), and the (prev === idx) early return prevents
-  // pointless re-renders when the rounded index hasn't actually
-  // changed. The indicator now follows the swipe smoothly.
+  // rAF-based scroll listener — activeIndex follows scrollLeft smoothly.
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -91,11 +95,13 @@ export function WeeklyJourneyCarousel({ weeks }: Props) {
       left: slideWidth * index,
       behavior: "smooth",
     });
-    // No setState here — the scroll listener will update activeIndex
-    // as the smooth scroll progresses. Indicator literally tracks the
-    // scroll position, which gives a nice "dot travelling along the
-    // track" effect as you skip multiple weeks.
   }
+
+  // Look up the session for the modal when openSessionId is set.
+  const openSession =
+    openSessionId !== null
+      ? weeks.flatMap((w) => w.sessions).find((s) => s.id === openSessionId) ?? null
+      : null;
 
   if (weeks.length === 0) return null;
 
@@ -105,11 +111,8 @@ export function WeeklyJourneyCarousel({ weeks }: Props) {
       aria-roledescription="carousel"
       aria-label="Weekly journey of the program"
     >
-      {/* Inner WEEK card — Bundle 4.2.12.
-          The W-track is now INSIDE this card (was outside, on cream).
-          The card holds the whole journey beat: navigation (spine) at
-          top, divider, then the swipable slides below. The cream outer
-          region around it still provides ambient breathing room. */}
+      {/* Inner WEEK card — contains the navigation (W-track) + content
+          (swipable slides) as one unified journey container. */}
       <div
         className="rounded-2xl overflow-hidden"
         style={{
@@ -119,10 +122,8 @@ export function WeeklyJourneyCarousel({ weeks }: Props) {
             "0 1px 2px rgba(15, 34, 41, 0.03), 0 4px 14px rgba(15, 34, 41, 0.05)",
         }}
       >
-        {/* Journey track — sits inside the white card at the top.
-            Padding around it for breath; the cyan dots POP against
-            white (they were under-contrasted on cream). */}
-        <div className="px-4 lg:px-5 pt-6 lg:pt-7 pb-4 lg:pb-5">
+        {/* Journey track — Bundle 4.2.13: more breath above + below. */}
+        <div className="px-4 lg:px-5 pt-8 lg:pt-10 pb-6 lg:pb-7">
           <JourneyTrack
             totalWeeks={weeks.length}
             activeIndex={activeIndex}
@@ -130,8 +131,7 @@ export function WeeklyJourneyCarousel({ weeks }: Props) {
           />
         </div>
 
-        {/* Subtle divider — inside the card, between the navigation
-            (spine) above and the swipable content below. */}
+        {/* Subtle divider between navigation and content */}
         <div
           className="h-px mx-4 lg:mx-5"
           style={{ backgroundColor: "rgba(8, 145, 178, 0.18)" }}
@@ -167,7 +167,10 @@ export function WeeklyJourneyCarousel({ weeks }: Props) {
               aria-label={`Week ${week.weekNumber} of ${weeks.length}`}
               aria-hidden={i !== activeIndex}
             >
-              <WeekSlide week={week} />
+              <WeekSlide
+                week={week}
+                onOpenDetail={(sessionId) => setOpenSessionId(sessionId)}
+              />
             </div>
           ))}
         </div>
@@ -176,33 +179,34 @@ export function WeeklyJourneyCarousel({ weeks }: Props) {
       <p className="sr-only" aria-live="polite" aria-atomic="true">
         Week {activeIndex + 1} of {weeks.length}
       </p>
+
+      {/* Session detail modal — only when a session is open. */}
+      {openSession && (
+        <SessionDetailModal
+          session={openSession}
+          onClose={() => setOpenSessionId(null)}
+        />
+      )}
     </div>
   );
 }
 
-/** A single week's slide — week header (umbrella) over indented sessions.
+/** A single week's slide — week header (umbrella) over stacked sessions.
  *
- *  Bundle 4.2.10: the week is now visually the UMBRELLA over its
- *  sessions. The centered week header (date label + theme) sits at top.
- *  Below it, a thin cyan vertical rail runs down the LEFT side of the
- *  session area, with sessions indented to the right of the rail. The
- *  rail visualizes "everything below this is INSIDE this week."
- *
- *  Bundle 4.2.7 carryover: multi-session weeks get SessionSeparator
- *  numbering; single-session weeks omit the separator (one session
- *  doesn't need numbering). */
-function WeekSlide({ week }: { week: WeekData }) {
-  const isMultiSession = week.sessions.length > 1;
-
+ *  Bundle 4.2.13: no separators between sessions. All sessions use the
+ *  same uniform layout, regardless of whether the week has 1 or many.
+ *  Sessions stack with tight margin between them. */
+function WeekSlide({
+  week,
+  onOpenDetail,
+}: {
+  week: WeekData;
+  onOpenDetail: (sessionId: string) => void;
+}) {
   return (
-    // Slide-level padding for the inner card (Bundle 4.2.11). The
-    // slide content has clean breath from the inner card's edges.
     <div className="px-4 lg:px-5 py-5 lg:py-6">
-      {/* Week header — Bundle 4.2.11 hierarchy swap.
-          The week-with-dates is now the BIG uppercase header (anchor
-          for which slide you're on); the theme is the subtitle below.
-          Inverted from previous treatment where theme was the display
-          element and week-date was a small caps label. */}
+      {/* Week header — date+range as the big uppercase title, theme
+          as subtitle below. */}
       <div className="text-center mb-6 lg:mb-8">
         <h3
           className="font-black font-headline uppercase tracking-tight leading-[1.1]"
@@ -227,27 +231,15 @@ function WeekSlide({ week }: { week: WeekData }) {
       </div>
 
       {week.sessions.length > 0 ? (
-        // Bundle 4.2.12: rail removed (read as noise). The inner white
-        // card already creates the umbrella around the week — a
-        // vertical rail inside it was redundant. Sessions stack
-        // vertically across the full slide width; the separator and
-        // session card are properly centered/aligned without the
-        // rail's left offset.
         <div>
           {week.sessions.map((s, idx) => (
             <div
               key={s.id}
-              className={idx > 0 ? "mt-7 lg:mt-9" : undefined}
+              className={idx > 0 ? "mt-3.5 lg:mt-4" : undefined}
             >
-              {isMultiSession && (
-                <SessionSeparator
-                  number={idx + 1}
-                  dateLabel={formatSessionDay(s.start_time)}
-                />
-              )}
               <SessionFeature
                 session={s}
-                showDayInMeta={!isMultiSession}
+                onOpenDetail={() => onOpenDetail(s.id)}
               />
             </div>
           ))}
@@ -265,82 +257,38 @@ function WeekSlide({ week }: { week: WeekData }) {
 }
 
 /**
- * SessionSeparator — within-week structural marker.
+ * SessionFeature — Bundle 4.2.13 uniform layout.
  *
- * Same visual language as the W1-W5 journey track at the carousel
- * level (thin cyan line + small-caps text), but at the session scope.
- * The number gives sequential structure ("1, 2, 3"); the day label
- * places the session in the week's calendar without echoing the
- * date-time metadata below.
- */
-function SessionSeparator({
-  number,
-  dateLabel,
-}: {
-  number: number;
-  dateLabel: string;
-}) {
-  return (
-    <div className="flex items-center gap-3 mb-4 lg:mb-5">
-      <div
-        className="flex-1 h-[1.5px] rounded-full"
-        style={{ backgroundColor: "rgba(156,240,255,0.55)" }}
-        aria-hidden
-      />
-      <span
-        className="text-[11px] font-bold font-headline uppercase tracking-[0.2em] shrink-0"
-        style={{ color: "#0891b2" }}
-      >
-        {number}
-        <span style={{ color: "#cbd5e1" }}> · </span>
-        <span style={{ color: "#94a3b8" }}>{dateLabel}</span>
-      </span>
-      <div
-        className="flex-1 h-[1.5px] rounded-full"
-        style={{ backgroundColor: "rgba(156,240,255,0.55)" }}
-        aria-hidden
-      />
-    </div>
-  );
-}
-
-/**
- * SessionFeature — Bundle 4.2.8 compact horizontal row.
- *
- * "Editorial in principle, compact in execution." Each session keeps
- * its own image, strong typographic title, metadata, and description —
- * but in a horizontal layout (image left, content right) that's ~120-
- * 160px tall instead of ~400px. Multi-session weeks now fit all
- * sessions on one slide without internal scroll.
- *
- * showDayInMeta — when false (multi-session week), the day is already
- * in the SessionSeparator above, so the metadata drops it ("19:00 · 1H"
- * instead of "FRI 12 JUN · 19:00 · 1H").
+ *  - Square image (1:1) at fixed size, flush to card edges (left
+ *    column items-center → image dominates row height).
+ *  - Title (font-black)
+ *  - Two-line metadata: day on top, time + duration below — consistent
+ *    across all sessions in all weeks.
+ *  - Inline description with line-clamp-2 + ellipsis — kept so the
+ *    buyer gets a preview without tapping.
+ *  - Small orange "See details →" action — opens the modal with the
+ *    full session detail.
  */
 function SessionFeature({
   session,
-  showDayInMeta,
+  onOpenDetail,
 }: {
   session: SessionLite;
-  showDayInMeta: boolean;
+  onOpenDetail: () => void;
 }) {
   return (
     <article
-      // Bundle 4.2.12: items-stretch lets the image column fill the
-      // card height edge-to-edge (top, left, bottom). overflow-hidden
-      // + rounded-2xl on the card clips the image to the card's
-      // rounded corners. Image flush to card edges; text has padding
-      // on right + top + bottom only.
-      className="flex items-stretch gap-3.5 lg:gap-5 rounded-2xl overflow-hidden"
+      className="flex items-center gap-3.5 lg:gap-5 rounded-2xl overflow-hidden"
       style={{
         backgroundColor: "#FAF7F1",
         border: "1px solid rgba(15,34,41,0.05)",
       }}
     >
-      {/* Image — left column, flush to card edges. Relative wrapper +
-          absolute image lets it stretch to match content column height
-          while preserving aspect-correct cropping via object-cover. */}
-      <div className="shrink-0 w-32 lg:w-40 relative">
+      {/* Image — square 1:1, flush to card edges. */}
+      <div
+        className="shrink-0 w-32 lg:w-36 relative self-stretch"
+        style={{ aspectRatio: "1 / 1" }}
+      >
         {session.image_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -368,9 +316,8 @@ function SessionFeature({
         )}
       </div>
 
-      {/* Content — right column. Padded on right + top + bottom
-          (the image-side has no padding because the image fills it). */}
-      <div className="flex-1 min-w-0 text-left py-3.5 lg:py-4 pr-3.5 lg:pr-4">
+      {/* Content — right column. Padded on right + top + bottom. */}
+      <div className="flex-1 min-w-0 text-left py-3 lg:py-3.5 pr-3.5 lg:pr-4">
         <h4
           className="font-black font-headline tracking-tight"
           style={{
@@ -382,25 +329,23 @@ function SessionFeature({
         >
           {session.title}
         </h4>
-        {/* Metadata — Bundle 4.2.12 bump.
-            Was: 10-11px in slate tertiary (#94a3b8) → whispered.
-            Now: 11-12px in slate secondary (#475569) with slightly
-            tighter tracking. Same small-caps treatment, clearly
-            readable without dominating the title. */}
+        {/* Metadata — Bundle 4.2.13: two-line layout always.
+            Day on top, time + duration below. Keeps the metadata
+            shape consistent across all sessions and avoids ugly
+            mid-string wraps on tight viewports. */}
         <p
-          className="text-[11px] lg:text-[12px] font-bold font-headline uppercase tracking-[0.15em] mt-2"
+          className="text-[11px] lg:text-[12px] font-bold font-headline uppercase tracking-[0.15em] mt-2 leading-snug"
           style={{ color: "#475569" }}
           suppressHydrationWarning
         >
-          {showDayInMeta && (
-            <>
-              {formatSessionDay(session.start_time)}
-              <span style={{ color: "#cbd5e1" }}> · </span>
-            </>
-          )}
-          {formatSessionTime(session.start_time)}
-          <span style={{ color: "#cbd5e1" }}> · </span>
-          {formatDuration(session.duration_minutes)}
+          <span className="block">
+            {formatSessionDay(session.start_time)}
+          </span>
+          <span className="block">
+            {formatSessionTime(session.start_time)}
+            <span style={{ color: "#cbd5e1" }}> · </span>
+            {formatDuration(session.duration_minutes)}
+          </span>
         </p>
         {session.description && session.description.trim() && (
           <p
@@ -410,16 +355,153 @@ function SessionFeature({
             {session.description}
           </p>
         )}
+        <button
+          type="button"
+          onClick={onOpenDetail}
+          className="mt-2 text-[11px] lg:text-[12px] font-bold font-headline transition-opacity hover:opacity-70 active:opacity-50"
+          style={{ color: "#FF6130" }}
+        >
+          See details →
+        </button>
       </div>
     </article>
   );
 }
 
 /**
- * JourneyTrack — stepped progress indicator. Week-number labels (W1, W2,
- * ...) above the dots; dots connected by a thin cyan line; active dot
- * enlarged with a soft glow ring; first dot always orange ("start
- * here"). Tapping a dot jumps to that week.
+ * SessionDetailModal — Bundle 4.2.13.
+ *
+ * Fixed full-screen backdrop + centered white card containing the
+ * session's full detail (large 16:9 image, title, metadata, full
+ * description). Closes on:
+ *   - Backdrop click
+ *   - × button
+ *   - Escape key
+ *
+ * Body scroll lock is set on mount and cleared on unmount.
+ */
+function SessionDetailModal({
+  session,
+  onClose,
+}: {
+  session: SessionLite;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    document.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [onClose]);
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={`${session.title} — session details`}
+      className="fixed inset-0 z-[60] flex items-center justify-center p-4 animate-fade-in"
+      style={{ backgroundColor: "rgba(15, 34, 41, 0.65)" }}
+      onClick={onClose}
+    >
+      <div
+        className="rounded-3xl overflow-y-auto max-w-lg w-full max-h-[90vh] relative"
+        style={{ backgroundColor: "#FFFFFF" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Close button — top-right, floats over image */}
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          className="absolute top-3.5 right-3.5 z-10 w-9 h-9 rounded-full flex items-center justify-center transition-opacity hover:opacity-80 active:opacity-60"
+          style={{
+            backgroundColor: "rgba(255,255,255,0.92)",
+            border: "1px solid rgba(15,34,41,0.10)",
+            boxShadow: "0 2px 6px rgba(15,34,41,0.10)",
+          }}
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#0F2229"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+          >
+            <line x1="6" y1="6" x2="18" y2="18" />
+            <line x1="18" y1="6" x2="6" y2="18" />
+          </svg>
+        </button>
+
+        {/* Image — 16:9 cinematic at top of modal */}
+        {session.image_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={session.image_url}
+            alt=""
+            className="w-full block"
+            style={{ aspectRatio: "16 / 9", objectFit: "cover" }}
+          />
+        ) : (
+          <div
+            className="w-full"
+            style={{
+              aspectRatio: "16 / 9",
+              background:
+                "linear-gradient(135deg, rgba(156,240,255,0.40), rgba(255,97,48,0.20))",
+            }}
+          />
+        )}
+
+        {/* Content */}
+        <div className="px-6 lg:px-8 pt-6 lg:pt-7 pb-7 lg:pb-8">
+          <h3
+            className="font-black font-headline tracking-tight"
+            style={{
+              color: "#0F2229",
+              fontSize: "clamp(1.25rem, 4.5vw, 1.625rem)",
+              letterSpacing: "-0.015em",
+              lineHeight: 1.2,
+            }}
+          >
+            {session.title}
+          </h3>
+          <p
+            className="text-[11px] lg:text-[12px] font-bold font-headline uppercase tracking-[0.15em] mt-3"
+            style={{ color: "#475569" }}
+            suppressHydrationWarning
+          >
+            {formatSessionDay(session.start_time)}
+            <span style={{ color: "#cbd5e1" }}> · </span>
+            {formatSessionTime(session.start_time)}
+            <span style={{ color: "#cbd5e1" }}> · </span>
+            {formatDuration(session.duration_minutes)}
+          </p>
+          {session.description && session.description.trim() && (
+            <p
+              className="text-[15px] mt-5 leading-relaxed whitespace-pre-wrap"
+              style={{ color: "#475569" }}
+            >
+              {session.description}
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * JourneyTrack — stepped progress indicator. Active dot is ORANGE
+ * (moves with swipe); other dots are cyan. Tapping a dot jumps to
+ * that week.
  */
 function JourneyTrack({
   totalWeeks,
@@ -458,10 +540,6 @@ function JourneyTrack({
         <div className="relative flex items-center justify-between w-full">
           {Array.from({ length: totalWeeks }).map((_, i) => {
             const isActive = i === activeIndex;
-            // Bundle 4.2.12: orange now means "you are here" (active),
-            // not "start of program" (first week). The dot moves with
-            // the swipe — active dot is orange and larger; inactive
-            // dots are cyan and smaller. Cleaner indicator semantics.
             const dotColor = isActive ? "#FF6130" : "#9CF0FF";
             const glowColor = "rgba(255,97,48,0.28)";
             return (
