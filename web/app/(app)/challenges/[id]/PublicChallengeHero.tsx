@@ -143,11 +143,16 @@ export function PublicChallengeHero({
   const dateRange = formatProgramDateRange(startDate, endDate);
   const solo = creators.length === 1;
 
-  const identityCaption = solo
-    ? "Personal Expert. Followed in realtime."
+  // Caption split into two lines for stronger hierarchy (Bundle 4.2.9).
+  // Line 1 is the brand-differentiator statement; line 2 is the qualifier.
+  const captionPrimary = solo
+    ? "Personal Expert."
     : creators.length === 2
-      ? "Two Experts. One Program. Followed together in realtime."
-      : `${creators.length} Experts. One Program. Followed together in realtime.`;
+      ? "Two Experts. One Program."
+      : `${creators.length} Experts. One Program.`;
+  const captionSecondary = solo
+    ? "Followed in realtime."
+    : "Followed together in realtime.";
 
   return (
     <section className="px-6 lg:px-12 pt-10 lg:pt-14 pb-0">
@@ -161,15 +166,10 @@ export function PublicChallengeHero({
               "0 1px 3px rgba(15,34,41,0.04), 0 24px 64px rgba(15,34,41,0.06)",
           }}
         >
-          {/* Eyebrow */}
-          <p
-            className="text-[11px] font-bold font-headline uppercase tracking-[0.25em] mb-5 lg:mb-7 text-center"
-            style={{ color: "#FF6130" }}
-          >
-            {title}
-          </p>
-
-          {/* H1 — promise */}
+          {/* H1 — promise. Bundle 4.2.9: stands alone at the top of
+              the card (no eyebrow above). The program name was demoted
+              from eyebrow and relocated as a kicker above the
+              description, where it anchors the description block. */}
           <h1
             className="font-black font-headline text-center"
             style={{
@@ -182,12 +182,7 @@ export function PublicChallengeHero({
             {headline}
           </h1>
 
-          {/* Cover image — Bundle 4.2.8. Edge-to-edge inside the card
-              (negative margins escape the card's content padding). The
-              card's overflow-hidden + rounded corners clip the image
-              left/right so it follows the card's shape. 16:9 keeps it
-              wide-but-not-tall ("covering left to right" per direction).
-              Skipped entirely if no image set. */}
+          {/* Cover image — edge-to-edge inside the card. */}
           {imageUrl && (
             <div className="-mx-6 lg:-mx-10 mt-7 lg:mt-9">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -204,89 +199,115 @@ export function PublicChallengeHero({
             </div>
           )}
 
-          {/* Description paragraph — explains HOW the promise gets
-              delivered. Bundle 4.2.8. Centered, narrow max-width, body
-              weight. Only renders when description is distinct from the
-              promise (no duplication when promise_text was empty and
-              description was the H1 fallback). */}
-          {description && description.trim() && (
+          {/* Program name (kicker) + description.
+              Bundle 4.2.9: the kicker is the relocated program name
+              with more weight (was the small eyebrow at the top of
+              card). The description now sits ON TOP of stronger
+              presentation — bigger, darker color, font-medium. Together
+              they read as "this is what this program is, and here's
+              how it works" anchored below the cover image. */}
+          <div className="mt-7 lg:mt-9 text-center">
             <p
-              className="text-center mx-auto leading-relaxed"
-              style={{
-                color: "#475569",
-                fontSize: "0.9375rem",
-                maxWidth: "32rem",
-                marginTop: imageUrl ? "1.75rem" : "1.75rem",
-              }}
+              className="text-sm lg:text-base font-black font-headline uppercase tracking-[0.18em]"
+              style={{ color: "#FF6130" }}
             >
-              {description}
+              {title}
             </p>
-          )}
+            {description && description.trim() && (
+              <p
+                className="mt-3 mx-auto leading-relaxed font-medium"
+                style={{
+                  color: "#1e293b",
+                  fontSize: "1.0625rem",
+                  maxWidth: "32rem",
+                }}
+              >
+                {description}
+              </p>
+            )}
+          </div>
 
           <Divider className="mt-7 lg:mt-9 mb-7 lg:mb-9" />
 
-          {/* IDENTITY block — portraits + caption.
-              Caption is a single supporting line (not a headline), so the
-              identity block doesn't visually duplicate the spec block. */}
-          <div className="flex items-start justify-center gap-5 lg:gap-8 flex-wrap mb-5 lg:mb-6">
+          {/* IDENTITY block — portraits + 2-line caption.
+              Bundle 4.2.9: caption split into two lines with hierarchy.
+              First line is the brand-differentiator statement (font-
+              black, slate primary, display weight). Second line is the
+              qualifier (font-medium, slate secondary). The two-line
+              treatment gives the caption real punch — it was whispering
+              as a single small-medium line previously. */}
+          <div className="flex items-start justify-center gap-5 lg:gap-8 flex-wrap mb-6 lg:mb-7">
             {creators.map((c) => (
               <ExpertPortrait key={c.id} creator={c} />
             ))}
           </div>
           <p
-            className="text-[13px] lg:text-sm text-center font-medium leading-snug max-w-xs mx-auto"
-            style={{ color: "#475569" }}
+            className="text-base lg:text-lg text-center font-black font-headline tracking-tight"
+            style={{ color: "#0F2229", letterSpacing: "-0.01em" }}
           >
-            {identityCaption}
+            {captionPrimary}
+          </p>
+          <p
+            className="text-sm text-center mt-1.5 font-medium"
+            style={{ color: "#64748b" }}
+          >
+            {captionSecondary}
           </p>
 
           <Divider className="mt-7 lg:mt-9 mb-7 lg:mb-9" />
 
-          {/* SPEC block — Bundle 4.2.6 hierarchy swap. Metrics lead
-              ("5 weeks · 7 live sessions") because that's WHAT YOU BUY;
-              tribe line supports the metrics in the same "offer" group;
-              dates are below as the smaller "when it happens" detail.
-              Bigger gap between the offer group and the date line
-              visually separates the two beats. */}
+          {/* SPEC block — Bundle 4.2.9 pills. Three "spec chips" in a
+              row: weeks, sessions, dates. Each pill has cyan-tinted
+              background + hairline border + small-caps text — they
+              read as concrete "what you buy" inclusions instead of
+              data floating in text. Wraps on narrow viewports
+              (typically the date pill drops to a second line). Below
+              the pills, the tribe momentum line quietly ties them
+              together. */}
           <div className="text-center">
+            <div className="flex flex-wrap justify-center gap-2.5">
+              <SpecPill>
+                {totalWeeks} {totalWeeks === 1 ? "week" : "weeks"}
+              </SpecPill>
+              <SpecPill>
+                {sessionCount} live {sessionCount === 1 ? "session" : "sessions"}
+              </SpecPill>
+              <SpecPill>{dateRange}</SpecPill>
+            </div>
             <p
-              className="font-black font-headline tracking-tight"
-              style={{
-                color: "#0F2229",
-                fontSize: "clamp(1.5rem, 4.5vw, 2rem)",
-                letterSpacing: "-0.015em",
-                lineHeight: 1.1,
-              }}
-            >
-              {totalWeeks} {totalWeeks === 1 ? "week" : "weeks"}
-              <span style={{ color: "#cbd5e1" }}> · </span>
-              {sessionCount} live {sessionCount === 1 ? "session" : "sessions"}
-            </p>
-            <p
-              className="text-sm lg:text-base text-center mt-3 font-medium"
+              className="text-sm lg:text-base text-center mt-5 font-medium"
               style={{ color: "#475569" }}
             >
               Plus your tribe — momentum that lasts
             </p>
-            <p
-              className="text-[11px] lg:text-xs font-bold font-headline uppercase tracking-[0.2em] mt-6 lg:mt-7"
-              style={{ color: "#94a3b8" }}
-            >
-              {dateRange}
-            </p>
           </div>
 
-          <Divider className="mt-7 lg:mt-9 mb-8 lg:mb-10" />
+          {/* Bundle 4.2.9: the cream-tinted region (below) replaces
+              the divider here. The color change IS the section break. */}
 
-          {/* WEEKLY JOURNEY CAROUSEL — Bundle 4.2.7: more breath above
-              the journey track so it lands cleanly as the chapter
-              opener for the week-by-week section. */}
-          <WeeklyJourneyCarousel weeks={weeks} />
+          {/* WEEKLY JOURNEY CAROUSEL region — Bundle 4.2.9.
+              Wrapped in a cream-tinted inset that bleeds edge-to-edge
+              of the card (escapes the card's px-6/px-10 content
+              padding via negative margins, then re-pads inside). The
+              subtle background change signals "this is the journey,
+              a distinct beat within the card" — without using a wash
+              (which goes muddy on cream). White cards on cream inside.
 
-          {/* PRICE-AS-CTA — the buy moment is the price display.
-              Negative margins bring it edge-to-edge of the card bottom.
-              Bottom corners match the card's outer radius. */}
-          <div className="-mx-6 lg:-mx-10 mt-8 lg:mt-10">
+              Top spacing inside the cream region gives breathing room
+              before the W-track lands. */}
+          <div
+            className="-mx-6 lg:-mx-10 mt-7 lg:mt-9 px-6 lg:px-10 py-9 lg:py-11"
+            style={{ backgroundColor: "#FAF7F1" }}
+          >
+            <WeeklyJourneyCarousel weeks={weeks} />
+          </div>
+
+          {/* PRICE-AS-CTA — edge-to-edge orange block at the card's
+              bottom. Bundle 4.2.9: sits directly against the cream
+              carousel region above (no white margin between cream and
+              orange — the color transitions ARE the section breaks now,
+              not white dividers or gaps). */}
+          <div className="-mx-6 lg:-mx-10">
             <PriceCTA
               challengeId={challengeId}
               spaceId={spaceId}
@@ -309,6 +330,27 @@ function Divider({ className }: { className?: string }) {
       style={{ height: "1px", backgroundColor: "rgba(15,34,41,0.06)" }}
       aria-hidden
     />
+  );
+}
+
+/**
+ * SpecPill — a containment chip for offer specs (weeks, sessions, dates).
+ * Cyan-tinted background, hairline cyan border, small-caps font-bold.
+ * Renders the contained content as a "concrete inclusion" instead of
+ * floating data text.
+ */
+function SpecPill({ children }: { children: React.ReactNode }) {
+  return (
+    <span
+      className="inline-flex items-center px-3.5 py-2 rounded-full text-[11px] lg:text-xs font-bold font-headline uppercase tracking-[0.18em] whitespace-nowrap"
+      style={{
+        backgroundColor: "rgba(156, 240, 255, 0.20)",
+        border: "1px solid rgba(8, 145, 178, 0.22)",
+        color: "#0F2229",
+      }}
+    >
+      {children}
+    </span>
   );
 }
 

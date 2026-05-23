@@ -110,11 +110,36 @@ export function WeeklyJourneyCarousel({ weeks }: Props) {
         onJump={jumpTo}
       />
 
+      {/* Constants layer — Bundle 4.2.9. The W-track above shows the
+          PEAKS (discrete live sessions per week). This pill names the
+          CONSTANTS (continuous access running through all weeks). It
+          is persistent — doesn't change when the user swipes between
+          weeks — because it lives in the carousel chrome, not the
+          slides. Orange-tinted ("warmth, always-on") contrasts with
+          the cyan W-track ("structured, peaks"). */}
+      <div className="mt-5 lg:mt-6 flex justify-center">
+        <span
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[10px] lg:text-[11px] font-bold font-headline uppercase tracking-[0.2em]"
+          style={{
+            backgroundColor: "rgba(255, 97, 48, 0.08)",
+            border: "1px solid rgba(255, 97, 48, 0.22)",
+            color: "#c2410c",
+          }}
+        >
+          <span
+            className="w-1.5 h-1.5 rounded-full"
+            style={{ backgroundColor: "#FF6130" }}
+            aria-hidden
+          />
+          Always on · Expert access · Tribe
+        </span>
+      </div>
+
       {/* Carousel — native scroll-snap. All slides share the tallest
           height (flex stretch). User swipes; no auto-advance. */}
       <div
         ref={containerRef}
-        className="flex overflow-x-auto journey-carousel mt-7 lg:mt-9"
+        className="flex overflow-x-auto journey-carousel mt-8 lg:mt-10"
         style={{
           scrollSnapType: "x mandatory",
           WebkitOverflowScrolling: "touch",
@@ -286,7 +311,20 @@ function SessionFeature({
   showDayInMeta: boolean;
 }) {
   return (
-    <article className="flex items-start gap-3.5 lg:gap-5">
+    <article
+      className="flex items-start gap-3.5 lg:gap-5 rounded-2xl p-3.5 lg:p-4"
+      // Bundle 4.2.9: each session now lives in its own white card,
+      // floating on the cream carousel region. Gives each session
+      // visual weight + clear separation, while the carousel still
+      // connects them as a week sequence. Hairline border + subtle
+      // shadow for premium card feel.
+      style={{
+        backgroundColor: "#FFFFFF",
+        border: "1px solid rgba(15,34,41,0.06)",
+        boxShadow:
+          "0 1px 2px rgba(15,34,41,0.03), 0 4px 12px rgba(15,34,41,0.04)",
+      }}
+    >
       {/* Image — left column. Fixed width so layout is predictable
           regardless of image content. 16:9 aspect, rounded, subtle
           shadow to give it a "feature image" feel. */}
