@@ -32,7 +32,7 @@
 
 import Link from "next/link";
 import { PurchaseButton } from "@/app/components/PurchaseButton";
-import { WeeklyJourneyCarousel } from "./WeeklyJourneyCarousel";
+import { SessionsCarousel, type CarouselSession } from "./SessionsCarousel";
 
 interface Creator {
   id: string;
@@ -42,21 +42,9 @@ interface Creator {
   role: "owner" | "cohost";
 }
 
-interface SessionLite {
-  id: string;
-  title: string;
-  description: string | null;
-  image_url: string | null;
-  start_time: string;
-  duration_minutes: number;
-}
-
-interface WeekData {
-  weekNumber: number;
-  weekRange: string;
-  theme: string | null;
-  sessions: SessionLite[];
-}
+// Bundle 4.2.14: hero now receives a flat array of enriched sessions
+// (with weekNumber + host attached) instead of the previous weeks
+// shape. The carousel uses the flat list directly.
 
 interface Props {
   challengeId: string;
@@ -78,7 +66,7 @@ interface Props {
   priceCents: number;
   currency: string;
   creators: Creator[];
-  weeks: WeekData[];
+  sessions: CarouselSession[];
   isAuthenticated: boolean;
   hasPurchased: boolean;
   isCreator: boolean;
@@ -146,7 +134,7 @@ export function PublicChallengeHero({
   priceCents,
   currency,
   creators,
-  weeks,
+  sessions,
   isAuthenticated,
   hasPurchased,
   isCreator,
@@ -315,21 +303,18 @@ export function PublicChallengeHero({
           {/* Bundle 4.2.9: the cream-tinted region (below) replaces
               the divider here. The color change IS the section break. */}
 
-          {/* WEEKLY JOURNEY CAROUSEL region — Bundle 4.2.9.
-              Wrapped in a cream-tinted inset that bleeds edge-to-edge
-              of the card (escapes the card's px-6/px-10 content
-              padding via negative margins, then re-pads inside). The
-              subtle background change signals "this is the journey,
-              a distinct beat within the card" — without using a wash
-              (which goes muddy on cream). White cards on cream inside.
-
-              Top spacing inside the cream region gives breathing room
-              before the W-track lands. */}
+          {/* SESSIONS region — Bundle 4.2.14.
+              Cream-tinted edge-to-edge inset inside the hero card,
+              containing a flat horizontal carousel of all sessions
+              (vertical cards, landing-page style). The 5-week
+              structure is conveyed by the eyebrow on each card
+              ("WEEK N · DAY") plus the Program Rhythm spec block
+              above the cream region. No nested weekly navigation. */}
           <div
             className="-mx-6 lg:-mx-10 mt-7 lg:mt-9 px-6 lg:px-10 py-9 lg:py-11"
             style={{ backgroundColor: "#FAF7F1" }}
           >
-            <WeeklyJourneyCarousel weeks={weeks} />
+            <SessionsCarousel sessions={sessions} />
           </div>
 
           {/* PRICE-AS-CTA — edge-to-edge orange block at the card's

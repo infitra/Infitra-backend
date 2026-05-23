@@ -99,11 +99,13 @@ export default async function ChallengePage({
     ...cohostProfiles.map((p) => ({ ...p, role: "cohost" as const })),
   ];
 
-  // Sessions, with cover image + description
+  // Sessions, with cover image + description + host. Bundle 4.2.14:
+  // host_id is selected so we can attribute each session to its
+  // leading Expert in the buyer-page session cards (avatar + name).
   const { data: sessionRows } = await supabase
     .from("app_challenge_session")
     .select(
-      "session_id, app_session(id, title, description, image_url, start_time, duration_minutes)",
+      "session_id, app_session(id, title, description, image_url, start_time, duration_minutes, host_id)",
     )
     .eq("challenge_id", id);
 
@@ -116,20 +118,31 @@ export default async function ChallengePage({
       image_url: string | null;
       start_time: string;
       duration_minutes: number;
+      host_id: string | null;
     }>)
     .sort(
       (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime(),
     );
 
-  // Build the weeks array that the in-card carousel consumes. Bundle
-  // 4.2.4: the weekly journey lives INSIDE the product card; we
-  // compute the structure here once and hand it down.
+  // Build the weeks shape (used to derive each session's week number)
+  // then flatten + enrich for the new flat SessionsCarousel
+  // (Bundle 4.2.14). Each enriched session carries its weekNumber,
+  // weekRange, and resolved host.
   const weeklyArc = (buyerView.weekly_arc as Array<{ week: number; theme: string }>) ?? [];
   const weeks = buildWeeks(
     buyerView.start_date,
     buyerView.end_date,
     weeklyArc,
     sessions,
+  );
+  const creatorsById = new Map(creators.map((c) => [c.id, c]));
+  const enrichedSessions = weeks.flatMap((week) =>
+    week.sessions.map((s) => ({
+      ...s,
+      weekNumber: week.weekNumber,
+      weekRange: week.weekRange,
+      host: s.host_id ? creatorsById.get(s.host_id) ?? null : null,
+    })),
   );
 
   // User state (only if authenticated; page is public)
@@ -299,7 +312,7 @@ export default async function ChallengePage({
           priceCents={buyerView.price_cents}
           currency={buyerView.currency}
           creators={creators}
-          weeks={weeks}
+          sessions={enrichedSessions}
           isAuthenticated={!!user}
           hasPurchased={hasPurchased}
           isCreator={isCreator}

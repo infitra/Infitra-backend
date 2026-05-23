@@ -108,11 +108,11 @@ export default async function PublishedCelebrationPage({
     ...cohostProfiles.map((p) => ({ ...p, role: "cohost" as const })),
   ];
 
-  // Sessions with cover + description
+  // Sessions with cover + description + host (Bundle 4.2.14)
   const { data: sessionRows } = await supabase
     .from("app_challenge_session")
     .select(
-      "session_id, app_session(id, title, description, image_url, start_time, duration_minutes)",
+      "session_id, app_session(id, title, description, image_url, start_time, duration_minutes, host_id)",
     )
     .eq("challenge_id", challengeId);
 
@@ -125,6 +125,7 @@ export default async function PublishedCelebrationPage({
       image_url: string | null;
       start_time: string;
       duration_minutes: number;
+      host_id: string | null;
     }>)
     .sort(
       (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime(),
@@ -133,13 +134,23 @@ export default async function PublishedCelebrationPage({
   const topicsByCreator: Record<string, string[]> =
     (buyerView.topic_ownership as Record<string, string[]>) ?? {};
 
-  // Bundle 4.2.4: weeks array consumed by the in-card carousel
+  // Bundle 4.2.14: enriched flat sessions array for the flat
+  // SessionsCarousel (with weekNumber + host attached).
   const weeklyArc = (buyerView.weekly_arc as Array<{ week: number; theme: string }>) ?? [];
   const weeks = buildWeeks(
     buyerView.start_date,
     buyerView.end_date,
     weeklyArc,
     sessions,
+  );
+  const creatorsById = new Map(creators.map((c) => [c.id, c]));
+  const enrichedSessions = weeks.flatMap((week) =>
+    week.sessions.map((s) => ({
+      ...s,
+      weekNumber: week.weekNumber,
+      weekRange: week.weekRange,
+      host: s.host_id ? creatorsById.get(s.host_id) ?? null : null,
+    })),
   );
 
   return (
@@ -209,7 +220,7 @@ export default async function PublishedCelebrationPage({
           priceCents={buyerView.price_cents}
           currency={buyerView.currency}
           creators={creators}
-          weeks={weeks}
+          sessions={enrichedSessions}
           isAuthenticated={true}
           hasPurchased={false}
           isCreator={true}

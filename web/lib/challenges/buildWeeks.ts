@@ -1,6 +1,9 @@
 /**
- * Build the structured weeks array consumed by the in-card
- * WeeklyJourneyCarousel.
+ * Build the structured weeks array used as an intermediate shape for
+ * the buyer page. Bundle 4.2.14: the flat SessionsCarousel flattens
+ * this output and enriches each session with weekNumber + host. The
+ * cohort-space UI (post-purchase, post-pilot) will likely consume the
+ * full weeks shape directly when it ships.
  *
  * One entry per week from start_date through end_date. Each entry
  * carries: week number, date range string ("12 Jun – 18 Jun"),
@@ -18,6 +21,10 @@ export interface SessionLite {
   image_url: string | null;
   start_time: string;
   duration_minutes: number;
+  /** Session host (creator who leads it). Bundle 4.2.14 surfaces this
+   *  per-session on the buyer page so each session card can show who's
+   *  leading it (avatar + name). */
+  host_id: string | null;
 }
 
 export interface WeekEntry {
