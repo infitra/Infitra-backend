@@ -1,22 +1,31 @@
 "use client";
 
 /**
- * SessionsCarousel — Bundle 4.2.14.
+ * SessionsCarousel — Bundle 4.2.15.
  *
- * Replaces the WeeklyJourneyCarousel. Flat horizontal carousel of all
- * sessions in chronological order — landing-page pattern. Each session
- * is a vertical card with image on top (full card width) and content
- * below. The weekly structure is communicated by the "WEEK N · DAY"
- * eyebrow on each card; the program-rhythm spec block above the
- * carousel carries the "5 WEEKS" framing.
+ * Flat horizontal carousel of all sessions in chronological order —
+ * landing-page pattern. Each session is a vertical card with image on
+ * top (full card width) and content below. The weekly structure is
+ * communicated by the "WEEK N · DAY" eyebrow on each card; the
+ * program-rhythm spec block above the carousel carries the "5 WEEKS"
+ * framing.
  *
- * Why this and not the weekly carousel:
+ * Bundle 4.2.15 polish:
+ *   - Dropped the inner white container that wrapped the section
+ *     header + carousel. Header and carousel sit directly inside the
+ *     parent cream region — one fewer nested surface.
+ *   - Inverted card color from cream (#FAF7F1) to white (#FFFFFF) so
+ *     each card pops against the cream region instead of disappearing
+ *     into a cream-on-cream-inside-white sandwich.
+ *   - Carousel scroll track now bleeds with -mx-6 lg:-mx-10 + matching
+ *     px-6 lg:px-10 padding so cards align with the cream region's
+ *     content edge on the left and can scroll fully into view on the
+ *     right without butting against the cream region's padding.
+ *
+ * Why this carousel and not a weekly one (revert path: see 4.2.13):
  *   - Nested navigation (swipe weeks → scan sessions) was wrong for the
  *     buyer page's conversion job. Buyers don't navigate at decision
  *     time — they need to UNDERSTAND, not explore.
- *   - Horizontal session cards in a narrow right column generated
- *     cramped text, awkward metadata wraps, alignment drift across
- *     content lengths.
  *   - Vertical cards give each session full card width for title,
  *     metadata, coach attribution, and description. Same shape every
  *     card. Reads instantly.
@@ -100,63 +109,57 @@ export function SessionsCarousel({ sessions }: Props) {
 
   return (
     <div role="region" aria-label="Program sessions">
-      {/* Inner card — contains the section header at top + the
-          horizontal scrolling sessions below. */}
+      {/* Bundle 4.2.15: dropped the inner white card. Section header and
+          carousel sit directly inside the parent cream region. Cards
+          are now white-on-cream (inverted contrast) which lets each
+          session card pop instead of sitting inside a triple-nested
+          container. */}
+
+      {/* Section header — eyebrow left, pagination indicator right. */}
+      <div className="flex items-baseline justify-between pb-5 lg:pb-6">
+        <p
+          className="text-[11px] font-bold font-headline uppercase tracking-[0.22em]"
+          style={{ color: "#FF6130" }}
+        >
+          Sessions
+        </p>
+        <p
+          className="text-[11px] font-bold font-headline uppercase tracking-[0.22em]"
+          style={{ color: "#94a3b8" }}
+        >
+          {activeIndex + 1} of {sessions.length}
+        </p>
+      </div>
+
+      {/* Carousel — horizontal scroll, snap-mandatory.
+          Card width is ~85% on mobile so the next card peeks on the
+          right edge (swipe affordance); wider screens show more cards.
+          Negative-margin + matching padding bleeds the scroll track to
+          the cream region's edges, so cards line up with the section
+          header on the left and the last card can scroll fully into
+          view without butting against the cream region's right padding. */}
       <div
-        className="rounded-2xl overflow-hidden"
+        ref={containerRef}
+        className="flex overflow-x-auto gap-3 lg:gap-4 sessions-carousel -mx-6 lg:-mx-10 px-6 lg:px-10"
         style={{
-          backgroundColor: "#FFFFFF",
-          border: "1px solid rgba(15, 34, 41, 0.06)",
-          boxShadow:
-            "0 1px 2px rgba(15, 34, 41, 0.03), 0 4px 14px rgba(15, 34, 41, 0.05)",
+          scrollSnapType: "x mandatory",
+          WebkitOverflowScrolling: "touch",
+          scrollbarWidth: "none",
+          msOverflowStyle: "none",
         }}
       >
-        {/* Section header — eyebrow left, pagination indicator right.
-            Matches the landing-page pattern. */}
-        <div className="flex items-baseline justify-between px-5 lg:px-6 pt-7 lg:pt-8 pb-5 lg:pb-6">
-          <p
-            className="text-[11px] font-bold font-headline uppercase tracking-[0.22em]"
-            style={{ color: "#FF6130" }}
-          >
-            Sessions
-          </p>
-          <p
-            className="text-[11px] font-bold font-headline uppercase tracking-[0.22em]"
-            style={{ color: "#94a3b8" }}
-          >
-            {activeIndex + 1} of {sessions.length}
-          </p>
-        </div>
-
-        {/* Carousel — horizontal scroll, snap-mandatory.
-            Card width is ~85% on mobile so the next card peeks on the
-            right edge (swipe affordance); wider screens show more cards.
-            Left padding on the container so the first card has breath
-            from the inner-card edge. Right padding so the last card
-            doesn't butt against the right edge when fully scrolled. */}
-        <div
-          ref={containerRef}
-          className="flex overflow-x-auto gap-3 lg:gap-4 sessions-carousel px-5 lg:px-6 pb-6 lg:pb-7"
-          style={{
-            scrollSnapType: "x mandatory",
-            WebkitOverflowScrolling: "touch",
-            scrollbarWidth: "none",
-            msOverflowStyle: "none",
-          }}
-        >
-          <style>{`
-            .sessions-carousel::-webkit-scrollbar {
-              display: none;
-            }
-          `}</style>
-          {sessions.map((s) => (
-            <SessionCard
-              key={s.id}
-              session={s}
-              onOpenDetail={() => setOpenSessionId(s.id)}
-            />
-          ))}
-        </div>
+        <style>{`
+          .sessions-carousel::-webkit-scrollbar {
+            display: none;
+          }
+        `}</style>
+        {sessions.map((s) => (
+          <SessionCard
+            key={s.id}
+            session={s}
+            onOpenDetail={() => setOpenSessionId(s.id)}
+          />
+        ))}
       </div>
 
       <p className="sr-only" aria-live="polite" aria-atomic="true">
@@ -202,8 +205,10 @@ function SessionCard({
     <article
       className="w-[82%] sm:w-[55%] lg:w-[40%] shrink-0 rounded-2xl overflow-hidden flex flex-col"
       style={{
-        backgroundColor: "#FAF7F1",
+        backgroundColor: "#FFFFFF",
         border: "1px solid rgba(15,34,41,0.06)",
+        boxShadow:
+          "0 1px 2px rgba(15,34,41,0.03), 0 4px 14px rgba(15,34,41,0.05)",
         scrollSnapAlign: "start",
       }}
     >
