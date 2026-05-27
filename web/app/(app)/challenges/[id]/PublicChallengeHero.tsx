@@ -1,26 +1,25 @@
 /**
- * PublicChallengeHero — Bundle 4.2.5 (self-contained product card).
+ * PublicChallengeHero — Bundle 4.2.18 (stripped middle band).
  *
  * The hero is one complete card holding the entire offer:
- *   1. Eyebrow           — program name (orange caps)
- *   2. H1                — the promise
- *   3. Divider
- *   4. Portraits         — Experts as photos + names + role-accented taglines
- *   5. Caption           — "Two Experts. One Program. Followed in realtime."
- *                          single supporting line (NOT a headline) so the
- *                          identity block doesn't visually duplicate the
- *                          spec block below
+ *   1. H1                — the promise (ALL CAPS editorial display)
+ *   2. Cover image       — edge-to-edge inside the card
+ *   3. Program name kicker + description
+ *   4. Divider
+ *   5. Portraits         — Experts as photos + names + role-accented taglines
  *   6. Divider
- *   7. Spec block        — DATES leading: "22 May → 25 Jun"
- *                          metrics small-caps below: "5 WEEKS · 7 LIVE SESSIONS"
- *                          tribe momentum line at the bottom
- *   8. Divider
- *   9. Journey carousel  — manual swipe, editorial sessions, W1-W5 track
- *  10. Divider
- *  11. PRICE-AS-CTA      — the buy moment IS the price display. Orange
- *                          tappable block: CHF 287 + "For the full program"
- *                          + "I'm in →". Different states for purchased
- *                          (cyan, "open tribe space") and creator (preview).
+ *   7. Stats             — "5 weeks · 7 live sessions" + "Always on:
+ *                          Tribe Space + Expert Access" subtitle
+ *   8. Date range        — "22 May → 25 Jun 2026" display anchor
+ *   9. Sessions region   — flat horizontal carousel
+ *  10. PRICE-AS-CTA      — orange tappable block, the buy moment IS
+ *                          the price display
+ *
+ * Bundle 4.2.18 simplification (vs 4.2.17):
+ *   - Dropped "Two Experts. One Program." / "Followed together in
+ *     realtime." caption — redundant with the portraits visual.
+ *   - Dropped "PROGRAM RHYTHM" eyebrow + 3-pill chip rail. Replaced
+ *     with two clean text lines (stats + always-on qualifier).
  *
  * The card is self-contained — no external "first CTA" below it anymore.
  * Section 2 below the card still has its own "Commit" CTA at the page's
@@ -143,18 +142,11 @@ export function PublicChallengeHero({
   const headline = resolveHeadline(promise, totalWeeks, creators);
   const priceLabel = formatPrice(priceCents, currency);
   const dateRangeWithYear = formatProgramDateRangeWithYear(startDate, endDate);
-  const solo = creators.length === 1;
 
-  // Caption split into two lines for stronger hierarchy (Bundle 4.2.9).
-  // Line 1 is the brand-differentiator statement; line 2 is the qualifier.
-  const captionPrimary = solo
-    ? "Personal Expert."
-    : creators.length === 2
-      ? "Two Experts. One Program."
-      : `${creators.length} Experts. One Program.`;
-  const captionSecondary = solo
-    ? "Followed in realtime."
-    : "Followed together in realtime.";
+  // Bundle 4.2.18: dropped the caption block ("Two Experts. One
+  // Program." / "Followed together in realtime.") — it was
+  // rhetorical chrome on top of the experts visual which already
+  // communicates the same thing.
 
   return (
     <section className="px-6 lg:px-12 pt-16 lg:pt-14 pb-0">
@@ -232,61 +224,44 @@ export function PublicChallengeHero({
 
           <Divider className="mt-7 lg:mt-9 mb-7 lg:mb-9" />
 
-          {/* IDENTITY block — portraits + 2-line caption.
-              Bundle 4.2.9: caption split into two lines with hierarchy.
-              First line is the brand-differentiator statement (font-
-              black, slate primary, display weight). Second line is the
-              qualifier (font-medium, slate secondary). The two-line
-              treatment gives the caption real punch — it was whispering
-              as a single small-medium line previously. */}
-          <div className="flex items-start justify-center gap-5 lg:gap-8 flex-wrap mb-6 lg:mb-7">
+          {/* IDENTITY block — portraits only.
+              Bundle 4.2.18: the 2-line caption ("Two Experts. One
+              Program." / "Followed together in realtime.") was
+              removed — it restated what the portraits already show.
+              The portraits alone now carry the "who" beat. */}
+          <div className="flex items-start justify-center gap-5 lg:gap-8 flex-wrap">
             {creators.map((c) => (
               <ExpertPortrait key={c.id} creator={c} />
             ))}
           </div>
-          <p
-            className="text-base lg:text-lg text-center font-black font-headline tracking-tight"
-            style={{ color: "#0F2229", letterSpacing: "-0.01em" }}
-          >
-            {captionPrimary}
-          </p>
-          <p
-            className="text-sm text-center mt-1.5 font-medium"
-            style={{ color: "#64748b" }}
-          >
-            {captionSecondary}
-          </p>
 
           <Divider className="mt-7 lg:mt-9 mb-7 lg:mb-9" />
 
-          {/* PROGRAM RHYTHM block — Bundle 4.2.11 restructure.
-              Section eyebrow labels the beat. Two data pills (weeks +
-              sessions) on the first row, then a single wide pill
-              naming the always-on layer (replaces the previous "Plus
-              your tribe — momentum that lasts" tagline with a
-              concrete inclusion). Below the pills, the program dates
-              with year as a big display element — the "when" anchor
-              for the buyer's commitment. */}
+          {/* PROGRAM RHYTHM block — Bundle 4.2.18 simplification.
+              Was: "PROGRAM RHYTHM" eyebrow + three SpecPill chips +
+              date. Five visual elements, lots of chip chrome.
+              Now: two text lines (primary stat + always-on
+              qualifier) + date. The chip rail was creating "chip
+              soup" — the content speaks better as plain text. */}
           <div className="text-center">
             <p
-              className="text-[11px] font-bold font-headline uppercase tracking-[0.25em] mb-5 lg:mb-6"
-              style={{ color: "#FF6130" }}
+              className="font-bold font-headline"
+              style={{
+                color: "#0F2229",
+                fontSize: "clamp(1rem, 3.2vw, 1.125rem)",
+                letterSpacing: "-0.005em",
+              }}
             >
-              Program Rhythm
+              {totalWeeks} {totalWeeks === 1 ? "week" : "weeks"}
+              <span style={{ color: "#cbd5e1" }}>{"  ·  "}</span>
+              {sessionCount} live {sessionCount === 1 ? "session" : "sessions"}
             </p>
-            <div className="flex flex-wrap justify-center gap-2.5">
-              <SpecPill>
-                {totalWeeks} {totalWeeks === 1 ? "week" : "weeks"}
-              </SpecPill>
-              <SpecPill>
-                {sessionCount} live {sessionCount === 1 ? "session" : "sessions"}
-              </SpecPill>
-            </div>
-            <div className="flex justify-center mt-2.5">
-              <SpecPill>
-                Always on — Tribe Space + Expert Access
-              </SpecPill>
-            </div>
+            <p
+              className="text-sm lg:text-base font-medium mt-2"
+              style={{ color: "#64748b" }}
+            >
+              Always on: Tribe Space + Expert Access
+            </p>
             <p
               className="font-black font-headline tracking-tight mt-7 lg:mt-9"
               style={{
@@ -350,27 +325,6 @@ function Divider({ className }: { className?: string }) {
       style={{ height: "1px", backgroundColor: "rgba(15,34,41,0.06)" }}
       aria-hidden
     />
-  );
-}
-
-/**
- * SpecPill — a containment chip for offer specs (weeks, sessions, dates).
- * Cyan-tinted background, hairline cyan border, small-caps font-bold.
- * Renders the contained content as a "concrete inclusion" instead of
- * floating data text.
- */
-function SpecPill({ children }: { children: React.ReactNode }) {
-  return (
-    <span
-      className="inline-flex items-center px-3 lg:px-3.5 py-2 rounded-full text-[10px] lg:text-xs font-bold font-headline uppercase tracking-[0.16em] lg:tracking-[0.18em] text-center"
-      style={{
-        backgroundColor: "rgba(156, 240, 255, 0.20)",
-        border: "1px solid rgba(8, 145, 178, 0.22)",
-        color: "#0F2229",
-      }}
-    >
-      {children}
-    </span>
   );
 }
 
