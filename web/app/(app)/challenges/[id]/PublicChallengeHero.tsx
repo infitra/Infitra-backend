@@ -313,12 +313,17 @@ export function PublicChallengeHero({
             <SessionsCarousel sessions={sessions} />
           </div>
 
-          {/* PRICE-AS-CTA — edge-to-edge orange block at the card's
-              bottom. Bundle 4.2.9: sits directly against the cream
-              carousel region above (no white margin between cream and
-              orange — the color transitions ARE the section breaks now,
-              not white dividers or gaps). */}
-          <div className="-mx-6 lg:-mx-10">
+          {/* CTA section — Bundle 4.2.27.
+              Was: edge-to-edge orange block bleeding to the card's
+              edges. Read as a shouting hero button next to the
+              persistent StickyJoinCTA bottom bar — double-CTA
+              overload. Now: contained pill button inside the
+              card's normal content flow, with a positioning
+              sentence above it (the "why this is different"
+              beat) and a small price reveal. The StickyJoinCTA
+              bar carries the actual click responsibility; this
+              block is the editorial commit moment. */}
+          <div className="py-9 lg:py-12">
             <PriceCTA
               challengeId={challengeId}
               spaceId={spaceId}
@@ -407,18 +412,28 @@ function ExpertPortrait({ creator }: { creator: Creator }) {
 }
 
 /**
- * PriceCTA — the offer's buy moment AND price display in one element.
- * Sits at the bottom of the card (edge-to-edge via negative margins).
+ * PriceCTA — Bundle 4.2.27 redesign.
+ *
+ * Sits inside the card's content flow (no longer edge-to-edge).
+ * Three vertical beats in the buyer state:
+ *
+ *   1. Positioning sentence — "Stop buying static fitness content.
+ *      Start participating in a real fitness experience." Slate
+ *      sentence-case copy; the brand's stance against static
+ *      content sales right before the buy moment.
+ *   2. Price reveal — the offer's display number, refined editorial
+ *      size on the card surface (not in a colored block).
+ *   3. Pill button — contained, brand orange, "I'm in →".
+ *
+ * The persistent StickyJoinCTA bottom bar still owns the primary
+ * click moment. This block is the editorial commit beat —
+ * positioning + price reveal + tap target.
  *
  * States:
- *   - Creator (owner/cohost) → preview badge, no action
- *   - Already purchased       → cyan "open your tribe space" button
- *   - Authenticated buyer     → orange Stripe-checkout button
- *   - Anonymous               → orange link to /login w/ intent=buy
- *
- * The price IS the button's visual centerpiece (kept at the same
- * display-weight as the previous static price tag). Underneath:
- * "For the full program" + "I'm in →" — the action affordance.
+ *   - Creator (owner/cohost) → preview badge (no action)
+ *   - Already purchased       → cyan "open your tribe space" pill
+ *   - Authenticated buyer     → orange Stripe-checkout pill
+ *   - Anonymous               → orange /login?intent=buy pill
  */
 function PriceCTA({
   challengeId,
@@ -438,10 +453,10 @@ function PriceCTA({
   if (isCreator) {
     return (
       <div
-        className="px-6 py-7 text-center"
+        className="mx-auto max-w-md text-center px-6 py-5 rounded-2xl"
         style={{
-          backgroundColor: "rgba(255,97,48,0.08)",
-          borderTop: "1px solid rgba(255,97,48,0.12)",
+          backgroundColor: "rgba(255,97,48,0.06)",
+          border: "1px solid rgba(255,97,48,0.18)",
         }}
       >
         <p
@@ -458,103 +473,114 @@ function PriceCTA({
   }
 
   if (hasPurchased) {
-    // Bundle 4.2.23: padding tightened to match the slimmed buy
-    // state for visual consistency across CTA states.
     return (
-      <Link
-        href={spaceId ? `/communities/challenge/${spaceId}` : "/me"}
-        className="block px-6 py-5 lg:py-6 text-center transition-opacity hover:opacity-95 active:opacity-90"
-        style={{ backgroundColor: "#0891b2" }}
-      >
+      <div className="text-center">
         <p
-          className="text-[10px] lg:text-[11px] font-bold font-headline uppercase tracking-[0.25em] mb-1.5"
-          style={{ color: "rgba(255,255,255,0.75)" }}
+          className="text-[11px] lg:text-[12px] font-bold font-headline uppercase tracking-[0.25em] mb-3"
+          style={{ color: "#0891b2" }}
         >
           You&apos;re in
         </p>
-        <p
-          className="font-black font-headline tracking-tight text-white"
+        <Link
+          href={spaceId ? `/communities/challenge/${spaceId}` : "/me"}
+          className="inline-flex items-center justify-center px-7 lg:px-8 py-3.5 lg:py-4 rounded-full text-white text-sm lg:text-base font-black font-headline transition-transform hover:scale-[1.01] active:scale-[0.99]"
           style={{
-            fontSize: "clamp(1.25rem, 4vw, 1.625rem)",
-            letterSpacing: "-0.015em",
-            lineHeight: 1.1,
+            backgroundColor: "#0891b2",
+            letterSpacing: "-0.005em",
+            boxShadow:
+              "0 6px 18px rgba(8,145,178,0.32), 0 2px 6px rgba(8,145,178,0.18)",
           }}
         >
           Open your tribe space  →
-        </p>
-      </Link>
+        </Link>
+      </div>
     );
   }
 
-  // Anonymous or authenticated-not-purchased → orange buy block.
-  // For authenticated buyers, PurchaseButton handles Stripe checkout.
-  // For anonymous, it's a Link to /login with intent=buy.
-  //
-  // Bundle 4.2.23: slimmed to editorial proportions. Was a full-
-  // throated "hero button" with a display-display price + tagline
-  // + "I'm in →" arrow stacked over generous padding — landed as
-  // shouty on mobile. Now: tighter padding, refined display price
-  // (~1.5–2rem instead of ~2.5–3.25rem), compact "I'm in →"
-  // affordance kept inline on the same row as the eyebrow tag.
-  // The persistent StickyJoinCTA bar still carries the main
-  // click moment; this block is the *price reveal*, not the
-  // primary action.
-  const innerContent = (
-    <>
+  // Anonymous or authenticated-not-purchased → buy moment.
+  // Positioning sentence above, price reveal, then pill button.
+  const cta = (
+    <div className="text-center">
+      {/* Positioning sentence — the brand's stance against static
+          fitness content sales, placed right before the buy
+          moment. Slate sentence-case copy, not a label. */}
       <p
-        className="font-black font-headline tracking-tight text-white"
+        className="mx-auto leading-relaxed font-medium"
         style={{
-          fontSize: "clamp(1.625rem, 5vw, 2.125rem)",
-          letterSpacing: "-0.02em",
+          color: "#475569",
+          fontSize: "clamp(0.9375rem, 2.6vw, 1.0625rem)",
+          maxWidth: "28rem",
+        }}
+      >
+        Stop buying static fitness content.
+        <br className="hidden sm:block" />
+        <span className="sm:hidden"> </span>
+        Start participating in a real fitness experience.
+      </p>
+
+      {/* Price reveal — sits on the card surface as a refined
+          display number, no colored block. */}
+      <p
+        className="mt-6 lg:mt-7 font-black font-headline tracking-tight"
+        style={{
+          color: "#0F2229",
+          fontSize: "clamp(2rem, 6vw, 2.75rem)",
+          letterSpacing: "-0.03em",
           lineHeight: 1,
         }}
       >
         {priceLabel}
       </p>
-      <div className="mt-2 flex items-center justify-center gap-3">
-        <p
-          className="text-[10px] lg:text-[11px] font-bold font-headline uppercase tracking-[0.22em]"
-          style={{ color: "rgba(255,255,255,0.78)" }}
-        >
-          For the full program
-        </p>
-        <span
-          aria-hidden
-          className="text-[10px] lg:text-[11px] font-bold font-headline"
-          style={{ color: "rgba(255,255,255,0.40)" }}
-        >
-          ·
-        </span>
-        <p
-          className="text-[12px] lg:text-[13px] font-black font-headline text-white"
-          style={{ letterSpacing: "-0.005em" }}
-        >
-          I&apos;m in  →
-        </p>
-      </div>
-    </>
+      <p
+        className="text-[10px] lg:text-[11px] font-bold font-headline uppercase tracking-[0.25em] mt-2"
+        style={{ color: "#94a3b8" }}
+      >
+        For the full program
+      </p>
+    </div>
+  );
+
+  const buttonLabel = (
+    <span className="inline-flex items-center justify-center gap-2">
+      I&apos;m in <span aria-hidden>→</span>
+    </span>
   );
 
   if (isAuthenticated) {
     return (
-      <PurchaseButton
-        kind="challenge"
-        targetId={challengeId}
-        label=""
-        className="block w-full px-6 py-5 lg:py-6 text-center transition-opacity hover:opacity-95 active:opacity-90 disabled:opacity-70 bg-[#FF6130]"
-      >
-        {innerContent}
-      </PurchaseButton>
+      <>
+        {cta}
+        <div className="mt-6 lg:mt-7 flex justify-center">
+          <PurchaseButton
+            kind="challenge"
+            targetId={challengeId}
+            label=""
+            className="inline-flex items-center justify-center px-8 lg:px-10 py-3.5 lg:py-4 rounded-full text-white text-sm lg:text-base font-black font-headline transition-transform hover:scale-[1.01] active:scale-[0.99] disabled:opacity-70 bg-[#FF6130] shadow-[0_6px_18px_rgba(255,97,48,0.32),0_2px_6px_rgba(255,97,48,0.18)]"
+          >
+            {buttonLabel}
+          </PurchaseButton>
+        </div>
+      </>
     );
   }
 
   return (
-    <Link
-      href={`/login?intent=buy:challenge:${challengeId}&returnTo=/challenges/${challengeId}`}
-      className="block px-6 py-5 lg:py-6 text-center transition-opacity hover:opacity-95 active:opacity-90"
-      style={{ backgroundColor: "#FF6130" }}
-    >
-      {innerContent}
-    </Link>
+    <>
+      {cta}
+      <div className="mt-6 lg:mt-7 flex justify-center">
+        <Link
+          href={`/login?intent=buy:challenge:${challengeId}&returnTo=/challenges/${challengeId}`}
+          className="inline-flex items-center justify-center px-8 lg:px-10 py-3.5 lg:py-4 rounded-full text-white text-sm lg:text-base font-black font-headline transition-transform hover:scale-[1.01] active:scale-[0.99]"
+          style={{
+            backgroundColor: "#FF6130",
+            letterSpacing: "-0.005em",
+            boxShadow:
+              "0 6px 18px rgba(255,97,48,0.32), 0 2px 6px rgba(255,97,48,0.18)",
+          }}
+        >
+          {buttonLabel}
+        </Link>
+      </div>
+    </>
   );
 }
