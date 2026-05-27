@@ -160,20 +160,22 @@ export function SessionsCarousel({ sessions }: Props) {
       `}</style>
 
       {/* Carousel — horizontal scroll, snap-mandatory.
-          Card width is ~82% on mobile so the next card peeks on the
-          right edge (swipe affordance); wider screens show more cards.
-          Bundle 4.2.20: internal padding reduced from px-8 lg:px-12
-          to px-3 lg:px-4 so the breath on the LEFT of the first
-          card equals the gap BETWEEN cards (gap-3 lg:gap-4). Rhythm
-          is even across the row. The carousel still bleeds to the
-          region's outer edges via -mx-6 lg:-mx-10, so the cards'
-          row visibly extends wider than the section header above
-          it (anchored to the region's px-6 lg:px-10 content
-          padding) — the standard "card row bleeds wider than
-          surrounding content" mobile pattern. */}
+          Bundle 4.2.22:
+            - Dropped the -mx-6 lg:-mx-10 bleed. The carousel now
+              sits inside the region's content area, aligned with
+              the section header above it. The 4.2.20 attempt at
+              "bleed wider than content" still read as flush
+              against the hero card's outer edge because the
+              hero card itself sits very close to the screen
+              edge on mobile.
+            - First card sits at (region-content-edge + px-3)
+              ≈ hero-card-content-edge + 12px on mobile, properly
+              inset from the hero card boundary.
+            - pr-3 lg:pr-4 mirrors the left so the last card can
+              scroll fully into view with symmetric breath. */}
       <div
         ref={containerRef}
-        className="flex overflow-x-auto gap-3 lg:gap-4 sessions-carousel -mx-6 lg:-mx-10 px-3 lg:px-4"
+        className="flex overflow-x-auto gap-3 lg:gap-4 sessions-carousel px-3 lg:px-4"
         style={{
           scrollSnapType: "x mandatory",
           WebkitOverflowScrolling: "touch",
@@ -247,7 +249,7 @@ function SessionCard({
       type="button"
       onClick={onOpenDetail}
       aria-label={ariaLabel}
-      className="session-card w-[82%] sm:w-[55%] lg:w-[40%] shrink-0 rounded-2xl overflow-hidden flex flex-col text-left p-0 transition-all duration-200 hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+      className="session-card w-[70%] sm:w-[48%] lg:w-[32%] shrink-0 rounded-2xl overflow-hidden flex flex-col text-left p-0 transition-all duration-200 hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
       style={{
         // Bundle 4.2.19: re-flipped. Region is white now; cards
         // are cream so they read as distinct chips on the hero
