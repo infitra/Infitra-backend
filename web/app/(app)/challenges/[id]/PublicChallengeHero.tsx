@@ -191,9 +191,12 @@ export function PublicChallengeHero({
           }}
         >
           {/* Cover image — edge-to-edge at the top of the card.
-              Bundle 4.2.21: card lost its top padding when the H1
-              moved out; image now starts flush with the card's top
-              rounded corners (clipped by overflow-hidden). */}
+              Bundle 4.2.25: aspect changed 16:9 → 4:5 (portrait).
+              The 16:9 banner shape read as "scroll past me" —
+              landing-page references show the cover as a tall,
+              grounded image that anchors the card. 4:5 matches
+              that shape and gives the cover real weight against
+              the headline above and the content below. */}
           {imageUrl && (
             <div className="-mx-6 lg:-mx-10">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -202,7 +205,7 @@ export function PublicChallengeHero({
                 alt=""
                 style={{
                   width: "100%",
-                  aspectRatio: "16 / 9",
+                  aspectRatio: "4 / 5",
                   objectFit: "cover",
                   display: "block",
                 }}
