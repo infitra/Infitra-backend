@@ -401,9 +401,13 @@ function ExpertPortrait({ creator }: { creator: Creator }) {
       </h2>
       {creator.tagline && creator.tagline.trim() && (
         <p
-          className="mt-1 text-[11px] lg:text-xs font-bold font-headline text-center leading-snug line-clamp-2"
+          className="mt-1 text-[11px] lg:text-xs font-bold font-headline text-center leading-snug line-clamp-3"
           style={{ color: roleColor }}
         >
+          {/* Bundle 4.2.30: line-clamp-2 → line-clamp-3. Two-line
+              clamp was cutting taglines mid-word ("Sustainable
+              Fitness for R…"). Three lines gives proper room for
+              real taglines without unbounded growth. */}
           {creator.tagline}
         </p>
       )}
