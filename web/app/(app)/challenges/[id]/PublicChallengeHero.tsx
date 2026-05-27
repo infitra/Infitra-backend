@@ -149,24 +149,25 @@ export function PublicChallengeHero({
   // communicates the same thing.
 
   return (
-    <section className="px-6 lg:px-12 pt-16 lg:pt-14 pb-0">
+    <section className="px-6 lg:px-12 pt-12 lg:pt-16 pb-0">
       <div className="max-w-2xl mx-auto">
-        <div
-          className="rounded-[28px] lg:rounded-[32px] px-6 lg:px-10 pt-10 lg:pt-12 overflow-hidden"
-          style={{
-            backgroundColor: "#FFFFFF",
-            border: "1px solid rgba(15,34,41,0.06)",
-            boxShadow:
-              "0 1px 3px rgba(15,34,41,0.04), 0 24px 64px rgba(15,34,41,0.06)",
-          }}
-        >
-          {/* H1 — promise. Bundle 4.2.10: rendered in ALL CAPS for
-              editorial campaign-cover treatment (Vogue/Wired-style).
-              Same large display size; tighter letter-spacing tuned for
-              uppercase (uppercase needs slightly more breath than
-              sentence case at this weight). */}
+        {/* PAGE HERO — Bundle 4.2.21.
+            The H1 promise was previously inside the product card,
+            which made the card carry both page-level editorial voice
+            AND product offer in one container — the card swelled
+            because it had to. Pulled out here as a page-level header
+            (eyebrow + H1) sitting above the card. The card below now
+            opens directly with the cover image and reads as a
+            contained product tile. */}
+        <div className="text-center mb-9 lg:mb-12">
+          <p
+            className="text-[11px] lg:text-xs font-bold font-headline uppercase tracking-[0.28em] mb-3 lg:mb-4"
+            style={{ color: "#0891b2" }}
+          >
+            INFITRA Experience
+          </p>
           <h1
-            className="font-black font-headline text-center uppercase"
+            className="font-black font-headline uppercase"
             style={{
               color: "#0F2229",
               fontSize: "clamp(1.75rem, 5.5vw, 2.75rem)",
@@ -176,10 +177,23 @@ export function PublicChallengeHero({
           >
             {headline}
           </h1>
+        </div>
 
-          {/* Cover image — edge-to-edge inside the card. */}
+        <div
+          className="rounded-[28px] lg:rounded-[32px] px-6 lg:px-10 overflow-hidden"
+          style={{
+            backgroundColor: "#FFFFFF",
+            border: "1px solid rgba(15,34,41,0.06)",
+            boxShadow:
+              "0 1px 3px rgba(15,34,41,0.04), 0 24px 64px rgba(15,34,41,0.06)",
+          }}
+        >
+          {/* Cover image — edge-to-edge at the top of the card.
+              Bundle 4.2.21: card lost its top padding when the H1
+              moved out; image now starts flush with the card's top
+              rounded corners (clipped by overflow-hidden). */}
           {imageUrl && (
-            <div className="-mx-6 lg:-mx-10 mt-7 lg:mt-9">
+            <div className="-mx-6 lg:-mx-10">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={imageUrl}
@@ -195,13 +209,10 @@ export function PublicChallengeHero({
           )}
 
           {/* Program name (kicker) + description.
-              Bundle 4.2.9: the kicker is the relocated program name
-              with more weight (was the small eyebrow at the top of
-              card). The description now sits ON TOP of stronger
-              presentation — bigger, darker color, font-medium. Together
-              they read as "this is what this program is, and here's
-              how it works" anchored below the cover image. */}
-          <div className="mt-7 lg:mt-9 text-center">
+              The kicker (program name in orange caps) IS the card's
+              opening voice — it stays inside the card as the
+              product's local context. */}
+          <div className={`${imageUrl ? "mt-7 lg:mt-9" : "mt-10 lg:mt-12"} text-center`}>
             <p
               className="text-sm lg:text-base font-black font-headline uppercase tracking-[0.18em]"
               style={{ color: "#FF6130" }}
