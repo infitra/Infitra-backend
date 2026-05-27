@@ -151,28 +151,30 @@ export function PublicChallengeHero({
   return (
     <section className="px-6 lg:px-12 pt-12 lg:pt-16 pb-0">
       <div className="max-w-2xl mx-auto">
-        {/* PAGE HERO — Bundle 4.2.21.
-            The H1 promise was previously inside the product card,
-            which made the card carry both page-level editorial voice
-            AND product offer in one container — the card swelled
-            because it had to. Pulled out here as a page-level header
-            (eyebrow + H1) sitting above the card. The card below now
-            opens directly with the cover image and reads as a
-            contained product tile. */}
+        {/* PAGE HERO — Bundle 4.2.24 polish.
+            Eyebrow: bumped from 11px cyan to 13px brand orange so
+            it actually registers on mobile (was disappearing as a
+            cyan hairline). Same orange as the kicker inside the
+            card — visually ties the page hero to the product.
+            H1: dropped the `uppercase` treatment. Inside-the-card
+            it worked as "campaign cover" editorial caps; out here
+            as a page-level header, all-caps reads as shouting.
+            Sentence case + slightly tighter letter-spacing
+            (-0.02em, tuned for sentence case at black weight). */}
         <div className="text-center mb-9 lg:mb-12">
           <p
-            className="text-[11px] lg:text-xs font-bold font-headline uppercase tracking-[0.28em] mb-3 lg:mb-4"
-            style={{ color: "#0891b2" }}
+            className="text-[12px] lg:text-[13px] font-bold font-headline uppercase tracking-[0.28em] mb-4 lg:mb-5"
+            style={{ color: "#FF6130" }}
           >
             INFITRA Experience
           </p>
           <h1
-            className="font-black font-headline uppercase"
+            className="font-black font-headline"
             style={{
               color: "#0F2229",
               fontSize: "clamp(1.75rem, 5.5vw, 2.75rem)",
               lineHeight: 1.05,
-              letterSpacing: "-0.01em",
+              letterSpacing: "-0.02em",
             }}
           >
             {headline}
