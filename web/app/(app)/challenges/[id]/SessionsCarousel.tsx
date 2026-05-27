@@ -1,45 +1,45 @@
 "use client";
 
 /**
- * SessionsCarousel — Bundle 4.2.16.
+ * SessionsCarousel — Bundle 4.2.17.
  *
  * Flat horizontal carousel of all sessions in chronological order —
  * landing-page pattern. Each session is a vertical card with image on
- * top (full card width) and content below. The weekly structure is
- * communicated by the "WEEK N · DAY" eyebrow on each card; the
- * program-rhythm spec block above the carousel carries the "5 WEEKS"
- * framing.
+ * top (full card width) and minimal content below. The weekly
+ * structure is communicated by the "WEEK N · DAY" eyebrow on each
+ * card; the program-rhythm spec block above the carousel carries the
+ * "5 WEEKS" framing.
  *
- * Bundle 4.2.16 polish (on top of 4.2.15's drop-inner-container):
- *   - FIX: pagination count was reading children[0] / children[1] of
- *     the scroll container to derive cardWidth, but the scrollbar-hide
- *     <style> tag was children[0], producing a ~24px phantom width and
- *     a runaway count ("19 of 7"). Moved <style> outside the scroll
- *     container so children is purely SessionCards.
- *   - Bumped carousel internal padding (px-6 → px-8 mobile, px-10 →
- *     px-12 lg) so the first card has visible breath from the hero
- *     card's edge instead of sitting flush against it.
- *   - Scaled up card hierarchy now that cards have more horizontal
- *     room: title 16–18 → 20–22px, time line de-capped to 14–15px
- *     sentence-case (no longer competes with WEEK eyebrow), avatar
- *     24 → 36px with a "Led by" mini-label, host/description both
- *     14–15px, card padding p-4/5 → p-5/6, inter-block spacing
- *     opened up.
+ * Bundle 4.2.17 polish — strip-to-landing-page simplicity:
+ *   - Cards reduced from 8 content elements to 5: image, eyebrow
+ *     (WEEK N · DAY DD MON), title, time + duration, host (avatar +
+ *     name). Description, "Led by" label, and "See details →" CTA
+ *     are gone — they all live in SessionDetailModal now.
+ *   - Whole card is the click target (a <button>). Removed the
+ *     separate "See details →" link; hover gives a subtle lift +
+ *     stronger shadow as the affordance.
+ *   - Section header right label: static "M sessions" instead of
+ *     the live "N of M" counter. Less motion noise; the WEEK
+ *     eyebrow on each card already conveys position.
+ *
+ * Bundle 4.2.16 polish (kept):
+ *   - Scrollbar-hide <style> sits OUTSIDE the scroll container so
+ *     container.children is purely SessionCards (was breaking the
+ *     activeIndex math — still used for the sr-only live region).
+ *   - Carousel internal padding px-8 lg:px-12 indents first card
+ *     past the cream region's content edge for visible breath.
  *
  * Bundle 4.2.15 polish (kept):
- *   - Dropped the inner white container that wrapped the section
- *     header + carousel. Header and carousel sit directly inside the
- *     parent cream region — one fewer nested surface.
- *   - Inverted card color from cream (#FAF7F1) to white (#FFFFFF) so
- *     each card pops against the cream region.
+ *   - No inner white container. Section header + carousel sit
+ *     directly on the parent cream region. White cards on cream.
  *
- * Why this carousel and not a weekly one (revert path: see 4.2.13):
- *   - Nested navigation (swipe weeks → scan sessions) was wrong for the
- *     buyer page's conversion job. Buyers don't navigate at decision
- *     time — they need to UNDERSTAND, not explore.
- *   - Vertical cards give each session full card width for title,
- *     metadata, coach attribution, and description. Same shape every
- *     card. Reads instantly.
+ * Revert path:
+ *   - 4.2.17 (this): minimal card + click-to-detail
+ *   - 4.2.16: full-metadata card + "See details" button
+ *   - 4.2.15: drop inner container, invert cards to white
+ *   - 4.2.14: flat carousel introduced (replaced WeeklyJourney)
+ *   - 4.2.13: WeeklyJourneyCarousel (nested weeks navigation)
+ * Each step is one `git revert <sha>` away.
  *
  * Cohort-space (post-purchase) will get its own weekly navigation
  * tuned for participant flow. The buyer page's job is conversion,
@@ -126,7 +126,12 @@ export function SessionsCarousel({ sessions }: Props) {
           session card pop instead of sitting inside a triple-nested
           container. */}
 
-      {/* Section header — eyebrow left, pagination indicator right. */}
+      {/* Section header — eyebrow left, static session-count right.
+          Bundle 4.2.17: replaced the live "N of M" counter with a
+          static "M sessions" label. The ticking counter added motion
+          noise that competed with the calm landing-page reference;
+          the WEEK eyebrow on each card already gives positional
+          context, so the right label can just declare the total. */}
       <div className="flex items-baseline justify-between pb-5 lg:pb-6">
         <p
           className="text-[11px] font-bold font-headline uppercase tracking-[0.22em]"
@@ -138,7 +143,7 @@ export function SessionsCarousel({ sessions }: Props) {
           className="text-[11px] font-bold font-headline uppercase tracking-[0.22em]"
           style={{ color: "#94a3b8" }}
         >
-          {activeIndex + 1} of {sessions.length}
+          {sessions.length} {sessions.length === 1 ? "session" : "sessions"}
         </p>
       </div>
 
@@ -196,18 +201,25 @@ export function SessionsCarousel({ sessions }: Props) {
 }
 
 /**
- * SessionCard — vertical card with image on top, content below.
- * Landing-page pattern. Image takes the full card width with 4:3
- * aspect ratio; content fills the rest with consistent padding.
+ * SessionCard — vertical card with image on top, condensed content
+ * below. Whole card is the click target → opens SessionDetailModal.
+ *
+ * Bundle 4.2.17: stripped to landing-page-level simplicity.
+ *   - Dropped the "LED BY" mini-label (redundant label noise).
+ *   - Dropped the inline description preview (moved entirely to modal).
+ *   - Dropped the "See details →" CTA (whole card is now the affordance).
+ *   - Kept: image, eyebrow (WEEK N · DAY date), title, time + duration,
+ *     avatar + name (role-color-coded).
+ *
+ * Anything stripped from the card still lives in SessionDetailModal —
+ * the card is a glance-and-tap surface; the modal carries depth.
  *
  * Layout (top → bottom inside the card):
  *   - Image (4:3 aspect)
- *   - Eyebrow: WEEK N · DAY (cyan accent)
- *   - Title (font-black)
- *   - Meta: time · duration
- *   - Coach: avatar + name (role-color-coded)
- *   - Description preview (line-clamp-2)
- *   - See details → (bottom, mt-auto)
+ *   - Eyebrow: WEEK N · DAY DD MON (cyan accent)
+ *   - Title (font-black billboard)
+ *   - Time · duration (sentence-case info line)
+ *   - Avatar + name (role-color-coded, no label)
  */
 function SessionCard({
   session,
@@ -220,19 +232,38 @@ function SessionCard({
   const timeLabel = formatSessionTime(session.start_time);
   const durLabel = formatDuration(session.duration_minutes);
 
+  // Whole card is a <button>. Default button chrome (background,
+  // border, font, alignment) is overridden so it renders as a card.
+  // aria-label gives screen readers a single clear announcement
+  // instead of having them read every child element individually.
+  const ariaLabel = `${session.title}, week ${session.weekNumber}, ${dayLabel}. Open details.`;
+
   return (
-    <article
-      className="w-[82%] sm:w-[55%] lg:w-[40%] shrink-0 rounded-2xl overflow-hidden flex flex-col"
+    <button
+      type="button"
+      onClick={onOpenDetail}
+      aria-label={ariaLabel}
+      className="session-card w-[82%] sm:w-[55%] lg:w-[40%] shrink-0 rounded-2xl overflow-hidden flex flex-col text-left p-0 transition-all duration-200 hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
       style={{
         backgroundColor: "#FFFFFF",
         border: "1px solid rgba(15,34,41,0.06)",
         boxShadow:
           "0 1px 2px rgba(15,34,41,0.03), 0 4px 14px rgba(15,34,41,0.05)",
         scrollSnapAlign: "start",
+        font: "inherit",
+        color: "inherit",
+        // @ts-expect-error CSS custom property for focus ring color
+        "--tw-ring-color": "#FF6130",
       }}
     >
+      <style>{`
+        .session-card:hover {
+          box-shadow: 0 2px 4px rgba(15,34,41,0.05), 0 10px 24px rgba(15,34,41,0.10);
+        }
+      `}</style>
+
       {/* Image — top, full card width, 4:3 */}
-      <div className="relative" style={{ aspectRatio: "4 / 3" }}>
+      <div className="relative w-full" style={{ aspectRatio: "4 / 3" }}>
         {session.image_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -260,11 +291,8 @@ function SessionCard({
         )}
       </div>
 
-      {/* Content — Bundle 4.2.16: scaled-up hierarchy.
-          The card was originally sized for a narrower inside-the-
-          white-container context; now that it sits on cream with
-          more horizontal room, every line goes bigger so the card
-          reads as a billboard, not a metadata strip. */}
+      {/* Content — four lines max. The card is a billboard, not a
+          spec sheet. Everything else lives in the modal. */}
       <div className="p-5 lg:p-6 flex-1 flex flex-col">
         <p
           className="text-[10px] lg:text-[11px] font-bold font-headline uppercase tracking-[0.2em]"
@@ -275,8 +303,6 @@ function SessionCard({
           {dayLabel}
         </p>
 
-        {/* Title — the card's billboard. Clamp 1.25–1.375rem so it
-            scales smoothly on the in-between widths. */}
         <h4
           className="font-black font-headline tracking-tight mt-2.5"
           style={{
@@ -289,10 +315,6 @@ function SessionCard({
           {session.title}
         </h4>
 
-        {/* Time + duration — demoted from tiny-uppercase-tracked
-            (which competed with the WEEK eyebrow) to a calmer
-            sentence-case font-bold info line. Reads as data, not
-            a second label. */}
         <p
           className="text-[14px] lg:text-[15px] font-bold font-headline mt-2.5"
           style={{ color: "#475569", letterSpacing: "-0.005em" }}
@@ -303,56 +325,24 @@ function SessionCard({
           {durLabel}
         </p>
 
-        {/* Coach attribution — bigger avatar (was 24px, now 36px)
-            with a "Led by" mini-label so the role of the person is
-            unambiguous, and the name itself reads at proper body
-            weight rather than as a tiny tag. */}
+        {/* Host — avatar + name, no "LED BY" label. Role color
+            (orange = owner, cyan = cohost) IS the signifier. */}
         {session.host && (
-          <div className="flex items-center gap-3 mt-5">
+          <div className="flex items-center gap-3 mt-auto pt-5">
             <HostAvatar host={session.host} />
-            <div className="min-w-0">
-              <p
-                className="text-[10px] font-bold font-headline uppercase tracking-[0.2em]"
-                style={{ color: "#94a3b8" }}
-              >
-                Led by
-              </p>
-              <p
-                className="text-[14px] lg:text-[15px] font-black font-headline mt-0.5 truncate"
-                style={{
-                  color:
-                    session.host.role === "owner" ? "#FF6130" : "#0891b2",
-                }}
-              >
-                {session.host.display_name ?? "Expert"}
-              </p>
-            </div>
+            <span
+              className="text-[14px] lg:text-[15px] font-black font-headline truncate"
+              style={{
+                color:
+                  session.host.role === "owner" ? "#FF6130" : "#0891b2",
+              }}
+            >
+              {session.host.display_name ?? "Expert"}
+            </span>
           </div>
         )}
-
-        {/* Description preview — bumped to 14-15px with relaxed
-            leading for actual readability. line-clamp-2 still
-            caps it at two lines. */}
-        {session.description && session.description.trim() && (
-          <p
-            className="text-[14px] lg:text-[15px] mt-5 leading-relaxed line-clamp-2"
-            style={{ color: "#64748b" }}
-          >
-            {session.description}
-          </p>
-        )}
-
-        {/* See details — pushed to bottom of card */}
-        <button
-          type="button"
-          onClick={onOpenDetail}
-          className="mt-auto pt-5 text-left text-[13px] lg:text-[14px] font-bold font-headline transition-opacity hover:opacity-70 active:opacity-50 self-start"
-          style={{ color: "#FF6130" }}
-        >
-          See details →
-        </button>
       </div>
-    </article>
+    </button>
   );
 }
 
