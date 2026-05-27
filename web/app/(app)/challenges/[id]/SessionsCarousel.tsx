@@ -300,9 +300,14 @@ function SessionCard({
         )}
       </div>
 
-      {/* Content — four lines max. The card is a billboard, not a
-          spec sheet. Everything else lives in the modal. */}
-      <div className="p-5 lg:p-6 flex-1 flex flex-col">
+      {/* Content — Bundle 4.2.26: content area tightened so the
+          image dominates the card again. Was p-5 lg:p-6 + mt-2.5
+          between elements + pt-5 on host (≈ 50/50 image-to-
+          content split). Now p-4 lg:p-5 + mt-2 + pt-4 (≈ 1.5:1
+          image-to-content). Same content kept — just less air
+          inside it. The card reads as "tap me, look at this"
+          rather than "read me." */}
+      <div className="p-4 lg:p-5 flex-1 flex flex-col">
         <p
           className="text-[10px] lg:text-[11px] font-bold font-headline uppercase tracking-[0.2em]"
           style={{ color: "#0891b2" }}
@@ -313,7 +318,7 @@ function SessionCard({
         </p>
 
         <h4
-          className="font-black font-headline tracking-tight mt-2.5"
+          className="font-black font-headline tracking-tight mt-2"
           style={{
             color: "#0F2229",
             fontSize: "clamp(1.25rem, 4.2vw, 1.375rem)",
@@ -325,7 +330,7 @@ function SessionCard({
         </h4>
 
         <p
-          className="text-[14px] lg:text-[15px] font-bold font-headline mt-2.5"
+          className="text-[14px] lg:text-[15px] font-bold font-headline mt-2"
           style={{ color: "#475569", letterSpacing: "-0.005em" }}
           suppressHydrationWarning
         >
@@ -337,7 +342,7 @@ function SessionCard({
         {/* Host — avatar + name, no "LED BY" label. Role color
             (orange = owner, cyan = cohost) IS the signifier. */}
         {session.host && (
-          <div className="flex items-center gap-3 mt-auto pt-5">
+          <div className="flex items-center gap-3 mt-auto pt-4">
             <HostAvatar host={session.host} />
             <span
               className="text-[14px] lg:text-[15px] font-black font-headline truncate"
