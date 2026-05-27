@@ -245,7 +245,10 @@ function SessionCard({
       aria-label={ariaLabel}
       className="session-card w-[82%] sm:w-[55%] lg:w-[40%] shrink-0 rounded-2xl overflow-hidden flex flex-col text-left p-0 transition-all duration-200 hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
       style={{
-        backgroundColor: "#FFFFFF",
+        // Bundle 4.2.19: re-flipped. Region is white now; cards
+        // are cream so they read as distinct chips on the hero
+        // card surface.
+        backgroundColor: "#FAF7F1",
         border: "1px solid rgba(15,34,41,0.06)",
         boxShadow:
           "0 1px 2px rgba(15,34,41,0.03), 0 4px 14px rgba(15,34,41,0.05)",

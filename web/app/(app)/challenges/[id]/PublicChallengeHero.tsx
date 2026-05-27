@@ -278,21 +278,21 @@ export function PublicChallengeHero({
           {/* Bundle 4.2.9: the cream-tinted region (below) replaces
               the divider here. The color change IS the section break. */}
 
-          {/* SESSIONS region — Bundle 4.2.15.
-              Cream-tinted edge-to-edge inset inside the hero card,
-              containing a flat horizontal carousel of all sessions
-              (vertical white cards, landing-page style). 4.2.15
-              dropped the inner white container wrapper that used to
-              sit between the cream region and the carousel — section
-              header and carousel now live directly on the cream, and
-              the session cards are white-on-cream (inverted from
-              4.2.14) so they pop instead of competing with a nested
-              white surface. The 5-week structure is conveyed by the
-              eyebrow on each card ("WEEK N · DAY") plus the Program
-              Rhythm spec block above the cream region. */}
+          {/* SESSIONS region — Bundle 4.2.19.
+              Edge-to-edge inset inside the hero card, containing a
+              flat horizontal carousel of all sessions. 4.2.19 flips
+              the contrast direction once more: the region itself
+              goes back to white (blending into the hero card), and
+              the session cards become cream. The result: sessions
+              feel like part of the hero card surface, with cream
+              cards as the only distinct chips.
+              Color history on this region:
+                4.2.14 cream region, cream cards in white container
+                4.2.15 cream region, white cards (drop container)
+                4.2.19 white region, cream cards (this) */}
           <div
             className="-mx-6 lg:-mx-10 mt-7 lg:mt-9 px-6 lg:px-10 py-9 lg:py-11"
-            style={{ backgroundColor: "#FAF7F1" }}
+            style={{ backgroundColor: "#FFFFFF" }}
           >
             <SessionsCarousel sessions={sessions} />
           </div>
