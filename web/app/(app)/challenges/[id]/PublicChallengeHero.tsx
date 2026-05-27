@@ -191,24 +191,20 @@ export function PublicChallengeHero({
           }}
         >
           {/* Cover image — edge-to-edge at the top of the card.
-              Bundle 4.2.25: aspect changed 16:9 → 4:5 (portrait).
-              The 16:9 banner shape read as "scroll past me" —
-              landing-page references show the cover as a tall,
-              grounded image that anchors the card. 4:5 matches
-              that shape and gives the cover real weight against
-              the headline above and the content below. */}
+              Bundle 4.2.28: responsive aspect ratio matching the
+              landing reference — 4:5 (portrait) on mobile so the
+              cover dominates and anchors, 3:2 (landscape) on lg+
+              so the image stays substantial without consuming the
+              full viewport when the card is wider. 4:5 alone at
+              max-w-2xl on desktop produced an 840px-tall image
+              that filled the screen. */}
           {imageUrl && (
             <div className="-mx-6 lg:-mx-10">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={imageUrl}
                 alt=""
-                style={{
-                  width: "100%",
-                  aspectRatio: "4 / 5",
-                  objectFit: "cover",
-                  display: "block",
-                }}
+                className="w-full block aspect-[4/5] lg:aspect-[3/2] object-cover"
               />
             </div>
           )}
