@@ -196,23 +196,22 @@ export function PublicChallengeHero({
           }}
         >
           {/* Cover image — edge-to-edge at the top of the card.
-              Bundle 4.2.28: responsive aspect ratio matching the
-              landing reference — 4:5 (portrait) on mobile so the
-              cover dominates and anchors, 3:2 (landscape) on lg+
-              so the image stays substantial without consuming the
-              full viewport when the card is wider.
-              Bundle 4.2.32: added a "LIVE · N WEEKS" pill overlay
-              in the top-left corner of the image, matching the
-              landing reference. Labels the cover as a live program
-              and signals duration at a glance — a small but strong
-              editorial cue that this isn't a static product. */}
+              Bundle 4.2.33: mobile aspect 4:5 → 5:4. The 4:5
+              portrait made the image dominate the fold on mobile
+              (~60% of viewport height); landing reference is
+              gently landscape (~5:4, slightly wider than tall),
+              so the image sits as a campaign portrait without
+              swallowing the page. Desktop stays at 3:2 (4.2.28).
+              Bundle 4.2.32: "LIVE · N WEEKS" pill overlay in the
+              top-left corner — labels the cover as a live program
+              and signals duration at a glance. */}
           {imageUrl && (
             <div className="-mx-6 lg:-mx-10 relative">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={imageUrl}
                 alt=""
-                className="w-full block aspect-[4/5] lg:aspect-[3/2] object-cover"
+                className="w-full block aspect-[5/4] lg:aspect-[3/2] object-cover"
               />
               <div
                 className="absolute top-4 left-4 lg:top-5 lg:left-5 inline-flex items-center gap-2 px-3 py-1.5 rounded-full"
