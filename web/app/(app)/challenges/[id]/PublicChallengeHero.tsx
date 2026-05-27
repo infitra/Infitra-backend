@@ -453,14 +453,16 @@ function PriceCTA({
   }
 
   if (hasPurchased) {
+    // Bundle 4.2.23: padding tightened to match the slimmed buy
+    // state for visual consistency across CTA states.
     return (
       <Link
         href={spaceId ? `/communities/challenge/${spaceId}` : "/me"}
-        className="block px-6 py-8 lg:py-10 text-center transition-opacity hover:opacity-95 active:opacity-90"
+        className="block px-6 py-5 lg:py-6 text-center transition-opacity hover:opacity-95 active:opacity-90"
         style={{ backgroundColor: "#0891b2" }}
       >
         <p
-          className="text-[11px] font-bold font-headline uppercase tracking-[0.25em] mb-2"
+          className="text-[10px] lg:text-[11px] font-bold font-headline uppercase tracking-[0.25em] mb-1.5"
           style={{ color: "rgba(255,255,255,0.75)" }}
         >
           You&apos;re in
@@ -468,8 +470,8 @@ function PriceCTA({
         <p
           className="font-black font-headline tracking-tight text-white"
           style={{
-            fontSize: "clamp(1.5rem, 5vw, 2rem)",
-            letterSpacing: "-0.02em",
+            fontSize: "clamp(1.25rem, 4vw, 1.625rem)",
+            letterSpacing: "-0.015em",
             lineHeight: 1.1,
           }}
         >
@@ -482,30 +484,49 @@ function PriceCTA({
   // Anonymous or authenticated-not-purchased → orange buy block.
   // For authenticated buyers, PurchaseButton handles Stripe checkout.
   // For anonymous, it's a Link to /login with intent=buy.
+  //
+  // Bundle 4.2.23: slimmed to editorial proportions. Was a full-
+  // throated "hero button" with a display-display price + tagline
+  // + "I'm in →" arrow stacked over generous padding — landed as
+  // shouty on mobile. Now: tighter padding, refined display price
+  // (~1.5–2rem instead of ~2.5–3.25rem), compact "I'm in →"
+  // affordance kept inline on the same row as the eyebrow tag.
+  // The persistent StickyJoinCTA bar still carries the main
+  // click moment; this block is the *price reveal*, not the
+  // primary action.
   const innerContent = (
     <>
       <p
         className="font-black font-headline tracking-tight text-white"
         style={{
-          fontSize: "clamp(2.5rem, 8vw, 3.25rem)",
-          letterSpacing: "-0.03em",
+          fontSize: "clamp(1.625rem, 5vw, 2.125rem)",
+          letterSpacing: "-0.02em",
           lineHeight: 1,
         }}
       >
         {priceLabel}
       </p>
-      <p
-        className="text-[11px] font-bold font-headline uppercase tracking-[0.22em] mt-2"
-        style={{ color: "rgba(255,255,255,0.78)" }}
-      >
-        For the full program
-      </p>
-      <p
-        className="text-base lg:text-lg font-black font-headline tracking-tight text-white mt-5"
-        style={{ letterSpacing: "-0.01em" }}
-      >
-        I&apos;m in  →
-      </p>
+      <div className="mt-2 flex items-center justify-center gap-3">
+        <p
+          className="text-[10px] lg:text-[11px] font-bold font-headline uppercase tracking-[0.22em]"
+          style={{ color: "rgba(255,255,255,0.78)" }}
+        >
+          For the full program
+        </p>
+        <span
+          aria-hidden
+          className="text-[10px] lg:text-[11px] font-bold font-headline"
+          style={{ color: "rgba(255,255,255,0.40)" }}
+        >
+          ·
+        </span>
+        <p
+          className="text-[12px] lg:text-[13px] font-black font-headline text-white"
+          style={{ letterSpacing: "-0.005em" }}
+        >
+          I&apos;m in  →
+        </p>
+      </div>
     </>
   );
 
@@ -515,7 +536,7 @@ function PriceCTA({
         kind="challenge"
         targetId={challengeId}
         label=""
-        className="block w-full px-6 py-8 lg:py-10 text-center transition-opacity hover:opacity-95 active:opacity-90 disabled:opacity-70 bg-[#FF6130]"
+        className="block w-full px-6 py-5 lg:py-6 text-center transition-opacity hover:opacity-95 active:opacity-90 disabled:opacity-70 bg-[#FF6130]"
       >
         {innerContent}
       </PurchaseButton>
@@ -525,7 +546,7 @@ function PriceCTA({
   return (
     <Link
       href={`/login?intent=buy:challenge:${challengeId}&returnTo=/challenges/${challengeId}`}
-      className="block px-6 py-8 lg:py-10 text-center transition-opacity hover:opacity-95 active:opacity-90"
+      className="block px-6 py-5 lg:py-6 text-center transition-opacity hover:opacity-95 active:opacity-90"
       style={{ backgroundColor: "#FF6130" }}
     >
       {innerContent}
