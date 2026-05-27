@@ -32,6 +32,7 @@
 import Link from "next/link";
 import { PurchaseButton } from "@/app/components/PurchaseButton";
 import { SessionsCarousel, type CarouselSession } from "./SessionsCarousel";
+import { ExpandableDescription } from "./ExpandableDescription";
 
 interface Creator {
   id: string;
@@ -225,16 +226,12 @@ export function PublicChallengeHero({
               {title}
             </p>
             {description && description.trim() && (
-              <p
-                className="mt-3 mx-auto leading-relaxed font-medium"
-                style={{
-                  color: "#1e293b",
-                  fontSize: "1.0625rem",
-                  maxWidth: "32rem",
-                }}
-              >
-                {description}
-              </p>
+              // Bundle 4.2.31: long descriptions ballooned the card
+              // (real Alex+Mira draft wrapped to ~11 lines on mobile).
+              // ExpandableDescription collapses to 3 lines + "Read
+              // more" when the text exceeds ~220 chars; short
+              // descriptions render inline as before.
+              <ExpandableDescription description={description} />
             )}
           </div>
 
