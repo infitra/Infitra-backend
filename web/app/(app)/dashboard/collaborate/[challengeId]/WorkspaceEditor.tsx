@@ -203,6 +203,18 @@ export function WorkspaceEditor({
     const [d = "", t = ""] = iso.split("T");
     return { date: d, time: t };
   }
+  // Bundle 4.2.34: convert "YYYY-MM-DDTHH:MM" (the value shape that
+  // datetime-local inputs use, with no timezone offset) into a proper
+  // UTC ISO string by interpreting it in the *browser's* local timezone
+  // first. Without this, sending the raw string to a postgres timestamp
+  // column means the wall-clock value is stored as UTC, which is wrong
+  // for any user not in UTC (e.g., editing from Cambodia stored 19:00
+  // as "19:00 UTC" instead of "19:00 Asia/Phnom_Penh" = "12:00 UTC").
+  // Both handleAddSession and handleSaveSession call this so they can't
+  // drift apart again.
+  function localInputToUTCISO(localInput: string): string {
+    return new Date(localInput).toISOString();
+  }
   function setDatePart(setter: (next: string) => void, currentIso: string, newDate: string) {
     const { time } = splitIso(currentIso);
     if (!newDate) { setter(""); return; }
@@ -574,7 +586,9 @@ export function WorkspaceEditor({
     const result = await updateChallengeSession(
       sessionId,
       editFields.title.trim(),
-      new Date(editFields.startTime).toISOString(),
+      // Bundle 4.2.34: same helper as handleAddSession so both paths
+      // can't drift on timezone handling again.
+      localInputToUTCISO(editFields.startTime),
       parseInt(editFields.duration),
       editFields.description.trim() || null,
       editFields.imageUrl,
@@ -615,8 +629,17 @@ export function WorkspaceEditor({
     }
     setAddingSession(true);
     setError(null);
+    // Bundle 4.2.34: convert local-time datetime-input string to UTC ISO
+    // before sending to the server. sessDate is "YYYY-MM-DDTHH:MM" with
+    // no timezone — sending it raw meant Postgres treated it as UTC,
+    // which is wrong for any user not in UTC. handleSaveSession already
+    // did this conversion via new Date(...).toISOString(); handleAddSession
+    // didn't, so newly-created sessions were stored 7h off (when
+    // creating from Cambodia) while edited sessions were fine. Both
+    // paths now use localInputToUTCISO() so they can't drift again.
+    const startTimeUTC = localInputToUTCISO(sessDate);
     const result = await createChallengeSession(
-      challenge.id, sessTitle.trim(), sessDate, parseInt(sessDuration), sessImageUrl,
+      challenge.id, sessTitle.trim(), startTimeUTC, parseInt(sessDuration), sessImageUrl,
       sessDescription.trim() || null,
     );
     if (result?.error) { setError(result.error); setAddingSession(false); return; }
