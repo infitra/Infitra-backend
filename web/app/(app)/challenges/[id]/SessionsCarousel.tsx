@@ -162,14 +162,18 @@ export function SessionsCarousel({ sessions }: Props) {
       {/* Carousel — horizontal scroll, snap-mandatory.
           Card width is ~82% on mobile so the next card peeks on the
           right edge (swipe affordance); wider screens show more cards.
-          Negative-margin bleeds the scroll track out to the cream
-          region's outer edges; the slightly-deeper internal padding
-          (px-8 vs cream's px-6) indents the first card a few px past
-          the section header so it has visible breath from the hero
-          card's edge. */}
+          Bundle 4.2.20: internal padding reduced from px-8 lg:px-12
+          to px-3 lg:px-4 so the breath on the LEFT of the first
+          card equals the gap BETWEEN cards (gap-3 lg:gap-4). Rhythm
+          is even across the row. The carousel still bleeds to the
+          region's outer edges via -mx-6 lg:-mx-10, so the cards'
+          row visibly extends wider than the section header above
+          it (anchored to the region's px-6 lg:px-10 content
+          padding) — the standard "card row bleeds wider than
+          surrounding content" mobile pattern. */}
       <div
         ref={containerRef}
-        className="flex overflow-x-auto gap-3 lg:gap-4 sessions-carousel -mx-6 lg:-mx-10 px-8 lg:px-12"
+        className="flex overflow-x-auto gap-3 lg:gap-4 sessions-carousel -mx-6 lg:-mx-10 px-3 lg:px-4"
         style={{
           scrollSnapType: "x mandatory",
           WebkitOverflowScrolling: "touch",
