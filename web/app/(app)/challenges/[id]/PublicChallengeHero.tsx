@@ -149,7 +149,11 @@ export function PublicChallengeHero({
   // communicates the same thing.
 
   return (
-    <section className="px-6 lg:px-12 pt-12 lg:pt-16 pb-0">
+    // Bundle 4.2.29: pt bumped from pt-12 lg:pt-16 to pt-20 lg:pt-24
+    // so the "INFITRA Experience" eyebrow clears the (app) layout's
+    // sticky nav (which sits ~80px tall on mobile). Previously the
+    // eyebrow rendered behind the nav at scroll position 0.
+    <section className="px-6 lg:px-12 pt-20 lg:pt-24 pb-0">
       <div className="max-w-2xl mx-auto">
         {/* PAGE HERO — Bundle 4.2.24 polish.
             Eyebrow: bumped from 11px cyan to 13px brand orange so
