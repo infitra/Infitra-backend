@@ -200,17 +200,44 @@ export function PublicChallengeHero({
               landing reference — 4:5 (portrait) on mobile so the
               cover dominates and anchors, 3:2 (landscape) on lg+
               so the image stays substantial without consuming the
-              full viewport when the card is wider. 4:5 alone at
-              max-w-2xl on desktop produced an 840px-tall image
-              that filled the screen. */}
+              full viewport when the card is wider.
+              Bundle 4.2.32: added a "LIVE · N WEEKS" pill overlay
+              in the top-left corner of the image, matching the
+              landing reference. Labels the cover as a live program
+              and signals duration at a glance — a small but strong
+              editorial cue that this isn't a static product. */}
           {imageUrl && (
-            <div className="-mx-6 lg:-mx-10">
+            <div className="-mx-6 lg:-mx-10 relative">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={imageUrl}
                 alt=""
                 className="w-full block aspect-[4/5] lg:aspect-[3/2] object-cover"
               />
+              <div
+                className="absolute top-4 left-4 lg:top-5 lg:left-5 inline-flex items-center gap-2 px-3 py-1.5 rounded-full"
+                style={{
+                  backgroundColor: "rgba(15,34,41,0.85)",
+                  backdropFilter: "blur(8px)",
+                  WebkitBackdropFilter: "blur(8px)",
+                  boxShadow: "0 2px 10px rgba(15,34,41,0.20)",
+                }}
+              >
+                <span
+                  aria-hidden
+                  className="inline-block w-1.5 h-1.5 rounded-full"
+                  style={{
+                    backgroundColor: "#9CF0FF",
+                    boxShadow: "0 0 6px rgba(156,240,255,0.80)",
+                  }}
+                />
+                <span
+                  className="text-[10px] lg:text-[11px] font-bold font-headline uppercase tracking-[0.18em]"
+                  style={{ color: "#9CF0FF" }}
+                >
+                  Live <span style={{ color: "rgba(156,240,255,0.45)" }}>·</span> {totalWeeks} {totalWeeks === 1 ? "Week" : "Weeks"}
+                </span>
+              </div>
             </div>
           )}
 
