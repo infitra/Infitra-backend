@@ -1173,6 +1173,7 @@ export function WorkspaceEditor({
                   className="w-full rounded-xl p-3 text-sm focus:outline-none"
                   style={{ border: "1px solid rgba(15,34,41,0.10)", color: "#0F2229" }}
                 />
+                <p className="text-[10px] mt-1.5" style={{ color: "#cbd5e1" }}>(Asia/Phnom_Penh)</p>
               </div>
               <div>
                 <label className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-2">Duration (min)</label>
@@ -1487,6 +1488,7 @@ export function WorkspaceEditor({
                 className="w-full rounded-xl p-3 text-sm focus:outline-none"
                 style={{ border: "1px solid rgba(15,34,41,0.10)", color: "#0F2229" }}
               />
+              <p className="text-[10px] mt-1.5" style={{ color: "#cbd5e1" }}>(Asia/Phnom_Penh)</p>
             </div>
             <div>
               <label className="text-xs font-bold font-headline text-[#94a3b8] uppercase tracking-wider block mb-2">Duration (min)</label>

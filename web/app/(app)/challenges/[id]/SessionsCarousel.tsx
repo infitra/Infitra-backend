@@ -46,7 +46,7 @@
  * which is a different surface.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 
 interface HostLite {
   id: string;
@@ -348,19 +348,10 @@ function SessionCard({
         {people.length > 0 && (
           <div className="flex items-center gap-3 mt-auto pt-4">
             <TeamFacepile people={people} />
-            <span
+            <PeopleNames
+              people={people}
               className="text-[14px] lg:text-[15px] font-black font-headline truncate"
-              style={{
-                color:
-                  people.length === 1
-                    ? people[0].role === "owner"
-                      ? "#FF6130"
-                      : "#0891b2"
-                    : "#0F2229",
-              }}
-            >
-              {peopleNames(people)}
-            </span>
+            />
           </div>
         )}
       </div>
@@ -428,11 +419,35 @@ function sessionPeople(session: CarouselSession): HostLite[] {
   return out;
 }
 
-function peopleNames(people: HostLite[]): string {
-  const names = people.map((p) => p.display_name ?? "Expert");
-  if (names.length <= 1) return names[0] ?? "Expert";
-  if (names.length === 2) return `${names[0]} & ${names[1]}`;
-  return `${names.slice(0, -1).join(", ")} & ${names[names.length - 1]}`;
+// Names rendered inline, each tinted by its own role (owner = orange,
+// cohost = cyan) so a co-led session matches the solo-session coloring
+// rather than collapsing both names into one neutral color. Separator
+// is neutral grey: "Alex, Mira & Sam".
+function PeopleNames({
+  people,
+  className,
+}: {
+  people: HostLite[];
+  className?: string;
+}) {
+  return (
+    <span className={className}>
+      {people.map((p, i) => (
+        <Fragment key={p.id}>
+          {i > 0 && (
+            <span style={{ color: "#94a3b8" }}>
+              {i === people.length - 1 ? " & " : ", "}
+            </span>
+          )}
+          <span
+            style={{ color: p.role === "owner" ? "#FF6130" : "#0891b2" }}
+          >
+            {p.display_name ?? "Expert"}
+          </span>
+        </Fragment>
+      ))}
+    </span>
+  );
 }
 
 /**
@@ -582,19 +597,10 @@ function SessionDetailModal({
                 >
                   {modalPeople.length > 1 ? "Co-led by" : "Led by"}
                 </p>
-                <p
-                  className="text-sm font-black font-headline mt-0.5"
-                  style={{
-                    color:
-                      modalPeople.length === 1
-                        ? modalPeople[0].role === "owner"
-                          ? "#FF6130"
-                          : "#0891b2"
-                        : "#0F2229",
-                  }}
-                >
-                  {peopleNames(modalPeople)}
-                </p>
+                <PeopleNames
+                  people={modalPeople}
+                  className="text-sm font-black font-headline mt-0.5 block"
+                />
               </div>
             </div>
           )}
