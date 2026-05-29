@@ -29,6 +29,17 @@ import { PurchaseButton } from "@/app/components/PurchaseButton";
 import { WeeklyJourneyCarousel } from "./WeeklyJourneyCarousel";
 import { ExpandableDescription } from "./ExpandableDescription";
 
+// Bundle 4.2.37: enriched shape — each session now carries its
+// host + cohosts (mirroring the flat carousel's CarouselSession
+// since 4.2.35). The weekly page assembles this in /weekly/page.tsx
+// via loadSessionCohosts the same way the main page does.
+interface HostLite {
+  id: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  role: "owner" | "cohost";
+}
+
 interface WeekData {
   weekNumber: number;
   weekRange: string;
@@ -40,7 +51,8 @@ interface WeekData {
     image_url: string | null;
     start_time: string;
     duration_minutes: number;
-    host_id?: string | null;
+    host: HostLite | null;
+    cohosts: HostLite[];
   }>;
 }
 

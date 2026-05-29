@@ -36,7 +36,19 @@
  * umbrella rail; W-track INSIDE the white inner card.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
+
+// Bundle 4.2.37: mirror of the cohost-aware shape used by the flat
+// SessionsCarousel (added there in 4.2.35) so the A/B comparison
+// between flat and weekly stays apples-to-apples — both variants
+// surface co-led sessions, both pin formatting to Asia/Phnom_Penh.
+
+interface HostLite {
+  id: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  role: "owner" | "cohost";
+}
 
 interface SessionLite {
   id: string;
@@ -45,6 +57,8 @@ interface SessionLite {
   image_url: string | null;
   start_time: string;
   duration_minutes: number;
+  host: HostLite | null;
+  cohosts: HostLite[];
 }
 
 interface WeekData {
@@ -355,6 +369,23 @@ function SessionFeature({
             {session.description}
           </p>
         )}
+        {/* Bundle 4.2.37: team facepile + names. Mirrors the flat
+            carousel so co-led sessions read as co-led at a glance
+            (small overlapping avatars + "Alex & Mira" with the
+            role-tinted name colors). */}
+        {(() => {
+          const people = sessionPeople(session);
+          if (people.length === 0) return null;
+          return (
+            <div className="flex items-center gap-2 mt-2.5">
+              <TeamFacepile people={people} size="sm" />
+              <PeopleNames
+                people={people}
+                className="text-[12px] lg:text-[13px] font-black font-headline truncate"
+              />
+            </div>
+          );
+        })()}
         <button
           type="button"
           onClick={onOpenDetail}
@@ -484,6 +515,32 @@ function SessionDetailModal({
             <span style={{ color: "#cbd5e1" }}> · </span>
             {formatDuration(session.duration_minutes)}
           </p>
+
+          {/* Bundle 4.2.37: team block. "Led by" / "Co-led by" label
+              over the facepile + role-tinted names. Same pattern as
+              the flat carousel's modal. */}
+          {(() => {
+            const people = sessionPeople(session);
+            if (people.length === 0) return null;
+            return (
+              <div className="flex items-center gap-3 mt-5">
+                <TeamFacepile people={people} size="md" />
+                <div>
+                  <p
+                    className="text-[10px] font-bold font-headline uppercase tracking-[0.2em]"
+                    style={{ color: "#94a3b8" }}
+                  >
+                    {people.length > 1 ? "Co-led by" : "Led by"}
+                  </p>
+                  <PeopleNames
+                    people={people}
+                    className="text-sm font-black font-headline mt-0.5 block"
+                  />
+                </div>
+              </div>
+            );
+          })()}
+
           {session.description && session.description.trim() && (
             <p
               className="text-[15px] mt-5 leading-relaxed whitespace-pre-wrap"
@@ -571,11 +628,148 @@ function JourneyTrack({
   );
 }
 
+/* ── Team helpers (mirror of SessionsCarousel, Bundle 4.2.37) ──── */
+
+/**
+ * The session team in display order: host first, then any session
+ * cohosts. De-duped by id so a person listed in both slots only
+ * appears once. Same shape and behavior as SessionsCarousel.sessionPeople.
+ */
+function sessionPeople(session: SessionLite): HostLite[] {
+  const out: HostLite[] = [];
+  const seen = new Set<string>();
+  if (session.host) {
+    out.push(session.host);
+    seen.add(session.host.id);
+  }
+  for (const c of session.cohosts) {
+    if (seen.has(c.id)) continue;
+    seen.add(c.id);
+    out.push(c);
+  }
+  return out;
+}
+
+/**
+ * Names rendered inline, each tinted by its own role (owner = orange,
+ * cohost = cyan) so a co-led session matches solo-session coloring
+ * instead of collapsing both names into one neutral color. Separator
+ * is neutral grey: "Alex, Mira & Sam".
+ */
+function PeopleNames({
+  people,
+  className,
+}: {
+  people: HostLite[];
+  className?: string;
+}) {
+  return (
+    <span className={className}>
+      {people.map((p, i) => (
+        <Fragment key={p.id}>
+          {i > 0 && (
+            <span style={{ color: "#94a3b8" }}>
+              {i === people.length - 1 ? " & " : ", "}
+            </span>
+          )}
+          <span
+            style={{ color: p.role === "owner" ? "#FF6130" : "#0891b2" }}
+          >
+            {p.display_name ?? "Expert"}
+          </span>
+        </Fragment>
+      ))}
+    </span>
+  );
+}
+
+/**
+ * Single avatar or overlapping avatars for a co-led session.
+ * `size`: "sm" = 24px (card chrome — the weekly card is compact;
+ * the larger 36px of the flat-card facepile would dominate the
+ * narrow content column); "md" = 32px (modal — bigger surface,
+ * more room to breathe).
+ */
+function TeamFacepile({
+  people,
+  size,
+}: {
+  people: HostLite[];
+  size: "sm" | "md";
+}) {
+  if (people.length === 1) return <Avatar host={people[0]} size={size} />;
+  return (
+    <div className="flex shrink-0">
+      {people.map((p, i) => (
+        <div
+          key={p.id}
+          style={{
+            marginLeft: i === 0 ? 0 : size === "sm" ? "-7px" : "-9px",
+            zIndex: people.length - i,
+          }}
+        >
+          <Avatar host={p} size={size} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function Avatar({ host, size }: { host: HostLite; size: "sm" | "md" }) {
+  const dim = size === "sm" ? "w-6 h-6" : "w-8 h-8";
+  const fontSize = size === "sm" ? "text-[10px]" : "text-[12px]";
+  if (host.avatar_url) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={host.avatar_url}
+        alt={host.display_name ?? "Expert"}
+        className={`${dim} rounded-full object-cover shrink-0`}
+        style={{
+          border: "1.5px solid #FFFFFF",
+          boxShadow: "0 1px 3px rgba(15,34,41,0.12)",
+        }}
+      />
+    );
+  }
+  const isOwner = host.role === "owner";
+  return (
+    <div
+      className={`${dim} rounded-full flex items-center justify-center shrink-0`}
+      style={{
+        backgroundColor: isOwner
+          ? "rgba(255,97,48,0.15)"
+          : "rgba(8,145,178,0.15)",
+        border: "1.5px solid #FFFFFF",
+        boxShadow: "0 1px 3px rgba(15,34,41,0.08)",
+      }}
+    >
+      <span
+        className={`${fontSize} font-black font-headline`}
+        style={{ color: isOwner ? "#FF6130" : "#0891b2" }}
+      >
+        {(host.display_name ?? "?")[0]?.toUpperCase()}
+      </span>
+    </div>
+  );
+}
+
 /* ── Format helpers ─────────────────────────────────────────────── */
+
+// Bundle 4.2.37: timezone pin — mirror of the same fix in
+// SessionsCarousel (Bundle 4.2.35). Sessions are created and
+// displayed in a single canonical wall-clock zone (the workspace
+// interprets datetime inputs as Asia/Phnom_Penh). Times are
+// stored UTC; we pin formatting to that same zone so the buyer
+// page shows the intended local time deterministically on both
+// server and client (otherwise the server-rendered UTC time gets
+// frozen by suppressHydrationWarning).
+const DISPLAY_TZ = "Asia/Phnom_Penh";
 
 function formatSessionDay(iso: string): string {
   const d = new Date(iso);
   return d.toLocaleDateString("en-GB", {
+    timeZone: DISPLAY_TZ,
     weekday: "short",
     day: "numeric",
     month: "short",
@@ -584,7 +778,11 @@ function formatSessionDay(iso: string): string {
 
 function formatSessionTime(iso: string): string {
   const d = new Date(iso);
-  return d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  return d.toLocaleTimeString("en-GB", {
+    timeZone: DISPLAY_TZ,
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function formatDuration(minutes: number): string {

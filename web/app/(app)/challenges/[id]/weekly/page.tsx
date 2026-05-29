@@ -29,6 +29,7 @@ import { PublicBeyondLiveBlock } from "../PublicBeyondLiveBlock";
 import { PublicCommitBlock } from "../PublicCommitBlock";
 import { StickyJoinCTA } from "../StickyJoinCTA";
 import { buildWeeks } from "@/lib/challenges/buildWeeks";
+import { loadSessionCohosts } from "@/lib/challenges/sessionCohosts";
 
 export const metadata = {
   title: "Challenge (weekly variant) — INFITRA",
@@ -145,16 +146,27 @@ export default async function ChallengePage({
       (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime(),
     );
 
-  // Bundle 4.2.35 weekly variant: WeeklyJourneyCarousel consumes the
-  // weeks shape directly. The enriched flat-sessions array used by
-  // the flat-carousel variant is intentionally not built here.
+  // Bundle 4.2.37: WeeklyJourneyCarousel consumes the weeks shape
+  // directly, with each session enriched with host + cohosts (mirror
+  // of the flat variant since 4.2.35) so co-led sessions read as
+  // co-led in the weekly variant too.
   const weeklyArc = (buyerView.weekly_arc as Array<{ week: number; theme: string }>) ?? [];
-  const weeks = buildWeeks(
+  const rawWeeks = buildWeeks(
     buyerView.start_date,
     buyerView.end_date,
     weeklyArc,
     sessions,
   );
+  const creatorsById = new Map(creators.map((c) => [c.id, c]));
+  const cohostsBySession = await loadSessionCohosts(supabase, id, creatorsById);
+  const weeks = rawWeeks.map((week) => ({
+    ...week,
+    sessions: week.sessions.map((s) => ({
+      ...s,
+      host: s.host_id ? creatorsById.get(s.host_id) ?? null : null,
+      cohosts: cohostsBySession.get(s.id) ?? [],
+    })),
+  }));
 
   // User state (only if authenticated; page is public)
   let hasPurchased = false;
