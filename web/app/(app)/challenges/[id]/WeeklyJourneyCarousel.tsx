@@ -108,6 +108,19 @@ export function WeeklyJourneyCarousel({ weeks }: Props) {
   const [activeHeight, setActiveHeight] = useState<number | undefined>();
   const activeIndexRef = useRef(0);
 
+  // Bundle 4.2.43: slides are now narrower than the container (92% so
+  // 8% of the next week peeks on the right — universal carousel
+  // "swipe me" affordance). Container-width can no longer drive
+  // scroll math; we use the actual slide width measured from the
+  // first slide's DOM node so activeIndex stays accurate regardless
+  // of total-week count.
+  function getSlideWidth(): number {
+    const container = containerRef.current;
+    if (!container) return 0;
+    const first = slideRefs.current.get(0);
+    return first ? first.offsetWidth : container.clientWidth;
+  }
+
   // rAF-based scroll listener — activeIndex follows scrollLeft smoothly.
   useEffect(() => {
     const container = containerRef.current;
@@ -118,7 +131,7 @@ export function WeeklyJourneyCarousel({ weeks }: Props) {
       if (rafId !== null) cancelAnimationFrame(rafId);
       rafId = requestAnimationFrame(() => {
         if (!container) return;
-        const slideWidth = container.clientWidth;
+        const slideWidth = getSlideWidth();
         if (slideWidth === 0) return;
         const idx = Math.round(container.scrollLeft / slideWidth);
         setActiveIndex((prev) => (prev === idx ? prev : idx));
@@ -178,7 +191,7 @@ export function WeeklyJourneyCarousel({ weeks }: Props) {
   function jumpTo(index: number) {
     const container = containerRef.current;
     if (!container) return;
-    const slideWidth = container.clientWidth;
+    const slideWidth = getSlideWidth();
     container.scrollTo({
       left: slideWidth * index,
       behavior: "smooth",
@@ -226,14 +239,20 @@ export function WeeklyJourneyCarousel({ weeks }: Props) {
           aria-hidden
         />
 
-        {/* Swipable slides — Bundle 4.2.42 update:
+        {/* Swipable slides — Bundle 4.2.43 update:
+            - Slides are 92% wide so 8% of the next week's content
+              peeks on the right — the universal carousel signal
+              that there's more to swipe to. (Spotify, Apple Music,
+              Instagram Reels all use this exact pattern.)
+            - paddingRight: 8% on the carousel container extends the
+              scrollable area so the LAST slide can still snap its
+              left edge to the container's left (otherwise it'd be
+              forever offset on the right with no available scroll).
             - items-start prevents flex from stretching slides to the
               tallest; each takes its natural content height
-            - overflow-y-hidden caps the visible content at the
-              container's height so slide content can't bleed below
-              the white outer card during height transitions
-            - Transition shortened 250ms → 100ms so the post-swipe
-              vertical settle feels like a snap, not a drag */}
+            - overflow-y-hidden caps slide content to the container
+              height during transitions
+            - 100ms height transition keeps post-swipe settle quick */}
         <div
           ref={containerRef}
           className="flex items-start overflow-x-auto overflow-y-hidden journey-carousel"
@@ -244,6 +263,7 @@ export function WeeklyJourneyCarousel({ weeks }: Props) {
             msOverflowStyle: "none",
             height: activeHeight ? `${activeHeight}px` : undefined,
             transition: "height 100ms ease",
+            paddingRight: "8%",
           }}
         >
           <style>{`
@@ -255,7 +275,7 @@ export function WeeklyJourneyCarousel({ weeks }: Props) {
             <div
               key={week.weekNumber}
               ref={(el) => { slideRefs.current.set(i, el); }}
-              className="w-full shrink-0"
+              className="w-[92%] shrink-0"
               style={{
                 scrollSnapAlign: "start",
                 scrollSnapStop: "always",
@@ -435,6 +455,17 @@ function SessionFeature({
         .weekly-session-card:hover .weekly-card-chevron {
           opacity: 1;
           transform: translateX(0);
+        }
+        /* Bundle 4.2.43: touch devices don't fire hover events, so the
+           hover-only chevron silently disappears for everyone on
+           mobile. Force it visible on (hover: none) devices — touch
+           gets a static chevron as the tap affordance; desktop keeps
+           the elegant fade-in. */
+        @media (hover: none) {
+          .weekly-session-card .weekly-card-chevron {
+            opacity: 1;
+            transform: translateX(0);
+          }
         }
       `}</style>
 
@@ -749,7 +780,13 @@ function JourneyTrack({
                 key={i}
                 type="button"
                 onClick={() => onJump(i)}
-                className="relative flex items-center justify-center w-7 h-7 rounded-full transition-transform active:scale-90"
+                // Bundle 4.2.43: added hover:scale-110 so dots
+                // visibly respond on desktop (signals "tap me" on
+                // hover-capable devices). Touch devices don't see
+                // hover and don't need this — the W-track tap area
+                // is already 28x28px on touch and tapping triggers
+                // the active:scale-90 feedback.
+                className="relative flex items-center justify-center w-7 h-7 rounded-full transition-transform active:scale-90 hover:scale-110"
                 aria-label={`Week ${i + 1}${isActive ? " (current)" : ""}`}
                 aria-current={isActive ? "true" : undefined}
               >
