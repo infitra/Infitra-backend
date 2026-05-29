@@ -88,6 +88,13 @@ export function WeeklyJourneyCarousel({ weeks }: Props) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [openSessionId, setOpenSessionId] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  // Bundle 4.2.40: dynamic carousel height. Each slide has different
+  // content (1 session vs 3+), so the default flex behavior (container
+  // grows to the tallest slide) left dead space in the shorter ones.
+  // We track each slide's natural height and tween the container to
+  // the active slide's height.
+  const slideRefs = useRef<Map<number, HTMLDivElement | null>>(new Map());
+  const [activeHeight, setActiveHeight] = useState<number | undefined>();
 
   // rAF-based scroll listener — activeIndex follows scrollLeft smoothly.
   useEffect(() => {
@@ -112,6 +119,26 @@ export function WeeklyJourneyCarousel({ weeks }: Props) {
       if (rafId !== null) cancelAnimationFrame(rafId);
     };
   }, []);
+
+  // Measure the active slide's natural height + re-measure on resize
+  // (viewport width change can reflow content and change height).
+  useEffect(() => {
+    function measure() {
+      const node = slideRefs.current.get(activeIndex);
+      if (!node) return;
+      // scrollHeight reflects the slide's full content height even when
+      // the flex container has constrained it via our applied height.
+      setActiveHeight(node.scrollHeight);
+    }
+    // Initial + one delayed measure to catch async font/image layout.
+    measure();
+    const t = window.setTimeout(measure, 50);
+    window.addEventListener("resize", measure);
+    return () => {
+      window.clearTimeout(t);
+      window.removeEventListener("resize", measure);
+    };
+  }, [activeIndex, weeks.length]);
 
   function jumpTo(index: number) {
     const container = containerRef.current;
@@ -164,15 +191,23 @@ export function WeeklyJourneyCarousel({ weeks }: Props) {
           aria-hidden
         />
 
-        {/* Swipable slides */}
+        {/* Swipable slides — Bundle 4.2.40: items-start prevents flex
+            from stretching all slides to the tallest, so each slide
+            takes its natural content height. The container's height
+            is then explicitly set to the active slide's measured
+            height with a smooth transition (250ms ease), giving us
+            visible grow/shrink as you swipe between a week with one
+            session and a week with several. */}
         <div
           ref={containerRef}
-          className="flex overflow-x-auto journey-carousel"
+          className="flex items-start overflow-x-auto journey-carousel"
           style={{
             scrollSnapType: "x mandatory",
             WebkitOverflowScrolling: "touch",
             scrollbarWidth: "none",
             msOverflowStyle: "none",
+            height: activeHeight ? `${activeHeight}px` : undefined,
+            transition: "height 250ms ease",
           }}
         >
           <style>{`
@@ -183,6 +218,7 @@ export function WeeklyJourneyCarousel({ weeks }: Props) {
           {weeks.map((week, i) => (
             <div
               key={week.weekNumber}
+              ref={(el) => { slideRefs.current.set(i, el); }}
               className="w-full shrink-0"
               style={{
                 scrollSnapAlign: "start",
@@ -231,23 +267,22 @@ function WeekSlide({
 }) {
   return (
     <div className="px-4 lg:px-5 py-5 lg:py-6">
-      {/* Week header — Bundle 4.2.39 chapter-heading format.
-          Was: "WEEK 2 · 10 JAN – 16 JAN" (big uppercase) with
-          "Building Consistency" as a smaller subtitle below. Two
-          competing beats where the data (dates) was visually
-          louder than the meaning (theme). Now: single editorial
-          beat — "Week 2: Building Consistency" — sentence case
-          with the theme leading. Dates are scaffolding the W-track
-          dots already provide via position; the theme is the
-          story of the week. Falls back to plain "Week N" when no
-          theme is set. */}
+      {/* Week header — chapter-heading format.
+          Single editorial beat ("Week 2: Building Consistency").
+          Dates dropped (the W-track dots convey position via
+          highlight). Bundle 4.2.40 upgrades the typography to
+          ALL CAPS so the heading carries proper editorial weight
+          — matches the campaign-cover treatment the brand uses
+          for display headlines elsewhere, and reads as a
+          magazine section break rather than a quiet subtitle.
+          Falls back to plain "WEEK N" when no theme is set. */}
       <div className="text-center mb-6 lg:mb-8">
         <h3
-          className="font-black font-headline tracking-tight leading-[1.15]"
+          className="font-black font-headline uppercase leading-[1.1]"
           style={{
             color: "#0F2229",
             fontSize: "clamp(1.25rem, 4vw, 1.625rem)",
-            letterSpacing: "-0.02em",
+            letterSpacing: "-0.01em",
           }}
         >
           Week {week.weekNumber}
@@ -334,7 +369,13 @@ function SessionFeature({
       type="button"
       onClick={onOpenDetail}
       aria-label={ariaLabel}
-      className="weekly-session-card w-full flex items-stretch gap-0 rounded-2xl overflow-hidden text-left p-0 transition-all duration-200 hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+      // Bundle 4.2.40: stronger hover lift + hover-only chevron at
+      // the right edge (see below). Static state stays clean and
+      // card-like; hover gives a clear "tap me" affordance via a
+      // bigger translate-y + deeper shadow + the chevron sliding in.
+      // Touch devices don't see hover, but the card shape, image
+      // dominance, and rounded chrome already read as tappable.
+      className="weekly-session-card w-full flex items-stretch gap-0 rounded-2xl overflow-hidden text-left p-0 transition-all duration-200 hover:-translate-y-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
       style={{
         backgroundColor: "#FAF7F1",
         border: "1px solid rgba(15,34,41,0.05)",
@@ -346,7 +387,18 @@ function SessionFeature({
     >
       <style>{`
         .weekly-session-card:hover {
-          box-shadow: 0 2px 4px rgba(15,34,41,0.05), 0 10px 24px rgba(15,34,41,0.10);
+          box-shadow:
+            0 4px 8px rgba(15,34,41,0.06),
+            0 16px 32px rgba(15,34,41,0.12);
+        }
+        .weekly-session-card .weekly-card-chevron {
+          opacity: 0;
+          transform: translateX(-4px);
+          transition: opacity 200ms ease, transform 200ms ease;
+        }
+        .weekly-session-card:hover .weekly-card-chevron {
+          opacity: 1;
+          transform: translateX(0);
         }
       `}</style>
 
@@ -427,6 +479,30 @@ function SessionFeature({
             />
           </div>
         )}
+      </div>
+
+      {/* Bundle 4.2.40: hover-only chevron. Invisible at rest (so the
+          static card doesn't read as a list item with a > drilldown
+          indicator), fades + slides in on hover as a clear "tap me"
+          affordance. Touch devices don't see hover and don't need
+          this — the card's shape + image dominance carry the
+          affordance there. */}
+      <div
+        className="weekly-card-chevron shrink-0 self-center pr-3 lg:pr-4"
+        aria-hidden
+      >
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#FF6130"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <polyline points="9 18 15 12 9 6" />
+        </svg>
       </div>
     </button>
   );
