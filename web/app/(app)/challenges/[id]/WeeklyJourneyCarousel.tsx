@@ -94,16 +94,19 @@ export function WeeklyJourneyCarousel({ weeks }: Props) {
   // We track each slide's natural height and tween the container to
   // the active slide's height.
   //
-  // Bundle 4.2.41 fix: the measurement is now DEBOUNCED until after
-  // the scroll-snap settles. Without this, activeIndex changes
-  // mid-swipe (as soon as scrollLeft crosses each slide's midpoint),
-  // which fired the height transition WHILE the user was still
-  // scrolling — making the whole carousel feel like it was dragging
-  // up and down vertically during a horizontal swipe. Now the height
-  // only transitions after the gesture completes.
+  // Bundle 4.2.42 fix (after 4.2.41 didn't fully resolve it): the
+  // height measurement is keyed off the SCROLL itself ending, not off
+  // activeIndex changing. activeIndex updates the moment scrollLeft
+  // crosses a slide's midpoint — which is mid-gesture, before
+  // scroll-snap has settled. Now: a debounced scroll-end detector
+  // (200ms after the last scroll event) measures and applies the
+  // new height. Transition cut from 250ms → 100ms so the resulting
+  // vertical motion reads as a quick "settle," not a "drag." Plus
+  // overflow-y-hidden on the carousel as a safety net so the slide
+  // content can't escape the container's box during the transition.
   const slideRefs = useRef<Map<number, HTMLDivElement | null>>(new Map());
   const [activeHeight, setActiveHeight] = useState<number | undefined>();
-  const hasMeasuredRef = useRef(false);
+  const activeIndexRef = useRef(0);
 
   // rAF-based scroll listener — activeIndex follows scrollLeft smoothly.
   useEffect(() => {
@@ -129,33 +132,48 @@ export function WeeklyJourneyCarousel({ weeks }: Props) {
     };
   }, []);
 
-  // Measure the active slide's natural height + re-measure on resize.
-  // Debounced for activeIndex changes so the height update fires after
-  // the scroll-snap settles, not during the swipe gesture (see header
-  // comment on activeHeight). Resize fires immediately — that doesn't
-  // have a mid-gesture problem.
+  // Keep a ref to the latest activeIndex so the scroll-end listener
+  // (set up once on mount) always reads the current value.
   useEffect(() => {
+    activeIndexRef.current = activeIndex;
+  }, [activeIndex]);
+
+  // Measure on scroll-end — i.e. 200ms after the LAST scroll event
+  // from the carousel. This is the single reliable signal that the
+  // gesture + snap-snapping is fully done. Tying measurement to this
+  // (instead of to activeIndex changes, which fire mid-gesture) is
+  // what stops the carousel from feeling like it drags vertically.
+  // Effect runs once; the activeIndexRef gives the listener fresh
+  // values across renders.
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    let scrollEndTimer: number | null = null;
+
     function measure() {
-      const node = slideRefs.current.get(activeIndex);
+      const node = slideRefs.current.get(activeIndexRef.current);
       if (!node) return;
       setActiveHeight(node.scrollHeight);
     }
-    // First measure: short delay so async layout (fonts, images) has a
-    // moment to settle. Subsequent measures (activeIndex changes from
-    // user swipes): wait ~320ms so scroll-snap completes before the
-    // height starts transitioning. ~300ms is the typical settle time
-    // for mobile-touch + scroll-snap-mandatory; 320 gives a tiny buffer.
-    const settleDelay = hasMeasuredRef.current ? 320 : 50;
-    const t = window.setTimeout(() => {
-      measure();
-      hasMeasuredRef.current = true;
-    }, settleDelay);
+
+    function onScroll() {
+      if (scrollEndTimer !== null) window.clearTimeout(scrollEndTimer);
+      scrollEndTimer = window.setTimeout(measure, 200);
+    }
+
+    // Initial measure on mount (no scroll event has fired yet).
+    const initialT = window.setTimeout(measure, 50);
+
+    container.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", measure);
     return () => {
-      window.clearTimeout(t);
+      container.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", measure);
+      if (scrollEndTimer !== null) window.clearTimeout(scrollEndTimer);
+      window.clearTimeout(initialT);
     };
-  }, [activeIndex, weeks.length]);
+  }, []);
 
   function jumpTo(index: number) {
     const container = containerRef.current;
@@ -208,23 +226,24 @@ export function WeeklyJourneyCarousel({ weeks }: Props) {
           aria-hidden
         />
 
-        {/* Swipable slides — Bundle 4.2.40: items-start prevents flex
-            from stretching all slides to the tallest, so each slide
-            takes its natural content height. The container's height
-            is then explicitly set to the active slide's measured
-            height with a smooth transition (250ms ease), giving us
-            visible grow/shrink as you swipe between a week with one
-            session and a week with several. */}
+        {/* Swipable slides — Bundle 4.2.42 update:
+            - items-start prevents flex from stretching slides to the
+              tallest; each takes its natural content height
+            - overflow-y-hidden caps the visible content at the
+              container's height so slide content can't bleed below
+              the white outer card during height transitions
+            - Transition shortened 250ms → 100ms so the post-swipe
+              vertical settle feels like a snap, not a drag */}
         <div
           ref={containerRef}
-          className="flex items-start overflow-x-auto journey-carousel"
+          className="flex items-start overflow-x-auto overflow-y-hidden journey-carousel"
           style={{
             scrollSnapType: "x mandatory",
             WebkitOverflowScrolling: "touch",
             scrollbarWidth: "none",
             msOverflowStyle: "none",
             height: activeHeight ? `${activeHeight}px` : undefined,
-            transition: "height 250ms ease",
+            transition: "height 100ms ease",
           }}
         >
           <style>{`
