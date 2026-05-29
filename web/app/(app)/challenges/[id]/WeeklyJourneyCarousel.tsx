@@ -1,39 +1,51 @@
 "use client";
 
 /**
- * WeeklyJourneyCarousel — Bundle 4.2.13.
+ * WeeklyJourneyCarousel — Bundle 4.2.13 (resurrected 4.2.37), now
+ * upgraded in 4.2.39 with agenda-style cards + chapter-heading week
+ * title.
  *
- * Lives INSIDE the product card (PublicChallengeHero). Contains the
- * whole "journey" beat: a W1-W5 navigation track + swipable week
- * content. Cyan dots represent live peaks; the rest of the always-on
- * layer is described by the spec block above the carousel (the
- * "Always on — Tribe Space + Expert Access" pill).
+ * Lives INSIDE the product card (PublicChallengeHeroWeekly) on the
+ * /weekly route variant. Contains the whole "journey" beat: a W1-WN
+ * navigation track + swipable week content. Active dot = orange,
+ * other dots = cyan.
  *
- * 4.2.13 changes from 4.2.12:
+ * Bundle 4.2.39 polish (current shape):
  *
- *  - Spine breathing room: more pt/pb around the W-track inside the
- *    inner white card.
+ *  - Week header reframed: "WEEK 2 · 10 JAN – 16 JAN" + "Building
+ *    Consistency" (two beats) → "Week 2: Building Consistency"
+ *    (single editorial beat). Dates dropped — the W-track dots
+ *    already convey position; the theme is what matters.
  *
- *  - SessionSeparator dropped entirely. The previous numbered separator
- *    ("1 · Sat 13 Jun") between sessions was extra UI noise. All
- *    sessions now use the same layout regardless of whether the week
- *    has one or many — including the same two-line metadata format
- *    (day on top, time/duration below) — so the visual rhythm stays
- *    consistent. Sessions stack with a tighter vertical gap.
+ *  - Session cards reframed as AGENDA ITEMS:
+ *      * Lead with WHEN: day eyebrow + time line above the title.
+ *      * Title is the centerpiece, not the lede.
+ *      * No description preview, no See-details link — depth
+ *        lives in the modal.
+ *      * Whole card is the click target (button + hover lift).
+ *      * Image 1:1 → 3:4 portrait for proper visual weight.
  *
- *  - Session card layout: SQUARE image (1:1 aspect, fixed size). With
- *    items-center, the image always dominates row height — every
- *    session ends up the same size regardless of content. The 16:9
- *    cinematic version is preserved for the modal (See details).
+ * Bundle 4.2.37 (resurrection / parity with flat):
  *
- *  - Description kept inline with line-clamp-2 + ellipsis, plus a
- *    small orange "See details →" action. Tapping the button opens a
- *    modal with the full session detail (large image + full
- *    description) on the same page.
+ *  - Resurrected from commit 295c7ef so the /weekly A/B route
+ *    can render the older weekly-nav pattern alongside the flat
+ *    SessionsCarousel at /challenges/[id].
  *
- * Other carryovers from 4.2.12: rAF-based scroll listener for smooth
- * indicator tracking; active dot = orange (moves with swipe); no
- * umbrella rail; W-track INSIDE the white inner card.
+ *  - Cohost-aware: SessionLite carries host + cohosts; cards
+ *    render a small facepile + role-tinted names ("Alex & Mira").
+ *    Modal shows "Led by" / "Co-led by" + facepile.
+ *
+ *  - Times pinned to Asia/Phnom_Penh (DISPLAY_TZ) for deterministic
+ *    SSR/CSR rendering — mirror of the flat carousel's TZ fix.
+ *
+ * Bundle 4.2.13 carryover:
+ *
+ *  - rAF-based scroll listener for smooth indicator tracking.
+ *  - Active dot = orange (moves with swipe); other dots = cyan.
+ *  - W-track INSIDE the white inner card with breathing room
+ *    above + below.
+ *  - SessionSeparator dropped; all sessions share the same card
+ *    layout regardless of week count.
  */
 
 import { Fragment, useEffect, useRef, useState } from "react";
@@ -219,29 +231,28 @@ function WeekSlide({
 }) {
   return (
     <div className="px-4 lg:px-5 py-5 lg:py-6">
-      {/* Week header — date+range as the big uppercase title, theme
-          as subtitle below. */}
+      {/* Week header — Bundle 4.2.39 chapter-heading format.
+          Was: "WEEK 2 · 10 JAN – 16 JAN" (big uppercase) with
+          "Building Consistency" as a smaller subtitle below. Two
+          competing beats where the data (dates) was visually
+          louder than the meaning (theme). Now: single editorial
+          beat — "Week 2: Building Consistency" — sentence case
+          with the theme leading. Dates are scaffolding the W-track
+          dots already provide via position; the theme is the
+          story of the week. Falls back to plain "Week N" when no
+          theme is set. */}
       <div className="text-center mb-6 lg:mb-8">
         <h3
-          className="font-black font-headline uppercase tracking-tight leading-[1.1]"
+          className="font-black font-headline tracking-tight leading-[1.15]"
           style={{
             color: "#0F2229",
-            fontSize: "clamp(1.125rem, 3.8vw, 1.5rem)",
-            letterSpacing: "-0.015em",
+            fontSize: "clamp(1.25rem, 4vw, 1.625rem)",
+            letterSpacing: "-0.02em",
           }}
         >
           Week {week.weekNumber}
-          <span style={{ color: "#cbd5e1" }}> · </span>
-          {week.weekRange}
+          {week.theme && week.theme.trim() ? `: ${week.theme.trim()}` : null}
         </h3>
-        {week.theme && week.theme.trim() && (
-          <p
-            className="text-base lg:text-lg mt-2 font-medium"
-            style={{ color: "#475569" }}
-          >
-            {week.theme}
-          </p>
-        )}
       </div>
 
       {week.sessions.length > 0 ? (
@@ -271,17 +282,21 @@ function WeekSlide({
 }
 
 /**
- * SessionFeature — Bundle 4.2.13 uniform layout.
+ * SessionFeature — Bundle 4.2.39 redesign: agenda-item card.
  *
- *  - Square image (1:1) at fixed size, flush to card edges (left
- *    column items-center → image dominates row height).
- *  - Title (font-black)
- *  - Two-line metadata: day on top, time + duration below — consistent
- *    across all sessions in all weeks.
- *  - Inline description with line-clamp-2 + ellipsis — kept so the
- *    buyer gets a preview without tapping.
- *  - Small orange "See details →" action — opens the modal with the
- *    full session detail.
+ * The weekly variant's mental model is "your schedule this week,"
+ * not "browse posters of sessions." This card reshapes the content
+ * to match: WHEN leads, title second, person third. Whole card is
+ * the click target → opens SessionDetailModal. Depth (description,
+ * full date+time line, modal team block) lives in the modal.
+ *
+ * Layout:
+ *   ┌───────────┬─────────────────────────────────┐
+ *   │           │ MON 11 JAN          (cyan eyebrow)
+ *   │  Image    │ 19:00 — 1h          (slate semibold)
+ *   │  (3:4)    │ Full Body Strength  (font-black h4)
+ *   │           │ [👤] Alex Mercer    (role-tinted name)
+ *   └───────────┴─────────────────────────────────┘
  */
 function SessionFeature({
   session,
@@ -290,18 +305,57 @@ function SessionFeature({
   session: SessionLite;
   onOpenDetail: () => void;
 }) {
+  const people = sessionPeople(session);
+  const dayLabel = formatSessionDay(session.start_time);
+  const timeLabel = formatSessionTime(session.start_time);
+  const durLabel = formatDuration(session.duration_minutes);
+  const personSummary =
+    people.length === 0
+      ? "no host"
+      : people.length === 1
+        ? people[0].display_name ?? "Expert"
+        : `${people.length} experts`;
+  const ariaLabel = `${session.title}, ${dayLabel} at ${timeLabel}, ${durLabel}, ${personSummary}. Open details.`;
+
   return (
-    <article
-      className="flex items-center gap-3.5 lg:gap-5 rounded-2xl overflow-hidden"
+    // Bundle 4.2.39 redesign — agenda-item card.
+    // Was: horizontal mini-billboard with title-first, then day,
+    // then description preview, then See-details link. The card
+    // worked as a campaign teaser but didn't match the weekly
+    // navigation's mental model (your schedule for this week).
+    // Now: whole card is the click target (matches flat 4.2.17
+    // pattern). Content column LEADS with WHEN (day eyebrow + time
+    // line), then title, then who. No description preview, no
+    // explicit CTA — depth lives in the modal. Reads as "a session
+    // on your calendar this week," not "a poster of a session."
+    // Image is 3:4 portrait so it carries proper visual weight
+    // against the typography hierarchy.
+    <button
+      type="button"
+      onClick={onOpenDetail}
+      aria-label={ariaLabel}
+      className="weekly-session-card w-full flex items-stretch gap-0 rounded-2xl overflow-hidden text-left p-0 transition-all duration-200 hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
       style={{
         backgroundColor: "#FAF7F1",
         border: "1px solid rgba(15,34,41,0.05)",
+        font: "inherit",
+        color: "inherit",
+        // @ts-expect-error CSS custom property for focus ring color
+        "--tw-ring-color": "#FF6130",
       }}
     >
-      {/* Image — square 1:1, flush to card edges. */}
+      <style>{`
+        .weekly-session-card:hover {
+          box-shadow: 0 2px 4px rgba(15,34,41,0.05), 0 10px 24px rgba(15,34,41,0.10);
+        }
+      `}</style>
+
+      {/* Image — 3:4 portrait (Bundle 4.2.39, was 1:1 square).
+          Taller image gives the card more visual presence and
+          balances the typography hierarchy in the content column. */}
       <div
-        className="shrink-0 w-32 lg:w-36 relative self-stretch"
-        style={{ aspectRatio: "1 / 1" }}
+        className="shrink-0 w-28 lg:w-32 relative"
+        style={{ aspectRatio: "3 / 4" }}
       >
         {session.image_url ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -322,80 +376,59 @@ function SessionFeature({
             <img
               src="/logo-mark.png"
               alt=""
-              width={18}
-              height={18}
+              width={20}
+              height={20}
               style={{ opacity: 0.35 }}
             />
           </div>
         )}
       </div>
 
-      {/* Content — right column. Padded on right + top + bottom. */}
-      <div className="flex-1 min-w-0 text-left py-3 lg:py-3.5 pr-3.5 lg:pr-4">
+      {/* Content — right column, agenda hierarchy.
+          1. Day eyebrow (small caps, slate) — WHEN, scans first
+          2. Time + duration (sentence case, semibold, larger) — practical detail
+          3. Title (font-black, the centerpiece)
+          4. Person (facepile + role-tinted name)
+          No description preview, no See-details link. */}
+      <div className="flex-1 min-w-0 flex flex-col py-4 px-4 lg:py-4 lg:px-5">
+        <p
+          className="text-[10px] lg:text-[11px] font-bold font-headline uppercase tracking-[0.2em]"
+          style={{ color: "#0891b2" }}
+          suppressHydrationWarning
+        >
+          {dayLabel}
+        </p>
+        <p
+          className="text-[13px] lg:text-[14px] font-bold font-headline mt-1"
+          style={{ color: "#475569", letterSpacing: "-0.005em" }}
+          suppressHydrationWarning
+        >
+          {timeLabel}
+          <span style={{ color: "#cbd5e1" }}>{"  —  "}</span>
+          {durLabel}
+        </p>
         <h4
-          className="font-black font-headline tracking-tight"
+          className="font-black font-headline tracking-tight mt-2"
           style={{
             color: "#0F2229",
-            fontSize: "clamp(0.95rem, 3.5vw, 1.0625rem)",
-            letterSpacing: "-0.01em",
+            fontSize: "clamp(1rem, 3.6vw, 1.125rem)",
+            letterSpacing: "-0.015em",
             lineHeight: 1.2,
           }}
         >
           {session.title}
         </h4>
-        {/* Metadata — Bundle 4.2.13: two-line layout always.
-            Day on top, time + duration below. Keeps the metadata
-            shape consistent across all sessions and avoids ugly
-            mid-string wraps on tight viewports. */}
-        <p
-          className="text-[11px] lg:text-[12px] font-bold font-headline uppercase tracking-[0.15em] mt-2 leading-snug"
-          style={{ color: "#475569" }}
-          suppressHydrationWarning
-        >
-          <span className="block">
-            {formatSessionDay(session.start_time)}
-          </span>
-          <span className="block">
-            {formatSessionTime(session.start_time)}
-            <span style={{ color: "#cbd5e1" }}> · </span>
-            {formatDuration(session.duration_minutes)}
-          </span>
-        </p>
-        {session.description && session.description.trim() && (
-          <p
-            className="text-[12px] lg:text-[13px] mt-2 leading-snug line-clamp-2"
-            style={{ color: "#64748b" }}
-          >
-            {session.description}
-          </p>
+        {people.length > 0 && (
+          <div className="flex items-center gap-2 mt-auto pt-3">
+            <TeamFacepile people={people} size="sm" />
+            <PeopleNames
+              people={people}
+              className="text-[12px] lg:text-[13px] font-black font-headline truncate"
+            />
+          </div>
         )}
-        {/* Bundle 4.2.37: team facepile + names. Mirrors the flat
-            carousel so co-led sessions read as co-led at a glance
-            (small overlapping avatars + "Alex & Mira" with the
-            role-tinted name colors). */}
-        {(() => {
-          const people = sessionPeople(session);
-          if (people.length === 0) return null;
-          return (
-            <div className="flex items-center gap-2 mt-2.5">
-              <TeamFacepile people={people} size="sm" />
-              <PeopleNames
-                people={people}
-                className="text-[12px] lg:text-[13px] font-black font-headline truncate"
-              />
-            </div>
-          );
-        })()}
-        <button
-          type="button"
-          onClick={onOpenDetail}
-          className="mt-2 text-[11px] lg:text-[12px] font-bold font-headline transition-opacity hover:opacity-70 active:opacity-50"
-          style={{ color: "#FF6130" }}
-        >
-          See details →
-        </button>
       </div>
-    </article>
+    </button>
   );
 }
 
