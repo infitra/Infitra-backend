@@ -77,18 +77,17 @@ export function StickyJoinCTA({
       }}
     >
       <div className="flex items-center gap-3 max-w-md mx-auto">
+        {/* Bundle 4.2.45: dropped the "Full program" subtitle so the
+            sticky bar shows just the price + the action. The
+            in-card CTA's two-line positioning sentence and the
+            "I'm in · CHF 99" pill carry the framing; this bar is
+            just the persistent commit affordance. */}
         <div className="shrink-0">
           <div
             className="text-base font-black font-headline leading-none"
             style={{ color: "#0F2229" }}
           >
             {price}
-          </div>
-          <div
-            className="text-[10px] font-bold font-headline mt-0.5"
-            style={{ color: "#94a3b8" }}
-          >
-            Full program
           </div>
         </div>
         <div className="flex-1">

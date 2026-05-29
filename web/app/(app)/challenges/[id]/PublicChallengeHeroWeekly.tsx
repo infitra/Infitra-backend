@@ -545,12 +545,12 @@ function PriceCTA({
   }
 
   // Anonymous or authenticated-not-purchased → buy moment.
-  // Positioning sentence above, price reveal, then pill button.
+  // Bundle 4.2.45 — mirror of the main hero changes. Two-line
+  // positioning sentence (Stop / Start as separate beats, second
+  // bold); price reveal + eyebrow stack collapsed into a single
+  // bigger pill with the price inline ("I'm in · CHF 99").
   const cta = (
     <div className="text-center">
-      {/* Positioning sentence — the brand's stance against static
-          fitness content sales, placed right before the buy
-          moment. Slate sentence-case copy, not a label. */}
       <p
         className="mx-auto leading-relaxed font-medium"
         style={{
@@ -560,49 +560,46 @@ function PriceCTA({
         }}
       >
         Stop buying static fitness content.
-        <br className="hidden sm:block" />
-        <span className="sm:hidden"> </span>
-        Start participating in a real fitness experience.
       </p>
-
-      {/* Price reveal — sits on the card surface as a refined
-          display number, no colored block. */}
       <p
-        className="mt-6 lg:mt-7 font-black font-headline tracking-tight"
+        className="mx-auto mt-2 leading-relaxed font-black font-headline"
         style={{
           color: "#0F2229",
-          fontSize: "clamp(2rem, 6vw, 2.75rem)",
-          letterSpacing: "-0.03em",
-          lineHeight: 1,
+          fontSize: "clamp(1rem, 2.8vw, 1.125rem)",
+          letterSpacing: "-0.01em",
+          maxWidth: "28rem",
         }}
       >
-        {priceLabel}
-      </p>
-      <p
-        className="text-[10px] lg:text-[11px] font-bold font-headline uppercase tracking-[0.25em] mt-2"
-        style={{ color: "#94a3b8" }}
-      >
-        For the full program
+        Start participating in a real fitness experience.
       </p>
     </div>
   );
 
   const buttonLabel = (
-    <span className="inline-flex items-center justify-center gap-2">
-      I&apos;m in <span aria-hidden>→</span>
+    <span className="inline-flex items-center justify-center gap-3">
+      <span>I&apos;m in</span>
+      <span aria-hidden style={{ color: "rgba(255,255,255,0.55)" }}>
+        ·
+      </span>
+      <span>{priceLabel}</span>
     </span>
   );
+
+  const pillClass =
+    "inline-flex items-center justify-center px-10 lg:px-12 py-4 lg:py-5 rounded-full text-white text-base lg:text-lg font-black font-headline transition-transform hover:scale-[1.01] active:scale-[0.99]";
+  const pillShadow =
+    "0 8px 22px rgba(255,97,48,0.36), 0 2px 8px rgba(255,97,48,0.20)";
 
   if (isAuthenticated) {
     return (
       <>
         {cta}
-        <div className="mt-6 lg:mt-7 flex justify-center">
+        <div className="mt-7 lg:mt-9 flex justify-center">
           <PurchaseButton
             kind="challenge"
             targetId={challengeId}
             label=""
-            className="inline-flex items-center justify-center px-8 lg:px-10 py-3.5 lg:py-4 rounded-full text-white text-sm lg:text-base font-black font-headline transition-transform hover:scale-[1.01] active:scale-[0.99] disabled:opacity-70 bg-[#FF6130] shadow-[0_6px_18px_rgba(255,97,48,0.32),0_2px_6px_rgba(255,97,48,0.18)]"
+            className={`${pillClass} disabled:opacity-70 bg-[#FF6130] shadow-[0_8px_22px_rgba(255,97,48,0.36),0_2px_8px_rgba(255,97,48,0.20)]`}
           >
             {buttonLabel}
           </PurchaseButton>
@@ -614,15 +611,14 @@ function PriceCTA({
   return (
     <>
       {cta}
-      <div className="mt-6 lg:mt-7 flex justify-center">
+      <div className="mt-7 lg:mt-9 flex justify-center">
         <Link
           href={`/login?intent=buy:challenge:${challengeId}&returnTo=/challenges/${challengeId}`}
-          className="inline-flex items-center justify-center px-8 lg:px-10 py-3.5 lg:py-4 rounded-full text-white text-sm lg:text-base font-black font-headline transition-transform hover:scale-[1.01] active:scale-[0.99]"
+          className={pillClass}
           style={{
             backgroundColor: "#FF6130",
             letterSpacing: "-0.005em",
-            boxShadow:
-              "0 6px 18px rgba(255,97,48,0.32), 0 2px 6px rgba(255,97,48,0.18)",
+            boxShadow: pillShadow,
           }}
         >
           {buttonLabel}
