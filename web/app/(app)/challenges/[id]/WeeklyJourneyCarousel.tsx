@@ -223,12 +223,31 @@ export function WeeklyJourneyCarousel({ weeks }: Props) {
             "0 1px 2px rgba(15, 34, 41, 0.03), 0 4px 14px rgba(15, 34, 41, 0.05)",
         }}
       >
-        {/* Journey track — Bundle 4.2.13: more breath above + below. */}
-        <div className="px-4 lg:px-5 pt-8 lg:pt-10 pb-6 lg:pb-7">
-          <JourneyTrack
-            totalWeeks={weeks.length}
-            activeIndex={activeIndex}
-            onJump={jumpTo}
+        {/* Journey track + prev/next arrows — Bundle 4.2.44.
+            The W-track alone wasn't reading as "swipeable" to
+            testers. Flanking it with explicit prev/next buttons
+            makes the navigation unambiguous on every device,
+            without breaking slide alignment (which is what the
+            4.2.43 peek attempt did). Arrows fade to disabled at
+            the boundaries rather than disappearing, so the
+            W-track stays horizontally stable. */}
+        <div className="flex items-center gap-2 lg:gap-3 px-3 lg:px-4 pt-8 lg:pt-10 pb-6 lg:pb-7">
+          <NavArrow
+            direction="prev"
+            disabled={activeIndex === 0}
+            onClick={() => jumpTo(activeIndex - 1)}
+          />
+          <div className="flex-1 min-w-0">
+            <JourneyTrack
+              totalWeeks={weeks.length}
+              activeIndex={activeIndex}
+              onJump={jumpTo}
+            />
+          </div>
+          <NavArrow
+            direction="next"
+            disabled={activeIndex === weeks.length - 1}
+            onClick={() => jumpTo(activeIndex + 1)}
           />
         </div>
 
@@ -239,20 +258,18 @@ export function WeeklyJourneyCarousel({ weeks }: Props) {
           aria-hidden
         />
 
-        {/* Swipable slides — Bundle 4.2.43 update:
-            - Slides are 92% wide so 8% of the next week's content
-              peeks on the right — the universal carousel signal
-              that there's more to swipe to. (Spotify, Apple Music,
-              Instagram Reels all use this exact pattern.)
-            - paddingRight: 8% on the carousel container extends the
-              scrollable area so the LAST slide can still snap its
-              left edge to the container's left (otherwise it'd be
-              forever offset on the right with no available scroll).
-            - items-start prevents flex from stretching slides to the
-              tallest; each takes its natural content height
-            - overflow-y-hidden caps slide content to the container
-              height during transitions
-            - 100ms height transition keeps post-swipe settle quick */}
+        {/* Swipable slides — Bundle 4.2.44: reverted the 4.2.43 slide
+            peek (was w-[92%] + paddingRight: 8%). The peek shifted
+            the centered content off-center within the outer white
+            card, cramped card content at the narrower slide width,
+            and produced cross-week alignment problems when headers
+            wrapped to different line counts. Discoverability is now
+            handled by the explicit prev/next arrows flanking the
+            W-track above (see JourneyTrack changes), not by a peek.
+            - Slides at w-full again — clean centering, no cramping
+            - items-start: slides take their natural content height
+            - overflow-y-hidden + dynamic height + 100ms transition
+              for the post-settle height adjustment (4.2.42) */}
         <div
           ref={containerRef}
           className="flex items-start overflow-x-auto overflow-y-hidden journey-carousel"
@@ -263,7 +280,6 @@ export function WeeklyJourneyCarousel({ weeks }: Props) {
             msOverflowStyle: "none",
             height: activeHeight ? `${activeHeight}px` : undefined,
             transition: "height 100ms ease",
-            paddingRight: "8%",
           }}
         >
           <style>{`
@@ -275,7 +291,7 @@ export function WeeklyJourneyCarousel({ weeks }: Props) {
             <div
               key={week.weekNumber}
               ref={(el) => { slideRefs.current.set(i, el); }}
-              className="w-[92%] shrink-0"
+              className="w-full shrink-0"
               style={{
                 scrollSnapAlign: "start",
                 scrollSnapStop: "always",
@@ -728,6 +744,55 @@ function SessionDetailModal({
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * NavArrow — Bundle 4.2.44. Previous/next week button flanking the
+ * W-track. Small (32x32 / 36x36) rounded button with a chevron icon.
+ * Visible at the boundaries too (just disabled + faded) so the
+ * W-track stays horizontally stable regardless of activeIndex.
+ */
+function NavArrow({
+  direction,
+  disabled,
+  onClick,
+}: {
+  direction: "prev" | "next";
+  disabled: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={disabled ? undefined : onClick}
+      aria-label={direction === "prev" ? "Previous week" : "Next week"}
+      aria-disabled={disabled || undefined}
+      tabIndex={disabled ? -1 : 0}
+      className="shrink-0 w-8 h-8 lg:w-9 lg:h-9 rounded-full flex items-center justify-center transition-all duration-150 hover:scale-105 active:scale-95"
+      style={{
+        backgroundColor: disabled ? "rgba(15,34,41,0.03)" : "rgba(8,145,178,0.10)",
+        border: `1px solid ${disabled ? "rgba(15,34,41,0.06)" : "rgba(8,145,178,0.25)"}`,
+        cursor: disabled ? "default" : "pointer",
+        opacity: disabled ? 0.45 : 1,
+      }}
+    >
+      <svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke={disabled ? "#94a3b8" : "#0891b2"}
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        style={{
+          transform: direction === "prev" ? "rotate(180deg)" : undefined,
+        }}
+      >
+        <polyline points="9 18 15 12 9 6" />
+      </svg>
+    </button>
   );
 }
 
