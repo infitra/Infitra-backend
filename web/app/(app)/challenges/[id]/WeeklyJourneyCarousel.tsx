@@ -93,8 +93,17 @@ export function WeeklyJourneyCarousel({ weeks }: Props) {
   // grows to the tallest slide) left dead space in the shorter ones.
   // We track each slide's natural height and tween the container to
   // the active slide's height.
+  //
+  // Bundle 4.2.41 fix: the measurement is now DEBOUNCED until after
+  // the scroll-snap settles. Without this, activeIndex changes
+  // mid-swipe (as soon as scrollLeft crosses each slide's midpoint),
+  // which fired the height transition WHILE the user was still
+  // scrolling — making the whole carousel feel like it was dragging
+  // up and down vertically during a horizontal swipe. Now the height
+  // only transitions after the gesture completes.
   const slideRefs = useRef<Map<number, HTMLDivElement | null>>(new Map());
   const [activeHeight, setActiveHeight] = useState<number | undefined>();
+  const hasMeasuredRef = useRef(false);
 
   // rAF-based scroll listener — activeIndex follows scrollLeft smoothly.
   useEffect(() => {
@@ -120,19 +129,27 @@ export function WeeklyJourneyCarousel({ weeks }: Props) {
     };
   }, []);
 
-  // Measure the active slide's natural height + re-measure on resize
-  // (viewport width change can reflow content and change height).
+  // Measure the active slide's natural height + re-measure on resize.
+  // Debounced for activeIndex changes so the height update fires after
+  // the scroll-snap settles, not during the swipe gesture (see header
+  // comment on activeHeight). Resize fires immediately — that doesn't
+  // have a mid-gesture problem.
   useEffect(() => {
     function measure() {
       const node = slideRefs.current.get(activeIndex);
       if (!node) return;
-      // scrollHeight reflects the slide's full content height even when
-      // the flex container has constrained it via our applied height.
       setActiveHeight(node.scrollHeight);
     }
-    // Initial + one delayed measure to catch async font/image layout.
-    measure();
-    const t = window.setTimeout(measure, 50);
+    // First measure: short delay so async layout (fonts, images) has a
+    // moment to settle. Subsequent measures (activeIndex changes from
+    // user swipes): wait ~320ms so scroll-snap completes before the
+    // height starts transitioning. ~300ms is the typical settle time
+    // for mobile-touch + scroll-snap-mandatory; 320 gives a tiny buffer.
+    const settleDelay = hasMeasuredRef.current ? 320 : 50;
+    const t = window.setTimeout(() => {
+      measure();
+      hasMeasuredRef.current = true;
+    }, settleDelay);
     window.addEventListener("resize", measure);
     return () => {
       window.clearTimeout(t);
