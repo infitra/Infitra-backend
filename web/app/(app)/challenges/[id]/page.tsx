@@ -8,6 +8,7 @@ import { PublicBeyondLiveBlock } from "./PublicBeyondLiveBlock";
 import { PublicCommitBlock } from "./PublicCommitBlock";
 import { StickyJoinCTA } from "./StickyJoinCTA";
 import { buildWeeks } from "@/lib/challenges/buildWeeks";
+import { loadSessionCohosts } from "@/lib/challenges/sessionCohosts";
 
 export const metadata = {
   title: "Challenge — INFITRA",
@@ -136,12 +137,17 @@ export default async function ChallengePage({
     sessions,
   );
   const creatorsById = new Map(creators.map((c) => [c.id, c]));
+  // Per-session cohosts (shared/co-led sessions). Read from the
+  // public-safe vw_challenge_session_team view — app_session_cohost
+  // itself is RLS-restricted and carries split_percent.
+  const cohostsBySession = await loadSessionCohosts(supabase, id, creatorsById);
   const enrichedSessions = weeks.flatMap((week) =>
     week.sessions.map((s) => ({
       ...s,
       weekNumber: week.weekNumber,
       weekRange: week.weekRange,
       host: s.host_id ? creatorsById.get(s.host_id) ?? null : null,
+      cohosts: cohostsBySession.get(s.id) ?? [],
     })),
   );
 

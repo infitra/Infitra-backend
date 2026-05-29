@@ -65,6 +65,7 @@ export interface CarouselSession {
   weekNumber: number;
   weekRange: string;
   host: HostLite | null;
+  cohosts: HostLite[];
 }
 
 interface Props {
@@ -237,6 +238,7 @@ function SessionCard({
   const dayLabel = formatSessionDayShort(session.start_time);
   const timeLabel = formatSessionTime(session.start_time);
   const durLabel = formatDuration(session.duration_minutes);
+  const people = sessionPeople(session);
 
   // Whole card is a <button>. Default button chrome (background,
   // border, font, alignment) is overridden so it renders as a card.
@@ -332,26 +334,32 @@ function SessionCard({
         <p
           className="text-[14px] lg:text-[15px] font-bold font-headline mt-2"
           style={{ color: "#475569", letterSpacing: "-0.005em" }}
-          suppressHydrationWarning
         >
           {timeLabel}
           <span style={{ color: "#cbd5e1" }}>{"  ·  "}</span>
           {durLabel}
         </p>
 
-        {/* Host — avatar + name, no "LED BY" label. Role color
-            (orange = owner, cyan = cohost) IS the signifier. */}
-        {session.host && (
+        {/* Team — host + any session cohosts, no "LED BY" label.
+            Single host: avatar + role-colored name (orange = owner,
+            cyan = cohost) as before. Shared session: overlapping
+            facepile + combined names so co-led sessions read as
+            co-led at a glance. */}
+        {people.length > 0 && (
           <div className="flex items-center gap-3 mt-auto pt-4">
-            <HostAvatar host={session.host} />
+            <TeamFacepile people={people} />
             <span
               className="text-[14px] lg:text-[15px] font-black font-headline truncate"
               style={{
                 color:
-                  session.host.role === "owner" ? "#FF6130" : "#0891b2",
+                  people.length === 1
+                    ? people[0].role === "owner"
+                      ? "#FF6130"
+                      : "#0891b2"
+                    : "#0F2229",
               }}
             >
-              {session.host.display_name ?? "Expert"}
+              {peopleNames(people)}
             </span>
           </div>
         )}
@@ -401,6 +409,54 @@ function HostAvatar({ host }: { host: HostLite }) {
 }
 
 /**
+ * The session team in display order: host first, then any session
+ * cohosts. De-duped by id so a person listed in both slots only
+ * appears once. Used for both the card facepile and the modal.
+ */
+function sessionPeople(session: CarouselSession): HostLite[] {
+  const out: HostLite[] = [];
+  const seen = new Set<string>();
+  if (session.host) {
+    out.push(session.host);
+    seen.add(session.host.id);
+  }
+  for (const c of session.cohosts) {
+    if (seen.has(c.id)) continue;
+    seen.add(c.id);
+    out.push(c);
+  }
+  return out;
+}
+
+function peopleNames(people: HostLite[]): string {
+  const names = people.map((p) => p.display_name ?? "Expert");
+  if (names.length <= 1) return names[0] ?? "Expert";
+  if (names.length === 2) return `${names[0]} & ${names[1]}`;
+  return `${names.slice(0, -1).join(", ")} & ${names[names.length - 1]}`;
+}
+
+/**
+ * TeamFacepile — single avatar for a solo host, or overlapping
+ * avatars for a co-led session. Reuses HostAvatar so role tinting
+ * and the initial-letter fallback stay consistent.
+ */
+function TeamFacepile({ people }: { people: HostLite[] }) {
+  if (people.length === 1) return <HostAvatar host={people[0]} />;
+  return (
+    <div className="flex shrink-0">
+      {people.map((p, i) => (
+        <div
+          key={p.id}
+          style={{ marginLeft: i === 0 ? 0 : "-10px", zIndex: people.length - i }}
+        >
+          <HostAvatar host={p} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/**
  * SessionDetailModal — Bundle 4.2.14 (carried from previous bundle,
  * enhanced with coach attribution). Opens on "See details" click,
  * closes on backdrop click / × / Escape, locks body scroll.
@@ -412,6 +468,8 @@ function SessionDetailModal({
   session: CarouselSession;
   onClose: () => void;
 }) {
+  const modalPeople = sessionPeople(session);
+
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
@@ -506,7 +564,6 @@ function SessionDetailModal({
           <p
             className="text-[12px] lg:text-[13px] font-bold font-headline uppercase tracking-[0.15em] mt-2"
             style={{ color: "#475569" }}
-            suppressHydrationWarning
           >
             {formatSessionDayLong(session.start_time)}
             <span style={{ color: "#cbd5e1" }}> · </span>
@@ -515,24 +572,28 @@ function SessionDetailModal({
             {formatDuration(session.duration_minutes)}
           </p>
 
-          {session.host && (
+          {modalPeople.length > 0 && (
             <div className="flex items-center gap-3 mt-5">
-              <HostAvatar host={session.host} />
+              <TeamFacepile people={modalPeople} />
               <div>
                 <p
                   className="text-[10px] font-bold font-headline uppercase tracking-[0.2em]"
                   style={{ color: "#94a3b8" }}
                 >
-                  Led by
+                  {modalPeople.length > 1 ? "Co-led by" : "Led by"}
                 </p>
                 <p
                   className="text-sm font-black font-headline mt-0.5"
                   style={{
                     color:
-                      session.host.role === "owner" ? "#FF6130" : "#0891b2",
+                      modalPeople.length === 1
+                        ? modalPeople[0].role === "owner"
+                          ? "#FF6130"
+                          : "#0891b2"
+                        : "#0F2229",
                   }}
                 >
-                  {session.host.display_name ?? "Expert"}
+                  {peopleNames(modalPeople)}
                 </p>
               </div>
             </div>
@@ -554,9 +615,18 @@ function SessionDetailModal({
 
 /* ── Format helpers ─────────────────────────────────────────────── */
 
+// Sessions are created and displayed in a single canonical wall-clock
+// timezone (the workspace interprets the creator's datetime inputs as
+// Asia/Phnom_Penh). Times are stored UTC; we pin formatting to that
+// same zone so the buyer page shows the intended local time (e.g.
+// 19:00) instead of the render runtime's zone — the server runs in UTC,
+// which previously froze the label at 12:00 via suppressHydrationWarning.
+const DISPLAY_TZ = "Asia/Phnom_Penh";
+
 function formatSessionDayShort(iso: string): string {
   const d = new Date(iso);
   return d.toLocaleDateString("en-GB", {
+    timeZone: DISPLAY_TZ,
     weekday: "short",
     day: "numeric",
     month: "short",
@@ -566,6 +636,7 @@ function formatSessionDayShort(iso: string): string {
 function formatSessionDayLong(iso: string): string {
   const d = new Date(iso);
   return d.toLocaleDateString("en-GB", {
+    timeZone: DISPLAY_TZ,
     weekday: "long",
     day: "numeric",
     month: "short",
@@ -574,7 +645,11 @@ function formatSessionDayLong(iso: string): string {
 
 function formatSessionTime(iso: string): string {
   const d = new Date(iso);
-  return d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  return d.toLocaleTimeString("en-GB", {
+    timeZone: DISPLAY_TZ,
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function formatDuration(minutes: number): string {

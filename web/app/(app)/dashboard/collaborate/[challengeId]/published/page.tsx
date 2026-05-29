@@ -6,6 +6,7 @@ import { PublicCreatorsBlock } from "@/app/(app)/challenges/[id]/PublicCreatorsB
 import { PublicBeyondLiveBlock } from "@/app/(app)/challenges/[id]/PublicBeyondLiveBlock";
 import { PublishedShareBar } from "./PublishedShareBar";
 import { buildWeeks } from "@/lib/challenges/buildWeeks";
+import { loadSessionCohosts } from "@/lib/challenges/sessionCohosts";
 
 export const metadata = { title: "Collaboration Published — INFITRA" };
 
@@ -144,12 +145,19 @@ export default async function PublishedCelebrationPage({
     sessions,
   );
   const creatorsById = new Map(creators.map((c) => [c.id, c]));
+  // Per-session cohosts — same public-safe view path as the buyer page.
+  const cohostsBySession = await loadSessionCohosts(
+    supabase,
+    challengeId,
+    creatorsById,
+  );
   const enrichedSessions = weeks.flatMap((week) =>
     week.sessions.map((s) => ({
       ...s,
       weekNumber: week.weekNumber,
       weekRange: week.weekRange,
       host: s.host_id ? creatorsById.get(s.host_id) ?? null : null,
+      cohosts: cohostsBySession.get(s.id) ?? [],
     })),
   );
 
