@@ -69,9 +69,11 @@ export function StickyJoinCTA({
         visible ? "translate-y-0" : "translate-y-full"
       }`}
       style={{
-        backgroundColor: "rgba(252,250,246,0.92)",
-        backdropFilter: "blur(12px)",
-        WebkitBackdropFilter: "blur(12px)",
+        // Was backdrop-filter blur(12px); a fixed bottom bar blurring the
+        // scrolling/animated content beneath re-rasterises every frame on
+        // mobile. Bumped to near-opaque solid (was 0.92) and dropped the
+        // blur — visually near-identical, removes the per-frame cost.
+        backgroundColor: "rgba(252,250,246,0.97)",
         borderTop: "1px solid rgba(15,34,41,0.08)",
         boxShadow: "0 -4px 20px rgba(15,34,41,0.06)",
       }}

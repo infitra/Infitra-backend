@@ -243,10 +243,11 @@ export default async function ChallengePage({
             style={{
               position: "absolute",
               inset: 0,
-              background: "rgba(242, 239, 232, 0.55)",
-              backdropFilter: "blur(20px) saturate(1.2)",
-              WebkitBackdropFilter: "blur(20px) saturate(1.2)",
-              borderBottom: "1px solid rgba(255, 255, 255, 0.25)",
+              // Solid cream instead of backdrop-filter blur — see ParticipantNav:
+              // a fixed bar blurring the animated background re-blurs every frame
+              // and janks mobile scroll. Compositor-free near-opaque fill.
+              background: "rgba(244, 241, 234, 0.94)",
+              borderBottom: "1px solid rgba(15, 34, 41, 0.06)",
             }}
           />
           <div className="relative max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">

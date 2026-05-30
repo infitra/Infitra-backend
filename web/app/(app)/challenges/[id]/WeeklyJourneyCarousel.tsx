@@ -517,12 +517,14 @@ function SessionFeature({
           <Image
             src={session.image_url}
             alt=""
-            // Below the fold — defer so it doesn't compete with the cover.
-            // Tiny rendered slot (~128px) → optimizer serves a few-KB WebP,
-            // which is what removes the swipe-decode delay on carousel weeks.
+            // Optimizer serves a few-KB WebP into this ~128px slot, so the
+            // whole carousel's thumbs are cheap to load up front. Eager (not
+            // lazy) means swiping to another week shows an already-loaded
+            // image instead of a per-swipe network round-trip — that
+            // round-trip was the "carousel lags with loading" symptom.
             fill
             sizes="128px"
-            loading="lazy"
+            loading="eager"
             decoding="async"
             className="object-cover"
           />
