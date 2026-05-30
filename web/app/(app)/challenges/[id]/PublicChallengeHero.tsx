@@ -211,9 +211,16 @@ export function PublicChallengeHero({
           className="rounded-[28px] lg:rounded-[32px] px-6 lg:px-10 overflow-hidden"
           style={{
             backgroundColor: "#FFFFFF",
-            border: "1px solid rgba(15,34,41,0.06)",
+            // Bundle 4.2.48: the card's hairline edge is drawn as an
+            // OUTSET box-shadow ring (0 0 0 1px) rather than a layout
+            // `border`. With overflow-hidden, a real border clips the
+            // edge-to-edge cover image to the padding box and leaves a
+            // faint 1px seam beside the photo (reads as a white edge on
+            // the sides + rounded corners). A non-inset ring paints
+            // outside the border box, so the photo fills cleanly to the
+            // card edge and the hairline never intrudes over it.
             boxShadow:
-              "0 1px 3px rgba(15,34,41,0.04), 0 24px 64px rgba(15,34,41,0.06)",
+              "0 0 0 1px rgba(15,34,41,0.06), 0 1px 3px rgba(15,34,41,0.04), 0 24px 64px rgba(15,34,41,0.06)",
           }}
         >
           {/* Cover image — edge-to-edge at the top of the card.

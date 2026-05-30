@@ -222,9 +222,11 @@ export function WeeklyJourneyCarousel({ weeks }: Props) {
         className="rounded-2xl overflow-hidden"
         style={{
           backgroundColor: "#FFFFFF",
-          border: "1px solid rgba(15, 34, 41, 0.06)",
+          // Bundle 4.2.48: hairline edge via outset ring, not a layout
+          // border — see PublicChallengeHero for the rationale (avoids
+          // the overflow-hidden seam beside edge-to-edge content).
           boxShadow:
-            "0 1px 2px rgba(15, 34, 41, 0.03), 0 4px 14px rgba(15, 34, 41, 0.05)",
+            "0 0 0 1px rgba(15, 34, 41, 0.06), 0 1px 2px rgba(15, 34, 41, 0.03), 0 4px 14px rgba(15, 34, 41, 0.05)",
         }}
       >
         {/* Journey track + prev/next arrows — Bundle 4.2.44.
@@ -454,7 +456,10 @@ function SessionFeature({
       className="weekly-session-card w-full flex items-stretch gap-0 rounded-2xl overflow-hidden text-left p-0 transition-all duration-200 hover:-translate-y-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
       style={{
         backgroundColor: "#FAF7F1",
-        border: "1px solid rgba(15,34,41,0.05)",
+        // Bundle 4.2.48: hairline as an outset ring (not a border) so the
+        // left-edge cover photo fills cleanly to the card edge without the
+        // overflow-hidden seam. Hover shadow below re-includes the ring.
+        boxShadow: "0 0 0 1px rgba(15,34,41,0.05)",
         font: "inherit",
         color: "inherit",
         // @ts-expect-error CSS custom property for focus ring color
@@ -464,6 +469,7 @@ function SessionFeature({
       <style>{`
         .weekly-session-card:hover {
           box-shadow:
+            0 0 0 1px rgba(15,34,41,0.05),
             0 4px 8px rgba(15,34,41,0.06),
             0 16px 32px rgba(15,34,41,0.12);
         }
