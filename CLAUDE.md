@@ -140,3 +140,36 @@ Build the thinnest possible frontend that lets:
 2. **Creators**: create session/challenge → publish → go live → manage attendees
 
 Stack to be decided (Next.js recommended). See MVP plan in project memory.
+
+---
+
+## Hosting & Portability Guardrails
+
+The frontend deploys to **Vercel** (project `infitra-backend`, prod domain
+`www.infitra.fit`, currently **Hobby/free** tier). Vercel is a *deploy target*,
+not part of the architecture — the goal is to keep it that way so we can move
+hosts (Cloudflare via OpenNext, a Dockerized self-host, AWS, etc.) in days, not
+a rewrite. To avoid ever getting locked into an un-optimized setup, follow these
+rules:
+
+1. **Never adopt Vercel proprietary data products** — no `@vercel/kv`,
+   `@vercel/postgres`, `@vercel/blob`, Vercel Edge Config, or Vercel Cron.
+   State lives in Supabase + Edge Functions; scheduled work goes in Edge
+   Functions / DB cron. This is the single biggest lock-in risk.
+2. **Avoid `@vercel/*` runtime SDKs** generally. Vercel Analytics / Speed
+   Insights are fine (trivially removable); nothing else without a reason.
+3. **Keep image handling behind `next/image`'s `loader` abstraction** (done in
+   Bundle 4.2.51). Today it uses Vercel's optimizer; switching to a custom
+   loader (Supabase Pro transforms / Cloudflare Images) is a one-file change in
+   `next.config.ts`, zero component churn.
+4. **Stay on standard, self-hostable Next.js** — no reliance on Vercel-only
+   runtime behavior. `next start` in a container must remain a valid target.
+5. **Billing hygiene**: set a Vercel spend cap / alert. Re-evaluate the host
+   when the monthly bill crosses a threshold worth caring about (~CHF 100–200).
+   Note: Vercel **Hobby is non-commercial** — must move to Pro before taking
+   real payments at scale.
+
+Cost reality: Vercel gets expensive at scale via bandwidth, function-seconds
+(heavy SSR), and metered image optimization. None bite at pilot scale. The
+buyer page's SSR query waterfall and image weight are the levers that most
+affect those meters — keep them lean.
