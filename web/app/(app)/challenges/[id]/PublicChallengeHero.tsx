@@ -88,6 +88,9 @@ interface Props {
    *  carrying its sessions (with host + cohosts already attached).
    *  Consumed by WeeklyJourneyCarousel. */
   weeks: WeekData[];
+  /** IANA timezone resolved for the viewer — forwarded to the carousel
+   *  so session times render in the viewer's own zone (4.2.49). */
+  timeZone: string;
   isAuthenticated: boolean;
   hasPurchased: boolean;
   isCreator: boolean;
@@ -156,6 +159,7 @@ export function PublicChallengeHero({
   currency,
   creators,
   weeks,
+  timeZone,
   isAuthenticated,
   hasPurchased,
   isCreator,
@@ -356,7 +360,7 @@ export function PublicChallengeHero({
             className="-mx-6 lg:-mx-10 mt-7 lg:mt-9 px-6 lg:px-10 py-9 lg:py-11"
             style={{ backgroundColor: "#FFFFFF" }}
           >
-            <WeeklyJourneyCarousel weeks={weeks} />
+            <WeeklyJourneyCarousel weeks={weeks} timeZone={timeZone} />
           </div>
 
           {/* CTA section — Bundle 4.2.27.

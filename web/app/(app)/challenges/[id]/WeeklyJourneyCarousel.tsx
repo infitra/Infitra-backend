@@ -86,9 +86,12 @@ interface WeekData {
 
 interface Props {
   weeks: WeekData[];
+  /** IANA timezone resolved for the viewer (device cookie → IP header →
+   *  default), passed from the server so SSR + hydration agree. */
+  timeZone: string;
 }
 
-export function WeeklyJourneyCarousel({ weeks }: Props) {
+export function WeeklyJourneyCarousel({ weeks, timeZone }: Props) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [openSessionId, setOpenSessionId] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -309,6 +312,7 @@ export function WeeklyJourneyCarousel({ weeks }: Props) {
             >
               <WeekSlide
                 week={week}
+                timeZone={timeZone}
                 onOpenDetail={(sessionId) => setOpenSessionId(sessionId)}
               />
             </div>
@@ -324,6 +328,7 @@ export function WeeklyJourneyCarousel({ weeks }: Props) {
       {openSession && (
         <SessionDetailModal
           session={openSession}
+          timeZone={timeZone}
           onClose={() => setOpenSessionId(null)}
         />
       )}
@@ -338,9 +343,11 @@ export function WeeklyJourneyCarousel({ weeks }: Props) {
  *  Sessions stack with tight margin between them. */
 function WeekSlide({
   week,
+  timeZone,
   onOpenDetail,
 }: {
   week: WeekData;
+  timeZone: string;
   onOpenDetail: (sessionId: string) => void;
 }) {
   return (
@@ -377,6 +384,7 @@ function WeekSlide({
             >
               <SessionFeature
                 session={s}
+                timeZone={timeZone}
                 onOpenDetail={() => onOpenDetail(s.id)}
               />
             </div>
@@ -413,14 +421,16 @@ function WeekSlide({
  */
 function SessionFeature({
   session,
+  timeZone,
   onOpenDetail,
 }: {
   session: SessionLite;
+  timeZone: string;
   onOpenDetail: () => void;
 }) {
   const people = sessionPeople(session);
-  const dayLabel = formatSessionDay(session.start_time);
-  const timeLabel = formatSessionTime(session.start_time);
+  const dayLabel = formatSessionDay(session.start_time, timeZone);
+  const timeLabel = formatSessionTime(session.start_time, timeZone);
   const durLabel = formatDuration(session.duration_minutes);
   const personSummary =
     people.length === 0
@@ -615,9 +625,11 @@ function SessionFeature({
  */
 function SessionDetailModal({
   session,
+  timeZone,
   onClose,
 }: {
   session: SessionLite;
+  timeZone: string;
   onClose: () => void;
 }) {
   useEffect(() => {
@@ -711,9 +723,9 @@ function SessionDetailModal({
             style={{ color: "#475569" }}
             suppressHydrationWarning
           >
-            {formatSessionDay(session.start_time)}
+            {formatSessionDay(session.start_time, timeZone)}
             <span style={{ color: "#cbd5e1" }}> · </span>
-            {formatSessionTime(session.start_time)}
+            {formatSessionTime(session.start_time, timeZone)}
             <span style={{ color: "#cbd5e1" }}> · </span>
             {formatDuration(session.duration_minutes)}
           </p>
@@ -1013,30 +1025,27 @@ function Avatar({ host, size }: { host: HostLite; size: "sm" | "md" }) {
 
 /* ── Format helpers ─────────────────────────────────────────────── */
 
-// Bundle 4.2.37: timezone pin — mirror of the same fix in
-// SessionsCarousel (Bundle 4.2.35). Sessions are created and
-// displayed in a single canonical wall-clock zone (the workspace
-// interprets datetime inputs as Asia/Phnom_Penh). Times are
-// stored UTC; we pin formatting to that same zone so the buyer
-// page shows the intended local time deterministically on both
-// server and client (otherwise the server-rendered UTC time gets
-// frozen by suppressHydrationWarning).
-const DISPLAY_TZ = "Asia/Phnom_Penh";
-
-function formatSessionDay(iso: string): string {
+// Bundle 4.2.49: times are formatted in the VIEWER's own timezone.
+// `timeZone` is resolved server-side (device zone via the viewer_tz
+// cookie → Vercel x-vercel-ip-timezone header → default) and passed
+// down as a prop so SSR and hydration format with the SAME explicit
+// zone — deterministic, no flicker, and correct to wherever the
+// viewer actually is. (Superseded the 4.2.37 hardcoded Asia/Phnom_Penh
+// pin, which showed Cambodian time to everyone regardless of location.)
+function formatSessionDay(iso: string, timeZone: string): string {
   const d = new Date(iso);
   return d.toLocaleDateString("en-GB", {
-    timeZone: DISPLAY_TZ,
+    timeZone,
     weekday: "short",
     day: "numeric",
     month: "short",
   });
 }
 
-function formatSessionTime(iso: string): string {
+function formatSessionTime(iso: string, timeZone: string): string {
   const d = new Date(iso);
   return d.toLocaleTimeString("en-GB", {
-    timeZone: DISPLAY_TZ,
+    timeZone,
     hour: "2-digit",
     minute: "2-digit",
   });

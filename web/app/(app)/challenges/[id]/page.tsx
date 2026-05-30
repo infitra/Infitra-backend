@@ -9,6 +9,7 @@ import { PublicCommitBlock } from "./PublicCommitBlock";
 import { StickyJoinCTA } from "./StickyJoinCTA";
 import { buildWeeks } from "@/lib/challenges/buildWeeks";
 import { loadSessionCohosts } from "@/lib/challenges/sessionCohosts";
+import { resolveViewerTimeZone } from "@/lib/time/viewerTimeZone";
 
 export const metadata = {
   title: "Challenge — INFITRA",
@@ -29,6 +30,9 @@ export default async function ChallengePage({
 }) {
   const { id } = await params;
   const { checkout_error: checkoutError } = await searchParams;
+  // Viewer's own timezone (device cookie → IP header → default) so session
+  // times render in their local zone, resolved server-side for stable SSR.
+  const viewerTimeZone = await resolveViewerTimeZone();
   const supabase = await createClient();
   const {
     data: { user },
@@ -318,6 +322,7 @@ export default async function ChallengePage({
           currency={buyerView.currency}
           creators={creators}
           weeks={weeks}
+          timeZone={viewerTimeZone}
           isAuthenticated={!!user}
           hasPurchased={hasPurchased}
           isCreator={isCreator}

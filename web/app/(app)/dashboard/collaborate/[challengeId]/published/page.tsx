@@ -7,6 +7,7 @@ import { PublicBeyondLiveBlock } from "@/app/(app)/challenges/[id]/PublicBeyondL
 import { PublishedShareBar } from "./PublishedShareBar";
 import { buildWeeks } from "@/lib/challenges/buildWeeks";
 import { loadSessionCohosts } from "@/lib/challenges/sessionCohosts";
+import { resolveViewerTimeZone } from "@/lib/time/viewerTimeZone";
 
 export const metadata = { title: "Collaboration Published — INFITRA" };
 
@@ -32,6 +33,7 @@ export default async function PublishedCelebrationPage({
   params: Promise<{ challengeId: string }>;
 }) {
   const { challengeId } = await params;
+  const viewerTimeZone = await resolveViewerTimeZone();
   const supabase = await createClient();
   const {
     data: { user },
@@ -230,6 +232,7 @@ export default async function PublishedCelebrationPage({
           currency={buyerView.currency}
           creators={creators}
           weeks={weeks}
+          timeZone={viewerTimeZone}
           isAuthenticated={true}
           hasPurchased={false}
           isCreator={true}
