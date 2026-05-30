@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { ParticipantNav } from "@/app/components/ParticipantNav";
 import { PublicChallengeHero } from "./PublicChallengeHero";
 import { PublicCreatorsBlock } from "./PublicCreatorsBlock";
@@ -250,8 +251,7 @@ export default async function ChallengePage({
           />
           <div className="relative max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2.5">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 src="/logo-mark.png"
                 alt="INFITRA"
                 width={34}

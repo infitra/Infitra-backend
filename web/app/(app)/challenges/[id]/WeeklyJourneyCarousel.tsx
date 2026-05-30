@@ -53,6 +53,7 @@
  */
 
 import { Fragment, useEffect, useRef, useState } from "react";
+import Image from "next/image";
 
 // Bundle 4.2.37: mirror of the cohost-aware shape used by the flat
 // SessionsCarousel (added there in 4.2.35) so the A/B comparison
@@ -513,14 +514,17 @@ function SessionFeature({
         style={{ aspectRatio: "3 / 4" }}
       >
         {session.image_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             src={session.image_url}
             alt=""
             // Below the fold — defer so it doesn't compete with the cover.
+            // Tiny rendered slot (~128px) → optimizer serves a few-KB WebP,
+            // which is what removes the swipe-decode delay on carousel weeks.
+            fill
+            sizes="128px"
             loading="lazy"
             decoding="async"
-            className="absolute inset-0 w-full h-full object-cover"
+            className="object-cover"
           />
         ) : (
           <div
@@ -530,8 +534,7 @@ function SessionFeature({
                 "linear-gradient(135deg, rgba(156,240,255,0.40), rgba(255,97,48,0.20))",
             }}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Image
               src="/logo-mark.png"
               alt=""
               width={20}
@@ -690,16 +693,18 @@ function SessionDetailModal({
 
         {/* Image — 16:9 cinematic at top of modal */}
         {session.image_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={session.image_url}
-            alt=""
-            // Modal only mounts on open — never blocks the initial paint.
-            loading="lazy"
-            decoding="async"
-            className="w-full block"
-            style={{ aspectRatio: "16 / 9", objectFit: "cover" }}
-          />
+          <div className="relative w-full" style={{ aspectRatio: "16 / 9" }}>
+            <Image
+              src={session.image_url}
+              alt=""
+              // Modal only mounts on open — never blocks the initial paint.
+              fill
+              sizes="(max-width: 768px) 100vw, 600px"
+              loading="lazy"
+              decoding="async"
+              className="object-cover"
+            />
+          </div>
         ) : (
           <div
             className="w-full"
@@ -995,10 +1000,11 @@ function Avatar({ host, size }: { host: HostLite; size: "sm" | "md" }) {
   const fontSize = size === "sm" ? "text-[10px]" : "text-[12px]";
   if (host.avatar_url) {
     return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
+      <Image
         src={host.avatar_url}
         alt={host.display_name ?? "Expert"}
+        width={32}
+        height={32}
         loading="lazy"
         decoding="async"
         className={`${dim} rounded-full object-cover shrink-0`}

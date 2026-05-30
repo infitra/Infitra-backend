@@ -25,6 +25,7 @@
  */
 
 import Link from "next/link";
+import Image from "next/image";
 import { PurchaseButton } from "@/app/components/PurchaseButton";
 import { WeeklyJourneyCarousel } from "./WeeklyJourneyCarousel";
 import { ExpandableDescription } from "./ExpandableDescription";
@@ -238,16 +239,20 @@ export function PublicChallengeHero({
               top-left corner — labels the cover as a live program
               and signals duration at a glance. */}
           {imageUrl && (
-            <div className="-mx-6 lg:-mx-10 relative">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+            <div className="-mx-6 lg:-mx-10 relative aspect-[5/4] lg:aspect-[3/2]">
+              <Image
                 src={imageUrl}
                 alt=""
                 // LCP element — fetch eagerly at high priority so the cover
                 // paints first instead of competing with below-fold images.
+                // next/image serves a right-sized WebP via the Vercel
+                // optimizer instead of the full-resolution source PNG.
+                fill
+                sizes="(max-width: 1024px) 100vw, 760px"
                 fetchPriority="high"
+                loading="eager"
                 decoding="async"
-                className="w-full block aspect-[5/4] lg:aspect-[3/2] object-cover"
+                className="object-cover"
               />
               <div
                 className="absolute top-4 left-4 lg:top-5 lg:left-5 inline-flex items-center gap-2 px-3 py-1.5 rounded-full"
@@ -415,10 +420,11 @@ function ExpertPortrait({ creator }: { creator: Creator }) {
       style={{ maxWidth: "150px" }}
     >
       {creator.avatar_url ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
+        <Image
           src={creator.avatar_url}
           alt={creator.display_name ?? "Expert"}
+          width={112}
+          height={112}
           decoding="async"
           className="w-24 h-24 lg:w-28 lg:h-28 rounded-full object-cover"
           style={{

@@ -15,6 +15,8 @@
  * fine on its own, doesn't pretend there's a partner.
  */
 
+import Image from "next/image";
+
 interface Creator {
   id: string;
   display_name: string | null;
@@ -88,10 +90,11 @@ export function PublicCreatorsBlock({ creators, topicsByCreator }: Props) {
                 {/* Avatar + name + tagline */}
                 <div className="flex items-start gap-4 mb-5">
                   {c.avatar_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
+                    <Image
                       src={c.avatar_url}
                       alt={c.display_name ?? "Creator"}
+                      width={96}
+                      height={96}
                       loading="lazy"
                       decoding="async"
                       className="w-20 h-20 lg:w-24 lg:h-24 rounded-full object-cover shrink-0"
