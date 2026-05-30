@@ -517,6 +517,9 @@ function SessionFeature({
           <img
             src={session.image_url}
             alt=""
+            // Below the fold — defer so it doesn't compete with the cover.
+            loading="lazy"
+            decoding="async"
             className="absolute inset-0 w-full h-full object-cover"
           />
         ) : (
@@ -691,6 +694,9 @@ function SessionDetailModal({
           <img
             src={session.image_url}
             alt=""
+            // Modal only mounts on open — never blocks the initial paint.
+            loading="lazy"
+            decoding="async"
             className="w-full block"
             style={{ aspectRatio: "16 / 9", objectFit: "cover" }}
           />
@@ -993,6 +999,8 @@ function Avatar({ host, size }: { host: HostLite; size: "sm" | "md" }) {
       <img
         src={host.avatar_url}
         alt={host.display_name ?? "Expert"}
+        loading="lazy"
+        decoding="async"
         className={`${dim} rounded-full object-cover shrink-0`}
         style={{
           border: "1.5px solid #FFFFFF",

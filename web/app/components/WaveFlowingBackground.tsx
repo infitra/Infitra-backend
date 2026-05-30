@@ -7,14 +7,20 @@
  * bend from the lower-left toward the upper-right of the viewport.
  * Each stripe is filled with the brand cyan→white→orange gradient.
  *
- * Two motion sources, both staying perfectly anchored to the viewport
- * corners (no spatial transform):
- *   1. SMIL animation on Wave 1's <feGaussianBlur stdDeviation> — the
- *      broad blurred backdrop visibly breathes between sharper (8px)
- *      and softer (28px) blur over 9s.
- *   2. CSS opacity pulses on each wave layer with independent cycles
- *      (7s / 5s / 6s) so the cumulative colour amount fluctuates
- *      organically over time.
+ * Motion — CSS opacity pulses on each wave layer with independent cycles
+ * (7s / 5s / 6s) so the cumulative colour amount fluctuates organically
+ * over time. Opacity is a compositor-only property (GPU, no repaint), so
+ * the flow is effectively free to animate, even page-wide and fixed.
+ *
+ * The backmost wave's blur is STATIC (stdDeviation 18). It used to animate
+ * 8↔28 via SMIL, but animating an SVG filter forces a full-viewport CPU
+ * re-rasterisation of a large blur kernel every frame — the dominant
+ * scroll-jank cost on long pages. The oscillation was near-imperceptible
+ * next to the opacity flow, so it's frozen at the mid value: the waves
+ * look identically soft, the per-frame raster cost is gone.
+ *
+ * Motion respects prefers-reduced-motion (see globals.css): users who opt
+ * out of motion get a calm static gradient instead of the pulsing flow.
  *
  * No CSS filter brightness/saturate — brand colours stay exactly
  * #9CF0FF and #FF6130 at every moment.
@@ -29,15 +35,9 @@ export function WaveFlowingBackground() {
       className="fixed inset-0 z-0 pointer-events-none overflow-hidden"
       aria-hidden="true"
     >
-      {/* Wave 1 — back, biggest, heavily blurred. SVG blur stdDeviation
-          animates 8↔28 so the broad backdrop visibly breathes. */}
-      <div
-        className="absolute inset-0"
-        style={{
-          animation: "wave-pulse-1 7s ease-in-out infinite",
-          willChange: "opacity",
-        }}
-      >
+      {/* Wave 1 — back, biggest, heavily blurred. Blur is static (18);
+          only opacity pulses (compositor-cheap). */}
+      <div className="absolute inset-0 wfg-wave wfg-wave-1">
         <svg
           viewBox="0 0 1600 1000"
           preserveAspectRatio="none"
@@ -52,17 +52,10 @@ export function WaveFlowingBackground() {
               <stop offset="100%" stopColor="#FF6130" stopOpacity="0.92" />
             </linearGradient>
             <filter id="wfg-blur" x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur stdDeviation="18">
-                <animate
-                  attributeName="stdDeviation"
-                  values="8;28;8"
-                  dur="9s"
-                  repeatCount="indefinite"
-                  calcMode="spline"
-                  keyTimes="0;0.5;1"
-                  keySplines="0.5 0 0.5 1;0.5 0 0.5 1"
-                />
-              </feGaussianBlur>
+              {/* Static blur — was animated 8↔28 (expensive per-frame
+                  raster); frozen at the mid value for identical softness
+                  at zero runtime cost. */}
+              <feGaussianBlur stdDeviation="18" />
             </filter>
           </defs>
           <path
@@ -74,13 +67,7 @@ export function WaveFlowingBackground() {
       </div>
 
       {/* Wave 2 — middle layer, fastest opacity dim/peak */}
-      <div
-        className="absolute inset-0"
-        style={{
-          animation: "wave-pulse-2 5s ease-in-out infinite",
-          willChange: "opacity",
-        }}
-      >
+      <div className="absolute inset-0 wfg-wave wfg-wave-2">
         <svg
           viewBox="0 0 1600 1000"
           preserveAspectRatio="none"
@@ -103,13 +90,7 @@ export function WaveFlowingBackground() {
       </div>
 
       {/* Wave 3 — front, sharpest, narrower band of pure vivid brand */}
-      <div
-        className="absolute inset-0"
-        style={{
-          animation: "wave-pulse-3 6s ease-in-out infinite -1.5s",
-          willChange: "opacity",
-        }}
-      >
+      <div className="absolute inset-0 wfg-wave wfg-wave-3">
         <svg
           viewBox="0 0 1600 1000"
           preserveAspectRatio="none"

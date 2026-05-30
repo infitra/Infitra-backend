@@ -243,6 +243,10 @@ export function PublicChallengeHero({
               <img
                 src={imageUrl}
                 alt=""
+                // LCP element — fetch eagerly at high priority so the cover
+                // paints first instead of competing with below-fold images.
+                fetchPriority="high"
+                decoding="async"
                 className="w-full block aspect-[5/4] lg:aspect-[3/2] object-cover"
               />
               <div
@@ -415,6 +419,7 @@ function ExpertPortrait({ creator }: { creator: Creator }) {
         <img
           src={creator.avatar_url}
           alt={creator.display_name ?? "Expert"}
+          decoding="async"
           className="w-24 h-24 lg:w-28 lg:h-28 rounded-full object-cover"
           style={{
             border: "3px solid #FFFFFF",

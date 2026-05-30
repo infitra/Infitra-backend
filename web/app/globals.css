@@ -197,6 +197,24 @@ body {
   50%      { opacity: 1; }
 }
 
+/* WaveFlowingBackground layers — opacity-only pulses (compositor-cheap).
+   Defined as classes (not inline styles) so prefers-reduced-motion can
+   override them; inline `animation` can't be overridden by a media query. */
+.wfg-wave { will-change: opacity; }
+.wfg-wave-1 { animation: wave-pulse-1 7s ease-in-out infinite; }
+.wfg-wave-2 { animation: wave-pulse-2 5s ease-in-out infinite; }
+.wfg-wave-3 { animation: wave-pulse-3 6s ease-in-out infinite -1.5s; }
+
+/* Honour the OS "reduce motion" setting: hold each layer at a calm static
+   opacity (a mid-state of its pulse) so the gradient stays rich but stops
+   moving. Also drops will-change so we don't keep idle compositor layers. */
+@media (prefers-reduced-motion: reduce) {
+  .wfg-wave { will-change: auto; }
+  .wfg-wave-1 { animation: none; opacity: 0.85; }
+  .wfg-wave-2 { animation: none; opacity: 0.65; }
+  .wfg-wave-3 { animation: none; opacity: 0.65; }
+}
+
 /* beam-hover-cyan — legacy, kept for design-lab only */
 
 /* ── Card Base — wave-influenced translucent, shadow-elevated ── */

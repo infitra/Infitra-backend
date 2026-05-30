@@ -92,6 +92,8 @@ export function PublicCreatorsBlock({ creators, topicsByCreator }: Props) {
                     <img
                       src={c.avatar_url}
                       alt={c.display_name ?? "Creator"}
+                      loading="lazy"
+                      decoding="async"
                       className="w-20 h-20 lg:w-24 lg:h-24 rounded-full object-cover shrink-0"
                     />
                   ) : (

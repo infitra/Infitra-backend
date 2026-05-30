@@ -34,52 +34,110 @@ export default async function ChallengePage({
   // times render in their local zone, resolved server-side for stable SSR.
   const viewerTimeZone = await resolveViewerTimeZone();
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
-  // Buyer view — consolidated challenge data from vw_challenge_buyer_view.
-  // NOTE: vw_challenge_buyer_view.promise_text is coalesced with description
-  // server-side. For Bundle 4.2.8 we also want the RAW promise_text and
-  // description as separate fields so the hero card can render both
-  // (promise as H1, description as the explanatory paragraph below the
-  // cover image). Hence the extra query below.
-  const { data: buyerView } = await supabase
-    .from("vw_challenge_buyer_view")
-    .select("*")
-    .eq("challenge_id", id)
-    .maybeSingle();
+  // ── Wave 1 ─────────────────────────────────────────────────────────
+  // Everything keyed only on the challenge id (plus the auth lookup) is
+  // independent, so fetch it all in parallel. These used to be ~5
+  // sequential awaits; collapsing them into one Promise.all cuts the
+  // server-side waterfall depth (worst on a Vercel cold start).
+  //
+  // buyerView: consolidated challenge data (promise_text is coalesced
+  //   with description server-side).
+  // challengeDetails: the RAW promise_text + description as separate
+  //   fields so the hero card can render both (promise as H1, description
+  //   as the paragraph below the cover) — Bundle 4.2.8.
+  // sessionRows: host_id is selected so each session card can attribute
+  //   its leading Expert (avatar + name) — Bundle 4.2.14.
+  const [
+    {
+      data: { user },
+    },
+    { data: buyerView },
+    { data: challengeDetails },
+    { data: cohostRows },
+    { data: sessionRows },
+  ] = await Promise.all([
+    supabase.auth.getUser(),
+    supabase
+      .from("vw_challenge_buyer_view")
+      .select("*")
+      .eq("challenge_id", id)
+      .maybeSingle(),
+    supabase
+      .from("app_challenge")
+      .select("promise_text, description")
+      .eq("id", id)
+      .maybeSingle(),
+    supabase
+      .from("app_challenge_cohost")
+      .select("cohost_id")
+      .eq("challenge_id", id),
+    supabase
+      .from("app_challenge_session")
+      .select(
+        "session_id, app_session(id, title, description, image_url, start_time, duration_minutes, host_id)",
+      )
+      .eq("challenge_id", id),
+  ]);
 
   if (!buyerView) notFound();
   if (buyerView.status !== "published") notFound();
 
-  // Raw promise + description for the hero card's two-beat treatment.
-  const { data: challengeDetails } = await supabase
-    .from("app_challenge")
-    .select("promise_text, description")
-    .eq("id", id)
-    .maybeSingle();
-  const rawPromise = challengeDetails?.promise_text?.trim() || null;
-  const rawDescription = challengeDetails?.description?.trim() || null;
   // If promise is set, both can be shown. If only description is set,
   // description becomes the H1 (existing fallback in the hero) and there's
   // no separate description block (it would duplicate the H1).
+  const rawPromise = challengeDetails?.promise_text?.trim() || null;
+  const rawDescription = challengeDetails?.description?.trim() || null;
   const heroPromise = rawPromise ?? rawDescription;
   const heroDescription = rawPromise ? rawDescription : null;
 
-  // Cohorts → IDs
-  const { data: cohostRows } = await supabase
-    .from("app_challenge_cohost")
-    .select("cohost_id")
-    .eq("challenge_id", id);
-  const cohostIds: string[] = (cohostRows ?? []).map((c: { cohost_id: string }) => c.cohost_id);
+  const cohostIds: string[] = (cohostRows ?? []).map(
+    (c: { cohost_id: string }) => c.cohost_id,
+  );
 
-  // All creator profiles (owner + cohosts)
+  const sessions = ((sessionRows ?? [])
+    .map((r: any) => r.app_session)
+    .filter(Boolean) as Array<{
+      id: string;
+      title: string;
+      description: string | null;
+      image_url: string | null;
+      start_time: string;
+      duration_minutes: number;
+      host_id: string | null;
+    }>)
+    .sort(
+      (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime(),
+    );
+
+  // ── Wave 2 ─────────────────────────────────────────────────────────
+  // Creator profiles depend on owner_id + cohostIds (from wave 1); the
+  // viewer's own membership + profile depend on the authenticated user.
+  // All three are independent of one another → parallel. The viewer
+  // queries no-op (resolve null) for anonymous visitors.
   const allCreatorIds = [buyerView.owner_id, ...cohostIds];
-  const { data: creatorProfiles } = await supabase
-    .from("app_profile")
-    .select("id, display_name, avatar_url, bio, tagline, username")
-    .in("id", allCreatorIds);
+  const [{ data: creatorProfiles }, membershipRes, viewerProfileRes] =
+    await Promise.all([
+      supabase
+        .from("app_profile")
+        .select("id, display_name, avatar_url, bio, tagline, username")
+        .in("id", allCreatorIds),
+      user
+        ? supabase
+            .from("app_challenge_member")
+            .select("id")
+            .eq("challenge_id", id)
+            .eq("user_id", user.id)
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
+      user
+        ? supabase
+            .from("app_profile")
+            .select("display_name, role")
+            .eq("id", user.id)
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
+    ]);
 
   const profileById = new Map<string, {
     id: string;
@@ -103,31 +161,42 @@ export default async function ChallengePage({
     ...(owner ? [{ ...owner, role: "owner" as const }] : []),
     ...cohostProfiles.map((p) => ({ ...p, role: "cohost" as const })),
   ];
+  const creatorsById = new Map(creators.map((c) => [c.id, c]));
 
-  // Sessions, with cover image + description + host. Bundle 4.2.14:
-  // host_id is selected so we can attribute each session to its
-  // leading Expert in the buyer-page session cards (avatar + name).
-  const { data: sessionRows } = await supabase
-    .from("app_challenge_session")
-    .select(
-      "session_id, app_session(id, title, description, image_url, start_time, duration_minutes, host_id)",
-    )
-    .eq("challenge_id", id);
+  // Viewer state (page is public; these are only meaningful when signed in).
+  const hasPurchased = !!(membershipRes.data as { id: string } | null);
+  const isCreator =
+    !!user && (user.id === buyerView.owner_id || cohostIds.includes(user.id));
+  const viewerProfile = viewerProfileRes.data as {
+    display_name: string | null;
+    role: string | null;
+  } | null;
+  const viewerDisplayName = viewerProfile?.display_name ?? null;
+  const viewerRole = viewerProfile?.role ?? undefined;
 
-  const sessions = ((sessionRows ?? [])
-    .map((r: any) => r.app_session)
-    .filter(Boolean) as Array<{
-      id: string;
-      title: string;
-      description: string | null;
-      image_url: string | null;
-      start_time: string;
-      duration_minutes: number;
-      host_id: string | null;
-    }>)
-    .sort(
-      (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime(),
-    );
+  // ── Wave 3 ─────────────────────────────────────────────────────────
+  // Per-session cohosts need the resolved creator map (wave 2); the space
+  // lookup needs to know the viewer is entitled (hasPurchased/isCreator).
+  // Independent of each other → parallel.
+  //
+  // cohostsBySession: read from the public-safe vw_challenge_session_team
+  //   view — app_session_cohost itself is RLS-restricted (split_percent).
+  // spaceId: the door into the cohort community. app_challenge_space.id
+  //   !== source_challenge_id, so it must be resolved here, not passed as
+  //   the challengeId (Bundle 4.1 bug fix).
+  const needsSpace = !!user && (hasPurchased || isCreator);
+  const [cohostsBySession, spaceRes] = await Promise.all([
+    loadSessionCohosts(supabase, id, creatorsById),
+    needsSpace
+      ? supabase
+          .from("app_challenge_space")
+          .select("id")
+          .eq("source_challenge_id", id)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
+  const spaceId: string | null =
+    (spaceRes.data as { id: string } | null)?.id ?? null;
 
   // Bundle 4.2.47: build the per-week structure for the now-canonical
   // WeeklyJourneyCarousel inside PublicChallengeHero. Each session
@@ -140,11 +209,6 @@ export default async function ChallengePage({
     weeklyArc,
     sessions,
   );
-  const creatorsById = new Map(creators.map((c) => [c.id, c]));
-  // Per-session cohosts (shared/co-led sessions). Read from the
-  // public-safe vw_challenge_session_team view — app_session_cohost
-  // itself is RLS-restricted and carries split_percent.
-  const cohostsBySession = await loadSessionCohosts(supabase, id, creatorsById);
   const weeks = rawWeeks.map((week) => ({
     ...week,
     sessions: week.sessions.map((s) => ({
@@ -153,48 +217,6 @@ export default async function ChallengePage({
       cohosts: cohostsBySession.get(s.id) ?? [],
     })),
   }));
-
-  // User state (only if authenticated; page is public)
-  let hasPurchased = false;
-  let isCreator = false;
-  let viewerDisplayName: string | null = null;
-  let viewerRole: string | undefined = undefined;
-  // spaceId is the door into the cohort community (/communities/challenge/[spaceId]).
-  // Bundle 4.1 bug fix: previously the "Open challenge space" links passed
-  // challengeId directly, but app_challenge_space.id !== source_challenge_id —
-  // those links were broken. Resolve the space here and pass its ID down.
-  let spaceId: string | null = null;
-  if (user) {
-    const { data: membership } = await supabase
-      .from("app_challenge_member")
-      .select("id")
-      .eq("challenge_id", id)
-      .eq("user_id", user.id)
-      .maybeSingle();
-    hasPurchased = !!membership;
-    isCreator =
-      user.id === buyerView.owner_id || cohostIds.includes(user.id);
-
-    if (hasPurchased || isCreator) {
-      const { data: space } = await supabase
-        .from("app_challenge_space")
-        .select("id")
-        .eq("source_challenge_id", id)
-        .maybeSingle();
-      spaceId = space?.id ?? null;
-    }
-
-    // Fetch viewer profile for the app-style nav (display_name + role
-    // drive whether ParticipantNav shows creator links like Home /
-    // Earnings / + Create or just the participant version).
-    const { data: viewerProfile } = await supabase
-      .from("app_profile")
-      .select("display_name, role")
-      .eq("id", user.id)
-      .maybeSingle();
-    viewerDisplayName = viewerProfile?.display_name ?? null;
-    viewerRole = viewerProfile?.role ?? undefined;
-  }
 
   // topic_ownership shape: { [creator_profile_id]: string[] }
   const topicsByCreator: Record<string, string[]> =
