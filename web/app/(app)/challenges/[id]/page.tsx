@@ -125,12 +125,12 @@ export default async function ChallengePage({
       (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime(),
     );
 
-  // Build the weeks shape (used to derive each session's week number)
-  // then flatten + enrich for the new flat SessionsCarousel
-  // (Bundle 4.2.14). Each enriched session carries its weekNumber,
-  // weekRange, and resolved host.
+  // Bundle 4.2.47: build the per-week structure for the now-canonical
+  // WeeklyJourneyCarousel inside PublicChallengeHero. Each session
+  // inside its week gets its host + cohosts attached so the agenda
+  // cards can render co-led sessions with the right facepile + names.
   const weeklyArc = (buyerView.weekly_arc as Array<{ week: number; theme: string }>) ?? [];
-  const weeks = buildWeeks(
+  const rawWeeks = buildWeeks(
     buyerView.start_date,
     buyerView.end_date,
     weeklyArc,
@@ -141,15 +141,14 @@ export default async function ChallengePage({
   // public-safe vw_challenge_session_team view — app_session_cohost
   // itself is RLS-restricted and carries split_percent.
   const cohostsBySession = await loadSessionCohosts(supabase, id, creatorsById);
-  const enrichedSessions = weeks.flatMap((week) =>
-    week.sessions.map((s) => ({
+  const weeks = rawWeeks.map((week) => ({
+    ...week,
+    sessions: week.sessions.map((s) => ({
       ...s,
-      weekNumber: week.weekNumber,
-      weekRange: week.weekRange,
       host: s.host_id ? creatorsById.get(s.host_id) ?? null : null,
       cohosts: cohostsBySession.get(s.id) ?? [],
     })),
-  );
+  }));
 
   // User state (only if authenticated; page is public)
   let hasPurchased = false;
@@ -318,7 +317,7 @@ export default async function ChallengePage({
           priceCents={buyerView.price_cents}
           currency={buyerView.currency}
           creators={creators}
-          sessions={enrichedSessions}
+          weeks={weeks}
           isAuthenticated={!!user}
           hasPurchased={hasPurchased}
           isCreator={isCreator}

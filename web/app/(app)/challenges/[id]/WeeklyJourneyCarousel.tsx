@@ -1,14 +1,18 @@
 "use client";
 
 /**
- * WeeklyJourneyCarousel — Bundle 4.2.13 (resurrected 4.2.37), now
- * upgraded in 4.2.39 with agenda-style cards + chapter-heading week
- * title.
+ * WeeklyJourneyCarousel — canonical sessions carousel (Bundle 4.2.47).
  *
- * Lives INSIDE the product card (PublicChallengeHeroWeekly) on the
- * /weekly route variant. Contains the whole "journey" beat: a W1-WN
- * navigation track + swipable week content. Active dot = orange,
- * other dots = cyan.
+ * Lives INSIDE the product card (PublicChallengeHero). Contains the
+ * whole "journey" beat: a W1-WN navigation track + per-week sessions
+ * shown as agenda items. Active dot = orange, other dots = cyan.
+ *
+ * Originally introduced in 4.2.13, replaced by a flat
+ * SessionsCarousel in 4.2.14, then resurrected for an A/B test in
+ * 4.2.37 (/weekly route), upgraded in 4.2.39 with agenda-style
+ * cards + chapter-heading week titles, and promoted to the canonical
+ * variant in 4.2.47 after the weekly experience won the feedback
+ * round. The /weekly route was retired in the same bundle.
  *
  * Bundle 4.2.39 polish (current shape):
  *

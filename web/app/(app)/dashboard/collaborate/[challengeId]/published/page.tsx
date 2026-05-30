@@ -135,10 +135,12 @@ export default async function PublishedCelebrationPage({
   const topicsByCreator: Record<string, string[]> =
     (buyerView.topic_ownership as Record<string, string[]>) ?? {};
 
-  // Bundle 4.2.14: enriched flat sessions array for the flat
-  // SessionsCarousel (with weekNumber + host attached).
+  // Bundle 4.2.47: build the per-week structure for the now-canonical
+  // WeeklyJourneyCarousel inside PublicChallengeHero. Mirrors the
+  // buyer page's assembly so the post-publish preview shows exactly
+  // what participants will see.
   const weeklyArc = (buyerView.weekly_arc as Array<{ week: number; theme: string }>) ?? [];
-  const weeks = buildWeeks(
+  const rawWeeks = buildWeeks(
     buyerView.start_date,
     buyerView.end_date,
     weeklyArc,
@@ -151,15 +153,14 @@ export default async function PublishedCelebrationPage({
     challengeId,
     creatorsById,
   );
-  const enrichedSessions = weeks.flatMap((week) =>
-    week.sessions.map((s) => ({
+  const weeks = rawWeeks.map((week) => ({
+    ...week,
+    sessions: week.sessions.map((s) => ({
       ...s,
-      weekNumber: week.weekNumber,
-      weekRange: week.weekRange,
       host: s.host_id ? creatorsById.get(s.host_id) ?? null : null,
       cohosts: cohostsBySession.get(s.id) ?? [],
     })),
-  );
+  }));
 
   return (
     <>
@@ -228,7 +229,7 @@ export default async function PublishedCelebrationPage({
           priceCents={buyerView.price_cents}
           currency={buyerView.currency}
           creators={creators}
-          sessions={enrichedSessions}
+          weeks={weeks}
           isAuthenticated={true}
           hasPurchased={false}
           isCreator={true}

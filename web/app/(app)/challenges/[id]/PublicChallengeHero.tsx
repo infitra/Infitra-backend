@@ -1,38 +1,60 @@
 /**
- * PublicChallengeHero — Bundle 4.2.18 (stripped middle band).
+ * PublicChallengeHero — Bundle 4.2.47 (weekly-promoted).
  *
- * The hero is one complete card holding the entire offer:
- *   1. H1                — the promise (ALL CAPS editorial display)
- *   2. Cover image       — edge-to-edge inside the card
- *   3. Program name kicker + description
- *   4. Divider
- *   5. Portraits         — Experts as photos + names + role-accented taglines
- *   6. Divider
- *   7. Stats             — "5 weeks · 7 live sessions" + "Always on:
- *                          Tribe Space + Expert Access" subtitle
- *   8. Date range        — "22 May → 25 Jun 2026" display anchor
- *   9. Sessions region   — flat horizontal carousel
- *  10. PRICE-AS-CTA      — orange tappable block, the buy moment IS
- *                          the price display
+ * The buyer-page hero card. Holds the entire offer:
+ *   1. Page-level header (INFITRA Experience eyebrow + H1 promise)
+ *   2. Cover image (4:5 mobile / 3:2 desktop, with LIVE · N WEEKS pill)
+ *   3. Program name kicker + expandable description
+ *   4. Experts portraits (role-color taglines)
+ *   5. Stats line + always-on subtitle + date range
+ *   6. WeeklyJourneyCarousel — W1..WN navigation + per-week sessions
+ *      list (resurrected from 4.2.13, agenda-style cards from 4.2.39)
+ *   7. CTA — two-line positioning sentence + bigger pill button
+ *      ("I'm in · CHF 99") with the price inside it
  *
- * Bundle 4.2.18 simplification (vs 4.2.17):
- *   - Dropped "Two Experts. One Program." / "Followed together in
- *     realtime." caption — redundant with the portraits visual.
- *   - Dropped "PROGRAM RHYTHM" eyebrow + 3-pill chip rail. Replaced
- *     with two clean text lines (stats + always-on qualifier).
+ * The flat SessionsCarousel and the parallel PublicChallengeHeroWeekly
+ * variant were merged into THIS file in Bundle 4.2.47 after the
+ * weekly variant won the A/B feedback round. Git history (pre-4.2.47)
+ * preserves the flat carousel for reference if it's ever wanted back.
  *
- * The card is self-contained — no external "first CTA" below it anymore.
- * Section 2 below the card still has its own "Commit" CTA at the page's
- * end as the second-chance moment.
- *
- * Brand language: "Expert" not "coach"; "tribe" not "cohort/community"
- * (buyer-facing copy only).
+ * Used by:
+ *   - /challenges/[id]                                (public buyer page)
+ *   - /dashboard/collaborate/[challengeId]/published  (post-publish
+ *     preview the creator sees — same hero, same data, plus a
+ *     celebratory header strip and share bar around it)
  */
 
 import Link from "next/link";
 import { PurchaseButton } from "@/app/components/PurchaseButton";
-import { SessionsCarousel, type CarouselSession } from "./SessionsCarousel";
+import { WeeklyJourneyCarousel } from "./WeeklyJourneyCarousel";
 import { ExpandableDescription } from "./ExpandableDescription";
+
+// Each session in a week carries its host + cohosts so the
+// WeeklyJourneyCarousel can render co-led sessions with a facepile
+// + role-tinted names. The buyer page assembles this via
+// loadSessionCohosts (web/lib/challenges/sessionCohosts.ts).
+interface HostLite {
+  id: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  role: "owner" | "cohost";
+}
+
+interface WeekData {
+  weekNumber: number;
+  weekRange: string;
+  theme: string | null;
+  sessions: Array<{
+    id: string;
+    title: string;
+    description: string | null;
+    image_url: string | null;
+    start_time: string;
+    duration_minutes: number;
+    host: HostLite | null;
+    cohosts: HostLite[];
+  }>;
+}
 
 interface Creator {
   id: string;
@@ -41,10 +63,6 @@ interface Creator {
   tagline: string | null;
   role: "owner" | "cohost";
 }
-
-// Bundle 4.2.14: hero now receives a flat array of enriched sessions
-// (with weekNumber + host attached) instead of the previous weeks
-// shape. The carousel uses the flat list directly.
 
 interface Props {
   challengeId: string;
@@ -66,7 +84,10 @@ interface Props {
   priceCents: number;
   currency: string;
   creators: Creator[];
-  sessions: CarouselSession[];
+  /** Per-week structure: one entry per week of the program, each
+   *  carrying its sessions (with host + cohosts already attached).
+   *  Consumed by WeeklyJourneyCarousel. */
+  weeks: WeekData[];
   isAuthenticated: boolean;
   hasPurchased: boolean;
   isCreator: boolean;
@@ -134,7 +155,7 @@ export function PublicChallengeHero({
   priceCents,
   currency,
   creators,
-  sessions,
+  weeks,
   isAuthenticated,
   hasPurchased,
   isCreator,
@@ -317,23 +338,18 @@ export function PublicChallengeHero({
           {/* Bundle 4.2.9: the cream-tinted region (below) replaces
               the divider here. The color change IS the section break. */}
 
-          {/* SESSIONS region — Bundle 4.2.19.
-              Edge-to-edge inset inside the hero card, containing a
-              flat horizontal carousel of all sessions. 4.2.19 flips
-              the contrast direction once more: the region itself
-              goes back to white (blending into the hero card), and
-              the session cards become cream. The result: sessions
-              feel like part of the hero card surface, with cream
-              cards as the only distinct chips.
-              Color history on this region:
-                4.2.14 cream region, cream cards in white container
-                4.2.15 cream region, white cards (drop container)
-                4.2.19 white region, cream cards (this) */}
+          {/* SESSIONS region — Bundle 4.2.35 WEEKLY VARIANT.
+              Same region wrapper as the main hero (white, edge-to-
+              edge inset). The only difference is what's INSIDE:
+              this variant renders WeeklyJourneyCarousel instead of
+              SessionsCarousel. The weekly carousel manages its own
+              W1/W2/W3 navigation track + per-week session list +
+              See-details modal internally. */}
           <div
             className="-mx-6 lg:-mx-10 mt-7 lg:mt-9 px-6 lg:px-10 py-9 lg:py-11"
             style={{ backgroundColor: "#FFFFFF" }}
           >
-            <SessionsCarousel sessions={sessions} />
+            <WeeklyJourneyCarousel weeks={weeks} />
           </div>
 
           {/* CTA section — Bundle 4.2.27.
@@ -525,13 +541,10 @@ function PriceCTA({
   }
 
   // Anonymous or authenticated-not-purchased → buy moment.
-  // Bundle 4.2.45: positioning sentence reshaped into two distinct
-  // beats (always on separate lines, no flow-wrap), with the second
-  // beat darker + heavier for clear stop→start emphasis. The
-  // separate price reveal + "For the full program" eyebrow are
-  // gone; the price now lives inside the pill button itself
-  // ("I'm in — CHF 99") so the buy moment is a single confident
-  // object instead of a stack of three.
+  // Bundle 4.2.45 — mirror of the main hero changes. Two-line
+  // positioning sentence (Stop / Start as separate beats, second
+  // bold); price reveal + eyebrow stack collapsed into a single
+  // bigger pill with the price inline ("I'm in · CHF 99").
   const cta = (
     <div className="text-center">
       <p
@@ -568,9 +581,6 @@ function PriceCTA({
     </span>
   );
 
-  // Bundle 4.2.45: bigger pill (px-10/12 + py-4/5, text-base/lg)
-  // so it carries the buy moment on its own without the auxiliary
-  // price/eyebrow stack above.
   const pillClass =
     "inline-flex items-center justify-center px-10 lg:px-12 py-4 lg:py-5 rounded-full text-white text-base lg:text-lg font-black font-headline transition-transform hover:scale-[1.01] active:scale-[0.99]";
   const pillShadow =
