@@ -2,7 +2,9 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { VIEWER_TZ_COOKIE } from "@/lib/time/viewerTimeZone";
+// Import from the client-safe module, NOT viewerTimeZone.ts — the latter
+// pulls in next/headers and would break the client bundle build.
+import { VIEWER_TZ_COOKIE } from "@/lib/time/viewerTzShared";
 
 /**
  * Bundle 4.2.49 — keeps the `viewer_tz` cookie in sync with the device's

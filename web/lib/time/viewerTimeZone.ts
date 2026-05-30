@@ -1,4 +1,11 @@
 import { cookies, headers } from "next/headers";
+import { VIEWER_TZ_COOKIE, isValidTimeZone } from "./viewerTzShared";
+
+// Re-export the client-safe primitives so existing server-side importers
+// of "@/lib/time/viewerTimeZone" keep working unchanged. Client components
+// must import these from "./viewerTzShared" directly — this module pulls in
+// next/headers and so cannot be bundled for the browser.
+export { VIEWER_TZ_COOKIE, isValidTimeZone };
 
 /**
  * Bundle 4.2.49 — per-viewer timezone resolution (server side).
@@ -20,25 +27,11 @@ import { cookies, headers } from "next/headers";
  *   3. DEFAULT_TIME_ZONE — local-dev / unknown fallback.
  */
 
-export const VIEWER_TZ_COOKIE = "viewer_tz";
-
 // Fallback only hit when neither the cookie nor the Vercel IP header is
 // present (e.g. local dev). Asia/Phnom_Penh matches where the pilot is
 // being run from, so dev renders a sensible wall-clock until the cookie
 // round-trips.
 const DEFAULT_TIME_ZONE = "Asia/Phnom_Penh";
-
-/** Returns true if `tz` is a usable IANA timezone the runtime recognises. */
-export function isValidTimeZone(tz: string | null | undefined): tz is string {
-  if (!tz) return false;
-  try {
-    // Throws RangeError for an unknown/invalid timeZone.
-    new Intl.DateTimeFormat("en-US", { timeZone: tz });
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 export async function resolveViewerTimeZone(): Promise<string> {
   const cookieStore = await cookies();
