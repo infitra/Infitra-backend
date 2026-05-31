@@ -215,18 +215,23 @@ body {
   .wfg-wave-3 { animation: none; opacity: 0.65; }
 }
 
-/* Bundle 4.2.54 — buyer-page mobile background freeze (diagnostic).
-   The buyer page (challenges/[id]) is our heaviest scroll surface. To
-   isolate whether the animated wave background is what still feels laggy
-   on mobile, freeze the waves to a static gradient there — same end-state
-   as prefers-reduced-motion, scoped via the page's [data-static-bg]
-   marker and limited to ≤lg (desktop keeps the live flow). Fully
-   reversible: remove this block + the marker in challenges/[id]/page.tsx. */
+/* Bundle 4.2.55 — buyer-page mobile background REMOVAL (diagnostic).
+   The buyer page (challenges/[id]) is our heaviest scroll surface and the
+   first one felt on mobile. 4.2.54 froze the wave MOTION and scroll lag
+   was unchanged → animation exonerated. This goes further: fully hide the
+   fixed, full-viewport, Gaussian-blurred wave SVG on this page at ≤lg, so
+   the flat cream (#F2EFE8 from the layout) shows through. That removes the
+   per-frame compositing/raster cost of the blurred fixed layer — including
+   the iOS Safari re-raster when the address bar collapses mid-scroll —
+   which freezing could NOT remove. Desktop keeps the live flow.
+
+   Scoped via the buyer page's [data-bg-mobile-off] marker (a :has() hook).
+
+   ⟲ REVERT TO THE ORIGINAL PULSATING BACKGROUND: delete this whole @media
+     block AND the <div data-bg-mobile-off> marker in
+     app/(app)/challenges/[id]/page.tsx. Two deletions, nothing else. */
 @media (max-width: 1023px) {
-  body:has([data-static-bg]) .wfg-wave { will-change: auto; }
-  body:has([data-static-bg]) .wfg-wave-1 { animation: none; opacity: 0.85; }
-  body:has([data-static-bg]) .wfg-wave-2 { animation: none; opacity: 0.65; }
-  body:has([data-static-bg]) .wfg-wave-3 { animation: none; opacity: 0.65; }
+  body:has([data-bg-mobile-off]) .wfg-wave { display: none; }
 }
 
 /* beam-hover-cyan — legacy, kept for design-lab only */

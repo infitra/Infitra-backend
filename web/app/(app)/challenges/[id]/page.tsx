@@ -225,14 +225,20 @@ export default async function ChallengePage({
 
   return (
     <>
-      {/* Bundle 4.2.54 — diagnostic: freeze the wave background to a
-          static gradient on THIS page at mobile widths. The shared
-          WaveFlowingBackground is mounted by the (app) layout, so we
-          can't pass it a prop from here; instead we drop a layout-neutral
-          marker and let globals.css freeze the wave animation via
-          `body:has([data-static-bg]) .wfg-wave` (≤lg only). Reversible:
-          delete this marker + the matching CSS block. */}
-      <div data-static-bg hidden aria-hidden />
+      {/* Bundle 4.2.55 — diagnostic: fully HIDE the wave background on
+          THIS page at mobile widths (was 4.2.54's freeze; freezing the
+          motion changed nothing, so we now remove the fixed blurred SVG
+          entirely to isolate its compositing/raster cost — incl. the iOS
+          address-bar-resize re-raster). The shared WaveFlowingBackground
+          is mounted by the (app) layout, so we can't prop it from here;
+          we drop a layout-neutral marker and globals.css hides the wave
+          layers via `body:has([data-bg-mobile-off]) .wfg-wave` (≤lg only).
+          Desktop is untouched.
+
+          REVERT TO THE ORIGINAL PULSATING BACKGROUND: delete this <div>
+          marker AND the matching @media block in globals.css. Two
+          deletions, nothing else. */}
+      <div data-bg-mobile-off hidden aria-hidden />
       {/* Chrome — auth-aware:
           • Authenticated viewers (the common case for creators viewing
             their own page, participants browsing, and anyone returning

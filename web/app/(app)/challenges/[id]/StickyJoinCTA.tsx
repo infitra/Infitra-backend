@@ -42,19 +42,46 @@ export function StickyJoinCTA({
   const [scrolledPast, setScrolledPast] = useState(false);
 
   useEffect(() => {
-    function onScroll() {
+    // Bundle 4.2.55: rAF-throttle + cache layout reads. The old handler
+    // read document.documentElement.scrollHeight on EVERY scroll event —
+    // a forced synchronous layout each event, a real per-scroll cost on
+    // mobile. scrollHeight + innerHeight only change on resize/content
+    // shifts, not on scroll, so we cache them and recompute on resize
+    // (which on iOS also fires when the address bar collapses). The
+    // scroll path now reads only window.scrollY (cheap, no reflow) and
+    // runs at most once per frame.
+    let rafId: number | null = null;
+    let viewportHeight = window.innerHeight;
+    let docHeight = document.documentElement.scrollHeight;
+
+    function recalcDims() {
+      viewportHeight = window.innerHeight;
+      docHeight = document.documentElement.scrollHeight;
+      update();
+    }
+
+    function update() {
+      rafId = null;
       // Show once the user has scrolled past the hero (~600px down).
       // Hide when within 700px of page bottom (the commit block CTA is
       // visible at that point — no need for two CTAs at once).
       const scrollTop = window.scrollY;
-      const viewportHeight = window.innerHeight;
-      const docHeight = document.documentElement.scrollHeight;
       setScrolledPast(scrollTop > 500);
       setNearBottom(docHeight - (scrollTop + viewportHeight) < 700);
     }
-    onScroll();
+
+    function onScroll() {
+      if (rafId === null) rafId = requestAnimationFrame(update);
+    }
+
+    update();
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    window.addEventListener("resize", recalcDims);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", recalcDims);
+      if (rafId !== null) cancelAnimationFrame(rafId);
+    };
   }, []);
 
   // Don't render for creators (no CTA needed in preview mode)
