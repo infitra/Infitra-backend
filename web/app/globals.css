@@ -215,6 +215,20 @@ body {
   .wfg-wave-3 { animation: none; opacity: 0.65; }
 }
 
+/* Bundle 4.2.54 — buyer-page mobile background freeze (diagnostic).
+   The buyer page (challenges/[id]) is our heaviest scroll surface. To
+   isolate whether the animated wave background is what still feels laggy
+   on mobile, freeze the waves to a static gradient there — same end-state
+   as prefers-reduced-motion, scoped via the page's [data-static-bg]
+   marker and limited to ≤lg (desktop keeps the live flow). Fully
+   reversible: remove this block + the marker in challenges/[id]/page.tsx. */
+@media (max-width: 1023px) {
+  body:has([data-static-bg]) .wfg-wave { will-change: auto; }
+  body:has([data-static-bg]) .wfg-wave-1 { animation: none; opacity: 0.85; }
+  body:has([data-static-bg]) .wfg-wave-2 { animation: none; opacity: 0.65; }
+  body:has([data-static-bg]) .wfg-wave-3 { animation: none; opacity: 0.65; }
+}
+
 /* beam-hover-cyan — legacy, kept for design-lab only */
 
 /* ── Card Base — wave-influenced translucent, shadow-elevated ── */

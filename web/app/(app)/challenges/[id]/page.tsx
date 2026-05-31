@@ -225,6 +225,14 @@ export default async function ChallengePage({
 
   return (
     <>
+      {/* Bundle 4.2.54 — diagnostic: freeze the wave background to a
+          static gradient on THIS page at mobile widths. The shared
+          WaveFlowingBackground is mounted by the (app) layout, so we
+          can't pass it a prop from here; instead we drop a layout-neutral
+          marker and let globals.css freeze the wave animation via
+          `body:has([data-static-bg]) .wfg-wave` (≤lg only). Reversible:
+          delete this marker + the matching CSS block. */}
+      <div data-static-bg hidden aria-hidden />
       {/* Chrome — auth-aware:
           • Authenticated viewers (the common case for creators viewing
             their own page, participants browsing, and anyone returning
