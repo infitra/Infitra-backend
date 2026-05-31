@@ -22,6 +22,18 @@
  * Motion respects prefers-reduced-motion (see globals.css): users who opt
  * out of motion get a calm static gradient instead of the pulsing flow.
  *
+ * MOBILE (≤lg, see globals.css `.wfg-root` block): the flow is frozen to
+ * its static mid-state AND the root is sized with `100lvh` instead of the
+ * viewport-tracking `inset-0`. Reason: on iOS Safari the address bar
+ * collapses/expands during scroll, resizing the viewport — which would
+ * resize this fixed layer and force the big blur to RE-RASTERISE mid-
+ * scroll (the dominant mobile scroll-jank cost). `100lvh` is a stable
+ * unit that ignores the toolbar toggle, so the blurred layer rasterises
+ * once and is then just a cheap cached texture. The look is identical to
+ * the static (frozen) desktop state; only the motion is dropped. Desktop
+ * (≥lg) keeps the live pulsing flow. Revert: drop the `.wfg-root` mobile
+ * block in globals.css.
+ *
  * No CSS filter brightness/saturate — brand colours stay exactly
  * #9CF0FF and #FF6130 at every moment.
  *
@@ -32,7 +44,7 @@
 export function WaveFlowingBackground() {
   return (
     <div
-      className="fixed inset-0 z-0 pointer-events-none overflow-hidden"
+      className="wfg-root fixed inset-0 z-0 pointer-events-none overflow-hidden"
       aria-hidden="true"
     >
       {/* Wave 1 — back, biggest, heavily blurred. Blur is static (18);

@@ -215,23 +215,38 @@ body {
   .wfg-wave-3 { animation: none; opacity: 0.65; }
 }
 
-/* Bundle 4.2.55 — buyer-page mobile background REMOVAL (diagnostic).
-   The buyer page (challenges/[id]) is our heaviest scroll surface and the
-   first one felt on mobile. 4.2.54 froze the wave MOTION and scroll lag
-   was unchanged → animation exonerated. This goes further: fully hide the
-   fixed, full-viewport, Gaussian-blurred wave SVG on this page at ≤lg, so
-   the flat cream (#F2EFE8 from the layout) shows through. That removes the
-   per-frame compositing/raster cost of the blurred fixed layer — including
-   the iOS Safari re-raster when the address bar collapses mid-scroll —
-   which freezing could NOT remove. Desktop keeps the live flow.
+/* Bundle 4.2.56 — smooth STATIC wave background on mobile (all app pages).
+   Diagnosis (4.2.54→4.2.55): the fixed, full-viewport, Gaussian-blurred
+   wave SVG was the mobile scroll-jank source — fully removing it made the
+   buyer page smooth; the dashboard lagged for the same reason (shared bg).
+   Freezing the animation alone did NOT help, because the real re-raster
+   trigger on iOS is the VIEWPORT RESIZE: `fixed inset-0` ties the layer's
+   height to the viewport, and Safari's address bar collapses/expands
+   during scroll → the layer resizes → the big blur re-rasterises every
+   scroll frame.
 
-   Scoped via the buyer page's [data-bg-mobile-off] marker (a :has() hook).
+   Fix — keep the exact brand look, drop only the per-frame raster:
+     1. Freeze the opacity pulse to its calm mid-state (static on mobile).
+     2. Size the root with `100lvh` (the LARGE viewport height — a stable
+        unit that ignores the toolbar toggle) instead of `inset-0`, so the
+        layer never resizes mid-scroll. Blur rasterises ONCE → cached
+        texture → cheap to composite while scrolling.
+   Desktop (≥lg) is untouched: live pulsing flow. Visual is identical to
+   the static frozen state; only motion is dropped on mobile.
 
-   ⟲ REVERT TO THE ORIGINAL PULSATING BACKGROUND: delete this whole @media
-     block AND the <div data-bg-mobile-off> marker in
-     app/(app)/challenges/[id]/page.tsx. Two deletions, nothing else. */
+   ⟲ REVERT TO THE ORIGINAL PULSATING BACKGROUND EVERYWHERE: delete this
+     whole @media block. (The `.wfg-root` class on the container is inert
+     without it.) */
 @media (max-width: 1023px) {
-  body:has([data-bg-mobile-off]) .wfg-wave { display: none; }
+  /* Stop tracking the dynamic viewport height — release the bottom
+     constraint from `inset-0` and pin a stable height instead. */
+  .wfg-root { bottom: auto; height: 100lvh; }
+  /* Freeze the flow to its calm static mid-state (mirrors the
+     prefers-reduced-motion treatment). No will-change → no idle layer. */
+  .wfg-wave { will-change: auto; }
+  .wfg-wave-1 { animation: none; opacity: 0.85; }
+  .wfg-wave-2 { animation: none; opacity: 0.65; }
+  .wfg-wave-3 { animation: none; opacity: 0.65; }
 }
 
 /* beam-hover-cyan — legacy, kept for design-lab only */
