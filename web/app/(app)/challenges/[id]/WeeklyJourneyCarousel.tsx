@@ -114,7 +114,6 @@ export function WeeklyJourneyCarousel({ weeks, timeZone }: Props) {
   // content can't escape the container's box during the transition.
   const slideRefs = useRef<Map<number, HTMLDivElement | null>>(new Map());
   const [activeHeight, setActiveHeight] = useState<number | undefined>();
-  const activeIndexRef = useRef(0);
 
   // Bundle 4.2.43: slides are now narrower than the container (92% so
   // 8% of the next week peeks on the right — universal carousel
@@ -153,48 +152,38 @@ export function WeeklyJourneyCarousel({ weeks, timeZone }: Props) {
     };
   }, []);
 
-  // Keep a ref to the latest activeIndex so the scroll-end listener
-  // (set up once on mount) always reads the current value.
+  // Bundle 4.2.53 — stable max-height, measured once (no per-swipe
+  // resize). The previous approach tweened the container to the ACTIVE
+  // slide's height on every scroll-end. That height change reflows the
+  // whole page below the carousel and produces a visible "expand after
+  // settle" hitch — the felt jank testers reported. Instead we measure
+  // the TALLEST slide once and lock the container to that height. The
+  // container never resizes on swipe → zero per-swipe reflow, and
+  // content is already laid out at full height before you land on it
+  // (no post-settle pop). Shorter weeks (items-start) simply have
+  // whitespace below — a fair trade for a dead-smooth swipe.
   useEffect(() => {
-    activeIndexRef.current = activeIndex;
-  }, [activeIndex]);
+    if (slideRefs.current.size === 0) return;
 
-  // Measure on scroll-end — i.e. 200ms after the LAST scroll event
-  // from the carousel. This is the single reliable signal that the
-  // gesture + snap-snapping is fully done. Tying measurement to this
-  // (instead of to activeIndex changes, which fire mid-gesture) is
-  // what stops the carousel from feeling like it drags vertically.
-  // Effect runs once; the activeIndexRef gives the listener fresh
-  // values across renders.
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    let scrollEndTimer: number | null = null;
-
-    function measure() {
-      const node = slideRefs.current.get(activeIndexRef.current);
-      if (!node) return;
-      setActiveHeight(node.scrollHeight);
+    function measureMax() {
+      let max = 0;
+      slideRefs.current.forEach((node) => {
+        if (node && node.scrollHeight > max) max = node.scrollHeight;
+      });
+      if (max > 0) setActiveHeight(max);
     }
 
-    function onScroll() {
-      if (scrollEndTimer !== null) window.clearTimeout(scrollEndTimer);
-      scrollEndTimer = window.setTimeout(measure, 200);
-    }
-
-    // Initial measure on mount (no scroll event has fired yet).
-    const initialT = window.setTimeout(measure, 50);
-
-    container.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", measure);
+    // Measure after first paint, then again shortly after in case fonts
+    // settle and nudge line-wrapping (which changes slide height).
+    const t1 = window.setTimeout(measureMax, 50);
+    const t2 = window.setTimeout(measureMax, 400);
+    window.addEventListener("resize", measureMax);
     return () => {
-      container.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", measure);
-      if (scrollEndTimer !== null) window.clearTimeout(scrollEndTimer);
-      window.clearTimeout(initialT);
+      window.removeEventListener("resize", measureMax);
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
     };
-  }, []);
+  }, [weeks.length]);
 
   function jumpTo(index: number) {
     const container = containerRef.current;
@@ -288,8 +277,13 @@ export function WeeklyJourneyCarousel({ weeks, timeZone }: Props) {
             WebkitOverflowScrolling: "touch",
             scrollbarWidth: "none",
             msOverflowStyle: "none",
+            // Bundle 4.2.53: locked to the tallest slide (measured once),
+            // no transition. The container never resizes on swipe, so a
+            // swipe can't reflow the page — that was the carousel hitch.
             height: activeHeight ? `${activeHeight}px` : undefined,
-            transition: "height 100ms ease",
+            // Isolate the carousel's internal layout/paint from the rest
+            // of the document so its subtree work never bleeds outward.
+            contain: "layout paint",
           }}
         >
           <style>{`
@@ -510,8 +504,15 @@ function SessionFeature({
           Taller image gives the card more visual presence and
           balances the typography hierarchy in the content column. */}
       <div
-        className="shrink-0 w-28 lg:w-32 relative"
-        style={{ aspectRatio: "3 / 4" }}
+        className="shrink-0 w-28 lg:w-32 relative overflow-hidden"
+        style={{
+          aspectRatio: "3 / 4",
+          // Bundle 4.2.53: tinted placeholder behind the image. Before the
+          // WebP paints (or during a fast scroll), the slot shows a warm
+          // cream tile instead of a blank white "loading" box — removes the
+          // flash-of-empty that read as lag.
+          backgroundColor: "#ECE7DD",
+        }}
       >
         {session.image_url ? (
           <Image

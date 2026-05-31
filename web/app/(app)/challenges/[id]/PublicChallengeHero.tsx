@@ -239,7 +239,10 @@ export function PublicChallengeHero({
               top-left corner — labels the cover as a live program
               and signals duration at a glance. */}
           {imageUrl && (
-            <div className="-mx-6 lg:-mx-10 relative aspect-[5/4] lg:aspect-[3/2]">
+            <div
+              className="-mx-6 lg:-mx-10 relative aspect-[5/4] lg:aspect-[3/2] overflow-hidden"
+              style={{ backgroundColor: "#ECE7DD" }}
+            >
               <Image
                 src={imageUrl}
                 alt=""
@@ -429,6 +432,7 @@ function ExpertPortrait({ creator }: { creator: Creator }) {
           className="w-24 h-24 lg:w-28 lg:h-28 rounded-full object-cover"
           style={{
             border: "3px solid #FFFFFF",
+            backgroundColor: "#ECE7DD",
             boxShadow:
               "0 1px 2px rgba(15,34,41,0.04), 0 6px 16px rgba(15,34,41,0.08)",
           }}

@@ -83,8 +83,11 @@ export function PublicCreatorsBlock({ creators, topicsByCreator }: Props) {
                 style={{
                   backgroundColor: "#FFFFFF",
                   border: "1px solid rgba(15,34,41,0.06)",
+                  // Bundle 4.2.53: trimmed the large 24px-blur shadow to a
+                  // tighter 14px. Visually near-identical, smaller blurred
+                  // paint region as these below-fold cards scroll in.
                   boxShadow:
-                    "0 1px 2px rgba(15,34,41,0.04), 0 8px 24px rgba(15,34,41,0.05)",
+                    "0 1px 2px rgba(15,34,41,0.04), 0 4px 14px rgba(15,34,41,0.05)",
                 }}
               >
                 {/* Avatar + name + tagline */}
@@ -95,9 +98,14 @@ export function PublicCreatorsBlock({ creators, topicsByCreator }: Props) {
                       alt={c.display_name ?? "Creator"}
                       width={96}
                       height={96}
-                      loading="lazy"
+                      // Bundle 4.2.53: eager (not lazy) + tinted slot. These
+                      // sit just below the fold and were popping in on a fast
+                      // scroll. Tiny optimized avatars — cheap to load up
+                      // front; the cream tint covers the brief pre-paint gap.
+                      loading="eager"
                       decoding="async"
                       className="w-20 h-20 lg:w-24 lg:h-24 rounded-full object-cover shrink-0"
+                      style={{ backgroundColor: "#ECE7DD" }}
                     />
                   ) : (
                     <div
