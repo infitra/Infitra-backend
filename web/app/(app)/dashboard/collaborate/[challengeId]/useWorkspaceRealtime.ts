@@ -66,6 +66,7 @@ export function useWorkspaceRealtime({
   const applyContractLocked = useWorkspaceStore((s) => s.applyContractLocked);
   const applyAcceptanceAdded = useWorkspaceStore((s) => s.applyAcceptanceAdded);
   const applyDeclineAdded = useWorkspaceStore((s) => s.applyDeclineAdded);
+  const applyContractCleared = useWorkspaceStore((s) => s.applyContractCleared);
 
   // Keep local activity in sync with server-rendered initialActivity
   // when the page revalidates (e.g. router.refresh from another action).
@@ -148,10 +149,20 @@ export function useWorkspaceRealtime({
           table: "app_challenge",
           filter: `id=eq.${challengeId}`,
         },
-        () => {
-          // Server props rebuild → fields re-render with partner's saves.
-          // useSyncedField inside each editor keeps locally-dirty fields
-          // from being overwritten.
+        (payload) => {
+          // Reopen signal: reactivate_drafting nulls contract_id (without
+          // deleting the contract row), so a null contract_id here means
+          // the workspace was reopened → clear the realtime-owned contract
+          // slice. (The re-seed net preserves contract, so this UPDATE is
+          // the only path that clears it.)
+          const row = payload.new as { contract_id?: string | null } | null;
+          if (row && row.contract_id == null) {
+            applyContractCleared();
+          }
+          // Field edits still flow via props for now (Phase 2b migrates
+          // them). Server props rebuild → fields re-render with partner's
+          // saves. useSyncedField keeps locally-dirty fields from being
+          // overwritten.
           router.refresh();
         },
       )

@@ -144,10 +144,14 @@ export interface WorkspaceState {
 
 export interface WorkspaceActions {
   /**
-   * Replace every server-derived slice in one shot. Used for the initial
-   * seed and (during the Phase 2 migration) as the re-seed safety net when
-   * a slice still propagates via router.refresh() → fresh props. The `ui`
-   * slice is preserved — it is local-only, not server state.
+   * Re-seed the server-derived slices from fresh props (the Phase 2
+   * migration safety net for slices still on router.refresh()). The `ui`
+   * slice is preserved (local-only), and — critically — so is `contract`:
+   * the contract slice is now realtime-owned, and props can arrive STALE
+   * (an out-of-order router.refresh delivering a pre-lock snapshot). If
+   * re-seed overwrote contract it would revert a locked workspace back to
+   * draft (the bug seen in 2a's first deploy). Contract transitions arrive
+   * only via realtime: applyContractLocked / Acceptance / Decline / Cleared.
    */
   seed: (next: Omit<WorkspaceState, "ui">) => void;
 
@@ -168,6 +172,12 @@ export interface WorkspaceActions {
     cohost_id: string;
     comment: string | null;
   }) => void;
+  /**
+   * Reopen → clear the contract slice. reactivate_drafting nulls
+   * app_challenge.contract_id (it does NOT delete the contract row), so the
+   * reopen signal is the app_challenge UPDATE with contract_id = null.
+   */
+  applyContractCleared: () => void;
 }
 
 export type WorkspaceStore = WorkspaceState & WorkspaceActions;
@@ -184,7 +194,11 @@ export function createWorkspaceStore(
 ): StoreApi<WorkspaceStore> {
   return createStore<WorkspaceStore>((set) => ({
     ...initial,
-    seed: (next) => set(next),
+    // Preserve the realtime-owned `contract` slice across re-seeds (see the
+    // interface doc above). `ui` is preserved automatically (not in `next`).
+    seed: (next) => set((s) => ({ ...next, contract: s.contract })),
+
+    applyContractCleared: () => set(() => ({ contract: null })),
 
     applyContractLocked: (row) =>
       set(() => ({
