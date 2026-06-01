@@ -152,28 +152,35 @@ export function WeeklyJourneyCarousel({ weeks, timeZone }: Props) {
     };
   }, []);
 
-  // Bundle 4.2.57 — per-week height restored. We tween the container to
-  // the ACTIVE slide's natural height so shorter weeks (1 session) don't
-  // carry the deadspace of the tallest week. 4.2.53 had locked this to a
-  // single max-height to chase scroll-jank, but that jank turned out to
-  // be the fixed blurred background (fixed in 4.2.56), not this height
-  // change — so the per-week sizing is safe to bring back. A slide's
-  // scrollHeight is constant regardless of scroll position, so we can
-  // measure the moment activeIndex settles (activeIndex only updates when
-  // the rAF scroll listener crosses a slide boundary). `contain: layout
-  // paint` on the container still isolates its paint from the page.
+  // Stable max-height, measured once. We tried per-week dynamic height
+  // (4.2.57) once the background jank was fixed, but the per-swipe height
+  // tween reads as "nervous" — the container twitches vertically on every
+  // swipe. A locked height to the TALLEST slide is calmer: the container
+  // never resizes on swipe, content is already laid out before you land,
+  // no post-settle pop. Shorter weeks (items-start) just have whitespace
+  // below — accepted, in exchange for a dead-still swipe.
   useEffect(() => {
-    function measureActive() {
-      const node = slideRefs.current.get(activeIndex);
-      if (node) setActiveHeight(node.scrollHeight);
+    if (slideRefs.current.size === 0) return;
+
+    function measureMax() {
+      let max = 0;
+      slideRefs.current.forEach((node) => {
+        if (node && node.scrollHeight > max) max = node.scrollHeight;
+      });
+      if (max > 0) setActiveHeight(max);
     }
-    const t = window.setTimeout(measureActive, 50);
-    window.addEventListener("resize", measureActive);
+
+    // Measure after first paint, then again once fonts settle (line-wrap
+    // shifts can change slide height).
+    const t1 = window.setTimeout(measureMax, 50);
+    const t2 = window.setTimeout(measureMax, 400);
+    window.addEventListener("resize", measureMax);
     return () => {
-      window.clearTimeout(t);
-      window.removeEventListener("resize", measureActive);
+      window.removeEventListener("resize", measureMax);
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
     };
-  }, [activeIndex, weeks.length]);
+  }, [weeks.length]);
 
   function jumpTo(index: number) {
     const container = containerRef.current;
@@ -267,12 +274,11 @@ export function WeeklyJourneyCarousel({ weeks, timeZone }: Props) {
             WebkitOverflowScrolling: "touch",
             scrollbarWidth: "none",
             msOverflowStyle: "none",
-            // Bundle 4.2.57: tween to the active week's height (per-week
-            // sizing — no deadspace in short weeks). One settle per swipe,
-            // not per frame; the prior scroll-jank was the background, not
-            // this. `contain` still isolates the carousel's paint.
+            // Locked to the tallest slide (measured once), no transition —
+            // the container never resizes on swipe, so swiping stays dead
+            // still (per-week tweening felt nervous). `contain` isolates
+            // the carousel's paint from the rest of the document.
             height: activeHeight ? `${activeHeight}px` : undefined,
-            transition: "height 160ms ease",
             contain: "layout paint",
           }}
         >
