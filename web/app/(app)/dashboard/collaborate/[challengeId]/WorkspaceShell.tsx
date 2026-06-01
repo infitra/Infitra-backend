@@ -4,6 +4,8 @@ import { WorkspaceEditor } from "./WorkspaceEditor";
 import { WorkspaceChat } from "./WorkspaceChat";
 import { RecentChangesExpander } from "./RecentChangesExpander";
 import { useWorkspaceRealtime, type ActivityRow } from "./useWorkspaceRealtime";
+import { WorkspaceStoreProvider } from "@/lib/workspace/StoreProvider";
+import { initWorkspaceState } from "@/lib/workspace/initFromServerProps";
 import type { ComponentProps } from "react";
 
 /**
@@ -53,7 +55,28 @@ export function WorkspaceShell({
     contractId,
   });
 
+  // Bundle 3.5 Phase 1: seed the workspace store from the resolved props.
+  // INERT for now — the store is created and populated but no descendant
+  // reads from it yet (consumers migrate to selectors in Phase 2). The
+  // provider creates exactly one store per mount (SSR-safe; not a
+  // singleton). Built once on mount from the initial props; live updates
+  // still flow through props/router.refresh until Phase 2 rewires them.
+  const initialState = initWorkspaceState({
+    challenge: editorProps.challenge,
+    isOwner: editorProps.isOwner,
+    currentUserId,
+    ownerProfile: editorProps.ownerProfile,
+    ownerSplit: editorProps.ownerSplit,
+    cohosts: editorProps.cohosts,
+    sessions: editorProps.sessions,
+    pendingInvites: editorProps.pendingInvites ?? [],
+    contract: editorProps.contract,
+    activity,
+    profileMap,
+  });
+
   return (
+    <WorkspaceStoreProvider initialState={initialState}>
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Left: Workspace editor (2/3) */}
       <div className="lg:col-span-2">
@@ -100,5 +123,6 @@ export function WorkspaceShell({
         </div>
       </div>
     </div>
+    </WorkspaceStoreProvider>
   );
 }
