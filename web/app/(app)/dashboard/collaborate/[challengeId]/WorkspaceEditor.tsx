@@ -132,25 +132,27 @@ const DETAILS_ATTRIBUTION_FIELDS = [
 export function WorkspaceEditor({
   isOwner,
   currentUserId,
-  ownerProfile,
-  ownerSplit,
-  cohosts,
-  sessions,
-  pendingInvites,
   activity,
-  profileMap,
 }: Props) {
   const router = useRouter();
   const { status: saveStatus, runSave } = useSaveStatus();
 
-  // Bundle 3.5 Phase 2a/2b: the contract and challenge slices come from the
-  // workspace store, not props. Realtime mutates them directly (no
-  // router.refresh round-trip): contract via lock/accept/decline/cleared,
-  // challenge via applyChallengeUpdate on app_challenge UPDATE. The re-seed
-  // net preserves both, so a stale prop refresh can't clobber them. All
-  // downstream derivations and the per-field useSyncedField read these.
+  // Bundle 3.5 Phase 2a/2b/2c: the workspace's live slices come from the
+  // store, not props. Realtime mutates them directly (no router.refresh):
+  //   - challenge (2b) via applyChallengeUpdate on app_challenge UPDATE
+  //   - contract (2a) via lock/accept/decline/cleared
+  //   - structural slices (2c: sessions, cohosts, pendingInvites, splits,
+  //     profiles) via a debounced load_workspace refetch → seed()
+  // seed() preserves the realtime-owned challenge + contract, so a stale prop
+  // refresh can't clobber them. Per-field local-wins stays in useSyncedField.
   const contract = useWorkspaceStore((s) => s.contract);
   const challenge = useWorkspaceStore((s) => s.challenge);
+  const ownerProfile = useWorkspaceStore((s) => s.ownerProfile);
+  const ownerSplit = useWorkspaceStore((s) => s.ownerSplit);
+  const cohosts = useWorkspaceStore((s) => s.cohosts);
+  const sessions = useWorkspaceStore((s) => s.sessions);
+  const pendingInvites = useWorkspaceStore((s) => s.pendingInvites);
+  const profileMap = useWorkspaceStore((s) => s.profileMap);
 
   const [error, setError] = useState<string | null>(null);
 

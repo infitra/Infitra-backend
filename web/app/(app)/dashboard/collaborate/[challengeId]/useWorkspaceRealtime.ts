@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useWorkspaceStore } from "@/lib/workspace/StoreProvider";
+import { loadWorkspaceSnapshot } from "@/lib/workspace/loadSnapshot";
 
 /**
  * Realtime sync for the workspace. One multiplexed Supabase channel
@@ -68,6 +69,30 @@ export function useWorkspaceRealtime({
   const applyDeclineAdded = useWorkspaceStore((s) => s.applyDeclineAdded);
   const applyContractCleared = useWorkspaceStore((s) => s.applyContractCleared);
   const applyChallengeUpdate = useWorkspaceStore((s) => s.applyChallengeUpdate);
+
+  // Bundle 3.5 Phase 2c — structural refetch. Session/cohost/invite changes
+  // can't be rebuilt from their raw payloads (no joined names/details), so on
+  // such an event we re-pull the consolidated snapshot (one load_workspace
+  // round-trip) and seed() it into the store — instead of router.refresh()'s
+  // full-page re-render. seed() preserves the realtime-owned challenge +
+  // contract slices. Debounced so a burst (e.g. add-session also inserts a
+  // session-cohost) coalesces into a single fetch.
+  const seed = useWorkspaceStore((s) => s.seed);
+  const currentUserId = useWorkspaceStore((s) => s.currentUserId);
+  const refetchTimer = useRef<number | null>(null);
+  const refetch = useCallback(() => {
+    if (refetchTimer.current !== null) window.clearTimeout(refetchTimer.current);
+    refetchTimer.current = window.setTimeout(async () => {
+      const snap = await loadWorkspaceSnapshot(challengeId, currentUserId);
+      if (snap) seed(snap);
+    }, 150);
+  }, [challengeId, currentUserId, seed]);
+  useEffect(
+    () => () => {
+      if (refetchTimer.current !== null) window.clearTimeout(refetchTimer.current);
+    },
+    [],
+  );
 
   // Keep local activity in sync with server-rendered initialActivity
   // when the page revalidates (e.g. router.refresh from another action).
@@ -178,7 +203,7 @@ export function useWorkspaceRealtime({
           table: "app_challenge_session",
           filter: `challenge_id=eq.${challengeId}`,
         },
-        () => router.refresh(),
+        () => refetch(),
       )
       .on(
         "postgres_changes",
@@ -188,7 +213,7 @@ export function useWorkspaceRealtime({
           table: "app_challenge_session",
           filter: `challenge_id=eq.${challengeId}`,
         },
-        () => router.refresh(),
+        () => refetch(),
       )
       .on(
         "postgres_changes",
@@ -202,7 +227,7 @@ export function useWorkspaceRealtime({
           // for sessions in other challenges; we ignore those.
           const row = payload.new as { id?: string } | null;
           if (row?.id && sessionIdSet.has(row.id)) {
-            router.refresh();
+            refetch();
           }
         },
       )
@@ -217,7 +242,7 @@ export function useWorkspaceRealtime({
           // Session deleted — filter client-side by session id from OLD row.
           const row = payload.old as { id?: string } | null;
           if (row?.id && sessionIdSet.has(row.id)) {
-            router.refresh();
+            refetch();
           }
         },
       )
@@ -235,7 +260,7 @@ export function useWorkspaceRealtime({
         (payload) => {
           const row = payload.new as { session_id?: string } | null;
           if (row?.session_id && sessionIdSet.has(row.session_id)) {
-            router.refresh();
+            refetch();
           }
         },
       )
@@ -249,7 +274,7 @@ export function useWorkspaceRealtime({
         (payload) => {
           const row = payload.old as { session_id?: string } | null;
           if (row?.session_id && sessionIdSet.has(row.session_id)) {
-            router.refresh();
+            refetch();
           }
         },
       )
@@ -264,7 +289,7 @@ export function useWorkspaceRealtime({
           table: "app_challenge_cohost",
           filter: `challenge_id=eq.${challengeId}`,
         },
-        () => router.refresh(),
+        () => refetch(),
       )
       .on(
         "postgres_changes",
@@ -274,7 +299,7 @@ export function useWorkspaceRealtime({
           table: "app_challenge_cohost",
           filter: `challenge_id=eq.${challengeId}`,
         },
-        () => router.refresh(),
+        () => refetch(),
       )
       .on(
         "postgres_changes",
@@ -284,7 +309,7 @@ export function useWorkspaceRealtime({
           table: "app_challenge_cohost",
           filter: `challenge_id=eq.${challengeId}`,
         },
-        () => router.refresh(),
+        () => refetch(),
       )
       .on(
         "postgres_changes",
@@ -294,7 +319,7 @@ export function useWorkspaceRealtime({
           table: "app_collaboration_invite",
           filter: `challenge_id=eq.${challengeId}`,
         },
-        () => router.refresh(),
+        () => refetch(),
       )
       // Polish v12.U.1: second propagation path for the lock event.
       // The primary path is app_challenge.contract_id UPDATE, but the
