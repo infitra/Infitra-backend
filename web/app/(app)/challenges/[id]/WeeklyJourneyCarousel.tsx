@@ -152,38 +152,28 @@ export function WeeklyJourneyCarousel({ weeks, timeZone }: Props) {
     };
   }, []);
 
-  // Bundle 4.2.53 — stable max-height, measured once (no per-swipe
-  // resize). The previous approach tweened the container to the ACTIVE
-  // slide's height on every scroll-end. That height change reflows the
-  // whole page below the carousel and produces a visible "expand after
-  // settle" hitch — the felt jank testers reported. Instead we measure
-  // the TALLEST slide once and lock the container to that height. The
-  // container never resizes on swipe → zero per-swipe reflow, and
-  // content is already laid out at full height before you land on it
-  // (no post-settle pop). Shorter weeks (items-start) simply have
-  // whitespace below — a fair trade for a dead-smooth swipe.
+  // Bundle 4.2.57 — per-week height restored. We tween the container to
+  // the ACTIVE slide's natural height so shorter weeks (1 session) don't
+  // carry the deadspace of the tallest week. 4.2.53 had locked this to a
+  // single max-height to chase scroll-jank, but that jank turned out to
+  // be the fixed blurred background (fixed in 4.2.56), not this height
+  // change — so the per-week sizing is safe to bring back. A slide's
+  // scrollHeight is constant regardless of scroll position, so we can
+  // measure the moment activeIndex settles (activeIndex only updates when
+  // the rAF scroll listener crosses a slide boundary). `contain: layout
+  // paint` on the container still isolates its paint from the page.
   useEffect(() => {
-    if (slideRefs.current.size === 0) return;
-
-    function measureMax() {
-      let max = 0;
-      slideRefs.current.forEach((node) => {
-        if (node && node.scrollHeight > max) max = node.scrollHeight;
-      });
-      if (max > 0) setActiveHeight(max);
+    function measureActive() {
+      const node = slideRefs.current.get(activeIndex);
+      if (node) setActiveHeight(node.scrollHeight);
     }
-
-    // Measure after first paint, then again shortly after in case fonts
-    // settle and nudge line-wrapping (which changes slide height).
-    const t1 = window.setTimeout(measureMax, 50);
-    const t2 = window.setTimeout(measureMax, 400);
-    window.addEventListener("resize", measureMax);
+    const t = window.setTimeout(measureActive, 50);
+    window.addEventListener("resize", measureActive);
     return () => {
-      window.removeEventListener("resize", measureMax);
-      window.clearTimeout(t1);
-      window.clearTimeout(t2);
+      window.clearTimeout(t);
+      window.removeEventListener("resize", measureActive);
     };
-  }, [weeks.length]);
+  }, [activeIndex, weeks.length]);
 
   function jumpTo(index: number) {
     const container = containerRef.current;
@@ -277,12 +267,12 @@ export function WeeklyJourneyCarousel({ weeks, timeZone }: Props) {
             WebkitOverflowScrolling: "touch",
             scrollbarWidth: "none",
             msOverflowStyle: "none",
-            // Bundle 4.2.53: locked to the tallest slide (measured once),
-            // no transition. The container never resizes on swipe, so a
-            // swipe can't reflow the page — that was the carousel hitch.
+            // Bundle 4.2.57: tween to the active week's height (per-week
+            // sizing — no deadspace in short weeks). One settle per swipe,
+            // not per frame; the prior scroll-jank was the background, not
+            // this. `contain` still isolates the carousel's paint.
             height: activeHeight ? `${activeHeight}px` : undefined,
-            // Isolate the carousel's internal layout/paint from the rest
-            // of the document so its subtree work never bleeds outward.
+            transition: "height 160ms ease",
             contain: "layout paint",
           }}
         >
@@ -696,14 +686,22 @@ function SessionDetailModal({
 
         {/* Image — 16:9 cinematic at top of modal */}
         {session.image_url ? (
-          <div className="relative w-full" style={{ aspectRatio: "16 / 9" }}>
+          <div
+            className="relative w-full overflow-hidden"
+            style={{ aspectRatio: "16 / 9", backgroundColor: "#ECE7DD" }}
+          >
             <Image
               src={session.image_url}
               alt=""
-              // Modal only mounts on open — never blocks the initial paint.
+              // Bundle 4.2.57: eager + high priority. The modal mounts only
+              // on open (user-initiated), so lazy gave nothing — it just
+              // delayed the fetch. This 16:9 crop is a different optimized
+              // variant than the cached 3:4 thumb, so it's uncached; start
+              // it immediately at high priority. Cream tint covers the gap.
               fill
               sizes="(max-width: 768px) 100vw, 600px"
-              loading="lazy"
+              loading="eager"
+              fetchPriority="high"
               decoding="async"
               className="object-cover"
             />
