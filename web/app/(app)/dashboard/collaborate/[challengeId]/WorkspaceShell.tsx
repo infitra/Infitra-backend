@@ -1,26 +1,30 @@
 "use client";
 
+import { useEffect, useRef, type ComponentProps } from "react";
 import { WorkspaceEditor } from "./WorkspaceEditor";
 import { WorkspaceChat } from "./WorkspaceChat";
 import { RecentChangesExpander } from "./RecentChangesExpander";
 import { useWorkspaceRealtime, type ActivityRow } from "./useWorkspaceRealtime";
-import { WorkspaceStoreProvider } from "@/lib/workspace/StoreProvider";
-import { initWorkspaceState } from "@/lib/workspace/initFromServerProps";
-import type { ComponentProps } from "react";
+import { WorkspaceStoreProvider, useWorkspaceStore } from "@/lib/workspace/StoreProvider";
+import {
+  initWorkspaceState,
+  type WorkspaceServerSeed,
+} from "@/lib/workspace/initFromServerProps";
 
 /**
- * Client wrapper around the workspace grid. Owns the single
- * useWorkspaceRealtime subscription so the editor, the activity
- * expander, and the chat all share one channel and one live activity
- * array (no duplicate subscriptions, no N+1 channel sprawl).
+ * Client wrapper around the workspace grid.
  *
- * page.tsx (server component) does the data fetching, then mounts
- * this shell with the props pre-resolved. The shell passes live
- * activity into WorkspaceEditor (for SectionAttribution chips) and
- * into RecentChangesExpander.
+ * Structure (Bundle 3.5 Phase 2): the store PROVIDER is the outer shell,
+ * and an inner <WorkspaceGrid> — mounted inside the provider — owns the
+ * single useWorkspaceRealtime subscription so the realtime handlers can
+ * mutate the store directly. (The hook must sit below the provider to
+ * read store actions; in Phase 1 it sat above it, so it could only
+ * router.refresh().)
  *
- * Right rail uses a flex column so the chat fills remaining vertical
- * space — fixes the chat-cut-off-at-bottom bug from Bundle 3 v1.
+ * page.tsx (server component) fetches the data and mounts this shell with
+ * props pre-resolved. Those props seed the store once on mount and, while
+ * any slice still propagates via router.refresh(), re-seed it (the Phase 2
+ * migration safety net) so a store-reading consumer never goes stale.
  */
 
 type WorkspaceEditorProps = Omit<ComponentProps<typeof WorkspaceEditor>, "activity">;
@@ -34,19 +38,61 @@ interface Props extends WorkspaceEditorProps {
   profileMap: Record<string, { name: string; avatar: string | null }>;
 }
 
-export function WorkspaceShell({
-  challengeId,
-  initialActivity,
-  knownSessionIds,
-  dmConversationId,
-  currentUserId,
-  profileMap,
-  ...editorProps
-}: Props) {
-  // Polish v12.W: thread the active contract id down to the realtime
-  // hook so it can filter acceptance/decline INSERT events to this
-  // contract only (broad subscription, client-side filter).
-  const contractId = (editorProps as { contract?: { id?: string } | null }).contract?.id ?? null;
+/** Assemble the server-derived store slices from the resolved props. */
+function buildSeed(p: Props): WorkspaceServerSeed {
+  return {
+    challenge: p.challenge,
+    isOwner: p.isOwner,
+    currentUserId: p.currentUserId,
+    ownerProfile: p.ownerProfile,
+    ownerSplit: p.ownerSplit,
+    cohosts: p.cohosts,
+    sessions: p.sessions,
+    pendingInvites: p.pendingInvites ?? [],
+    contract: p.contract,
+    activity: p.initialActivity,
+    profileMap: p.profileMap,
+  };
+}
+
+export function WorkspaceShell(props: Props) {
+  return (
+    <WorkspaceStoreProvider initialState={initWorkspaceState(buildSeed(props))}>
+      <WorkspaceGrid {...props} />
+    </WorkspaceStoreProvider>
+  );
+}
+
+function WorkspaceGrid(props: Props) {
+  const {
+    challengeId,
+    initialActivity,
+    knownSessionIds,
+    dmConversationId,
+    currentUserId,
+    profileMap,
+    ...editorProps
+  } = props;
+
+  const contractId = editorProps.contract?.id ?? null;
+
+  // Re-seed safety net (Phase 2 migration window). Any slice still flowing
+  // through router.refresh() arrives as fresh props; mirror it into the
+  // store so store-reading consumers stay consistent. Keyed on a content
+  // signature so it only fires when the server data actually changed — and
+  // never on the very first render (the provider already seeded that).
+  const reseed = useWorkspaceStore((s) => s.seed);
+  const seed = buildSeed(props);
+  const sig = JSON.stringify(seed);
+  const seedRef = useRef(seed);
+  seedRef.current = seed;
+  const lastSig = useRef(sig);
+  useEffect(() => {
+    if (lastSig.current !== sig) {
+      lastSig.current = sig;
+      reseed(seedRef.current);
+    }
+  }, [sig, reseed]);
 
   const { activity } = useWorkspaceRealtime({
     challengeId,
@@ -55,28 +101,7 @@ export function WorkspaceShell({
     contractId,
   });
 
-  // Bundle 3.5 Phase 1: seed the workspace store from the resolved props.
-  // INERT for now — the store is created and populated but no descendant
-  // reads from it yet (consumers migrate to selectors in Phase 2). The
-  // provider creates exactly one store per mount (SSR-safe; not a
-  // singleton). Built once on mount from the initial props; live updates
-  // still flow through props/router.refresh until Phase 2 rewires them.
-  const initialState = initWorkspaceState({
-    challenge: editorProps.challenge,
-    isOwner: editorProps.isOwner,
-    currentUserId,
-    ownerProfile: editorProps.ownerProfile,
-    ownerSplit: editorProps.ownerSplit,
-    cohosts: editorProps.cohosts,
-    sessions: editorProps.sessions,
-    pendingInvites: editorProps.pendingInvites ?? [],
-    contract: editorProps.contract,
-    activity,
-    profileMap,
-  });
-
   return (
-    <WorkspaceStoreProvider initialState={initialState}>
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Left: Workspace editor (2/3) */}
       <div className="lg:col-span-2">
@@ -123,6 +148,5 @@ export function WorkspaceShell({
         </div>
       </div>
     </div>
-    </WorkspaceStoreProvider>
   );
 }

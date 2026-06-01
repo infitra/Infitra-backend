@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { useWorkspaceStore } from "@/lib/workspace/StoreProvider";
 
 /**
  * Realtime sync for the workspace. One multiplexed Supabase channel
@@ -55,6 +56,16 @@ export function useWorkspaceRealtime({
 }: Params): { activity: ActivityRow[] } {
   const router = useRouter();
   const [activity, setActivity] = useState<ActivityRow[]>(initialActivity);
+
+  // Bundle 3.5 Phase 2a — contract slice mutators. These are stable
+  // references (Zustand actions are defined once), so capturing them in the
+  // channel effect below is safe; they never trigger a re-subscribe. The
+  // partner-side contract events now mutate the store directly instead of
+  // calling router.refresh() (which re-ran the page server component and
+  // re-fetched ~10 queries per event).
+  const applyContractLocked = useWorkspaceStore((s) => s.applyContractLocked);
+  const applyAcceptanceAdded = useWorkspaceStore((s) => s.applyAcceptanceAdded);
+  const applyDeclineAdded = useWorkspaceStore((s) => s.applyDeclineAdded);
 
   // Keep local activity in sync with server-rendered initialActivity
   // when the page revalidates (e.g. router.refresh from another action).
@@ -286,12 +297,21 @@ export function useWorkspaceRealtime({
         (payload) => {
           // Broad subscription (target_id isn't filterable across
           // session+challenge variants) — filter client-side.
+          // Phase 2a: mutate the store's contract slice instead of
+          // router.refresh(). A fresh lock resets acceptances/declines.
           const row = payload.new as {
+            id?: string;
             target_type?: string;
             target_id?: string;
+            locked_at?: string;
           } | null;
-          if (row?.target_type === "challenge" && row?.target_id === challengeId) {
-            router.refresh();
+          if (
+            row?.target_type === "challenge" &&
+            row?.target_id === challengeId &&
+            row.id &&
+            row.locked_at
+          ) {
+            applyContractLocked({ id: row.id, locked_at: row.locked_at });
           }
         },
       )
@@ -311,9 +331,18 @@ export function useWorkspaceRealtime({
           table: "app_collaboration_acceptance",
         },
         (payload) => {
-          const row = payload.new as { contract_id?: string } | null;
-          if (contractId && row?.contract_id === contractId) {
-            router.refresh();
+          // Phase 2a: append the cohost's signature to the store's
+          // contract slice. The mutator guards against the active
+          // contract id, so the broad subscription stays correct.
+          const row = payload.new as {
+            contract_id?: string;
+            cohost_id?: string;
+          } | null;
+          if (row?.contract_id && row?.cohost_id) {
+            applyAcceptanceAdded({
+              contract_id: row.contract_id,
+              cohost_id: row.cohost_id,
+            });
           }
         },
       )
@@ -325,9 +354,18 @@ export function useWorkspaceRealtime({
           table: "app_collaboration_decline",
         },
         (payload) => {
-          const row = payload.new as { contract_id?: string } | null;
-          if (contractId && row?.contract_id === contractId) {
-            router.refresh();
+          // Phase 2a: record the cohost's change request in the store.
+          const row = payload.new as {
+            contract_id?: string;
+            cohost_id?: string;
+            comment?: string | null;
+          } | null;
+          if (row?.contract_id && row?.cohost_id) {
+            applyDeclineAdded({
+              contract_id: row.contract_id,
+              cohost_id: row.cohost_id,
+              comment: row.comment ?? null,
+            });
           }
         },
       )

@@ -145,10 +145,29 @@ export interface WorkspaceState {
 export interface WorkspaceActions {
   /**
    * Replace every server-derived slice in one shot. Used for the initial
-   * seed and (Phase 4) for reconciliation after a reconnect. The `ui`
+   * seed and (during the Phase 2 migration) as the re-seed safety net when
+   * a slice still propagates via router.refresh() → fresh props. The `ui`
    * slice is preserved — it is local-only, not server state.
    */
   seed: (next: Omit<WorkspaceState, "ui">) => void;
+
+  // ---- Phase 2a: contract slice (lock / accept / decline) ----
+  // Map raw realtime rows (snake_case) into the enriched `contract` slice.
+  // Each guards against the active contract so stale/cross-contract events
+  // are ignored. The backend remains the source of truth; these only mirror
+  // confirmed DB inserts for instant UI (reconciliation/reseed corrects any
+  // divergence).
+
+  /** app_collaboration_contract INSERT → a fresh lock for this challenge. */
+  applyContractLocked: (row: { id: string; locked_at: string }) => void;
+  /** app_collaboration_acceptance INSERT → add a cohost's signature. */
+  applyAcceptanceAdded: (row: { contract_id: string; cohost_id: string }) => void;
+  /** app_collaboration_decline INSERT → record a cohost's change request. */
+  applyDeclineAdded: (row: {
+    contract_id: string;
+    cohost_id: string;
+    comment: string | null;
+  }) => void;
 }
 
 export type WorkspaceStore = WorkspaceState & WorkspaceActions;
@@ -166,5 +185,44 @@ export function createWorkspaceStore(
   return createStore<WorkspaceStore>((set) => ({
     ...initial,
     seed: (next) => set(next),
+
+    applyContractLocked: (row) =>
+      set(() => ({
+        contract: {
+          id: row.id,
+          lockedAt: row.locked_at,
+          acceptances: [],
+          declines: [],
+        },
+      })),
+
+    applyAcceptanceAdded: (row) =>
+      set((s) => {
+        if (!s.contract || s.contract.id !== row.contract_id) return {};
+        if (s.contract.acceptances.includes(row.cohost_id)) return {};
+        return {
+          contract: {
+            ...s.contract,
+            acceptances: [...s.contract.acceptances, row.cohost_id],
+          },
+        };
+      }),
+
+    applyDeclineAdded: (row) =>
+      set((s) => {
+        if (!s.contract || s.contract.id !== row.contract_id) return {};
+        if (s.contract.declines.some((d) => d.cohostId === row.cohost_id)) {
+          return {};
+        }
+        return {
+          contract: {
+            ...s.contract,
+            declines: [
+              ...s.contract.declines,
+              { cohostId: row.cohost_id, comment: row.comment },
+            ],
+          },
+        };
+      }),
   }));
 }

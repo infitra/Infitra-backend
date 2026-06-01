@@ -35,6 +35,7 @@ import { SaveStatusPill } from "./SaveStatusPill";
 import { useSaveStatus } from "./useSaveStatus";
 import { useSyncedField, type ActivityRow } from "./useWorkspaceRealtime";
 import { SectionAttribution } from "./SectionAttribution";
+import { useWorkspaceStore } from "@/lib/workspace/StoreProvider";
 
 interface TopicOwnershipEntry {
   creator_id: string;
@@ -137,12 +138,19 @@ export function WorkspaceEditor({
   cohosts,
   sessions,
   pendingInvites,
-  contract,
   activity,
   profileMap,
 }: Props) {
   const router = useRouter();
   const { status: saveStatus, runSave } = useSaveStatus();
+
+  // Bundle 3.5 Phase 2a: the contract slice (lock / accept / decline) now
+  // comes from the workspace store, not props. Realtime acceptance/decline/
+  // lock inserts mutate the store directly (no router.refresh round-trip);
+  // the store is also re-seeded from props for any path still on refresh
+  // (e.g. reopen via app_challenge UPDATE). All downstream derivations
+  // (isLocked, allAccepted, hasDeclines, contractParties, gating) read this.
+  const contract = useWorkspaceStore((s) => s.contract);
 
   const [error, setError] = useState<string | null>(null);
 
