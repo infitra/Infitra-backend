@@ -130,7 +130,6 @@ const DETAILS_ATTRIBUTION_FIELDS = [
 ];
 
 export function WorkspaceEditor({
-  challenge,
   isOwner,
   currentUserId,
   ownerProfile,
@@ -144,13 +143,14 @@ export function WorkspaceEditor({
   const router = useRouter();
   const { status: saveStatus, runSave } = useSaveStatus();
 
-  // Bundle 3.5 Phase 2a: the contract slice (lock / accept / decline) now
-  // comes from the workspace store, not props. Realtime acceptance/decline/
-  // lock inserts mutate the store directly (no router.refresh round-trip);
-  // the store is also re-seeded from props for any path still on refresh
-  // (e.g. reopen via app_challenge UPDATE). All downstream derivations
-  // (isLocked, allAccepted, hasDeclines, contractParties, gating) read this.
+  // Bundle 3.5 Phase 2a/2b: the contract and challenge slices come from the
+  // workspace store, not props. Realtime mutates them directly (no
+  // router.refresh round-trip): contract via lock/accept/decline/cleared,
+  // challenge via applyChallengeUpdate on app_challenge UPDATE. The re-seed
+  // net preserves both, so a stale prop refresh can't clobber them. All
+  // downstream derivations and the per-field useSyncedField read these.
   const contract = useWorkspaceStore((s) => s.contract);
+  const challenge = useWorkspaceStore((s) => s.challenge);
 
   const [error, setError] = useState<string | null>(null);
 

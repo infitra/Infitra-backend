@@ -67,6 +67,7 @@ export function useWorkspaceRealtime({
   const applyAcceptanceAdded = useWorkspaceStore((s) => s.applyAcceptanceAdded);
   const applyDeclineAdded = useWorkspaceStore((s) => s.applyDeclineAdded);
   const applyContractCleared = useWorkspaceStore((s) => s.applyContractCleared);
+  const applyChallengeUpdate = useWorkspaceStore((s) => s.applyChallengeUpdate);
 
   // Keep local activity in sync with server-rendered initialActivity
   // when the page revalidates (e.g. router.refresh from another action).
@@ -150,20 +151,23 @@ export function useWorkspaceRealtime({
           filter: `id=eq.${challengeId}`,
         },
         (payload) => {
+          const row = payload.new as { contract_id?: string | null } | null;
+          if (!row) return;
           // Reopen signal: reactivate_drafting nulls contract_id (without
           // deleting the contract row), so a null contract_id here means
           // the workspace was reopened → clear the realtime-owned contract
           // slice. (The re-seed net preserves contract, so this UPDATE is
           // the only path that clears it.)
-          const row = payload.new as { contract_id?: string | null } | null;
-          if (row && row.contract_id == null) {
+          if (row.contract_id == null) {
             applyContractCleared();
           }
-          // Field edits still flow via props for now (Phase 2b migrates
-          // them). Server props rebuild → fields re-render with partner's
-          // saves. useSyncedField keeps locally-dirty fields from being
-          // overwritten.
-          router.refresh();
+          // Phase 2b: merge the partner's field edit straight into the
+          // store's challenge slice — no router.refresh() (which re-ran the
+          // whole page + ~10 queries per keystroke-save). useSyncedField
+          // keeps locally-dirty fields from being overwritten for the actor.
+          applyChallengeUpdate(
+            payload.new as Parameters<typeof applyChallengeUpdate>[0],
+          );
         },
       )
       .on(

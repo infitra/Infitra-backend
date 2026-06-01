@@ -178,6 +178,32 @@ export interface WorkspaceActions {
    * reopen signal is the app_challenge UPDATE with contract_id = null.
    */
   applyContractCleared: () => void;
+
+  // ---- Phase 2b: challenge field-edit slice ----
+  /**
+   * app_challenge UPDATE → merge the raw row into the `challenge` slice
+   * (snake_case → camelCase). This replaces router.refresh() on every
+   * partner field edit. promiseEditorName is resolved from the profileMap
+   * (promise_edited_by is always the owner or a cohost, both in the map).
+   * Per-field local-wins for the actor still lives in useSyncedField.
+   */
+  applyChallengeUpdate: (row: {
+    title: string;
+    description: string | null;
+    start_date: string;
+    end_date: string;
+    price_cents: number;
+    capacity: number | null;
+    status: string;
+    image_url: string | null;
+    contract_id: string | null;
+    promise_text: string | null;
+    weekly_arc: WorkspaceWeeklyFocusEntry[] | null;
+    topic_ownership: WorkspaceTopicOwnershipEntry[] | null;
+    intro_prompt: string | null;
+    promise_edited_at: string | null;
+    promise_edited_by: string | null;
+  }) => void;
 }
 
 export type WorkspaceStore = WorkspaceState & WorkspaceActions;
@@ -194,11 +220,38 @@ export function createWorkspaceStore(
 ): StoreApi<WorkspaceStore> {
   return createStore<WorkspaceStore>((set) => ({
     ...initial,
-    // Preserve the realtime-owned `contract` slice across re-seeds (see the
-    // interface doc above). `ui` is preserved automatically (not in `next`).
-    seed: (next) => set((s) => ({ ...next, contract: s.contract })),
+    // Preserve the realtime-owned slices across re-seeds (see the interface
+    // doc above): `contract` (Phase 2a) and `challenge` (Phase 2b) are driven
+    // by realtime mutators, so a stale prop re-seed must not clobber them.
+    // `ui` is preserved automatically (not in `next`).
+    seed: (next) =>
+      set((s) => ({ ...next, challenge: s.challenge, contract: s.contract })),
 
     applyContractCleared: () => set(() => ({ contract: null })),
+
+    applyChallengeUpdate: (row) =>
+      set((s) => ({
+        challenge: {
+          ...s.challenge,
+          title: row.title,
+          description: row.description,
+          startDate: row.start_date,
+          endDate: row.end_date,
+          priceCents: row.price_cents,
+          capacity: row.capacity,
+          status: row.status,
+          imageUrl: row.image_url,
+          contractId: row.contract_id,
+          promiseText: row.promise_text,
+          weeklyArc: row.weekly_arc ?? [],
+          topicOwnership: row.topic_ownership ?? [],
+          introPrompt: row.intro_prompt,
+          promiseEditedAt: row.promise_edited_at,
+          promiseEditorName: row.promise_edited_by
+            ? (s.profileMap[row.promise_edited_by]?.name ?? null)
+            : null,
+        },
+      })),
 
     applyContractLocked: (row) =>
       set(() => ({
