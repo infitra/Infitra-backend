@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useWorkspaceStore } from "@/lib/workspace/StoreProvider";
 import { loadWorkspaceSnapshot } from "@/lib/workspace/loadSnapshot";
@@ -56,7 +55,6 @@ export function useWorkspaceRealtime({
   knownSessionIds,
   contractId,
 }: Params): { activity: ActivityRow[] } {
-  const router = useRouter();
   const [activity, setActivity] = useState<ActivityRow[]>(initialActivity);
 
   // Bundle 3.5 Phase 2a — contract slice mutators. These are stable
@@ -117,23 +115,12 @@ export function useWorkspaceRealtime({
     setActivity(initialActivity);
   }, [initialActivity]);
 
-  // Polish v12.Y: third propagation path for contract state changes.
-  // Chat realtime is proven reliable (system messages reliably reach
-  // the cohost). WorkspaceChat dispatches a `workspace-contract-event`
-  // when ANY system message arrives — lock / reopen / accept / decline
-  // / join all post system messages, and they're the cases where the
-  // workspace state needs to refresh. This sits alongside the two
-  // direct realtime subscriptions on app_challenge UPDATE and
-  // app_collaboration_contract INSERT below; any one firing triggers
-  // the refresh.
-  useEffect(() => {
-    function handler() {
-      router.refresh();
-    }
-    if (typeof window === "undefined") return;
-    window.addEventListener("workspace-contract-event", handler);
-    return () => window.removeEventListener("workspace-contract-event", handler);
-  }, [router]);
+  // Bundle 3.5 Phase 6: the v12.Y `workspace-contract-event` band-aid is
+  // removed. Contract state now arrives via direct store mutation (the
+  // app_collaboration_contract / acceptance / decline subscriptions →
+  // applyContractLocked/Acceptance/Decline) and is backstopped by the Phase
+  // 4 reconcile on reconnect / tab-return. The chat-system-message refresh
+  // path is no longer needed (and WorkspaceChat no longer dispatches it).
 
   // Polish v12.Z: page-visibility refresh. The most reliable failure
   // mode for the cohost's lock-state propagation is a silently
