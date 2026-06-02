@@ -154,6 +154,15 @@ export function WorkspaceEditor({
   const pendingInvites = useWorkspaceStore((s) => s.pendingInvites);
   const profileMap = useWorkspaceStore((s) => s.profileMap);
 
+  // Bundle 3.5 Phase 3 — the actor applies their OWN contract action to the
+  // store immediately on success, instead of waiting for the realtime echo
+  // (which can drop, leaving the owner stuck on "Locking…"). The echo, when
+  // it arrives, is idempotent (the mutators guard against duplicates).
+  const applyContractLocked = useWorkspaceStore((s) => s.applyContractLocked);
+  const applyAcceptanceAdded = useWorkspaceStore((s) => s.applyAcceptanceAdded);
+  const applyDeclineAdded = useWorkspaceStore((s) => s.applyDeclineAdded);
+  const applyContractCleared = useWorkspaceStore((s) => s.applyContractCleared);
+
   const [error, setError] = useState<string | null>(null);
 
   // ── Editable fields, with local-wins sync against partner saves ──
@@ -717,8 +726,12 @@ export function WorkspaceEditor({
     setLocking(true); setError(null);
     const result = await lockTerms(challenge.id);
     if (result.error) { setError(result.error); setLocking(false); return; }
-    // Do NOT reset `locking` here — the useEffect above clears it
-    // when `isLocked` flips true (server state has caught up).
+    // Phase 3: reflect the lock in the actor's own store immediately (the
+    // `locking` effect then clears the spinner). Don't depend on the echo.
+    const newContractId = (result as { contractId?: string }).contractId;
+    if (newContractId) {
+      applyContractLocked({ id: newContractId, locked_at: new Date().toISOString() });
+    }
     refreshAfterAction();
   }
 
@@ -727,6 +740,8 @@ export function WorkspaceEditor({
     setConfirming(true); setError(null);
     const result = await confirmTerms(contract.id);
     if (result.error) { setError(result.error); setConfirming(false); return; }
+    // Phase 3: flip the cohost's own signature row to ✓ instantly.
+    applyAcceptanceAdded({ contract_id: contract.id, cohost_id: currentUserId });
     setAcceptModalOpen(false);
     setConfirming(false);
     refreshAfterAction();
@@ -738,6 +753,8 @@ export function WorkspaceEditor({
     const comment = requestChangesComment.trim() || undefined;
     const result = await requestChanges(contract.id, comment);
     if (result.error) { setError(result.error); setConfirming(false); return; }
+    // Phase 3: record the cohost's own change-request in the store instantly.
+    applyDeclineAdded({ contract_id: contract.id, cohost_id: currentUserId, comment: comment ?? null });
     // Close + reset BEFORE refresh so the dialog doesn't briefly
     // show a stale state during the re-render.
     setRequestChangesOpen(false);
@@ -751,9 +768,9 @@ export function WorkspaceEditor({
     setLocking(true); setError(null);
     const result = await reactivateDrafting(challenge.id, contract.id);
     if (result.error) { setError(result.error); setLocking(false); return; }
-    // Do NOT reset `locking` here — the useEffect above (watching
-    // `isLocked`) clears it when the unlock state arrives via prop.
-    // Button stays "Reopening Draft…" until then.
+    // Phase 3: clear the actor's own contract immediately (the `locking`
+    // effect then clears the spinner). Don't depend on the echo.
+    applyContractCleared();
     refreshAfterAction();
   }
 
