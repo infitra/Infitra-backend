@@ -204,6 +204,19 @@ export interface WorkspaceActions {
     promise_edited_at: string | null;
     promise_edited_by: string | null;
   }) => void;
+
+  // ---- Phase 4: reconciliation + channel health ----
+  /**
+   * Authoritative full overwrite — replaces EVERY server-derived slice,
+   * INCLUDING the realtime-owned challenge + contract. Unlike seed() (which
+   * preserves those to dodge stale-prop clobber during normal operation),
+   * reconcile() is only called after a reconnect / tab-return with a snapshot
+   * that was JUST fetched, so it is the source of truth and heals any events
+   * missed while the channel was down.
+   */
+  reconcile: (next: Omit<WorkspaceState, "ui">) => void;
+  /** Channel health → drives the "Reconnecting…" pill. */
+  setChannelStatus: (status: WorkspaceChannelStatus) => void;
 }
 
 export type WorkspaceStore = WorkspaceState & WorkspaceActions;
@@ -226,6 +239,13 @@ export function createWorkspaceStore(
     // `ui` is preserved automatically (not in `next`).
     seed: (next) =>
       set((s) => ({ ...next, challenge: s.challenge, contract: s.contract })),
+
+    // Authoritative resync — overwrites everything (challenge + contract
+    // included). `ui` is preserved (not in `next`).
+    reconcile: (next) => set(next),
+
+    setChannelStatus: (status) =>
+      set((s) => ({ ui: { ...s.ui, channelStatus: status } })),
 
     applyContractCleared: () => set(() => ({ contract: null })),
 

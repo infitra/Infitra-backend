@@ -101,8 +101,31 @@ function WorkspaceGrid(props: Props) {
     contractId,
   });
 
+  // Phase 4: channel-health pill — shown only while the realtime channel is
+  // degraded; clears (and reconciles) automatically on reconnect.
+  const channelStatus = useWorkspaceStore((s) => s.ui.channelStatus);
+  const degraded = channelStatus === "reconnecting" || channelStatus === "error";
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <>
+      {degraded && (
+        <div
+          role="status"
+          className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full text-xs font-bold font-headline flex items-center gap-2"
+          style={{
+            backgroundColor: "rgba(15,34,41,0.92)",
+            color: "#FFFFFF",
+            boxShadow: "0 4px 14px rgba(0,0,0,0.2)",
+          }}
+        >
+          <span
+            className="inline-block w-2 h-2 rounded-full animate-pulse"
+            style={{ backgroundColor: "#FFB020" }}
+          />
+          Reconnecting…
+        </div>
+      )}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Left: Workspace editor (2/3) */}
       <div className="lg:col-span-2">
         <WorkspaceEditor
@@ -147,6 +170,7 @@ function WorkspaceGrid(props: Props) {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

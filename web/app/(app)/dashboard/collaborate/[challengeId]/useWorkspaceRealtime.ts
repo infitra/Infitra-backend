@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useWorkspaceStore } from "@/lib/workspace/StoreProvider";
 import { loadWorkspaceSnapshot } from "@/lib/workspace/loadSnapshot";
+import { useChannelHealth } from "@/lib/realtime/useChannelHealth";
 
 /**
  * Realtime sync for the workspace. One multiplexed Supabase channel
@@ -94,6 +95,22 @@ export function useWorkspaceRealtime({
     [],
   );
 
+  // Bundle 3.5 Phase 4 — reconciliation + channel health. reconcileNow() is an
+  // AUTHORITATIVE full resync (overwrites contract + challenge too, unlike the
+  // refetch/seed above) used when the realtime channel recovers or the tab
+  // regains focus — healing any events missed while the socket was down. The
+  // channel-health hook also drives the "Reconnecting…" pill via the store.
+  const reconcile = useWorkspaceStore((s) => s.reconcile);
+  const setChannelStatus = useWorkspaceStore((s) => s.setChannelStatus);
+  const reconcileNow = useCallback(async () => {
+    const snap = await loadWorkspaceSnapshot(challengeId, currentUserId);
+    if (snap) reconcile(snap);
+  }, [challengeId, currentUserId, reconcile]);
+  const { handleSubscribeStatus } = useChannelHealth({
+    onStatus: setChannelStatus,
+    onRecover: reconcileNow,
+  });
+
   // Keep local activity in sync with server-rendered initialActivity
   // when the page revalidates (e.g. router.refresh from another action).
   useEffect(() => {
@@ -134,12 +151,14 @@ export function useWorkspaceRealtime({
     if (typeof document === "undefined") return;
     function onVisible() {
       if (document.visibilityState === "visible") {
-        router.refresh();
+        // Phase 4: authoritative reconcile (one load_workspace + overwrite)
+        // instead of router.refresh — catches anything missed while away.
+        reconcileNow();
       }
     }
     document.addEventListener("visibilitychange", onVisible);
     return () => document.removeEventListener("visibilitychange", onVisible);
-  }, [router]);
+  }, [reconcileNow]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -410,6 +429,9 @@ export function useWorkspaceRealtime({
         },
       )
       .subscribe((status, err) => {
+        // Phase 4: feed channel health → updates the "Reconnecting…" pill and
+        // reconciles on recovery (SUBSCRIBED after a drop).
+        handleSubscribeStatus(status);
         if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
           // eslint-disable-next-line no-console
           console.warn("[useWorkspaceRealtime] subscription", status, err);
