@@ -67,7 +67,7 @@ export function buildWeeks(
   });
 }
 
-function computeTotalWeeks(startDate: string, endDate: string): number {
+export function computeTotalWeeks(startDate: string, endDate: string): number {
   if (!startDate || !endDate) return 0;
   const s = new Date(startDate + "T00:00:00");
   const e = new Date(endDate + "T00:00:00");
@@ -76,7 +76,7 @@ function computeTotalWeeks(startDate: string, endDate: string): number {
   return Math.max(1, Math.floor(days / 7) + 1);
 }
 
-function sessionWeekNumber(
+export function sessionWeekNumber(
   startDate: string,
   totalWeeks: number,
   sessionIso: string,
@@ -91,7 +91,7 @@ function sessionWeekNumber(
   return Math.max(1, Math.min(totalWeeks, Math.floor(days / 7) + 1));
 }
 
-function weekRange(startDate: string, weekNumber: number) {
+export function weekRange(startDate: string, weekNumber: number) {
   const programStart = new Date(startDate + "T00:00:00");
   const start = new Date(
     programStart.getTime() + (weekNumber - 1) * 7 * 86400000,
@@ -100,7 +100,7 @@ function weekRange(startDate: string, weekNumber: number) {
   return { start, end };
 }
 
-function formatWeekRange(start: Date, end: Date): string {
+export function formatWeekRange(start: Date, end: Date): string {
   const fmt = (d: Date) =>
     d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
   return `${fmt(start)} – ${fmt(end)}`;
