@@ -1,18 +1,20 @@
 "use client";
 
 /**
- * TribeFeed — Bundle 5c (locker-room Ship 1).
+ * TribeFeed — Bundle 5c (locker-room Ship 1.1).
  *
- * One contained conversation panel. The composer is a GUIDED flow: the two kind
- * pills start neutral (so it's clear you must choose), the text field is locked
- * until you pick, and the chosen pill pops to its colour (Share cyan / Question
- * orange). Question reveals an "ask a specific Expert" picker — you pick who
- * first, then the text unlocks. Posts are structured: author header → a context
- * box (the intro prompt / reflection session / who a question is for, set
- * apart) → body. (Likes/comments land in Ship 2.)
+ * One contained conversation panel with a GUIDED composer (choose Share/Question
+ * first → the chosen pill pops → the text unlocks; Question reveals an Expert
+ * picker). Posts render as clean white cards on a tinted strip so they read as
+ * distinct, contained, and uncluttered: author header → one kind/context line
+ * (no redundant badge-plus-box, no "you" chip) → body.
+ *
+ * Realtime now works (app_challenge_post is in the realtime publication); your
+ * own post is also prepended optimistically so it shows the instant you post.
+ * (Likes/comments + coach answers are Ship 2.)
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { createChallengePost } from "@/app/actions/community";
 import { useExperienceSpaceStore } from "@/lib/experienceSpace/StoreProvider";
@@ -44,13 +46,6 @@ interface RawRow {
 const ORANGE = "#FF6130";
 const CYAN = "#0891b2";
 const INK = "#0F2229";
-
-/** Visible kinds + accent. Intro + Reflection are the guided/context posts → cyan. */
-const KIND: Record<string, { label: string; color: string }> = {
-  intro: { label: "Introduction", color: CYAN },
-  reflection: { label: "Reflection", color: CYAN },
-  question: { label: "Question", color: ORANGE },
-};
 
 const COMPOSE_KINDS = [
   { key: "talk", label: "Share", color: CYAN },
@@ -152,12 +147,27 @@ export function TribeFeed({
   async function submit() {
     if (!body.trim() || posting || kind === null) return;
     if (kind === "question" && !askId) { setError("Pick an Expert to ask."); return; }
+    const text = body.trim();
+    const isQuestion = kind === "question";
     setPosting(true); setError(null);
-    const result =
-      kind === "question"
-        ? await createChallengePost(spaceId, body.trim(), { kind: "question", directedTo: [askId!] })
-        : await createChallengePost(spaceId, body.trim(), { kind: "talk" });
+    const result = isQuestion
+      ? await createChallengePost(spaceId, text, { kind: "question", directedTo: [askId!] })
+      : await createChallengePost(spaceId, text, { kind: "talk" });
     if (result?.error) { setError(result.error); setPosting(false); return; }
+
+    // Optimistically show it now (realtime echo dedupes by id).
+    const postId = (result as { postId?: string })?.postId;
+    if (postId) {
+      profRef.current[viewer.id] = { name: viewer.name, avatar: viewer.avatar };
+      const optimistic: FeedPost = {
+        id: postId, author_id: viewer.id, body: text,
+        kind: isQuestion ? "question" : "talk", contextId: null,
+        directedTo: isQuestion && askId ? [askId] : [],
+        created_at: new Date().toISOString(),
+        authorName: viewer.name, authorAvatar: viewer.avatar,
+      };
+      setPosts((prev) => (prev.some((p) => p.id === postId) ? prev : [optimistic, ...prev]));
+    }
     setBody(""); setKind(null); setAskId(null); setPosting(false);
   }
 
@@ -193,9 +203,8 @@ export function TribeFeed({
         <div
           id="tribe-composer"
           className="px-4 sm:px-5 py-5 scroll-mt-24"
-          style={{ borderTop: "1px solid rgba(15,34,41,0.06)", borderBottom: "1px solid rgba(15,34,41,0.06)", backgroundColor: "#FCFAF6" }}
+          style={{ borderTop: "1px solid rgba(15,34,41,0.06)", backgroundColor: "#FCFAF6" }}
         >
-          {/* Step 1 — choose a kind (neutral until chosen, then pops) */}
           <div className="flex gap-2">
             {COMPOSE_KINDS.map((k) => {
               const active = kind === k.key;
@@ -217,7 +226,6 @@ export function TribeFeed({
             })}
           </div>
 
-          {/* Step 2 (question only) — choose who to ask */}
           {kind === "question" && creators.length > 0 && (
             <div className="mt-3.5">
               <p className="text-[10px] uppercase tracking-[0.16em] font-headline mb-1.5" style={{ color: "#94a3b8", fontWeight: 800 }}>Ask</p>
@@ -244,7 +252,6 @@ export function TribeFeed({
             </div>
           )}
 
-          {/* Step 3 — write (locked until ready) */}
           <div className="flex gap-3 mt-4">
             <Avatar src={viewer.avatar} name={viewer.name} size={38} ring={CYAN} />
             <div className="flex-1 min-w-0">
@@ -280,37 +287,37 @@ export function TribeFeed({
         </div>
       )}
 
-      {/* Posts */}
-      {loading ? (
-        <p className="text-xs py-8 text-center" style={{ color: "#94a3b8" }}>Loading the Tribe…</p>
-      ) : posts.length === 0 ? (
-        <div className="py-10 text-center">
-          <p className="text-sm font-bold font-headline" style={{ color: "#64748b" }}>The Tribe is quiet</p>
-          <p className="text-xs mt-1" style={{ color: "#94a3b8" }}>Start the conversation.</p>
-        </div>
-      ) : (
-        <div>
-          {posts.map((p, i) => (
-            <PostRow
-              key={p.id}
-              post={p}
-              first={i === 0}
-              creator={creatorById.get(p.author_id)}
-              directedCreator={p.kind === "question" ? creatorById.get(p.directedTo[0]) : undefined}
-              reflectsOn={p.kind === "reflection" && p.contextId ? sessionById.get(p.contextId)?.title ?? null : null}
-              introPrompt={p.kind === "intro" ? introPrompt : null}
-              isOwn={p.author_id === viewer.id}
-            />
-          ))}
-        </div>
-      )}
+      {/* Posts — white cards on a tinted strip */}
+      <div className="px-3 sm:px-4 py-4" style={{ borderTop: "1px solid rgba(15,34,41,0.06)", backgroundColor: "#F4F1EA" }}>
+        {loading ? (
+          <p className="text-xs py-6 text-center" style={{ color: "#94a3b8" }}>Loading the Tribe…</p>
+        ) : posts.length === 0 ? (
+          <div className="py-8 text-center rounded-xl" style={{ backgroundColor: "#FFFFFF" }}>
+            <p className="text-sm font-bold font-headline" style={{ color: "#64748b" }}>The Tribe is quiet</p>
+            <p className="text-xs mt-1" style={{ color: "#94a3b8" }}>Start the conversation.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {posts.map((p) => (
+              <PostCard
+                key={p.id}
+                post={p}
+                creator={creatorById.get(p.author_id)}
+                directedCreator={p.kind === "question" ? creatorById.get(p.directedTo[0]) : undefined}
+                reflectsOn={p.kind === "reflection" && p.contextId ? sessionById.get(p.contextId)?.title ?? null : null}
+                introPrompt={p.kind === "intro" ? introPrompt : null}
+                isOwn={p.author_id === viewer.id}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </section>
   );
 }
 
-function PostRow({
+function PostCard({
   post,
-  first,
   creator,
   directedCreator,
   reflectsOn,
@@ -318,71 +325,61 @@ function PostRow({
   isOwn,
 }: {
   post: FeedPost;
-  first: boolean;
   creator?: SpaceCreator;
   directedCreator?: SpaceCreator;
   reflectsOn?: string | null;
   introPrompt?: string | null;
   isOwn: boolean;
 }) {
-  const badge = KIND[post.kind];
   const isCreator = !!creator;
   const ring = isCreator ? (creator!.role === "owner" ? ORANGE : CYAN) : isOwn ? CYAN : undefined;
 
   return (
-    <div className="flex gap-3 px-4 sm:px-5 py-5" style={first ? undefined : { borderTop: "1px solid rgba(15,34,41,0.06)" }}>
-      <Avatar src={post.authorAvatar} name={post.authorName} size={40} ring={ring} />
-      <div className="flex-1 min-w-0">
-        {/* Author header */}
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-sm font-black font-headline" style={{ color: INK }}>{post.authorName}</span>
-          {isCreator && (
-            <span className="text-[9px] uppercase tracking-wider font-headline px-1.5 py-0.5 rounded-full text-white" style={{ backgroundColor: ring, fontWeight: 800 }}>Expert</span>
-          )}
-          {isOwn && !isCreator && (
-            <span className="text-[9px] uppercase tracking-wider font-headline px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "rgba(8,145,178,0.12)", color: CYAN, fontWeight: 800 }}>You</span>
-          )}
-          {badge && (
-            <span className="text-[10px] uppercase tracking-wider font-headline px-2 py-0.5 rounded-full" style={{ color: badge.color, backgroundColor: `${badge.color}14`, fontWeight: 800 }}>{badge.label}</span>
-          )}
-          <span className="text-[11px] ml-auto shrink-0" style={{ color: "#94a3b8" }} suppressHydrationWarning>
-            {new Date(post.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
-          </span>
-        </div>
-
-        {/* Context — set apart in its own box */}
-        {post.kind === "question" && directedCreator && (
-          <ContextBox color={ORANGE} prefix="Asking">
-            <Avatar src={directedCreator.avatar} name={directedCreator.name} size={18} ring={directedCreator.role === "owner" ? ORANGE : CYAN} />
-            <span className="text-[12px] font-black font-headline" style={{ color: ORANGE }}>{directedCreator.name}</span>
-          </ContextBox>
-        )}
-        {post.kind === "intro" && introPrompt && (
-          <ContextBox color={CYAN} prefix="In response to">
-            <span className="text-[12px] italic" style={{ color: "#475569" }}>“{introPrompt}”</span>
-          </ContextBox>
-        )}
-        {post.kind === "reflection" && reflectsOn && (
-          <ContextBox color={CYAN} prefix="Reflecting on">
-            <span className="text-[12px] font-bold font-headline" style={{ color: CYAN }}>{reflectsOn}</span>
-          </ContextBox>
-        )}
-
-        {/* Body */}
-        <p className="text-sm leading-relaxed whitespace-pre-wrap mt-2.5" style={{ color: "#334155" }}>{post.body}</p>
-      </div>
-    </div>
-  );
-}
-
-function ContextBox({ color, prefix, children }: { color: string; prefix: string; children: ReactNode }) {
-  return (
-    <div
-      className="flex items-center gap-1.5 flex-wrap rounded-lg px-2.5 py-1.5 mt-2"
-      style={{ backgroundColor: `${color}0D`, boxShadow: `inset 2px 0 0 ${color}` }}
+    <article
+      className="rounded-xl p-4"
+      style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.04), 0 1px 4px rgba(15,34,41,0.04)" }}
     >
-      <span className="text-[10px] uppercase tracking-wider font-headline" style={{ color: "#94a3b8", fontWeight: 800 }}>{prefix}</span>
-      {children}
-    </div>
+      <div className="flex gap-3">
+        <Avatar src={post.authorAvatar} name={post.authorName} size={40} ring={ring} />
+        <div className="flex-1 min-w-0">
+          {/* Author header */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-sm font-black font-headline" style={{ color: INK }}>{post.authorName}</span>
+            {isCreator && (
+              <span className="text-[9px] uppercase tracking-wider font-headline px-1.5 py-0.5 rounded-full text-white" style={{ backgroundColor: ring, fontWeight: 800 }}>Expert</span>
+            )}
+            <span className="text-[11px] ml-auto shrink-0" style={{ color: "#94a3b8" }} suppressHydrationWarning>
+              {new Date(post.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+            </span>
+          </div>
+
+          {/* One kind/context line — conveys both, no extra chips */}
+          {post.kind === "question" && directedCreator && (
+            <div className="flex items-center gap-1.5 mt-1.5">
+              <span className="text-[10px] uppercase tracking-wider font-headline" style={{ color: ORANGE, fontWeight: 800 }}>Question for</span>
+              <Avatar src={directedCreator.avatar} name={directedCreator.name} size={18} ring={directedCreator.role === "owner" ? ORANGE : CYAN} />
+              <span className="text-[12px] font-black font-headline" style={{ color: ORANGE }}>{directedCreator.name}</span>
+            </div>
+          )}
+          {post.kind === "reflection" && reflectsOn && (
+            <div className="flex items-center gap-1.5 mt-1.5">
+              <span className="text-[10px] uppercase tracking-wider font-headline" style={{ color: CYAN, fontWeight: 800 }}>Reflection on</span>
+              <span className="text-[12px] font-black font-headline" style={{ color: CYAN }}>{reflectsOn}</span>
+            </div>
+          )}
+          {post.kind === "intro" && (
+            <div className="mt-1.5">
+              <span className="text-[10px] uppercase tracking-wider font-headline" style={{ color: CYAN, fontWeight: 800 }}>Introduction</span>
+              {introPrompt && (
+                <p className="text-[12px] italic leading-snug mt-1" style={{ color: "#94a3b8" }}>“{introPrompt}”</p>
+              )}
+            </div>
+          )}
+
+          {/* Body */}
+          <p className="text-sm leading-relaxed whitespace-pre-wrap mt-2.5" style={{ color: "#334155" }}>{post.body}</p>
+        </div>
+      </div>
+    </article>
   );
 }
