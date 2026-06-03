@@ -15,7 +15,7 @@
  * optimistically. (Likes/comments + coach answers are Ship 2.)
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { createChallengePost } from "@/app/actions/community";
 import { useExperienceSpaceStore } from "@/lib/experienceSpace/StoreProvider";
@@ -419,28 +419,25 @@ function PostCard({
           </div>
 
           {post.kind === "question" && directedCreator && (
-            <div className="flex items-center gap-1.5 mt-1.5">
-              <span className="text-[10px] uppercase tracking-wider font-headline" style={{ color: ORANGE, fontWeight: 800 }}>Question for</span>
-              <Avatar src={directedCreator.avatar} name={directedCreator.name} size={18} ring={directedCreator.role === "owner" ? ORANGE : CYAN} />
-              <span className="text-[12px] font-black font-headline" style={{ color: ORANGE }}>{directedCreator.name}</span>
-            </div>
+            <ContextBanner color={ORANGE} label="Question for">
+              <Avatar src={directedCreator.avatar} name={directedCreator.name} size={24} ring={directedCreator.role === "owner" ? ORANGE : CYAN} />
+              <span className="text-[14px] font-black font-headline" style={{ color: ORANGE }}>{directedCreator.name}</span>
+            </ContextBanner>
           )}
           {post.kind === "reflection" && reflectsOn && (
-            <div className="flex items-center gap-1.5 mt-1.5">
-              <span className="text-[10px] uppercase tracking-wider font-headline" style={{ color: CYAN, fontWeight: 800 }}>Reflection on</span>
-              <span className="text-[12px] font-black font-headline" style={{ color: CYAN }}>{reflectsOn}</span>
-            </div>
+            <ContextBanner color={CYAN} label="Reflection on">
+              <span className="text-[14px] font-black font-headline" style={{ color: CYAN }}>{reflectsOn}</span>
+            </ContextBanner>
           )}
           {post.kind === "intro" && (
-            <div className="mt-1.5">
-              <span className="text-[10px] uppercase tracking-wider font-headline" style={{ color: CYAN, fontWeight: 800 }}>Introduction</span>
+            <ContextBanner color={CYAN} label="Introduction" stacked>
               {introPrompt && (
-                <p className="text-[12px] italic leading-snug mt-1" style={{ color: "#94a3b8" }}>“{introPrompt}”</p>
+                <p className="text-[13px] italic leading-snug" style={{ color: "#475569" }}>“{introPrompt}”</p>
               )}
-            </div>
+            </ContextBanner>
           )}
 
-          <p className="text-sm leading-relaxed whitespace-pre-wrap mt-2.5" style={{ color: "#334155" }}>{post.body}</p>
+          <p className="text-sm leading-relaxed whitespace-pre-wrap mt-3" style={{ color: "#334155" }}>{post.body}</p>
 
           {post.mediaUrl && (
             // eslint-disable-next-line @next/next/no-img-element
@@ -456,5 +453,39 @@ function PostCard({
         </div>
       </div>
     </article>
+  );
+}
+
+/** A weighted context banner above the body — tinted, with a colour accent bar —
+ *  so "Question for / Introduction / Reflection on" stands out even when the post
+ *  carries a photo. (Ship 2's "Answer to" will reuse this.) */
+function ContextBanner({
+  color,
+  label,
+  stacked,
+  children,
+}: {
+  color: string;
+  label: string;
+  stacked?: boolean;
+  children?: ReactNode;
+}) {
+  const labelEl = (
+    <span className="text-[11px] uppercase tracking-[0.12em] font-headline" style={{ color, fontWeight: 800 }}>{label}</span>
+  );
+  return (
+    <div className="rounded-lg mt-2.5 px-3 py-2" style={{ backgroundColor: `${color}14`, boxShadow: `inset 3.5px 0 0 ${color}` }}>
+      {stacked ? (
+        <>
+          {labelEl}
+          <div className="mt-1">{children}</div>
+        </>
+      ) : (
+        <div className="flex items-center gap-2 flex-wrap">
+          {labelEl}
+          {children}
+        </div>
+      )}
+    </div>
   );
 }
