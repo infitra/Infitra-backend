@@ -11,6 +11,7 @@ import type {
   ExperienceSpaceState,
   ExperienceSummary,
   ExperienceViewer,
+  ExperienceProgress,
   ProgramState,
   SpaceCreator,
   SpaceSession,
@@ -25,6 +26,7 @@ export interface RawExperienceSpaceSnapshot {
   is_member?: boolean;
   space_id?: string;
   viewer?: ExperienceViewer;
+  progress?: ExperienceProgress | null;
   experience?: ExperienceSummary;
   program_state?: ProgramState | null;
   creators?: SpaceCreator[];
@@ -61,5 +63,6 @@ export function mapSnapshot(
     members: raw.members ?? [],
     memberCount: raw.member_count ?? 0,
     actionItems: raw.action_items ?? [],
+    progress: raw.progress ?? null,
   };
 }

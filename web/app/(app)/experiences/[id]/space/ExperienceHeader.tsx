@@ -1,48 +1,58 @@
 "use client";
 
 /**
- * ExperienceHeader — Bundle 5c (locker-room v4).
+ * ExperienceHeader — Bundle 5c (locker-room v5).
  *
- * A slim "you're inside this" context strip (cover thumb + title + creators +
- * status) that EXPANDS on demand: Meet your Experts (full profiles), The Tribe
- * (roster), About (the promise + weekly arc). This is the single home for the
- * "who / what" reference info — so it no longer dangles as a card at the bottom
- * of the page on mobile. Orientation, not a sales hero.
+ * Slim "you're inside this" strip + a prominent status (the countdown to
+ * kickoff, or the current week) + a live "Active now" presence indicator, then
+ * two on-demand expandables: Meet your Experts (profiles) and Structure (the
+ * weekly arc + promise). Orientation, not a sales hero.
  */
 
 import Image from "next/image";
 import { useState } from "react";
 import { useExperienceSpaceStore } from "@/lib/experienceSpace/StoreProvider";
 import { programStatus } from "@/lib/experienceSpace/weekJourney";
+import { usePresence } from "./usePresence";
 import { Avatar } from "./Avatar";
 
 const ORANGE = "#FF6130";
 const CYAN = "#0891b2";
+const GREEN = "#22c55e";
 const INK = "#0F2229";
 
-type Panel = "experts" | "tribe" | "about";
+type Panel = "experts" | "structure";
 
 export function ExperienceHeader() {
   const experience = useExperienceSpaceStore((s) => s.experience);
   const programState = useExperienceSpaceStore((s) => s.programState);
   const creators = useExperienceSpaceStore((s) => s.creators);
-  const members = useExperienceSpaceStore((s) => s.members);
-  const memberCount = useExperienceSpaceStore((s) => s.memberCount);
+  const viewer = useExperienceSpaceStore((s) => s.viewer);
+  const spaceId = useExperienceSpaceStore((s) => s.spaceId);
 
+  const present = usePresence(spaceId, viewer);
   const [open, setOpen] = useState<Panel | null>(null);
   const toggle = (p: Panel) => setOpen((cur) => (cur === p ? null : p));
 
   const status = programStatus(experience);
   const totalWeeks = programState?.totalWeeks ?? experience.weeklyArc.length ?? 0;
   const currentWeek = programState?.currentWeek ?? 1;
-  const chip =
+
+  const statusLabel =
+    status.phase === "upcoming" ? "Starts in" : status.phase === "complete" ? "Wrapped" : "You're in";
+  const statusValue =
     status.phase === "upcoming"
-      ? `Starts in ${status.startsInDays}d`
+      ? `${status.startsInDays} ${status.startsInDays === 1 ? "day" : "days"}`
       : status.phase === "complete"
         ? "Completed"
         : `Week ${currentWeek} of ${totalWeeks}`;
+  const statusColor = status.phase === "upcoming" ? ORANGE : status.phase === "complete" ? CYAN : INK;
+  const startDate = new Date(experience.startDate + "T00:00:00");
+  const startStr = isNaN(startDate.getTime())
+    ? null
+    : startDate.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 
-  const hasAbout = !!experience.promiseText || experience.weeklyArc.length > 0;
+  const hasStructure = !!experience.promiseText || experience.weeklyArc.length > 0;
 
   return (
     <div
@@ -72,24 +82,57 @@ export function ExperienceHeader() {
           >
             {experience.title}
           </h1>
-          <div className="flex items-center gap-x-2.5 gap-y-1.5 mt-2 flex-wrap">
-            <div className="flex items-center gap-1.5">
-              <div className="flex -space-x-1.5">
-                {creators.map((c) => (
-                  <Avatar key={c.id} src={c.avatar} name={c.name} size={20} ring={c.role === "owner" ? ORANGE : "#9CF0FF"} />
-                ))}
-              </div>
-              <span className="text-[12px] sm:text-sm font-bold font-headline" style={{ color: "#475569" }}>
-                <span style={{ color: "#94a3b8" }}>with </span>
-                {creators.map((c) => c.name).join(" & ")}
-              </span>
+          <div className="flex items-center gap-1.5 mt-2">
+            <div className="flex -space-x-1.5">
+              {creators.map((c) => (
+                <Avatar key={c.id} src={c.avatar} name={c.name} size={20} ring={c.role === "owner" ? ORANGE : "#9CF0FF"} />
+              ))}
             </div>
-            <span
-              className="text-[10px] uppercase tracking-wider font-headline px-2 py-0.5 rounded-full"
-              style={{ color: CYAN, backgroundColor: "rgba(8,145,178,0.10)", fontWeight: 800 }}
-            >
-              {chip}
+            <span className="text-[12px] sm:text-sm font-bold font-headline" style={{ color: "#475569" }}>
+              <span style={{ color: "#94a3b8" }}>with </span>
+              {creators.map((c) => c.name).join(" & ")}
             </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Prominent status + live presence */}
+      <div
+        className="flex items-center justify-between gap-4 px-4 sm:px-5 py-3.5"
+        style={{ borderTop: "1px solid rgba(15,34,41,0.06)" }}
+      >
+        <div className="min-w-0">
+          <p className="text-[10px] uppercase tracking-[0.18em] font-headline" style={{ color: "#94a3b8", fontWeight: 800 }}>
+            {statusLabel}
+          </p>
+          <p
+            className="font-black font-headline leading-none mt-0.5"
+            style={{ color: statusColor, fontSize: "clamp(1.25rem, 4vw, 1.7rem)", letterSpacing: "-0.02em" }}
+            suppressHydrationWarning
+          >
+            {statusValue}
+          </p>
+          {status.phase === "upcoming" && startStr && (
+            <p className="text-[11px] mt-0.5" style={{ color: "#94a3b8" }} suppressHydrationWarning>
+              Week 1 begins {startStr}
+            </p>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          {present.length > 0 && (
+            <div className="flex -space-x-2">
+              {present.slice(0, 4).map((u) => (
+                <Avatar key={u.id} src={u.avatar} name={u.name} size={26} ring="#FFFFFF" />
+              ))}
+            </div>
+          )}
+          <div className="text-right">
+            <p className="text-[10px] uppercase tracking-[0.14em] font-headline flex items-center gap-1 justify-end" style={{ color: "#94a3b8", fontWeight: 800 }}>
+              <span className="inline-block w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: GREEN }} />
+              Active now
+            </p>
+            <p className="text-sm font-black font-headline" style={{ color: INK }}>{present.length}</p>
           </div>
         </div>
       </div>
@@ -97,65 +140,45 @@ export function ExperienceHeader() {
       {/* Expand toggles */}
       <div className="flex flex-wrap gap-2 px-4 sm:px-5 pb-4 pt-3" style={{ borderTop: "1px solid rgba(15,34,41,0.06)" }}>
         <Toggle label="Meet your Experts" active={open === "experts"} onClick={() => toggle("experts")} />
-        <Toggle label={`The Tribe · ${memberCount}`} active={open === "tribe"} onClick={() => toggle("tribe")} />
-        {hasAbout && <Toggle label="About" active={open === "about"} onClick={() => toggle("about")} />}
+        {hasStructure && <Toggle label="Structure" active={open === "structure"} onClick={() => toggle("structure")} />}
       </div>
 
       {/* Expanded panel */}
-      {open && (
+      {open === "experts" && (
+        <div className="px-4 sm:px-5 pb-5 pt-1 space-y-4">
+          {creators.map((c) => (
+            <div key={c.id} className="flex gap-3">
+              <Avatar src={c.avatar} name={c.name} size={44} ring={c.role === "owner" ? ORANGE : "#9CF0FF"} />
+              <div className="min-w-0">
+                <p className="text-sm font-black font-headline" style={{ color: INK }}>
+                  {c.name}
+                  <span className="ml-2 text-[10px] uppercase tracking-wider" style={{ color: "#94a3b8" }}>
+                    {c.role === "owner" ? "Lead" : "Co-host"}
+                  </span>
+                </p>
+                {c.tagline && <p className="text-[12px] font-bold font-headline mt-0.5" style={{ color: CYAN }}>{c.tagline}</p>}
+                {c.bio && <p className="text-[13px] leading-relaxed mt-1" style={{ color: "#475569" }}>{c.bio}</p>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {open === "structure" && (
         <div className="px-4 sm:px-5 pb-5 pt-1">
-          {open === "experts" && (
-            <div className="space-y-4">
-              {creators.map((c) => (
-                <div key={c.id} className="flex gap-3">
-                  <Avatar src={c.avatar} name={c.name} size={44} ring={c.role === "owner" ? ORANGE : "#9CF0FF"} />
-                  <div className="min-w-0">
-                    <p className="text-sm font-black font-headline" style={{ color: INK }}>
-                      {c.name}
-                      <span className="ml-2 text-[10px] uppercase tracking-wider" style={{ color: "#94a3b8" }}>
-                        {c.role === "owner" ? "Lead" : "Co-host"}
-                      </span>
-                    </p>
-                    {c.tagline && <p className="text-[12px] font-bold font-headline mt-0.5" style={{ color: CYAN }}>{c.tagline}</p>}
-                    {c.bio && <p className="text-[13px] leading-relaxed mt-1" style={{ color: "#475569" }}>{c.bio}</p>}
-                  </div>
+          {experience.promiseText && (
+            <p className="text-[14px] leading-relaxed" style={{ color: "#334155" }}>{experience.promiseText}</p>
+          )}
+          {experience.weeklyArc.length > 0 && (
+            <div className="mt-4 space-y-1.5">
+              {experience.weeklyArc.map((w) => (
+                <div key={w.week} className="flex gap-3 text-[13px]">
+                  <span className="font-black font-headline shrink-0 w-14" style={{ color: w.week === currentWeek ? ORANGE : "#94a3b8" }}>
+                    Wk {w.week}
+                  </span>
+                  <span style={{ color: "#475569" }}>{w.theme}</span>
                 </div>
               ))}
-            </div>
-          )}
-
-          {open === "tribe" && (
-            members.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {members.map((m) => (
-                  <div key={m.id} className="flex items-center gap-2.5">
-                    <Avatar src={m.avatar} name={m.name} size={30} />
-                    <span className="text-sm font-bold font-headline truncate" style={{ color: INK }}>{m.name}</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-xs" style={{ color: "#94a3b8" }}>The Tribe will gather here.</p>
-            )
-          )}
-
-          {open === "about" && (
-            <div>
-              {experience.promiseText && (
-                <p className="text-[14px] leading-relaxed" style={{ color: "#334155" }}>{experience.promiseText}</p>
-              )}
-              {experience.weeklyArc.length > 0 && (
-                <div className="mt-4 space-y-1.5">
-                  {experience.weeklyArc.map((w) => (
-                    <div key={w.week} className="flex gap-3 text-[13px]">
-                      <span className="font-black font-headline shrink-0 w-14" style={{ color: w.week === currentWeek ? CYAN : "#94a3b8" }}>
-                        Wk {w.week}
-                      </span>
-                      <span style={{ color: "#475569" }}>{w.theme}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
           )}
         </div>

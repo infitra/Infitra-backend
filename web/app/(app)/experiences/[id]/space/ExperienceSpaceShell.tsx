@@ -20,6 +20,7 @@ import { TribeFeed } from "./TribeFeed";
 import { IntroActionCard } from "./IntroActionCard";
 import { WeekJourney } from "./WeekJourney";
 import { YouPanel } from "./YouPanel";
+import { ProgressCard } from "./ProgressCard";
 import type { ExperienceSpaceSeed } from "@/lib/experienceSpace/mapSnapshot";
 
 export function ExperienceSpaceShell({ seed }: { seed: ExperienceSpaceSeed }) {
@@ -68,15 +69,17 @@ function SpaceBody() {
       {/* ── HEADER — slim, expandable ── */}
       <ExperienceHeader />
 
-      {/* ── MOBILE: personal hub up top ── */}
-      <div className="lg:hidden mb-6">
+      {/* ── MOBILE: personal hub + progress up top ── */}
+      <div className="lg:hidden mb-6 space-y-4">
         <YouPanel />
+        <ProgressCard />
       </div>
 
       {/* ── LOCKER ROOM: sticky hub rail + main content ── */}
       <div className="lg:grid lg:grid-cols-[340px_minmax(0,1fr)] lg:gap-6 lg:items-start">
-        <aside className="hidden lg:block lg:sticky lg:top-24">
+        <aside className="hidden lg:flex lg:flex-col lg:gap-4 lg:sticky lg:top-24">
           <YouPanel />
+          <ProgressCard />
         </aside>
 
         <main className="space-y-6 min-w-0">

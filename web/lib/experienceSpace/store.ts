@@ -80,6 +80,24 @@ export interface ExperienceViewer {
   postCount: number;
 }
 
+/** Personal progress for this experience (from vw_my_challenges_progress).
+ *  Note: attendedSessions/completionPercent count entitlement, not turnout —
+ *  the UI uses attendancePercent / attendedPastSessions / upcomingSessions /
+ *  progressPercent, which are the meaningful "how am I doing" numbers. */
+export interface ExperienceProgress {
+  totalSessions: number;
+  pastSessions: number;
+  attendedSessions: number;
+  attendedPastSessions: number;
+  upcomingSessions: number;
+  attendancePercent: number;
+  completionPercent: number;
+  progressPercent: number;
+}
+
+/** Hub → feed intent: which composer mode to open when jumping to the feed. */
+export type ComposeIntent = "share" | "question" | null;
+
 /** Action Bar item. Bundle 5 ships only `intro`; 6-9 add pre_pulse/reflection/question. */
 export interface ActionItem {
   kind: string;
@@ -108,7 +126,8 @@ export interface ExperienceSpaceState {
   members: TribeMember[];
   memberCount: number;
   actionItems: ActionItem[];
-  ui: { channelStatus: SpaceChannelStatus };
+  progress: ExperienceProgress | null;
+  ui: { channelStatus: SpaceChannelStatus; composeIntent: ComposeIntent };
 }
 
 export interface ExperienceSpaceActions {
@@ -117,6 +136,8 @@ export interface ExperienceSpaceActions {
   /** Authoritative full overwrite on reconnect / tab-return (Phase-4 reconcile). */
   reconcile: (next: Omit<ExperienceSpaceState, "ui">) => void;
   setChannelStatus: (status: SpaceChannelStatus) => void;
+  /** Hub asks the feed composer to open in a given mode (share / question). */
+  setComposeIntent: (intent: ComposeIntent) => void;
 
   /** app_session UPDATE → update a session's live/status fields in place. */
   applySessionUpdate: (row: {
@@ -145,6 +166,8 @@ export function createExperienceSpaceStore(
     reconcile: (next) => set(next),
     setChannelStatus: (status) =>
       set((s) => ({ ui: { ...s.ui, channelStatus: status } })),
+    setComposeIntent: (intent) =>
+      set((s) => ({ ui: { ...s.ui, composeIntent: intent } })),
 
     applySessionUpdate: (row) =>
       set((s) => ({

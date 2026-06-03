@@ -43,6 +43,7 @@ export function YouPanel() {
   const isCreator = useExperienceSpaceStore((s) => s.isCreator);
   const isMember = useExperienceSpaceStore((s) => s.isMember);
   const actionItems = useExperienceSpaceStore((s) => s.actionItems);
+  const setComposeIntent = useExperienceSpaceStore((s) => s.setComposeIntent);
 
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -129,13 +130,24 @@ export function YouPanel() {
           </a>
         )}
 
-        {/* The one action */}
-        <div className="mt-3">
+        {/* Actions */}
+        <div className="mt-3 space-y-2">
           {introPending ? (
-            <PrimaryAction href="#your-move" label="Introduce yourself" />
+            <PrimaryAction href="#your-move" label="Introduce yourself" variant="solid" />
           ) : (
-            <PrimaryAction href="#tribe-composer" label="Share with the Tribe" />
+            <PrimaryAction
+              href="#tribe-composer"
+              label="Engage with your Tribe"
+              variant="solid"
+              onClick={() => setComposeIntent("share")}
+            />
           )}
+          <PrimaryAction
+            href="#tribe-composer"
+            label="Ask your Experts"
+            variant="tint"
+            onClick={() => setComposeIntent("question")}
+          />
         </div>
 
         {/* Jump-to navigation */}
@@ -181,15 +193,31 @@ function NavPill({ href, label }: { href: string; label: string }) {
   );
 }
 
-function PrimaryAction({ href, label }: { href: string; label: string }) {
+function PrimaryAction({
+  href,
+  label,
+  variant,
+  onClick,
+}: {
+  href: string;
+  label: string;
+  variant: "solid" | "tint";
+  onClick?: () => void;
+}) {
+  const solid = variant === "solid";
   return (
     <a
       href={href}
+      onClick={onClick}
       className="flex items-center justify-center gap-1.5 rounded-xl py-3 text-[13px] font-black font-headline transition-transform hover:scale-[1.01]"
-      style={{ backgroundColor: ORANGE, color: "#fff", boxShadow: "0 4px 14px rgba(255,97,48,0.32)" }}
+      style={
+        solid
+          ? { backgroundColor: ORANGE, color: "#fff", boxShadow: "0 4px 14px rgba(255,97,48,0.32)" }
+          : { backgroundColor: "rgba(255,97,48,0.08)", color: ORANGE }
+      }
     >
       {label}
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={solid ? "#fff" : ORANGE} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
         <polyline points="9 18 15 12 9 6" />
       </svg>
     </a>

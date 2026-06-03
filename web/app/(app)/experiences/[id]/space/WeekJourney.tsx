@@ -29,6 +29,7 @@ import {
 } from "@/lib/experienceSpace/weekJourney";
 import type { SpaceSession } from "@/lib/experienceSpace/store";
 
+const ORANGE = "#FF6130";
 const CYAN = "#0891b2";
 const RED = "#ef4444";
 const INK = "#0F2229";
@@ -132,7 +133,7 @@ export function WeekJourney() {
           <p
             className="font-black font-headline uppercase mt-1.5"
             style={{
-              color: CYAN,
+              color: ORANGE,
               fontSize: "clamp(0.95rem, 3.2vw, 1.25rem)",
               letterSpacing: "0.02em",
             }}
@@ -193,7 +194,7 @@ export function WeekJourney() {
 
 /* ── Progress rail ─────────────────────────────────────────────────────
  * Nodes 1..N. Calendar progress is the dot styling (done = cyan filled,
- * current = cyan + glow, ahead = hollow). The week you're VIEWING gets an
+ * current = orange + glow, ahead = hollow). The week you're VIEWING gets an
  * ink ring + bold label, so selection reads independently of progress.
  */
 function WeekRail({
@@ -274,12 +275,12 @@ function RailDot({
   const isCurrent = week.status === "current";
   const isDone = week.status === "done";
   const size = isCurrent ? 16 : 11;
-  const fill = isCurrent || isDone ? CYAN : "#FFFFFF";
+  const fill = isCurrent ? ORANGE : isDone ? CYAN : "#FFFFFF";
 
   const shadow = selected
     ? "0 0 0 2px #FFFFFF, 0 0 0 4px #0F2229"
     : isCurrent
-      ? "0 0 0 5px rgba(8,145,178,0.18), 0 1px 3px rgba(15,34,41,0.10)"
+      ? "0 0 0 5px rgba(255,97,48,0.20), 0 1px 3px rgba(15,34,41,0.10)"
       : "0 1px 2px rgba(15,34,41,0.06)";
 
   return (
@@ -332,13 +333,13 @@ function HeroSessionCard({
   live: boolean;
   now: number;
 }) {
-  const accent = live ? RED : CYAN;
+  const accent = live ? RED : ORANGE;
   return (
     <div
       className="rounded-2xl overflow-hidden flex items-stretch"
       style={{
         backgroundColor: "#FFFFFF",
-        boxShadow: `0 0 0 1.5px ${accent}, 0 10px 30px ${live ? "rgba(239,68,68,0.18)" : "rgba(8,145,178,0.12)"}`,
+        boxShadow: `0 0 0 1.5px ${accent}, 0 10px 30px ${live ? "rgba(239,68,68,0.18)" : "rgba(255,97,48,0.16)"}`,
       }}
     >
       <div className="relative shrink-0 w-28 sm:w-40" style={{ backgroundColor: "#ECE7DD" }}>
@@ -347,7 +348,7 @@ function HeroSessionCard({
         ) : (
           <div
             className="absolute inset-0"
-            style={{ background: "linear-gradient(135deg, rgba(156,240,255,0.45), rgba(8,145,178,0.18))" }}
+            style={{ background: "linear-gradient(135deg, rgba(156,240,255,0.4), rgba(255,97,48,0.2))" }}
           />
         )}
       </div>
@@ -388,7 +389,7 @@ function HeroSessionCard({
               </span>
               <span
                 className="text-2xl sm:text-3xl font-black font-headline tabular-nums"
-                style={{ color: INK, letterSpacing: "-0.01em" }}
+                style={{ color: ORANGE, letterSpacing: "-0.01em" }}
                 suppressHydrationWarning
               >
                 {countdown(session.startTime, now)}

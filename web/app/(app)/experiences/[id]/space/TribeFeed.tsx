@@ -1,22 +1,24 @@
 "use client";
 
 /**
- * TribeFeed — Bundle 5c (locker-room v4).
+ * TribeFeed — Bundle 5c (locker-room v5).
  *
- * The Tribe's conversation. The kind selector sits at the TOP of the composer
- * (you choose what you're doing before you type): Share (cyan) or Question
- * (orange). Picking Question reveals an "ask a specific Expert" picker and the
- * post is directed to them (directed_to).
- *
- * Colour system: Share = cyan, Question = orange, and the GUIDED system posts —
- * Intro + Reflection — are purple. Cards stay calm (one small kind accent),
- * creators read as Experts, your own posts are marked "You", and questions show
- * who they're for.
+ * The Tribe's conversation, now as ONE contained panel (header + composer +
+ * posts) instead of loose floating cards. The composer's kind selector sits at
+ * the top — Share (cyan) or Question (orange); Question reveals an "ask a
+ * specific Expert" picker (directed_to). Posts carry CONTEXT that sets the
+ * guided kinds apart from a plain share:
+ *   • Introduction → the intro prompt it answered
+ *   • Reflection   → the session it reflects on
+ *   • Question     → who it's for
+ * Intro + Reflection badges are cyan (guided); Question is orange; Share is
+ * unbadged. The hub can open the composer in a given mode via composeIntent.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { createChallengePost } from "@/app/actions/community";
+import { useExperienceSpaceStore } from "@/lib/experienceSpace/StoreProvider";
 import type { ExperienceViewer, SpaceCreator } from "@/lib/experienceSpace/store";
 import { Avatar } from "./Avatar";
 
@@ -25,6 +27,7 @@ interface FeedPost {
   author_id: string;
   body: string;
   kind: string;
+  contextId: string | null;
   directedTo: string[];
   created_at: string;
   authorName: string;
@@ -36,20 +39,19 @@ interface RawRow {
   author_id: string;
   body: string;
   kind?: string;
+  context_id?: string | null;
   directed_to?: string[] | null;
   created_at: string;
 }
 
 const ORANGE = "#FF6130";
 const CYAN = "#0891b2";
-const PURPLE = "#8b5cf6";
 const INK = "#0F2229";
 
-/** Visible post kinds + their accent. `talk` (a plain share) has no badge.
- *  Intro + Reflection are the guided/system posts → purple. */
+/** Visible kinds + accent. Intro + Reflection are the guided/context posts → cyan. */
 const KIND: Record<string, { label: string; color: string }> = {
-  intro: { label: "Introduction", color: PURPLE },
-  reflection: { label: "Reflection", color: PURPLE },
+  intro: { label: "Introduction", color: CYAN },
+  reflection: { label: "Reflection", color: CYAN },
   question: { label: "Question", color: ORANGE },
 };
 
@@ -70,6 +72,11 @@ export function TribeFeed({
   canPost: boolean;
   creators: SpaceCreator[];
 }) {
+  const introPrompt = useExperienceSpaceStore((s) => s.experience.introPrompt);
+  const sessions = useExperienceSpaceStore((s) => s.sessions);
+  const composeIntent = useExperienceSpaceStore((s) => s.ui.composeIntent);
+  const setComposeIntent = useExperienceSpaceStore((s) => s.setComposeIntent);
+
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [body, setBody] = useState("");
@@ -78,8 +85,20 @@ export function TribeFeed({
   const [posting, setPosting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const profRef = useRef<Record<string, { name: string; avatar: string | null }>>({});
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const creatorById = useMemo(() => new Map(creators.map((c) => [c.id, c])), [creators]);
+  const sessionById = useMemo(() => new Map(sessions.map((s) => [s.id, s])), [sessions]);
+
+  // Hub → composer intent (Engage / Ask). Consume once applied.
+  useEffect(() => {
+    if (!composeIntent) return;
+    const k: ComposeKind = composeIntent === "question" ? "question" : "talk";
+    setKind(k);
+    if (k === "question" && creators.length === 1) setAskId(creators[0].id);
+    setComposeIntent(null);
+    textareaRef.current?.focus();
+  }, [composeIntent, creators, setComposeIntent]);
 
   const enrich = useCallback(async (rows: { author_id: string }[]) => {
     const supabase = createClient();
@@ -92,7 +111,7 @@ export function TribeFeed({
 
   const toPost = useCallback((r: RawRow): FeedPost => ({
     id: r.id, author_id: r.author_id, body: r.body, kind: r.kind ?? "talk",
-    directedTo: r.directed_to ?? [], created_at: r.created_at,
+    contextId: r.context_id ?? null, directedTo: r.directed_to ?? [], created_at: r.created_at,
     authorName: profRef.current[r.author_id]?.name ?? "Member", authorAvatar: profRef.current[r.author_id]?.avatar ?? null,
   }), []);
 
@@ -147,12 +166,13 @@ export function TribeFeed({
   const canSubmit = !!body.trim() && !posting && !(kind === "question" && !askId);
 
   return (
-    <div>
-      {/* Section header */}
-      <div className="flex items-baseline gap-2.5 mb-3">
-        <p className="text-[11px] uppercase tracking-[0.2em] font-headline" style={{ color: INK, fontWeight: 800 }}>
-          The Tribe
-        </p>
+    <section
+      className="rounded-2xl overflow-hidden"
+      style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.05), 0 6px 22px rgba(15,34,41,0.06)" }}
+    >
+      {/* Header */}
+      <div className="flex items-center gap-2.5 px-4 sm:px-5 pt-4 pb-3">
+        <p className="text-[11px] uppercase tracking-[0.2em] font-headline" style={{ color: INK, fontWeight: 800 }}>The Tribe</p>
         {!loading && posts.length > 0 && (
           <span className="text-[11px] font-bold font-headline" style={{ color: "#94a3b8" }}>
             {posts.length} {posts.length === 1 ? "post" : "posts"}
@@ -164,10 +184,9 @@ export function TribeFeed({
       {canPost && (
         <div
           id="tribe-composer"
-          className="rounded-2xl p-4 mb-4 scroll-mt-24"
-          style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.05), 0 4px 16px rgba(15,34,41,0.05)" }}
+          className="px-4 sm:px-5 py-4 scroll-mt-24"
+          style={{ borderTop: "1px solid rgba(15,34,41,0.06)", borderBottom: "1px solid rgba(15,34,41,0.06)", backgroundColor: "#FCFAF6" }}
         >
-          {/* Kind selector — at the top, before you type */}
           <div className="flex gap-2 mb-3">
             {COMPOSE_KINDS.map((k) => {
               const active = kind === k.key;
@@ -189,21 +208,19 @@ export function TribeFeed({
             <Avatar src={viewer.avatar} name={viewer.name} size={38} ring={CYAN} />
             <div className="flex-1 min-w-0">
               <textarea
+                ref={textareaRef}
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
                 placeholder={kind === "question" ? "What do you want to ask?" : "Share something with your Tribe…"}
                 rows={2}
                 maxLength={5000}
                 className="w-full rounded-xl p-3 text-sm resize-none focus:outline-none"
-                style={{ backgroundColor: "#FAF7F1", border: "1px solid rgba(15,34,41,0.08)", color: INK }}
+                style={{ backgroundColor: "#FFFFFF", border: "1px solid rgba(15,34,41,0.10)", color: INK }}
               />
 
-              {/* Question → pick an Expert to direct it to */}
               {kind === "question" && creators.length > 0 && (
                 <div className="mt-2.5">
-                  <p className="text-[10px] uppercase tracking-[0.16em] font-headline mb-1.5" style={{ color: "#94a3b8", fontWeight: 800 }}>
-                    Ask
-                  </p>
+                  <p className="text-[10px] uppercase tracking-[0.16em] font-headline mb-1.5" style={{ color: "#94a3b8", fontWeight: 800 }}>Ask</p>
                   <div className="flex flex-wrap gap-2">
                     {creators.map((c) => {
                       const active = askId === c.id;
@@ -246,91 +263,108 @@ export function TribeFeed({
 
       {/* Posts */}
       {loading ? (
-        <p className="text-xs py-6 text-center" style={{ color: "#94a3b8" }}>Loading the Tribe…</p>
+        <p className="text-xs py-8 text-center" style={{ color: "#94a3b8" }}>Loading the Tribe…</p>
       ) : posts.length === 0 ? (
-        <div className="py-10 text-center rounded-2xl" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.05)" }}>
+        <div className="py-10 text-center">
           <p className="text-sm font-bold font-headline" style={{ color: "#64748b" }}>The Tribe is quiet</p>
           <p className="text-xs mt-1" style={{ color: "#94a3b8" }}>Start the conversation.</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {posts.map((p) => (
-            <PostCard
+        <div>
+          {posts.map((p, i) => (
+            <PostRow
               key={p.id}
               post={p}
+              first={i === 0}
               creator={creatorById.get(p.author_id)}
               directedCreator={p.kind === "question" ? creatorById.get(p.directedTo[0]) : undefined}
+              reflectsOn={p.kind === "reflection" && p.contextId ? sessionById.get(p.contextId)?.title ?? null : null}
+              introPrompt={p.kind === "intro" ? introPrompt : null}
               isOwn={p.author_id === viewer.id}
             />
           ))}
         </div>
       )}
-    </div>
+    </section>
   );
 }
 
-function PostCard({
+function PostRow({
   post,
+  first,
   creator,
   directedCreator,
+  reflectsOn,
+  introPrompt,
   isOwn,
 }: {
   post: FeedPost;
+  first: boolean;
   creator?: SpaceCreator;
   directedCreator?: SpaceCreator;
+  reflectsOn?: string | null;
+  introPrompt?: string | null;
   isOwn: boolean;
 }) {
   const badge = KIND[post.kind];
   const isCreator = !!creator;
   const ring = isCreator ? (creator!.role === "owner" ? ORANGE : CYAN) : isOwn ? CYAN : undefined;
-  const accent = badge?.color;
 
   return (
-    <article
-      className="rounded-2xl relative overflow-hidden"
-      style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.05), 0 2px 12px rgba(15,34,41,0.04)" }}
+    <div
+      className="flex gap-3 px-4 sm:px-5 py-4"
+      style={first ? undefined : { borderTop: "1px solid rgba(15,34,41,0.06)" }}
     >
-      {accent && <div className="absolute left-0 top-0 bottom-0 w-1" style={{ backgroundColor: accent }} aria-hidden />}
-      <div className="flex gap-3 p-4" style={accent ? { paddingLeft: 20 } : undefined}>
-        <Avatar src={post.authorAvatar} name={post.authorName} size={40} ring={ring} />
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-sm font-black font-headline" style={{ color: INK }}>{post.authorName}</span>
-            {isCreator && (
-              <span className="text-[9px] uppercase tracking-wider font-headline px-1.5 py-0.5 rounded-full text-white" style={{ backgroundColor: ring, fontWeight: 800 }}>
-                Expert
-              </span>
-            )}
-            {isOwn && !isCreator && (
-              <span className="text-[9px] uppercase tracking-wider font-headline px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "rgba(8,145,178,0.12)", color: CYAN, fontWeight: 800 }}>
-                You
-              </span>
-            )}
-            {badge && (
-              <span className="text-[10px] uppercase tracking-wider font-headline px-2 py-0.5 rounded-full" style={{ color: badge.color, backgroundColor: `${badge.color}14`, fontWeight: 800 }}>
-                {badge.label}
-              </span>
-            )}
-            <span className="text-[11px] ml-auto shrink-0" style={{ color: "#94a3b8" }} suppressHydrationWarning>
-              {new Date(post.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
-            </span>
-          </div>
-
-          {/* Directed question → who it's for */}
-          {post.kind === "question" && directedCreator && (
-            <div className="flex items-center gap-1.5 mt-1.5">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={ORANGE} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
-              </svg>
-              <span className="text-[11px] font-bold font-headline" style={{ color: "#94a3b8" }}>for</span>
-              <Avatar src={directedCreator.avatar} name={directedCreator.name} size={18} ring={directedCreator.role === "owner" ? ORANGE : CYAN} />
-              <span className="text-[12px] font-black font-headline" style={{ color: ORANGE }}>{directedCreator.name}</span>
-            </div>
+      <Avatar src={post.authorAvatar} name={post.authorName} size={40} ring={ring} />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="text-sm font-black font-headline" style={{ color: INK }}>{post.authorName}</span>
+          {isCreator && (
+            <span className="text-[9px] uppercase tracking-wider font-headline px-1.5 py-0.5 rounded-full text-white" style={{ backgroundColor: ring, fontWeight: 800 }}>Expert</span>
           )}
-
-          <p className="text-sm leading-relaxed whitespace-pre-wrap mt-1.5" style={{ color: "#334155" }}>{post.body}</p>
+          {isOwn && !isCreator && (
+            <span className="text-[9px] uppercase tracking-wider font-headline px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "rgba(8,145,178,0.12)", color: CYAN, fontWeight: 800 }}>You</span>
+          )}
+          {badge && (
+            <span className="text-[10px] uppercase tracking-wider font-headline px-2 py-0.5 rounded-full" style={{ color: badge.color, backgroundColor: `${badge.color}14`, fontWeight: 800 }}>{badge.label}</span>
+          )}
+          <span className="text-[11px] ml-auto shrink-0" style={{ color: "#94a3b8" }} suppressHydrationWarning>
+            {new Date(post.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+          </span>
         </div>
+
+        {/* Context — what makes guided posts more than a plain share */}
+        {post.kind === "question" && directedCreator && (
+          <ContextLine color={ORANGE} prefix="for">
+            <Avatar src={directedCreator.avatar} name={directedCreator.name} size={18} ring={directedCreator.role === "owner" ? ORANGE : CYAN} />
+            <span className="text-[12px] font-black font-headline" style={{ color: ORANGE }}>{directedCreator.name}</span>
+          </ContextLine>
+        )}
+        {post.kind === "intro" && introPrompt && (
+          <ContextLine color={CYAN} prefix="In response to">
+            <span className="text-[12px] italic" style={{ color: "#64748b" }}>“{introPrompt}”</span>
+          </ContextLine>
+        )}
+        {post.kind === "reflection" && reflectsOn && (
+          <ContextLine color={CYAN} prefix="Reflecting on">
+            <span className="text-[12px] font-bold font-headline" style={{ color: CYAN }}>{reflectsOn}</span>
+          </ContextLine>
+        )}
+
+        <p className="text-sm leading-relaxed whitespace-pre-wrap mt-1.5" style={{ color: "#334155" }}>{post.body}</p>
       </div>
-    </article>
+    </div>
+  );
+}
+
+function ContextLine({ color, prefix, children }: { color: string; prefix: string; children: ReactNode }) {
+  return (
+    <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
+      </svg>
+      <span className="text-[11px] font-bold font-headline" style={{ color: "#94a3b8" }}>{prefix}</span>
+      {children}
+    </div>
   );
 }
