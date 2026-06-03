@@ -1,13 +1,12 @@
 "use client";
 
 /**
- * YouPanel — Bundle 5c (locker-room v3). The personal command center.
+ * YouPanel — Bundle 5c (locker-room v4). The personal command center.
  *
- * "You, inside this experience": a branded identity header, where you are in
- * the journey (week progress, or a pre-start countdown), a few personal stats,
- * your next moment, in-page navigation (jump to The Week / The Tribe), and the
- * single contextual action that matters right now (introduce / join live /
- * share). Lives in the desktop sticky rail and at the top on mobile.
+ * Action-first: identity → where you are → your next moment → the ONE thing to
+ * do → quick nav → light personal stats. Colour discipline: orange is reserved
+ * for the single primary action (and red for live); everything else is cyan /
+ * ink so the hub reads calm and the action pops.
  */
 
 import { useEffect, useState } from "react";
@@ -60,25 +59,23 @@ export function YouPanel() {
   const hero = model.heroSessionId ? sessions.find((s) => s.id === model.heroSessionId) ?? null : null;
   const introPending = isMember && actionItems.some((a) => a.kind === "intro");
   const joined = fmtJoined(viewer.joinedAt);
-  const roleLabel = isCreator ? "Expert" : "Member";
 
   return (
     <div
       className="rounded-2xl overflow-hidden"
       style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.05), 0 8px 26px rgba(15,34,41,0.08)" }}
     >
-      {/* Identity — branded header band */}
+      {/* Identity — calm branded band (cyan-forward) */}
       <div
         className="px-5 pt-5 pb-4"
-        style={{ background: "linear-gradient(135deg, rgba(255,97,48,0.12), rgba(156,240,255,0.10) 70%, rgba(255,255,255,0))" }}
+        style={{ background: "linear-gradient(135deg, rgba(8,145,178,0.10), rgba(156,240,255,0.10) 70%, rgba(255,255,255,0))" }}
       >
         <div className="flex items-center gap-3">
           <Avatar src={viewer.avatar} name={viewer.name} size={48} ring={isCreator ? ORANGE : CYAN} />
           <div className="min-w-0">
             <p className="text-base font-black font-headline truncate" style={{ color: INK }}>{viewer.name}</p>
-            <p className="text-[11px] font-bold font-headline" style={{ color: "#64748b" }}>
-              {roleLabel}
-              {joined && <span style={{ color: "#94a3b8" }}> · joined {joined}</span>}
+            <p className="text-[11px] font-bold font-headline uppercase tracking-wider" style={{ color: "#94a3b8" }}>
+              {isCreator ? "Expert" : "Member"}
             </p>
           </div>
         </div>
@@ -87,19 +84,13 @@ export function YouPanel() {
       <div className="px-5 pb-5 pt-1">
         {/* Where you are */}
         <div className="mt-3">
-          {status.phase === "upcoming" ? (
-            <p className="text-[11px] uppercase tracking-[0.16em] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>
-              Starts in {status.startsInDays}d
-            </p>
-          ) : status.phase === "complete" ? (
-            <p className="text-[11px] uppercase tracking-[0.16em] font-headline" style={{ color: CYAN, fontWeight: 800 }}>
-              Completed · {totalWeeks} weeks
-            </p>
-          ) : (
-            <p className="text-[11px] uppercase tracking-[0.16em] font-headline" style={{ color: INK, fontWeight: 800 }}>
-              Week {currentWeek} of {totalWeeks}
-            </p>
-          )}
+          <p className="text-[11px] uppercase tracking-[0.16em] font-headline" style={{ color: status.phase === "upcoming" ? CYAN : INK, fontWeight: 800 }}>
+            {status.phase === "upcoming"
+              ? `Starts in ${status.startsInDays}d`
+              : status.phase === "complete"
+                ? `Completed · ${totalWeeks} weeks`
+                : `Week ${currentWeek} of ${totalWeeks}`}
+          </p>
           <div className="flex gap-1 mt-2">
             {Array.from({ length: totalWeeks }).map((_, i) => {
               const done = i < weeksCompleted;
@@ -108,18 +99,11 @@ export function YouPanel() {
                 <span
                   key={i}
                   className="flex-1 rounded-full"
-                  style={{ height: 5, backgroundColor: done ? CYAN : current ? ORANGE : "rgba(15,34,41,0.08)" }}
+                  style={{ height: 5, backgroundColor: done ? CYAN : current ? INK : "rgba(15,34,41,0.08)" }}
                 />
               );
             })}
           </div>
-        </div>
-
-        {/* Stats — personal */}
-        <div className="grid grid-cols-3 gap-2 mt-4">
-          <Stat value={sessions.length} label="sessions" />
-          <Stat value={viewer.postCount} label={viewer.postCount === 1 ? "post" : "posts"} />
-          <Stat value={totalWeeks} label="weeks" />
         </div>
 
         {/* Next moment */}
@@ -127,23 +111,32 @@ export function YouPanel() {
           <a
             href={model.heroIsLive ? `/sessions/${hero.id}/live` : "#the-week"}
             className="flex items-center gap-2 rounded-xl px-3 py-2.5 mt-4"
-            style={{ backgroundColor: model.heroIsLive ? "rgba(239,68,68,0.08)" : "rgba(255,97,48,0.07)" }}
+            style={{ backgroundColor: model.heroIsLive ? "rgba(239,68,68,0.08)" : "#FAF7F1" }}
           >
             {model.heroIsLive && <span className="inline-block w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: RED }} />}
             <div className="min-w-0 flex-1">
-              <p className="text-[9px] uppercase tracking-[0.16em] font-headline" style={{ color: model.heroIsLive ? RED : ORANGE, fontWeight: 800 }}>
+              <p className="text-[9px] uppercase tracking-[0.16em] font-headline" style={{ color: model.heroIsLive ? RED : CYAN, fontWeight: 800 }}>
                 {model.heroIsLive ? "Live now" : "Next moment"}
               </p>
               <p className="text-[13px] font-black font-headline truncate" style={{ color: INK }}>{hero.title}</p>
             </div>
-            <span className="text-[12px] font-black font-headline tabular-nums shrink-0" style={{ color: model.heroIsLive ? RED : ORANGE }} suppressHydrationWarning>
+            <span className="text-[12px] font-black font-headline tabular-nums shrink-0" style={{ color: model.heroIsLive ? RED : INK }} suppressHydrationWarning>
               {model.heroIsLive ? "Join" : countdown(hero.startTime, now)}
             </span>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={model.heroIsLive ? RED : ORANGE} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.7 }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={model.heroIsLive ? RED : "#94a3b8"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="9 18 15 12 9 6" />
             </svg>
           </a>
         )}
+
+        {/* The one action */}
+        <div className="mt-3">
+          {introPending ? (
+            <PrimaryAction href="#your-move" label="Introduce yourself" />
+          ) : (
+            <PrimaryAction href="#tribe-composer" label="Share with the Tribe" />
+          )}
+        </div>
 
         {/* Jump-to navigation */}
         <p className="text-[10px] uppercase tracking-[0.16em] font-headline mt-5 mb-2" style={{ color: "#94a3b8", fontWeight: 800 }}>
@@ -154,23 +147,20 @@ export function YouPanel() {
           <NavPill href="#tribe" label="The Tribe" />
         </div>
 
-        {/* Contextual action */}
-        <div className="mt-2">
-          {introPending ? (
-            <ActionButton href="#your-move" label="Introduce yourself" tone="orange" />
-          ) : (
-            <ActionButton href="#tribe-composer" label="Share with the Tribe" tone="plain" />
-          )}
+        {/* Personal stats */}
+        <div className="grid grid-cols-2 gap-2 mt-4">
+          <Stat value={String(viewer.postCount)} label={viewer.postCount === 1 ? "post" : "posts"} />
+          <Stat value={joined ?? "—"} label="joined" />
         </div>
       </div>
     </div>
   );
 }
 
-function Stat({ value, label }: { value: number; label: string }) {
+function Stat({ value, label }: { value: string; label: string }) {
   return (
-    <div className="rounded-xl py-2 px-1 text-center" style={{ backgroundColor: "#FAF7F1" }}>
-      <p className="text-lg font-black font-headline leading-none" style={{ color: INK }}>{value}</p>
+    <div className="rounded-xl py-2 px-2 text-center" style={{ backgroundColor: "#FAF7F1" }}>
+      <p className="text-base font-black font-headline leading-none" style={{ color: INK }} suppressHydrationWarning>{value}</p>
       <p className="text-[10px] mt-1 font-bold font-headline uppercase tracking-wider" style={{ color: "#94a3b8" }}>{label}</p>
     </div>
   );
@@ -191,20 +181,15 @@ function NavPill({ href, label }: { href: string; label: string }) {
   );
 }
 
-function ActionButton({ href, label, tone }: { href: string; label: string; tone: "orange" | "plain" }) {
-  const isOrange = tone === "orange";
+function PrimaryAction({ href, label }: { href: string; label: string }) {
   return (
     <a
       href={href}
-      className="flex items-center justify-center gap-1.5 rounded-xl py-2.5 mt-2 text-[13px] font-black font-headline transition-transform hover:scale-[1.01]"
-      style={
-        isOrange
-          ? { backgroundColor: ORANGE, color: "#fff", boxShadow: "0 4px 14px rgba(255,97,48,0.32)" }
-          : { backgroundColor: "rgba(255,97,48,0.08)", color: ORANGE }
-      }
+      className="flex items-center justify-center gap-1.5 rounded-xl py-3 text-[13px] font-black font-headline transition-transform hover:scale-[1.01]"
+      style={{ backgroundColor: ORANGE, color: "#fff", boxShadow: "0 4px 14px rgba(255,97,48,0.32)" }}
     >
       {label}
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={isOrange ? "#fff" : ORANGE} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
         <polyline points="9 18 15 12 9 6" />
       </svg>
     </a>

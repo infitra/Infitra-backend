@@ -1,17 +1,17 @@
 "use client";
 
 /**
- * TribeFeed — Bundle 5c (locker-room v3).
+ * TribeFeed — Bundle 5c (locker-room v4).
  *
- * The Tribe's conversation. Composer offers two kinds — Share and Question —
- * and a Question swaps the composer into "ask a specific Expert" mode: you pick
- * one of the creators and the post is directed to them (directed_to). Posts
- * render human-first (avatar + name), with creators set apart as Experts, your
- * own posts marked "You", and questions showing who they're for.
+ * The Tribe's conversation. The kind selector sits at the TOP of the composer
+ * (you choose what you're doing before you type): Share (cyan) or Question
+ * (orange). Picking Question reveals an "ask a specific Expert" picker and the
+ * post is directed to them (directed_to).
  *
- * Data + realtime layer unchanged: list_challenge_posts seed (returns kind +
- * directed_to), author-profile enrichment cache, app_challenge_post INSERT →
- * prepend.
+ * Colour system: Share = cyan, Question = orange, and the GUIDED system posts —
+ * Intro + Reflection — are purple. Cards stay calm (one small kind accent),
+ * creators read as Experts, your own posts are marked "You", and questions show
+ * who they're for.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -42,18 +42,20 @@ interface RawRow {
 
 const ORANGE = "#FF6130";
 const CYAN = "#0891b2";
+const PURPLE = "#8b5cf6";
 const INK = "#0F2229";
 
-/** Visible post kinds + their accent. `talk` (a plain share) has no badge. */
+/** Visible post kinds + their accent. `talk` (a plain share) has no badge.
+ *  Intro + Reflection are the guided/system posts → purple. */
 const KIND: Record<string, { label: string; color: string }> = {
-  intro: { label: "Introduction", color: CYAN },
-  reflection: { label: "Reflection", color: "#8b5cf6" },
+  intro: { label: "Introduction", color: PURPLE },
+  reflection: { label: "Reflection", color: PURPLE },
   question: { label: "Question", color: ORANGE },
 };
 
 const COMPOSE_KINDS = [
-  { key: "talk", label: "Share" },
-  { key: "question", label: "Question" },
+  { key: "talk", label: "Share", color: CYAN },
+  { key: "question", label: "Question", color: ORANGE },
 ] as const;
 type ComposeKind = (typeof COMPOSE_KINDS)[number]["key"];
 
@@ -125,6 +127,7 @@ export function TribeFeed({
 
   function selectKind(k: ComposeKind) {
     setKind(k);
+    setError(null);
     if (k !== "question") setAskId(null);
     else if (creators.length === 1) setAskId(creators[0].id);
   }
@@ -147,8 +150,7 @@ export function TribeFeed({
     <div>
       {/* Section header */}
       <div className="flex items-baseline gap-2.5 mb-3">
-        <p className="text-[11px] uppercase tracking-[0.2em] font-headline flex items-center gap-2" style={{ color: "#475569", fontWeight: 800 }}>
-          <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: ORANGE }} />
+        <p className="text-[11px] uppercase tracking-[0.2em] font-headline" style={{ color: INK, fontWeight: 800 }}>
           The Tribe
         </p>
         {!loading && posts.length > 0 && (
@@ -165,6 +167,24 @@ export function TribeFeed({
           className="rounded-2xl p-4 mb-4 scroll-mt-24"
           style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.05), 0 4px 16px rgba(15,34,41,0.05)" }}
         >
+          {/* Kind selector — at the top, before you type */}
+          <div className="flex gap-2 mb-3">
+            {COMPOSE_KINDS.map((k) => {
+              const active = kind === k.key;
+              return (
+                <button
+                  key={k.key}
+                  type="button"
+                  onClick={() => selectKind(k.key)}
+                  className="px-4 py-1.5 rounded-full text-[12px] font-black font-headline uppercase tracking-wider transition-colors"
+                  style={{ color: active ? "#fff" : k.color, backgroundColor: active ? k.color : `${k.color}14` }}
+                >
+                  {k.label}
+                </button>
+              );
+            })}
+          </div>
+
           <div className="flex gap-3">
             <Avatar src={viewer.avatar} name={viewer.name} size={38} ring={CYAN} />
             <div className="flex-1 min-w-0">
@@ -181,7 +201,7 @@ export function TribeFeed({
               {/* Question → pick an Expert to direct it to */}
               {kind === "question" && creators.length > 0 && (
                 <div className="mt-2.5">
-                  <p className="text-[10px] uppercase tracking-[0.16em] font-headline mb-1.5" style={{ color: ORANGE, fontWeight: 800 }}>
+                  <p className="text-[10px] uppercase tracking-[0.16em] font-headline mb-1.5" style={{ color: "#94a3b8", fontWeight: 800 }}>
                     Ask
                   </p>
                   <div className="flex flex-wrap gap-2">
@@ -191,15 +211,15 @@ export function TribeFeed({
                         <button
                           key={c.id}
                           type="button"
-                          onClick={() => setAskId(c.id)}
+                          onClick={() => { setAskId(c.id); setError(null); }}
                           className="flex items-center gap-1.5 rounded-full pl-1 pr-3 py-1 transition-colors"
                           style={{
-                            backgroundColor: active ? ORANGE : "rgba(255,97,48,0.08)",
-                            boxShadow: active ? "0 2px 8px rgba(255,97,48,0.3)" : "none",
+                            backgroundColor: active ? "rgba(255,97,48,0.12)" : "rgba(15,34,41,0.04)",
+                            boxShadow: active ? `inset 0 0 0 1.5px ${ORANGE}` : "none",
                           }}
                         >
-                          <Avatar src={c.avatar} name={c.name} size={22} ring={active ? "#fff" : (c.role === "owner" ? ORANGE : CYAN)} />
-                          <span className="text-[12px] font-black font-headline" style={{ color: active ? "#fff" : ORANGE }}>{c.name}</span>
+                          <Avatar src={c.avatar} name={c.name} size={22} ring={c.role === "owner" ? ORANGE : CYAN} />
+                          <span className="text-[12px] font-black font-headline" style={{ color: active ? ORANGE : "#475569" }}>{c.name}</span>
                         </button>
                       );
                     })}
@@ -209,24 +229,7 @@ export function TribeFeed({
 
               {error && <p className="text-xs mt-1.5" style={{ color: ORANGE }}>{error}</p>}
 
-              <div className="flex items-center justify-between gap-2 mt-2.5">
-                <div className="flex gap-1.5">
-                  {COMPOSE_KINDS.map((k) => {
-                    const active = kind === k.key;
-                    const color = k.key === "question" ? ORANGE : "#475569";
-                    return (
-                      <button
-                        key={k.key}
-                        type="button"
-                        onClick={() => selectKind(k.key)}
-                        className="text-[11px] font-black font-headline uppercase tracking-wider px-3 py-1.5 rounded-full transition-colors"
-                        style={{ color: active ? "#fff" : color, backgroundColor: active ? color : `${color}14` }}
-                      >
-                        {k.label}
-                      </button>
-                    );
-                  })}
-                </div>
+              <div className="flex justify-end mt-2.5">
                 <button
                   onClick={submit}
                   disabled={!canSubmit}
