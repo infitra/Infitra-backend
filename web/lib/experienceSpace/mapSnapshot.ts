@@ -10,6 +10,7 @@
 import type {
   ExperienceSpaceState,
   ExperienceSummary,
+  ExperienceViewer,
   ProgramState,
   SpaceCreator,
   SpaceSession,
@@ -23,6 +24,7 @@ export interface RawExperienceSpaceSnapshot {
   is_owner?: boolean;
   is_member?: boolean;
   space_id?: string;
+  viewer?: ExperienceViewer;
   experience?: ExperienceSummary;
   program_state?: ProgramState | null;
   creators?: SpaceCreator[];
@@ -43,6 +45,13 @@ export function mapSnapshot(
     experience: raw.experience,
     spaceId: raw.space_id,
     currentUserId,
+    viewer: raw.viewer ?? {
+      id: currentUserId,
+      name: "You",
+      avatar: null,
+      joinedAt: null,
+      postCount: 0,
+    },
     isCreator: raw.is_creator ?? false,
     isOwner: raw.is_owner ?? false,
     isMember: raw.is_member ?? false,

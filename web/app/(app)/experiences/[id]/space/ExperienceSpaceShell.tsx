@@ -1,18 +1,20 @@
 "use client";
 
 /**
- * ExperienceSpaceShell — Bundle 5c (4-zone editorial revision).
+ * ExperienceSpaceShell — Bundle 5c (locker-room v2).
  *
- * The participant locker room, composed as a single editorial column with one
- * deliberate hierarchy instead of stacked cards on a background:
+ * One responsive locker room rather than a stack of cards:
  *
- *   ① Cover band     — clean cover image, with the title + creators + Tribe
- *                       presence as an editorial text block BELOW the image.
- *   ② Your Move      — the bold intro directive (members who haven't introduced).
- *   ③ The Week       — THE centerpiece (WeekJourney): "WEEK 1 OF 6 · THEME",
- *                       progress rail, next moment elevated, the week as a journey.
- *                       Runs wider than the rest to carry the page.
- *   ④ Tribe feed     — the living conversation.
+ *   COVER BAND (full width) — the experience identity (image, title, creators,
+ *   Tribe presence).
+ *
+ *   DESKTOP (lg+): a sticky LEFT RAIL (you + experts + tribe) beside a MAIN
+ *   column (your move → the week → the tribe feed) — a real "room", using the
+ *   width instead of a narrow centred column.
+ *
+ *   MOBILE: everything stacks — cover → YOU → your move → the week → the feed.
+ *   (Experts/Tribe live in the cover's facepile on mobile, so the rail cards
+ *   are desktop-only.)
  */
 
 import Image from "next/image";
@@ -23,6 +25,9 @@ import { initFromSeed } from "./initState";
 import { TribeFeed } from "./TribeFeed";
 import { IntroActionCard } from "./IntroActionCard";
 import { WeekJourney } from "./WeekJourney";
+import { YouPanel } from "./YouPanel";
+import { Avatar } from "./Avatar";
+import type { SpaceCreator, TribeMember } from "@/lib/experienceSpace/store";
 import type { ExperienceSpaceSeed } from "@/lib/experienceSpace/mapSnapshot";
 
 export function ExperienceSpaceShell({ seed }: { seed: ExperienceSpaceSeed }) {
@@ -33,26 +38,17 @@ export function ExperienceSpaceShell({ seed }: { seed: ExperienceSpaceSeed }) {
   );
 }
 
-function Avatar({ src, name, size = 28, ring }: { src: string | null; name: string; size?: number; ring?: string }) {
-  const style = { width: size, height: size, ...(ring ? { border: `2px solid ${ring}` } : { border: "2px solid #fff" }) };
-  return src ? (
-    <img src={src} alt={name} className="rounded-full object-cover" style={style} />
-  ) : (
-    <div
-      className="rounded-full flex items-center justify-center text-white font-black"
-      style={{ ...style, backgroundColor: ring ?? "#0891b2", fontSize: size * 0.4 }}
-    >
-      {name[0]?.toUpperCase()}
-    </div>
-  );
-}
+const CARD = {
+  backgroundColor: "#FFFFFF",
+  boxShadow: "0 0 0 1px rgba(15,34,41,0.05), 0 6px 22px rgba(15,34,41,0.06)",
+} as const;
 
 function SpaceBody() {
   const experience = useExperienceSpaceStore((s) => s.experience);
   const spaceId = useExperienceSpaceStore((s) => s.spaceId);
+  const viewer = useExperienceSpaceStore((s) => s.viewer);
   const isCreator = useExperienceSpaceStore((s) => s.isCreator);
   const isMember = useExperienceSpaceStore((s) => s.isMember);
-  const currentUserId = useExperienceSpaceStore((s) => s.currentUserId);
   const creators = useExperienceSpaceStore((s) => s.creators);
   const sessions = useExperienceSpaceStore((s) => s.sessions);
   const members = useExperienceSpaceStore((s) => s.members);
@@ -67,10 +63,12 @@ function SpaceBody() {
   });
 
   const introAction = actionItems.find((a) => a.kind === "intro");
+  const showIntro = !!introAction && isMember;
+  const canPost = isMember || isCreator;
   const degraded = channelStatus === "reconnecting" || channelStatus === "error";
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
       {degraded && (
         <div
           role="status"
@@ -82,18 +80,18 @@ function SpaceBody() {
         </div>
       )}
 
-      {/* ── ① COVER BAND — image clean, text below ── */}
-      <div className="max-w-2xl mx-auto">
+      {/* ── COVER BAND — experience identity (full width) ── */}
+      <div className="mb-6">
         <div
-          className="rounded-3xl overflow-hidden relative"
-          style={{ aspectRatio: "16 / 7", backgroundColor: "#ECE7DD", boxShadow: "0 12px 40px rgba(15,34,41,0.14)" }}
+          className="rounded-3xl overflow-hidden relative aspect-[16/9] sm:aspect-[24/9]"
+          style={{ backgroundColor: "#ECE7DD", boxShadow: "0 12px 40px rgba(15,34,41,0.14)" }}
         >
           {experience.imageUrl && (
             <Image
               src={experience.imageUrl}
               alt=""
               fill
-              sizes="(max-width: 768px) 100vw, 700px"
+              sizes="(max-width: 1024px) 100vw, 1024px"
               loading="eager"
               fetchPriority="high"
               decoding="async"
@@ -102,7 +100,7 @@ function SpaceBody() {
           )}
         </div>
 
-        <div className="mt-5 mb-7">
+        <div className="mt-5">
           <p className="text-[11px] uppercase tracking-[0.2em] font-headline mb-2" style={{ color: "#0891b2", fontWeight: 800 }}>
             Experience space
           </p>
@@ -113,12 +111,10 @@ function SpaceBody() {
             {experience.title}
           </h1>
           {experience.promiseText && (
-            <p className="text-[15px] sm:text-base leading-relaxed mt-3" style={{ color: "#475569" }}>
+            <p className="text-[15px] sm:text-base leading-relaxed mt-3 max-w-2xl" style={{ color: "#475569" }}>
               {experience.promiseText}
             </p>
           )}
-
-          {/* Identity + Tribe presence */}
           <div className="flex items-center gap-x-4 gap-y-2 mt-4 flex-wrap">
             <div className="flex items-center gap-2">
               <div className="flex -space-x-2">
@@ -130,9 +126,7 @@ function SpaceBody() {
                 {creators.map((c) => c.name).join(" & ")}
               </span>
             </div>
-
             <span className="w-1 h-1 rounded-full" style={{ backgroundColor: "#cbd5e1" }} aria-hidden />
-
             <div className="flex items-center gap-2">
               {members.length > 0 && (
                 <div className="flex -space-x-2">
@@ -149,26 +143,76 @@ function SpaceBody() {
         </div>
       </div>
 
-      {/* ── ② YOUR MOVE — bold intro directive ── */}
-      {introAction && isMember && (
-        <div className="max-w-2xl mx-auto mb-7">
-          <IntroActionCard spaceId={spaceId} prompt={introAction.introPrompt ?? "Introduce yourself to the Tribe."} />
+      {/* ── MOBILE: personalized YOU header (rail is desktop-only) ── */}
+      <div className="lg:hidden mb-6">
+        <YouPanel />
+      </div>
+
+      {/* ── LOCKER ROOM: sticky rail + main ── */}
+      <div className="lg:grid lg:grid-cols-[340px_minmax(0,1fr)] lg:gap-6 lg:items-start">
+        <aside className="hidden lg:flex lg:flex-col lg:gap-4 lg:sticky lg:top-24">
+          <YouPanel />
+          <ExpertsCard creators={creators} />
+          <TribeCard members={members} memberCount={memberCount} />
+        </aside>
+
+        <main className="space-y-6 min-w-0">
+          {showIntro && (
+            <div id="your-move" className="scroll-mt-24">
+              <IntroActionCard spaceId={spaceId} prompt={introAction!.introPrompt ?? "Introduce yourself to the Tribe."} />
+            </div>
+          )}
+          <WeekJourney />
+          <TribeFeed spaceId={spaceId} viewer={viewer} canPost={canPost} creators={creators} />
+        </main>
+      </div>
+    </div>
+  );
+}
+
+function ExpertsCard({ creators }: { creators: SpaceCreator[] }) {
+  if (creators.length === 0) return null;
+  return (
+    <div className="rounded-2xl p-5" style={CARD}>
+      <p className="text-[10px] uppercase tracking-[0.18em] font-headline mb-3" style={{ color: "#FF6130", fontWeight: 800 }}>
+        Your Experts
+      </p>
+      <div className="space-y-3.5">
+        {creators.map((c) => (
+          <div key={c.id} className="flex items-center gap-2.5">
+            <Avatar src={c.avatar} name={c.name} size={38} ring={c.role === "owner" ? "#FF6130" : "#9CF0FF"} />
+            <div className="min-w-0">
+              <p className="text-sm font-black font-headline truncate" style={{ color: "#0F2229" }}>{c.name}</p>
+              {c.tagline && <p className="text-[11px] truncate" style={{ color: "#94a3b8" }}>{c.tagline}</p>}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TribeCard({ members, memberCount }: { members: TribeMember[]; memberCount: number }) {
+  return (
+    <div className="rounded-2xl p-5" style={CARD}>
+      <p className="text-[10px] uppercase tracking-[0.18em] font-headline mb-3" style={{ color: "#0891b2", fontWeight: 800 }}>
+        The Tribe · {memberCount}
+      </p>
+      {members.length > 0 ? (
+        <div className="space-y-2.5">
+          {members.slice(0, 8).map((m) => (
+            <div key={m.id} className="flex items-center gap-2.5">
+              <Avatar src={m.avatar} name={m.name} size={28} />
+              <span className="text-sm font-bold font-headline truncate" style={{ color: "#0F2229" }}>{m.name}</span>
+            </div>
+          ))}
+          {memberCount > 8 && (
+            <p className="text-[11px] pt-1" style={{ color: "#94a3b8" }}>+{memberCount - 8} more</p>
+          )}
         </div>
+      ) : (
+        <p className="text-xs" style={{ color: "#94a3b8" }}>The Tribe will gather here.</p>
       )}
-
-      {/* ── ③ THE WEEK — the carrying centerpiece (runs wider) ── */}
-      <div className="mb-9">
-        <WeekJourney />
-      </div>
-
-      {/* ── ④ TRIBE FEED — the living conversation ── */}
-      <div className="max-w-2xl mx-auto">
-        <p className="text-[11px] uppercase tracking-[0.2em] font-headline mb-3 flex items-center gap-2" style={{ color: "#475569", fontWeight: 800 }}>
-          <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: "#FF6130" }} />
-          The Tribe
-        </p>
-        <TribeFeed spaceId={spaceId} currentUserId={currentUserId} canPost={isMember || isCreator} />
-      </div>
     </div>
   );
 }

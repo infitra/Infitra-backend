@@ -118,6 +118,40 @@ export function buildWeekJourney(
   };
 }
 
+export interface ProgramStatus {
+  phase: "upcoming" | "active" | "complete";
+  /** Whole days until the program starts (0 once it has). */
+  startsInDays: number;
+  hasStarted: boolean;
+}
+
+/**
+ * Where the program sits on the calendar — so the UI can say "starts in 12
+ * days" instead of mislabelling a not-yet-started program as "this week"
+ * (program_state floors current week to 1 before kickoff).
+ */
+export function programStatus(
+  experience: ExperienceSummary,
+  now: number = Date.now(),
+): ProgramStatus {
+  const start = new Date(experience.startDate + "T00:00:00").getTime();
+  const endParsed = new Date(experience.endDate + "T00:00:00").getTime();
+  // Treat the program as running through the end of the last day.
+  const end = isNaN(endParsed) ? start : endParsed + 86_400_000;
+
+  if (!isNaN(start) && now < start) {
+    return {
+      phase: "upcoming",
+      startsInDays: Math.max(1, Math.ceil((start - now) / 86_400_000)),
+      hasStarted: false,
+    };
+  }
+  if (!isNaN(end) && now > end) {
+    return { phase: "complete", startsInDays: 0, hasStarted: true };
+  }
+  return { phase: "active", startsInDays: 0, hasStarted: true };
+}
+
 /** Per-session state within its week, given the chosen hero. */
 export function sessionStateFor(
   session: SpaceSession,

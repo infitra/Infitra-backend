@@ -71,6 +71,15 @@ export interface TribeMember {
   avatar: string | null;
 }
 
+/** The calling user, for the personalized header ("you in this experience"). */
+export interface ExperienceViewer {
+  id: string;
+  name: string;
+  avatar: string | null;
+  joinedAt: string | null;
+  postCount: number;
+}
+
 /** Action Bar item. Bundle 5 ships only `intro`; 6-9 add pre_pulse/reflection/question. */
 export interface ActionItem {
   kind: string;
@@ -89,6 +98,7 @@ export interface ExperienceSpaceState {
   experience: ExperienceSummary;
   spaceId: string;
   currentUserId: string;
+  viewer: ExperienceViewer;
   isCreator: boolean;
   isOwner: boolean;
   isMember: boolean;

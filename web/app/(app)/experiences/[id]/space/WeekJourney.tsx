@@ -21,6 +21,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useExperienceSpaceStore } from "@/lib/experienceSpace/StoreProvider";
 import {
   buildWeekJourney,
+  programStatus,
   sessionStateFor,
   type SessionState,
   type WeekBucket,
@@ -72,6 +73,7 @@ export function WeekJourney() {
     () => buildWeekJourney(experience, programState, sessions, now),
     [experience, programState, sessions, now],
   );
+  const status = programStatus(experience, now);
 
   // Default to the week that holds the next moment (so the highlight is on
   // screen at load); else the calendar-current week. Chosen once.
@@ -93,8 +95,9 @@ export function WeekJourney() {
 
   return (
     <section
+      id="the-week"
       aria-label="Your week"
-      className="rounded-3xl overflow-hidden"
+      className="rounded-3xl overflow-hidden scroll-mt-24"
       style={{
         backgroundColor: "#FFFFFF",
         boxShadow:
@@ -140,8 +143,11 @@ export function WeekJourney() {
         )}
         <p className="text-[12px] mt-2" style={{ color: "#94a3b8" }} suppressHydrationWarning>
           {selected.range}
-          {selected.status === "current" && (
+          {selected.status === "current" && status.hasStarted && (
             <span style={{ color: CYAN, fontWeight: 700 }}> · this week</span>
+          )}
+          {selected.status === "current" && !status.hasStarted && (
+            <span style={{ color: ORANGE, fontWeight: 700 }}> · starts in {status.startsInDays}d</span>
           )}
         </p>
       </div>
