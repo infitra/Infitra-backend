@@ -22,7 +22,7 @@ import { Avatar } from "./Avatar";
 
 const ORANGE = "#FF6130";
 const CYAN = "#0891b2";
-const GREEN = "#22c55e";
+const DARKCYAN = "#0e7490";
 const INK = "#0F2229";
 
 type Panel = "experts" | "structure";
@@ -51,7 +51,7 @@ export function ExperienceHeader() {
         : `Week ${currentWeek} of ${totalWeeks}`;
   const statusColor = status.phase === "upcoming" ? ORANGE : status.phase === "complete" ? CYAN : INK;
   const startDate = new Date(experience.startDate + "T00:00:00");
-  const startStr = isNaN(startDate.getTime()) ? null : startDate.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  const startStr = isNaN(startDate.getTime()) ? null : startDate.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 
   const hasStructure = !!experience.promiseText || experience.weeklyArc.length > 0;
 
@@ -80,7 +80,7 @@ export function ExperienceHeader() {
 
       {/* TOP ZONE — cover (constrained here) + identity + status + pills */}
       <div className="relative">
-        <div className="exp-cover absolute left-0 top-0 right-0 h-40 lg:right-auto lg:bottom-0 lg:h-auto lg:w-[360px]" style={{ backgroundColor: "#ECE7DD" }}>
+        <div className="exp-cover absolute left-0 top-0 right-0 h-28 lg:right-auto lg:bottom-0 lg:h-auto lg:w-[360px]" style={{ backgroundColor: "#ECE7DD" }}>
           {experience.imageUrl && (
             <Image
               src={experience.imageUrl}
@@ -95,7 +95,7 @@ export function ExperienceHeader() {
           )}
         </div>
 
-        <div className="relative pt-36 lg:pt-0 lg:pl-[340px]">
+        <div className="relative pt-28 lg:pt-0 lg:pl-[340px]">
           <div className="relative p-5 lg:p-7">
             {/* Identity */}
             <div className="lg:pr-64">
@@ -133,15 +133,20 @@ export function ExperienceHeader() {
                   <p className="text-[11px] mt-1" style={{ color: "#94a3b8" }} suppressHydrationWarning>Week 1 begins {startStr}</p>
                 )}
               </div>
-              <div className="flex items-center gap-1.5 lg:justify-end lg:mt-3 shrink-0">
+              <div className="flex items-center gap-2 lg:justify-end lg:mt-3 shrink-0">
                 {present.length > 0 && (
-                  <div className="flex -space-x-2 mr-0.5">
-                    {present.slice(0, 4).map((u) => (
-                      <Avatar key={u.id} src={u.avatar} name={u.name} size={24} ring="#FFFFFF" bg={CYAN} />
+                  <div className="flex -space-x-2">
+                    {present.slice(0, 3).map((u) => (
+                      <div key={u.id} className="relative">
+                        <Avatar src={u.avatar} name={u.name} size={26} ring="#FFFFFF" bg={CYAN} />
+                        <span
+                          className="absolute bottom-0 right-0 rounded-full animate-pulse"
+                          style={{ width: 8, height: 8, backgroundColor: DARKCYAN, border: "2px solid #FFFFFF" }}
+                        />
+                      </div>
                     ))}
                   </div>
                 )}
-                <span className="inline-block w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: GREEN }} />
                 <span className="text-[11px] uppercase tracking-[0.14em] font-headline" style={{ color: "#64748b", fontWeight: 800 }}>Active now</span>
                 <span className="text-sm font-black font-headline" style={{ color: INK }}>{present.length}</span>
               </div>

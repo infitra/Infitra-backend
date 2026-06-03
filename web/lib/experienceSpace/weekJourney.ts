@@ -15,8 +15,21 @@ import {
   computeTotalWeeks,
   sessionWeekNumber,
   weekRange,
-  formatWeekRange,
 } from "@/lib/challenges/buildWeeks";
+
+/** Week range WITH year (e.g. "3 Jan – 9 Jan 2027") — the locker room shows full
+ *  dates so a future program never reads as the past. Scoped here so the buyer
+ *  page's year-less ranges are untouched. */
+function fmtRangeWithYear(start: Date, end: Date): string {
+  const fmt = (d: Date, withYear: boolean) =>
+    d.toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "short",
+      ...(withYear ? { year: "numeric" } : {}),
+    });
+  const sameYear = start.getFullYear() === end.getFullYear();
+  return `${fmt(start, !sameYear)} – ${fmt(end, true)}`;
+}
 import type { ExperienceSummary, ProgramState, SpaceSession } from "./store";
 
 export type SessionState = "done" | "live" | "next" | "upcoming";
@@ -100,7 +113,7 @@ export function buildWeekJourney(
       return {
         weekNumber: n,
         theme: themeFor(n),
-        range: formatWeekRange(r.start, r.end),
+        range: fmtRangeWithYear(r.start, r.end),
         sessions: byWeek.get(n) ?? [],
         status: n < currentWeek ? "done" : n === currentWeek ? "current" : "future",
       };

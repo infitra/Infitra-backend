@@ -1,20 +1,21 @@
 "use client";
 
 /**
- * TribeFeed — Bundle 5c (locker-room Ship 1.1).
+ * TribeFeed — Bundle 5c (locker-room Ship 1.4).
  *
  * One contained conversation panel with a GUIDED composer (choose Share/Question
  * first → the chosen pill pops → the text unlocks; Question reveals an Expert
- * picker). Posts render as clean white cards on a tinted strip so they read as
- * distinct, contained, and uncluttered: author header → one kind/context line
- * (no redundant badge-plus-box, no "you" chip) → body.
+ * picker). Posts can now carry an IMAGE (Instagram/Facebook style — e.g. sharing
+ * a meal): the composer uploads to the existing profile-images bucket and the
+ * post renders the photo inline. Posts are clean white cards on a tinted strip:
+ * author header → one kind/context line → body → photo. Dates show the full year
+ * so a 2027 program never reads as the past.
  *
- * Realtime now works (app_challenge_post is in the realtime publication); your
- * own post is also prepended optimistically so it shows the instant you post.
- * (Likes/comments + coach answers are Ship 2.)
+ * Realtime works (app_challenge_post is published); your own post is prepended
+ * optimistically. (Likes/comments + coach answers are Ship 2.)
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { createChallengePost } from "@/app/actions/community";
 import { useExperienceSpaceStore } from "@/lib/experienceSpace/StoreProvider";
@@ -28,6 +29,7 @@ interface FeedPost {
   kind: string;
   contextId: string | null;
   directedTo: string[];
+  mediaUrl: string | null;
   created_at: string;
   authorName: string;
   authorAvatar: string | null;
@@ -40,6 +42,7 @@ interface RawRow {
   kind?: string;
   context_id?: string | null;
   directed_to?: string[] | null;
+  media_url?: string | null;
   created_at: string;
 }
 
@@ -52,6 +55,10 @@ const COMPOSE_KINDS = [
   { key: "question", label: "Question", color: ORANGE },
 ] as const;
 type ComposeKind = (typeof COMPOSE_KINDS)[number]["key"];
+
+function fmtDate(iso: string) {
+  return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+}
 
 export function TribeFeed({
   spaceId,
@@ -74,10 +81,13 @@ export function TribeFeed({
   const [body, setBody] = useState("");
   const [kind, setKind] = useState<ComposeKind | null>(null);
   const [askId, setAskId] = useState<string | null>(null);
+  const [mediaUrl, setMediaUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [posting, setPosting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const profRef = useRef<Record<string, { name: string; avatar: string | null }>>({});
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const creatorById = useMemo(() => new Map(creators.map((c) => [c.id, c])), [creators]);
   const sessionById = useMemo(() => new Map(sessions.map((s) => [s.id, s])), [sessions]);
@@ -103,7 +113,8 @@ export function TribeFeed({
 
   const toPost = useCallback((r: RawRow): FeedPost => ({
     id: r.id, author_id: r.author_id, body: r.body, kind: r.kind ?? "talk",
-    contextId: r.context_id ?? null, directedTo: r.directed_to ?? [], created_at: r.created_at,
+    contextId: r.context_id ?? null, directedTo: r.directed_to ?? [], mediaUrl: r.media_url ?? null,
+    created_at: r.created_at,
     authorName: profRef.current[r.author_id]?.name ?? "Member", authorAvatar: profRef.current[r.author_id]?.avatar ?? null,
   }), []);
 
@@ -144,36 +155,58 @@ export function TribeFeed({
     if (k === "talk") textareaRef.current?.focus();
   }
 
+  async function handleUpload(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { setError("Image must be under 5MB."); return; }
+    setUploading(true); setError(null);
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setError("Not signed in."); setUploading(false); return; }
+      const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+      const path = `${user.id}/post-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("profile-images").upload(path, file, { upsert: true, contentType: file.type });
+      if (upErr) { setError(`Upload failed: ${upErr.message}`); setUploading(false); return; }
+      const { data: urlData } = supabase.storage.from("profile-images").getPublicUrl(path);
+      setMediaUrl(urlData.publicUrl);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload failed.");
+    }
+    setUploading(false);
+  }
+
   async function submit() {
     if (!body.trim() || posting || kind === null) return;
     if (kind === "question" && !askId) { setError("Pick an Expert to ask."); return; }
     const text = body.trim();
     const isQuestion = kind === "question";
+    const media = mediaUrl;
     setPosting(true); setError(null);
     const result = isQuestion
-      ? await createChallengePost(spaceId, text, { kind: "question", directedTo: [askId!] })
-      : await createChallengePost(spaceId, text, { kind: "talk" });
+      ? await createChallengePost(spaceId, text, { kind: "question", directedTo: [askId!], mediaUrl: media })
+      : await createChallengePost(spaceId, text, { kind: "talk", mediaUrl: media });
     if (result?.error) { setError(result.error); setPosting(false); return; }
 
-    // Optimistically show it now (realtime echo dedupes by id).
     const postId = (result as { postId?: string })?.postId;
     if (postId) {
       profRef.current[viewer.id] = { name: viewer.name, avatar: viewer.avatar };
       const optimistic: FeedPost = {
         id: postId, author_id: viewer.id, body: text,
         kind: isQuestion ? "question" : "talk", contextId: null,
-        directedTo: isQuestion && askId ? [askId] : [],
+        directedTo: isQuestion && askId ? [askId] : [], mediaUrl: media,
         created_at: new Date().toISOString(),
         authorName: viewer.name, authorAvatar: viewer.avatar,
       };
       setPosts((prev) => (prev.some((p) => p.id === postId) ? prev : [optimistic, ...prev]));
     }
-    setBody(""); setKind(null); setAskId(null); setPosting(false);
+    setBody(""); setKind(null); setAskId(null); setMediaUrl(null); setPosting(false);
   }
 
   const needsAsk = kind === "question" && !askId;
   const textLocked = kind === null || needsAsk;
-  const canSubmit = !!body.trim() && !posting && !textLocked;
+  const canSubmit = !!body.trim() && !posting && !uploading && !textLocked;
   const placeholder =
     kind === null
       ? "Choose Share or Question to begin…"
@@ -271,8 +304,43 @@ export function TribeFeed({
                   opacity: textLocked ? 0.7 : 1,
                 }}
               />
+
+              {/* Image preview */}
+              {mediaUrl && (
+                <div className="relative mt-2.5 inline-block">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={mediaUrl} alt="" className="rounded-xl max-h-44 object-cover" style={{ boxShadow: "0 0 0 1px rgba(15,34,41,0.08)" }} />
+                  <button
+                    type="button"
+                    onClick={() => setMediaUrl(null)}
+                    aria-label="Remove image"
+                    className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center"
+                    style={{ backgroundColor: "rgba(15,34,41,0.72)" }}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"><line x1="6" y1="6" x2="18" y2="18" /><line x1="18" y1="6" x2="6" y2="18" /></svg>
+                  </button>
+                </div>
+              )}
+
               {error && <p className="text-xs mt-1.5" style={{ color: ORANGE }}>{error}</p>}
-              <div className="flex justify-end mt-3">
+
+              <div className="flex items-center justify-between mt-3">
+                <div className="flex items-center gap-2">
+                  <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleUpload} />
+                  <button
+                    type="button"
+                    onClick={() => fileRef.current?.click()}
+                    disabled={textLocked || uploading}
+                    aria-label="Add image"
+                    className="w-9 h-9 rounded-full flex items-center justify-center transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    style={{ backgroundColor: "rgba(8,145,178,0.10)" }}
+                  >
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={CYAN} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" />
+                    </svg>
+                  </button>
+                  {uploading && <span className="text-[11px] font-bold font-headline" style={{ color: "#94a3b8" }}>Uploading…</span>}
+                </div>
                 <button
                   onClick={submit}
                   disabled={!canSubmit}
@@ -342,18 +410,14 @@ function PostCard({
       <div className="flex gap-3">
         <Avatar src={post.authorAvatar} name={post.authorName} size={40} ring={ring} />
         <div className="flex-1 min-w-0">
-          {/* Author header */}
           <div className="flex items-center gap-1.5">
             <span className="text-sm font-black font-headline" style={{ color: INK }}>{post.authorName}</span>
             {isCreator && (
               <span className="text-[9px] uppercase tracking-wider font-headline px-1.5 py-0.5 rounded-full text-white" style={{ backgroundColor: ring, fontWeight: 800 }}>Expert</span>
             )}
-            <span className="text-[11px] ml-auto shrink-0" style={{ color: "#94a3b8" }} suppressHydrationWarning>
-              {new Date(post.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
-            </span>
+            <span className="text-[11px] ml-auto shrink-0" style={{ color: "#94a3b8" }} suppressHydrationWarning>{fmtDate(post.created_at)}</span>
           </div>
 
-          {/* One kind/context line — conveys both, no extra chips */}
           {post.kind === "question" && directedCreator && (
             <div className="flex items-center gap-1.5 mt-1.5">
               <span className="text-[10px] uppercase tracking-wider font-headline" style={{ color: ORANGE, fontWeight: 800 }}>Question for</span>
@@ -376,8 +440,19 @@ function PostCard({
             </div>
           )}
 
-          {/* Body */}
           <p className="text-sm leading-relaxed whitespace-pre-wrap mt-2.5" style={{ color: "#334155" }}>{post.body}</p>
+
+          {post.mediaUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={post.mediaUrl}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              className="rounded-xl mt-3 w-full max-h-[440px] object-cover"
+              style={{ boxShadow: "0 0 0 1px rgba(15,34,41,0.06)" }}
+            />
+          )}
         </div>
       </div>
     </article>
