@@ -22,12 +22,6 @@ const CYAN = "#0891b2";
 const RED = "#ef4444";
 const INK = "#0F2229";
 
-function fmtJoined(iso: string | null) {
-  if (!iso) return null;
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return null;
-  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
-}
 function countdown(iso: string, now: number) {
   const ms = new Date(iso).getTime() - now;
   if (ms <= 0) return "now";
@@ -58,7 +52,6 @@ export function YouPanel() {
   const currentWeek = model.currentWeek;
   const weeksCompleted = programState?.weeksCompleted ?? 0;
   const hero = model.heroSessionId ? sessions.find((s) => s.id === model.heroSessionId) ?? null : null;
-  const joined = fmtJoined(viewer.joinedAt);
 
   return (
     <div
@@ -78,10 +71,6 @@ export function YouPanel() {
               {isCreator ? "Expert" : "Member"}
             </p>
           </div>
-        </div>
-        <div className="grid grid-cols-2 gap-2 mt-4">
-          <Stat value={String(viewer.postCount)} label={viewer.postCount === 1 ? "post" : "posts"} />
-          <Stat value={joined ?? "—"} label="joined" />
         </div>
       </div>
 
@@ -151,15 +140,6 @@ function Section({ label, children, mobileOnly }: { label: string; children: Rea
     <div className={`px-5 py-4 ${mobileOnly ? "lg:hidden" : ""}`} style={{ borderTop: "1px solid rgba(15,34,41,0.06)" }}>
       <p className="text-[10px] uppercase tracking-[0.18em] font-headline mb-3" style={{ color: "#94a3b8", fontWeight: 800 }}>{label}</p>
       {children}
-    </div>
-  );
-}
-
-function Stat({ value, label }: { value: string; label: string }) {
-  return (
-    <div className="rounded-xl py-2 px-2 text-center" style={{ backgroundColor: "rgba(255,255,255,0.6)" }}>
-      <p className="text-base font-black font-headline leading-none" style={{ color: INK }} suppressHydrationWarning>{value}</p>
-      <p className="text-[10px] mt-1 font-bold font-headline uppercase tracking-wider" style={{ color: "#94a3b8" }}>{label}</p>
     </div>
   );
 }
