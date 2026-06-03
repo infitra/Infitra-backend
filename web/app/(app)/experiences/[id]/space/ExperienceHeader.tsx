@@ -1,14 +1,16 @@
 "use client";
 
 /**
- * ExperienceHeader — Bundle 5c (locker-room Ship 1.2). The establishing shot.
+ * ExperienceHeader — Bundle 5c (locker-room Ship 1.3). The establishing shot.
  *
- * Direction B — a branded editorial band: a brand-gradient wash that echoes the
- * page wave (cyan → cream → orange), a bold title, the cover image blended in
- * via a soft mask (no hard rectangle), and the status (countdown + live "Active
- * now") woven into the band rather than boxed. It shares the visual language of
- * the Week + hub, so the page opens as one world instead of an info bar bolted
- * on top. Below: the on-demand expandables — Meet your Experts + Structure.
+ * Direction B — a branded editorial band that joins the page's visual language:
+ * a brand-gradient wash echoing the wave (cyan → cream → orange), a bold title,
+ * the cover blended in via a soft responsive mask, and the status woven in.
+ *
+ * Ship 1.3 polish: bigger creator avatars + balanced spacing; the status is
+ * anchored (vertically centred on the right) on desktop and a clean balanced row
+ * on mobile; the cover is constrained to the top zone so opening a panel doesn't
+ * stretch it. Below: Meet your Experts + Structure.
  */
 
 import Image from "next/image";
@@ -63,8 +65,6 @@ export function ExperienceHeader() {
         boxShadow: "0 0 0 1px rgba(15,34,41,0.05), 0 10px 32px rgba(15,34,41,0.10)",
       }}
     >
-      {/* Responsive mask: cover fades into the band — bottom edge on mobile,
-          right edge on desktop. */}
       <style>{`
         .exp-cover {
           -webkit-mask-image: linear-gradient(to bottom, #000 64%, transparent);
@@ -78,38 +78,37 @@ export function ExperienceHeader() {
         }
       `}</style>
 
-      {/* Cover — blended into the band */}
-      <div className="exp-cover absolute left-0 top-0 right-0 h-40 lg:right-auto lg:bottom-0 lg:h-auto lg:w-[360px]" style={{ backgroundColor: "#ECE7DD" }}>
-        {experience.imageUrl && (
-          <Image
-            src={experience.imageUrl}
-            alt=""
-            fill
-            sizes="(max-width: 1024px) 100vw, 360px"
-            loading="eager"
-            fetchPriority="high"
-            decoding="async"
-            className="object-cover"
-          />
-        )}
-      </div>
+      {/* TOP ZONE — cover (constrained here) + identity + status + pills */}
+      <div className="relative">
+        <div className="exp-cover absolute left-0 top-0 right-0 h-40 lg:right-auto lg:bottom-0 lg:h-auto lg:w-[360px]" style={{ backgroundColor: "#ECE7DD" }}>
+          {experience.imageUrl && (
+            <Image
+              src={experience.imageUrl}
+              alt=""
+              fill
+              sizes="(max-width: 1024px) 100vw, 360px"
+              loading="eager"
+              fetchPriority="high"
+              decoding="async"
+              className="object-cover"
+            />
+          )}
+        </div>
 
-      {/* Content over the band */}
-      <div className="relative pt-36 lg:pt-0 lg:pl-[340px]">
-        <div className="p-5 lg:p-7">
-          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 lg:gap-6">
+        <div className="relative pt-36 lg:pt-0 lg:pl-[340px]">
+          <div className="relative p-5 lg:p-7">
             {/* Identity */}
-            <div className="min-w-0">
+            <div className="lg:pr-64">
               <h1
                 className="font-black font-headline tracking-tight leading-[1.04]"
-                style={{ color: INK, fontSize: "clamp(1.6rem, 3.4vw, 2.5rem)", letterSpacing: "-0.025em" }}
+                style={{ color: INK, fontSize: "clamp(1.7rem, 3.4vw, 2.5rem)", letterSpacing: "-0.025em" }}
               >
                 {experience.title}
               </h1>
-              <div className="flex items-center gap-1.5 mt-3">
-                <div className="flex -space-x-1.5">
+              <div className="flex items-center gap-2 mt-3">
+                <div className="flex -space-x-2">
                   {creators.map((c) => (
-                    <Avatar key={c.id} src={c.avatar} name={c.name} size={24} ring={c.role === "owner" ? ORANGE : "#9CF0FF"} />
+                    <Avatar key={c.id} src={c.avatar} name={c.name} size={30} ring={c.role === "owner" ? ORANGE : "#9CF0FF"} />
                   ))}
                 </div>
                 <span className="text-sm font-bold font-headline" style={{ color: "#475569" }}>
@@ -119,24 +118,26 @@ export function ExperienceHeader() {
               </div>
             </div>
 
-            {/* Status — woven in, not boxed */}
-            <div className="shrink-0 lg:text-right">
-              <p className="text-[10px] uppercase tracking-[0.18em] font-headline" style={{ color: "#94a3b8", fontWeight: 800 }}>{statusLabel}</p>
-              <p
-                className="font-black font-headline leading-none mt-0.5"
-                style={{ color: statusColor, fontSize: "clamp(1.5rem, 3.4vw, 2rem)", letterSpacing: "-0.02em" }}
-                suppressHydrationWarning
-              >
-                {statusValue}
-              </p>
-              {status.phase === "upcoming" && startStr && (
-                <p className="text-[11px] mt-1" style={{ color: "#94a3b8" }} suppressHydrationWarning>Week 1 begins {startStr}</p>
-              )}
-              <div className="flex items-center gap-1.5 mt-2.5 lg:justify-end">
+            {/* Status — balanced row on mobile, anchored centre-right on desktop */}
+            <div className="mt-5 lg:mt-0 lg:absolute lg:top-1/2 lg:-translate-y-1/2 lg:right-7 lg:w-56 lg:text-right flex items-center justify-between lg:block">
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.18em] font-headline" style={{ color: "#94a3b8", fontWeight: 800 }}>{statusLabel}</p>
+                <p
+                  className="font-black font-headline leading-none mt-0.5"
+                  style={{ color: statusColor, fontSize: "clamp(1.5rem, 3.2vw, 2rem)", letterSpacing: "-0.02em" }}
+                  suppressHydrationWarning
+                >
+                  {statusValue}
+                </p>
+                {status.phase === "upcoming" && startStr && (
+                  <p className="text-[11px] mt-1" style={{ color: "#94a3b8" }} suppressHydrationWarning>Week 1 begins {startStr}</p>
+                )}
+              </div>
+              <div className="flex items-center gap-1.5 lg:justify-end lg:mt-3 shrink-0">
                 {present.length > 0 && (
                   <div className="flex -space-x-2 mr-0.5">
                     {present.slice(0, 4).map((u) => (
-                      <Avatar key={u.id} src={u.avatar} name={u.name} size={22} ring="#FFFFFF" />
+                      <Avatar key={u.id} src={u.avatar} name={u.name} size={24} ring="#FFFFFF" bg={CYAN} />
                     ))}
                   </div>
                 )}
@@ -145,52 +146,52 @@ export function ExperienceHeader() {
                 <span className="text-sm font-black font-headline" style={{ color: INK }}>{present.length}</span>
               </div>
             </div>
-          </div>
 
-          {/* Expand toggles */}
-          <div className="flex flex-wrap gap-2 mt-5">
-            <Toggle label="Meet your Experts" active={open === "experts"} onClick={() => toggle("experts")} />
-            {hasStructure && <Toggle label="Structure" active={open === "structure"} onClick={() => toggle("structure")} />}
+            {/* Expand toggles */}
+            <div className="flex flex-wrap gap-2 mt-5 lg:mt-7 lg:pr-64">
+              <Toggle label="Meet your Experts" active={open === "experts"} onClick={() => toggle("experts")} />
+              {hasStructure && <Toggle label="Structure" active={open === "structure"} onClick={() => toggle("structure")} />}
+            </div>
           </div>
         </div>
-
-        {/* Expanded panels */}
-        {open === "experts" && (
-          <div className="px-5 lg:px-7 pb-5 space-y-4">
-            {creators.map((c) => (
-              <div key={c.id} className="flex gap-3">
-                <Avatar src={c.avatar} name={c.name} size={44} ring={c.role === "owner" ? ORANGE : "#9CF0FF"} />
-                <div className="min-w-0">
-                  <p className="text-sm font-black font-headline" style={{ color: INK }}>
-                    {c.name}
-                    <span className="ml-2 text-[10px] uppercase tracking-wider" style={{ color: "#94a3b8" }}>{c.role === "owner" ? "Lead" : "Co-host"}</span>
-                  </p>
-                  {c.tagline && <p className="text-[12px] font-bold font-headline mt-0.5" style={{ color: CYAN }}>{c.tagline}</p>}
-                  {c.bio && <p className="text-[13px] leading-relaxed mt-1" style={{ color: "#475569" }}>{c.bio}</p>}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {open === "structure" && (
-          <div className="px-5 lg:px-7 pb-5">
-            {experience.promiseText && (
-              <p className="text-[14px] leading-relaxed" style={{ color: "#334155" }}>{experience.promiseText}</p>
-            )}
-            {experience.weeklyArc.length > 0 && (
-              <div className="mt-4 space-y-1.5">
-                {experience.weeklyArc.map((w) => (
-                  <div key={w.week} className="flex gap-3 text-[13px]">
-                    <span className="font-black font-headline shrink-0 w-14" style={{ color: w.week === currentWeek ? ORANGE : "#94a3b8" }}>Wk {w.week}</span>
-                    <span style={{ color: "#475569" }}>{w.theme}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
       </div>
+
+      {/* Expanded panels — below the top zone, so the cover never stretches into them */}
+      {open === "experts" && (
+        <div className="px-5 lg:px-7 pb-5 pt-1 space-y-4">
+          {creators.map((c) => (
+            <div key={c.id} className="flex gap-3">
+              <Avatar src={c.avatar} name={c.name} size={44} ring={c.role === "owner" ? ORANGE : "#9CF0FF"} />
+              <div className="min-w-0">
+                <p className="text-sm font-black font-headline" style={{ color: INK }}>
+                  {c.name}
+                  <span className="ml-2 text-[10px] uppercase tracking-wider" style={{ color: "#94a3b8" }}>{c.role === "owner" ? "Lead" : "Co-host"}</span>
+                </p>
+                {c.tagline && <p className="text-[12px] font-bold font-headline mt-0.5" style={{ color: CYAN }}>{c.tagline}</p>}
+                {c.bio && <p className="text-[13px] leading-relaxed mt-1" style={{ color: "#475569" }}>{c.bio}</p>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {open === "structure" && (
+        <div className="px-5 lg:px-7 pb-5 pt-1">
+          {experience.promiseText && (
+            <p className="text-[14px] leading-relaxed" style={{ color: "#334155" }}>{experience.promiseText}</p>
+          )}
+          {experience.weeklyArc.length > 0 && (
+            <div className="mt-4 space-y-1.5">
+              {experience.weeklyArc.map((w) => (
+                <div key={w.week} className="flex gap-3 text-[13px]">
+                  <span className="font-black font-headline shrink-0 w-14" style={{ color: w.week === currentWeek ? ORANGE : "#94a3b8" }}>Wk {w.week}</span>
+                  <span style={{ color: "#475569" }}>{w.theme}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
