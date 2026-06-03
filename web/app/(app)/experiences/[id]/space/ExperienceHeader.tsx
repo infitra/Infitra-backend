@@ -80,7 +80,7 @@ export function ExperienceHeader() {
 
       {/* TOP ZONE — cover (constrained here) + identity + status + pills */}
       <div className="relative">
-        <div className="exp-cover absolute left-0 top-0 right-0 h-28 lg:right-auto lg:bottom-0 lg:h-auto lg:w-[360px]" style={{ backgroundColor: "#ECE7DD" }}>
+        <div className="exp-cover relative w-full aspect-[5/4] lg:absolute lg:left-0 lg:top-0 lg:bottom-0 lg:w-[360px] lg:aspect-auto" style={{ backgroundColor: "#ECE7DD" }}>
           {experience.imageUrl && (
             <Image
               src={experience.imageUrl}
@@ -95,7 +95,7 @@ export function ExperienceHeader() {
           )}
         </div>
 
-        <div className="relative pt-28 lg:pt-0 lg:pl-[340px]">
+        <div className="relative lg:pl-[340px]">
           <div className="relative p-5 lg:p-7">
             {/* Identity */}
             <div className="lg:pr-64">

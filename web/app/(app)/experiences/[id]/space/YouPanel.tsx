@@ -22,6 +22,14 @@ const CYAN = "#0891b2";
 const RED = "#ef4444";
 const INK = "#0F2229";
 
+/** Smooth-scroll to an in-page section WITHOUT putting a #hash in the URL
+ *  (a lingering hash makes reload jump to that section instead of the top). */
+function scrollToId(id: string) {
+  if (typeof document !== "undefined") {
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+}
+
 function countdown(iso: string, now: number) {
   const ms = new Date(iso).getTime() - now;
   if (ms <= 0) return "now";
@@ -96,6 +104,7 @@ export function YouPanel() {
         {hero && (
           <a
             href={model.heroIsLive ? `/sessions/${hero.id}/live` : "#the-week"}
+            onClick={(e) => { if (!model.heroIsLive) { e.preventDefault(); scrollToId("the-week"); } }}
             className="flex items-center gap-2 rounded-xl px-3 py-2.5 mt-3.5"
             style={{ backgroundColor: model.heroIsLive ? "rgba(239,68,68,0.08)" : "#FAF7F1" }}
           >
@@ -148,6 +157,7 @@ function NavPill({ href, label }: { href: string; label: string }) {
   return (
     <a
       href={href}
+      onClick={(e) => { e.preventDefault(); scrollToId(href.slice(1)); }}
       className="flex items-center justify-center gap-1 rounded-xl py-2.5 text-[12px] font-black font-headline"
       style={{ backgroundColor: "rgba(15,34,41,0.04)", color: "#475569" }}
     >
@@ -163,7 +173,7 @@ function EngageBtn({ href, label, color, onClick }: { href: string; label: strin
   return (
     <a
       href={href}
-      onClick={onClick}
+      onClick={(e) => { e.preventDefault(); onClick?.(); scrollToId(href.slice(1)); }}
       className="flex items-center justify-center gap-1.5 rounded-xl py-3 text-[13px] font-black font-headline transition-transform hover:scale-[1.01]"
       style={{ backgroundColor: `${color}14`, color, boxShadow: `inset 0 0 0 1.5px ${color}40` }}
     >

@@ -11,7 +11,7 @@
  * the header's expandables, so there's no separate People card to misplace.
  */
 
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { ExperienceSpaceStoreProvider, useExperienceSpaceStore } from "@/lib/experienceSpace/StoreProvider";
 import { useExperienceSpaceRealtime } from "./useExperienceSpaceRealtime";
 import { initFromSeed } from "./initState";
@@ -47,6 +47,15 @@ function SpaceBody() {
     spaceId,
     knownSessionIds: useMemo(() => sessions.map((s) => s.id), [sessions]),
   });
+
+  // A lingering #hash (from an in-page jump) makes the browser scroll to that
+  // section on reload. Strip it on mount and start at the top.
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.location.hash) {
+      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+      window.scrollTo(0, 0);
+    }
+  }, []);
 
   const introAction = actionItems.find((a) => a.kind === "intro");
   const showIntro = !!introAction && isMember;
