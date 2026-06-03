@@ -1,25 +1,27 @@
 "use client";
 
 /**
- * ExperienceSpaceShell — Bundle 5c (locker-room v2).
+ * ExperienceSpaceShell — Bundle 5c (locker-room v3).
  *
- * One responsive locker room rather than a stack of cards:
+ * Reframed from a buyer-page replica into "inside the experience":
  *
- *   COVER BAND (full width) — the experience identity (image, title, creators,
- *   Tribe presence).
+ *   MASTHEAD — a slim context strip (cover thumb + title + creators + status),
+ *   not a marketing hero. It orients, it doesn't sell.
  *
- *   DESKTOP (lg+): a sticky LEFT RAIL (you + experts + tribe) beside a MAIN
- *   column (your move → the week → the tribe feed) — a real "room", using the
- *   width instead of a narrow centred column.
+ *   YOUR HUB — the personal command center (where you are, your next moment,
+ *   in-page navigation, the one action that matters). Desktop sticky rail / top
+ *   on mobile.
  *
- *   MOBILE: everything stacks — cover → YOU → your move → the week → the feed.
- *   (Experts/Tribe live in the cover's facepile on mobile, so the rail cards
- *   are desktop-only.)
+ *   THE WEEK → THE TRIBE — the content, in the main column.
+ *
+ *   PEOPLE — one combined Experts + Tribe card (the single home for "who"), so
+ *   no fact repeats across zones.
  */
 
 import Image from "next/image";
 import { useMemo } from "react";
 import { ExperienceSpaceStoreProvider, useExperienceSpaceStore } from "@/lib/experienceSpace/StoreProvider";
+import { programStatus } from "@/lib/experienceSpace/weekJourney";
 import { useExperienceSpaceRealtime } from "./useExperienceSpaceRealtime";
 import { initFromSeed } from "./initState";
 import { TribeFeed } from "./TribeFeed";
@@ -27,8 +29,15 @@ import { IntroActionCard } from "./IntroActionCard";
 import { WeekJourney } from "./WeekJourney";
 import { YouPanel } from "./YouPanel";
 import { Avatar } from "./Avatar";
-import type { SpaceCreator, TribeMember } from "@/lib/experienceSpace/store";
+import type { ExperienceSummary, ProgramState, SpaceCreator, TribeMember } from "@/lib/experienceSpace/store";
 import type { ExperienceSpaceSeed } from "@/lib/experienceSpace/mapSnapshot";
+
+const ORANGE = "#FF6130";
+const CYAN = "#0891b2";
+const CARD = {
+  backgroundColor: "#FFFFFF",
+  boxShadow: "0 0 0 1px rgba(15,34,41,0.05), 0 6px 22px rgba(15,34,41,0.06)",
+} as const;
 
 export function ExperienceSpaceShell({ seed }: { seed: ExperienceSpaceSeed }) {
   return (
@@ -38,17 +47,13 @@ export function ExperienceSpaceShell({ seed }: { seed: ExperienceSpaceSeed }) {
   );
 }
 
-const CARD = {
-  backgroundColor: "#FFFFFF",
-  boxShadow: "0 0 0 1px rgba(15,34,41,0.05), 0 6px 22px rgba(15,34,41,0.06)",
-} as const;
-
 function SpaceBody() {
   const experience = useExperienceSpaceStore((s) => s.experience);
   const spaceId = useExperienceSpaceStore((s) => s.spaceId);
   const viewer = useExperienceSpaceStore((s) => s.viewer);
   const isCreator = useExperienceSpaceStore((s) => s.isCreator);
   const isMember = useExperienceSpaceStore((s) => s.isMember);
+  const programState = useExperienceSpaceStore((s) => s.programState);
   const creators = useExperienceSpaceStore((s) => s.creators);
   const sessions = useExperienceSpaceStore((s) => s.sessions);
   const members = useExperienceSpaceStore((s) => s.members);
@@ -80,70 +85,10 @@ function SpaceBody() {
         </div>
       )}
 
-      {/* ── COVER BAND — experience identity (full width) ── */}
-      <div className="mb-6">
-        <div
-          className="rounded-3xl overflow-hidden relative aspect-[16/9] sm:aspect-[24/9]"
-          style={{ backgroundColor: "#ECE7DD", boxShadow: "0 12px 40px rgba(15,34,41,0.14)" }}
-        >
-          {experience.imageUrl && (
-            <Image
-              src={experience.imageUrl}
-              alt=""
-              fill
-              sizes="(max-width: 1024px) 100vw, 1024px"
-              loading="eager"
-              fetchPriority="high"
-              decoding="async"
-              className="object-cover"
-            />
-          )}
-        </div>
+      {/* ── MASTHEAD — slim context strip ── */}
+      <Masthead experience={experience} programState={programState} creators={creators} />
 
-        <div className="mt-5">
-          <p className="text-[11px] uppercase tracking-[0.2em] font-headline mb-2" style={{ color: "#0891b2", fontWeight: 800 }}>
-            Experience space
-          </p>
-          <h1
-            className="font-black font-headline tracking-tight leading-[1.05]"
-            style={{ color: "#0F2229", fontSize: "clamp(1.7rem, 5vw, 2.6rem)", letterSpacing: "-0.025em" }}
-          >
-            {experience.title}
-          </h1>
-          {experience.promiseText && (
-            <p className="text-[15px] sm:text-base leading-relaxed mt-3 max-w-2xl" style={{ color: "#475569" }}>
-              {experience.promiseText}
-            </p>
-          )}
-          <div className="flex items-center gap-x-4 gap-y-2 mt-4 flex-wrap">
-            <div className="flex items-center gap-2">
-              <div className="flex -space-x-2">
-                {creators.map((c) => (
-                  <Avatar key={c.id} src={c.avatar} name={c.name} size={32} ring={c.role === "owner" ? "#FF6130" : "#9CF0FF"} />
-                ))}
-              </div>
-              <span className="text-sm font-black font-headline" style={{ color: "#0F2229" }}>
-                {creators.map((c) => c.name).join(" & ")}
-              </span>
-            </div>
-            <span className="w-1 h-1 rounded-full" style={{ backgroundColor: "#cbd5e1" }} aria-hidden />
-            <div className="flex items-center gap-2">
-              {members.length > 0 && (
-                <div className="flex -space-x-2">
-                  {members.slice(0, 5).map((m) => (
-                    <Avatar key={m.id} src={m.avatar} name={m.name} size={28} />
-                  ))}
-                </div>
-              )}
-              <span className="text-sm font-bold font-headline" style={{ color: "#0F2229" }}>
-                {memberCount} <span className="font-normal" style={{ color: "#64748b" }}>in the Tribe</span>
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── MOBILE: personalized YOU header (rail is desktop-only) ── */}
+      {/* ── MOBILE: personal hub up top ── */}
       <div className="lg:hidden mb-6">
         <YouPanel />
       </div>
@@ -152,8 +97,7 @@ function SpaceBody() {
       <div className="lg:grid lg:grid-cols-[340px_minmax(0,1fr)] lg:gap-6 lg:items-start">
         <aside className="hidden lg:flex lg:flex-col lg:gap-4 lg:sticky lg:top-24">
           <YouPanel />
-          <ExpertsCard creators={creators} />
-          <TribeCard members={members} memberCount={memberCount} />
+          <PeopleCard creators={creators} members={members} memberCount={memberCount} />
         </aside>
 
         <main className="space-y-6 min-w-0">
@@ -163,24 +107,104 @@ function SpaceBody() {
             </div>
           )}
           <WeekJourney />
-          <TribeFeed spaceId={spaceId} viewer={viewer} canPost={canPost} creators={creators} />
+          <div id="tribe" className="scroll-mt-24">
+            <TribeFeed spaceId={spaceId} viewer={viewer} canPost={canPost} creators={creators} />
+          </div>
         </main>
+      </div>
+
+      {/* ── MOBILE: People at the bottom ── */}
+      <div className="lg:hidden mt-6">
+        <PeopleCard creators={creators} members={members} memberCount={memberCount} />
       </div>
     </div>
   );
 }
 
-function ExpertsCard({ creators }: { creators: SpaceCreator[] }) {
-  if (creators.length === 0) return null;
+function Masthead({
+  experience,
+  programState,
+  creators,
+}: {
+  experience: ExperienceSummary;
+  programState: ProgramState | null;
+  creators: SpaceCreator[];
+}) {
+  const status = programStatus(experience);
+  const totalWeeks = programState?.totalWeeks ?? experience.weeklyArc.length ?? 0;
+  const currentWeek = programState?.currentWeek ?? 1;
+  const chip =
+    status.phase === "upcoming"
+      ? { label: `Starts in ${status.startsInDays}d`, color: ORANGE }
+      : status.phase === "complete"
+        ? { label: "Completed", color: CYAN }
+        : { label: `Week ${currentWeek} of ${totalWeeks}`, color: CYAN };
+
+  return (
+    <div className="rounded-2xl overflow-hidden flex items-stretch mb-6" style={CARD}>
+      <div className="relative shrink-0 w-28 sm:w-44" style={{ backgroundColor: "#ECE7DD" }}>
+        {experience.imageUrl && (
+          <Image
+            src={experience.imageUrl}
+            alt=""
+            fill
+            sizes="(max-width: 640px) 112px, 176px"
+            loading="eager"
+            fetchPriority="high"
+            decoding="async"
+            className="object-cover"
+          />
+        )}
+      </div>
+      <div className="flex-1 min-w-0 p-4 sm:p-5 flex flex-col justify-center">
+        <h1
+          className="font-black font-headline tracking-tight leading-[1.1]"
+          style={{ color: "#0F2229", fontSize: "clamp(1.15rem, 3.4vw, 1.7rem)", letterSpacing: "-0.02em" }}
+        >
+          {experience.title}
+        </h1>
+        <div className="flex items-center gap-x-2.5 gap-y-1.5 mt-2.5 flex-wrap">
+          <div className="flex items-center gap-1.5">
+            <div className="flex -space-x-1.5">
+              {creators.map((c) => (
+                <Avatar key={c.id} src={c.avatar} name={c.name} size={22} ring={c.role === "owner" ? ORANGE : "#9CF0FF"} />
+              ))}
+            </div>
+            <span className="text-[12px] sm:text-sm font-bold font-headline" style={{ color: "#475569" }}>
+              <span style={{ color: "#94a3b8" }}>with </span>
+              {creators.map((c) => c.name).join(" & ")}
+            </span>
+          </div>
+          <span
+            className="text-[10px] uppercase tracking-wider font-headline px-2 py-0.5 rounded-full"
+            style={{ color: chip.color, backgroundColor: `${chip.color}14`, fontWeight: 800 }}
+          >
+            {chip.label}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PeopleCard({
+  creators,
+  members,
+  memberCount,
+}: {
+  creators: SpaceCreator[];
+  members: TribeMember[];
+  memberCount: number;
+}) {
   return (
     <div className="rounded-2xl p-5" style={CARD}>
-      <p className="text-[10px] uppercase tracking-[0.18em] font-headline mb-3" style={{ color: "#FF6130", fontWeight: 800 }}>
+      <p className="text-[10px] uppercase tracking-[0.18em] font-headline mb-3" style={{ color: ORANGE, fontWeight: 800 }}>
         Your Experts
       </p>
       <div className="space-y-3.5">
         {creators.map((c) => (
           <div key={c.id} className="flex items-center gap-2.5">
-            <Avatar src={c.avatar} name={c.name} size={38} ring={c.role === "owner" ? "#FF6130" : "#9CF0FF"} />
+            <Avatar src={c.avatar} name={c.name} size={38} ring={c.role === "owner" ? ORANGE : "#9CF0FF"} />
             <div className="min-w-0">
               <p className="text-sm font-black font-headline truncate" style={{ color: "#0F2229" }}>{c.name}</p>
               {c.tagline && <p className="text-[11px] truncate" style={{ color: "#94a3b8" }}>{c.tagline}</p>}
@@ -188,14 +212,10 @@ function ExpertsCard({ creators }: { creators: SpaceCreator[] }) {
           </div>
         ))}
       </div>
-    </div>
-  );
-}
 
-function TribeCard({ members, memberCount }: { members: TribeMember[]; memberCount: number }) {
-  return (
-    <div className="rounded-2xl p-5" style={CARD}>
-      <p className="text-[10px] uppercase tracking-[0.18em] font-headline mb-3" style={{ color: "#0891b2", fontWeight: 800 }}>
+      <div className="h-px my-4" style={{ backgroundColor: "rgba(15,34,41,0.07)" }} aria-hidden />
+
+      <p className="text-[10px] uppercase tracking-[0.18em] font-headline mb-3" style={{ color: CYAN, fontWeight: 800 }}>
         The Tribe · {memberCount}
       </p>
       {members.length > 0 ? (
@@ -206,9 +226,7 @@ function TribeCard({ members, memberCount }: { members: TribeMember[]; memberCou
               <span className="text-sm font-bold font-headline truncate" style={{ color: "#0F2229" }}>{m.name}</span>
             </div>
           ))}
-          {memberCount > 8 && (
-            <p className="text-[11px] pt-1" style={{ color: "#94a3b8" }}>+{memberCount - 8} more</p>
-          )}
+          {memberCount > 8 && <p className="text-[11px] pt-1" style={{ color: "#94a3b8" }}>+{memberCount - 8} more</p>}
         </div>
       ) : (
         <p className="text-xs" style={{ color: "#94a3b8" }}>The Tribe will gather here.</p>
