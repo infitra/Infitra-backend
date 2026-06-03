@@ -1,18 +1,15 @@
 "use client";
 
 /**
- * TribeFeed — Bundle 5c (locker-room v5).
+ * TribeFeed — Bundle 5c (locker-room Ship 1).
  *
- * The Tribe's conversation, now as ONE contained panel (header + composer +
- * posts) instead of loose floating cards. The composer's kind selector sits at
- * the top — Share (cyan) or Question (orange); Question reveals an "ask a
- * specific Expert" picker (directed_to). Posts carry CONTEXT that sets the
- * guided kinds apart from a plain share:
- *   • Introduction → the intro prompt it answered
- *   • Reflection   → the session it reflects on
- *   • Question     → who it's for
- * Intro + Reflection badges are cyan (guided); Question is orange; Share is
- * unbadged. The hub can open the composer in a given mode via composeIntent.
+ * One contained conversation panel. The composer is a GUIDED flow: the two kind
+ * pills start neutral (so it's clear you must choose), the text field is locked
+ * until you pick, and the chosen pill pops to its colour (Share cyan / Question
+ * orange). Question reveals an "ask a specific Expert" picker — you pick who
+ * first, then the text unlocks. Posts are structured: author header → a context
+ * box (the intro prompt / reflection session / who a question is for, set
+ * apart) → body. (Likes/comments land in Ship 2.)
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
@@ -80,7 +77,7 @@ export function TribeFeed({
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [body, setBody] = useState("");
-  const [kind, setKind] = useState<ComposeKind>("talk");
+  const [kind, setKind] = useState<ComposeKind | null>(null);
   const [askId, setAskId] = useState<string | null>(null);
   const [posting, setPosting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -90,14 +87,14 @@ export function TribeFeed({
   const creatorById = useMemo(() => new Map(creators.map((c) => [c.id, c])), [creators]);
   const sessionById = useMemo(() => new Map(sessions.map((s) => [s.id, s])), [sessions]);
 
-  // Hub → composer intent (Engage / Ask). Consume once applied.
+  // Hub → composer intent (Share / Ask). Pre-selects the kind, then consumes.
   useEffect(() => {
     if (!composeIntent) return;
     const k: ComposeKind = composeIntent === "question" ? "question" : "talk";
     setKind(k);
     if (k === "question" && creators.length === 1) setAskId(creators[0].id);
+    else if (k !== "question") setAskId(null);
     setComposeIntent(null);
-    textareaRef.current?.focus();
   }, [composeIntent, creators, setComposeIntent]);
 
   const enrich = useCallback(async (rows: { author_id: string }[]) => {
@@ -149,10 +146,11 @@ export function TribeFeed({
     setError(null);
     if (k !== "question") setAskId(null);
     else if (creators.length === 1) setAskId(creators[0].id);
+    if (k === "talk") textareaRef.current?.focus();
   }
 
   async function submit() {
-    if (!body.trim() || posting) return;
+    if (!body.trim() || posting || kind === null) return;
     if (kind === "question" && !askId) { setError("Pick an Expert to ask."); return; }
     setPosting(true); setError(null);
     const result =
@@ -160,10 +158,20 @@ export function TribeFeed({
         ? await createChallengePost(spaceId, body.trim(), { kind: "question", directedTo: [askId!] })
         : await createChallengePost(spaceId, body.trim(), { kind: "talk" });
     if (result?.error) { setError(result.error); setPosting(false); return; }
-    setBody(""); setKind("talk"); setAskId(null); setPosting(false);
+    setBody(""); setKind(null); setAskId(null); setPosting(false);
   }
 
-  const canSubmit = !!body.trim() && !posting && !(kind === "question" && !askId);
+  const needsAsk = kind === "question" && !askId;
+  const textLocked = kind === null || needsAsk;
+  const canSubmit = !!body.trim() && !posting && !textLocked;
+  const placeholder =
+    kind === null
+      ? "Choose Share or Question to begin…"
+      : kind === "question"
+        ? askId
+          ? `What do you want to ask ${creatorById.get(askId)?.name ?? "your Expert"}?`
+          : "Choose who to ask above…"
+        : "Share something with your Tribe…";
 
   return (
     <section
@@ -180,14 +188,15 @@ export function TribeFeed({
         )}
       </div>
 
-      {/* Composer */}
+      {/* Composer — guided */}
       {canPost && (
         <div
           id="tribe-composer"
-          className="px-4 sm:px-5 py-4 scroll-mt-24"
+          className="px-4 sm:px-5 py-5 scroll-mt-24"
           style={{ borderTop: "1px solid rgba(15,34,41,0.06)", borderBottom: "1px solid rgba(15,34,41,0.06)", backgroundColor: "#FCFAF6" }}
         >
-          <div className="flex gap-2 mb-3">
+          {/* Step 1 — choose a kind (neutral until chosen, then pops) */}
+          <div className="flex gap-2">
             {COMPOSE_KINDS.map((k) => {
               const active = kind === k.key;
               return (
@@ -196,7 +205,11 @@ export function TribeFeed({
                   type="button"
                   onClick={() => selectKind(k.key)}
                   className="px-4 py-1.5 rounded-full text-[12px] font-black font-headline uppercase tracking-wider transition-colors"
-                  style={{ color: active ? "#fff" : k.color, backgroundColor: active ? k.color : `${k.color}14` }}
+                  style={
+                    active
+                      ? { color: "#fff", backgroundColor: k.color, boxShadow: `0 2px 8px ${k.color}55` }
+                      : { color: "#475569", backgroundColor: "rgba(15,34,41,0.05)" }
+                  }
                 >
                   {k.label}
                 </button>
@@ -204,53 +217,59 @@ export function TribeFeed({
             })}
           </div>
 
-          <div className="flex gap-3">
+          {/* Step 2 (question only) — choose who to ask */}
+          {kind === "question" && creators.length > 0 && (
+            <div className="mt-3.5">
+              <p className="text-[10px] uppercase tracking-[0.16em] font-headline mb-1.5" style={{ color: "#94a3b8", fontWeight: 800 }}>Ask</p>
+              <div className="flex flex-wrap gap-2">
+                {creators.map((c) => {
+                  const active = askId === c.id;
+                  return (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => { setAskId(c.id); setError(null); textareaRef.current?.focus(); }}
+                      className="flex items-center gap-1.5 rounded-full pl-1 pr-3 py-1 transition-colors"
+                      style={{
+                        backgroundColor: active ? "rgba(255,97,48,0.12)" : "rgba(15,34,41,0.05)",
+                        boxShadow: active ? `inset 0 0 0 1.5px ${ORANGE}` : "none",
+                      }}
+                    >
+                      <Avatar src={c.avatar} name={c.name} size={22} ring={c.role === "owner" ? ORANGE : CYAN} />
+                      <span className="text-[12px] font-black font-headline" style={{ color: active ? ORANGE : "#475569" }}>{c.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Step 3 — write (locked until ready) */}
+          <div className="flex gap-3 mt-4">
             <Avatar src={viewer.avatar} name={viewer.name} size={38} ring={CYAN} />
             <div className="flex-1 min-w-0">
               <textarea
                 ref={textareaRef}
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
-                placeholder={kind === "question" ? "What do you want to ask?" : "Share something with your Tribe…"}
-                rows={2}
+                placeholder={placeholder}
+                rows={3}
                 maxLength={5000}
-                className="w-full rounded-xl p-3 text-sm resize-none focus:outline-none"
-                style={{ backgroundColor: "#FFFFFF", border: "1px solid rgba(15,34,41,0.10)", color: INK }}
+                disabled={textLocked}
+                className="w-full rounded-xl p-3 text-sm resize-none focus:outline-none transition-colors disabled:cursor-not-allowed"
+                style={{
+                  backgroundColor: textLocked ? "rgba(15,34,41,0.03)" : "#FFFFFF",
+                  border: "1px solid rgba(15,34,41,0.10)",
+                  color: INK,
+                  opacity: textLocked ? 0.7 : 1,
+                }}
               />
-
-              {kind === "question" && creators.length > 0 && (
-                <div className="mt-2.5">
-                  <p className="text-[10px] uppercase tracking-[0.16em] font-headline mb-1.5" style={{ color: "#94a3b8", fontWeight: 800 }}>Ask</p>
-                  <div className="flex flex-wrap gap-2">
-                    {creators.map((c) => {
-                      const active = askId === c.id;
-                      return (
-                        <button
-                          key={c.id}
-                          type="button"
-                          onClick={() => { setAskId(c.id); setError(null); }}
-                          className="flex items-center gap-1.5 rounded-full pl-1 pr-3 py-1 transition-colors"
-                          style={{
-                            backgroundColor: active ? "rgba(255,97,48,0.12)" : "rgba(15,34,41,0.04)",
-                            boxShadow: active ? `inset 0 0 0 1.5px ${ORANGE}` : "none",
-                          }}
-                        >
-                          <Avatar src={c.avatar} name={c.name} size={22} ring={c.role === "owner" ? ORANGE : CYAN} />
-                          <span className="text-[12px] font-black font-headline" style={{ color: active ? ORANGE : "#475569" }}>{c.name}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
               {error && <p className="text-xs mt-1.5" style={{ color: ORANGE }}>{error}</p>}
-
-              <div className="flex justify-end mt-2.5">
+              <div className="flex justify-end mt-3">
                 <button
                   onClick={submit}
                   disabled={!canSubmit}
-                  className="px-5 py-2 rounded-full text-white text-sm font-black font-headline disabled:opacity-40"
+                  className="px-6 py-2 rounded-full text-white text-sm font-black font-headline disabled:opacity-40"
                   style={{ backgroundColor: ORANGE, boxShadow: "0 2px 8px rgba(255,97,48,0.3)" }}
                 >
                   {posting ? "Posting…" : "Post"}
@@ -311,12 +330,10 @@ function PostRow({
   const ring = isCreator ? (creator!.role === "owner" ? ORANGE : CYAN) : isOwn ? CYAN : undefined;
 
   return (
-    <div
-      className="flex gap-3 px-4 sm:px-5 py-4"
-      style={first ? undefined : { borderTop: "1px solid rgba(15,34,41,0.06)" }}
-    >
+    <div className="flex gap-3 px-4 sm:px-5 py-5" style={first ? undefined : { borderTop: "1px solid rgba(15,34,41,0.06)" }}>
       <Avatar src={post.authorAvatar} name={post.authorName} size={40} ring={ring} />
       <div className="flex-1 min-w-0">
+        {/* Author header */}
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="text-sm font-black font-headline" style={{ color: INK }}>{post.authorName}</span>
           {isCreator && (
@@ -333,37 +350,38 @@ function PostRow({
           </span>
         </div>
 
-        {/* Context — what makes guided posts more than a plain share */}
+        {/* Context — set apart in its own box */}
         {post.kind === "question" && directedCreator && (
-          <ContextLine color={ORANGE} prefix="for">
+          <ContextBox color={ORANGE} prefix="Asking">
             <Avatar src={directedCreator.avatar} name={directedCreator.name} size={18} ring={directedCreator.role === "owner" ? ORANGE : CYAN} />
             <span className="text-[12px] font-black font-headline" style={{ color: ORANGE }}>{directedCreator.name}</span>
-          </ContextLine>
+          </ContextBox>
         )}
         {post.kind === "intro" && introPrompt && (
-          <ContextLine color={CYAN} prefix="In response to">
-            <span className="text-[12px] italic" style={{ color: "#64748b" }}>“{introPrompt}”</span>
-          </ContextLine>
+          <ContextBox color={CYAN} prefix="In response to">
+            <span className="text-[12px] italic" style={{ color: "#475569" }}>“{introPrompt}”</span>
+          </ContextBox>
         )}
         {post.kind === "reflection" && reflectsOn && (
-          <ContextLine color={CYAN} prefix="Reflecting on">
+          <ContextBox color={CYAN} prefix="Reflecting on">
             <span className="text-[12px] font-bold font-headline" style={{ color: CYAN }}>{reflectsOn}</span>
-          </ContextLine>
+          </ContextBox>
         )}
 
-        <p className="text-sm leading-relaxed whitespace-pre-wrap mt-1.5" style={{ color: "#334155" }}>{post.body}</p>
+        {/* Body */}
+        <p className="text-sm leading-relaxed whitespace-pre-wrap mt-2.5" style={{ color: "#334155" }}>{post.body}</p>
       </div>
     </div>
   );
 }
 
-function ContextLine({ color, prefix, children }: { color: string; prefix: string; children: ReactNode }) {
+function ContextBox({ color, prefix, children }: { color: string; prefix: string; children: ReactNode }) {
   return (
-    <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
-      </svg>
-      <span className="text-[11px] font-bold font-headline" style={{ color: "#94a3b8" }}>{prefix}</span>
+    <div
+      className="flex items-center gap-1.5 flex-wrap rounded-lg px-2.5 py-1.5 mt-2"
+      style={{ backgroundColor: `${color}0D`, boxShadow: `inset 2px 0 0 ${color}` }}
+    >
+      <span className="text-[10px] uppercase tracking-wider font-headline" style={{ color: "#94a3b8", fontWeight: 800 }}>{prefix}</span>
       {children}
     </div>
   );
