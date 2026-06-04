@@ -33,7 +33,7 @@
  *
  *  - Resurrected from commit 295c7ef so the /weekly A/B route
  *    can render the older weekly-nav pattern alongside the flat
- *    SessionsCarousel at /challenges/[id].
+ *    SessionsCarousel at /experiences/[id].
  *
  *  - Cohost-aware: SessionLite carries host + cohosts; cards
  *    render a small facepile + role-tinted names ("Alex & Mira").

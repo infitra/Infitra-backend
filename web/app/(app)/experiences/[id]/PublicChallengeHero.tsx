@@ -18,7 +18,7 @@
  * preserves the flat carousel for reference if it's ever wanted back.
  *
  * Used by:
- *   - /challenges/[id]                                (public buyer page)
+ *   - /experiences/[id]                               (public buyer page)
  *   - /dashboard/collaborate/[challengeId]/published  (post-publish
  *     preview the creator sees — same hero, same data, plus a
  *     celebratory header strip and share bar around it)

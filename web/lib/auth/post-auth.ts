@@ -6,7 +6,7 @@ import type { SupabaseClient, User } from "@supabase/supabase-js";
  * Bundle 4.1: the buyer-page flow sends anon users to /login with
  * two intents threaded through query params:
  *
- *   ?returnTo=/challenges/abc        — generic "come back here"
+ *   ?returnTo=/experiences/abc       — generic "come back here"
  *   ?intent=buy:challenge:abc        — "after auth, start checkout"
  *
  * `intent=buy:*` is the magic one: instead of bouncing the user back
@@ -32,7 +32,7 @@ interface ResolvePostAuthArgs {
   role: AppRole;
   /** Raw `intent` query param value, e.g. "buy:challenge:abc-123" */
   intent?: string | null;
-  /** Raw `returnTo` query param value, e.g. "/challenges/abc" */
+  /** Raw `returnTo` query param value, e.g. "/experiences/abc" */
   returnTo?: string | null;
 }
 
@@ -99,7 +99,7 @@ export async function resolvePostAuth({
   // purchased, capacity full, rate limited, etc.) we fall back to the
   // returnTo page (the buyer page) so they see context, not a void.
   if (buy) {
-    const fallback = safeReturnTo ?? `/${buy.kind === "challenge" ? "challenges" : "sessions"}/${buy.targetId}`;
+    const fallback = safeReturnTo ?? `/${buy.kind === "challenge" ? "experiences" : "sessions"}/${buy.targetId}`;
 
     // Edge function requires the user's JWT. supabase.functions.invoke
     // uses the SSR cookies, which contain the freshly minted session

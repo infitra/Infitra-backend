@@ -18,12 +18,12 @@ export const metadata = { title: "Collaboration Published — INFITRA" };
  * confirmation card with a full preview of the public buyer page that
  * participants will see. The creator gets a celebratory header on top,
  * a copyable share link bar (sticky on scroll), and the same
- * components used at /challenges/[id] composed inline so they see
+ * components used at /experiences/[id] composed inline so they see
  * exactly what buyers see.
  *
  * Single source of truth for the buyer experience: PublicChallengeHero,
  * PublicCreatorsBlock, PublicBeyondLiveBlock all come from
- * /challenges/[id]/ and are reused here. No PublicCommitBlock because
+ * /experiences/[id]/ and are reused here. No PublicCommitBlock because
  * a creator isn't going to buy their own program — instead the commit
  * footer is replaced with a "Share this with your community" block.
  */
@@ -65,7 +65,7 @@ export default async function PublishedCelebrationPage({
   }
 
   // Raw promise + description for the hero card's two-beat treatment
-  // (Bundle 4.2.8). Same logic as /challenges/[id]/page.tsx.
+  // (Bundle 4.2.8). Same logic as /experiences/[id]/page.tsx.
   const { data: challengeDetails } = await supabase
     .from("app_challenge")
     .select("promise_text, description")
@@ -208,7 +208,7 @@ export default async function PublishedCelebrationPage({
           public page action. */}
       <PublishedShareBar challengeId={challengeId} title={buyerView.title} />
 
-      {/* The actual public preview — same architecture as /challenges/[id].
+      {/* The actual public preview — same architecture as /experiences/[id].
           Bundle 4.2.5: self-contained card + section 2.
             SECTION 1 — Cover image (optional) + self-contained product
                         card (the price-as-CTA inside the card renders
