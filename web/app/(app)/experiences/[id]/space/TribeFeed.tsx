@@ -431,7 +431,6 @@ function PostCard({
 
           {post.kind === "question" && directedCreator && (
             <ContextBanner color={ORANGE} label="Question for">
-              <Avatar src={directedCreator.avatar} name={directedCreator.name} size={30} ring={directedCreator.role === "owner" ? ORANGE : CYAN} />
               <span className="text-[14px] font-black font-headline" style={{ color: ORANGE }}>{directedCreator.name}</span>
             </ContextBanner>
           )}
@@ -455,7 +454,7 @@ function PostCard({
           {post.coachAnswer && (
             <div className="rounded-lg mt-3 p-3" style={{ backgroundColor: "rgba(8,145,178,0.08)", boxShadow: "inset 3.5px 0 0 #0891b2" }}>
               <div className="flex items-center gap-2">
-                <Avatar src={answerCreator?.avatar ?? null} name={answerCreator?.name ?? "Expert"} size={28} ring={answerCreator?.role === "owner" ? ORANGE : CYAN} />
+                <Avatar src={answerCreator?.avatar ?? null} name={answerCreator?.name ?? "Expert"} size={30} ring={answerCreator?.role === "owner" ? ORANGE : CYAN} />
                 <span className="text-[11px] uppercase tracking-[0.12em] font-headline" style={{ color: CYAN, fontWeight: 800 }}>Answered by {answerCreator?.name ?? "your Expert"}</span>
               </div>
               <p className="text-sm leading-relaxed whitespace-pre-wrap mt-1.5" style={{ color: "#334155" }}>{post.coachAnswer.body}</p>

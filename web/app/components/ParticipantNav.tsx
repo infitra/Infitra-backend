@@ -73,10 +73,12 @@ export function ParticipantNav({
           </span>
         </Link>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 md:gap-5">
           <MobileMenu links={mobileLinks} />
 
-          <div className="hidden md:flex items-center gap-8">
+          {/* Navigation cluster (desktop) — links + Create, kept together and
+              distinct from the account controls. */}
+          <div className="hidden md:flex items-center gap-7">
             {links.map(({ label, href }) => (
               <Link
                 key={href}
@@ -87,42 +89,48 @@ export function ParticipantNav({
                 {label}
               </Link>
             ))}
+            {isCreator && (
+              <Link
+                href="/dashboard/create"
+                className="inline-flex px-4 py-2 rounded-full text-xs font-black font-headline text-white uppercase tracking-widest"
+                style={{ backgroundColor: "#FF6130", boxShadow: "0 2px 8px rgba(255,97,48,0.3)" }}
+              >
+                + Create
+              </Link>
+            )}
           </div>
 
-          {isCreator && (
-            <Link
-              href="/dashboard/create"
-              className="hidden md:inline-flex px-4 py-2 rounded-full text-xs font-black font-headline text-white uppercase tracking-widest"
-              style={{ backgroundColor: "#FF6130", boxShadow: "0 2px 8px rgba(255,97,48,0.3)" }}
-            >
-              + Create
-            </Link>
-          )}
+          {/* Divider between navigation and account (desktop only). */}
+          <span
+            className="hidden md:block h-5 w-px"
+            style={{ backgroundColor: "rgba(15, 34, 41, 0.12)" }}
+          />
 
-          <NotificationBell />
-
-          {displayName && (
-            <span
-              className="text-sm font-headline font-semibold hidden md:block"
-              style={{ color: "rgba(15, 34, 41, 0.50)" }}
-            >
-              {displayName}
-            </span>
-          )}
-
-          <form action={signOut}>
-            <button
-              type="submit"
-              className="px-4 py-2 text-xs font-bold rounded-full transition-all font-headline cursor-pointer hover:opacity-80"
-              style={{
-                color: "rgba(15, 34, 41, 0.50)",
-                border: "1px solid rgba(15, 34, 41, 0.12)",
-                backgroundColor: "rgba(255, 255, 255, 0.35)",
-              }}
-            >
-              Sign Out
-            </button>
-          </form>
+          {/* Account cluster — bell, name, sign out as one unit. */}
+          <div className="flex items-center gap-3">
+            <NotificationBell />
+            {displayName && (
+              <span
+                className="text-sm font-headline font-semibold hidden md:block"
+                style={{ color: "rgba(15, 34, 41, 0.50)" }}
+              >
+                {displayName}
+              </span>
+            )}
+            <form action={signOut}>
+              <button
+                type="submit"
+                className="px-4 py-2 text-xs font-bold rounded-full transition-all font-headline cursor-pointer hover:opacity-80"
+                style={{
+                  color: "rgba(15, 34, 41, 0.50)",
+                  border: "1px solid rgba(15, 34, 41, 0.12)",
+                  backgroundColor: "rgba(255, 255, 255, 0.35)",
+                }}
+              >
+                Sign Out
+              </button>
+            </form>
+          </div>
         </div>
       </div>
     </nav>

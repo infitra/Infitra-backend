@@ -5,8 +5,8 @@
  *
  *   PROFILE     — avatar + name + role, with your Posts / Joined alongside.
  *   MOMENTUM    — where you are (countdown / week), the progress bar, next moment.
- *   ENGAGEMENT  — Share with your Tribe / Ask your Experts (equal weight,
- *                 colour-coded to their kind).
+ *   ENGAGEMENT  — Share with your Tribe (+ Ask your Experts for participants;
+ *                 creators only share — they ARE the experts).
  *   JUMP TO     — in-page nav, mobile only (the desktop rail is short enough).
  *
  * Colour discipline: cyan = Share/info/identity, orange = Ask/action, red = live.
@@ -125,11 +125,14 @@ export function YouPanel() {
         )}
       </Section>
 
-      {/* ── ENGAGEMENT ── */}
+      {/* ── ENGAGEMENT ── role-aware: a creator IS the expert, so "Ask your
+          Experts" is nonsense for them — they only share (coach drops). */}
       <Section label="Engagement">
         <div className="space-y-2">
           <EngageBtn href="#tribe-composer" label="Share with your Tribe" color={CYAN} onClick={() => setComposeIntent("share")} />
-          <EngageBtn href="#tribe-composer" label="Ask your Experts" color={ORANGE} onClick={() => setComposeIntent("question")} />
+          {!isCreator && (
+            <EngageBtn href="#tribe-composer" label="Ask your Experts" color={ORANGE} onClick={() => setComposeIntent("question")} />
+          )}
         </div>
       </Section>
 
