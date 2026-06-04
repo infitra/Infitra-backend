@@ -7,12 +7,37 @@ export const metadata = {
   title: "Payment Confirmed — INFITRA",
 };
 
+/**
+ * Post-purchase confirmation. Reached right after Stripe redirects on a
+ * successful payment (success_url) — including the buy-intent flow where a
+ * brand-new account signs up and goes straight to checkout.
+ *
+ * The job here is to get the buyer INTO the thing they just bought, not to
+ * dump them on the marketing landing page. Two realities shape the logic:
+ *
+ *  1. We need to know which Experience they bought. Stripe gives us back only
+ *     the Checkout Session id (`sid`). The clean signal is `xid` (the challenge
+ *     id) threaded onto success_url by create_checkout_session; if that's
+ *     present we trust it. As a fallback (older links / belt-and-braces) we
+ *     read the buyer's most-recent membership.
+ *
+ *  2. Entitlement is created ASYNC by the stripe_webhook (app_challenge_member
+ *     + app_transaction). Stripe redirects here immediately, so the membership
+ *     may not exist for a second or two. We therefore only deep-link into the
+ *     Experience Space once we can CONFIRM the membership row — otherwise the
+ *     space's access gate would bounce them back to the buyer page ("buy
+ *     again"). When it's not yet confirmed we send them to My Programs, where
+ *     the program surfaces the moment the webhook lands.
+ *
+ * (The forthcoming post-purchase profile step will sit between this page and
+ * the Experience and naturally absorb that webhook gap.)
+ */
 export default async function CheckoutSuccessPage({
   searchParams,
 }: {
-  searchParams: Promise<{ sid?: string }>;
+  searchParams: Promise<{ sid?: string; xid?: string; kind?: string }>;
 }) {
-  const { sid } = await searchParams;
+  const { xid, kind } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -26,10 +51,36 @@ export default async function CheckoutSuccessPage({
     .eq("id", user.id)
     .single();
 
-  const homePath =
-    profile?.role === "creator" || profile?.role === "admin"
-      ? "/dashboard"
-      : "/";
+  // Resolve the purchased Experience + confirm entitlement.
+  let challengeId: string | null = null;
+  let entitled = false;
+
+  if (xid && kind !== "session") {
+    // Explicit target from success_url — verify the membership for THIS one.
+    const { data: m } = await supabase
+      .from("app_challenge_member")
+      .select("challenge_id")
+      .eq("user_id", user.id)
+      .eq("challenge_id", xid)
+      .maybeSingle();
+    challengeId = xid;
+    entitled = !!m;
+  } else if (!xid) {
+    // Fallback: the buyer's most-recent enrollment.
+    const { data: m } = await supabase
+      .from("app_challenge_member")
+      .select("challenge_id")
+      .eq("user_id", user.id)
+      .order("joined_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (m) {
+      challengeId = m.challenge_id as string;
+      entitled = true;
+    }
+  }
+
+  const canOpenExperience = entitled && !!challengeId;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -69,34 +120,61 @@ export default async function CheckoutSuccessPage({
             className="text-sm leading-relaxed mb-8"
             style={{ color: "#64748b" }}
           >
-            Your payment has been confirmed. You&apos;ll receive a confirmation
-            email shortly. The join link will be available when the session goes
-            live.
+            {canOpenExperience ? (
+              <>
+                Your payment&apos;s confirmed and a receipt is on its way.
+                Everything for this program — your tribe, the weekly plan, and
+                the live join button when sessions start — lives in your
+                Experience Space.
+              </>
+            ) : (
+              <>
+                Your payment&apos;s confirmed and a receipt is on its way.
+                We&apos;re just finalizing your enrollment — your program will
+                appear in My Programs in a few seconds.
+              </>
+            )}
           </p>
 
           <div className="flex flex-col gap-3">
-            <Link
-              href="/"
-              className="w-full py-3.5 rounded-full text-white text-sm font-black font-headline hover:scale-[1.02] transition-transform text-center"
-              style={{
-                backgroundColor: "#FF6130",
-                boxShadow:
-                  "0 4px 14px rgba(255,97,48,0.35), 0 2px 6px rgba(255,97,48,0.20)",
-              }}
-            >
-              Back to Discover
-            </Link>
-            <Link
-              href={homePath}
-              className="w-full py-3.5 rounded-full text-sm font-bold font-headline transition-colors text-center"
-              style={{
-                backgroundColor: "rgba(255, 255, 255, 0.78)",
-                border: "1px solid rgba(15, 34, 41, 0.15)",
-                color: "#475569",
-              }}
-            >
-              Go to Dashboard
-            </Link>
+            {canOpenExperience ? (
+              <>
+                <Link
+                  href={`/experiences/${challengeId}/space`}
+                  className="w-full py-3.5 rounded-full text-white text-sm font-black font-headline hover:scale-[1.02] transition-transform text-center"
+                  style={{
+                    backgroundColor: "#FF6130",
+                    boxShadow:
+                      "0 4px 14px rgba(255,97,48,0.35), 0 2px 6px rgba(255,97,48,0.20)",
+                  }}
+                >
+                  Open your Experience
+                </Link>
+                <Link
+                  href="/me"
+                  className="w-full py-3.5 rounded-full text-sm font-bold font-headline transition-colors text-center"
+                  style={{
+                    backgroundColor: "rgba(255, 255, 255, 0.78)",
+                    border: "1px solid rgba(15, 34, 41, 0.15)",
+                    color: "#475569",
+                  }}
+                >
+                  My Programs
+                </Link>
+              </>
+            ) : (
+              <Link
+                href="/me"
+                className="w-full py-3.5 rounded-full text-white text-sm font-black font-headline hover:scale-[1.02] transition-transform text-center"
+                style={{
+                  backgroundColor: "#FF6130",
+                  boxShadow:
+                    "0 4px 14px rgba(255,97,48,0.35), 0 2px 6px rgba(255,97,48,0.20)",
+                }}
+              >
+                Go to My Programs
+              </Link>
+            )}
           </div>
         </div>
       </div>

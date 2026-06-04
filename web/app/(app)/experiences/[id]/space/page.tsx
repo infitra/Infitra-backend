@@ -23,10 +23,12 @@ export default async function ExperienceSpacePage({
   });
   const seed = mapSnapshot(data as RawExperienceSpaceSnapshot | null, user.id);
 
-  // Not authorized / no space yet → bounce to the dashboard. (Once 5d renames
-  // the buyer route, this becomes the Experience's public page so a non-member
-  // can join.)
-  if (error || !seed) redirect("/dashboard");
+  // Not authorized / no space yet → send to the Experience's public buyer page
+  // so a non-member can see the offer and join (an enrolled user landing there
+  // is redirected straight back into this space). This also covers the brief
+  // window where a just-paid buyer arrives before the stripe webhook has
+  // written their membership — they see the offer, not the creator dashboard.
+  if (error || !seed) redirect(`/experiences/${id}`);
 
   const { data: prof } = await supabase
     .from("app_profile")
