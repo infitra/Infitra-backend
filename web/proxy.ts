@@ -9,15 +9,16 @@ const PUBLIC_ROUTES = ["/", "/beta-access", "/auth/callback", "/test-wave-light"
 // have dynamic IDs and need to be shareable to anyone (including
 // strangers landing from a DM/social-shared link).
 //
-// /challenges/ → public buyer page (Bundle 4). Creators paste this
+// /experiences/ → public buyer page (Bundle 4, renamed from
+// /challenges/ in the Bundle 5 legacy sweep). Creators paste this
 // URL into their networks; if it requires beta access or login,
 // outreach is broken. The page itself is auth-aware (Sign-in CTA
 // for anonymous, Join for authenticated, Preview for the creator).
 //
-// When Bundle 5 ships the cohort space at /challenges/[id]/space,
-// that page's own server component will handle auth + entitlement
-// checks — the proxy stays simple.
-const PUBLIC_PREFIXES = ["/challenges/"];
+// The cohort space at /experiences/[id]/space also falls under this
+// prefix; that page's own server component handles auth + entitlement
+// (redirects anon → /login) — the proxy stays simple.
+const PUBLIC_PREFIXES = ["/experiences/"];
 
 function isPublic(pathname: string): boolean {
   if (PUBLIC_ROUTES.includes(pathname)) return true;
@@ -65,8 +66,6 @@ export async function proxy(request: NextRequest) {
       pathname.startsWith("/discover") ||
       pathname.startsWith("/sessions") ||
       pathname.startsWith("/checkout") ||
-      pathname.startsWith("/challenges") ||
-      pathname.startsWith("/communities") ||
       pathname.startsWith("/creators") ||
       pathname.startsWith("/profile") ||
       // Participant home (Bundle 4.1) — lists "My programs" with door
