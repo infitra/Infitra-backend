@@ -48,6 +48,12 @@ export async function signUp(prevState: unknown, formData: FormData) {
     displayName = (formData.get("display_name") as string)?.trim() ?? "";
   }
 
+  // Real name — captured only on the official (non-buy) participant signup.
+  // Buyers skip it (we lean on Stripe's billing name); creators use the brand
+  // Display Name field instead. app_handle_new_user persists full_name from
+  // metadata when present.
+  const fullName = (formData.get("full_name") as string)?.trim() || null;
+
   if (!email || !password) return { error: "Email and password are required." };
   if (password.length < 8) return { error: "Password must be at least 8 characters." };
   if (!["participant", "creator"].includes(role)) return { error: "Please select a role." };
@@ -65,7 +71,8 @@ export async function signUp(prevState: unknown, formData: FormData) {
       emailRedirectTo: buildCallbackUrl(origin, intent, returnTo),
       // Role and display_name are passed as metadata so the DB trigger
       // can set them correctly on INSERT — role is immutable after creation.
-      data: { role, display_name: displayName },
+      // full_name is null except on the official participant signup.
+      data: { role, display_name: displayName, full_name: fullName },
     },
   });
 

@@ -382,10 +382,12 @@ export function LoginForm() {
             })}
           </div>
 
-          {/* Display name */}
+          {/* Name — "Full Name" for participants (→ full_name; their displayed
+              Username is set later, post-purchase or in profile), brand
+              "Display Name" for creators (→ display_name, shown publicly). */}
           <div className="mb-6">
             <label htmlFor="signup_display_name" className={labelClass} style={labelStyle}>
-              Display Name
+              {selectedRole === "participant" ? "Full Name" : "Display Name"}
             </label>
             <input
               id="signup_display_name"
@@ -394,7 +396,11 @@ export function LoginForm() {
               onChange={(e) => setDisplayName(e.target.value)}
               minLength={2}
               maxLength={50}
-              placeholder="Your name or studio name"
+              placeholder={
+                selectedRole === "participant"
+                  ? "Your full name"
+                  : "Your name or studio name"
+              }
               className={inputClass}
               style={inputStyle}
             />
@@ -466,9 +472,23 @@ export function LoginForm() {
           )}
 
           <form action={signUpAction} className="space-y-4">
-            {/* Hidden fields — role and display_name set in step 1 */}
+            {/* Hidden fields set from step 1. Participants: the entered name is
+                their real full_name, and display_name (the Username shown to
+                others) defaults to their first name until they set it later.
+                Creators: the entered name is their public Display Name. */}
             <input type="hidden" name="role" value={selectedRole ?? ""} />
-            <input type="hidden" name="display_name" value={displayName} />
+            {selectedRole === "participant" ? (
+              <>
+                <input type="hidden" name="full_name" value={displayName} />
+                <input
+                  type="hidden"
+                  name="display_name"
+                  value={displayName.trim().split(/\s+/)[0]}
+                />
+              </>
+            ) : (
+              <input type="hidden" name="display_name" value={displayName} />
+            )}
             {/* No intent in the non-buy-flow path, but pass returnTo
                 if it happens to be present (e.g. signing up to view a
                 draft someone shared). */}
