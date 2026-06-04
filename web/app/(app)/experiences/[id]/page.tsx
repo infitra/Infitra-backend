@@ -13,7 +13,7 @@ import { loadSessionCohosts } from "@/lib/challenges/sessionCohosts";
 import { resolveViewerTimeZone } from "@/lib/time/viewerTimeZone";
 
 export const metadata = {
-  title: "Challenge — INFITRA",
+  title: "Experience — INFITRA",
 };
 
 // Bundle 4: public buyer page. Editorial / magazine-style scroll
