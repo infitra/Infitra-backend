@@ -135,9 +135,10 @@ export function FirstMovesCard({
         </div>
       </div>
 
-      {/* Username — the friendly displayed name (backed by display_name) */}
+      {/* Display name — what the tribe sees (app_profile.display_name). Not the
+          reserved `username` slug, which stays backend-only for now. */}
       <label className="block text-xs font-bold font-headline mb-1.5" style={{ color: INK }}>
-        Username
+        Display name
       </label>
       <input
         value={displayName}

@@ -108,7 +108,7 @@ export function ExperienceHeader() {
               <div className="flex items-center gap-2 mt-3">
                 <div className="flex -space-x-2">
                   {creators.map((c) => (
-                    <Avatar key={c.id} src={c.avatar} name={c.name} size={30} ring={c.role === "owner" ? ORANGE : "#9CF0FF"} />
+                    <Avatar key={c.id} src={c.avatar} name={c.name} size={36} ring={c.role === "owner" ? ORANGE : "#9CF0FF"} />
                   ))}
                 </div>
                 <span className="text-sm font-bold font-headline" style={{ color: "#475569" }}>
@@ -138,7 +138,7 @@ export function ExperienceHeader() {
                   <div className="flex -space-x-2">
                     {present.slice(0, 3).map((u) => (
                       <div key={u.id} className="relative">
-                        <Avatar src={u.avatar} name={u.name} size={26} ring="#FFFFFF" bg={CYAN} />
+                        <Avatar src={u.avatar} name={u.name} size={32} ring="#FFFFFF" bg={CYAN} />
                         <span
                           className="absolute bottom-0 right-0 rounded-full animate-pulse"
                           style={{ width: 8, height: 8, backgroundColor: DARKCYAN, border: "2px solid #FFFFFF" }}
@@ -166,7 +166,7 @@ export function ExperienceHeader() {
         <div className="px-5 lg:px-7 pb-5 pt-1 space-y-4">
           {creators.map((c) => (
             <div key={c.id} className="flex gap-3">
-              <Avatar src={c.avatar} name={c.name} size={44} ring={c.role === "owner" ? ORANGE : "#9CF0FF"} />
+              <Avatar src={c.avatar} name={c.name} size={52} ring={c.role === "owner" ? ORANGE : "#9CF0FF"} />
               <div className="min-w-0">
                 <p className="text-sm font-black font-headline" style={{ color: INK }}>
                   {c.name}

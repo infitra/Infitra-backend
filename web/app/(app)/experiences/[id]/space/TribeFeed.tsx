@@ -316,7 +316,7 @@ export function TribeFeed({
                     <button key={c.id} type="button" onClick={() => { setAskId(c.id); setError(null); textareaRef.current?.focus(); }}
                       className="flex items-center gap-1.5 rounded-full pl-1 pr-3 py-1 transition-colors"
                       style={{ backgroundColor: active ? "rgba(255,97,48,0.12)" : "rgba(15,34,41,0.05)", boxShadow: active ? `inset 0 0 0 1.5px ${ORANGE}` : "none" }}>
-                      <Avatar src={c.avatar} name={c.name} size={22} ring={c.role === "owner" ? ORANGE : CYAN} />
+                      <Avatar src={c.avatar} name={c.name} size={28} ring={c.role === "owner" ? ORANGE : CYAN} />
                       <span className="text-[12px] font-black font-headline" style={{ color: active ? ORANGE : "#475569" }}>{c.name}</span>
                     </button>
                   );
@@ -326,7 +326,7 @@ export function TribeFeed({
           )}
 
           <div className="flex gap-3 mt-4">
-            <Avatar src={viewer.avatar} name={viewer.name} size={38} ring={CYAN} />
+            <Avatar src={viewer.avatar} name={viewer.name} size={46} ring={CYAN} />
             <div className="flex-1 min-w-0">
               <textarea ref={textareaRef} value={body} onChange={(e) => setBody(e.target.value)} placeholder={placeholder} rows={3} maxLength={5000} disabled={textLocked}
                 className="w-full rounded-xl p-3 text-sm resize-none focus:outline-none transition-colors disabled:cursor-not-allowed"
@@ -421,7 +421,7 @@ function PostCard({
   return (
     <article className="rounded-xl p-4" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.04), 0 1px 4px rgba(15,34,41,0.04)" }}>
       <div className="flex gap-3">
-        <Avatar src={post.authorAvatar} name={post.authorName} size={40} ring={ring} />
+        <Avatar src={post.authorAvatar} name={post.authorName} size={48} ring={ring} />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
             <span className="text-sm font-black font-headline" style={{ color: INK }}>{post.authorName}</span>
@@ -431,7 +431,7 @@ function PostCard({
 
           {post.kind === "question" && directedCreator && (
             <ContextBanner color={ORANGE} label="Question for">
-              <Avatar src={directedCreator.avatar} name={directedCreator.name} size={24} ring={directedCreator.role === "owner" ? ORANGE : CYAN} />
+              <Avatar src={directedCreator.avatar} name={directedCreator.name} size={30} ring={directedCreator.role === "owner" ? ORANGE : CYAN} />
               <span className="text-[14px] font-black font-headline" style={{ color: ORANGE }}>{directedCreator.name}</span>
             </ContextBanner>
           )}
@@ -455,7 +455,7 @@ function PostCard({
           {post.coachAnswer && (
             <div className="rounded-lg mt-3 p-3" style={{ backgroundColor: "rgba(8,145,178,0.08)", boxShadow: "inset 3.5px 0 0 #0891b2" }}>
               <div className="flex items-center gap-2">
-                <Avatar src={answerCreator?.avatar ?? null} name={answerCreator?.name ?? "Expert"} size={22} ring={answerCreator?.role === "owner" ? ORANGE : CYAN} />
+                <Avatar src={answerCreator?.avatar ?? null} name={answerCreator?.name ?? "Expert"} size={28} ring={answerCreator?.role === "owner" ? ORANGE : CYAN} />
                 <span className="text-[11px] uppercase tracking-[0.12em] font-headline" style={{ color: CYAN, fontWeight: 800 }}>Answered by {answerCreator?.name ?? "your Expert"}</span>
               </div>
               <p className="text-sm leading-relaxed whitespace-pre-wrap mt-1.5" style={{ color: "#334155" }}>{post.coachAnswer.body}</p>
@@ -491,7 +491,7 @@ function PostCard({
                   const cRing = cCreator ? (cCreator.role === "owner" ? ORANGE : CYAN) : undefined;
                   return (
                     <div key={c.id} className="flex gap-2.5">
-                      <Avatar src={c.authorAvatar} name={c.authorName} size={28} ring={cRing} />
+                      <Avatar src={c.authorAvatar} name={c.authorName} size={34} ring={cRing} />
                       <div className="flex-1 min-w-0 rounded-xl px-3 py-2" style={{ backgroundColor: c.isCoachAnswer ? "rgba(8,145,178,0.07)" : "#FAF7F1" }}>
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="text-[12px] font-black font-headline" style={{ color: INK }}>{c.authorName}</span>
@@ -527,7 +527,7 @@ function CommentComposer({ viewer, onSubmit }: { viewer: ExperienceViewer; onSub
   }
   return (
     <div className="flex gap-2.5 items-start">
-      <Avatar src={viewer.avatar} name={viewer.name} size={28} ring={CYAN} />
+      <Avatar src={viewer.avatar} name={viewer.name} size={34} ring={CYAN} />
       <div className="flex-1 min-w-0">
         <div className="flex gap-2 items-end">
           <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="Add a comment…" rows={1} maxLength={2000}
