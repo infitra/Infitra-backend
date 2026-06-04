@@ -415,6 +415,8 @@ function PostCard({
   const creator = creatorById.get(post.author_id);
   const ring = isCreator ? (creator!.role === "owner" ? ORANGE : CYAN) : isOwn ? CYAN : undefined;
   const answerCreator = post.coachAnswer ? creatorById.get(post.coachAnswer.authorId) : undefined;
+  // The coach answer is shown inline above — don't repeat it in the thread.
+  const visibleComments = comments?.filter((c) => !c.isCoachAnswer);
 
   return (
     <article className="rounded-xl p-4" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.04), 0 1px 4px rgba(15,34,41,0.04)" }}>
@@ -481,10 +483,10 @@ function PostCard({
             <div className="mt-3 space-y-3">
               {comments === undefined ? (
                 <p className="text-[11px]" style={{ color: "#94a3b8" }}>Loading…</p>
-              ) : comments.length === 0 ? (
+              ) : !visibleComments || visibleComments.length === 0 ? (
                 <p className="text-[11px]" style={{ color: "#94a3b8" }}>No comments yet — be the first.</p>
               ) : (
-                comments.map((c) => {
+                visibleComments.map((c) => {
                   const cCreator = creatorById.get(c.author_id);
                   const cRing = cCreator ? (cCreator.role === "owner" ? ORANGE : CYAN) : undefined;
                   return (
