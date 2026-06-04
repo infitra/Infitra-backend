@@ -174,9 +174,14 @@ Deno.serve(async (req) => {
     }
 
     // 4) URLs
+    // Thread the purchased target onto the redirect so the success page can
+    // deep-link the right Experience deterministically — even before the async
+    // stripe_webhook has written the entitlement. {CHECKOUT_SESSION_ID} is
+    // Stripe's own placeholder (it substitutes it); our params ride alongside.
+    const successQuery = `sid={CHECKOUT_SESSION_ID}&kind=${kind}&xid=${target_id}`;
     const successUrl = PROJECT_URL
-      ? `${PROJECT_URL}/checkout/success?sid={CHECKOUT_SESSION_ID}`
-      : "https://example.com/checkout/success?sid={CHECKOUT_SESSION_ID}";
+      ? `${PROJECT_URL}/checkout/success?${successQuery}`
+      : `https://example.com/checkout/success?${successQuery}`;
     const cancelUrl  = PROJECT_URL
       ? `${PROJECT_URL}/checkout/cancel`
       : "https://example.com/checkout/cancel";

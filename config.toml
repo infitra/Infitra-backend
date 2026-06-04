@@ -78,7 +78,11 @@ entrypoint = "./functions/stripe-webhook/index.ts"
 
 [functions.create_checkout_session]
 enabled = true
-verify_jwt = true
+# verify_jwt is false: the function handles the CORS preflight (OPTIONS) and does
+# its own JWT validation inside (caller.auth.getUser -> 401). Platform-level
+# verify_jwt=true would reject the unauthenticated preflight and break browser
+# checkout. Kept in sync with the live deployment (was drifted to true here).
+verify_jwt = false
 import_map = "./functions/create_checkout_session/deno.json"
 # Uncomment to specify a custom file path to the entrypoint.
 # Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
