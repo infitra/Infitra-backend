@@ -1,29 +1,21 @@
 "use client";
 
 /**
- * YouPanel — your console in the locker room, role-aware.
+ * YouPanel — Bundle 5c (locker-room Ship 1). Your console, in clear sections:
  *
- * PARTICIPANT:
- *   PROFILE     — avatar + name + role.
- *   MOMENTUM    — where you are (countdown / week) + progress bar + next moment.
- *   ENGAGEMENT  — Share with your Tribe / Ask your Experts.
+ *   PROFILE     — avatar + name + role, with your Posts / Joined alongside.
+ *   MOMENTUM    — where you are (countdown / week), the progress bar, next moment.
+ *   ENGAGEMENT  — Share with your Tribe (+ Ask your Experts for participants;
+ *                 creators only share — they ARE the experts).
+ *   JUMP TO     — in-page nav, mobile only (the desktop rail is short enough).
  *
- * CREATOR (Expert) — a command center, not a journey tracker:
- *   PROFILE     — avatar + name + Expert.
- *   COHORT      — program status + tribe size + next session you host.
- *   NEEDS YOU   — directed questions waiting on you (the action), reflections
- *                 to read. Numbers from load_experience_creator_stats.
- *   ENGAGEMENT  — Share with your Tribe (coach drop). No "Ask" — they ARE the expert.
- *
- * Colour discipline: cyan = Share/info/identity, orange = Ask/action/attention,
- * red = live.
+ * Colour discipline: cyan = Share/info/identity, orange = Ask/action, red = live.
  */
 
 import { useEffect, useState, type ReactNode } from "react";
 import { useExperienceSpaceStore } from "@/lib/experienceSpace/StoreProvider";
 import { buildWeekJourney, programStatus } from "@/lib/experienceSpace/weekJourney";
 import { Avatar } from "./Avatar";
-import { useCreatorStats } from "./useCreatorStats";
 
 const ORANGE = "#FF6130";
 const CYAN = "#0891b2";
@@ -54,7 +46,6 @@ export function YouPanel() {
   const programState = useExperienceSpaceStore((s) => s.programState);
   const sessions = useExperienceSpaceStore((s) => s.sessions);
   const isCreator = useExperienceSpaceStore((s) => s.isCreator);
-  const memberCount = useExperienceSpaceStore((s) => s.memberCount);
   const setComposeIntent = useExperienceSpaceStore((s) => s.setComposeIntent);
 
   const [now, setNow] = useState(() => Date.now());
@@ -63,51 +54,12 @@ export function YouPanel() {
     return () => clearInterval(t);
   }, []);
 
-  // Creator-only at-a-glance numbers, kept live (pending questions / reflections).
-  const stats = useCreatorStats(isCreator, experience?.id);
-
   const model = buildWeekJourney(experience, programState, sessions, now);
   const status = programStatus(experience, now);
   const totalWeeks = model.totalWeeks;
   const currentWeek = model.currentWeek;
   const weeksCompleted = programState?.weeksCompleted ?? 0;
   const hero = model.heroSessionId ? sessions.find((s) => s.id === model.heroSessionId) ?? null : null;
-
-  const statusLine =
-    status.phase === "upcoming"
-      ? `Starts in ${status.startsInDays}d`
-      : status.phase === "complete"
-        ? `Completed · ${totalWeeks} weeks`
-        : `Week ${currentWeek} of ${totalWeeks}`;
-
-  const heroHref = model.heroIsLive
-    ? isCreator
-      ? `/dashboard/sessions/${hero?.id}/live`
-      : `/sessions/${hero?.id}/live`
-    : "#the-week";
-
-  const HeroMoment = hero ? (
-    <a
-      href={heroHref}
-      onClick={(e) => { if (!model.heroIsLive) { e.preventDefault(); scrollToId("the-week"); } }}
-      className="flex items-center gap-2 rounded-xl px-3 py-2.5 mt-3.5"
-      style={{ backgroundColor: model.heroIsLive ? "rgba(239,68,68,0.08)" : "#FAF7F1" }}
-    >
-      {model.heroIsLive && <span className="inline-block w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: RED }} />}
-      <div className="min-w-0 flex-1">
-        <p className="text-[9px] uppercase tracking-[0.16em] font-headline" style={{ color: model.heroIsLive ? RED : CYAN, fontWeight: 800 }}>
-          {model.heroIsLive ? "Live now" : isCreator ? "You host next" : "Next moment"}
-        </p>
-        <p className="text-[13px] font-black font-headline truncate" style={{ color: INK }}>{hero.title}</p>
-      </div>
-      <span className="text-[12px] font-black font-headline tabular-nums shrink-0" style={{ color: model.heroIsLive ? RED : INK }} suppressHydrationWarning>
-        {model.heroIsLive ? "Join" : countdown(hero.startTime, now)}
-      </span>
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={model.heroIsLive ? RED : "#94a3b8"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="9 18 15 12 9 6" />
-      </svg>
-    </a>
-  ) : null;
 
   return (
     <div
@@ -130,103 +82,59 @@ export function YouPanel() {
         </div>
       </div>
 
-      {isCreator ? (
-        <>
-          {/* ── COHORT ── */}
-          <Section label="Cohort">
-            <p className="text-[11px] uppercase tracking-[0.16em] font-headline" style={{ color: status.phase === "upcoming" ? CYAN : INK, fontWeight: 800 }}>
-              {statusLine}
-            </p>
-            <div className="flex items-baseline gap-2 mt-2">
-              <span className="text-2xl font-black font-headline leading-none" style={{ color: INK }}>{memberCount}</span>
-              <span className="text-[11px] uppercase tracking-wider font-headline" style={{ color: "#94a3b8", fontWeight: 800 }}>
-                {memberCount === 1 ? "member" : "members"} in your tribe
-              </span>
+      {/* ── MOMENTUM ── */}
+      <Section label="Momentum">
+        <p className="text-[11px] uppercase tracking-[0.16em] font-headline" style={{ color: status.phase === "upcoming" ? CYAN : INK, fontWeight: 800 }}>
+          {status.phase === "upcoming"
+            ? `Starts in ${status.startsInDays}d`
+            : status.phase === "complete"
+              ? `Completed · ${totalWeeks} weeks`
+              : `Week ${currentWeek} of ${totalWeeks}`}
+        </p>
+        <div className="flex gap-1 mt-2">
+          {Array.from({ length: totalWeeks }).map((_, i) => {
+            const done = i < weeksCompleted;
+            const current = status.phase === "active" && i === currentWeek - 1;
+            return (
+              <span key={i} className="flex-1 rounded-full" style={{ height: 5, backgroundColor: done ? CYAN : current ? ORANGE : "rgba(15,34,41,0.08)" }} />
+            );
+          })}
+        </div>
+
+        {hero && (
+          <a
+            href={model.heroIsLive ? `/sessions/${hero.id}/live` : "#the-week"}
+            onClick={(e) => { if (!model.heroIsLive) { e.preventDefault(); scrollToId("the-week"); } }}
+            className="flex items-center gap-2 rounded-xl px-3 py-2.5 mt-3.5"
+            style={{ backgroundColor: model.heroIsLive ? "rgba(239,68,68,0.08)" : "#FAF7F1" }}
+          >
+            {model.heroIsLive && <span className="inline-block w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: RED }} />}
+            <div className="min-w-0 flex-1">
+              <p className="text-[9px] uppercase tracking-[0.16em] font-headline" style={{ color: model.heroIsLive ? RED : CYAN, fontWeight: 800 }}>
+                {model.heroIsLive ? "Live now" : "Next moment"}
+              </p>
+              <p className="text-[13px] font-black font-headline truncate" style={{ color: INK }}>{hero.title}</p>
             </div>
-            {HeroMoment}
-          </Section>
+            <span className="text-[12px] font-black font-headline tabular-nums shrink-0" style={{ color: model.heroIsLive ? RED : INK }} suppressHydrationWarning>
+              {model.heroIsLive ? "Join" : countdown(hero.startTime, now)}
+            </span>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={model.heroIsLive ? RED : "#94a3b8"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </a>
+        )}
+      </Section>
 
-          {/* ── NEEDS YOU ── */}
-          <Section label="Needs you">
-            {stats && stats.pending > 0 ? (
-              <a
-                href="#tribe"
-                onClick={(e) => { e.preventDefault(); scrollToId("tribe"); }}
-                className="flex items-center gap-2 rounded-xl px-3.5 py-3 transition-transform hover:scale-[1.01]"
-                style={{ backgroundColor: "rgba(255,97,48,0.10)", boxShadow: `inset 0 0 0 1.5px ${ORANGE}40` }}
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="text-[9px] uppercase tracking-[0.16em] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>Waiting on you</p>
-                  <p className="text-[15px] font-black font-headline" style={{ color: ORANGE }}>
-                    {stats.pending} {stats.pending === 1 ? "question" : "questions"}
-                  </p>
-                </div>
-                <span className="text-[11px] font-black font-headline shrink-0" style={{ color: ORANGE }}>Answer</span>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={ORANGE} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
-              </a>
-            ) : (
-              <div className="flex items-center gap-2 rounded-xl px-3.5 py-3" style={{ backgroundColor: "rgba(8,145,178,0.07)" }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={CYAN} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M20 6L9 17l-5-5" />
-                </svg>
-                <span className="text-[12px] font-bold font-headline" style={{ color: "#475569" }}>
-                  {stats ? "All questions answered" : "Checking your tribe…"}
-                </span>
-              </div>
-            )}
-
-            {stats && stats.reflections > 0 && (
-              <a
-                href="#tribe"
-                onClick={(e) => { e.preventDefault(); scrollToId("tribe"); }}
-                className="flex items-center gap-2 rounded-xl px-3.5 py-2.5 mt-2 transition-transform hover:scale-[1.01]"
-                style={{ backgroundColor: "rgba(8,145,178,0.08)", boxShadow: `inset 0 0 0 1.5px ${CYAN}33` }}
-              >
-                <span className="text-[12px] font-black font-headline flex-1" style={{ color: CYAN }}>
-                  {stats.reflections} new {stats.reflections === 1 ? "reflection" : "reflections"} to read
-                </span>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={CYAN} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
-              </a>
-            )}
-          </Section>
-
-          {/* ── ENGAGEMENT ── creators only share (they ARE the experts). */}
-          <Section label="Engagement">
-            <EngageBtn href="#tribe-composer" label="Share with your Tribe" color={CYAN} onClick={() => setComposeIntent("share")} />
-          </Section>
-        </>
-      ) : (
-        <>
-          {/* ── MOMENTUM ── */}
-          <Section label="Momentum">
-            <p className="text-[11px] uppercase tracking-[0.16em] font-headline" style={{ color: status.phase === "upcoming" ? CYAN : INK, fontWeight: 800 }}>
-              {statusLine}
-            </p>
-            <div className="flex gap-1 mt-2">
-              {Array.from({ length: totalWeeks }).map((_, i) => {
-                const done = i < weeksCompleted;
-                const current = status.phase === "active" && i === currentWeek - 1;
-                return (
-                  <span key={i} className="flex-1 rounded-full" style={{ height: 5, backgroundColor: done ? CYAN : current ? ORANGE : "rgba(15,34,41,0.08)" }} />
-                );
-              })}
-            </div>
-            {HeroMoment}
-          </Section>
-
-          {/* ── ENGAGEMENT ── */}
-          <Section label="Engagement">
-            <div className="space-y-2">
-              <EngageBtn href="#tribe-composer" label="Share with your Tribe" color={CYAN} onClick={() => setComposeIntent("share")} />
-              <EngageBtn href="#tribe-composer" label="Ask your Experts" color={ORANGE} onClick={() => setComposeIntent("question")} />
-            </div>
-          </Section>
-        </>
-      )}
+      {/* ── ENGAGEMENT ── role-aware: a creator IS the expert, so "Ask your
+          Experts" is nonsense for them — they only share (coach drops). */}
+      <Section label="Engagement">
+        <div className="space-y-2">
+          <EngageBtn href="#tribe-composer" label="Share with your Tribe" color={CYAN} onClick={() => setComposeIntent("share")} />
+          {!isCreator && (
+            <EngageBtn href="#tribe-composer" label="Ask your Experts" color={ORANGE} onClick={() => setComposeIntent("question")} />
+          )}
+        </div>
+      </Section>
 
       {/* ── JUMP TO (mobile only) ── */}
       <Section label="Jump to" mobileOnly>
