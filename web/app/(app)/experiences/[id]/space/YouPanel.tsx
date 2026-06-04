@@ -20,10 +20,10 @@
  */
 
 import { useEffect, useState, type ReactNode } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { useExperienceSpaceStore } from "@/lib/experienceSpace/StoreProvider";
 import { buildWeekJourney, programStatus } from "@/lib/experienceSpace/weekJourney";
 import { Avatar } from "./Avatar";
+import { useCreatorStats } from "./useCreatorStats";
 
 const ORANGE = "#FF6130";
 const CYAN = "#0891b2";
@@ -48,8 +48,6 @@ function countdown(iso: string, now: number) {
   return `${Math.floor(h / 24)}d`;
 }
 
-type CreatorStats = { pending: number; reflections: number };
-
 export function YouPanel() {
   const viewer = useExperienceSpaceStore((s) => s.viewer);
   const experience = useExperienceSpaceStore((s) => s.experience);
@@ -65,26 +63,8 @@ export function YouPanel() {
     return () => clearInterval(t);
   }, []);
 
-  // Creator-only at-a-glance numbers (pending questions / reflections).
-  const [stats, setStats] = useState<CreatorStats | null>(null);
-  useEffect(() => {
-    if (!isCreator || !experience?.id) return;
-    let alive = true;
-    const supabase = createClient();
-    supabase
-      .rpc("load_experience_creator_stats", { p_challenge_id: experience.id })
-      .then(({ data }) => {
-        const d = data as
-          | { authorized?: boolean; pending_questions?: number; recent_reflections?: number }
-          | null;
-        if (alive && d?.authorized) {
-          setStats({ pending: d.pending_questions ?? 0, reflections: d.recent_reflections ?? 0 });
-        }
-      });
-    return () => {
-      alive = false;
-    };
-  }, [isCreator, experience?.id]);
+  // Creator-only at-a-glance numbers, kept live (pending questions / reflections).
+  const stats = useCreatorStats(isCreator, experience?.id);
 
   const model = buildWeekJourney(experience, programState, sessions, now);
   const status = programStatus(experience, now);
