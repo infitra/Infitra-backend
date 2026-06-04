@@ -2,7 +2,23 @@ import Link from "next/link";
 import Image from "next/image";
 import { signOut } from "@/app/actions/auth";
 import { MobileMenu } from "@/app/components/MobileMenu";
+import { NotificationBell } from "@/app/components/NotificationBell";
 
+/**
+ * The single app nav for every authenticated surface — creators AND
+ * participants. (It only ever renders for a logged-in user: the public buyer
+ * page shows its own anon header instead, and every other host redirects anon
+ * to /login.) Role drives the contents:
+ *
+ *   - Participant: minimal — just "Home" (→ /me, the same place the logo goes)
+ *     plus the notification bell. Participants get real notifications too
+ *     (coach answered your question, intro prompt, etc.), so the bell belongs.
+ *   - Creator: Home / Earnings + a Create pill + the bell.
+ *
+ * Solid-cream treatment (no backdrop-blur): a fixed bar blurring the animated
+ * background re-rasterises every frame and is a known mobile scroll-jank
+ * source — the same reason the dashboard's old blur nav was retired here.
+ */
 export function ParticipantNav({
   displayName,
   role,
@@ -11,24 +27,24 @@ export function ParticipantNav({
   role?: string;
 }) {
   const isCreator = role === "creator" || role === "admin";
-  // Bundle 4.1: participants now have a home at /me — "My programs"
-  // lists their purchases with a door into each cohort space. Creators
-  // still go to /dashboard. This makes the logo (and post-login landing)
-  // actually meaningful for participants instead of dropping them on the
-  // marketing landing page.
   const homeHref = isCreator ? "/dashboard" : "/me";
 
-  // Creator links mirror the dashboard layout nav.
-  // Participant links are intentionally minimal for the pilot — just the
-  // "My programs" doorway. Post-pilot this is where Discover, Achievements,
-  // etc. will live.
+  // Desktop links (the Create pill is rendered separately for creators).
   const links = isCreator
+    ? [
+        { label: "Home", href: "/dashboard" },
+        { label: "Earnings", href: "/dashboard/earnings" },
+      ]
+    : [{ label: "Home", href: "/me" }];
+
+  // Mobile menu mirrors desktop, folding Create back in for creators.
+  const mobileLinks = isCreator
     ? [
         { label: "Home", href: "/dashboard" },
         { label: "Create", href: "/dashboard/create" },
         { label: "Earnings", href: "/dashboard/earnings" },
       ]
-    : [{ label: "My programs", href: "/me" }];
+    : [{ label: "Home", href: "/me" }];
 
   return (
     <nav className="fixed top-0 w-full z-50">
@@ -36,10 +52,6 @@ export function ParticipantNav({
         style={{
           position: "absolute",
           inset: 0,
-          // Near-opaque solid instead of backdrop-filter blur. A fixed bar
-          // blurring the *animated* background re-rasterises every frame
-          // (even idle) and is a major mobile scroll-jank source. Solid cream
-          // looks near-identical over the cream page and is compositor-free.
           background: "rgba(244, 241, 234, 0.94)",
           borderBottom: "1px solid rgba(15, 34, 41, 0.06)",
         }}
@@ -60,8 +72,10 @@ export function ParticipantNav({
             INFITRA
           </span>
         </Link>
+
         <div className="flex items-center gap-4">
-          <MobileMenu links={links} />
+          <MobileMenu links={mobileLinks} />
+
           <div className="hidden md:flex items-center gap-8">
             {links.map(({ label, href }) => (
               <Link
@@ -74,6 +88,19 @@ export function ParticipantNav({
               </Link>
             ))}
           </div>
+
+          {isCreator && (
+            <Link
+              href="/dashboard/create"
+              className="hidden md:inline-flex px-4 py-2 rounded-full text-xs font-black font-headline text-white uppercase tracking-widest"
+              style={{ backgroundColor: "#FF6130", boxShadow: "0 2px 8px rgba(255,97,48,0.3)" }}
+            >
+              + Create
+            </Link>
+          )}
+
+          <NotificationBell />
+
           {displayName && (
             <span
               className="text-sm font-headline font-semibold hidden md:block"
@@ -82,6 +109,7 @@ export function ParticipantNav({
               {displayName}
             </span>
           )}
+
           <form action={signOut}>
             <button
               type="submit"
