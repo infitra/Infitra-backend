@@ -551,7 +551,7 @@ function PriceCTA({
           You&apos;re in
         </p>
         <Link
-          href={spaceId ? `/communities/challenge/${spaceId}` : "/me"}
+          href={spaceId ? `/experiences/${challengeId}/space` : "/me"}
           className="inline-flex items-center justify-center px-7 lg:px-8 py-3.5 lg:py-4 rounded-full text-white text-sm lg:text-base font-black font-headline transition-transform hover:scale-[1.01] active:scale-[0.99]"
           style={{
             backgroundColor: "#0891b2",
@@ -635,7 +635,7 @@ function PriceCTA({
       {cta}
       <div className="mt-7 lg:mt-9 flex justify-center">
         <Link
-          href={`/login?intent=buy:challenge:${challengeId}&returnTo=/challenges/${challengeId}`}
+          href={`/login?intent=buy:challenge:${challengeId}&returnTo=/experiences/${challengeId}`}
           className={pillClass}
           style={{
             backgroundColor: "#FF6130",

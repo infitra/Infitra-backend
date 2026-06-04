@@ -267,7 +267,7 @@ export default async function ChallengePage({
               </span>
             </Link>
             <Link
-              href={`/login?returnTo=/challenges/${id}`}
+              href={`/login?returnTo=/experiences/${id}`}
               className="px-5 py-2 rounded-full text-xs font-headline font-bold text-white uppercase tracking-widest"
               style={{ backgroundColor: "#FF6130", boxShadow: "0 2px 8px rgba(255,97,48,0.3)" }}
             >

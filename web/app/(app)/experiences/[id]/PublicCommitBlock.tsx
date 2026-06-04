@@ -191,7 +191,7 @@ function SecondCTA({
   if (hasPurchased) {
     return (
       <Link
-        href={spaceId ? `/communities/challenge/${spaceId}` : "/me"}
+        href={spaceId ? `/experiences/${challengeId}/space` : "/me"}
         className="inline-block px-7 py-4 rounded-full text-white text-base font-black font-headline transition-transform hover:scale-[1.01]"
         style={{
           backgroundColor: "#0891b2",
@@ -217,7 +217,7 @@ function SecondCTA({
 
   return (
     <Link
-      href={`/login?intent=buy:challenge:${challengeId}&returnTo=/challenges/${challengeId}`}
+      href={`/login?intent=buy:challenge:${challengeId}&returnTo=/experiences/${challengeId}`}
       className="inline-block px-7 py-4 rounded-full text-white text-base font-black font-headline transition-transform hover:scale-[1.01]"
       style={{
         backgroundColor: "#FF6130",

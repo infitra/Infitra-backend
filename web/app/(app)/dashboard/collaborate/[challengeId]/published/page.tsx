@@ -1,9 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { PublicChallengeHero } from "@/app/(app)/challenges/[id]/PublicChallengeHero";
-import { PublicCreatorsBlock } from "@/app/(app)/challenges/[id]/PublicCreatorsBlock";
-import { PublicBeyondLiveBlock } from "@/app/(app)/challenges/[id]/PublicBeyondLiveBlock";
+import { PublicChallengeHero } from "@/app/(app)/experiences/[id]/PublicChallengeHero";
+import { PublicCreatorsBlock } from "@/app/(app)/experiences/[id]/PublicCreatorsBlock";
+import { PublicBeyondLiveBlock } from "@/app/(app)/experiences/[id]/PublicBeyondLiveBlock";
 import { PublishedShareBar } from "./PublishedShareBar";
 import { buildWeeks } from "@/lib/challenges/buildWeeks";
 import { loadSessionCohosts } from "@/lib/challenges/sessionCohosts";
@@ -278,7 +278,7 @@ export default async function PublishedCelebrationPage({
             DMs, or wherever your people are.
           </p>
           <Link
-            href={`/challenges/${challengeId}`}
+            href={`/experiences/${challengeId}`}
             className="inline-block px-6 py-3.5 rounded-full text-white text-sm font-black font-headline transition-transform hover:scale-[1.01]"
             style={{
               backgroundColor: "#FF6130",

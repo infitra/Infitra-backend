@@ -221,7 +221,7 @@ interface Insight {
  * program is published.
  */
 function cardHomeHref(program: Program): string {
-  if (program.spaceId) return `/communities/challenge/${program.spaceId}`;
+  if (program.spaceId) return `/experiences/${program.id}/space`;
   // Drafting / awaiting-signatures don't have a space yet — workspace is home.
   return `/dashboard/collaborate/${program.id}`;
 }
@@ -230,7 +230,7 @@ function programInsight(program: Program, partner: Partner | null): Insight {
   const partnerName = firstName(partner?.name);
   const enrolled = program.enrolledCount ?? 0;
   const workspaceHref = `/dashboard/collaborate/${program.id}`;
-  const publicHref = `/challenges/${program.id}`;
+  const publicHref = `/experiences/${program.id}`;
   // Polish v12.U: the separate /contract route was deleted — the
   // workspace IS the contract review surface now. CTAs that used to
   // deep-link to /contract now route to the workspace.

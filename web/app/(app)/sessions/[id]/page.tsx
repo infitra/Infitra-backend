@@ -153,7 +153,7 @@ export default async function SessionPage({
               {/* Challenge banner */}
               {isPartOfChallenge && (
                 <Link
-                  href={`/challenges/${parentChallenge.id}`}
+                  href={`/experiences/${parentChallenge.id}`}
                   className="mb-6 flex items-center gap-3 p-4 rounded-xl transition-colors group/ch"
                   style={{
                     backgroundColor: "rgba(255, 97, 48, 0.08)",
@@ -417,7 +417,7 @@ export default async function SessionPage({
                 )
               ) : isPartOfChallenge ? (
                 <Link
-                  href={`/challenges/${parentChallenge.id}`}
+                  href={`/experiences/${parentChallenge.id}`}
                   className="w-full py-4 rounded-full text-white text-sm font-black font-headline hover:scale-[1.02] transition-transform text-center block"
                   style={{
                     backgroundColor: "#FF6130",

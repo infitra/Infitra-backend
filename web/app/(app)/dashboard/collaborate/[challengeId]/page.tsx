@@ -62,7 +62,7 @@ export default async function CollaborateWorkspacePage({
   // The workspace is the drafting room only. Once published it has no edit
   // affordance — land in the challenge space if one exists, else dashboard.
   if (ws.status === "published") {
-    if (ws.space_id) redirect(`/communities/challenge/${ws.space_id}`);
+    if (ws.space_id) redirect(`/experiences/${challengeId}/space`);
     redirect("/dashboard");
   }
 

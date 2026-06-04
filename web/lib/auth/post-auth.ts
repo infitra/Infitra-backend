@@ -63,11 +63,10 @@ function sanitizeReturnTo(returnTo: string | null | undefined): string | null {
   if (returnTo.startsWith("//")) return null;
   if (returnTo.startsWith("/login") || returnTo.startsWith("/auth")) return null;
   const allowedPrefixes = [
-    "/challenges/",
+    "/experiences/",
     "/dashboard",
     "/discover",
     "/sessions",
-    "/communities/",
     "/creators/",
     "/profile",
     "/me",

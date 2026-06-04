@@ -474,7 +474,7 @@ export async function updateTribeCover(spaceId: string, coverImageUrl: string | 
     .eq("owner_id", user.id);
 
   if (error) return { error: error.message };
-  revalidatePath(`/communities/challenge/${spaceId}`);
+  revalidatePath(`/me`);
   return { success: true };
 }
 

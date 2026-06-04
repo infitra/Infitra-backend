@@ -6,7 +6,7 @@
  * Keeps the Experience-Space store live. The locker room is mostly read-heavy;
  * the genuinely live structural events are:
  *   - app_session UPDATE  → a session going live / changing → applySessionUpdate
- *   - app_challenge_space_member INSERT/DELETE → tribe grew/shrank → reconcile
+ *   - app_challenge_member INSERT/DELETE → tribe grew/shrank → reconcile
  * On channel recovery or tab-return we reconcile (one load_experience_space →
  * authoritative overwrite). The Tribe feed has its own realtime (TribeFeed).
  *
@@ -76,8 +76,8 @@ export function useExperienceSpaceRealtime({
         {
           event: "INSERT",
           schema: "public",
-          table: "app_challenge_space_member",
-          filter: `space_id=eq.${spaceId}`,
+          table: "app_challenge_member",
+          filter: `challenge_id=eq.${challengeId}`,
         },
         () => reconcileNow(),
       )
@@ -86,8 +86,8 @@ export function useExperienceSpaceRealtime({
         {
           event: "DELETE",
           schema: "public",
-          table: "app_challenge_space_member",
-          filter: `space_id=eq.${spaceId}`,
+          table: "app_challenge_member",
+          filter: `challenge_id=eq.${challengeId}`,
         },
         () => reconcileNow(),
       )

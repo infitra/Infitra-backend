@@ -122,7 +122,7 @@ export function StickyJoinCTA({
         <div className="flex-1">
           {hasPurchased ? (
             <Link
-              href={spaceId ? `/communities/challenge/${spaceId}` : "/me"}
+              href={spaceId ? `/experiences/${challengeId}/space` : "/me"}
               className="block w-full text-center py-3 rounded-full text-white text-sm font-black font-headline"
               style={{
                 backgroundColor: "#0891b2",
@@ -142,7 +142,7 @@ export function StickyJoinCTA({
             // intent=buy:* sends the user straight to Stripe after auth;
             // returnTo is the fallback if checkout can't be created.
             <Link
-              href={`/login?intent=buy:challenge:${challengeId}&returnTo=/challenges/${challengeId}`}
+              href={`/login?intent=buy:challenge:${challengeId}&returnTo=/experiences/${challengeId}`}
               className="block w-full text-center py-3 rounded-full text-white text-sm font-black font-headline transition-transform hover:scale-[1.01]"
               style={{
                 backgroundColor: "#FF6130",

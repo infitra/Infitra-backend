@@ -54,8 +54,8 @@ const stageConfig: Record<
 function destinationFor(p: ProgramSummary): string {
   if (p.stage === "completed") {
     return p.spaceId
-      ? `/communities/challenge/${p.spaceId}`
-      : `/challenges/${p.id}`;
+      ? `/experiences/${p.id}/space`
+      : `/experiences/${p.id}`;
   }
   return `/dashboard/collaborate/${p.id}`;
 }

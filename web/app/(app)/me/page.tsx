@@ -223,7 +223,7 @@ function ProgramCard({
 
         <div className="mt-auto flex items-center gap-3">
           <Link
-            href={spaceId ? `/communities/challenge/${spaceId}` : `/challenges/${challenge.id}`}
+            href={spaceId ? `/experiences/${challenge.id}/space` : `/experiences/${challenge.id}`}
             className="flex-1 text-center py-2.5 rounded-full text-white text-xs font-bold font-headline"
             style={{
               backgroundColor: "#0891b2",
@@ -233,7 +233,7 @@ function ProgramCard({
             {spaceId ? "Open space →" : "Open page →"}
           </Link>
           <Link
-            href={`/challenges/${challenge.id}`}
+            href={`/experiences/${challenge.id}`}
             className="text-xs font-bold font-headline px-3 py-2.5"
             style={{ color: "#64748b" }}
           >

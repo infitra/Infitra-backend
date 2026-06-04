@@ -40,8 +40,8 @@ export function PublishedShareBar({ challengeId, title: _title }: Props) {
 
   const publicUrl =
     typeof window !== "undefined"
-      ? `${window.location.origin}/challenges/${challengeId}`
-      : `/challenges/${challengeId}`;
+      ? `${window.location.origin}/experiences/${challengeId}`
+      : `/experiences/${challengeId}`;
 
   async function handleCopy() {
     try {
@@ -122,7 +122,7 @@ export function PublishedShareBar({ challengeId, title: _title }: Props) {
 
           {/* "View public page" CTA */}
           <Link
-            href={`/challenges/${challengeId}`}
+            href={`/experiences/${challengeId}`}
             target="_blank"
             rel="noopener noreferrer"
             className="shrink-0 px-3 lg:px-4 py-2.5 rounded-full text-[11px] lg:text-xs font-black font-headline transition-colors"
