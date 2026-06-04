@@ -29,14 +29,12 @@ export function FirstMovesCard({
   introPrompt,
   initialDisplayName,
   initialAvatarUrl,
-  initialVisibility,
 }: {
   challengeId: string;
   entitled: boolean;
   introPrompt: string;
   initialDisplayName: string;
   initialAvatarUrl: string | null;
-  initialVisibility: "public" | "private";
 }) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -44,7 +42,6 @@ export function FirstMovesCard({
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(initialAvatarUrl);
   const [displayName, setDisplayName] = useState(initialDisplayName);
-  const [visibility, setVisibility] = useState<"public" | "private">(initialVisibility);
   const [introText, setIntroText] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,7 +61,6 @@ export function FirstMovesCard({
 
     const fd = new FormData();
     if (displayName.trim()) fd.append("display_name", displayName.trim());
-    fd.append("visibility", visibility);
     if (avatarFile) fd.append("avatar", avatarFile);
     const res = await saveFirstMoves(fd);
     if (res && "error" in res && res.error) {
@@ -139,46 +135,19 @@ export function FirstMovesCard({
         </div>
       </div>
 
-      {/* Display name */}
+      {/* Username — the friendly displayed name (backed by display_name) */}
       <label className="block text-xs font-bold font-headline mb-1.5" style={{ color: INK }}>
-        Your name
+        Username
       </label>
       <input
         value={displayName}
         onChange={(e) => setDisplayName(e.target.value)}
         maxLength={50}
-        className="w-full px-4 py-2.5 rounded-xl text-sm mb-6 outline-none"
+        className="w-full px-4 py-2.5 rounded-xl text-sm mb-1.5 outline-none"
         style={{ border: "1px solid rgba(15,34,41,0.14)", color: INK, backgroundColor: "white" }}
       />
-
-      {/* Privacy */}
-      <label className="block text-xs font-bold font-headline mb-1.5" style={{ color: INK }}>
-        Profile
-      </label>
-      <div
-        className="flex p-1 rounded-xl mb-1.5"
-        style={{ backgroundColor: "rgba(15,34,41,0.05)" }}
-      >
-        {(["public", "private"] as const).map((v) => (
-          <button
-            key={v}
-            type="button"
-            onClick={() => setVisibility(v)}
-            className="flex-1 py-2 rounded-lg text-xs font-bold font-headline capitalize transition-colors"
-            style={
-              visibility === v
-                ? { backgroundColor: "white", color: INK, boxShadow: "0 1px 4px rgba(15,34,41,0.10)" }
-                : { color: MUTED }
-            }
-          >
-            {v}
-          </button>
-        ))}
-      </div>
       <p className="text-[11px] mb-6" style={{ color: MUTED }}>
-        {visibility === "public"
-          ? "Anyone on INFITRA can find and view your profile."
-          : "Only you — and the tribes you join — can see your profile."}
+        How your tribe sees you.
       </p>
 
       {/* Intro */}

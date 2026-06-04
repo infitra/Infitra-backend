@@ -45,7 +45,7 @@ export default async function CheckoutSuccessPage({
 
   const { data: profile } = await supabase
     .from("app_profile")
-    .select("display_name, role, avatar_url, visibility")
+    .select("display_name, role, avatar_url")
     .eq("id", user.id)
     .single();
 
@@ -87,8 +87,6 @@ export default async function CheckoutSuccessPage({
     const p = (ch?.intro_prompt as string | null)?.trim();
     if (p) introPrompt = p;
   }
-
-  const visibility = profile?.visibility === "private" ? "private" : "public";
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -139,7 +137,6 @@ export default async function CheckoutSuccessPage({
               introPrompt={introPrompt}
               initialDisplayName={profile?.display_name ?? ""}
               initialAvatarUrl={(profile?.avatar_url as string | null) ?? null}
-              initialVisibility={visibility}
             />
           ) : (
             <Link
