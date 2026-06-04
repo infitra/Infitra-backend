@@ -170,3 +170,65 @@ export async function completeOnboarding(prevState: unknown, formData: FormData)
 
   redirect(isCreator ? "/dashboard" : "/");
 }
+
+/**
+ * Participant-safe profile save used by the post-purchase "first moves" card.
+ * Unlike updateProfile (creator-shaped: requires fields, hard-redirects to
+ * /dashboard), this writes only what the buyer chose to fill — photo,
+ * display name, and profile visibility — and returns a result so the client
+ * controls navigation. Every field is optional ("Later" leaves it untouched).
+ *
+ * visibility is public|private; the DB CHECK forces creators to stay public,
+ * so the toggle is effectively participant-only (creators never see this card).
+ */
+export async function saveFirstMoves(formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated." };
+
+  const updates: Record<string, any> = {};
+
+  const displayName = (formData.get("display_name") as string)?.trim();
+  if (displayName) {
+    if (displayName.length < 2 || displayName.length > 50) {
+      return { error: "Display name must be 2–50 characters." };
+    }
+    updates.display_name = displayName;
+  }
+
+  const visibility = (formData.get("visibility") as string)?.trim();
+  if (visibility === "public" || visibility === "private") {
+    updates.visibility = visibility;
+  }
+
+  const avatarFile = formData.get("avatar") as File | null;
+  if (avatarFile && avatarFile.size > 0) {
+    if (avatarFile.size > 5 * 1024 * 1024) {
+      return { error: "Photo must be under 5MB." };
+    }
+    const ext = avatarFile.name.split(".").pop()?.toLowerCase() || "jpg";
+    const path = `${user.id}/avatar.${ext}`;
+    const bytes = new Uint8Array(await avatarFile.arrayBuffer());
+    const { error: upErr } = await supabase.storage
+      .from("profile-images")
+      .upload(path, bytes, { upsert: true, contentType: avatarFile.type });
+    if (upErr) return { error: `Photo upload failed: ${upErr.message}` };
+    const { data: urlData } = supabase.storage
+      .from("profile-images")
+      .getPublicUrl(path);
+    updates.avatar_url = urlData.publicUrl;
+  }
+
+  // Nothing filled — treat as a no-op success (they hit "Later" on everything).
+  if (Object.keys(updates).length === 0) return { success: true };
+
+  updates.updated_at = new Date().toISOString();
+  const { error } = await supabase
+    .from("app_profile")
+    .update(updates)
+    .eq("id", user.id);
+  if (error) return { error: error.message };
+  return { success: true };
+}
