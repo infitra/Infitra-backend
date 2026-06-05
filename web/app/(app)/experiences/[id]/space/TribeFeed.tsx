@@ -19,6 +19,7 @@ import { createClient } from "@/lib/supabase/client";
 import { createChallengePost, createChallengeComment, toggleChallengeLike } from "@/app/actions/community";
 import { useExperienceSpaceStore } from "@/lib/experienceSpace/StoreProvider";
 import type { ExperienceViewer, SpaceCreator, SpaceSession } from "@/lib/experienceSpace/store";
+import { sessionTeamLabel } from "@/lib/experienceSpace/store";
 import { SessionDetailModal } from "@/app/components/SessionDetailModal";
 import { Avatar } from "./Avatar";
 
@@ -434,7 +435,7 @@ export function TribeFeed({
           )}
 
           <div className="flex gap-3 mt-4">
-            <Avatar src={viewer.avatar} name={viewer.name} size={46} ring={CYAN} />
+            <Avatar src={viewer.avatar} name={viewer.name} size={46} ring={isCreator ? ORANGE : CYAN} />
             <div className="flex-1 min-w-0">
               <textarea ref={textareaRef} value={body} onChange={(e) => setBody(e.target.value)} placeholder={placeholder} rows={3} maxLength={5000} disabled={textLocked}
                 className="w-full rounded-xl p-3 text-sm resize-none focus:outline-none transition-colors disabled:cursor-not-allowed"
@@ -674,6 +675,7 @@ function PostCard({
 }
 
 function CommentComposer({ viewer, onSubmit }: { viewer: ExperienceViewer; onSubmit: (text: string) => Promise<string | null> }) {
+  const viewerIsCreator = useExperienceSpaceStore((s) => s.isCreator);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -686,7 +688,7 @@ function CommentComposer({ viewer, onSubmit }: { viewer: ExperienceViewer; onSub
   }
   return (
     <div className="flex gap-2.5 items-start">
-      <Avatar src={viewer.avatar} name={viewer.name} size={34} ring={CYAN} />
+      <Avatar src={viewer.avatar} name={viewer.name} size={34} ring={viewerIsCreator ? ORANGE : CYAN} />
       <div className="flex-1 min-w-0">
         <div className="flex gap-2 items-end">
           <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder="Add a comment…" rows={1} maxLength={2000}
@@ -753,7 +755,7 @@ function SessionContextCard({ session }: { session: SpaceSession }) {
         <div className="flex-1 min-w-0 py-2.5 px-3.5 flex flex-col justify-center">
           <p className="text-[10px] uppercase tracking-[0.16em] font-headline" style={{ color: CYAN, fontWeight: 800 }}>Session</p>
           <h4 className="font-black font-headline tracking-tight mt-0.5 truncate" style={{ color: INK, fontSize: "clamp(0.95rem, 3vw, 1.05rem)" }}>{session.title}</h4>
-          <p className="text-[11px] mt-0.5 truncate" style={{ color: "#94a3b8" }} suppressHydrationWarning>{day} · {time} · {dur} · {session.hostName}</p>
+          <p className="text-[11px] mt-0.5 truncate" style={{ color: "#94a3b8" }} suppressHydrationWarning>{day} · {time} · {dur} · {sessionTeamLabel(session)}</p>
         </div>
         <div className="shrink-0 self-center pr-3 pl-1">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="transition-transform group-hover:translate-x-0.5">

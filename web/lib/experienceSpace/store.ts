@@ -66,6 +66,14 @@ export interface SpaceSession {
   cohosts: { id: string; name: string; avatar: string | null }[];
 }
 
+/** "Host & Co-host" label for a session — host first, then co-hosts. */
+export function sessionTeamLabel(s: Pick<SpaceSession, "hostName" | "cohosts">): string {
+  const names = [s.hostName, ...s.cohosts.map((c) => c.name)];
+  if (names.length === 1) return names[0];
+  if (names.length === 2) return `${names[0]} & ${names[1]}`;
+  return `${names.slice(0, -1).join(", ")} & ${names[names.length - 1]}`;
+}
+
 export interface TribeMember {
   id: string;
   name: string;

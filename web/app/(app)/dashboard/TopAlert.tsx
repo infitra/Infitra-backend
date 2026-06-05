@@ -97,7 +97,7 @@ export function TopAlert({ liveSession, goLiveSoonSession }: Props) {
     const m = minutesUntil(goLiveSoonSession.startTime);
     return (
       <Banner
-        href={`/dashboard/sessions/${goLiveSoonSession.id}`}
+        href={`/dashboard/sessions/${goLiveSoonSession.id}/live`}
         pulseColor="#FF6130"
         label={`Ready to go live${m > 0 ? ` · in ${m}m` : ""}`}
         title={goLiveSoonSession.title}

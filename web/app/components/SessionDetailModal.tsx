@@ -57,17 +57,17 @@ export function SessionDetailModal({ open, session, onClose, onEdit, onDelete }:
       role="dialog"
     >
       <div
-        className="max-w-lg w-full rounded-2xl overflow-hidden infitra-card"
+        className="max-w-lg w-full max-h-[85vh] overflow-y-auto rounded-2xl infitra-card"
         style={{ backgroundColor: "#FFFFFF" }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Cover */}
         {session.imageUrl ? (
-          <div className="aspect-[5/3] w-full overflow-hidden">
+          <div className="aspect-[16/9] w-full overflow-hidden">
             <img src={session.imageUrl} alt="" className="w-full h-full object-cover" />
           </div>
         ) : (
-          <div className="aspect-[5/3] w-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, #0F2229, #1a3340, #2a1508)" }}>
+          <div className="aspect-[16/9] w-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, #0F2229, #1a3340, #2a1508)" }}>
             <img src="/logo-mark.png" alt="" width={48} height={48} style={{ opacity: 0.15 }} />
           </div>
         )}

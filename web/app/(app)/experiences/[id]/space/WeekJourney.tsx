@@ -28,6 +28,7 @@ import {
   type WeekJourneyModel,
 } from "@/lib/experienceSpace/weekJourney";
 import type { SpaceSession } from "@/lib/experienceSpace/store";
+import { sessionTeamLabel } from "@/lib/experienceSpace/store";
 import { SessionDetailModal } from "@/app/components/SessionDetailModal";
 
 const ORANGE = "#FF6130";
@@ -394,7 +395,7 @@ function HeroSessionCard({
           {session.title}
         </h3>
         <p className="text-xs mt-1.5" style={{ color: "#64748b" }} suppressHydrationWarning>
-          {fmtDay(session.startTime)} · {fmtTime(session.startTime)} · {fmtDur(session.durationMinutes)} · {session.hostName}
+          {fmtDay(session.startTime)} · {fmtTime(session.startTime)} · {fmtDur(session.durationMinutes)} · {sessionTeamLabel(session)}
         </p>
 
         <div className="flex items-center justify-between gap-3 mt-auto pt-3.5">
@@ -474,7 +475,7 @@ function AgendaSessionRow({ session, done, onOpen }: { session: SpaceSession; do
         >
           {session.title}
         </h4>
-        <p className="text-[11px] mt-0.5 truncate" style={{ color: "#94a3b8" }}>{session.hostName}</p>
+        <p className="text-[11px] mt-0.5 truncate" style={{ color: "#94a3b8" }}>{sessionTeamLabel(session)}</p>
       </div>
 
       <div className="shrink-0 self-center pr-4 pl-2">

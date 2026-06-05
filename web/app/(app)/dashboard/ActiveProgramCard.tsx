@@ -250,7 +250,7 @@ function programInsight(program: Program, partner: Partner | null): Insight {
       return {
         tone: "urgent",
         message: `Going live in ${minsToNext} min`,
-        primary: { label: "Go live", kind: "navigate", href: `/dashboard/sessions/${program.nextSession!.id}` },
+        primary: { label: "Go live", kind: "navigate", href: `/dashboard/sessions/${program.nextSession!.id}/live` },
       };
     }
 
