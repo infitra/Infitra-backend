@@ -108,7 +108,7 @@ export function ExperienceHeader() {
               <div className="flex items-center gap-2 mt-3">
                 <div className="flex -space-x-2">
                   {creators.map((c) => (
-                    <Avatar key={c.id} src={c.avatar} name={c.name} size={36} ring={c.role === "owner" ? ORANGE : "#9CF0FF"} />
+                    <Avatar key={c.id} src={c.avatar} name={c.name} size={36} ring={ORANGE} />
                   ))}
                 </div>
                 <span className="text-sm font-bold font-headline" style={{ color: "#475569" }}>
@@ -169,7 +169,7 @@ export function ExperienceHeader() {
         >
           {creators.map((c) => (
             <div key={c.id} className="flex gap-3.5 lg:gap-4">
-              <Avatar src={c.avatar} name={c.name} size={52} ring={c.role === "owner" ? ORANGE : "#9CF0FF"} />
+              <Avatar src={c.avatar} name={c.name} size={52} ring={ORANGE} />
               <div className="min-w-0 lg:max-w-3xl">
                 <p className="text-sm font-black font-headline" style={{ color: INK }}>
                   {c.name}

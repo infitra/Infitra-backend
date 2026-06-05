@@ -63,6 +63,7 @@ export interface SpaceSession {
   hostId: string;
   hostName: string;
   hostAvatar: string | null;
+  cohosts: { id: string; name: string; avatar: string | null }[];
 }
 
 export interface TribeMember {

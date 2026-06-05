@@ -338,11 +338,17 @@ export function TribeFeed({
             /* Creators compose a Share; "Add context" attaches a session and/or
                tags a co-host — the expert-side replacement for "Ask an Expert". */
             <div>
+              {/* Share / Add context behave as a 2-way toggle: Share collapses
+                  the picker, Add context opens it. Only one reads as active. */}
               <div className="flex flex-wrap items-center gap-2">
-                <span className="px-4 py-1.5 rounded-full text-[12px] font-black font-headline uppercase tracking-wider text-white" style={{ backgroundColor: CYAN, boxShadow: `0 2px 8px ${CYAN}55` }}>Share</span>
-                <button type="button" onClick={() => setShowContext((v) => !v)}
+                <button type="button" onClick={() => setShowContext(false)}
+                  className="px-4 py-1.5 rounded-full text-[12px] font-black font-headline uppercase tracking-wider transition-colors"
+                  style={!showContext ? { color: "#fff", backgroundColor: CYAN, boxShadow: `0 2px 8px ${CYAN}55` } : { color: "#475569", backgroundColor: "rgba(15,34,41,0.05)" }}>
+                  Share
+                </button>
+                <button type="button" onClick={() => setShowContext(true)}
                   className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[12px] font-black font-headline transition-colors"
-                  style={{ color: showContext ? CYAN : "#475569", backgroundColor: showContext ? "rgba(8,145,178,0.12)" : "rgba(15,34,41,0.05)", boxShadow: showContext ? `inset 0 0 0 1.5px ${CYAN}` : "none" }}>
+                  style={showContext ? { color: "#fff", backgroundColor: CYAN, boxShadow: `0 2px 8px ${CYAN}55` } : { color: "#475569", backgroundColor: "rgba(15,34,41,0.05)" }}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
                   {contextSessionId ? "Session added" : "Add context"}
                 </button>
@@ -358,13 +364,13 @@ export function TribeFeed({
                 <div className="mt-3 rounded-xl p-3.5" style={{ backgroundColor: "#FCFAF6", boxShadow: "inset 0 0 0 1px rgba(15,34,41,0.06)" }}>
                   <p className="text-[10px] uppercase tracking-[0.16em] font-headline mb-2" style={{ color: "#94a3b8", fontWeight: 800 }}>Reference a session</p>
                   {sessions.length > 0 ? (
-                    <div className="flex gap-2.5 overflow-x-auto pb-1 px-0.5 -mx-0.5">
+                    <div className="flex gap-3 overflow-x-auto px-1 py-1.5 -mx-1">
                       {sessions.map((s) => {
                         const active = contextSessionId === s.id;
                         return (
                           <button key={s.id} type="button" onClick={() => setContextSessionId(active ? null : s.id)}
                             className="shrink-0 w-40 rounded-xl overflow-hidden text-left transition-shadow"
-                            style={{ backgroundColor: "#FFFFFF", boxShadow: active ? `0 0 0 2px ${CYAN}, 0 4px 14px rgba(8,145,178,0.18)` : "0 0 0 1px rgba(15,34,41,0.08)" }}>
+                            style={{ backgroundColor: "#FFFFFF", boxShadow: active ? `0 0 0 2px ${CYAN}` : "0 0 0 1px rgba(15,34,41,0.08)" }}>
                             <div className="relative w-full aspect-[5/3]" style={{ backgroundColor: "#ECE7DD" }}>
                               {s.imageUrl ? (
                                 <Image src={s.imageUrl} alt="" fill sizes="160px" loading="lazy" decoding="async" className="object-cover" />
@@ -483,7 +489,6 @@ export function TribeFeed({
                 reflectsOn={p.kind === "reflection" && p.contextId ? sessionById.get(p.contextId)?.title ?? null : null}
                 contextSession={p.kind === "talk" && p.contextId ? sessionById.get(p.contextId) ?? null : null}
                 introPrompt={p.kind === "intro" ? introPrompt : null}
-                isOwn={p.author_id === viewer.id}
                 onLike={() => toggleLike(p)}
                 threadOpen={openPosts.has(p.id)}
                 comments={threads[p.id]}
@@ -499,7 +504,7 @@ export function TribeFeed({
 }
 
 function PostCard({
-  post, viewer, creatorById, peopleById, directedCreator, reflectsOn, contextSession, introPrompt, isOwn,
+  post, viewer, creatorById, peopleById, directedCreator, reflectsOn, contextSession, introPrompt,
   onLike, threadOpen, comments, onToggleThread, onSubmitComment,
 }: {
   post: FeedPost;
@@ -510,7 +515,6 @@ function PostCard({
   reflectsOn?: string | null;
   contextSession?: SpaceSession | null;
   introPrompt?: string | null;
-  isOwn: boolean;
   onLike: () => void;
   threadOpen: boolean;
   comments?: CommentItem[];
@@ -518,8 +522,9 @@ function PostCard({
   onSubmitComment: (text: string) => Promise<string | null>;
 }) {
   const isCreator = creatorById.has(post.author_id);
-  const creator = creatorById.get(post.author_id);
-  const ring = isCreator ? (creator!.role === "owner" ? ORANGE : CYAN) : isOwn ? CYAN : undefined;
+  // Ring signals role type, not seniority: every host/co-host is orange, every
+  // participant is cyan.
+  const ring = isCreator ? ORANGE : CYAN;
   const answerCreator = post.coachAnswer ? creatorById.get(post.coachAnswer.authorId) : undefined;
   // The coach answer is shown inline above — don't repeat it in the thread.
   const visibleComments = comments?.filter((c) => !c.isCoachAnswer);
@@ -552,8 +557,8 @@ function PostCard({
           </div>
 
           {post.kind === "question" && directedCreator && (
-            <ContextBanner color={ORANGE} label="Question for">
-              <span className="text-[14px] font-black font-headline" style={{ color: ORANGE }}>{directedCreator.name}</span>
+            <ContextBanner color={CYAN} label="Question for">
+              <span className="text-[14px] font-black font-headline" style={{ color: CYAN }}>{directedCreator.name}</span>
             </ContextBanner>
           )}
           {post.kind === "reflection" && reflectsOn && (
@@ -578,10 +583,10 @@ function PostCard({
 
           {/* Coach answer — prominent, under the question */}
           {post.coachAnswer && (
-            <div className="rounded-lg mt-3 p-3" style={{ backgroundColor: "rgba(8,145,178,0.08)", boxShadow: "inset 3.5px 0 0 #0891b2" }}>
+            <div className="rounded-lg mt-3 p-3" style={{ backgroundColor: "rgba(255,97,48,0.08)", boxShadow: `inset 3.5px 0 0 ${ORANGE}` }}>
               <div className="flex items-center gap-2">
-                <Avatar src={answerCreator?.avatar ?? null} name={answerCreator?.name ?? "Expert"} size={30} ring={answerCreator?.role === "owner" ? ORANGE : CYAN} />
-                <span className="text-[11px] uppercase tracking-[0.12em] font-headline" style={{ color: CYAN, fontWeight: 800 }}>Answered by {answerCreator?.name ?? "your Expert"}</span>
+                <Avatar src={answerCreator?.avatar ?? null} name={answerCreator?.name ?? "Expert"} size={30} ring={ORANGE} />
+                <span className="text-[11px] uppercase tracking-[0.12em] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>Answered by {answerCreator?.name ?? "your Expert"}</span>
               </div>
               <p className="text-sm leading-relaxed whitespace-pre-wrap mt-1.5" style={{ color: "#334155" }}>{post.coachAnswer.body}</p>
             </div>
@@ -642,7 +647,7 @@ function PostCard({
               ) : (
                 visibleComments.map((c) => {
                   const cCreator = creatorById.get(c.author_id);
-                  const cRing = cCreator ? (cCreator.role === "owner" ? ORANGE : CYAN) : undefined;
+                  const cRing = cCreator ? ORANGE : CYAN;
                   return (
                     <div key={c.id} className="flex gap-2.5">
                       <Avatar src={c.authorAvatar} name={c.authorName} size={34} ring={cRing} />
@@ -735,7 +740,7 @@ function SessionContextCard({ session }: { session: SpaceSession }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="group w-full text-left flex items-stretch rounded-xl overflow-hidden mt-3"
+        className="group w-full max-w-md text-left flex items-stretch rounded-xl overflow-hidden mt-3"
         style={{ backgroundColor: "#FAF7F1", boxShadow: `inset 3.5px 0 0 ${CYAN}, 0 0 0 1px rgba(15,34,41,0.05)` }}
       >
         <div className="relative shrink-0 w-20 sm:w-24" style={{ backgroundColor: "#ECE7DD" }}>
@@ -763,7 +768,7 @@ function SessionContextCard({ session }: { session: SpaceSession }) {
           id: session.id, title: session.title, startTime: session.startTime,
           durationMinutes: session.durationMinutes, hostId: session.hostId,
           hostName: session.hostName, hostAvatar: session.hostAvatar,
-          imageUrl: session.imageUrl, description: session.description, cohosts: [],
+          imageUrl: session.imageUrl, description: session.description, cohosts: session.cohosts,
         }}
       />
     </>

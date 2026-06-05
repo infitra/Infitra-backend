@@ -115,12 +115,12 @@ export function SessionDetailModal({ open, session, onClose, onEdit, onDelete }:
                 {c.avatar ? (
                   <img src={c.avatar} alt={c.name} className="w-8 h-8 rounded-full object-cover" />
                 ) : (
-                  <div className="w-8 h-8 rounded-full bg-cyan-100 flex items-center justify-center">
-                    <span className="text-xs font-black text-cyan-700">{c.name[0]}</span>
+                  <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center">
+                    <span className="text-xs font-black text-orange-700">{c.name[0]}</span>
                   </div>
                 )}
                 <span className="text-sm font-bold text-[#0F2229]">{c.name}</span>
-                <span className="text-[10px] font-bold font-headline text-[#0891b2] uppercase tracking-wider">Cohost</span>
+                <span className="text-[10px] font-bold font-headline text-[#FF6130] uppercase tracking-wider">Cohost</span>
               </div>
             ))}
           </div>

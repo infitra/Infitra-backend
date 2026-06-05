@@ -28,6 +28,7 @@ import {
   type WeekJourneyModel,
 } from "@/lib/experienceSpace/weekJourney";
 import type { SpaceSession } from "@/lib/experienceSpace/store";
+import { SessionDetailModal } from "@/app/components/SessionDetailModal";
 
 const ORANGE = "#FF6130";
 const CYAN = "#0891b2";
@@ -61,6 +62,10 @@ export function WeekJourney() {
   const experience = useExperienceSpaceStore((s) => s.experience);
   const programState = useExperienceSpaceStore((s) => s.programState);
   const sessions = useExperienceSpaceStore((s) => s.sessions);
+
+  // Tapping any session card opens the read-only detail popup (same modal the
+  // buyer carousel + Tribe posts use) — no navigation out to a session page.
+  const [detail, setDetail] = useState<SpaceSession | null>(null);
 
   // A slow tick keeps countdowns + live/next states fresh without a re-render storm.
   const [now, setNow] = useState(() => Date.now());
@@ -184,10 +189,22 @@ export function WeekJourney() {
               session={s}
               state={sessionStateFor(s, model, now)}
               now={now}
+              onOpen={() => setDetail(s)}
             />
           ))
         )}
       </div>
+
+      <SessionDetailModal
+        open={!!detail}
+        onClose={() => setDetail(null)}
+        session={detail ? {
+          id: detail.id, title: detail.title, startTime: detail.startTime,
+          durationMinutes: detail.durationMinutes, hostId: detail.hostId,
+          hostName: detail.hostName, hostAvatar: detail.hostAvatar,
+          imageUrl: detail.imageUrl, description: detail.description, cohosts: detail.cohosts,
+        } : null}
+      />
     </section>
   );
 }
@@ -313,30 +330,37 @@ function WeekSessionCard({
   session,
   state,
   now,
+  onOpen,
 }: {
   session: SpaceSession;
   state: SessionState;
   now: number;
+  onOpen: () => void;
 }) {
   if (state === "next" || state === "live") {
-    return <HeroSessionCard session={session} live={state === "live"} now={now} />;
+    return <HeroSessionCard session={session} live={state === "live"} now={now} onOpen={onOpen} />;
   }
-  return <AgendaSessionRow session={session} done={state === "done"} />;
+  return <AgendaSessionRow session={session} done={state === "done"} onOpen={onOpen} />;
 }
 
 function HeroSessionCard({
   session,
   live,
   now,
+  onOpen,
 }: {
   session: SpaceSession;
   live: boolean;
   now: number;
+  onOpen: () => void;
 }) {
   const accent = live ? RED : ORANGE;
   return (
     <div
-      className="rounded-2xl overflow-hidden flex items-stretch"
+      onClick={onOpen}
+      role="button"
+      tabIndex={0}
+      className="rounded-2xl overflow-hidden flex items-stretch cursor-pointer transition-transform hover:-translate-y-0.5"
       style={{
         backgroundColor: "#FFFFFF",
         boxShadow: `0 0 0 1.5px ${accent}, 0 10px 30px ${live ? "rgba(239,68,68,0.18)" : "rgba(255,97,48,0.16)"}`,
@@ -377,6 +401,7 @@ function HeroSessionCard({
           {live ? (
             <a
               href={`/sessions/${session.id}/live`}
+              onClick={(e) => e.stopPropagation()}
               className="px-6 py-2.5 rounded-full text-white text-sm font-black font-headline transition-transform hover:scale-[1.02]"
               style={{ backgroundColor: RED, boxShadow: "0 4px 14px rgba(239,68,68,0.35)" }}
             >
@@ -402,10 +427,13 @@ function HeroSessionCard({
   );
 }
 
-function AgendaSessionRow({ session, done }: { session: SpaceSession; done: boolean }) {
+function AgendaSessionRow({ session, done, onOpen }: { session: SpaceSession; done: boolean; onOpen: () => void }) {
   return (
     <div
-      className="rounded-2xl overflow-hidden flex items-stretch transition-opacity"
+      onClick={onOpen}
+      role="button"
+      tabIndex={0}
+      className="rounded-2xl overflow-hidden flex items-stretch transition-transform hover:-translate-y-0.5 cursor-pointer"
       style={{
         backgroundColor: "#FAF7F1",
         boxShadow: "0 0 0 1px rgba(15,34,41,0.05)",
