@@ -98,6 +98,12 @@ export interface ExperienceProgress {
 /** Hub → feed intent: which composer mode to open when jumping to the feed. */
 export type ComposeIntent = "share" | "question" | null;
 
+/** Creator console at-a-glance numbers (load_experience_creator_stats). */
+export interface CreatorStats {
+  pending: number;
+  reflections: number;
+}
+
 /** Action Bar item. Bundle 5 ships only `intro`; 6-9 add pre_pulse/reflection/question. */
 export interface ActionItem {
   kind: string;
@@ -127,7 +133,15 @@ export interface ExperienceSpaceState {
   memberCount: number;
   actionItems: ActionItem[];
   progress: ExperienceProgress | null;
-  ui: { channelStatus: SpaceChannelStatus; composeIntent: ComposeIntent };
+  ui: {
+    channelStatus: SpaceChannelStatus;
+    composeIntent: ComposeIntent;
+    /** Creator-only at-a-glance numbers, server-seeded + refreshed live. */
+    creatorStats: CreatorStats | null;
+    /** Bumped by the feed's existing realtime channel on a question/comment —
+     *  a cheap signal to re-fetch creatorStats without opening a 2nd channel. */
+    feedActivity: number;
+  };
 }
 
 export interface ExperienceSpaceActions {
@@ -138,6 +152,10 @@ export interface ExperienceSpaceActions {
   setChannelStatus: (status: SpaceChannelStatus) => void;
   /** Hub asks the feed composer to open in a given mode (share / question). */
   setComposeIntent: (intent: ComposeIntent) => void;
+  /** Creator console: replace the at-a-glance numbers (after a live re-fetch). */
+  setCreatorStats: (stats: CreatorStats) => void;
+  /** Feed → "something happened" tick; the Shell re-fetches creatorStats on it. */
+  bumpFeedActivity: () => void;
 
   /** app_session UPDATE → update a session's live/status fields in place. */
   applySessionUpdate: (row: {
@@ -168,6 +186,10 @@ export function createExperienceSpaceStore(
       set((s) => ({ ui: { ...s.ui, channelStatus: status } })),
     setComposeIntent: (intent) =>
       set((s) => ({ ui: { ...s.ui, composeIntent: intent } })),
+    setCreatorStats: (stats) =>
+      set((s) => ({ ui: { ...s.ui, creatorStats: stats } })),
+    bumpFeedActivity: () =>
+      set((s) => ({ ui: { ...s.ui, feedActivity: s.ui.feedActivity + 1 } })),
 
     applySessionUpdate: (row) =>
       set((s) => ({

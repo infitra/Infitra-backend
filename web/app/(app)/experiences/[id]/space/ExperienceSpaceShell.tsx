@@ -12,6 +12,7 @@
  */
 
 import { useEffect, useMemo } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { ExperienceSpaceStoreProvider, useExperienceSpaceStore } from "@/lib/experienceSpace/StoreProvider";
 import { useExperienceSpaceRealtime } from "./useExperienceSpaceRealtime";
 import { initFromSeed } from "./initState";
@@ -22,10 +23,17 @@ import { WeekJourney } from "./WeekJourney";
 import { YouPanel } from "./YouPanel";
 import { ProgressCard } from "./ProgressCard";
 import type { ExperienceSpaceSeed } from "@/lib/experienceSpace/mapSnapshot";
+import type { CreatorStats } from "@/lib/experienceSpace/store";
 
-export function ExperienceSpaceShell({ seed }: { seed: ExperienceSpaceSeed }) {
+export function ExperienceSpaceShell({
+  seed,
+  initialCreatorStats,
+}: {
+  seed: ExperienceSpaceSeed;
+  initialCreatorStats?: CreatorStats | null;
+}) {
   return (
-    <ExperienceSpaceStoreProvider initialState={initFromSeed(seed)}>
+    <ExperienceSpaceStoreProvider initialState={initFromSeed(seed, initialCreatorStats ?? null)}>
       <SpaceBody />
     </ExperienceSpaceStoreProvider>
   );
@@ -47,6 +55,39 @@ function SpaceBody() {
     spaceId,
     knownSessionIds: useMemo(() => sessions.map((s) => s.id), [sessions]),
   });
+
+  // Creator console numbers: server-seeded on first paint (ui.creatorStats),
+  // then refreshed whenever the feed's EXISTING realtime channel ticks
+  // feedActivity (a new question / comment). No second subscription — just one
+  // cheap re-COUNT on real activity. Single fetch here so both YouPanel
+  // instances (mobile + desktop rail) share it.
+  const feedActivity = useExperienceSpaceStore((s) => s.ui.feedActivity);
+  const hasSeededStats = useExperienceSpaceStore((s) => s.ui.creatorStats !== null);
+  const setCreatorStats = useExperienceSpaceStore((s) => s.setCreatorStats);
+  useEffect(() => {
+    if (!isCreator) return;
+    // First run with server-seeded numbers already present → don't re-query.
+    if (feedActivity === 0 && hasSeededStats) return;
+    let alive = true;
+    const supabase = createClient();
+    supabase
+      .rpc("load_experience_creator_stats", { p_challenge_id: experience.id })
+      .then(({ data }) => {
+        const d = data as
+          | { authorized?: boolean; pending_questions?: number; recent_reflections?: number }
+          | null;
+        if (alive && d?.authorized) {
+          setCreatorStats({
+            pending: d.pending_questions ?? 0,
+            reflections: d.recent_reflections ?? 0,
+          });
+        }
+      });
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [feedActivity, isCreator, experience.id, setCreatorStats]);
 
   // A lingering #hash (from an in-page jump) makes the browser scroll to that
   // section on reload. Strip it on mount and start at the top.

@@ -30,6 +30,25 @@ export default async function ExperienceSpacePage({
   // written their membership — they see the offer, not the creator dashboard.
   if (error || !seed) redirect(`/experiences/${id}`);
 
+  // Creators get an at-a-glance console; fetch its numbers server-side so they
+  // render on first paint (no client round-trip, no "needs a refresh"). Cheap,
+  // creators only; the RPC self-authorizes so a non-creator just gets null.
+  let initialCreatorStats: { pending: number; reflections: number } | null = null;
+  if (seed.isCreator) {
+    const { data: cs } = await supabase.rpc("load_experience_creator_stats", {
+      p_challenge_id: id,
+    });
+    const c = cs as
+      | { authorized?: boolean; pending_questions?: number; recent_reflections?: number }
+      | null;
+    if (c?.authorized) {
+      initialCreatorStats = {
+        pending: c.pending_questions ?? 0,
+        reflections: c.recent_reflections ?? 0,
+      };
+    }
+  }
+
   const { data: prof } = await supabase
     .from("app_profile")
     .select("display_name, role")
@@ -40,7 +59,7 @@ export default async function ExperienceSpacePage({
     <div className="min-h-screen">
       <ParticipantNav displayName={prof?.display_name ?? null} role={prof?.role} />
       <div className="pt-20">
-        <ExperienceSpaceShell seed={seed} />
+        <ExperienceSpaceShell seed={seed} initialCreatorStats={initialCreatorStats} />
       </div>
     </div>
   );

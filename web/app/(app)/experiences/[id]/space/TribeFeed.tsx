@@ -76,6 +76,10 @@ export function TribeFeed({
   const sessions = useExperienceSpaceStore((s) => s.sessions);
   const composeIntent = useExperienceSpaceStore((s) => s.ui.composeIntent);
   const setComposeIntent = useExperienceSpaceStore((s) => s.setComposeIntent);
+  // Reused by the creator console: this feed already holds the realtime channel
+  // for questions/comments, so we tick a shared counter instead of opening a
+  // second subscription. The Shell re-fetches the creator stats off it.
+  const bumpFeedActivity = useExperienceSpaceStore((s) => s.bumpFeedActivity);
 
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -150,6 +154,7 @@ export function TribeFeed({
         async (payload) => {
           const r = payload.new as RawRow & { kind?: string };
           if (r.kind === "intro_private") return;
+          if (r.kind === "question") bumpFeedActivity(); // new question → creator pending may rise
           await enrich([r]);
           setPosts((prev) => (prev.some((p) => p.id === r.id) ? prev : [toPost(r), ...prev]));
         })
@@ -168,6 +173,7 @@ export function TribeFeed({
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "app_challenge_comment" },
         async (payload) => {
           const r = payload.new as { id: string; post_id: string; author_id: string; body: string; is_coach_answer?: boolean; created_at: string };
+          bumpFeedActivity(); // any comment may be a coach answer → creator pending may fall (incl. the creator's own answer)
           if (r.author_id === viewer.id) return; // mine = optimistic
           await enrich([r]);
           setPosts((prev) => prev.map((p) => p.id === r.post_id
@@ -177,7 +183,7 @@ export function TribeFeed({
         })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [spaceId, viewer.id, enrich, toPost, toComment]);
+  }, [spaceId, viewer.id, enrich, toPost, toComment, bumpFeedActivity]);
 
   function selectKind(k: ComposeKind) {
     setKind(k); setError(null);
