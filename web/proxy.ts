@@ -49,9 +49,15 @@ export async function proxy(request: NextRequest) {
   const validCode = process.env.BETA_ACCESS_CODE;
 
   if (!betaCookie || betaCookie !== validCode) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/beta-access";
-    url.searchParams.set("next", pathname);
+    // Preserve the FULL original destination (path + query) so intent-carrying
+    // links survive the gate — notably the buyer page's anonymous Join link
+    // /login?intent=buy:challenge:<id>&returnTo=... Setting next to `pathname`
+    // alone dropped the query, so after the code was entered the user landed on
+    // a bare /login with the buy intent gone and the purchase flow dead-ended.
+    // Build a clean /beta-access URL (not a clone of the original request,
+    // which would also leak the original query as loose params on the gate URL).
+    const url = new URL("/beta-access", request.url);
+    url.searchParams.set("next", pathname + request.nextUrl.search);
     return NextResponse.redirect(url);
   }
 

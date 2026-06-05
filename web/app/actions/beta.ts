@@ -22,5 +22,9 @@ export async function submitBetaCode(prevState: unknown, formData: FormData) {
     path: "/",
   });
 
-  redirect(next);
+  // Only ever bounce to a same-origin relative path. `next` carries the buyer
+  // page's intent query (/login?intent=buy:...), so guard against an attacker
+  // crafting /beta-access?next=//evil.com or an absolute URL (open redirect).
+  const safeNext = next.startsWith("/") && !next.startsWith("//") ? next : "/login";
+  redirect(safeNext);
 }
