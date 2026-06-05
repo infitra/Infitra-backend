@@ -19,6 +19,7 @@ import { createClient } from "@/lib/supabase/client";
 import { createChallengePost, createChallengeComment, toggleChallengeLike } from "@/app/actions/community";
 import { useExperienceSpaceStore } from "@/lib/experienceSpace/StoreProvider";
 import type { ExperienceViewer, SpaceCreator, SpaceSession } from "@/lib/experienceSpace/store";
+import { SessionDetailModal } from "@/app/components/SessionDetailModal";
 import { Avatar } from "./Avatar";
 
 interface CoachAnswer { authorId: string; body: string; createdAt: string }
@@ -66,6 +67,10 @@ type ComposeKind = (typeof COMPOSE_KINDS)[number]["key"];
 
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+}
+function fmtSessionShort(iso: string) {
+  const d = new Date(iso);
+  return `${d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })} · ${d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`;
 }
 
 export function TribeFeed({
@@ -351,21 +356,34 @@ export function TribeFeed({
 
               {showContext && (
                 <div className="mt-3 rounded-xl p-3.5" style={{ backgroundColor: "#FCFAF6", boxShadow: "inset 0 0 0 1px rgba(15,34,41,0.06)" }}>
+                  <p className="text-[10px] uppercase tracking-[0.16em] font-headline mb-2" style={{ color: "#94a3b8", fontWeight: 800 }}>Reference a session</p>
                   {sessions.length > 0 ? (
-                    <div>
-                      <p className="text-[10px] uppercase tracking-[0.16em] font-headline mb-1.5" style={{ color: "#94a3b8", fontWeight: 800 }}>Reference a session</p>
-                      <div className="flex flex-wrap gap-2">
-                        {sessions.map((s) => {
-                          const active = contextSessionId === s.id;
-                          return (
-                            <button key={s.id} type="button" onClick={() => setContextSessionId(active ? null : s.id)}
-                              className="rounded-full px-3 py-1.5 text-[12px] font-bold font-headline transition-colors text-left"
-                              style={{ color: active ? CYAN : "#475569", backgroundColor: active ? "rgba(8,145,178,0.12)" : "rgba(15,34,41,0.05)", boxShadow: active ? `inset 0 0 0 1.5px ${CYAN}` : "none" }}>
-                              {s.title}
-                            </button>
-                          );
-                        })}
-                      </div>
+                    <div className="flex gap-2.5 overflow-x-auto pb-1 px-0.5 -mx-0.5">
+                      {sessions.map((s) => {
+                        const active = contextSessionId === s.id;
+                        return (
+                          <button key={s.id} type="button" onClick={() => setContextSessionId(active ? null : s.id)}
+                            className="shrink-0 w-40 rounded-xl overflow-hidden text-left transition-shadow"
+                            style={{ backgroundColor: "#FFFFFF", boxShadow: active ? `0 0 0 2px ${CYAN}, 0 4px 14px rgba(8,145,178,0.18)` : "0 0 0 1px rgba(15,34,41,0.08)" }}>
+                            <div className="relative w-full aspect-[5/3]" style={{ backgroundColor: "#ECE7DD" }}>
+                              {s.imageUrl ? (
+                                <Image src={s.imageUrl} alt="" fill sizes="160px" loading="lazy" decoding="async" className="object-cover" />
+                              ) : (
+                                <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, rgba(156,240,255,0.3), rgba(255,97,48,0.12))" }} />
+                              )}
+                              {active && (
+                                <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full flex items-center justify-center" style={{ backgroundColor: CYAN, boxShadow: "0 1px 4px rgba(15,34,41,0.3)" }}>
+                                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                                </div>
+                              )}
+                            </div>
+                            <div className="p-2.5">
+                              <p className="text-[12px] font-black font-headline leading-tight" style={{ color: INK, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{s.title}</p>
+                              <p className="text-[10px] font-bold font-headline mt-1 truncate" style={{ color: "#94a3b8" }} suppressHydrationWarning>{fmtSessionShort(s.startTime)}</p>
+                            </div>
+                          </button>
+                        );
+                      })}
                     </div>
                   ) : (
                     <p className="text-[12px] font-bold font-headline" style={{ color: "#94a3b8" }}>No sessions to reference yet.</p>
@@ -546,11 +564,12 @@ function PostCard({
               {introPrompt && <p className="text-[13px] italic leading-snug" style={{ color: "#475569" }}>“{introPrompt}”</p>}
             </ContextBanner>
           )}
+          <p className="text-sm leading-relaxed whitespace-pre-wrap mt-3" style={{ color: "#334155" }}>{post.body}</p>
+
+          {/* Referenced session — renders below the words, like an image embed */}
           {post.kind === "talk" && contextSession && (
             <SessionContextCard session={contextSession} />
           )}
-
-          <p className="text-sm leading-relaxed whitespace-pre-wrap mt-3" style={{ color: "#334155" }}>{post.body}</p>
 
           {post.mediaUrl && (
             // eslint-disable-next-line @next/next/no-img-element
@@ -701,37 +720,52 @@ function ContextChip({ color, onRemove, children }: { color: string; onRemove: (
 }
 
 // The referenced-session embed inside a creator's Share — mirrors the
-// WeekJourney agenda row (cover · when · title · host) and taps through to the
-// session. Fed from the store, so it carries the live session details.
+// WeekJourney agenda row (cover · when · title · host). Clicking it opens the
+// read-only session detail popup (the same modal the buyer carousel uses), so
+// it never navigates out to the standalone session pages. Fed from the store.
 function SessionContextCard({ session }: { session: SpaceSession }) {
+  const [open, setOpen] = useState(false);
   const start = new Date(session.startTime);
   const day = start.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
   const time = start.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
   const m = session.durationMinutes;
   const dur = m < 60 ? `${m} min` : m % 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${Math.floor(m / 60)}h`;
   return (
-    <a
-      href={`/sessions/${session.id}`}
-      className="group flex items-stretch rounded-xl overflow-hidden mt-2.5"
-      style={{ backgroundColor: "#FAF7F1", boxShadow: `inset 3.5px 0 0 ${CYAN}, 0 0 0 1px rgba(15,34,41,0.05)` }}
-    >
-      <div className="relative shrink-0 w-20 sm:w-24" style={{ backgroundColor: "#ECE7DD" }}>
-        {session.imageUrl ? (
-          <Image src={session.imageUrl} alt="" fill sizes="96px" loading="lazy" decoding="async" className="object-cover" />
-        ) : (
-          <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, rgba(156,240,255,0.3), rgba(255,97,48,0.12))" }} />
-        )}
-      </div>
-      <div className="flex-1 min-w-0 py-2.5 px-3.5 flex flex-col justify-center">
-        <p className="text-[10px] uppercase tracking-[0.16em] font-headline" style={{ color: CYAN, fontWeight: 800 }}>Session</p>
-        <h4 className="font-black font-headline tracking-tight mt-0.5 truncate" style={{ color: INK, fontSize: "clamp(0.95rem, 3vw, 1.05rem)" }}>{session.title}</h4>
-        <p className="text-[11px] mt-0.5 truncate" style={{ color: "#94a3b8" }} suppressHydrationWarning>{day} · {time} · {dur} · {session.hostName}</p>
-      </div>
-      <div className="shrink-0 self-center pr-3 pl-1">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="transition-transform group-hover:translate-x-0.5">
-          <polyline points="9 18 15 12 9 6" />
-        </svg>
-      </div>
-    </a>
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="group w-full text-left flex items-stretch rounded-xl overflow-hidden mt-3"
+        style={{ backgroundColor: "#FAF7F1", boxShadow: `inset 3.5px 0 0 ${CYAN}, 0 0 0 1px rgba(15,34,41,0.05)` }}
+      >
+        <div className="relative shrink-0 w-20 sm:w-24" style={{ backgroundColor: "#ECE7DD" }}>
+          {session.imageUrl ? (
+            <Image src={session.imageUrl} alt="" fill sizes="96px" loading="lazy" decoding="async" className="object-cover" />
+          ) : (
+            <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, rgba(156,240,255,0.3), rgba(255,97,48,0.12))" }} />
+          )}
+        </div>
+        <div className="flex-1 min-w-0 py-2.5 px-3.5 flex flex-col justify-center">
+          <p className="text-[10px] uppercase tracking-[0.16em] font-headline" style={{ color: CYAN, fontWeight: 800 }}>Session</p>
+          <h4 className="font-black font-headline tracking-tight mt-0.5 truncate" style={{ color: INK, fontSize: "clamp(0.95rem, 3vw, 1.05rem)" }}>{session.title}</h4>
+          <p className="text-[11px] mt-0.5 truncate" style={{ color: "#94a3b8" }} suppressHydrationWarning>{day} · {time} · {dur} · {session.hostName}</p>
+        </div>
+        <div className="shrink-0 self-center pr-3 pl-1">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="transition-transform group-hover:translate-x-0.5">
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+        </div>
+      </button>
+      <SessionDetailModal
+        open={open}
+        onClose={() => setOpen(false)}
+        session={{
+          id: session.id, title: session.title, startTime: session.startTime,
+          durationMinutes: session.durationMinutes, hostId: session.hostId,
+          hostName: session.hostName, hostAvatar: session.hostAvatar,
+          imageUrl: session.imageUrl, description: session.description, cohosts: [],
+        }}
+      />
+    </>
   );
 }

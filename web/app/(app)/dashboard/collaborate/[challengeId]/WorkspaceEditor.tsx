@@ -23,7 +23,7 @@ import {
 } from "@/app/actions/collaboration";
 import { ContractCommitmentModal } from "./ContractCommitmentModal";
 import { ContractStatusBanner } from "./ContractStatusBanner";
-import { SessionDetailModal } from "./SessionDetailModal";
+import { SessionDetailModal } from "@/app/components/SessionDetailModal";
 import { PromiseEditor } from "./PromiseEditor";
 import { IntroPromptEditor } from "./IntroPromptEditor";
 import { TeamSection, type CreatorRow, type PendingInviteRow } from "./TeamSection";
