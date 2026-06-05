@@ -74,6 +74,7 @@ export function TribeFeed({
 }) {
   const introPrompt = useExperienceSpaceStore((s) => s.experience.introPrompt);
   const sessions = useExperienceSpaceStore((s) => s.sessions);
+  const members = useExperienceSpaceStore((s) => s.members);
   const composeIntent = useExperienceSpaceStore((s) => s.ui.composeIntent);
   const setComposeIntent = useExperienceSpaceStore((s) => s.setComposeIntent);
   // Reused by the creator console: this feed already holds the realtime channel
@@ -101,6 +102,15 @@ export function TribeFeed({
 
   const creatorById = useMemo(() => new Map(creators.map((c) => [c.id, c])), [creators]);
   const sessionById = useMemo(() => new Map(sessions.map((s) => [s.id, s])), [sessions]);
+  // Name/avatar resolver for likers — the tribe roster (DEFINER snapshot) has
+  // everyone, so even private members resolve here. Fallback "Member".
+  const peopleById = useMemo(() => {
+    const m = new Map<string, { name: string; avatar: string | null }>();
+    for (const c of creators) m.set(c.id, { name: c.name, avatar: c.avatar });
+    for (const mem of members) m.set(mem.id, { name: mem.name, avatar: mem.avatar });
+    m.set(viewer.id, { name: viewer.name, avatar: viewer.avatar });
+    return m;
+  }, [creators, members, viewer]);
 
   useEffect(() => {
     if (!composeIntent) return;
@@ -340,7 +350,7 @@ export function TribeFeed({
               {mediaUrl && (
                 <div className="relative mt-2.5 inline-block">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={mediaUrl} alt="" className="rounded-xl max-h-44 object-cover" style={{ boxShadow: "0 0 0 1px rgba(15,34,41,0.08)" }} />
+                  <img src={mediaUrl} alt="" className="rounded-xl w-[200px] aspect-[4/5] object-cover" style={{ boxShadow: "0 0 0 1px rgba(15,34,41,0.08)" }} />
                   <button type="button" onClick={() => setMediaUrl(null)} aria-label="Remove image" className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(15,34,41,0.72)" }}>
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"><line x1="6" y1="6" x2="18" y2="18" /><line x1="18" y1="6" x2="6" y2="18" /></svg>
                   </button>
@@ -382,6 +392,7 @@ export function TribeFeed({
                 post={p}
                 viewer={viewer}
                 creatorById={creatorById}
+                peopleById={peopleById}
                 directedCreator={p.kind === "question" ? creatorById.get(p.directedTo[0]) : undefined}
                 reflectsOn={p.kind === "reflection" && p.contextId ? sessionById.get(p.contextId)?.title ?? null : null}
                 introPrompt={p.kind === "intro" ? introPrompt : null}
@@ -401,12 +412,13 @@ export function TribeFeed({
 }
 
 function PostCard({
-  post, viewer, creatorById, directedCreator, reflectsOn, introPrompt, isOwn,
+  post, viewer, creatorById, peopleById, directedCreator, reflectsOn, introPrompt, isOwn,
   onLike, threadOpen, comments, onToggleThread, onSubmitComment,
 }: {
   post: FeedPost;
   viewer: ExperienceViewer;
   creatorById: Map<string, SpaceCreator>;
+  peopleById: Map<string, { name: string; avatar: string | null }>;
   directedCreator?: SpaceCreator;
   reflectsOn?: string | null;
   introPrompt?: string | null;
@@ -423,6 +435,22 @@ function PostCard({
   const answerCreator = post.coachAnswer ? creatorById.get(post.coachAnswer.authorId) : undefined;
   // The coach answer is shown inline above — don't repeat it in the thread.
   const visibleComments = comments?.filter((c) => !c.isCoachAnswer);
+
+  // Who-liked: lazily fetched (fresh each open) when the like count is tapped.
+  const [likersOpen, setLikersOpen] = useState(false);
+  const [likers, setLikers] = useState<{ id: string; name: string; avatar: string | null }[] | undefined>(undefined);
+  async function toggleLikers() {
+    if (likersOpen) { setLikersOpen(false); return; }
+    setLikersOpen(true);
+    setLikers(undefined);
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("app_challenge_post_like")
+      .select("user_id")
+      .eq("post_id", post.id);
+    const ids = (data as { user_id: string }[] | null) ?? [];
+    setLikers(ids.map(({ user_id }) => ({ id: user_id, ...(peopleById.get(user_id) ?? { name: "Member", avatar: null }) })));
+  }
 
   return (
     <article className="rounded-xl p-4" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.04), 0 1px 4px rgba(15,34,41,0.04)" }}>
@@ -453,7 +481,7 @@ function PostCard({
 
           {post.mediaUrl && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={post.mediaUrl} alt="" loading="lazy" decoding="async" className="rounded-xl mt-3 w-full max-h-[440px] object-cover" style={{ boxShadow: "0 0 0 1px rgba(15,34,41,0.06)" }} />
+            <img src={post.mediaUrl} alt="" loading="lazy" decoding="async" className="rounded-xl mt-3 w-full max-w-md aspect-[4/5] object-cover" style={{ boxShadow: "0 0 0 1px rgba(15,34,41,0.06)" }} />
           )}
 
           {/* Coach answer — prominent, under the question */}
@@ -469,12 +497,20 @@ function PostCard({
 
           {/* Engagement bar */}
           <div className="flex items-center gap-5 mt-3 pt-3" style={{ borderTop: "1px solid rgba(15,34,41,0.06)" }}>
-            <button type="button" onClick={onLike} className="flex items-center gap-1.5 transition-transform active:scale-95">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill={post.likedByMe ? ORANGE : "none"} stroke={post.likedByMe ? ORANGE : "#94a3b8"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 1 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z" />
-              </svg>
-              <span className="text-[12px] font-bold font-headline" style={{ color: post.likedByMe ? ORANGE : "#64748b" }}>{post.likeCount > 0 ? post.likeCount : "Like"}</span>
-            </button>
+            <div className="flex items-center gap-1.5">
+              <button type="button" onClick={onLike} aria-label={post.likedByMe ? "Unlike" : "Like"} className="flex items-center transition-transform active:scale-95">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill={post.likedByMe ? ORANGE : "none"} stroke={post.likedByMe ? ORANGE : "#94a3b8"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 1 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z" />
+                </svg>
+              </button>
+              {post.likeCount > 0 ? (
+                <button type="button" onClick={toggleLikers} className="text-[12px] font-bold font-headline transition-colors hover:opacity-80" style={{ color: post.likedByMe ? ORANGE : "#64748b" }}>
+                  {post.likeCount} {post.likeCount === 1 ? "like" : "likes"}
+                </button>
+              ) : (
+                <button type="button" onClick={onLike} className="text-[12px] font-bold font-headline" style={{ color: "#64748b" }}>Like</button>
+              )}
+            </div>
             <button type="button" onClick={onToggleThread} className="flex items-center gap-1.5">
               <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={threadOpen ? CYAN : "#94a3b8"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
@@ -482,6 +518,24 @@ function PostCard({
               <span className="text-[12px] font-bold font-headline" style={{ color: threadOpen ? CYAN : "#64748b" }}>{post.commentCount > 0 ? post.commentCount : "Comment"}</span>
             </button>
           </div>
+
+          {/* Likers — revealed by tapping the like count */}
+          {likersOpen && (
+            <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-2">
+              {likers === undefined ? (
+                <span className="text-[11px] font-bold font-headline" style={{ color: "#94a3b8" }}>Loading…</span>
+              ) : likers.length === 0 ? (
+                <span className="text-[11px] font-bold font-headline" style={{ color: "#94a3b8" }}>No likes yet.</span>
+              ) : (
+                likers.map((l) => (
+                  <div key={l.id} className="flex items-center gap-1.5">
+                    <Avatar src={l.avatar} name={l.name} size={20} ring="#FFFFFF" bg={CYAN} />
+                    <span className="text-[12px] font-bold font-headline" style={{ color: "#475569" }}>{l.name}</span>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
 
           {/* Comment thread */}
           {threadOpen && (

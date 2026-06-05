@@ -133,17 +133,18 @@ export function YouPanel() {
 
       {isCreator ? (
         <>
-          {/* ── COHORT ── */}
-          <Section label="Cohort">
-            <p className="text-[11px] uppercase tracking-[0.16em] font-headline" style={{ color: status.phase === "upcoming" ? CYAN : INK, fontWeight: 800 }}>
-              {statusLine}
-            </p>
-            <div className="flex items-baseline gap-2 mt-2">
-              <span className="text-2xl font-black font-headline leading-none" style={{ color: INK }}>{memberCount}</span>
-              <span className="text-[11px] uppercase tracking-wider font-headline" style={{ color: "#94a3b8", fontWeight: 800 }}>
-                {memberCount === 1 ? "member" : "members"} in your tribe
+          {/* ── TRIBE ── members are the headline; program timing is quiet
+              context; the session you host is the action card. */}
+          <Section label="Tribe">
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-black font-headline leading-none" style={{ color: INK }}>{memberCount}</span>
+              <span className="text-[12px] uppercase tracking-wider font-headline" style={{ color: "#94a3b8", fontWeight: 800 }}>
+                {memberCount === 1 ? "Member" : "Members"}
               </span>
             </div>
+            <p className="text-[11px] uppercase tracking-[0.14em] font-headline mt-2.5" style={{ color: status.phase === "active" ? INK : "#94a3b8", fontWeight: 700 }}>
+              {statusLine}
+            </p>
             {HeroMoment}
           </Section>
 

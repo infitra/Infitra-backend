@@ -163,17 +163,20 @@ export function ExperienceHeader() {
 
       {/* Expanded panels — below the top zone, so the cover never stretches into them */}
       {open === "experts" && (
-        <div className="px-5 lg:px-7 pb-5 pt-1 space-y-4">
+        <div
+          className="px-5 lg:px-8 pt-5 lg:pt-6 pb-6 space-y-5 lg:space-y-6"
+          style={{ borderTop: "1px solid rgba(15,34,41,0.07)" }}
+        >
           {creators.map((c) => (
-            <div key={c.id} className="flex gap-3">
+            <div key={c.id} className="flex gap-3.5 lg:gap-4">
               <Avatar src={c.avatar} name={c.name} size={52} ring={c.role === "owner" ? ORANGE : "#9CF0FF"} />
-              <div className="min-w-0">
+              <div className="min-w-0 lg:max-w-3xl">
                 <p className="text-sm font-black font-headline" style={{ color: INK }}>
                   {c.name}
                   <span className="ml-2 text-[10px] uppercase tracking-wider" style={{ color: "#94a3b8" }}>{c.role === "owner" ? "Lead" : "Co-host"}</span>
                 </p>
                 {c.tagline && <p className="text-[12px] font-bold font-headline mt-0.5" style={{ color: CYAN }}>{c.tagline}</p>}
-                {c.bio && <p className="text-[13px] leading-relaxed mt-1" style={{ color: "#475569" }}>{c.bio}</p>}
+                {c.bio && <p className="text-[13px] leading-relaxed mt-1.5" style={{ color: "#475569" }}>{c.bio}</p>}
               </div>
             </div>
           ))}
@@ -181,12 +184,15 @@ export function ExperienceHeader() {
       )}
 
       {open === "structure" && (
-        <div className="px-5 lg:px-7 pb-5 pt-1">
+        <div
+          className="px-5 lg:px-8 pt-5 lg:pt-6 pb-6 lg:max-w-3xl"
+          style={{ borderTop: "1px solid rgba(15,34,41,0.07)" }}
+        >
           {experience.promiseText && (
             <p className="text-[14px] leading-relaxed" style={{ color: "#334155" }}>{experience.promiseText}</p>
           )}
           {experience.weeklyArc.length > 0 && (
-            <div className="mt-4 space-y-1.5">
+            <div className="mt-4 space-y-2">
               {experience.weeklyArc.map((w) => (
                 <div key={w.week} className="flex gap-3 text-[13px]">
                   <span className="font-black font-headline shrink-0 w-14" style={{ color: w.week === currentWeek ? ORANGE : "#94a3b8" }}>Wk {w.week}</span>

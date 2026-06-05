@@ -73,64 +73,56 @@ export function ParticipantNav({
           </span>
         </Link>
 
-        <div className="flex items-center gap-4 md:gap-5">
+        {/* Navigation — centred in the bar on desktop (logo · nav · account),
+            absolutely centred so the logo / name widths never nudge it off
+            centre. On mobile it lives in the hamburger. */}
+        <div className="hidden md:flex items-center gap-7 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+          {links.map(({ label, href }) => (
+            <Link
+              key={href}
+              href={href}
+              className="font-headline text-xs font-bold uppercase tracking-widest transition-colors hover:opacity-80"
+              style={{ color: "rgba(15, 34, 41, 0.50)" }}
+            >
+              {label}
+            </Link>
+          ))}
+          {isCreator && (
+            <Link
+              href="/dashboard/create"
+              className="inline-flex px-4 py-2 rounded-full text-xs font-black font-headline text-white uppercase tracking-widest"
+              style={{ backgroundColor: "#FF6130", boxShadow: "0 2px 8px rgba(255,97,48,0.3)" }}
+            >
+              + Create
+            </Link>
+          )}
+        </div>
+
+        {/* Account cluster — hamburger (mobile) · bell · name · sign out. */}
+        <div className="flex items-center gap-3 md:gap-4">
           <MobileMenu links={mobileLinks} />
-
-          {/* Navigation cluster (desktop) — links + Create, kept together and
-              distinct from the account controls. */}
-          <div className="hidden md:flex items-center gap-7">
-            {links.map(({ label, href }) => (
-              <Link
-                key={href}
-                href={href}
-                className="font-headline text-xs font-bold uppercase tracking-widest transition-colors hover:opacity-80"
-                style={{ color: "rgba(15, 34, 41, 0.50)" }}
-              >
-                {label}
-              </Link>
-            ))}
-            {isCreator && (
-              <Link
-                href="/dashboard/create"
-                className="inline-flex px-4 py-2 rounded-full text-xs font-black font-headline text-white uppercase tracking-widest"
-                style={{ backgroundColor: "#FF6130", boxShadow: "0 2px 8px rgba(255,97,48,0.3)" }}
-              >
-                + Create
-              </Link>
-            )}
-          </div>
-
-          {/* Divider between navigation and account (desktop only). */}
-          <span
-            className="hidden md:block h-5 w-px"
-            style={{ backgroundColor: "rgba(15, 34, 41, 0.12)" }}
-          />
-
-          {/* Account cluster — bell, name, sign out as one unit. */}
-          <div className="flex items-center gap-3">
-            <NotificationBell />
-            {displayName && (
-              <span
-                className="text-sm font-headline font-semibold hidden md:block"
-                style={{ color: "rgba(15, 34, 41, 0.50)" }}
-              >
-                {displayName}
-              </span>
-            )}
-            <form action={signOut}>
-              <button
-                type="submit"
-                className="px-4 py-2 text-xs font-bold rounded-full transition-all font-headline cursor-pointer hover:opacity-80"
-                style={{
-                  color: "rgba(15, 34, 41, 0.50)",
-                  border: "1px solid rgba(15, 34, 41, 0.12)",
-                  backgroundColor: "rgba(255, 255, 255, 0.35)",
-                }}
-              >
-                Sign Out
-              </button>
-            </form>
-          </div>
+          <NotificationBell />
+          {displayName && (
+            <span
+              className="text-sm font-headline font-semibold hidden md:block"
+              style={{ color: "rgba(15, 34, 41, 0.50)" }}
+            >
+              {displayName}
+            </span>
+          )}
+          <form action={signOut}>
+            <button
+              type="submit"
+              className="px-4 py-2 text-xs font-bold rounded-full transition-all font-headline cursor-pointer hover:opacity-80"
+              style={{
+                color: "rgba(15, 34, 41, 0.50)",
+                border: "1px solid rgba(15, 34, 41, 0.12)",
+                backgroundColor: "rgba(255, 255, 255, 0.35)",
+              }}
+            >
+              Sign Out
+            </button>
+          </form>
         </div>
       </div>
     </nav>
