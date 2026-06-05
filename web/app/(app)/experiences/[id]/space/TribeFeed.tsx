@@ -81,12 +81,22 @@ export function TribeFeed({
   // for questions/comments, so we tick a shared counter instead of opening a
   // second subscription. The Shell re-fetches the creator stats off it.
   const bumpFeedActivity = useExperienceSpaceStore((s) => s.bumpFeedActivity);
+  // Creators get a contextual Share (attach a session / tag a co-host) in place
+  // of the participant "Ask an Expert" composer — see the composer branch below.
+  const isCreator = useExperienceSpaceStore((s) => s.isCreator);
 
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [body, setBody] = useState("");
-  const [kind, setKind] = useState<ComposeKind | null>(null);
+  // Creators always compose a Share (context is an optional add-on, not a mode);
+  // participants pick Share/Question, so they start ungated.
+  const [kind, setKind] = useState<ComposeKind | null>(isCreator ? "talk" : null);
   const [askId, setAskId] = useState<string | null>(null);
+  // Creator "Add context": a tagged session (context_id) + the picker's open
+  // state. The tagged co-host reuses askId (it rides on directed_to, like a
+  // question — but a tagged Share is silent context, never a notified question).
+  const [contextSessionId, setContextSessionId] = useState<string | null>(null);
+  const [showContext, setShowContext] = useState(false);
   const [mediaUrl, setMediaUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [posting, setPosting] = useState(false);
@@ -102,6 +112,8 @@ export function TribeFeed({
 
   const creatorById = useMemo(() => new Map(creators.map((c) => [c.id, c])), [creators]);
   const sessionById = useMemo(() => new Map(sessions.map((s) => [s.id, s])), [sessions]);
+  // Co-hosts a creator can tag as context on a Share (everyone but themselves).
+  const otherCreators = useMemo(() => creators.filter((c) => c.id !== viewer.id), [creators, viewer.id]);
   // Name/avatar resolver for likers — the tribe roster (DEFINER snapshot) has
   // everyone, so even private members resolve here. Fallback "Member".
   const peopleById = useMemo(() => {
@@ -114,12 +126,13 @@ export function TribeFeed({
 
   useEffect(() => {
     if (!composeIntent) return;
-    const k: ComposeKind = composeIntent === "question" ? "question" : "talk";
+    // Creators never enter "question" mode — their engage button opens a Share.
+    const k: ComposeKind = !isCreator && composeIntent === "question" ? "question" : "talk";
     setKind(k);
     if (k === "question" && creators.length === 1) setAskId(creators[0].id);
-    else if (k !== "question") setAskId(null);
+    else { setAskId(null); setContextSessionId(null); setShowContext(false); }
     setComposeIntent(null);
-  }, [composeIntent, creators, setComposeIntent]);
+  }, [composeIntent, creators, setComposeIntent, isCreator]);
 
   const enrich = useCallback(async (rows: { author_id: string }[]) => {
     const supabase = createClient();
@@ -230,23 +243,33 @@ export function TribeFeed({
     const text = body.trim();
     const isQuestion = kind === "question";
     const media = mediaUrl;
+    // A creator's Share can carry context: a session (context_type='session')
+    // and/or a tagged co-host (directed_to — silent context, not a question).
+    const ctxSession = !isQuestion && isCreator ? contextSessionId : null;
+    const taggedCohost = !isQuestion && isCreator ? askId : null;
     setPosting(true); setError(null);
     const result = isQuestion
       ? await createChallengePost(spaceId, text, { kind: "question", directedTo: [askId!], mediaUrl: media })
-      : await createChallengePost(spaceId, text, { kind: "talk", mediaUrl: media });
+      : await createChallengePost(spaceId, text, {
+          kind: "talk", mediaUrl: media,
+          contextType: ctxSession ? "session" : undefined,
+          contextId: ctxSession ?? undefined,
+          directedTo: taggedCohost ? [taggedCohost] : undefined,
+        });
     if (result?.error) { setError(result.error); setPosting(false); return; }
     const postId = (result as { postId?: string })?.postId;
     if (postId) {
       profRef.current[viewer.id] = { name: viewer.name, avatar: viewer.avatar };
       const optimistic: FeedPost = {
         id: postId, author_id: viewer.id, body: text, kind: isQuestion ? "question" : "talk",
-        contextId: null, directedTo: isQuestion && askId ? [askId] : [], mediaUrl: media,
+        contextId: ctxSession, directedTo: isQuestion ? [askId!] : (taggedCohost ? [taggedCohost] : []), mediaUrl: media,
         likeCount: 0, commentCount: 0, likedByMe: false, coachAnswer: null,
         created_at: new Date().toISOString(), authorName: viewer.name, authorAvatar: viewer.avatar,
       };
       setPosts((prev) => (prev.some((p) => p.id === postId) ? prev : [optimistic, ...prev]));
     }
-    setBody(""); setKind(null); setAskId(null); setMediaUrl(null); setPosting(false);
+    setBody(""); setKind(isCreator ? "talk" : null); setAskId(null);
+    setContextSessionId(null); setShowContext(false); setMediaUrl(null); setPosting(false);
   }
 
   // ── Likes ──
@@ -309,36 +332,108 @@ export function TribeFeed({
       {/* Composer */}
       {canPost && (
         <div id="tribe-composer" className="px-4 sm:px-5 py-5 scroll-mt-24" style={{ borderTop: "1px solid rgba(15,34,41,0.06)", backgroundColor: "#FCFAF6" }}>
-          <div className="flex gap-2">
-            {COMPOSE_KINDS.map((k) => {
-              const active = kind === k.key;
-              return (
-                <button key={k.key} type="button" onClick={() => selectKind(k.key)}
-                  className="px-4 py-1.5 rounded-full text-[12px] font-black font-headline uppercase tracking-wider transition-colors"
-                  style={active ? { color: "#fff", backgroundColor: k.color, boxShadow: `0 2px 8px ${k.color}55` } : { color: "#475569", backgroundColor: "rgba(15,34,41,0.05)" }}>
-                  {k.label}
+          {isCreator ? (
+            /* Creators compose a Share; "Add context" attaches a session and/or
+               tags a co-host — the expert-side replacement for "Ask an Expert". */
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="px-4 py-1.5 rounded-full text-[12px] font-black font-headline uppercase tracking-wider text-white" style={{ backgroundColor: CYAN, boxShadow: `0 2px 8px ${CYAN}55` }}>Share</span>
+                <button type="button" onClick={() => setShowContext((v) => !v)}
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[12px] font-black font-headline transition-colors"
+                  style={{ color: showContext ? CYAN : "#475569", backgroundColor: showContext ? "rgba(8,145,178,0.12)" : "rgba(15,34,41,0.05)", boxShadow: showContext ? `inset 0 0 0 1.5px ${CYAN}` : "none" }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                  {contextSessionId || askId ? "Context added" : "Add context"}
                 </button>
-              );
-            })}
-          </div>
+              </div>
 
-          {kind === "question" && creators.length > 0 && (
-            <div className="mt-3.5">
-              <p className="text-[10px] uppercase tracking-[0.16em] font-headline mb-1.5" style={{ color: "#94a3b8", fontWeight: 800 }}>Ask</p>
-              <div className="flex flex-wrap gap-2">
-                {creators.map((c) => {
-                  const active = askId === c.id;
+              {(contextSessionId || askId) && (
+                <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                  {contextSessionId && (
+                    <ContextChip color={CYAN} onRemove={() => setContextSessionId(null)}>On {sessionById.get(contextSessionId)?.title ?? "a session"}</ContextChip>
+                  )}
+                  {askId && (
+                    <ContextChip color={CYAN} onRemove={() => setAskId(null)}>For {creatorById.get(askId)?.name ?? "a co-host"}</ContextChip>
+                  )}
+                </div>
+              )}
+
+              {showContext && (
+                <div className="mt-3 rounded-xl p-3.5 space-y-3.5" style={{ backgroundColor: "#FCFAF6", boxShadow: "inset 0 0 0 1px rgba(15,34,41,0.06)" }}>
+                  {sessions.length > 0 && (
+                    <div>
+                      <p className="text-[10px] uppercase tracking-[0.16em] font-headline mb-1.5" style={{ color: "#94a3b8", fontWeight: 800 }}>On a session</p>
+                      <div className="flex flex-wrap gap-2">
+                        {sessions.map((s) => {
+                          const active = contextSessionId === s.id;
+                          return (
+                            <button key={s.id} type="button" onClick={() => setContextSessionId(active ? null : s.id)}
+                              className="rounded-full px-3 py-1.5 text-[12px] font-bold font-headline transition-colors text-left"
+                              style={{ color: active ? CYAN : "#475569", backgroundColor: active ? "rgba(8,145,178,0.12)" : "rgba(15,34,41,0.05)", boxShadow: active ? `inset 0 0 0 1.5px ${CYAN}` : "none" }}>
+                              {s.title}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  {otherCreators.length > 0 && (
+                    <div>
+                      <p className="text-[10px] uppercase tracking-[0.16em] font-headline mb-1.5" style={{ color: "#94a3b8", fontWeight: 800 }}>For a co-host</p>
+                      <div className="flex flex-wrap gap-2">
+                        {otherCreators.map((c) => {
+                          const active = askId === c.id;
+                          return (
+                            <button key={c.id} type="button" onClick={() => { setAskId(active ? null : c.id); setError(null); }}
+                              className="flex items-center gap-1.5 rounded-full pl-1 pr-3 py-1 transition-colors"
+                              style={{ backgroundColor: active ? "rgba(8,145,178,0.12)" : "rgba(15,34,41,0.05)", boxShadow: active ? `inset 0 0 0 1.5px ${CYAN}` : "none" }}>
+                              <Avatar src={c.avatar} name={c.name} size={26} ring={c.role === "owner" ? ORANGE : CYAN} />
+                              <span className="text-[12px] font-black font-headline" style={{ color: active ? CYAN : "#475569" }}>{c.name}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  {sessions.length === 0 && otherCreators.length === 0 && (
+                    <p className="text-[12px] font-bold font-headline" style={{ color: "#94a3b8" }}>No sessions or co-hosts to reference yet.</p>
+                  )}
+                </div>
+              )}
+            </div>
+          ) : (
+            <>
+              <div className="flex gap-2">
+                {COMPOSE_KINDS.map((k) => {
+                  const active = kind === k.key;
                   return (
-                    <button key={c.id} type="button" onClick={() => { setAskId(c.id); setError(null); textareaRef.current?.focus(); }}
-                      className="flex items-center gap-1.5 rounded-full pl-1 pr-3 py-1 transition-colors"
-                      style={{ backgroundColor: active ? "rgba(255,97,48,0.12)" : "rgba(15,34,41,0.05)", boxShadow: active ? `inset 0 0 0 1.5px ${ORANGE}` : "none" }}>
-                      <Avatar src={c.avatar} name={c.name} size={28} ring={c.role === "owner" ? ORANGE : CYAN} />
-                      <span className="text-[12px] font-black font-headline" style={{ color: active ? ORANGE : "#475569" }}>{c.name}</span>
+                    <button key={k.key} type="button" onClick={() => selectKind(k.key)}
+                      className="px-4 py-1.5 rounded-full text-[12px] font-black font-headline uppercase tracking-wider transition-colors"
+                      style={active ? { color: "#fff", backgroundColor: k.color, boxShadow: `0 2px 8px ${k.color}55` } : { color: "#475569", backgroundColor: "rgba(15,34,41,0.05)" }}>
+                      {k.label}
                     </button>
                   );
                 })}
               </div>
-            </div>
+
+              {kind === "question" && creators.length > 0 && (
+                <div className="mt-3.5">
+                  <p className="text-[10px] uppercase tracking-[0.16em] font-headline mb-1.5" style={{ color: "#94a3b8", fontWeight: 800 }}>Ask</p>
+                  <div className="flex flex-wrap gap-2">
+                    {creators.map((c) => {
+                      const active = askId === c.id;
+                      return (
+                        <button key={c.id} type="button" onClick={() => { setAskId(c.id); setError(null); textareaRef.current?.focus(); }}
+                          className="flex items-center gap-1.5 rounded-full pl-1 pr-3 py-1 transition-colors"
+                          style={{ backgroundColor: active ? "rgba(255,97,48,0.12)" : "rgba(15,34,41,0.05)", boxShadow: active ? `inset 0 0 0 1.5px ${ORANGE}` : "none" }}>
+                          <Avatar src={c.avatar} name={c.name} size={28} ring={c.role === "owner" ? ORANGE : CYAN} />
+                          <span className="text-[12px] font-black font-headline" style={{ color: active ? ORANGE : "#475569" }}>{c.name}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
           <div className="flex gap-3 mt-4">
@@ -393,8 +488,9 @@ export function TribeFeed({
                 viewer={viewer}
                 creatorById={creatorById}
                 peopleById={peopleById}
-                directedCreator={p.kind === "question" ? creatorById.get(p.directedTo[0]) : undefined}
+                directedCreator={(p.kind === "question" || p.kind === "talk") && p.directedTo.length > 0 ? creatorById.get(p.directedTo[0]) : undefined}
                 reflectsOn={p.kind === "reflection" && p.contextId ? sessionById.get(p.contextId)?.title ?? null : null}
+                contextSession={p.kind === "talk" && p.contextId ? sessionById.get(p.contextId)?.title ?? null : null}
                 introPrompt={p.kind === "intro" ? introPrompt : null}
                 isOwn={p.author_id === viewer.id}
                 onLike={() => toggleLike(p)}
@@ -412,7 +508,7 @@ export function TribeFeed({
 }
 
 function PostCard({
-  post, viewer, creatorById, peopleById, directedCreator, reflectsOn, introPrompt, isOwn,
+  post, viewer, creatorById, peopleById, directedCreator, reflectsOn, contextSession, introPrompt, isOwn,
   onLike, threadOpen, comments, onToggleThread, onSubmitComment,
 }: {
   post: FeedPost;
@@ -421,6 +517,7 @@ function PostCard({
   peopleById: Map<string, { name: string; avatar: string | null }>;
   directedCreator?: SpaceCreator;
   reflectsOn?: string | null;
+  contextSession?: string | null;
   introPrompt?: string | null;
   isOwn: boolean;
   onLike: () => void;
@@ -476,6 +573,13 @@ function PostCard({
               {introPrompt && <p className="text-[13px] italic leading-snug" style={{ color: "#475569" }}>“{introPrompt}”</p>}
             </ContextBanner>
           )}
+          {post.kind === "talk" && (contextSession || directedCreator) && (
+            <ContextBanner color={CYAN} label="Context">
+              <span className="text-[14px] font-black font-headline" style={{ color: CYAN }}>
+                {[contextSession ? `On ${contextSession}` : null, directedCreator ? `For ${directedCreator.name}` : null].filter(Boolean).join("  ·  ")}
+              </span>
+            </ContextBanner>
+          )}
 
           <p className="text-sm leading-relaxed whitespace-pre-wrap mt-3" style={{ color: "#334155" }}>{post.body}</p>
 
@@ -519,20 +623,23 @@ function PostCard({
             </button>
           </div>
 
-          {/* Likers — revealed by tapping the like count */}
+          {/* Likers — a structured "Liked by" panel anchored to the likes */}
           {likersOpen && (
-            <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-2">
+            <div className="mt-2.5 rounded-xl px-3.5 py-3" style={{ backgroundColor: "#FAF7F1" }}>
+              <p className="text-[10px] uppercase tracking-[0.14em] font-headline mb-2" style={{ color: "#94a3b8", fontWeight: 800 }}>Liked by</p>
               {likers === undefined ? (
                 <span className="text-[11px] font-bold font-headline" style={{ color: "#94a3b8" }}>Loading…</span>
               ) : likers.length === 0 ? (
                 <span className="text-[11px] font-bold font-headline" style={{ color: "#94a3b8" }}>No likes yet.</span>
               ) : (
-                likers.map((l) => (
-                  <div key={l.id} className="flex items-center gap-1.5">
-                    <Avatar src={l.avatar} name={l.name} size={20} ring="#FFFFFF" bg={CYAN} />
-                    <span className="text-[12px] font-bold font-headline" style={{ color: "#475569" }}>{l.name}</span>
-                  </div>
-                ))
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                  {likers.map((l) => (
+                    <div key={l.id} className="flex items-center gap-1.5">
+                      <Avatar src={l.avatar} name={l.name} size={20} ring="#FFFFFF" bg={CYAN} />
+                      <span className="text-[12px] font-bold font-headline" style={{ color: "#475569" }}>{l.name}</span>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           )}
@@ -608,5 +715,18 @@ function ContextBanner({ color, label, stacked, children }: { color: string; lab
     <div className="rounded-lg mt-2.5 px-3 py-2" style={{ backgroundColor: `${color}14`, boxShadow: `inset 3.5px 0 0 ${color}` }}>
       {stacked ? (<>{labelEl}<div className="mt-1">{children}</div></>) : (<div className="flex items-center gap-2 flex-wrap">{labelEl}{children}</div>)}
     </div>
+  );
+}
+
+// A removable context pill in the creator composer — the selected session /
+// tagged co-host, shown even when the picker is collapsed.
+function ContextChip({ color, onRemove, children }: { color: string; onRemove: () => void; children: ReactNode }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full pl-3 pr-1.5 py-1" style={{ backgroundColor: `${color}14`, boxShadow: `inset 0 0 0 1.5px ${color}` }}>
+      <span className="text-[12px] font-black font-headline" style={{ color }}>{children}</span>
+      <button type="button" onClick={onRemove} aria-label="Remove context" className="w-4 h-4 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: color }}>
+        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round"><line x1="6" y1="6" x2="18" y2="18" /><line x1="18" y1="6" x2="6" y2="18" /></svg>
+      </button>
+    </span>
   );
 }
