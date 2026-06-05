@@ -14,10 +14,11 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from "react";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { createChallengePost, createChallengeComment, toggleChallengeLike } from "@/app/actions/community";
 import { useExperienceSpaceStore } from "@/lib/experienceSpace/StoreProvider";
-import type { ExperienceViewer, SpaceCreator } from "@/lib/experienceSpace/store";
+import type { ExperienceViewer, SpaceCreator, SpaceSession } from "@/lib/experienceSpace/store";
 import { Avatar } from "./Avatar";
 
 interface CoachAnswer { authorId: string; body: string; createdAt: string }
@@ -112,8 +113,6 @@ export function TribeFeed({
 
   const creatorById = useMemo(() => new Map(creators.map((c) => [c.id, c])), [creators]);
   const sessionById = useMemo(() => new Map(sessions.map((s) => [s.id, s])), [sessions]);
-  // Co-hosts a creator can tag as context on a Share (everyone but themselves).
-  const otherCreators = useMemo(() => creators.filter((c) => c.id !== viewer.id), [creators, viewer.id]);
   // Name/avatar resolver for likers — the tribe roster (DEFINER snapshot) has
   // everyone, so even private members resolve here. Fallback "Member".
   const peopleById = useMemo(() => {
@@ -243,10 +242,9 @@ export function TribeFeed({
     const text = body.trim();
     const isQuestion = kind === "question";
     const media = mediaUrl;
-    // A creator's Share can carry context: a session (context_type='session')
-    // and/or a tagged co-host (directed_to — silent context, not a question).
+    // A creator's Share can reference a session (context_type='session').
+    // Participants' Shares carry no context.
     const ctxSession = !isQuestion && isCreator ? contextSessionId : null;
-    const taggedCohost = !isQuestion && isCreator ? askId : null;
     setPosting(true); setError(null);
     const result = isQuestion
       ? await createChallengePost(spaceId, text, { kind: "question", directedTo: [askId!], mediaUrl: media })
@@ -254,7 +252,6 @@ export function TribeFeed({
           kind: "talk", mediaUrl: media,
           contextType: ctxSession ? "session" : undefined,
           contextId: ctxSession ?? undefined,
-          directedTo: taggedCohost ? [taggedCohost] : undefined,
         });
     if (result?.error) { setError(result.error); setPosting(false); return; }
     const postId = (result as { postId?: string })?.postId;
@@ -262,7 +259,7 @@ export function TribeFeed({
       profRef.current[viewer.id] = { name: viewer.name, avatar: viewer.avatar };
       const optimistic: FeedPost = {
         id: postId, author_id: viewer.id, body: text, kind: isQuestion ? "question" : "talk",
-        contextId: ctxSession, directedTo: isQuestion ? [askId!] : (taggedCohost ? [taggedCohost] : []), mediaUrl: media,
+        contextId: ctxSession, directedTo: isQuestion ? [askId!] : [], mediaUrl: media,
         likeCount: 0, commentCount: 0, likedByMe: false, coachAnswer: null,
         created_at: new Date().toISOString(), authorName: viewer.name, authorAvatar: viewer.avatar,
       };
@@ -342,26 +339,21 @@ export function TribeFeed({
                   className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[12px] font-black font-headline transition-colors"
                   style={{ color: showContext ? CYAN : "#475569", backgroundColor: showContext ? "rgba(8,145,178,0.12)" : "rgba(15,34,41,0.05)", boxShadow: showContext ? `inset 0 0 0 1.5px ${CYAN}` : "none" }}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-                  {contextSessionId || askId ? "Context added" : "Add context"}
+                  {contextSessionId ? "Session added" : "Add context"}
                 </button>
               </div>
 
-              {(contextSessionId || askId) && (
+              {contextSessionId && (
                 <div className="mt-2.5 flex flex-wrap items-center gap-2">
-                  {contextSessionId && (
-                    <ContextChip color={CYAN} onRemove={() => setContextSessionId(null)}>On {sessionById.get(contextSessionId)?.title ?? "a session"}</ContextChip>
-                  )}
-                  {askId && (
-                    <ContextChip color={CYAN} onRemove={() => setAskId(null)}>For {creatorById.get(askId)?.name ?? "a co-host"}</ContextChip>
-                  )}
+                  <ContextChip color={CYAN} onRemove={() => setContextSessionId(null)}>On {sessionById.get(contextSessionId)?.title ?? "a session"}</ContextChip>
                 </div>
               )}
 
               {showContext && (
-                <div className="mt-3 rounded-xl p-3.5 space-y-3.5" style={{ backgroundColor: "#FCFAF6", boxShadow: "inset 0 0 0 1px rgba(15,34,41,0.06)" }}>
-                  {sessions.length > 0 && (
+                <div className="mt-3 rounded-xl p-3.5" style={{ backgroundColor: "#FCFAF6", boxShadow: "inset 0 0 0 1px rgba(15,34,41,0.06)" }}>
+                  {sessions.length > 0 ? (
                     <div>
-                      <p className="text-[10px] uppercase tracking-[0.16em] font-headline mb-1.5" style={{ color: "#94a3b8", fontWeight: 800 }}>On a session</p>
+                      <p className="text-[10px] uppercase tracking-[0.16em] font-headline mb-1.5" style={{ color: "#94a3b8", fontWeight: 800 }}>Reference a session</p>
                       <div className="flex flex-wrap gap-2">
                         {sessions.map((s) => {
                           const active = contextSessionId === s.id;
@@ -375,27 +367,8 @@ export function TribeFeed({
                         })}
                       </div>
                     </div>
-                  )}
-                  {otherCreators.length > 0 && (
-                    <div>
-                      <p className="text-[10px] uppercase tracking-[0.16em] font-headline mb-1.5" style={{ color: "#94a3b8", fontWeight: 800 }}>For a co-host</p>
-                      <div className="flex flex-wrap gap-2">
-                        {otherCreators.map((c) => {
-                          const active = askId === c.id;
-                          return (
-                            <button key={c.id} type="button" onClick={() => { setAskId(active ? null : c.id); setError(null); }}
-                              className="flex items-center gap-1.5 rounded-full pl-1 pr-3 py-1 transition-colors"
-                              style={{ backgroundColor: active ? "rgba(8,145,178,0.12)" : "rgba(15,34,41,0.05)", boxShadow: active ? `inset 0 0 0 1.5px ${CYAN}` : "none" }}>
-                              <Avatar src={c.avatar} name={c.name} size={26} ring={c.role === "owner" ? ORANGE : CYAN} />
-                              <span className="text-[12px] font-black font-headline" style={{ color: active ? CYAN : "#475569" }}>{c.name}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                  {sessions.length === 0 && otherCreators.length === 0 && (
-                    <p className="text-[12px] font-bold font-headline" style={{ color: "#94a3b8" }}>No sessions or co-hosts to reference yet.</p>
+                  ) : (
+                    <p className="text-[12px] font-bold font-headline" style={{ color: "#94a3b8" }}>No sessions to reference yet.</p>
                   )}
                 </div>
               )}
@@ -488,9 +461,9 @@ export function TribeFeed({
                 viewer={viewer}
                 creatorById={creatorById}
                 peopleById={peopleById}
-                directedCreator={(p.kind === "question" || p.kind === "talk") && p.directedTo.length > 0 ? creatorById.get(p.directedTo[0]) : undefined}
+                directedCreator={p.kind === "question" ? creatorById.get(p.directedTo[0]) : undefined}
                 reflectsOn={p.kind === "reflection" && p.contextId ? sessionById.get(p.contextId)?.title ?? null : null}
-                contextSession={p.kind === "talk" && p.contextId ? sessionById.get(p.contextId)?.title ?? null : null}
+                contextSession={p.kind === "talk" && p.contextId ? sessionById.get(p.contextId) ?? null : null}
                 introPrompt={p.kind === "intro" ? introPrompt : null}
                 isOwn={p.author_id === viewer.id}
                 onLike={() => toggleLike(p)}
@@ -517,7 +490,7 @@ function PostCard({
   peopleById: Map<string, { name: string; avatar: string | null }>;
   directedCreator?: SpaceCreator;
   reflectsOn?: string | null;
-  contextSession?: string | null;
+  contextSession?: SpaceSession | null;
   introPrompt?: string | null;
   isOwn: boolean;
   onLike: () => void;
@@ -573,12 +546,8 @@ function PostCard({
               {introPrompt && <p className="text-[13px] italic leading-snug" style={{ color: "#475569" }}>“{introPrompt}”</p>}
             </ContextBanner>
           )}
-          {post.kind === "talk" && (contextSession || directedCreator) && (
-            <ContextBanner color={CYAN} label="Context">
-              <span className="text-[14px] font-black font-headline" style={{ color: CYAN }}>
-                {[contextSession ? `On ${contextSession}` : null, directedCreator ? `For ${directedCreator.name}` : null].filter(Boolean).join("  ·  ")}
-              </span>
-            </ContextBanner>
+          {post.kind === "talk" && contextSession && (
+            <SessionContextCard session={contextSession} />
           )}
 
           <p className="text-sm leading-relaxed whitespace-pre-wrap mt-3" style={{ color: "#334155" }}>{post.body}</p>
@@ -718,8 +687,8 @@ function ContextBanner({ color, label, stacked, children }: { color: string; lab
   );
 }
 
-// A removable context pill in the creator composer — the selected session /
-// tagged co-host, shown even when the picker is collapsed.
+// A removable context pill in the creator composer — the selected session,
+// shown even when the picker is collapsed.
 function ContextChip({ color, onRemove, children }: { color: string; onRemove: () => void; children: ReactNode }) {
   return (
     <span className="inline-flex items-center gap-1.5 rounded-full pl-3 pr-1.5 py-1" style={{ backgroundColor: `${color}14`, boxShadow: `inset 0 0 0 1.5px ${color}` }}>
@@ -728,5 +697,41 @@ function ContextChip({ color, onRemove, children }: { color: string; onRemove: (
         <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round"><line x1="6" y1="6" x2="18" y2="18" /><line x1="18" y1="6" x2="6" y2="18" /></svg>
       </button>
     </span>
+  );
+}
+
+// The referenced-session embed inside a creator's Share — mirrors the
+// WeekJourney agenda row (cover · when · title · host) and taps through to the
+// session. Fed from the store, so it carries the live session details.
+function SessionContextCard({ session }: { session: SpaceSession }) {
+  const start = new Date(session.startTime);
+  const day = start.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+  const time = start.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  const m = session.durationMinutes;
+  const dur = m < 60 ? `${m} min` : m % 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${Math.floor(m / 60)}h`;
+  return (
+    <a
+      href={`/sessions/${session.id}`}
+      className="group flex items-stretch rounded-xl overflow-hidden mt-2.5"
+      style={{ backgroundColor: "#FAF7F1", boxShadow: `inset 3.5px 0 0 ${CYAN}, 0 0 0 1px rgba(15,34,41,0.05)` }}
+    >
+      <div className="relative shrink-0 w-20 sm:w-24" style={{ backgroundColor: "#ECE7DD" }}>
+        {session.imageUrl ? (
+          <Image src={session.imageUrl} alt="" fill sizes="96px" loading="lazy" decoding="async" className="object-cover" />
+        ) : (
+          <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, rgba(156,240,255,0.3), rgba(255,97,48,0.12))" }} />
+        )}
+      </div>
+      <div className="flex-1 min-w-0 py-2.5 px-3.5 flex flex-col justify-center">
+        <p className="text-[10px] uppercase tracking-[0.16em] font-headline" style={{ color: CYAN, fontWeight: 800 }}>Session</p>
+        <h4 className="font-black font-headline tracking-tight mt-0.5 truncate" style={{ color: INK, fontSize: "clamp(0.95rem, 3vw, 1.05rem)" }}>{session.title}</h4>
+        <p className="text-[11px] mt-0.5 truncate" style={{ color: "#94a3b8" }} suppressHydrationWarning>{day} · {time} · {dur} · {session.hostName}</p>
+      </div>
+      <div className="shrink-0 self-center pr-3 pl-1">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="transition-transform group-hover:translate-x-0.5">
+          <polyline points="9 18 15 12 9 6" />
+        </svg>
+      </div>
+    </a>
   );
 }
