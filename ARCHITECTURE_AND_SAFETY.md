@@ -71,10 +71,35 @@ Ran the security advisor: **5 ERROR, 71 WARN.** Most are expected (our SECURITY 
 
 ---
 
-## 6. Open questions for you (human-knowledge — needed to finish the safety picture)
+## 6. Answers (recorded) + what they mean
 
-1. **Supabase plan**: free or Pro? (Determines backup retention + whether PITR exists.)
-2. **2FA**: enabled on GitHub, Supabase, Vercel, Stripe, Daily, and the domain registrar? Backup codes stored somewhere safe (not only on the laptop)?
-3. **Account ownership**: are these on a company email you'll keep, or a personal one? Is there a second admin on the critical accounts (bus-factor)?
-4. **Secrets backup**: is there any copy of the env/secret values outside the Supabase/Vercel dashboards (e.g., a password manager)?
-5. **This laptop**: is it the only dev machine? (Code is safe on GitHub regardless; this is about local-only secrets + habits.)
+1. **Supabase plan = FREE.** → daily backup, ~7-day retention, **no PITR**. Acceptable floor for pre-launch; **upgrade to Pro (~$25/mo) + PITR before taking real payments** (losing financial rows is unacceptable). 🔴 for launch.
+2. **2FA = unknown / to check.** → Treat as a must-do: enable on all 6 accounts + store backup codes off-laptop. 🔴 until confirmed.
+3. **Accounts on a private email / a private Google account for INFITRA.** → Use ONE durable dedicated INFITRA Google account for all infra; avoid a fragile personal address; add a recovery method. Single-owner = bus-factor risk (acceptable solo, note it). 🟡
+4. **No secrets backup.** → Secrets live only in Supabase/Vercel dashboards + local `.env`. Put them in a **password manager** (durable off-laptop copy). 🔴 (single point).
+5. **Single laptop, only dev machine.** → Code is safe on GitHub regardless; the real local-only assets are `.env` + (until fix #1) the DB schema. Password-manager + schema-in-git remove this exposure.
+
+## 7. Where to SEE each thing yourself
+
+| Want to see… | Go to |
+|---|---|
+| All the **code** (frontend, edge functions, migrations) | GitHub → `github.com/infitra/Infitra-backend` (or locally in VS Code) |
+| **Data + tables** | Supabase dashboard → Table Editor |
+| **In-DB logic** (RLS policies, functions/RPCs, triggers, views) | Supabase → Database → Policies / Functions / Triggers / Views (+ SQL Editor) |
+| **Edge functions** (deployed) | Supabase → Edge Functions |
+| **Logins / users** | Supabase → Authentication |
+| **Uploaded images** | Supabase → Storage (`profile-images`) |
+| **Secrets / API keys** | Supabase → Project Settings → API + Edge Functions → Secrets; Vercel → Settings → Environment Variables |
+| **The website hosting** (builds, domain, env) | Vercel dashboard → the `infitra-backend` project |
+| **Payments** | Stripe dashboard · **Live video** | Daily dashboard |
+
+## 8. The "100% safe" checklist (confirmed, prioritized)
+
+- 🔴 **DB schema → into git.** `supabase db dump` committed to `db/schema.sql` (+ refresh on each migration). Gives a second, restorable copy of the full DB structure off Supabase. *(Guided — needs the DB password / CLI link.)*
+- 🔴 **Supabase → Pro + PITR before real payments.**
+- 🔴 **Secrets → a password manager** (off-laptop copy of every env value).
+- 🔴 **2FA on all 6 accounts** (GitHub, Supabase, Vercel, Stripe, Daily, registrar) + backup codes in the password manager, all under a dedicated INFITRA Google account.
+- 🟡 **Security hygiene migration** (§3): lock down `app_profile_stats`, de-list `profile-images`, pin `search_path` ×4, enable leaked-password protection.
+- 🟢 Already safe: source code (GitHub, all pushed, no committed secrets).
+
+Reaching all of the above = "any single device loss, account hiccup, or accidental deletion is fully recoverable" — the realistic meaning of 100% safe.
