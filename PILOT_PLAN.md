@@ -2134,3 +2134,53 @@ Then (pushed back):          Bundle 10 (emails) → Bundle 11 (verification)
                              → H6 (landing polish) → Bundle 12 (demo/outreach)
 Parked w/ triggers:          LiveKit migration · Stripe Connect · native app · continuation
 ```
+
+> **§9 is superseded by §10 (v5)** — economics rework + Vercel deploy + reordered Phase 2.
+
+---
+
+## 10. v5 — economics + deploy + reordered Phase 2 (AUTHORITATIVE)
+
+> Supersedes §9's ordering. Adds pilot economics, the Vercel deploy plan, and a
+> hard gate: a full **architecture + safety/DR analysis** runs after this is
+> committed and **before** the first build step (H0).
+
+### Locked decisions (v4 + v5)
+- **Pilot platform fee = founding 10%** (down from 20%; time-limited "founding creator" framing). At pilot scale the fee is an *acquisition* lever, not revenue — absolute amounts are tiny. Confirm the exact number when building H2.
+- **Manual payouts** for the pilot; **Stripe Connect deferred** post-pilot.
+- **Dashboards polished, not rebuilt.**
+- **Web + optional PWA-lite**; native app parked (Apple IAP/review risk for a payments product).
+- **Daily kept; LiveKit gated on the H0 spike.**
+- **Tiered pricing is DESIGN-ONLY pre-pilot** — do not build creator subscriptions / per-tier fee resolution now.
+
+### Economics
+
+**Current (verified):** 20%/80% is a hardcoded `0.8` in `functions/stripe_webhook/index.ts` (computeEconomics). `app_transaction` holds `amount_gross_cents` / `platform_cut_cents` / `creator_cut_cents`; buyer absorbs Stripe fees so the split is on the base price. Earnings views (`vw_my_creator_summary`, `vw_my_transactions`) + `app_payout` **exist live**; the earnings page computes platform cut as `gross − creator_cut` (works at any fee). **No** payout-destination columns on `app_profile`; **no** Stripe Connect. Cohost split distribution is **unimplemented** (webhook records the owner's full 80%).
+
+**Build (H2):**
+- Configurable fee resolved at checkout → Stripe metadata → webhook applies it → record `platform_fee_percent` on `app_transaction` (audit + the seam the future tier model plugs into). Pilot = one global founding rate (env/`app_setting`).
+- Manual payout readiness: capture creator payout destination (columns on `app_profile` or a small `app_creator_payout_detail`); show **accrued/owed**; record payouts in `app_payout`. Co-hosted splits computed manually from `app_challenge_cohost.split_percent` at payout time.
+
+**Pilot margin math:** variable cost/sale ≈ 0 (Stripe washed via buyer-absorb; manual payout free); fixed infra ≈ CHF 40–70/mo (Vercel Pro + Supabase + Daily/email). E.g. 1 creator × CHF 99 × 10 = CHF 990 gross → 10% = CHF 99 platform / CHF 891 creator. The pilot is not a revenue exercise.
+
+**Post-pilot tiered model (DESIGN ONLY):** Free (CHF 0/mo, ~15%) · Starter (~CHF 29/mo, ~8%) · Growth (~CHF 99/mo, ~3%). Creator prefers a paid tier above gross = `sub ÷ Δ%` (illustrative: ~CHF 414/mo → Starter, ~CHF 1,400/mo → Growth). Numbers illustrative — set with pilot willingness-to-pay data. Build = creator Stripe subscriptions + per-tier fee resolution (extends the H2 seam) + tier UI; parked until the pilot validates demand.
+
+### Vercel deploy plan
+- **Move to Vercel Pro before launch — compliance gate** (Hobby is non-commercial; real payments need Pro or self-host). ~$20/mo.
+- Spend cap + billing alert; re-evaluate host at ~CHF 100–200/mo.
+- At pilot scale: within Pro allotments. Watch the buyer-page SSR waterfall + image weight (the cost meters).
+- Portability stays policy: no Vercel proprietary data products; `next/image` loader abstraction (done); `next start` container must stay valid (OpenNext/Cloudflare or Docker as escape hatch).
+- Ops/config, not a build → slotted in H1.
+
+### Phase 2 — final order
+- **H0 · LiveKit spike** (1d, gating) — token mint in Deno edge + bare `<VideoConference/>` connects → schedule or park the migration.
+- **H1 · Platform, deploy & boundaries** — mobile/desktop gates (workspace desktop-only); notification design; **Vercel Pro + spend cap + portability confirm**; optional PWA-lite.
+- **H2 · Pilot economics + payouts** — configurable founding fee end-to-end; payout-destination capture; accrued/owed earnings.
+- **H3 · Calendar export + contract display** — `.ics` (participant + creator) + post-publish contract view.
+- **H4 · Two-sided workspace preview** — live buyer-page/space preview from the draft.
+- **H5 · Dashboard + earnings polish** — polish (not rebuild) creator + `/me` + earnings.
+- → **Bundle 10 emails → Bundle 11 verification → H6 landing polish → Bundle 12 demo/outreach.**
+- **Parked (triggers):** LiveKit migration · Stripe Connect + tiers · native app · continuation.
+
+### Gate before building: architecture + safety/DR analysis
+After this section is committed, produce `ARCHITECTURE_AND_SAFETY.md`: where everything lives (Supabase, Vercel, GitHub origin, Stripe, Daily, domain/DNS, env/secrets) + safety against loss (git/origin redundancy, Supabase backups/PITR + restore drill, secrets/env backup, account access + 2FA, single-points-of-failure, device-loss resilience, recovery runbook) + a prioritized fix-list. **Then** start H0.
