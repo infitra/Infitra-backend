@@ -64,6 +64,8 @@ export interface SpaceSession {
   hostName: string;
   hostAvatar: string | null;
   cohosts: { id: string; name: string; avatar: string | null }[];
+  /** Cohort pre-session pulse aggregate (count/avg, shown past a small floor). */
+  prePulse?: { count: number; avg: number; canShow: boolean };
 }
 
 /** "Host & Co-host" label for a session — host first, then co-hosts. */
@@ -113,10 +115,15 @@ export interface CreatorStats {
   reflections: number;
 }
 
-/** Action Bar item. Bundle 5 ships only `intro`; 6-9 add pre_pulse/reflection/question. */
+/** Action Bar item. `intro` (B5), `pre_pulse` + `reflection` (B6/B7). */
 export interface ActionItem {
   kind: string;
   introPrompt?: string;
+  /** pre_pulse / reflection: the session the action is about. */
+  sessionId?: string;
+  sessionTitle?: string;
+  /** pre_pulse: when the session starts (for the card copy). */
+  startTime?: string;
   [key: string]: unknown;
 }
 
@@ -179,6 +186,8 @@ export interface ExperienceSpaceActions {
   applyMembers: (members: TribeMember[], count: number) => void;
   /** The current user posted their intro → drop the intro action card. */
   clearIntroAction: () => void;
+  /** Drop a resolved action item (pre_pulse / reflection) by kind + session. */
+  clearActionItem: (kind: string, sessionId: string) => void;
 }
 
 export type ExperienceSpaceStore = ExperienceSpaceState & ExperienceSpaceActions;
@@ -221,5 +230,12 @@ export function createExperienceSpaceStore(
 
     clearIntroAction: () =>
       set((s) => ({ actionItems: s.actionItems.filter((a) => a.kind !== "intro") })),
+
+    clearActionItem: (kind, sessionId) =>
+      set((s) => ({
+        actionItems: s.actionItems.filter(
+          (a) => !(a.kind === kind && a.sessionId === sessionId),
+        ),
+      })),
   }));
 }

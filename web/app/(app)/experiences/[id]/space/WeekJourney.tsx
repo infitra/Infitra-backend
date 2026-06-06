@@ -397,6 +397,15 @@ function HeroSessionCard({
         <p className="text-xs mt-1.5" style={{ color: "#64748b" }} suppressHydrationWarning>
           {fmtDay(session.startTime)} · {fmtTime(session.startTime)} · {fmtDur(session.durationMinutes)} · {sessionTeamLabel(session)}
         </p>
+        {session.prePulse?.canShow && (
+          <span
+            className="inline-flex items-center gap-1.5 mt-2 self-start px-2.5 py-1 rounded-full text-[11px] font-bold font-headline"
+            style={{ backgroundColor: "rgba(8,145,178,0.10)", color: CYAN }}
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={CYAN} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2" /></svg>
+            Cohort energy {session.prePulse.avg}/10
+          </span>
+        )}
 
         <div className="flex items-center justify-between gap-3 mt-auto pt-3.5">
           {live ? (

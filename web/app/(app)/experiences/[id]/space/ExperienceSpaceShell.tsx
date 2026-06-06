@@ -19,6 +19,8 @@ import { initFromSeed } from "./initState";
 import { ExperienceHeader } from "./ExperienceHeader";
 import { TribeFeed } from "./TribeFeed";
 import { IntroActionCard } from "./IntroActionCard";
+import { PrePulseCard } from "./PrePulseCard";
+import { ReflectionCard } from "./ReflectionCard";
 import { WeekJourney } from "./WeekJourney";
 import { YouPanel } from "./YouPanel";
 import { ProgressCard } from "./ProgressCard";
@@ -100,6 +102,10 @@ function SpaceBody() {
 
   const introAction = actionItems.find((a) => a.kind === "intro");
   const showIntro = !!introAction && isMember;
+  // Engagement check-ins (Bundle 6/7) — server-gated to sessions the viewer
+  // attends, so no extra membership check needed here.
+  const pulseActions = actionItems.filter((a) => a.kind === "pre_pulse" && a.sessionId);
+  const reflectionActions = actionItems.filter((a) => a.kind === "reflection" && a.sessionId);
   const canPost = isMember || isCreator;
   const degraded = channelStatus === "reconnecting" || channelStatus === "error";
 
@@ -133,9 +139,28 @@ function SpaceBody() {
         </aside>
 
         <main className="space-y-6 min-w-0">
-          {showIntro && (
-            <div id="your-move" className="scroll-mt-24">
-              <IntroActionCard spaceId={spaceId} prompt={introAction!.introPrompt ?? "Introduce yourself to the Tribe."} />
+          {(showIntro || pulseActions.length > 0 || reflectionActions.length > 0) && (
+            <div id="your-move" className="scroll-mt-24 space-y-4">
+              {/* Time-sensitive first: pulse (session imminent) → reflection
+                  (just ended) → intro (ongoing onboarding). */}
+              {pulseActions.map((a) => (
+                <PrePulseCard
+                  key={`pulse-${a.sessionId}`}
+                  sessionId={a.sessionId as string}
+                  sessionTitle={a.sessionTitle ?? "your next session"}
+                  startTime={a.startTime}
+                />
+              ))}
+              {reflectionActions.map((a) => (
+                <ReflectionCard
+                  key={`refl-${a.sessionId}`}
+                  sessionId={a.sessionId as string}
+                  sessionTitle={a.sessionTitle ?? "that session"}
+                />
+              ))}
+              {showIntro && (
+                <IntroActionCard spaceId={spaceId} prompt={introAction!.introPrompt ?? "Introduce yourself to the Tribe."} />
+              )}
             </div>
           )}
           <WeekJourney />
