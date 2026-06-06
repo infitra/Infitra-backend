@@ -259,7 +259,7 @@ function programInsight(program: Program, partner: Partner | null): Insight {
       return {
         tone: "urgent",
         message: `Next session ${rel} — you're set`,
-        primary: { label: "Prepare session", kind: "navigate", href: `/dashboard/sessions/${program.nextSession!.id}` },
+        primary: { label: "Prepare session", kind: "navigate", href: `/dashboard/collaborate/${program.id}` },
       };
     }
 
@@ -773,17 +773,19 @@ function FeaturedSessionCard({
   session,
   programStart,
   isUrgent,
+  challengeId,
 }: {
   session: ProgramSession;
   programStart: string | null;
   isUrgent: boolean;
+  challengeId: string;
 }) {
   const t = formatNextSessionTime(session.startTime);
   const week = weekOfSession(programStart, session.startTime);
   const eyebrowColor = isUrgent ? "#ef4444" : "#0891b2";
   return (
     <Link
-      href={`/dashboard/sessions/${session.id}`}
+      href={`/dashboard/collaborate/${challengeId}`}
       className="shrink-0 block rounded-2xl overflow-hidden transition-shadow hover:shadow-md"
       style={{
         width: 320,
@@ -891,14 +893,16 @@ function LaunchMoment({
 function OtherSessionThumb({
   session,
   programStart,
+  challengeId,
 }: {
   session: ProgramSession;
   programStart: string | null;
+  challengeId: string;
 }) {
   const week = weekOfSession(programStart, session.startTime);
   return (
     <Link
-      href={`/dashboard/sessions/${session.id}`}
+      href={`/dashboard/collaborate/${challengeId}`}
       className="shrink-0 block rounded-2xl overflow-hidden transition-shadow hover:shadow-md"
       style={{
         width: 180,
@@ -968,12 +972,14 @@ function SessionScroller({ program }: { program: Program }) {
           session={next}
           programStart={program.startDate}
           isUrgent={isUrgent}
+          challengeId={program.id}
         />
         {rest.map((s) => (
           <OtherSessionThumb
             key={s.id}
             session={s}
             programStart={program.startDate}
+            challengeId={program.id}
           />
         ))}
       </div>
@@ -1012,6 +1018,7 @@ function MomentBlock({
         session={program.nextSession}
         programStart={program.startDate}
         isUrgent={minsToNext > 0 && minsToNext < 24 * 60}
+        challengeId={program.id}
       />
     );
   }

@@ -17,19 +17,19 @@ export function LiveRoomEmbed({
   sessionId,
   sessionTitle,
   isHost,
+  backHref,
 }: {
   sessionId: string;
   sessionTitle: string;
   isHost: boolean;
+  /** Where "Leave" / "Go back" returns to — the creator's workspace or the
+   *  participant's Experience Space, resolved by the live page. */
+  backHref: string;
 }) {
   const [status, setStatus] = useState<Status>("loading");
   const [roomUrl, setRoomUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<Summary | null>(null);
-
-  const backPath = isHost
-    ? `/dashboard/sessions/${sessionId}`
-    : `/sessions/${sessionId}`;
 
   const fetchToken = useCallback(async () => {
     setStatus("loading");
@@ -174,7 +174,7 @@ export function LiveRoomEmbed({
               Try Again
             </button>
             <Link
-              href={backPath}
+              href={backHref}
               className="w-full py-3 rounded-full text-sm font-bold font-headline text-center transition-colors hover:opacity-80"
               style={{
                 color: "#475569",
@@ -253,7 +253,7 @@ export function LiveRoomEmbed({
             </div>
           )}
           <Link
-            href={backPath}
+            href={backHref}
             className="inline-block px-6 py-3 rounded-full text-white text-sm font-black font-headline hover:scale-[1.02] transition-transform"
             style={{
               backgroundColor: "#FF6130",
@@ -261,7 +261,7 @@ export function LiveRoomEmbed({
                 "0 4px 14px rgba(255,97,48,0.35), 0 2px 6px rgba(255,97,48,0.20)",
             }}
           >
-            {isHost ? "Back to Dashboard" : "Back to Session"}
+            {isHost ? "Back to workspace" : "Back to your Experience"}
           </Link>
         </div>
       </div>
@@ -308,7 +308,7 @@ export function LiveRoomEmbed({
             </button>
           ) : (
             <Link
-              href={backPath}
+              href={backHref}
               className="px-4 py-2 rounded-full text-xs font-bold font-headline transition-colors hover:opacity-80"
               style={{
                 color: "#475569",

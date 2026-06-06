@@ -143,7 +143,10 @@ function describeNotification(n: EnrichedNotification): NotificationContent {
         return {
           title: "Session rescheduled",
           detail: "A session time was updated",
-          href: p.session_id ? `/dashboard/sessions/${p.session_id}` : null,
+          // The Experience Space works for either recipient (participant lands
+          // there; a creator sees their console there) — and the standalone
+          // session pages are retired.
+          href: p.challenge_id ? `/experiences/${p.challenge_id}/space` : null,
         };
       }
       return {

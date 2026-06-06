@@ -26,8 +26,18 @@ export default async function ParticipantLivePage({
     .single();
 
   if (!session) notFound();
-  if (session.status === "ended") redirect(`/sessions/${id}`);
-  if (!session.live_room_id) redirect(`/sessions/${id}`);
+
+  // Resolve the parent challenge so we can return the participant to the
+  // Experience Space (their home for this program), not the retired session page.
+  const { data: link } = await supabase
+    .from("app_challenge_session")
+    .select("challenge_id")
+    .eq("session_id", id)
+    .maybeSingle();
+  const backHref = link?.challenge_id ? `/experiences/${link.challenge_id}/space` : "/me";
+
+  if (session.status === "ended") redirect(backHref);
+  if (!session.live_room_id) redirect(backHref);
 
   // Entitlement guard (edge function does authoritative check, this is UX guard)
   const isHost = user.id === session.host_id;
@@ -38,7 +48,7 @@ export default async function ParticipantLivePage({
       .eq("session_id", id)
       .eq("user_id", user.id)
       .maybeSingle();
-    if (!attendance) redirect(`/sessions/${id}`);
+    if (!attendance) redirect(backHref);
   }
 
   return (
@@ -46,6 +56,7 @@ export default async function ParticipantLivePage({
       sessionId={id}
       sessionTitle={session.title}
       isHost={isHost}
+      backHref={backHref}
     />
   );
 }
