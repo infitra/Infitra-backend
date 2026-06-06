@@ -7,6 +7,10 @@
 
 ## 0. Status snapshot
 
+> ⚠️ This snapshot is historical. **Current frontier = §9 (v4 — Phase 2 pilot
+> hardening).** Bundles 1–9 are effectively shipped; Phase 2 (H0–H5) precedes the
+> pushed-back Bundles 10/11/12. Read §9 for what's next + the locked v4 decisions.
+
 ### What Bundle 2.x has shipped
 
 - **Phase 1 deletion** — tribes dashboard, dev-only routes, sessions list index, /discover, /creators/[username], /communities/creator all deleted; orphaned components purged; dashboard nav reduced to Home · Earnings · Create
@@ -1917,6 +1921,9 @@ These render minimal HTML reading challenge / session / Promise / Weekly Arc dat
 
 ## 6. Rollout sequence
 
+> ⚠️ Superseded by §9's revised order (Phase 2 H0–H5 → Bundle 10 → 11 → H6 → 12).
+> The Week 1–5 block below is the original v3 sequence, kept for context.
+
 ### Recommended order
 
 ```
@@ -2027,3 +2034,103 @@ The plan assumes some notification types are already wired in the existing RPCs 
 - `publish_challenge` → `challenge_published` for each cohost
 
 The existing `accept_collab_invite` is confirmed to insert `collab_accepted` for the inviter (line 82 of migration `20260513110859`).
+
+---
+
+## 9. v4 — Phase 2: Pre-verification pilot hardening (CURRENT FRONTIER)
+
+> Supersedes §0's stale "Bundle 4 next." Bundles 1–9 are effectively shipped:
+> 1–5 done; **8 (intro)** and **9 (Directed Q&A)** pulled forward during Bundle 5;
+> **6 (Pre-Session Pulse) + 7 (Post-Session Reflection)** shipped as the engagement
+> loop. Routes renamed in the legacy sweep: `/challenges/*` → `/experiences/*`,
+> `load_challenge_space` → `load_experience_space`, cohort space components live
+> in `web/app/(app)/experiences/[id]/space/`.
+>
+> Phase 2 is the polish + readiness work that must land **before** verification.
+> Bundles 10 / 11 / 12 are KEPT but pushed behind Phase 2.
+
+### Decisions locked (v4)
+
+- **Creator payouts — MANUAL for the pilot.** Capture payout details (bank/IBAN)
+  at onboarding/approval; platform holds funds via the existing Stripe Checkout;
+  pay creators by hand at pilot end. **Stripe Connect is deferred post-pilot**
+  (trigger: pilot success / payout volume). Saves ~1 week of Connect build + KYC
+  risk; right-sized for <10 creators.
+- **Dashboards — POLISH, not rebuild.** Refine existing creator/participant/
+  earnings surfaces; full rebuild deferred post-pilot (do it with real usage data).
+- **App — web + optional PWA-lite.** Native app parked post-pilot (App Store
+  review + Apple IAP ~30%-on-payments risk for a payments product). PWA-lite
+  (manifest + icons + service worker) keeps payments on web, gives app-feel cheap.
+- **Live provider — Daily for now; LiveKit gated on a 1-day spike** (see H0).
+  The `live_provider` adapter makes a later swap safe regardless.
+
+### Phase 2 bundles (in rollout order)
+
+**H0 · LiveKit spike (1 day, time-boxed, GATING) — do first.**
+Verify the one real unknown: minting a LiveKit access token inside the Supabase
+Deno edge runtime (`issue_join_token`) + a bare `@livekit/components-react`
+`<VideoConference />` connecting with that token. Clean → schedule the full
+Daily→LiveKit migration (~3.5–5d) into Phase 2 so the pilot runs on the kept
+stack; edge-runtime friction → park LiveKit post-pilot. Cheap way to turn a gut
+call into a data-backed one.
+
+**H1 · Platform boundaries + notifications (S–M) — cheap, derisks all testing.**
+- Mobile/desktop boundaries: workspace (`/dashboard/collaborate/[id]`) + heavy
+  creator editing are **desktop-only** with a clean "best on desktop" screen;
+  buyer page + Experience Space stay mobile-first (already responsive).
+- Notification dropdown design (items, empty/loading/read states) — `NotificationBell`
+  renders raw today.
+- *(Optional)* PWA-lite: web manifest + icons + minimal service worker.
+
+**H2 · Creator readiness + manual payouts (M) — pilot-critical money path.**
+- Creator onboarding polish (signup/approval flow).
+- Capture payout details (bank/IBAN) at onboarding; clearly state "manual payout
+  at pilot end."
+- Earnings page reflects **accrued** (not auto-paid) amounts. No Stripe Connect.
+
+**H3 · Calendar export + contract display (S–M) — two lean, high-ROI wins.**
+- `.ics` export: participant downloads their Experience calendar (their sessions);
+  creator downloads their hosting calendar (all sessions). Direct attendance lever.
+- Post-publish read-only contract view (the collaboration agreement; the pre-publish
+  "locked workspace = contract" doesn't cover post-publish).
+
+**H4 · Workspace preview — two-sided workspace (M–H) — the differentiator.**
+A preview pane/tab in the workspace that renders the REAL buyer page (+ Experience
+Space shell) from the live draft, so creators see the actual product INFITRA builds
+from their input. Raises published-page quality + creator confidence.
+
+**H5 · Dashboard + earnings polish (M) — daily-home quality.**
+Polish (NOT rebuild) the creator dashboard (`ActiveProgramCard` et al.), participant
+home (`/me`), and earnings page.
+
+### Pushed back (kept)
+
+- **Bundle 10 · Email touchpoints** — Kickoff / Session reminder / Missed session.
+  Also unblocks the deferred pulse/reflection PUSH notifications (the cron from
+  B6/B7 we deferred — the in-app action-item path already works).
+- **Bundle 11 · Verification + dogfooding** — full E2E pass of the pilot-critical
+  path (apply → buy → space → engagement loop → live → reflect → payout-accrual).
+  Gates "show with pride" outreach.
+- **H6 · Landing / marketing polish** — refresh with real product insight; slot
+  just before outreach scaling.
+- **Bundle 12 · Demo + outreach readiness.**
+
+### Parked (post-pilot / triggered)
+
+- **Daily→LiveKit migration** — slots into Phase 2 only if H0 is clean; else
+  post-pilot. Trigger: cost/scale or a custom-branded in-room UI need.
+- **Stripe Connect (automated payouts)** — trigger: pilot success / payout volume.
+- **Native app** — trigger: post-pilot validation. PWA-lite covers app-feel meanwhile.
+- **Continuation flow** — trigger: first pilot program nearing completion (backend
+  lineage via `continuation_group_id` is ready; this is a completion-time feature,
+  not pre-verification).
+
+### Revised rollout order
+
+```
+Phase 2 (pre-verification):  H0 spike → H1 → H2 → H3 → H4 → H5
+                             (+ Daily→LiveKit migration IF H0 clean)
+Then (pushed back):          Bundle 10 (emails) → Bundle 11 (verification)
+                             → H6 (landing polish) → Bundle 12 (demo/outreach)
+Parked w/ triggers:          LiveKit migration · Stripe Connect · native app · continuation
+```
