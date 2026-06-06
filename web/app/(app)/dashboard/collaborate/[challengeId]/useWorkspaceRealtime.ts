@@ -104,10 +104,34 @@ export function useWorkspaceRealtime({
     const snap = await loadWorkspaceSnapshot(challengeId, currentUserId);
     if (snap) reconcile(snap);
   }, [challengeId, currentUserId, reconcile]);
+  // Track whether the realtime socket is currently degraded so we can fall
+  // back to polling (below). Driven by the same status stream that feeds the
+  // "Reconnecting…" pill.
+  const [realtimeDegraded, setRealtimeDegraded] = useState(false);
   const { handleSubscribeStatus } = useChannelHealth({
-    onStatus: setChannelStatus,
+    onStatus: (s) => {
+      setChannelStatus(s);
+      setRealtimeDegraded(s === "error" || s === "reconnecting");
+    },
     onRecover: reconcileNow,
   });
+
+  // Graceful degradation for realtime-hostile networks. On some participants'
+  // devices (corporate firewalls, VPNs, WS-blocking extensions) the
+  // postgres_changes WebSocket never stays connected even though plain HTTP is
+  // fine — so the partner stops seeing changes until they manually reload.
+  // While the channel is degraded, poll the consolidated snapshot so updates
+  // still flow automatically. This adds NO second realtime channel — it's just
+  // a periodic load_workspace fetch, and only while the socket is down; it
+  // stops the moment the channel recovers (onRecover also fires one
+  // authoritative sync). On a healthy connection nothing here runs.
+  useEffect(() => {
+    if (!realtimeDegraded) return;
+    const t = window.setInterval(() => {
+      reconcileNow();
+    }, 10000);
+    return () => window.clearInterval(t);
+  }, [realtimeDegraded, reconcileNow]);
 
   // Keep local activity in sync with server-rendered initialActivity
   // when the page revalidates (e.g. router.refresh from another action).
