@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { WorkspaceShell } from "./WorkspaceShell";
+import { DesktopOnly } from "@/app/components/DesktopOnly";
 import type {
   WorkspaceChallenge,
   WorkspaceProfile,
@@ -96,22 +97,29 @@ export default async function CollaborateWorkspacePage({
         </div>
       </div>
 
-      <WorkspaceShell
-        challengeId={ws.challenge.id}
-        initialActivity={ws.activity}
-        knownSessionIds={ws.sessions.map((s) => s.id)}
-        dmConversationId={ws.dm_conversation_id}
-        currentUserId={user.id}
-        profileMap={ws.profile_map}
-        challenge={ws.challenge}
-        isOwner={ws.is_owner}
-        ownerProfile={ws.owner_profile}
-        ownerSplit={ws.owner_split}
-        cohosts={ws.cohosts}
-        sessions={ws.sessions}
-        pendingInvites={ws.pending_invites}
-        contract={ws.contract}
-      />
+      <DesktopOnly
+        title="The workspace is best on desktop"
+        message="The collaboration workspace is a detailed two-creator editor — themes, sessions, splits, the live contract. Open INFITRA on your laptop or desktop to design your program."
+        backHref="/dashboard"
+        backLabel="Back to dashboard"
+      >
+        <WorkspaceShell
+          challengeId={ws.challenge.id}
+          initialActivity={ws.activity}
+          knownSessionIds={ws.sessions.map((s) => s.id)}
+          dmConversationId={ws.dm_conversation_id}
+          currentUserId={user.id}
+          profileMap={ws.profile_map}
+          challenge={ws.challenge}
+          isOwner={ws.is_owner}
+          ownerProfile={ws.owner_profile}
+          ownerSplit={ws.owner_split}
+          cohosts={ws.cohosts}
+          sessions={ws.sessions}
+          pendingInvites={ws.pending_invites}
+          contract={ws.contract}
+        />
+      </DesktopOnly>
     </div>
   );
 }

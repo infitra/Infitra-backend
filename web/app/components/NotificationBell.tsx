@@ -59,6 +59,23 @@ function accentFor(type: string): string {
   return type === "collab_invite" ? ACCENT_INVITE : ACCENT_OTHER;
 }
 
+/** Glyph for notifications without a sender avatar (published, badge,
+ *  reschedule, etc.) — so every item reads at a glance instead of a bland dot. */
+function TypeIcon({ type, color }: { type: string; color: string }) {
+  const c = { width: 16, height: 16, viewBox: "0 0 24 24", fill: "none", stroke: color, strokeWidth: 1.9, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+  if (type === "badge_awarded")
+    return <svg {...c}><circle cx="12" cy="8" r="6" /><path d="M8.21 13.89 7 22l5-3 5 3-1.21-8.11" /></svg>;
+  if (type === "challenge_published")
+    return <svg {...c}><path d="M22 2 11 13" /><path d="M22 2 15 22l-4-9-9-4 20-7z" /></svg>;
+  if (type.startsWith("contract_"))
+    return <svg {...c}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6" /><path d="m9 15 2 2 4-4" /></svg>;
+  if (type === "question_for_you" || type === "coach_answered_your_question")
+    return <svg {...c}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>;
+  if (type === "system")
+    return <svg {...c}><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>;
+  return <svg {...c}><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>;
+}
+
 function timeAgo(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime();
   const min = Math.floor(ms / 60000);
@@ -337,8 +354,9 @@ export function NotificationBell() {
 
       {open && (
         <div
-          className="absolute right-0 mt-2 w-[380px] rounded-2xl overflow-hidden z-[60]"
+          className="absolute right-0 mt-2 rounded-2xl overflow-hidden z-[60]"
           style={{
+            width: "min(380px, calc(100vw - 1.5rem))",
             backgroundColor: "#FFFFFF",
             border: "1px solid rgba(15,34,41,0.10)",
             boxShadow: "0 16px 48px rgba(15,34,41,0.18)",
@@ -371,9 +389,13 @@ export function NotificationBell() {
                 Loading…
               </p>
             ) : items.length === 0 ? (
-              <p className="px-4 py-8 text-center text-xs" style={{ color: "#94a3b8" }}>
-                Nothing new yet.
-              </p>
+              <div className="px-4 py-10 text-center">
+                <div className="w-10 h-10 rounded-full mx-auto mb-3 flex items-center justify-center" style={{ backgroundColor: "rgba(8,145,178,0.10)" }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0891b2" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+                </div>
+                <p className="text-sm font-bold font-headline" style={{ color: "#64748b" }}>You&apos;re all caught up</p>
+                <p className="text-xs mt-1" style={{ color: "#94a3b8" }}>Invites, answers, and updates will land here.</p>
+              </div>
             ) : (
               items.map((n) => {
                 const d = describeNotification(n);
@@ -406,14 +428,15 @@ export function NotificationBell() {
                       ) : (
                         <div
                           className="w-8 h-8 rounded-full shrink-0 flex items-center justify-center"
-                          style={{ backgroundColor: "rgba(8,145,178,0.12)" }}
+                          style={{ backgroundColor: `${accent}1f` }}
                         >
-                          <span
-                            className="text-xs font-headline"
-                            style={{ color: "#0891b2", fontWeight: 700 }}
-                          >
-                            {(n.senderName?.[0] ?? "•").toUpperCase()}
-                          </span>
+                          {n.senderName ? (
+                            <span className="text-xs font-headline" style={{ color: accent, fontWeight: 700 }}>
+                              {n.senderName[0].toUpperCase()}
+                            </span>
+                          ) : (
+                            <TypeIcon type={n.type} color={accent} />
+                          )}
                         </div>
                       )}
                       <div className="min-w-0 flex-1">
