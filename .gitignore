@@ -9,3 +9,6 @@ build/
 supabase/.temp/
 .vscode/
 .claude/worktrees/
+
+# Supabase CLI scratch state (not for git)
+.temp/
