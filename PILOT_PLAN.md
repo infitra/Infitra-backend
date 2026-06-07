@@ -2173,14 +2173,14 @@ Parked w/ triggers:          LiveKit migration · Stripe Connect · native app �
 - Ops/config, not a build → slotted in H1.
 
 ### Phase 2 — final order
-- **H0 · LiveKit spike** (1d, gating) — token mint in Deno edge + bare `<VideoConference/>` connects → schedule or park the migration.
+- **H0 · LiveKit spike — ✅ DONE (clean).** Confirmed `npm:livekit-server-sdk@^2` mints a valid, correctly-granted LiveKit JWT in the Supabase Deno edge runtime (Deno 2.1.4; cold start incl. npm fetch ≈2.5s; no Node-API friction). → **Daily→LiveKit migration is GREENLIT for Phase 2** (~3.5–5d). What remains is execution, not unknown: a free LiveKit Cloud project (wss URL + API key/secret as edge secrets) + token-mint in `issue_join_token` + webhook remap + `LiveRoomEmbed` → `<LiveKitRoom><VideoConference/>` + room create/end.
 - **H1 · Platform, deploy & boundaries** — mobile/desktop gates (workspace desktop-only); notification design; **Vercel Pro + spend cap + portability confirm**; optional PWA-lite.
 - **H2 · Pilot economics + payouts** — configurable founding fee end-to-end; payout-destination capture; accrued/owed earnings.
 - **H3 · Calendar export + contract display** — `.ics` (participant + creator) + post-publish contract view.
 - **H4 · Two-sided workspace preview** — live buyer-page/space preview from the draft.
 - **H5 · Dashboard + earnings polish** — polish (not rebuild) creator + `/me` + earnings.
 - → **Bundle 10 emails → Bundle 11 verification → H6 landing polish → Bundle 12 demo/outreach.**
-- **Parked (triggers):** LiveKit migration · Stripe Connect + tiers · native app · continuation.
+- **Parked (triggers):** Stripe Connect + tiers · native app · continuation. *(Daily→LiveKit migration un-parked — greenlit by the H0 spike; now a Phase 2 block.)*
 
 ### Gate before building: architecture + safety/DR analysis
 After this section is committed, produce `ARCHITECTURE_AND_SAFETY.md`: where everything lives (Supabase, Vercel, GitHub origin, Stripe, Daily, domain/DNS, env/secrets) + safety against loss (git/origin redundancy, Supabase backups/PITR + restore drill, secrets/env backup, account access + 2FA, single-points-of-failure, device-loss resilience, recovery runbook) + a prioritized fix-list. **Then** start H0.
