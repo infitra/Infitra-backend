@@ -55,15 +55,49 @@ function writeLastSeen(): string {
   return now;
 }
 
+// Orange = "the ball is in your court" (someone is waiting on you to act).
+// Cyan = informational. Keeps the inbox scannable: orange rows are to-dos.
+const ACTION_TYPES = new Set([
+  "collab_invite",
+  "contract_locked",
+  "question_for_you",
+]);
+
 function accentFor(type: string): string {
-  return type === "collab_invite" ? ACCENT_INVITE : ACCENT_OTHER;
+  return ACTION_TYPES.has(type) ? ACCENT_INVITE : ACCENT_OTHER;
+}
+
+/** Compact star rating, e.g. 4 → "★★★★☆". Clamped 0–5. */
+function stars(rating: unknown): string {
+  const r = Math.max(0, Math.min(5, Math.round(Number(rating) || 0)));
+  return "★★★★★".slice(0, r) + "☆☆☆☆☆".slice(0, 5 - r);
+}
+
+/** Format a stored-UTC session time for display in the project timezone
+ *  (Asia/Phnom_Penh), e.g. "Mon, Jun 8, 6:00 PM". Null on bad input. */
+function formatSessionTime(iso: unknown): string | null {
+  if (typeof iso !== "string") return null;
+  const t = new Date(iso);
+  if (isNaN(t.getTime())) return null;
+  try {
+    return new Intl.DateTimeFormat("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      timeZone: "Asia/Phnom_Penh",
+    }).format(t);
+  } catch {
+    return null;
+  }
 }
 
 /** Glyph for notifications without a sender avatar (published, badge,
  *  reschedule, etc.) — so every item reads at a glance instead of a bland dot. */
 function TypeIcon({ type, color }: { type: string; color: string }) {
   const c = { width: 16, height: 16, viewBox: "0 0 24 24", fill: "none", stroke: color, strokeWidth: 1.9, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
-  if (type === "badge_awarded")
+  if (type === "badge_awarded" || type === "badge_monthly_digest")
     return <svg {...c}><circle cx="12" cy="8" r="6" /><path d="M8.21 13.89 7 22l5-3 5 3-1.21-8.11" /></svg>;
   if (type === "challenge_published")
     return <svg {...c}><path d="M22 2 11 13" /><path d="M22 2 15 22l-4-9-9-4 20-7z" /></svg>;
@@ -151,19 +185,32 @@ function describeNotification(n: EnrichedNotification): NotificationContent {
     }
     case "badge_awarded":
       return {
-        title: "Badge earned",
-        detail: typeof p.badge_label === "string" ? p.badge_label : "You earned a badge",
+        title: typeof p.badge_label === "string"
+          ? `You earned the ${p.badge_label} badge`
+          : "Badge earned",
+        detail: null,
         href: null,
       };
     case "system":
       if (p.kind === "session_time_changed") {
+        const when = formatSessionTime(p.new_start_time);
         return {
           title: "Session rescheduled",
-          detail: "A session time was updated",
-          // The Experience Space works for either recipient (participant lands
-          // there; a creator sees their console there) — and the standalone
-          // session pages are retired.
-          href: p.challenge_id ? `/experiences/${p.challenge_id}/space` : null,
+          // The new time is in the payload — surface it instead of a generic
+          // line. No challenge_id is carried and the standalone session pages
+          // are retired, so this row stays non-clickable (the value is the
+          // time itself, shown here).
+          detail: when ? `New time — ${when}` : "A session time was updated",
+          href: null,
+        };
+      }
+      // A collaborator left a review (delivered as a 'system' notification,
+      // discriminated by payload.event rather than kind).
+      if (p.event === "collab_review_new") {
+        return {
+          title: sender ? `${sender} reviewed your collaboration` : "New collaboration review",
+          detail: p.rating ? stars(p.rating) : "Open your dashboard to read it",
+          href: p.challenge_id ? `/experiences/${p.challenge_id}/space` : "/dashboard",
         };
       }
       return {
@@ -182,6 +229,25 @@ function describeNotification(n: EnrichedNotification): NotificationContent {
         title: sender ? `${sender} answered your question` : "Your question was answered",
         detail: "See the answer in your Tribe",
         href: p.challenge_id ? `/experiences/${p.challenge_id}/space` : "/me",
+      };
+    case "review_new": {
+      const preview = typeof p.preview === "string" ? p.preview.trim() : "";
+      return {
+        title: sender ? `${sender} left you a review` : "New review",
+        // Surface the rating + a snippet inline. No challenge_id is carried
+        // (only session_id) and there's no dedicated reviews surface yet, so
+        // the row is non-clickable — the value is shown here.
+        detail: `${stars(p.rating)}${preview ? ` · "${preview}"` : ""}`,
+        href: null,
+      };
+    }
+    case "badge_monthly_digest":
+      return {
+        title: "Your month in badges",
+        detail: typeof p.summary === "string" && p.summary.trim()
+          ? p.summary.trim()
+          : "Your monthly badge recap is ready",
+        href: null,
       };
     default:
       return { title: n.type.replace(/_/g, " "), detail: null, href: null };
@@ -267,6 +333,7 @@ export function NotificationBell() {
       if (typeof p.actor_id === "string") senderIds.add(p.actor_id);
       if (typeof p.asker_id === "string") senderIds.add(p.asker_id);
       if (typeof p.answerer_id === "string") senderIds.add(p.answerer_id);
+      if (typeof p.reviewer_id === "string") senderIds.add(p.reviewer_id);
     }
     const profileMap: Record<string, { name: string; avatar: string | null }> = {};
     if (senderIds.size > 0) {
@@ -288,6 +355,7 @@ export function NotificationBell() {
         (p.actor_id as string) ??
         (p.asker_id as string) ??
         (p.answerer_id as string) ??
+        (p.reviewer_id as string) ??
         null;
       const sender = senderId ? profileMap[senderId] : null;
       return {
