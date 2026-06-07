@@ -171,6 +171,18 @@ function describeNotification(n: EnrichedNotification): NotificationContent {
         detail: typeof p.message === "string" ? p.message : "Update from INFITRA",
         href: null,
       };
+    case "question_for_you":
+      return {
+        title: sender ? `${sender} asked you a question` : "New question for you",
+        detail: "Open your Tribe to answer",
+        href: p.challenge_id ? `/experiences/${p.challenge_id}/space` : "/dashboard",
+      };
+    case "coach_answered_your_question":
+      return {
+        title: sender ? `${sender} answered your question` : "Your question was answered",
+        detail: "See the answer in your Tribe",
+        href: p.challenge_id ? `/experiences/${p.challenge_id}/space` : "/me",
+      };
     default:
       return { title: n.type.replace(/_/g, " "), detail: null, href: null };
   }
@@ -245,12 +257,16 @@ export function NotificationBell() {
 
     // Step 2: enrich with sender names (batch profile lookup for the
     // notification types that have a sender — collab_invite,
-    // collab_accepted, dm_new). Single SELECT, no N+1.
+    // collab_accepted, dm_new, and the Q&A types whose "sender" lives
+    // under asker_id / answerer_id rather than from_id / actor_id).
+    // Single SELECT, no N+1.
     const senderIds = new Set<string>();
     for (const r of rows) {
       const p = r.payload ?? {};
       if (typeof p.from_id === "string") senderIds.add(p.from_id);
       if (typeof p.actor_id === "string") senderIds.add(p.actor_id);
+      if (typeof p.asker_id === "string") senderIds.add(p.asker_id);
+      if (typeof p.answerer_id === "string") senderIds.add(p.answerer_id);
     }
     const profileMap: Record<string, { name: string; avatar: string | null }> = {};
     if (senderIds.size > 0) {
@@ -267,7 +283,12 @@ export function NotificationBell() {
 
     const enriched: EnrichedNotification[] = rows.map((r) => {
       const p = r.payload ?? {};
-      const senderId = (p.from_id as string) ?? (p.actor_id as string) ?? null;
+      const senderId =
+        (p.from_id as string) ??
+        (p.actor_id as string) ??
+        (p.asker_id as string) ??
+        (p.answerer_id as string) ??
+        null;
       const sender = senderId ? profileMap[senderId] : null;
       return {
         ...r,
@@ -354,9 +375,13 @@ export function NotificationBell() {
 
       {open && (
         <div
-          className="absolute right-0 mt-2 rounded-2xl overflow-hidden z-[60]"
+          // Mobile: anchor to the VIEWPORT (fixed, inset 12px both sides, below
+          // the nav) so the panel can never clip off-screen — the previous
+          // `absolute right-0` anchored to the bell, which sits mid-right in the
+          // mobile nav, pushed a wide panel off the left edge. Desktop (sm+):
+          // revert to absolute, anchored to the bell, fixed 380px width.
+          className="fixed inset-x-3 top-16 rounded-2xl overflow-hidden z-[60] sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-[380px]"
           style={{
-            width: "min(380px, calc(100vw - 1.5rem))",
             backgroundColor: "#FFFFFF",
             border: "1px solid rgba(15,34,41,0.10)",
             boxShadow: "0 16px 48px rgba(15,34,41,0.18)",
