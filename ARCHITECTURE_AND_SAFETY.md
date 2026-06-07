@@ -95,11 +95,13 @@ Ran the security advisor: **5 ERROR, 71 WARN.** Most are expected (our SECURITY 
 
 ## 8. The "100% safe" checklist (confirmed, prioritized)
 
-- 🔴 **DB schema → into git.** `supabase db dump` committed to `db/schema.sql` (+ refresh on each migration). Gives a second, restorable copy of the full DB structure off Supabase. *(Guided — needs the DB password / CLI link.)*
-- 🔴 **Supabase → Pro + PITR before real payments.**
-- 🔴 **Secrets → a password manager** (off-laptop copy of every env value).
-- 🔴 **2FA on all 6 accounts** (GitHub, Supabase, Vercel, Stripe, Daily, registrar) + backup codes in the password manager, all under a dedicated INFITRA Google account.
-- 🟡 **Security hygiene migration** (§3): lock down `app_profile_stats`, de-list `profile-images`, pin `search_path` ×4, enable leaked-password protection.
-- 🟢 Already safe: source code (GitHub, all pushed, no committed secrets).
+- ✅ **DB schema → git (DONE).** `db/schema.sql` committed — full `supabase db dump --linked` (15.7k lines, schema-only, no data/secrets). DB is now rebuildable from the repo. **Refresh after each migration:** `supabase db dump --linked -f /Users/yvesimhasly/supabase/db/schema.sql`.
+- ✅ **Security hygiene migration (DONE)** — `20260605160000`: `app_profile_stats` SELECT locked down, `profile-images` de-listed, 4 collab functions `search_path`-pinned. (CLI `.temp/` also untracked + gitignored.)
+- 🔴 **Supabase → Pro + PITR before real payments** (you — tier is FREE: daily backup, no PITR).
+- 🔴 **Secrets → a password manager** (you — off-laptop copy of every env value; started with the DB password).
+- 🟡 **2FA on all 6 accounts** (GitHub, Supabase, Vercel, Stripe, Daily, registrar) + backup codes in the password manager (you — authenticator app started).
+- 🟡 **Enable Auth leaked-password protection** (you — Supabase → Authentication, ~30s toggle).
+- 🟡 **Rotate the exposed Google `X-Goog-Api-Key`** (you — appeared in a terminal screenshot + shell history).
+- 🟢 Already safe: source code (GitHub, all pushed, no committed secrets) + DB schema (now in git).
 
 Reaching all of the above = "any single device loss, account hiccup, or accidental deletion is fully recoverable" — the realistic meaning of 100% safe.
