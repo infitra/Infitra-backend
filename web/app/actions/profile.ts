@@ -3,7 +3,6 @@
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
-import { createClient as createSbClient } from "@supabase/supabase-js";
 
 export async function completeOnboarding(prevState: unknown, formData: FormData) {
   const supabase = await createClient();
@@ -122,33 +121,35 @@ export async function saveFirstMoves(formData: FormData) {
   const avatarFile = formData.get("avatar") as File | null;
   if (avatarFile && avatarFile.size > 0) {
     if (avatarFile.size > 5 * 1024 * 1024) return { error: "Photo must be under 5MB." };
-    // The @supabase/ssr server client carries the user's session for DB writes
-    // but NOT for storage uploads — those reach storage as `anon` and the
-    // bucket's authenticated-only INSERT policy rejects them ("new row violates
-    // row-level security policy"). Forward the user's access token explicitly so
-    // the storage request is authenticated as them; the path is their own folder
-    // (matches profile_images_user_insert). This sidesteps the ssr/browser
-    // session→storage propagation gap entirely.
+    // Upload via a RAW fetch to the storage REST API with the user's access
+    // token in Authorization. Both the ssr server client and the browser client
+    // failed to authenticate storage uploads here (request reached storage as
+    // anon → the bucket's authenticated-only INSERT policy rejected it), and
+    // setting global.headers on a throwaway supabase-js client gets overridden
+    // by its own per-request token resolution. A direct fetch leaves no
+    // ambiguity: the token is sent as-is, storage authenticates the user, and
+    // the path is their own folder (matches profile_images_user_insert).
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.access_token) return { error: "Your session expired — please sign in again." };
-    const authed = createSbClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        global: { headers: { Authorization: `Bearer ${session.access_token}` } },
-        auth: { persistSession: false, autoRefreshToken: false },
-      },
-    );
     const ext = avatarFile.name.split(".").pop()?.toLowerCase() || "jpg";
     const path = `${user.id}/avatar.${ext}`;
-    const bytes = new Uint8Array(await avatarFile.arrayBuffer());
-    const { error: upErr } = await authed.storage
-      .from("profile-images")
-      .upload(path, bytes, { upsert: true, contentType: avatarFile.type });
-    if (upErr) return { error: `Photo upload failed: ${upErr.message}` };
-    const base = authed.storage.from("profile-images").getPublicUrl(path).data.publicUrl;
-    // cache-bust so a re-uploaded photo (same path, upsert) refreshes in the browser
-    updates.avatar_url = `${base}?v=${Date.now()}`;
+    const base = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const res = await fetch(`${base}/storage/v1/object/profile-images/${path}`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        "Content-Type": avatarFile.type || "application/octet-stream",
+        "x-upsert": "true",
+      },
+      body: await avatarFile.arrayBuffer(),
+    });
+    if (!res.ok) {
+      const detail = await res.text().catch(() => "");
+      return { error: `Photo upload failed: ${detail || res.status}` };
+    }
+    // cache-bust so a re-uploaded photo (same path) refreshes in the browser
+    updates.avatar_url = `${base}/storage/v1/object/public/profile-images/${path}?v=${Date.now()}`;
   }
 
   // Nothing filled — treat as a no-op success (they hit "Later" on everything).
