@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { saveFirstMoves } from "@/app/actions/profile";
 import { submitIntro } from "@/app/actions/intro";
+import { uploadAvatar } from "@/lib/uploadAvatar";
 
 const ORANGE = "#FF6130";
 const CYAN = "#0891b2";
@@ -59,12 +60,16 @@ export function FirstMovesCard({
     setBusy(true);
     setError(null);
 
-    // Avatar + name go to saveFirstMoves, which uploads the photo server-side
-    // with the user's forwarded access token (the ssr/browser session doesn't
-    // reliably authenticate storage uploads otherwise).
+    // Photo → upload_avatar edge fn (service role; it persists avatar_url too).
+    // Name → saveFirstMoves. The edge fn is used because the in-app session
+    // doesn't authenticate storage uploads (they arrive as anon).
+    if (avatarFile) {
+      const up = await uploadAvatar(avatarFile);
+      if (up.error) { setError(up.error); setBusy(false); return; }
+    }
+
     const fd = new FormData();
     if (displayName.trim()) fd.append("display_name", displayName.trim());
-    if (avatarFile) fd.append("avatar", avatarFile);
     const res = await saveFirstMoves(fd);
     if (res && "error" in res && res.error) {
       setError(res.error);

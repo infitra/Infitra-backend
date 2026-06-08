@@ -118,39 +118,10 @@ export async function saveFirstMoves(formData: FormData) {
     updates.visibility = visibility;
   }
 
-  const avatarFile = formData.get("avatar") as File | null;
-  if (avatarFile && avatarFile.size > 0) {
-    if (avatarFile.size > 5 * 1024 * 1024) return { error: "Photo must be under 5MB." };
-    // Upload via a RAW fetch to the storage REST API with the user's access
-    // token in Authorization. Both the ssr server client and the browser client
-    // failed to authenticate storage uploads here (request reached storage as
-    // anon → the bucket's authenticated-only INSERT policy rejected it), and
-    // setting global.headers on a throwaway supabase-js client gets overridden
-    // by its own per-request token resolution. A direct fetch leaves no
-    // ambiguity: the token is sent as-is, storage authenticates the user, and
-    // the path is their own folder (matches profile_images_user_insert).
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.access_token) return { error: "Your session expired — please sign in again." };
-    const ext = avatarFile.name.split(".").pop()?.toLowerCase() || "jpg";
-    const path = `${user.id}/avatar.${ext}`;
-    const base = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const res = await fetch(`${base}/storage/v1/object/profile-images/${path}`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${session.access_token}`,
-        apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        "Content-Type": avatarFile.type || "application/octet-stream",
-        "x-upsert": "true",
-      },
-      body: await avatarFile.arrayBuffer(),
-    });
-    if (!res.ok) {
-      const detail = await res.text().catch(() => "");
-      return { error: `Photo upload failed: ${detail || res.status}` };
-    }
-    // cache-bust so a re-uploaded photo (same path) refreshes in the browser
-    updates.avatar_url = `${base}/storage/v1/object/public/profile-images/${path}?v=${Date.now()}`;
-  }
+  // Avatars are uploaded by the upload_avatar edge function (service role),
+  // which also persists app_profile.avatar_url — see web/lib/uploadAvatar.ts.
+  // (The in-app session can't authenticate storage uploads here.) This action
+  // only writes the display name + visibility.
 
   // Nothing filled — treat as a no-op success (they hit "Later" on everything).
   if (Object.keys(updates).length === 0) return { success: true };
@@ -161,5 +132,5 @@ export async function saveFirstMoves(formData: FormData) {
     .update(updates)
     .eq("id", user.id);
   if (error) return { error: error.message };
-  return { success: true, avatar_url: (updates.avatar_url as string | undefined) ?? null };
+  return { success: true };
 }
