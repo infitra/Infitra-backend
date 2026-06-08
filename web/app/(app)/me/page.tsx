@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ParticipantNav } from "@/app/components/ParticipantNav";
+import { ParticipantProfileCard } from "./ParticipantProfileCard";
 
 export const metadata = { title: "My programs — INFITRA" };
 
@@ -30,7 +31,7 @@ export default async function MeHomePage() {
   // Viewer profile for nav chrome
   const { data: profile } = await supabase
     .from("app_profile")
-    .select("display_name, role")
+    .select("display_name, role, avatar_url")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -107,6 +108,11 @@ export default async function MeHomePage() {
             chat with your coaches and fellow participants.
           </p>
         </header>
+
+        <ParticipantProfileCard
+          initialDisplayName={profile?.display_name ?? ""}
+          initialAvatarUrl={profile?.avatar_url ?? null}
+        />
 
         {rows.length === 0 ? (
           <EmptyState />
