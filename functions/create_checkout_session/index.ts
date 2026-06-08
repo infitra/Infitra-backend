@@ -129,6 +129,16 @@ Deno.serve(async (req) => {
     }
     if (baseCents <= 0) return json({ error: "Invalid price" }, 400);
 
+    // 3b) Resolve the platform fee % for this creator (per-creator override ??
+    // global default in app_setting ?? 20). Carried in metadata so the webhook
+    // applies exactly this rate and records it on the transaction.
+    let platformFeePercent = 10;
+    {
+      const { data: feePct, error: feeErr } = await admin.rpc("resolve_platform_fee_percent", { p_creator: creatorId });
+      if (feeErr) return json({ error: "Fee resolution failed", detail: feeErr.message }, 500);
+      if (feePct != null && Number.isFinite(Number(feePct))) platformFeePercent = Number(feePct);
+    }
+
     // duplicate purchase guard
     if (kind === "session") {
       const { data: existing } = await admin
@@ -190,6 +200,7 @@ Deno.serve(async (req) => {
     const md: Record<string,string> = {
       kind, target_id, buyer_id: buyerId, creator_id: creatorId,
       price_cents: String(baseCents), currency,
+      platform_fee_percent: String(platformFeePercent),
       fee_model: BUYER_ABSORBS_FEES ? "buyer_absorbs_3pct_plus_030" : "buyer_fixed_030"
     };
 

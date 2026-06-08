@@ -340,6 +340,7 @@ CREATE TABLE IF NOT EXISTS "public"."app_transaction" (
     "creator_cut_cents" bigint NOT NULL,
     "amount_after_stripe_cents" bigint NOT NULL,
     "currency" "text" NOT NULL,
+    "platform_fee_percent" numeric(5,2),
     CONSTRAINT "app_transaction_currency_check" CHECK (("currency" ~ '^[A-Z]{3}$'::"text")),
     CONSTRAINT "app_transaction_quantity_check" CHECK (("quantity" >= 1))
 );
@@ -5410,6 +5411,21 @@ $$;
 ALTER FUNCTION "public"."reschedule_published_session"("p_session" "uuid", "p_new_start_time" timestamp with time zone, "p_change_reason" "text") OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."resolve_platform_fee_percent"("p_creator" "uuid") RETURNS numeric
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+  select coalesce(
+    (select platform_fee_percent from public.app_profile where id = p_creator),
+    (select value::numeric from public.app_setting where key = 'platform_fee_percent'),
+    20
+  );
+$$;
+
+
+ALTER FUNCTION "public"."resolve_platform_fee_percent"("p_creator" "uuid") OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."respond_to_contract"("p_contract_id" "uuid", "p_actor" "uuid", "p_response" "text", "p_comment" "text" DEFAULT NULL::"text") RETURNS "void"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -7238,6 +7254,7 @@ CREATE TABLE IF NOT EXISTS "public"."app_profile" (
     "updated_at" timestamp with time zone,
     "is_admin" boolean DEFAULT false,
     "cover_image_url" "text",
+    "platform_fee_percent" numeric(5,2),
     CONSTRAINT "app_profile_creator_visibility_check" CHECK ((("role" <> 'creator'::"text") OR ("visibility" = 'public'::"text"))),
     CONSTRAINT "app_profile_role_check" CHECK (("role" = ANY (ARRAY['participant'::"text", 'creator'::"text", 'admin'::"text"]))),
     CONSTRAINT "app_profile_visibility_check" CHECK (("visibility" = ANY (ARRAY['public'::"text", 'private'::"text"])))
@@ -7396,6 +7413,16 @@ CREATE TABLE IF NOT EXISTS "public"."app_session_pre_pulse_response" (
 
 
 ALTER TABLE "public"."app_session_pre_pulse_response" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."app_setting" (
+    "key" "text" NOT NULL,
+    "value" "text" NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."app_setting" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."app_staff" (
@@ -8968,6 +8995,11 @@ ALTER TABLE ONLY "public"."app_session_pre_pulse_response"
 
 
 
+ALTER TABLE ONLY "public"."app_setting"
+    ADD CONSTRAINT "app_setting_pkey" PRIMARY KEY ("key");
+
+
+
 ALTER TABLE ONLY "public"."app_staff"
     ADD CONSTRAINT "app_staff_pkey" PRIMARY KEY ("user_id");
 
@@ -10424,6 +10456,9 @@ CREATE POLICY "app_session_select_merged" ON "public"."app_session" FOR SELECT U
            FROM "public"."app_challenge_cohost" "cch"
           WHERE (("cch"."challenge_id" = "c"."id") AND ("cch"."cohost_id" = ( SELECT "auth"."uid"() AS "uid")))))))))))));
 
+
+
+ALTER TABLE "public"."app_setting" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."app_staff" ENABLE ROW LEVEL SECURITY;
@@ -12059,6 +12094,13 @@ GRANT ALL ON FUNCTION "public"."reschedule_published_session"("p_session" "uuid"
 
 
 
+REVOKE ALL ON FUNCTION "public"."resolve_platform_fee_percent"("p_creator" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."resolve_platform_fee_percent"("p_creator" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."resolve_platform_fee_percent"("p_creator" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."resolve_platform_fee_percent"("p_creator" "uuid") TO "service_role";
+
+
+
 REVOKE ALL ON FUNCTION "public"."respond_to_contract"("p_contract_id" "uuid", "p_actor" "uuid", "p_response" "text", "p_comment" "text") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."respond_to_contract"("p_contract_id" "uuid", "p_actor" "uuid", "p_response" "text", "p_comment" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."respond_to_contract"("p_contract_id" "uuid", "p_actor" "uuid", "p_response" "text", "p_comment" "text") TO "service_role";
@@ -12451,6 +12493,10 @@ GRANT ALL ON TABLE "public"."app_session_overview" TO "service_role";
 GRANT SELECT,MAINTAIN ON TABLE "public"."app_session_pre_pulse_response" TO "anon";
 GRANT ALL ON TABLE "public"."app_session_pre_pulse_response" TO "authenticated";
 GRANT ALL ON TABLE "public"."app_session_pre_pulse_response" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."app_setting" TO "service_role";
 
 
 

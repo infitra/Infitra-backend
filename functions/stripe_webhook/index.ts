@@ -21,6 +21,7 @@ type CheckoutMeta = {
   creator_id?: string;
   currency: string;
   price_cents: string | number;
+  platform_fee_percent?: string | number;
 };
 
 type TxRow = {
@@ -38,6 +39,7 @@ type TxRow = {
   processing_fee_percent_cents: number;
   platform_cut_cents: number;
   creator_cut_cents: number;
+  platform_fee_percent: number;
   amount_after_stripe_cents: number;
 };
 
@@ -67,6 +69,7 @@ function parseMeta(md: unknown): CheckoutMeta {
     creator_id: m.creator_id ?? null ?? undefined,
     currency: m.currency,
     price_cents: m.price_cents,
+    platform_fee_percent: m.platform_fee_percent,
   };
   if (!out.kind || !["session", "challenge"].includes(out.kind)) throw new Error("metadata.kind invalid");
   if (!out.target_id) throw new Error("metadata.target_id missing");
@@ -76,15 +79,18 @@ function parseMeta(md: unknown): CheckoutMeta {
   return out;
 }
 
-function computeEconomics(md: CheckoutMeta, totalStripeFeeCents: number) {
+function computeEconomics(md: CheckoutMeta, totalStripeFeeCents: number, platformFeePercent: number) {
   const grossCents = Number(md.price_cents);
   if (!Number.isFinite(grossCents) || grossCents < 0) throw new Error("metadata.price_cents invalid");
   const fixedFeeCents = 30;
   const percentFeeCts = Math.max(totalStripeFeeCents - fixedFeeCents, 0);
-  const creatorCut = Math.floor(grossCents * 0.8);
-  const platformCut = grossCents - creatorCut;
+  // Platform takes platformFeePercent of gross (floored → rounding favors the
+  // creator); creator gets the remainder. Stripe fees are buyer-absorbed, so
+  // the split is on the base price.
+  const platformCut = Math.floor(grossCents * (platformFeePercent / 100));
+  const creatorCut = grossCents - platformCut;
   const afterStripe = grossCents - (fixedFeeCents + percentFeeCts);
-  return { grossCents, fixedFeeCents, percentFeeCts, creatorCut, platformCut, afterStripe };
+  return { grossCents, fixedFeeCents, percentFeeCts, creatorCut, platformCut, afterStripe, platformFeePercent };
 }
 
 async function getOrCreateEventLock(eventId: string) {
@@ -196,8 +202,21 @@ Deno.serve(async (req) => {
           return json({ code: 502, message: "Stripe retrieve PI failed", detail: String(e) }, 502);
         }
 
+        // Resolve the platform fee % this sale was created with — normally
+        // carried in metadata by create_checkout_session; fall back to the
+        // global app_setting, then to 20 (historical) so a sale never fails.
+        let platformFeePercent = Number(md.platform_fee_percent);
+        if (!Number.isFinite(platformFeePercent) || platformFeePercent < 0 || platformFeePercent > 100) {
+          try {
+            const { data: g } = await admin.from("app_setting").select("value").eq("key", "platform_fee_percent").maybeSingle();
+            platformFeePercent = (g?.value != null && Number.isFinite(Number(g.value))) ? Number(g.value) : 20;
+          } catch (_e) {
+            platformFeePercent = 20;
+          }
+        }
+
         let math;
-        try { math = computeEconomics(md, totalFeeCents); }
+        try { math = computeEconomics(md, totalFeeCents, platformFeePercent); }
         catch (e) { console.error("Economics compute failed", e); return json({ code: 422, message: "Economics compute failed", detail: String(e) }, 422); }
 
         const baseRow: TxRow = {
@@ -215,6 +234,7 @@ Deno.serve(async (req) => {
           processing_fee_percent_cents: math.percentFeeCts,
           platform_cut_cents: math.platformCut,
           creator_cut_cents: math.creatorCut,
+          platform_fee_percent: math.platformFeePercent,
           amount_after_stripe_cents: math.afterStripe,
         };
 
