@@ -93,12 +93,10 @@ function formatSessionTime(iso: unknown): string | null {
   }
 }
 
-/** Glyph for notifications without a sender avatar (published, badge,
- *  reschedule, etc.) — so every item reads at a glance instead of a bland dot. */
+/** Glyph for notifications without a sender avatar (published, reschedule,
+ *  etc.) — so every item reads at a glance instead of a bland dot. */
 function TypeIcon({ type, color }: { type: string; color: string }) {
   const c = { width: 16, height: 16, viewBox: "0 0 24 24", fill: "none", stroke: color, strokeWidth: 1.9, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
-  if (type === "badge_awarded" || type === "badge_monthly_digest")
-    return <svg {...c}><circle cx="12" cy="8" r="6" /><path d="M8.21 13.89 7 22l5-3 5 3-1.21-8.11" /></svg>;
   if (type === "challenge_published")
     return <svg {...c}><path d="M22 2 11 13" /><path d="M22 2 15 22l-4-9-9-4 20-7z" /></svg>;
   if (type.startsWith("contract_"))
@@ -183,14 +181,6 @@ function describeNotification(n: EnrichedNotification): NotificationContent {
         href: "/dashboard",
       };
     }
-    case "badge_awarded":
-      return {
-        title: typeof p.badge_label === "string"
-          ? `You earned the ${p.badge_label} badge`
-          : "Badge earned",
-        detail: null,
-        href: null,
-      };
     case "system":
       if (p.kind === "session_time_changed") {
         const when = formatSessionTime(p.new_start_time);
@@ -241,14 +231,6 @@ function describeNotification(n: EnrichedNotification): NotificationContent {
         href: null,
       };
     }
-    case "badge_monthly_digest":
-      return {
-        title: "Your month in badges",
-        detail: typeof p.summary === "string" && p.summary.trim()
-          ? p.summary.trim()
-          : "Your monthly badge recap is ready",
-        href: null,
-      };
     default:
       return { title: n.type.replace(/_/g, " "), detail: null, href: null };
   }

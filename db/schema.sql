@@ -214,236 +214,6 @@ $$;
 
 ALTER FUNCTION "public"."accept_collab_invite"("p_invite_id" "uuid", "p_actor" "uuid") OWNER TO "postgres";
 
-SET default_tablespace = '';
-
-SET default_table_access_method = "heap";
-
-
-CREATE TABLE IF NOT EXISTS "public"."app_user_badge" (
-    "id" bigint NOT NULL,
-    "user_id" "uuid" NOT NULL,
-    "badge_id" "uuid" NOT NULL,
-    "awarded_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    "awarded_by" "uuid",
-    "context" "jsonb",
-    "is_permanent" boolean DEFAULT false NOT NULL,
-    "revoked_at" timestamp with time zone,
-    "revoked_reason" "text",
-    "visible_on_profile" boolean DEFAULT true NOT NULL,
-    "pinned_on_profile" boolean DEFAULT false NOT NULL,
-    "period" "text"
-);
-
-
-ALTER TABLE "public"."app_user_badge" OWNER TO "postgres";
-
-
-COMMENT ON TABLE "public"."app_user_badge" IS 'Concrete awards of badges to users. Holds who got what, when, and under which context (e.g. monthly period).';
-
-
-
-COMMENT ON COLUMN "public"."app_user_badge"."context" IS 'Freeform metadata for this award: e.g. {"period_month":"2025-10","rank":10,"scope":"global"}.';
-
-
-
-CREATE OR REPLACE FUNCTION "public"."admin_award_creator_badge"("p_creator_id" "uuid", "p_badge_id" "uuid", "p_target_user_id" "uuid") RETURNS "public"."app_user_badge"
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public'
-    AS $$
-declare
-  v_badge        public.app_badge;
-  v_target_role  text;
-  v_existing     public.app_user_badge;
-  v_award        public.app_user_badge;
-begin
-  ------------------------------------------------------------------
-  -- 1) Load and validate badge
-  ------------------------------------------------------------------
-  select *
-  into v_badge
-  from public.app_badge
-  where id = p_badge_id;
-
-  if not found then
-    raise exception 'admin_award_creator_badge: badge not found';
-  end if;
-
-  if v_badge.source <> 'creator_defined' then
-    raise exception 'admin_award_creator_badge: badge must be creator_defined';
-  end if;
-
-  if v_badge.created_by is distinct from p_creator_id then
-    raise exception 'admin_award_creator_badge: badge does not belong to this creator';
-  end if;
-
-  if v_badge.audience <> 'participant' then
-    raise exception 'admin_award_creator_badge: badge must have audience = participant';
-  end if;
-
-  if v_badge.is_monthly or not v_badge.is_event_based then
-    raise exception 'admin_award_creator_badge: badge must be a permanent event-based badge';
-  end if;
-
-  if not v_badge.is_active then
-    raise exception 'admin_award_creator_badge: badge is not active';
-  end if;
-
-  ------------------------------------------------------------------
-  -- 2) Validate target user role (must NOT be a creator)
-  ------------------------------------------------------------------
-  select role
-  into v_target_role
-  from public.app_profile
-  where id = p_target_user_id;
-
-  if not found then
-    raise exception 'admin_award_creator_badge: target user not found';
-  end if;
-
-  if v_target_role = 'creator' then
-    raise exception 'admin_award_creator_badge: cannot award creator-defined participant badges to creators';
-  end if;
-
-  ------------------------------------------------------------------
-  -- 3) Idempotency: if already awarded & not revoked, return existing
-  ------------------------------------------------------------------
-  select *
-  into v_existing
-  from public.app_user_badge ub
-  where ub.user_id = p_target_user_id
-    and ub.badge_id = p_badge_id
-    and ub.revoked_at is null
-  limit 1;
-
-  if found then
-    return v_existing;
-  end if;
-
-  ------------------------------------------------------------------
-  -- 4) Insert award (same shape as manual creator award)
-  --    Notifications are already handled by fn_notify_badge_awarded()
-  ------------------------------------------------------------------
-  insert into public.app_user_badge (
-    user_id,
-    badge_id,
-    awarded_at,
-    awarded_by,
-    context,
-    is_permanent,
-    visible_on_profile,
-    pinned_on_profile,
-    period
-  )
-  values (
-    p_target_user_id,
-    p_badge_id,
-    now(),
-    p_creator_id,
-    '{}'::jsonb,
-    true,
-    true,
-    false,
-    null
-  )
-  returning * into v_award;
-
-  return v_award;
-end;
-$$;
-
-
-ALTER FUNCTION "public"."admin_award_creator_badge"("p_creator_id" "uuid", "p_badge_id" "uuid", "p_target_user_id" "uuid") OWNER TO "postgres";
-
-
-CREATE OR REPLACE FUNCTION "public"."admin_badge_award"("p_user_id" "uuid", "p_badge_slug" "text", "p_context" "jsonb" DEFAULT '{}'::"jsonb") RETURNS bigint
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public'
-    AS $$
-DECLARE
-  v_badge  app_badge%ROWTYPE;
-  v_id     bigint;
-BEGIN
-  SELECT *
-  INTO v_badge
-  FROM app_badge
-  WHERE slug = p_badge_slug;
-
-  IF NOT FOUND THEN
-    RAISE EXCEPTION 'badge_not_found: %', p_badge_slug;
-  END IF;
-
-  IF NOT v_badge.is_active THEN
-    RAISE EXCEPTION 'badge_inactive: %', p_badge_slug;
-  END IF;
-
-  IF NOT v_badge.is_auto_awarded THEN
-    RAISE EXCEPTION 'badge_not_auto_awarded: %', p_badge_slug;
-  END IF;
-
-  -----------------------------------------------------------------------
-  -- Monthly badges
-  -----------------------------------------------------------------------
-  IF v_badge.is_monthly THEN
-    INSERT INTO public.app_user_badge (
-      user_id,
-      badge_id,
-      awarded_at,
-      awarded_by,
-      context,
-      is_permanent,
-      visible_on_profile,
-      period
-    )
-    VALUES (
-      p_user_id,
-      v_badge.id,
-      now(),
-      NULL,
-      COALESCE(p_context, '{}'::jsonb),
-      FALSE,
-      TRUE,
-      p_context->>'period'
-    )
-    ON CONFLICT (user_id, badge_id, COALESCE(period,''))
-    DO NOTHING
-    RETURNING id INTO v_id;
-
-  -----------------------------------------------------------------------
-  -- Permanent badges
-  -----------------------------------------------------------------------
-  ELSE
-    INSERT INTO public.app_user_badge (
-      user_id,
-      badge_id,
-      awarded_at,
-      awarded_by,
-      context,
-      is_permanent,
-      visible_on_profile,
-      period
-    )
-    VALUES (
-      p_user_id,
-      v_badge.id,
-      now(),
-      NULL,
-      COALESCE(p_context, '{}'::jsonb),
-      TRUE,
-      TRUE,
-      NULL
-    )
-    ON CONFLICT (user_id, badge_id, COALESCE(period,''))
-    DO NOTHING
-    RETURNING id INTO v_id;
-  END IF;
-
-  RETURN COALESCE(v_id, 0);
-END;
-$$;
-
-
-ALTER FUNCTION "public"."admin_badge_award"("p_user_id" "uuid", "p_badge_slug" "text", "p_context" "jsonb") OWNER TO "postgres";
-
 
 CREATE OR REPLACE FUNCTION "public"."admin_email_enqueue_receipt"("p_tx_id" "uuid") RETURNS bigint
     LANGUAGE "plpgsql" SECURITY DEFINER
@@ -523,182 +293,9 @@ $$;
 
 ALTER FUNCTION "public"."admin_email_enqueue_receipt"("p_tx_id" "uuid") OWNER TO "postgres";
 
+SET default_tablespace = '';
 
-CREATE OR REPLACE FUNCTION "public"."admin_generate_monthly_badge_digest"("p_period" "text", "p_admin_id" "uuid" DEFAULT NULL::"uuid") RETURNS "void"
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public'
-    AS $$
-declare
-  v_uid    uuid;
-  u        record;
-  v_summary jsonb;
-  v_awarded jsonb;
-  v_revoked jsonb;
-begin
-  -- Determine effective admin user:
-  --  - if p_admin_id is passed (edge job) → use that
-  --  - else fallback to auth.uid() (manual admin call from SQL)
-  v_uid := coalesce(p_admin_id, auth.uid());
-
-  if not public.is_admin(v_uid) then
-    raise exception 'admin_generate_monthly_badge_digest: not authorized (requires admin)';
-  end if;
-
-  -- Loop over all users with monthly badges for this period that don't yet have a digest row
-  for u in
-    select distinct ub.user_id
-    from public.app_user_badge ub
-    join public.app_badge b on b.id = ub.badge_id
-    where b.is_monthly = true
-      and ub.period = p_period
-      and not exists (
-        select 1
-        from public.app_badge_monthly_digest d
-        where d.user_id = ub.user_id
-          and d.period  = p_period
-      )
-  loop
-    -- Aggregate awarded (revoked_at is null)
-    select
-      coalesce(
-        jsonb_agg(
-          jsonb_build_object(
-            'user_badge_id',   ub.id,
-            'badge_id',        ub.badge_id,
-            'badge_slug',      b.slug,
-            'badge_label',     b.label,
-            'tier',            b.tier,
-            'audience',        b.audience,
-            'rank',            (ub.context ->> 'rank')::int,
-            'period',          ub.period,
-            'context',         coalesce(ub.context, '{}'::jsonb),
-            'awarded_at',      ub.awarded_at,
-            'badge_color_hex', b.color_hex,
-            'badge_icon',      b.icon
-          )
-          order by ub.awarded_at
-        ) filter (where ub.revoked_at is null),
-        '[]'::jsonb
-      )
-    into v_awarded
-    from public.app_user_badge ub
-    join public.app_badge b on b.id = ub.badge_id
-    where b.is_monthly = true
-      and ub.period    = p_period
-      and ub.user_id   = u.user_id;
-
-    -- Aggregate revoked (revoked_at is not null)
-    select
-      coalesce(
-        jsonb_agg(
-          jsonb_build_object(
-            'user_badge_id',   ub.id,
-            'badge_id',        ub.badge_id,
-            'badge_slug',      b.slug,
-            'badge_label',     b.label,
-            'tier',            b.tier,
-            'audience',        b.audience,
-            'rank',            (ub.context ->> 'rank')::int,
-            'period',          ub.period,
-            'context',         coalesce(ub.context, '{}'::jsonb),
-            'awarded_at',      ub.awarded_at,
-            'revoked_at',      ub.revoked_at,
-            'revoked_reason',  ub.revoked_reason,
-            'badge_color_hex', b.color_hex,
-            'badge_icon',      b.icon
-          )
-          order by ub.revoked_at nulls last, ub.awarded_at
-        ) filter (where ub.revoked_at is not null),
-        '[]'::jsonb
-      )
-    into v_revoked
-    from public.app_user_badge ub
-    join public.app_badge b on b.id = ub.badge_id
-    where b.is_monthly = true
-      and ub.period    = p_period
-      and ub.user_id   = u.user_id;
-
-    -- Build summary (mirrors vw_my_monthly_summary, but for arbitrary user_id)
-    select
-      jsonb_build_object(
-        'total_badges',
-          (jsonb_array_length(v_awarded) + jsonb_array_length(v_revoked)),
-        'awarded_count',
-          jsonb_array_length(v_awarded),
-        'revoked_count',
-          jsonb_array_length(v_revoked),
-        'best_rank',
-          min( (ub.context ->> 'rank')::int )
-            filter (where ub.context ? 'rank'),
-        'has_attendance_rank',
-          bool_or(b.slug like 'system:top_%attendance%'),
-        'has_revenue_rank',
-          bool_or(b.slug like 'system:top_%revenue%'),
-        'has_follower_rank',
-          bool_or(b.slug like 'system:top_%followers%'),
-        'has_growth_badge',
-          bool_or(b.slug like 'system:monthly_%_growth%')
-      )
-    into v_summary
-    from public.app_user_badge ub
-    join public.app_badge b on b.id = ub.badge_id
-    where b.is_monthly = true
-      and ub.period    = p_period
-      and ub.user_id   = u.user_id;
-
-    -- Fallback if user has no rows (should not happen)
-    if v_summary is null then
-      v_summary := jsonb_build_object(
-        'total_badges',           0,
-        'awarded_count',          0,
-        'revoked_count',          0,
-        'best_rank',              null,
-        'has_attendance_rank',    false,
-        'has_revenue_rank',       false,
-        'has_follower_rank',      false,
-        'has_growth_badge',       false
-      );
-    end if;
-
-    -- Insert digest log row (idempotent by (user_id, period))
-    insert into public.app_badge_monthly_digest (
-      user_id,
-      period,
-      summary,
-      awarded,
-      revoked
-    )
-    values (
-      u.user_id,
-      p_period,
-      v_summary,
-      v_awarded,
-      v_revoked
-    )
-    on conflict (user_id, period) do nothing;
-
-    -- Insert one notification per user/period
-    insert into public.app_notification (
-      recipient_id,
-      type,
-      payload
-    )
-    values (
-      u.user_id,
-      'badge_monthly_digest',
-      jsonb_build_object(
-        'period',  p_period,
-        'summary', v_summary,
-        'awarded', v_awarded,
-        'revoked', v_revoked
-      )
-    );
-  end loop;
-end;
-$$;
-
-
-ALTER FUNCTION "public"."admin_generate_monthly_badge_digest"("p_period" "text", "p_admin_id" "uuid") OWNER TO "postgres";
+SET default_table_access_method = "heap";
 
 
 CREATE TABLE IF NOT EXISTS "public"."app_attendance" (
@@ -1112,981 +709,6 @@ $$;
 ALTER FUNCTION "public"."admin_regrant_entitlements_tx"("p_tx_id" "uuid") OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."admin_run_monthly_attendance_badges"("p_year" integer, "p_month" integer) RETURNS "void"
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public'
-    AS $$
-declare
-  v_period text := lpad(p_year::text, 4, '0') || '-' || lpad(p_month::text, 2, '0');
-  v_start  date := make_date(p_year, p_month, 1);
-  v_end    date := (make_date(p_year, p_month, 1) + interval '1 month')::date;
-  v_badge_top1     uuid;
-  v_badge_top10    uuid;
-  v_badge_top100   uuid;
-  v_badge_consist  uuid;
-  v_consistency_threshold int := 8; -- configurable later
-begin
-  -- =============================================================
-  -- Fetch badge IDs
-  -- =============================================================
-  select id into v_badge_top1
-  from app_badge
-  where slug = 'system:top_1_attendance_global';
-
-  select id into v_badge_top10
-  from app_badge
-  where slug = 'system:top_10_attendance_global';
-
-  select id into v_badge_top100
-  from app_badge
-  where slug = 'system:top_100_attendance_global';
-
-  select id into v_badge_consist
-  from app_badge
-  where slug = 'system:monthly_consistency';
-
-  if v_badge_top1 is null or v_badge_top10 is null
-     or v_badge_top100 is null or v_badge_consist is null then
-     raise exception 'Monthly attendance badges missing in app_badge table';
-  end if;
-
-  -- =============================================================
-  -- Ranking: attendance counts per user within the period
-  -- =============================================================
-  drop table if exists tmp_month_attendance;
-  create temporary table tmp_month_attendance as
-  select
-    a.user_id,
-    count(*)::int as total_attended
-  from app_attendance a
-  where a.joined_at >= v_start
-    and a.joined_at <  v_end
-  group by a.user_id;
-
-  -- =============================================================
-  -- Revoke all previous monthly attendance badges for this period
-  -- (idempotent)
-  -- =============================================================
-  update app_user_badge ub
-  set revoked_at = now(), revoked_reason = 'period refresh: ' || v_period
-  from app_badge b
-  where ub.badge_id = b.id
-    and b.slug in (
-      'system:top_1_attendance_global',
-      'system:top_10_attendance_global',
-      'system:top_100_attendance_global',
-      'system:monthly_consistency'
-    )
-    and ub.context->>'period' = v_period
-    and ub.revoked_at is null;
-
-  -- =============================================================
-  -- Award Top 1
-  -- =============================================================
-  perform admin_badge_award(
-    (select user_id from tmp_month_attendance order by total_attended desc, user_id limit 1),
-    'system:top_1_attendance_global',
-    jsonb_build_object(
-      'period', v_period,
-      'rank', 1,
-      'total_attendance', (select total_attended from tmp_month_attendance order by total_attended desc limit 1)
-    )
-  );
-
-  -- =============================================================
-  -- Award Top 10
-  -- =============================================================
-  perform (
-    select json_agg(admin_badge_award(
-      user_id,
-      'system:top_10_attendance_global',
-      jsonb_build_object(
-        'period', v_period,
-        'rank', rn,
-        'total_attendance', total_attended
-      )
-    ))
-    from (
-      select user_id, total_attended,
-             row_number() over (order by total_attended desc, user_id) as rn
-      from tmp_month_attendance
-      order by total_attended desc
-      limit 10
-    ) t
-  );
-
-  -- =============================================================
-  -- Award Top 100
-  -- =============================================================
-  perform (
-    select json_agg(admin_badge_award(
-      user_id,
-      'system:top_100_attendance_global',
-      jsonb_build_object(
-        'period', v_period,
-        'rank', rn,
-        'total_attendance', total_attended
-      )
-    ))
-    from (
-      select user_id, total_attended,
-             row_number() over (order by total_attended desc, user_id) as rn
-      from tmp_month_attendance
-      order by total_attended desc
-      limit 100
-    ) t
-  );
-
-  -- =============================================================
-  -- Award monthly consistency
-  -- =============================================================
-  perform (
-    select json_agg(admin_badge_award(
-      user_id,
-      'system:monthly_consistency',
-      jsonb_build_object(
-        'period', v_period,
-        'total_attendance', total_attended
-      )
-    ))
-    from tmp_month_attendance
-    where total_attended >= v_consistency_threshold
-  );
-
-end;
-$$;
-
-
-ALTER FUNCTION "public"."admin_run_monthly_attendance_badges"("p_year" integer, "p_month" integer) OWNER TO "postgres";
-
-
-CREATE OR REPLACE FUNCTION "public"."admin_run_monthly_creator_attendance_badges"("p_year" integer, "p_month" integer) RETURNS "void"
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public'
-    AS $$
-declare
-  v_period text := lpad(p_year::text, 4, '0') || '-' || lpad(p_month::text, 2, '0');
-  v_start  date := make_date(p_year, p_month, 1);
-  v_end    date := (make_date(p_year, p_month, 1) + interval '1 month')::date;
-
-  v_badge_top1    uuid;
-  v_badge_top10   uuid;
-  v_badge_top100  uuid;
-  v_badge_growth  uuid;
-  v_badge_builder uuid;
-  v_badge_leader  uuid;
-begin
-  -- -----------------------------------------------------------
-  -- 0) Look up badge IDs (sanity)
-  -- -----------------------------------------------------------
-  select id into v_badge_top1
-  from app_badge
-  where slug = 'system:top_1_attendance_global_creator';
-
-  select id into v_badge_top10
-  from app_badge
-  where slug = 'system:top_10_attendance_global_creator';
-
-  select id into v_badge_top100
-  from app_badge
-  where slug = 'system:top_100_attendance_global_creator';
-
-  select id into v_badge_growth
-  from app_badge
-  where slug = 'system:monthly_attendance_growth';
-
-  select id into v_badge_builder
-  from app_badge
-  where slug = 'system:community_builder';
-
-  select id into v_badge_leader
-  from app_badge
-  where slug = 'system:community_leader';
-
-  if v_badge_top1    is null
-     or v_badge_top10   is null
-     or v_badge_top100  is null
-     or v_badge_growth  is null
-     or v_badge_builder is null
-     or v_badge_leader  is null then
-    raise exception 'Monthly creator attendance badges missing in app_badge table';
-  end if;
-
-  -- -----------------------------------------------------------
-  -- 1) Build current-period attendance per creator
-  -- -----------------------------------------------------------
-  drop table if exists tmp_creator_attendance_month;
-  create temporary table tmp_creator_attendance_month as
-  select
-    s.host_id                         as creator_id,
-    count(*)::int                     as total_attendance,
-    count(distinct a.user_id)::int    as unique_attendees
-  from app_attendance a
-  join app_session s on s.id = a.session_id
-  where a.joined_at >= v_start
-    and a.joined_at <  v_end
-  group by s.host_id;
-
-  -- -----------------------------------------------------------
-  -- 2) Build previous-period attendance per creator
-  -- -----------------------------------------------------------
-  drop table if exists tmp_creator_attendance_prev;
-  create temporary table tmp_creator_attendance_prev as
-  with prev_dates as (
-    select
-      (make_date(p_year, p_month, 1) - interval '1 month')::date as prev_start,
-      make_date(p_year, p_month, 1)::date                        as prev_end
-  )
-  select
-    s.host_id                      as creator_id,
-    count(*)::int                  as total_attendance
-  from app_attendance a
-  join app_session s on s.id = a.session_id
-  cross join prev_dates d
-  where a.joined_at >= d.prev_start
-    and a.joined_at <  d.prev_end
-  group by s.host_id;
-
-  -- -----------------------------------------------------------
-  -- 3) Revoke existing attendance badges for this period
-  -- -----------------------------------------------------------
-  update app_user_badge ub
-  set revoked_at     = now(),
-      revoked_reason = 'period refresh: ' || v_period
-  from app_badge b
-  where ub.badge_id = b.id
-    and b.slug in (
-      'system:top_1_attendance_global_creator',
-      'system:top_10_attendance_global_creator',
-      'system:top_100_attendance_global_creator',
-      'system:monthly_attendance_growth',
-      'system:community_builder',
-      'system:community_leader'
-    )
-    and ub.period   = v_period
-    and ub.revoked_at is null;
-
-  -- -----------------------------------------------------------
-  -- 4) Award Top 1 / Top 10 / Top 100 by total_attendance
-  -- -----------------------------------------------------------
-  if exists (select 1 from tmp_creator_attendance_month) then
-    -- Top 1
-    perform admin_badge_award(
-      (select creator_id
-       from tmp_creator_attendance_month
-       order by total_attendance desc, creator_id
-       limit 1),
-      'system:top_1_attendance_global_creator',
-      jsonb_build_object(
-        'period', v_period,
-        'rank', 1,
-        'total_attendance',
-          (select total_attendance
-           from tmp_creator_attendance_month
-           order by total_attendance desc
-           limit 1)
-      )
-    );
-  end if;
-
-  -- Top 10
-  perform (
-    select json_agg(
-      admin_badge_award(
-        creator_id,
-        'system:top_10_attendance_global_creator',
-        jsonb_build_object(
-          'period', v_period,
-          'rank', rn,
-          'total_attendance', total_attendance,
-          'unique_attendees', unique_attendees
-        )
-      )
-    )
-    from (
-      select
-        creator_id,
-        total_attendance,
-        unique_attendees,
-        row_number() over (order by total_attendance desc, creator_id) as rn
-      from tmp_creator_attendance_month
-      order by total_attendance desc
-      limit 10
-    ) t
-  );
-
-  -- Top 100
-  perform (
-    select json_agg(
-      admin_badge_award(
-        creator_id,
-        'system:top_100_attendance_global_creator',
-        jsonb_build_object(
-          'period', v_period,
-          'rank', rn,
-          'total_attendance', total_attendance,
-          'unique_attendees', unique_attendees
-        )
-      )
-    )
-    from (
-      select
-        creator_id,
-        total_attendance,
-        unique_attendees,
-        row_number() over (order by total_attendance desc, creator_id) as rn
-      from tmp_creator_attendance_month
-      order by total_attendance desc
-      limit 100
-    ) t
-  );
-
-  -- -----------------------------------------------------------
-  -- 5) Award community_builder / community_leader
-  -- -----------------------------------------------------------
-  perform (
-    select json_agg(
-      admin_badge_award(
-        creator_id,
-        'system:community_builder',
-        jsonb_build_object(
-          'period', v_period,
-          'unique_attendees', unique_attendees
-        )
-      )
-    )
-    from tmp_creator_attendance_month
-    where unique_attendees >= 100
-  );
-
-  perform (
-    select json_agg(
-      admin_badge_award(
-        creator_id,
-        'system:community_leader',
-        jsonb_build_object(
-          'period', v_period,
-          'unique_attendees', unique_attendees
-        )
-      )
-    )
-    from tmp_creator_attendance_month
-    where unique_attendees >= 1000
-  );
-
-  -- -----------------------------------------------------------
-  -- 6) Award Monthly Attendance Growth (≥ +10% vs previous month)
-  -- -----------------------------------------------------------
-  perform (
-    with growth as (
-      select
-        cur.creator_id,
-        cur.total_attendance   as current_attendance,
-        coalesce(prev.total_attendance, 0)::int as previous_attendance,
-        case
-          when coalesce(prev.total_attendance, 0) > 0 then
-            (cur.total_attendance::numeric - prev.total_attendance::numeric)
-              / prev.total_attendance::numeric
-          else null::numeric
-        end as growth_ratio
-      from tmp_creator_attendance_month cur
-      left join tmp_creator_attendance_prev prev
-        on prev.creator_id = cur.creator_id
-    )
-    select json_agg(
-      admin_badge_award(
-        creator_id,
-        'system:monthly_attendance_growth',
-        jsonb_build_object(
-          'period', v_period,
-          'current_attendance',  current_attendance,
-          'previous_attendance', previous_attendance,
-          'growth_ratio',        growth_ratio
-        )
-      )
-    )
-    from growth
-    where growth_ratio is not null
-      and growth_ratio >= 0.10    -- ≥ +10%
-  );
-
-end;
-$$;
-
-
-ALTER FUNCTION "public"."admin_run_monthly_creator_attendance_badges"("p_year" integer, "p_month" integer) OWNER TO "postgres";
-
-
-CREATE OR REPLACE FUNCTION "public"."admin_run_monthly_creator_follower_badges"("p_year" integer, "p_month" integer) RETURNS "void"
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public'
-    AS $$
-declare
-  v_period text := lpad(p_year::text, 4, '0') || '-' || lpad(p_month::text, 2, '0');
-  v_start  date := make_date(p_year, p_month, 1);
-  v_end    date := (make_date(p_year, p_month, 1) + interval '1 month')::date;
-
-  v_badge_top1   uuid;
-  v_badge_top10  uuid;
-  v_badge_top100 uuid;
-  v_badge_growth uuid;
-begin
-  -- -----------------------------------------------------------
-  -- 0) Look up badge IDs
-  -- -----------------------------------------------------------
-  select id into v_badge_top1
-  from public.app_badge
-  where slug = 'system:top_1_followers_global';
-
-  select id into v_badge_top10
-  from public.app_badge
-  where slug = 'system:top_10_followers_global';
-
-  select id into v_badge_top100
-  from public.app_badge
-  where slug = 'system:top_100_followers_global';
-
-  select id into v_badge_growth
-  from public.app_badge
-  where slug = 'system:monthly_follower_growth';
-
-  if v_badge_top1 is null
-     or v_badge_top10 is null
-     or v_badge_top100 is null
-     or v_badge_growth is null then
-    raise exception 'Monthly creator follower badges missing in app_badge table';
-  end if;
-
-  -- -----------------------------------------------------------
-  -- 1) Current creator tribe member count (as of end of period)
-  -- -----------------------------------------------------------
-  drop table if exists tmp_creator_followers_current;
-  create temporary table tmp_creator_followers_current as
-  select
-    s.creator_id as creator_id,
-    count(m.user_id)::bigint as follower_count
-  from public.app_creator_space s
-  left join public.app_creator_space_member m
-    on m.space_id = s.id
-   and m.created_at < v_end
-  group by s.creator_id;
-
-  -- -----------------------------------------------------------
-  -- 2) Previous creator tribe member count (as of end prev month)
-  -- -----------------------------------------------------------
-  drop table if exists tmp_creator_followers_prev;
-  create temporary table tmp_creator_followers_prev as
-  with prev_dates as (
-    select
-      (make_date(p_year, p_month, 1) - interval '1 month')::date as prev_end
-  )
-  select
-    s.creator_id as creator_id,
-    count(m.user_id)::bigint as follower_count
-  from public.app_creator_space s
-  cross join prev_dates d
-  left join public.app_creator_space_member m
-    on m.space_id = s.id
-   and m.created_at < d.prev_end
-  group by s.creator_id;
-
-  -- -----------------------------------------------------------
-  -- 3) Revoke existing follower badges for this period
-  -- -----------------------------------------------------------
-  update public.app_user_badge ub
-  set revoked_at     = now(),
-      revoked_reason = 'period refresh: ' || v_period
-  from public.app_badge b
-  where ub.badge_id = b.id
-    and b.slug in (
-      'system:top_1_followers_global',
-      'system:top_10_followers_global',
-      'system:top_100_followers_global',
-      'system:monthly_follower_growth'
-    )
-    and ub.period = v_period
-    and ub.revoked_at is null;
-
-  -- -----------------------------------------------------------
-  -- 4) Award Top 1 / Top 10 / Top 100 by creator tribe size
-  -- -----------------------------------------------------------
-  if exists (
-      select 1
-      from tmp_creator_followers_current
-      where follower_count > 0
-  ) then
-    perform public.admin_badge_award(
-      (
-        select creator_id
-        from tmp_creator_followers_current
-        where follower_count > 0
-        order by follower_count desc, creator_id
-        limit 1
-      ),
-      'system:top_1_followers_global',
-      jsonb_build_object(
-        'period', v_period,
-        'rank', 1,
-        'follower_count',
-          (
-            select follower_count
-            from tmp_creator_followers_current
-            where follower_count > 0
-            order by follower_count desc, creator_id
-            limit 1
-          )
-      )
-    );
-  end if;
-
-  perform (
-    select json_agg(
-      public.admin_badge_award(
-        creator_id,
-        'system:top_10_followers_global',
-        jsonb_build_object(
-          'period', v_period,
-          'rank', rn,
-          'follower_count', follower_count
-        )
-      )
-    )
-    from (
-      select
-        creator_id,
-        follower_count,
-        row_number() over (order by follower_count desc, creator_id) as rn
-      from tmp_creator_followers_current
-      where follower_count > 0
-      order by follower_count desc, creator_id
-      limit 10
-    ) t
-  );
-
-  perform (
-    select json_agg(
-      public.admin_badge_award(
-        creator_id,
-        'system:top_100_followers_global',
-        jsonb_build_object(
-          'period', v_period,
-          'rank', rn,
-          'follower_count', follower_count
-        )
-      )
-    )
-    from (
-      select
-        creator_id,
-        follower_count,
-        row_number() over (order by follower_count desc, creator_id) as rn
-      from tmp_creator_followers_current
-      where follower_count > 0
-      order by follower_count desc, creator_id
-      limit 100
-    ) t
-  );
-
-  -- -----------------------------------------------------------
-  -- 5) Monthly creator tribe growth (≥ +10% vs previous month)
-  -- -----------------------------------------------------------
-  perform (
-    with growth as (
-      select
-        cur.creator_id,
-        cur.follower_count as current_followers,
-        coalesce(prev.follower_count, 0)::bigint as previous_followers,
-        case
-          when coalesce(prev.follower_count, 0) > 0 then
-            (cur.follower_count::numeric - prev.follower_count::numeric)
-              / prev.follower_count::numeric
-          else null::numeric
-        end as growth_ratio
-      from tmp_creator_followers_current cur
-      left join tmp_creator_followers_prev prev
-        on prev.creator_id = cur.creator_id
-    )
-    select json_agg(
-      public.admin_badge_award(
-        creator_id,
-        'system:monthly_follower_growth',
-        jsonb_build_object(
-          'period', v_period,
-          'current_followers', current_followers,
-          'previous_followers', previous_followers,
-          'growth_ratio', growth_ratio
-        )
-      )
-    )
-    from growth
-    where growth_ratio is not null
-      and growth_ratio >= 0.10
-  );
-
-end;
-$$;
-
-
-ALTER FUNCTION "public"."admin_run_monthly_creator_follower_badges"("p_year" integer, "p_month" integer) OWNER TO "postgres";
-
-
-CREATE OR REPLACE FUNCTION "public"."admin_run_monthly_creator_revenue_badges"("p_year" integer, "p_month" integer) RETURNS "void"
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public'
-    AS $$
-declare
-  v_period text := lpad(p_year::text, 4, '0') || '-' || lpad(p_month::text, 2, '0');
-  v_start  date := make_date(p_year, p_month, 1);
-  v_end    date := (make_date(p_year, p_month, 1) + interval '1 month')::date;
-
-  v_badge_top1   uuid;
-  v_badge_top10  uuid;
-  v_badge_top100 uuid;
-  v_badge_growth uuid;
-begin
-  -- -----------------------------------------------------------
-  -- 0) Look up badge IDs (sanity)
-  -- -----------------------------------------------------------
-  select id into v_badge_top1
-  from app_badge
-  where slug = 'system:top_1_revenue_global';
-
-  select id into v_badge_top10
-  from app_badge
-  where slug = 'system:top_10_revenue_global';
-
-  select id into v_badge_top100
-  from app_badge
-  where slug = 'system:top_100_revenue_global';
-
-  select id into v_badge_growth
-  from app_badge
-  where slug = 'system:monthly_revenue_growth';
-
-  if v_badge_top1 is null
-     or v_badge_top10 is null
-     or v_badge_top100 is null
-     or v_badge_growth is null then
-    raise exception 'Monthly creator revenue badges missing in app_badge table';
-  end if;
-
-  -- -----------------------------------------------------------
-  -- 1) Build monthly revenue per creator (current period)
-  -- -----------------------------------------------------------
-  drop table if exists tmp_creator_revenue_month;
-  create temporary table tmp_creator_revenue_month as
-  select
-    t.creator_id,
-    sum(t.amount_gross_cents)::bigint              as total_gross_cents,
-    count(distinct t.buyer_id)::int                as unique_buyers
-  from app_transaction t
-  where t.status = 'succeeded'
-    and t.creator_id is not null
-    and t.type in ('ticket', 'bundle')     -- adjust if you add more paid types
-    and t.created_at >= v_start
-    and t.created_at <  v_end
-  group by t.creator_id;
-
-  -- -----------------------------------------------------------
-  -- 2) Build previous-month revenue per creator
-  -- -----------------------------------------------------------
-  drop table if exists tmp_creator_revenue_prev;
-  create temporary table tmp_creator_revenue_prev as
-  with prev_dates as (
-    select
-      (make_date(p_year, p_month, 1) - interval '1 month')::date as prev_start,
-      make_date(p_year, p_month, 1)::date                        as prev_end
-  )
-  select
-    t.creator_id,
-    sum(t.amount_gross_cents)::bigint as total_gross_cents
-  from app_transaction t
-  cross join prev_dates d
-  where t.status = 'succeeded'
-    and t.creator_id is not null
-    and t.type in ('ticket', 'bundle')
-    and t.created_at >= d.prev_start
-    and t.created_at <  d.prev_end
-  group by t.creator_id;
-
-  -- -----------------------------------------------------------
-  -- 3) Revoke existing revenue badges for this period (idempotent)
-  -- -----------------------------------------------------------
-  update app_user_badge ub
-  set revoked_at     = now(),
-      revoked_reason = 'period refresh: ' || v_period
-  from app_badge b
-  where ub.badge_id = b.id
-    and b.slug in (
-      'system:top_1_revenue_global',
-      'system:top_10_revenue_global',
-      'system:top_100_revenue_global',
-      'system:monthly_revenue_growth'
-    )
-    and ub.period   = v_period
-    and ub.revoked_at is null;
-
-  -- -----------------------------------------------------------
-  -- 4) Award Top 1 / Top 10 / Top 100 by gross revenue
-  -- -----------------------------------------------------------
-  if exists (select 1 from tmp_creator_revenue_month) then
-    -- Top 1
-    perform admin_badge_award(
-      (select creator_id
-       from tmp_creator_revenue_month
-       order by total_gross_cents desc, creator_id
-       limit 1),
-      'system:top_1_revenue_global',
-      jsonb_build_object(
-        'period', v_period,
-        'rank', 1,
-        'total_gross_cents',
-          (select total_gross_cents
-           from tmp_creator_revenue_month
-           order by total_gross_cents desc
-           limit 1)
-      )
-    );
-  end if;
-
-  -- Top 10
-  perform (
-    select json_agg(
-      admin_badge_award(
-        creator_id,
-        'system:top_10_revenue_global',
-        jsonb_build_object(
-          'period', v_period,
-          'rank', rn,
-          'total_gross_cents', total_gross_cents,
-          'unique_buyers', unique_buyers
-        )
-      )
-    )
-    from (
-      select
-        creator_id,
-        total_gross_cents,
-        unique_buyers,
-        row_number() over (order by total_gross_cents desc, creator_id) as rn
-      from tmp_creator_revenue_month
-      order by total_gross_cents desc
-      limit 10
-    ) t
-  );
-
-  -- Top 100
-  perform (
-    select json_agg(
-      admin_badge_award(
-        creator_id,
-        'system:top_100_revenue_global',
-        jsonb_build_object(
-          'period', v_period,
-          'rank', rn,
-          'total_gross_cents', total_gross_cents,
-          'unique_buyers', unique_buyers
-        )
-      )
-    )
-    from (
-      select
-        creator_id,
-        total_gross_cents,
-        unique_buyers,
-        row_number() over (order by total_gross_cents desc, creator_id) as rn
-      from tmp_creator_revenue_month
-      order by total_gross_cents desc
-      limit 100
-    ) t
-  );
-
-  -- -----------------------------------------------------------
-  -- 5) Award Monthly Revenue Growth (>10% vs previous month)
-  -- -----------------------------------------------------------
-  perform (
-    with growth as (
-      select
-        cur.creator_id,
-        cur.total_gross_cents      as current_gross_cents,
-        coalesce(prev.total_gross_cents, 0)::bigint as previous_gross_cents,
-        case
-          when coalesce(prev.total_gross_cents, 0) > 0 then
-            (cur.total_gross_cents::numeric - prev.total_gross_cents::numeric)
-              / prev.total_gross_cents::numeric
-          else null::numeric
-        end as growth_ratio
-      from tmp_creator_revenue_month cur
-      left join tmp_creator_revenue_prev prev
-        on prev.creator_id = cur.creator_id
-    )
-    select json_agg(
-      admin_badge_award(
-        creator_id,
-        'system:monthly_revenue_growth',
-        jsonb_build_object(
-          'period', v_period,
-          'current_gross_cents',  current_gross_cents,
-          'previous_gross_cents', previous_gross_cents,
-          'growth_ratio',         growth_ratio
-        )
-      )
-    )
-    from growth
-    where growth_ratio is not null
-      and growth_ratio >= 0.10           -- ≥ +10% vs previous month
-  );
-
-end;
-$$;
-
-
-ALTER FUNCTION "public"."admin_run_monthly_creator_revenue_badges"("p_year" integer, "p_month" integer) OWNER TO "postgres";
-
-
-CREATE OR REPLACE FUNCTION "public"."admin_run_monthly_participant_growth_badges"("p_year" integer, "p_month" integer) RETURNS "void"
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public'
-    AS $$
-DECLARE
-  v_period       text;
-  v_start        date;
-  v_end          date;
-  v_prev_start   date;
-  v_prev_end     date;
-
-  v_badge_sess_growth     uuid;
-  v_badge_creators_growth uuid;
-
-  v_growth_threshold numeric := 0.10; -- 10% growth
-BEGIN
-  --------------------------------------------------------------------
-  -- Period calculations
-  --------------------------------------------------------------------
-  v_period     := lpad(p_year::text, 4, '0') || '-' || lpad(p_month::text, 2, '0');
-  v_start      := make_date(p_year, p_month, 1);
-  v_end        := (make_date(p_year, p_month, 1) + interval '1 month')::date;
-
-  v_prev_start := (v_start - interval '1 month')::date;
-  v_prev_end   := v_start;
-
-  --------------------------------------------------------------------
-  -- Fetch badge IDs
-  --------------------------------------------------------------------
-  SELECT id INTO v_badge_sess_growth
-  FROM public.app_badge
-  WHERE slug = 'system:monthly_sessions_growth_participant';
-
-  SELECT id INTO v_badge_creators_growth
-  FROM public.app_badge
-  WHERE slug = 'system:monthly_creators_growth_participant';
-
-  IF v_badge_sess_growth IS NULL OR v_badge_creators_growth IS NULL THEN
-    RAISE EXCEPTION 'Participant growth badges missing in app_badge table';
-  END IF;
-
-  --------------------------------------------------------------------
-  -- Build temp table of per-user growth metrics
-  --------------------------------------------------------------------
-  DROP TABLE IF EXISTS tmp_participant_growth;
-  CREATE TEMPORARY TABLE tmp_participant_growth AS
-  WITH prev_stats AS (
-    SELECT
-      a.user_id,
-      COUNT(*)::int                       AS prev_sessions,
-      COUNT(DISTINCT s.host_id)::int      AS prev_creators
-    FROM public.app_attendance a
-    JOIN public.app_session s ON s.id = a.session_id
-    WHERE a.joined_at >= v_prev_start
-      AND a.joined_at <  v_prev_end
-    GROUP BY a.user_id
-  ),
-  curr_stats AS (
-    SELECT
-      a.user_id,
-      COUNT(*)::int                       AS curr_sessions,
-      COUNT(DISTINCT s.host_id)::int      AS curr_creators
-    FROM public.app_attendance a
-    JOIN public.app_session s ON s.id = a.session_id
-    WHERE a.joined_at >= v_start
-      AND a.joined_at <  v_end
-    GROUP BY a.user_id
-  )
-  SELECT
-    COALESCE(c.user_id, p.user_id)                           AS user_id,
-    COALESCE(p.prev_sessions,  0)                            AS prev_sessions,
-    COALESCE(c.curr_sessions,  0)                            AS curr_sessions,
-    COALESCE(p.prev_creators,  0)                            AS prev_creators,
-    COALESCE(c.curr_creators,  0)                            AS curr_creators
-  FROM prev_stats p
-  FULL OUTER JOIN curr_stats c
-    ON p.user_id = c.user_id;
-
-  --------------------------------------------------------------------
-  -- Revoke existing participant growth badges for this period
-  -- (idempotent)
-  --------------------------------------------------------------------
-  UPDATE public.app_user_badge ub
-  SET revoked_at     = now(),
-      revoked_reason = 'period refresh: ' || v_period
-  FROM public.app_badge b
-  WHERE ub.badge_id = b.id
-    AND b.slug IN (
-      'system:monthly_sessions_growth_participant',
-      'system:monthly_creators_growth_participant'
-    )
-    AND ub.period = v_period
-    AND ub.revoked_at IS NULL;
-
-  --------------------------------------------------------------------
-  -- Award monthly_sessions_growth_participant
-  -- Condition: prev_sessions > 0 AND curr_sessions >= prev_sessions * (1 + threshold)
-  --------------------------------------------------------------------
-  PERFORM (
-    SELECT json_agg(public.admin_badge_award(
-      user_id,
-      'system:monthly_sessions_growth_participant',
-      jsonb_build_object(
-        'period',          v_period,
-        'prev_sessions',   prev_sessions,
-        'curr_sessions',   curr_sessions,
-        'growth_ratio',    (curr_sessions::numeric / NULLIF(prev_sessions,0))
-      )
-    ))
-    FROM tmp_participant_growth
-    WHERE prev_sessions > 0
-      AND curr_sessions > prev_sessions
-      AND curr_sessions::numeric >= prev_sessions::numeric * (1 + v_growth_threshold)
-  );
-
-  --------------------------------------------------------------------
-  -- Award monthly_creators_growth_participant
-  -- Condition: prev_creators > 0 AND curr_creators >= prev_creators * (1 + threshold)
-  --------------------------------------------------------------------
-  PERFORM (
-    SELECT json_agg(public.admin_badge_award(
-      user_id,
-      'system:monthly_creators_growth_participant',
-      jsonb_build_object(
-        'period',          v_period,
-        'prev_creators',   prev_creators,
-        'curr_creators',   curr_creators,
-        'growth_ratio',    (curr_creators::numeric / NULLIF(prev_creators,0))
-      )
-    ))
-    FROM tmp_participant_growth
-    WHERE prev_creators > 0
-      AND curr_creators > prev_creators
-      AND curr_creators::numeric >= prev_creators::numeric * (1 + v_growth_threshold)
-  );
-
-END;
-$$;
-
-
-ALTER FUNCTION "public"."admin_run_monthly_participant_growth_badges"("p_year" integer, "p_month" integer) OWNER TO "postgres";
-
-
 CREATE OR REPLACE FUNCTION "public"."app_handle_new_user"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -2165,123 +787,6 @@ $$;
 
 
 ALTER FUNCTION "public"."app_session_assert_within_challenge_window"() OWNER TO "postgres";
-
-
-CREATE OR REPLACE FUNCTION "public"."award_creator_badge"("p_badge_id" "uuid", "p_target_user_id" "uuid") RETURNS "public"."app_user_badge"
-    LANGUAGE "plpgsql"
-    SET "search_path" TO 'public'
-    AS $$
-declare
-  v_creator_id uuid;
-  v_role       text;
-  v_badge      public.app_badge;
-  v_target_role text;
-  v_existing   public.app_user_badge;
-  v_award      public.app_user_badge;
-begin
-  -- Auth check
-  select auth.uid() into v_creator_id;
-  if v_creator_id is null then
-    raise exception 'award_creator_badge: not authenticated';
-  end if;
-
-  -- Must be a creator
-  select role into v_role
-  from public.app_profile
-  where id = v_creator_id;
-
-  if v_role is distinct from 'creator' then
-    raise exception 'award_creator_badge: only creators can award their badges';
-  end if;
-
-  -- Load and validate badge
-  select *
-  into v_badge
-  from public.app_badge
-  where id = p_badge_id;
-
-  if not found then
-    raise exception 'award_creator_badge: badge not found';
-  end if;
-
-  if v_badge.source <> 'creator_defined' then
-    raise exception 'award_creator_badge: badge must be creator_defined';
-  end if;
-
-  if v_badge.created_by is distinct from v_creator_id then
-    raise exception 'award_creator_badge: you can only award your own badges';
-  end if;
-
-  if v_badge.audience <> 'participant' then
-    raise exception 'award_creator_badge: badge must have audience = participant';
-  end if;
-
-  if v_badge.is_monthly or not v_badge.is_event_based then
-    raise exception 'award_creator_badge: badge must be a permanent event-based badge';
-  end if;
-
-  if not v_badge.is_active then
-    raise exception 'award_creator_badge: badge is not active';
-  end if;
-
-  -- Validate target user and role (must not be a creator)
-  select role
-  into v_target_role
-  from public.app_profile
-  where id = p_target_user_id;
-
-  if not found then
-    raise exception 'award_creator_badge: target user not found';
-  end if;
-
-  if v_target_role = 'creator' then
-    raise exception 'award_creator_badge: cannot award creator badges to creators (participants only)';
-  end if;
-
-  -- Idempotency: if this user already has this badge, return existing row
-  select *
-  into v_existing
-  from public.app_user_badge ub
-  where ub.user_id = p_target_user_id
-    and ub.badge_id = p_badge_id
-    and ub.revoked_at is null
-  limit 1;
-
-  if found then
-    return v_existing;
-  end if;
-
-  -- Insert award (RLS policy will enforce all invariants)
-  insert into public.app_user_badge (
-    user_id,
-    badge_id,
-    awarded_at,
-    awarded_by,
-    context,
-    is_permanent,
-    visible_on_profile,
-    pinned_on_profile,
-    period
-  )
-  values (
-    p_target_user_id,
-    p_badge_id,
-    now(),
-    v_creator_id,
-    '{}'::jsonb,
-    true,     -- must match RLS policy
-    true,
-    false,
-    null
-  )
-  returning * into v_award;
-
-  return v_award;
-end;
-$$;
-
-
-ALTER FUNCTION "public"."award_creator_badge"("p_badge_id" "uuid", "p_target_user_id" "uuid") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."build_transaction_row"("p_buyer_id" "uuid", "p_creator_id" "uuid", "p_session_id" "uuid", "p_challenge_id" "uuid", "p_type" "public"."payment_type", "p_currency" "text", "p_amount_gross_cents" bigint, "p_processing_fee_fixed_cents" bigint, "p_processing_fee_percent_cents" bigint) RETURNS "jsonb"
@@ -3112,6 +1617,31 @@ $$;
 ALTER FUNCTION "public"."collab_reviews_for_creator"("p_subject" "uuid", "p_limit" integer, "p_after" timestamp with time zone) OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."complete_ended_experiences"() RETURNS integer
+    LANGUAGE "sql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+  with done as (
+    update public.app_challenge c
+       set status = 'completed', updated_at = now()
+     where c.status = 'published'
+       and c.end_date < (now() at time zone 'Asia/Phnom_Penh')::date
+       and not exists (
+         select 1 from public.app_challenge_session cs
+         join public.app_session s on s.id = cs.session_id
+         where cs.challenge_id = c.id
+           and s.status in ('draft','published','scheduled')
+           and s.start_time > now()
+       )
+    returning 1
+  )
+  select count(*)::int from done;
+$$;
+
+
+ALTER FUNCTION "public"."complete_ended_experiences"() OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."create_challenge_comment"("p_post" "uuid", "p_body" "text") RETURNS "uuid"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -3534,190 +2064,6 @@ $$;
 
 
 ALTER FUNCTION "public"."create_challenge_session"("p_challenge_id" "uuid", "p_title" "text", "p_start_time" timestamp with time zone, "p_duration_minutes" integer, "p_price_cents" integer, "p_currency" "text") OWNER TO "postgres";
-
-
-CREATE TABLE IF NOT EXISTS "public"."app_badge" (
-    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "slug" "text" NOT NULL,
-    "label" "text" NOT NULL,
-    "description" "text",
-    "audience" "text" NOT NULL,
-    "source" "text" NOT NULL,
-    "tier" "text" NOT NULL,
-    "is_event_based" boolean DEFAULT false NOT NULL,
-    "is_monthly" boolean DEFAULT false NOT NULL,
-    "is_auto_awarded" boolean DEFAULT false NOT NULL,
-    "is_active" boolean DEFAULT true NOT NULL,
-    "color_hex" "text",
-    "icon" "text",
-    "created_by" "uuid",
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    CONSTRAINT "app_badge_audience_check" CHECK (("audience" = ANY (ARRAY['participant'::"text", 'creator'::"text", 'both'::"text"]))),
-    CONSTRAINT "app_badge_source_check" CHECK (("source" = ANY (ARRAY['system'::"text", 'creator_defined'::"text"]))),
-    CONSTRAINT "app_badge_tier_check" CHECK (("tier" = ANY (ARRAY['common'::"text", 'advanced'::"text", 'rare'::"text", 'epic'::"text", 'legendary'::"text", 'seasonal'::"text"])))
-);
-
-
-ALTER TABLE "public"."app_badge" OWNER TO "postgres";
-
-
-COMMENT ON TABLE "public"."app_badge" IS 'Catalog of all badge types (system + creator-defined). Each row defines behavior and visual attributes, not a specific award instance.';
-
-
-
-COMMENT ON COLUMN "public"."app_badge"."slug" IS 'Canonical identifier, e.g. system:first_session_attended or creator:custom:xyz. Must be unique.';
-
-
-
-CREATE OR REPLACE FUNCTION "public"."create_creator_badge"("p_label" "text", "p_description" "text", "p_color_hex" "text" DEFAULT NULL::"text", "p_icon" "text" DEFAULT NULL::"text") RETURNS "public"."app_badge"
-    LANGUAGE "plpgsql"
-    SET "search_path" TO 'public'
-    AS $$
-declare
-  v_uid   uuid;
-  v_role  text;
-  v_slug  text;
-  v_badge public.app_badge;
-begin
-  -- Auth check
-  select auth.uid() into v_uid;
-  if v_uid is null then
-    raise exception 'create_creator_badge: not authenticated';
-  end if;
-
-  -- Must be a creator
-  select role into v_role
-  from public.app_profile
-  where id = v_uid;
-
-  if v_role is distinct from 'creator' then
-    raise exception 'create_creator_badge: only creators can create badges';
-  end if;
-
-  -- Basic validation
-  if p_label is null or length(trim(p_label)) = 0 then
-    raise exception 'create_creator_badge: label is required';
-  end if;
-
-  -- Generate a namespaced slug:
-  -- creator:<creatorid_no_dashes>:<sanitized_label>_<random>
-  v_slug :=
-    'creator:' ||
-    replace(v_uid::text, '-', '') || ':' ||
-    regexp_replace(lower(trim(p_label)), '[^a-z0-9]+', '_', 'g') ||
-    '_' ||
-    substr(replace(gen_random_uuid()::text, '-', ''), 1, 4);
-
-  -- Insert badge (will be checked again by RLS policy)
-  insert into public.app_badge (
-    slug,
-    label,
-    description,
-    audience,
-    source,
-    tier,
-    is_event_based,
-    is_monthly,
-    is_auto_awarded,
-    is_active,
-    color_hex,
-    icon,
-    created_by
-  )
-  values (
-    v_slug,
-    p_label,
-    p_description,
-    'participant',
-    'creator_defined',
-    'common',
-    true,
-    false,
-    false,
-    true,
-    p_color_hex,
-    p_icon,
-    v_uid
-  )
-  returning * into v_badge;
-
-  return v_badge;
-end;
-$$;
-
-
-ALTER FUNCTION "public"."create_creator_badge"("p_label" "text", "p_description" "text", "p_color_hex" "text", "p_icon" "text") OWNER TO "postgres";
-
-
-CREATE TABLE IF NOT EXISTS "public"."app_creator_badge_trigger" (
-    "id" bigint NOT NULL,
-    "badge_id" "uuid" NOT NULL,
-    "creator_id" "uuid" NOT NULL,
-    "trigger_type" "text" NOT NULL,
-    "params" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
-    "is_active" boolean DEFAULT true NOT NULL,
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    CONSTRAINT "creator_badge_trigger_type_check" CHECK (("trigger_type" = ANY (ARRAY['first_session_with_creator'::"text", 'nth_session_with_creator'::"text", 'challenge_completion'::"text", 'top_attendance_in_challenge'::"text"])))
-);
-
-
-ALTER TABLE "public"."app_creator_badge_trigger" OWNER TO "postgres";
-
-
-COMMENT ON TABLE "public"."app_creator_badge_trigger" IS 'Defines auto-award triggers for creator-defined badges.';
-
-
-
-CREATE OR REPLACE FUNCTION "public"."create_creator_badge_trigger"("p_badge_id" "uuid", "p_trigger_type" "text", "p_params" "jsonb" DEFAULT '{}'::"jsonb") RETURNS "public"."app_creator_badge_trigger"
-    LANGUAGE "plpgsql"
-    SET "search_path" TO 'public'
-    AS $$
-declare
-  v_uid   uuid;
-  v_badge public.app_badge;
-  v_row   public.app_creator_badge_trigger;
-begin
-  select auth.uid() into v_uid;
-  if v_uid is null then
-    raise exception 'not authenticated';
-  end if;
-
-  -- verify badge exists and belongs to creator
-  select *
-  into v_badge
-  from public.app_badge
-  where id = p_badge_id;
-
-  if not found then
-    raise exception 'badge not found';
-  end if;
-
-  if v_badge.source <> 'creator_defined'
-     or v_badge.created_by <> v_uid then
-    raise exception 'you may only attach triggers to your own creator-defined badges';
-  end if;
-
-  -- insert
-  insert into public.app_creator_badge_trigger (
-    badge_id,
-    creator_id,
-    trigger_type,
-    params
-  )
-  values (
-    p_badge_id,
-    v_uid,
-    p_trigger_type,
-    coalesce(p_params, '{}'::jsonb)
-  )
-  returning * into v_row;
-
-  return v_row;
-end;
-$$;
-
-
-ALTER FUNCTION "public"."create_creator_badge_trigger"("p_badge_id" "uuid", "p_trigger_type" "text", "p_params" "jsonb") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."create_creator_comment"("p_post" "uuid", "p_body" "text") RETURNS "uuid"
@@ -4754,427 +3100,25 @@ $$;
 ALTER FUNCTION "public"."ensure_creator_space"("p_creator" "uuid", "p_title" "text", "p_description" "text") OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."f_check_creator_auto_badges_challenge_completion"("p_user_id" "uuid", "p_challenge_id" "uuid") RETURNS "void"
-    LANGUAGE "plpgsql" SECURITY DEFINER
+CREATE OR REPLACE FUNCTION "public"."experience_review_open"("p_challenge" "uuid") RETURNS boolean
+    LANGUAGE "sql" STABLE SECURITY DEFINER
     SET "search_path" TO 'public'
     AS $$
-declare
-  v_challenge public.app_challenge;
-  v_trigger  record;
-begin
-  select *
-  into v_challenge
-  from public.app_challenge
-  where id = p_challenge_id;
-
-  if not found then
-    return;
-  end if;
-
-  for v_trigger in
-    select *
-    from public.app_creator_badge_trigger
-    where creator_id = v_challenge.owner_id
-      and trigger_type = 'challenge_completion'
-      and is_active
-  loop
-    perform public.admin_award_creator_badge(
-      v_challenge.owner_id,
-      v_trigger.badge_id,
-      p_user_id
-    );
-  end loop;
-end;
-$$;
-
-
-ALTER FUNCTION "public"."f_check_creator_auto_badges_challenge_completion"("p_user_id" "uuid", "p_challenge_id" "uuid") OWNER TO "postgres";
-
-
-CREATE OR REPLACE FUNCTION "public"."f_check_creator_auto_badges_for_attendance"() RETURNS "trigger"
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public'
-    AS $$
-declare
-  v_session       public.app_session;
-  v_creator_id    uuid;
-  v_count         int;
-  v_trigger       record;
-begin
-  -- get session info
-  select *
-  into v_session
-  from public.app_session
-  where id = new.session_id;
-
-  if not found then
-    return new;
-  end if;
-
-  v_creator_id := v_session.host_id;
-
-  -- loop all triggers for this creator
-  for v_trigger in
-    select *
-    from public.app_creator_badge_trigger
-    where creator_id = v_creator_id
-      and is_active
-  loop
-    -- 1) FIRST SESSION WITH CREATOR
-    if v_trigger.trigger_type = 'first_session_with_creator' then
-      select count(*)
-      into v_count
-      from public.app_attendance att
-      join public.app_session s on s.id = att.session_id
-      where att.user_id = new.user_id
-        and s.host_id = v_creator_id;
-
-      if v_count = 1 then
-        perform public.admin_award_creator_badge(
-          v_creator_id,
-          v_trigger.badge_id,
-          new.user_id
-        );
-      end if;
-    end if;
-
-    -- 2) Nth SESSION WITH CREATOR
-    if v_trigger.trigger_type = 'nth_session_with_creator' then
-      select count(*)
-      into v_count
-      from public.app_attendance att
-      join public.app_session s on s.id = att.session_id
-      where att.user_id = new.user_id
-        and s.host_id = v_creator_id;
-
-      if v_count = (v_trigger.params->>'n')::int then
-        perform public.admin_award_creator_badge(
-          v_creator_id,
-          v_trigger.badge_id,
-          new.user_id
-        );
-      end if;
-    end if;
-
-  end loop;
-
-  return new;
-end;
-$$;
-
-
-ALTER FUNCTION "public"."f_check_creator_auto_badges_for_attendance"() OWNER TO "postgres";
-
-
-CREATE OR REPLACE FUNCTION "public"."fn_badge_on_attendance"() RETURNS "trigger"
-    LANGUAGE "plpgsql"
-    SET "search_path" TO 'public'
-    AS $$
-declare
-  v_user_id                     uuid;
-  v_total_sessions_attended     bigint;
-  v_completed_challenges        bigint;
-  v_full_attendance_challenges  bigint;
-  v_completed_challenge_ids     uuid[];
-  v_challenge_id                uuid;
-begin
-  v_user_id := new.user_id;
-
-  -------------------------------------------------------------------
-  -- 1) Session-based participant badges
-  --    - system:first_session_attended
-  --    - system:10_sessions_attended
-  --    - system:100_sessions_attended
-  -------------------------------------------------------------------
-  select count(*)::bigint
-  into v_total_sessions_attended
-  from public.app_attendance a
-  where a.user_id = v_user_id;
-
-  if v_total_sessions_attended = 1 then
-    perform public.admin_badge_award(v_user_id, 'system:first_session_attended');
-  end if;
-
-  if v_total_sessions_attended = 10 then
-    perform public.admin_badge_award(v_user_id, 'system:10_sessions_attended');
-  end if;
-
-  if v_total_sessions_attended = 100 then
-    perform public.admin_badge_award(v_user_id, 'system:100_sessions_attended');
-  end if;
-
-  -------------------------------------------------------------------
-  -- 2) Challenge-based participant badges
-  --    - system:first_challenge_completed
-  --    - system:10_challenges_completed
-  --    - system:100_challenges_completed
-  --    - system:first_100_percent_attendance_challenge_completed
-  --
-  -- Definition of "completed" challenge:
-  --   challenge_status = 'completed'::challenge_status
-  --
-  -- We aggregate per challenge:
-  --   total_sessions          = # sessions in the challenge
-  --   attended_sessions       = # of those that this user attended
-  --   challenge_status        = max(c.status) (challenge_status enum)
-  -------------------------------------------------------------------
-  with per_challenge as (
-    select
-      cs.challenge_id,
-      count(distinct cs.session_id)                    as total_sessions,
-      count(distinct a.session_id)                     as attended_sessions,
-      max(c.status)                                    as challenge_status
-    from public.app_challenge_session cs
-    join public.app_challenge c
-      on c.id = cs.challenge_id
-    left join public.app_attendance a
-      on a.session_id = cs.session_id
-     and a.user_id    = v_user_id
-    group by cs.challenge_id
-  )
   select
-    count(*) filter (
-      where challenge_status = 'completed'
-        and total_sessions > 0
-        and attended_sessions >= 1
-    )::bigint                                        as completed_challenges,
-    count(*) filter (
-      where challenge_status = 'completed'
-        and total_sessions > 0
-        and attended_sessions = total_sessions
-    )::bigint                                        as full_attendance_challenges,
-    array_agg(challenge_id) filter (
-      where challenge_status = 'completed'
-        and total_sessions > 0
-        and attended_sessions >= 1
-    )                                                as completed_ids
-  into
-    v_completed_challenges,
-    v_full_attendance_challenges,
-    v_completed_challenge_ids
-  from per_challenge;
-
-  -- At least one completed challenge
-  if v_completed_challenges >= 1 then
-    perform public.admin_badge_award(v_user_id, 'system:first_challenge_completed');
-  end if;
-
-  -- 10 completed challenges
-  if v_completed_challenges >= 10 then
-    perform public.admin_badge_award(v_user_id, 'system:10_challenges_completed');
-  end if;
-
-  -- 100 completed challenges
-  if v_completed_challenges >= 100 then
-    perform public.admin_badge_award(v_user_id, 'system:100_challenges_completed');
-  end if;
-
-  -- At least one challenge with 100% attendance
-  if v_full_attendance_challenges >= 1 then
-    perform public.admin_badge_award(
-      v_user_id,
-      'system:first_100_percent_attendance_challenge_completed'
-    );
-  end if;
-
-  -------------------------------------------------------------------
-  -- 3) Creator custom badge auto-awards on challenge completion
-  --
-  -- For every challenge that is "completed" for this user (same
-  -- definition as above), run the creator auto-badge engine.
-  -- f_check_creator_auto_badges_challenge_completion() will:
-  --   - find triggers of type 'challenge_completion' for that challenge's owner
-  --   - call award_creator_badge() (which is idempotent per badge+user)
-  -------------------------------------------------------------------
-  if v_completed_challenge_ids is not null then
-    foreach v_challenge_id in array v_completed_challenge_ids loop
-      perform public.f_check_creator_auto_badges_challenge_completion(
-        v_user_id,
-        v_challenge_id
-      );
-    end loop;
-  end if;
-
-  return new;
-end;
+    ( exists (select 1 from app_challenge_session cs where cs.challenge_id = p_challenge)
+      and not exists (
+        select 1 from app_challenge_session cs
+        join app_session s on s.id = cs.session_id
+        where cs.challenge_id = p_challenge
+          and s.status in ('draft','published','scheduled')
+      ) )
+    or
+    ( coalesce((select c.end_date from app_challenge c where c.id = p_challenge), 'infinity'::date)
+        < (now() at time zone 'Asia/Phnom_Penh')::date );
 $$;
 
 
-ALTER FUNCTION "public"."fn_badge_on_attendance"() OWNER TO "postgres";
-
-
-CREATE OR REPLACE FUNCTION "public"."fn_badge_on_challenge_published"() RETURNS "trigger"
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public'
-    AS $$
-DECLARE
-  v_count bigint;
-BEGIN
-  IF tg_op = 'UPDATE'
-     AND new.status = 'published'
-     AND (old.status IS DISTINCT FROM new.status) THEN
-
-    SELECT count(*)::bigint INTO v_count
-    FROM public.app_challenge c
-    WHERE c.owner_id = new.owner_id AND c.status = 'published';
-
-    BEGIN
-      IF coalesce(v_count, 0) >= 1 THEN
-        PERFORM public.admin_badge_award(new.owner_id, 'system:first_challenge_published');
-      END IF;
-    EXCEPTION WHEN OTHERS THEN NULL;
-    END;
-
-    BEGIN
-      IF coalesce(v_count, 0) >= 10 THEN
-        PERFORM public.admin_badge_award(new.owner_id, 'system:10_challenges_published');
-      END IF;
-    EXCEPTION WHEN OTHERS THEN NULL;
-    END;
-
-    BEGIN
-      IF coalesce(v_count, 0) >= 100 THEN
-        PERFORM public.admin_badge_award(new.owner_id, 'system:100_challenges_published');
-      END IF;
-    EXCEPTION WHEN OTHERS THEN NULL;
-    END;
-  END IF;
-
-  RETURN new;
-END;
-$$;
-
-
-ALTER FUNCTION "public"."fn_badge_on_challenge_published"() OWNER TO "postgres";
-
-
-CREATE OR REPLACE FUNCTION "public"."fn_badge_on_session_cohost_insert"() RETURNS "trigger"
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public'
-    AS $$
-declare
-  v_host uuid;
-begin
-  -- Find the host of this session
-  select s.host_id
-  into v_host
-  from public.app_session s
-  where s.id = new.session_id;
-
-  if v_host is not null
-     and v_host <> new.cohost_id then
-    -- award to host
-    perform public.admin_badge_award(v_host, 'system:first_collaboration');
-    -- and to cohost
-    perform public.admin_badge_award(new.cohost_id, 'system:first_collaboration');
-  end if;
-
-  return new;
-end;
-$$;
-
-
-ALTER FUNCTION "public"."fn_badge_on_session_cohost_insert"() OWNER TO "postgres";
-
-
-CREATE OR REPLACE FUNCTION "public"."fn_badge_on_session_insert"() RETURNS "trigger"
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public'
-    AS $$
-DECLARE
-  v_count bigint;
-BEGIN
-  SELECT count(*)::bigint INTO v_count
-  FROM public.app_session s
-  WHERE s.host_id = new.host_id;
-
-  BEGIN
-    IF coalesce(v_count, 0) >= 1 THEN
-      PERFORM public.admin_badge_award(new.host_id, 'system:first_session_hosted');
-    END IF;
-  EXCEPTION WHEN OTHERS THEN NULL;
-  END;
-
-  BEGIN
-    IF coalesce(v_count, 0) >= 10 THEN
-      PERFORM public.admin_badge_award(new.host_id, 'system:10_sessions_hosted');
-    END IF;
-  EXCEPTION WHEN OTHERS THEN NULL;
-  END;
-
-  BEGIN
-    IF coalesce(v_count, 0) >= 100 THEN
-      PERFORM public.admin_badge_award(new.host_id, 'system:100_sessions_hosted');
-    END IF;
-  EXCEPTION WHEN OTHERS THEN NULL;
-  END;
-
-  RETURN new;
-END;
-$$;
-
-
-ALTER FUNCTION "public"."fn_badge_on_session_insert"() OWNER TO "postgres";
-
-
-CREATE OR REPLACE FUNCTION "public"."fn_notify_badge_awarded"() RETURNS "trigger"
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public'
-    AS $$
-declare
-  b record;
-begin
-  -- Fetch badge metadata
-  select
-    id,
-    slug,
-    label,
-    audience,
-    tier,
-    is_event_based,
-    is_monthly,
-    color_hex,
-    icon
-  into b
-  from public.app_badge
-  where id = new.badge_id;
-
-  if not found then
-    -- Should never happen, but fail silently to not break awards
-    return new;
-  end if;
-
-  -- Insert notification with enriched, UI-friendly payload
-  insert into public.app_notification (
-    recipient_id,
-    type,
-    payload
-  ) values (
-    new.user_id,
-    'badge_awarded',
-    jsonb_build_object(
-      'user_badge_id', new.id,
-      'badge_id', new.badge_id,
-      'badge_slug', b.slug,
-      'badge_label', b.label,
-      'audience', b.audience,
-      'tier', b.tier,
-      'is_event_based', b.is_event_based,
-      'is_monthly', b.is_monthly,
-      'period', new.period,
-      'context', coalesce(new.context, '{}'::jsonb),
-      'awarded_at', new.awarded_at,
-      'badge_color_hex', b.color_hex,
-      'badge_icon', b.icon
-    )
-  );
-
-  return new;
-end;
-$$;
-
-
-ALTER FUNCTION "public"."fn_notify_badge_awarded"() OWNER TO "postgres";
+ALTER FUNCTION "public"."experience_review_open"("p_challenge" "uuid") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."get_challenge_space_by_challenge"("p_challenge" "uuid") RETURNS TABLE("id" "uuid", "continuation_group_id" "uuid", "source_challenge_id" "uuid", "kind" "text", "title" "text", "description" "text", "ownership_type" "text", "owner_id" "uuid", "created_by" "uuid", "created_at" timestamp with time zone, "updated_at" timestamp with time zone)
@@ -5325,125 +3269,6 @@ $$;
 
 
 ALTER FUNCTION "public"."get_creator_space_by_creator"("p_creator" "uuid") OWNER TO "postgres";
-
-
-CREATE OR REPLACE FUNCTION "public"."get_my_latest_unseen_monthly_digest"() RETURNS TABLE("period" "text", "summary" "jsonb", "awarded" "jsonb", "revoked" "jsonb", "digest_created_at" timestamp with time zone)
-    LANGUAGE "plpgsql"
-    SET "search_path" TO 'public'
-    SET "row_security" TO 'on'
-    AS $$
-declare
-  v_uid    uuid;
-  v_period text;
-begin
-  -- Auth check
-  select auth.uid() into v_uid;
-  if v_uid is null then
-    raise exception 'get_my_latest_unseen_monthly_digest: not authenticated';
-  end if;
-
-  -- Find latest period where we have a digest for this user
-  select d.period
-  into v_period
-  from public.app_badge_monthly_digest d
-  where d.user_id = v_uid
-  order by d.period desc
-  limit 1;
-
-  -- No digest at all → return empty set
-  if v_period is null then
-    return;
-  end if;
-
-  -- Already seen this period?
-  if exists (
-    select 1
-    from public.app_user_period_seen s
-    where s.user_id = v_uid
-      and s.period = v_period
-  ) then
-    return;
-  end if;
-
-  -- Mark as seen (use PK constraint to avoid naming ambiguity)
-  insert into public.app_user_period_seen (user_id, period)
-  values (v_uid, v_period)
-  on conflict on constraint app_user_period_seen_pkey do nothing;
-
-  -- Return the digest row for this period
-  return query
-  select
-    d.period,
-    d.summary,
-    d.awarded,
-    d.revoked,
-    d.created_at as digest_created_at
-  from public.app_badge_monthly_digest d
-  where d.user_id = v_uid
-    and d.period = v_period;
-end;
-$$;
-
-
-ALTER FUNCTION "public"."get_my_latest_unseen_monthly_digest"() OWNER TO "postgres";
-
-
-COMMENT ON FUNCTION "public"."get_my_latest_unseen_monthly_digest"() IS 'Returns the latest monthly badge digest for auth.uid() only once (first time). Marks this period as seen in app_user_period_seen. Subsequent calls return no rows.';
-
-
-
-CREATE OR REPLACE FUNCTION "public"."get_my_monthly_digest"("p_period" "text") RETURNS TABLE("period" "text", "summary" "jsonb", "awarded" "jsonb", "revoked" "jsonb", "digest_created_at" timestamp with time zone, "seen_at" timestamp with time zone)
-    LANGUAGE "plpgsql"
-    SET "search_path" TO 'public'
-    SET "row_security" TO 'on'
-    AS $$
-declare
-  v_uid     uuid;
-  v_seen_at timestamptz;
-begin
-  -- Auth check
-  select auth.uid() into v_uid;
-  if v_uid is null then
-    raise exception 'get_my_monthly_digest: not authenticated';
-  end if;
-
-  -- If no digest for this period, return nothing
-  if not exists (
-    select 1
-    from public.app_badge_monthly_digest d
-    where d.user_id = v_uid
-      and d.period = p_period
-  ) then
-    return;
-  end if;
-
-  -- Seen timestamp (nullable)
-  select s.seen_at
-  into v_seen_at
-  from public.app_user_period_seen s
-  where s.user_id = v_uid
-    and s.period = p_period;
-
-  return query
-  select
-    d.period,
-    d.summary,
-    d.awarded,
-    d.revoked,
-    d.created_at,
-    v_seen_at
-  from public.app_badge_monthly_digest d
-  where d.user_id = v_uid
-    and d.period = p_period;
-end;
-$$;
-
-
-ALTER FUNCTION "public"."get_my_monthly_digest"("p_period" "text") OWNER TO "postgres";
-
-
-COMMENT ON FUNCTION "public"."get_my_monthly_digest"("p_period" "text") IS 'Returns the monthly badge digest for auth.uid() and the given period (YYYY-MM), if it exists, plus when it was first seen (if ever). Does not change seen-state.';
-
 
 
 CREATE OR REPLACE FUNCTION "public"."get_session_split_map"("p_session" "uuid") RETURNS "jsonb"
@@ -5829,70 +3654,6 @@ $$;
 
 
 ALTER FUNCTION "public"."is_session_host"("p_session_id" "uuid", "p_user_id" "uuid") OWNER TO "postgres";
-
-
-CREATE OR REPLACE FUNCTION "public"."join_creator_space"("p_space" "uuid") RETURNS "void"
-    LANGUAGE "plpgsql"
-    SET "search_path" TO 'public'
-    AS $$
-declare
-    v_actor uuid := auth.uid();
-begin
-    if v_actor is null then
-        raise exception 'Unauthorized';
-    end if;
-
-    if p_space is null then
-        raise exception 'space_id is required';
-    end if;
-
-    if not exists (
-        select 1
-        from public.app_creator_space s
-        where s.id = p_space
-    ) then
-        raise exception 'Creator space not found';
-    end if;
-
-    insert into public.app_creator_space_member (
-        space_id,
-        user_id
-    )
-    values (
-        p_space,
-        v_actor
-    )
-    on conflict do nothing;
-end;
-$$;
-
-
-ALTER FUNCTION "public"."join_creator_space"("p_space" "uuid") OWNER TO "postgres";
-
-
-CREATE OR REPLACE FUNCTION "public"."leave_creator_space"("p_space" "uuid") RETURNS "void"
-    LANGUAGE "plpgsql"
-    SET "search_path" TO 'public'
-    AS $$
-declare
-    v_actor uuid := auth.uid();
-begin
-    if v_actor is null then
-        raise exception 'Unauthorized';
-    end if;
-
-    if p_space is null then
-        raise exception 'space_id is required';
-    end if;
-
-    delete from public.app_creator_space_member
-    where space_id = p_space
-      and user_id = v_actor;
-end;
-$$;
-
-
-ALTER FUNCTION "public"."leave_creator_space"("p_space" "uuid") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."like_challenge_post"("p_post" "uuid") RETURNS "void"
@@ -7272,50 +5033,20 @@ begin
     new.creator_id,
     'review_new',
     jsonb_build_object(
-      'event',       'review_new',
-      'review_id',   new.id,
-      'session_id',  new.session_id,
+      'event', 'review_new',
+      'review_id', new.id,
+      'session_id', new.session_id,
+      'challenge_id', new.challenge_id,
       'reviewer_id', new.reviewer_id,
-      'rating',      new.rating,
-      'preview',     left(coalesce(new.comment, ''), 160)
+      'rating', new.rating,
+      'preview', left(coalesce(new.comment, ''), 160)
     )
   );
-  return null; -- no row change needed; this is a side-effect trigger
-end;
-$$;
+  return null;
+end; $$;
 
 
 ALTER FUNCTION "public"."on_review_new"() OWNER TO "postgres";
-
-
-CREATE OR REPLACE FUNCTION "public"."on_review_updated"() RETURNS "trigger"
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public'
-    AS $$
-begin
-  -- only notify if meaningful review fields changed
-  if (new.rating is distinct from old.rating) or (new.comment is distinct from old.comment) then
-    insert into public.app_notification (recipient_id, type, payload)
-    values (
-      new.creator_id,
-      'review_updated',
-      jsonb_build_object(
-        'event',       'review_updated',
-        'review_id',   new.id,
-        'session_id',  new.session_id,
-        'reviewer_id', new.reviewer_id,
-        'old_rating',  old.rating,
-        'new_rating',  new.rating,
-        'preview',     left(coalesce(new.comment, ''), 160)
-      )
-    );
-  end if;
-  return null;
-end;
-$$;
-
-
-ALTER FUNCTION "public"."on_review_updated"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."post_workspace_log"("p_challenge_id" "uuid", "p_body" "text", "p_metadata" "jsonb" DEFAULT '{}'::"jsonb") RETURNS "void"
@@ -8241,41 +5972,6 @@ $$;
 ALTER FUNCTION "public"."session_spots_left"("p_session" "uuid") OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."set_badge_visibility"("p_user_badge_id" bigint, "p_visible_on_profile" boolean, "p_pinned_on_profile" boolean) RETURNS "public"."app_user_badge"
-    LANGUAGE "plpgsql"
-    SET "search_path" TO 'public'
-    AS $$
-declare
-  v_uid   uuid;
-  v_badge public.app_user_badge;
-begin
-  -- Auth check
-  select auth.uid() into v_uid;
-  if v_uid is null then
-    raise exception 'set_badge_visibility: not authenticated';
-  end if;
-
-  -- Update ONLY this user's own badge
-  update public.app_user_badge ub
-  set
-    visible_on_profile = coalesce(p_visible_on_profile, ub.visible_on_profile),
-    pinned_on_profile  = coalesce(p_pinned_on_profile,  ub.pinned_on_profile)
-  where ub.id = p_user_badge_id
-    and ub.user_id = v_uid   -- hard ownership check
-  returning * into v_badge;
-
-  if not found then
-    raise exception 'set_badge_visibility: badge not found or not permitted';
-  end if;
-
-  return v_badge;
-end;
-$$;
-
-
-ALTER FUNCTION "public"."set_badge_visibility"("p_user_badge_id" bigint, "p_visible_on_profile" boolean, "p_pinned_on_profile" boolean) OWNER TO "postgres";
-
-
 CREATE OR REPLACE FUNCTION "public"."set_updated_at"() RETURNS "trigger"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -8821,56 +6517,75 @@ $$;
 ALTER FUNCTION "public"."update_weekly_arc_themes"("p_challenge_id" "uuid", "p_weekly_arc" "jsonb") OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."upsert_review"("p_session_id" "uuid", "p_rating" integer, "p_comment" "text" DEFAULT NULL::"text") RETURNS TABLE("id" "uuid", "session_id" "uuid", "rating" integer, "comment" "text", "created_at" timestamp with time zone)
+CREATE TABLE IF NOT EXISTS "public"."app_review" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "session_id" "uuid",
+    "reviewer_id" "uuid" NOT NULL,
+    "creator_id" "uuid" NOT NULL,
+    "rating" integer NOT NULL,
+    "comment" "text",
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "updated_at" timestamp with time zone,
+    "challenge_id" "uuid",
+    CONSTRAINT "app_review_no_self" CHECK (("reviewer_id" <> "creator_id")),
+    CONSTRAINT "app_review_one_product" CHECK ((("challenge_id" IS NOT NULL) <> ("session_id" IS NOT NULL))),
+    CONSTRAINT "app_review_rating_check" CHECK ((("rating" >= 1) AND ("rating" <= 5))),
+    CONSTRAINT "chk_app_review_rating_range" CHECK ((("rating" >= 1) AND ("rating" <= 5)))
+);
+
+ALTER TABLE ONLY "public"."app_review" FORCE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."app_review" OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."upsert_experience_review"("p_challenge_id" "uuid", "p_rating" integer, "p_comment" "text" DEFAULT NULL::"text") RETURNS "public"."app_review"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
     AS $$
-declare
-  v_creator    uuid;
-  v_id         uuid;
-  v_session_id uuid;
-  v_rating     int;
-  v_comment    text;
-  v_created_at timestamptz;
+declare v_owner uuid; v_row public.app_review;
 begin
-  -- Find session host (creator)
-  select s.host_id
-    into v_creator
-  from public.app_session s
-  where s.id = p_session_id;
-
-  if v_creator is null then
-    raise exception 'Session not found';
+  select c.owner_id into v_owner from public.app_challenge c where c.id = p_challenge_id;
+  if v_owner is null then raise exception 'Experience not found'; end if;
+  update public.app_review r set rating = p_rating, comment = p_comment
+    where r.challenge_id = p_challenge_id and r.reviewer_id = auth.uid()
+    returning * into v_row;
+  if not found then
+    insert into public.app_review (challenge_id, reviewer_id, creator_id, rating, comment)
+    values (p_challenge_id, auth.uid(), v_owner, p_rating, p_comment)
+    returning * into v_row;
   end if;
+  return v_row;
+end; $$;
 
-  -- Try update user's existing review (RLS enforces "own + 24h window")
-  update public.app_review r
-  set rating  = p_rating,
-      comment = p_comment
-  where r.session_id  = p_session_id
-    and r.reviewer_id = auth.uid()
-  returning r.id, r.session_id, r.rating, r.comment, r.created_at
-  into v_id, v_session_id, v_rating, v_comment, v_created_at;
 
-  -- If nothing updated, insert (RLS enforces: attended + session ended)
+ALTER FUNCTION "public"."upsert_experience_review"("p_challenge_id" "uuid", "p_rating" integer, "p_comment" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."upsert_solo_session_review"("p_session_id" "uuid", "p_rating" integer, "p_comment" "text" DEFAULT NULL::"text") RETURNS "public"."app_review"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
+    AS $$
+declare v_host uuid; v_row public.app_review;
+begin
+  select s.host_id into v_host from public.app_session s where s.id = p_session_id;
+  if v_host is null then raise exception 'Session not found'; end if;
+  if exists (select 1 from public.app_challenge_session cs where cs.session_id = p_session_id) then
+    raise exception 'This session is part of an experience; review the experience instead';
+  end if;
+  update public.app_review r set rating = p_rating, comment = p_comment
+    where r.session_id = p_session_id and r.reviewer_id = auth.uid()
+    returning * into v_row;
   if not found then
     insert into public.app_review (session_id, reviewer_id, creator_id, rating, comment)
-    values (p_session_id, auth.uid(), v_creator, p_rating, p_comment)
-    returning app_review.id,
-              app_review.session_id,
-              app_review.rating,
-              app_review.comment,
-              app_review.created_at
-    into v_id, v_session_id, v_rating, v_comment, v_created_at;
+    values (p_session_id, auth.uid(), v_host, p_rating, p_comment)
+    returning * into v_row;
   end if;
-
-  return query
-  select v_id, v_session_id, v_rating, v_comment, v_created_at;
-end;
-$$;
+  return v_row;
+end; $$;
 
 
-ALTER FUNCTION "public"."upsert_review"("p_session_id" "uuid", "p_rating" integer, "p_comment" "text") OWNER TO "postgres";
+ALTER FUNCTION "public"."upsert_solo_session_review"("p_session_id" "uuid", "p_rating" integer, "p_comment" "text") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."upsert_transaction_from_checkout"("buyer_id" "uuid", "creator_id" "uuid", "session_id" "uuid", "challenge_id" "uuid", "tx_type" "text", "status" "text", "quantity" integer, "currency" "text", "amount_gross_cents" bigint, "processing_fee_fixed_cents" bigint, "processing_fee_percent_cents" bigint, "amount_after_stripe_cents" bigint, "creator_cut_cents" bigint, "platform_cut_cents" bigint, "provider" "text", "provider_payment_id" "text", "metadata" "jsonb") RETURNS TABLE("inserted" boolean, "app_transaction_id" "uuid")
@@ -8980,55 +6695,6 @@ $_$;
 
 
 ALTER FUNCTION "public"."upsert_transaction_from_checkout"("buyer_id" "uuid", "creator_id" "uuid", "session_id" "uuid", "challenge_id" "uuid", "tx_type" "text", "status" "text", "quantity" integer, "currency" "text", "amount_gross_cents" bigint, "processing_fee_fixed_cents" bigint, "processing_fee_percent_cents" bigint, "amount_after_stripe_cents" bigint, "creator_cut_cents" bigint, "platform_cut_cents" bigint, "provider" "text", "provider_payment_id" "text", "metadata" "jsonb") OWNER TO "postgres";
-
-
-CREATE TABLE IF NOT EXISTS "public"."app_badge_monthly_digest" (
-    "id" bigint NOT NULL,
-    "user_id" "uuid" NOT NULL,
-    "period" "text" NOT NULL,
-    "summary" "jsonb" NOT NULL,
-    "awarded" "jsonb" NOT NULL,
-    "revoked" "jsonb" NOT NULL,
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
-);
-
-
-ALTER TABLE "public"."app_badge_monthly_digest" OWNER TO "postgres";
-
-
-COMMENT ON TABLE "public"."app_badge_monthly_digest" IS 'Stores one monthly badge digest per user/period, with summary and lists of awarded/revoked monthly badges.';
-
-
-
-COMMENT ON COLUMN "public"."app_badge_monthly_digest"."period" IS 'Monthly period in YYYY-MM format (e.g. 2025-11).';
-
-
-
-COMMENT ON COLUMN "public"."app_badge_monthly_digest"."summary" IS 'JSON summary: total_badges, best_rank, category flags (attendance, revenue, followers, growth), etc.';
-
-
-
-COMMENT ON COLUMN "public"."app_badge_monthly_digest"."awarded" IS 'JSON array of awarded monthly badges for this period (active at digest time).';
-
-
-
-COMMENT ON COLUMN "public"."app_badge_monthly_digest"."revoked" IS 'JSON array of monthly badges revoked for this period (revoked_at not null).';
-
-
-
-CREATE SEQUENCE IF NOT EXISTS "public"."app_badge_monthly_digest_id_seq"
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER SEQUENCE "public"."app_badge_monthly_digest_id_seq" OWNER TO "postgres";
-
-
-ALTER SEQUENCE "public"."app_badge_monthly_digest_id_seq" OWNED BY "public"."app_badge_monthly_digest"."id";
-
 
 
 CREATE TABLE IF NOT EXISTS "public"."app_challenge" (
@@ -9246,21 +6912,6 @@ ALTER TABLE ONLY "public"."app_collaboration_invite" REPLICA IDENTITY FULL;
 
 
 ALTER TABLE "public"."app_collaboration_invite" OWNER TO "postgres";
-
-
-CREATE SEQUENCE IF NOT EXISTS "public"."app_creator_badge_trigger_id_seq"
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER SEQUENCE "public"."app_creator_badge_trigger_id_seq" OWNER TO "postgres";
-
-
-ALTER SEQUENCE "public"."app_creator_badge_trigger_id_seq" OWNED BY "public"."app_creator_badge_trigger"."id";
-
 
 
 CREATE TABLE IF NOT EXISTS "public"."app_creator_comment" (
@@ -9514,7 +7165,7 @@ CREATE TABLE IF NOT EXISTS "public"."app_notification" (
     "payload" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
     "read_at" timestamp with time zone,
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    CONSTRAINT "app_notification_type_check" CHECK (("type" = ANY (ARRAY['review_new'::"text", 'dm_new'::"text", 'system'::"text", 'badge_awarded'::"text", 'badge_monthly_digest'::"text", 'collab_invite'::"text", 'collab_accepted'::"text", 'contract_locked'::"text", 'contract_accepted'::"text", 'contract_declined'::"text", 'challenge_published'::"text", 'question_for_you'::"text", 'coach_answered_your_question'::"text"])))
+    CONSTRAINT "app_notification_type_check" CHECK (("type" = ANY (ARRAY['review_new'::"text", 'dm_new'::"text", 'system'::"text", 'collab_invite'::"text", 'collab_accepted'::"text", 'contract_locked'::"text", 'contract_accepted'::"text", 'contract_declined'::"text", 'challenge_published'::"text", 'question_for_you'::"text", 'coach_answered_your_question'::"text"])))
 );
 
 
@@ -9596,24 +7247,53 @@ CREATE TABLE IF NOT EXISTS "public"."app_profile" (
 ALTER TABLE "public"."app_profile" OWNER TO "postgres";
 
 
-CREATE TABLE IF NOT EXISTS "public"."app_review" (
-    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+CREATE TABLE IF NOT EXISTS "public"."app_session_cohost" (
     "session_id" "uuid" NOT NULL,
-    "reviewer_id" "uuid" NOT NULL,
-    "creator_id" "uuid" NOT NULL,
-    "rating" integer NOT NULL,
-    "comment" "text",
-    "created_at" timestamp with time zone DEFAULT "now"(),
-    "updated_at" timestamp with time zone,
-    CONSTRAINT "app_review_no_self" CHECK (("reviewer_id" <> "creator_id")),
-    CONSTRAINT "app_review_rating_check" CHECK ((("rating" >= 1) AND ("rating" <= 5))),
-    CONSTRAINT "chk_app_review_rating_range" CHECK ((("rating" >= 1) AND ("rating" <= 5)))
+    "cohost_id" "uuid" NOT NULL,
+    "split_percent" integer,
+    "updated_at" timestamp with time zone
 );
 
-ALTER TABLE ONLY "public"."app_review" FORCE ROW LEVEL SECURITY;
+ALTER TABLE ONLY "public"."app_session_cohost" REPLICA IDENTITY FULL;
 
 
-ALTER TABLE "public"."app_review" OWNER TO "postgres";
+ALTER TABLE "public"."app_session_cohost" OWNER TO "postgres";
+
+
+CREATE OR REPLACE VIEW "public"."vw_expert_review_stats" AS
+ WITH "expert_ratings" AS (
+         SELECT "s"."host_id" AS "expert_id",
+            "r"."rating"
+           FROM ("public"."app_review" "r"
+             JOIN "public"."app_session" "s" ON (("s"."id" = "r"."session_id")))
+          WHERE ("r"."session_id" IS NOT NULL)
+        UNION ALL
+         SELECT "sc"."cohost_id",
+            "r"."rating"
+           FROM ("public"."app_review" "r"
+             JOIN "public"."app_session_cohost" "sc" ON (("sc"."session_id" = "r"."session_id")))
+          WHERE ("r"."session_id" IS NOT NULL)
+        UNION ALL
+         SELECT "c"."owner_id",
+            "r"."rating"
+           FROM ("public"."app_review" "r"
+             JOIN "public"."app_challenge" "c" ON (("c"."id" = "r"."challenge_id")))
+          WHERE ("r"."challenge_id" IS NOT NULL)
+        UNION ALL
+         SELECT "cc"."cohost_id",
+            "r"."rating"
+           FROM ("public"."app_review" "r"
+             JOIN "public"."app_challenge_cohost" "cc" ON (("cc"."challenge_id" = "r"."challenge_id")))
+          WHERE ("r"."challenge_id" IS NOT NULL)
+        )
+ SELECT "expert_id",
+    (COALESCE("avg"("rating"), (0)::numeric))::numeric(3,2) AS "avg_rating",
+    ("count"(*))::integer AS "total_reviews"
+   FROM "expert_ratings"
+  GROUP BY "expert_id";
+
+
+ALTER VIEW "public"."vw_expert_review_stats" OWNER TO "postgres";
 
 
 CREATE OR REPLACE VIEW "public"."app_profile_stats" AS
@@ -9629,11 +7309,10 @@ CREATE OR REPLACE VIEW "public"."app_profile_stats" AS
            FROM "public"."app_session"
           GROUP BY "app_session"."host_id"
         ), "reviews" AS (
-         SELECT "app_review"."creator_id" AS "profile_id",
-            (COALESCE("avg"("app_review"."rating"), (0)::numeric))::numeric(3,2) AS "avg_rating",
-            ("count"(*))::integer AS "total_reviews"
-           FROM "public"."app_review"
-          GROUP BY "app_review"."creator_id"
+         SELECT "vw_expert_review_stats"."expert_id" AS "profile_id",
+            "vw_expert_review_stats"."avg_rating",
+            "vw_expert_review_stats"."total_reviews"
+           FROM "public"."vw_expert_review_stats"
         )
  SELECT "p"."id" AS "profile_id",
     "p"."display_name",
@@ -9670,19 +7349,6 @@ CREATE OR REPLACE VIEW "public"."app_profile_public" AS
 
 
 ALTER VIEW "public"."app_profile_public" OWNER TO "postgres";
-
-
-CREATE TABLE IF NOT EXISTS "public"."app_session_cohost" (
-    "session_id" "uuid" NOT NULL,
-    "cohost_id" "uuid" NOT NULL,
-    "split_percent" integer,
-    "updated_at" timestamp with time zone
-);
-
-ALTER TABLE ONLY "public"."app_session_cohost" REPLICA IDENTITY FULL;
-
-
-ALTER TABLE "public"."app_session_cohost" OWNER TO "postgres";
 
 
 CREATE OR REPLACE VIEW "public"."app_session_financials" AS
@@ -9847,21 +7513,6 @@ ALTER SEQUENCE "public"."app_transaction_audit_id_seq" OWNER TO "postgres";
 
 
 ALTER SEQUENCE "public"."app_transaction_audit_id_seq" OWNED BY "public"."app_transaction_audit"."id";
-
-
-
-CREATE SEQUENCE IF NOT EXISTS "public"."app_user_badge_id_seq"
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER SEQUENCE "public"."app_user_badge_id_seq" OWNER TO "postgres";
-
-
-ALTER SEQUENCE "public"."app_user_badge_id_seq" OWNED BY "public"."app_user_badge"."id";
 
 
 
@@ -10125,59 +7776,26 @@ COMMENT ON VIEW "public"."vw_email_outbox_pending" IS 'Pending emails (not sent 
 
 
 
-CREATE OR REPLACE VIEW "public"."vw_my_badges" WITH ("security_invoker"='true') AS
- WITH "me" AS (
-         SELECT "auth"."uid"() AS "uid"
+CREATE OR REPLACE VIEW "public"."vw_experience_review_stats" AS
+ WITH "by_group" AS (
+         SELECT COALESCE("c_1"."continuation_group_id", "c_1"."id") AS "group_key",
+            (COALESCE("avg"("r"."rating"), (0)::numeric))::numeric(3,2) AS "avg_rating",
+            ("count"(*))::integer AS "total_reviews"
+           FROM ("public"."app_review" "r"
+             JOIN "public"."app_challenge" "c_1" ON (("c_1"."id" = "r"."challenge_id")))
+          WHERE ("r"."challenge_id" IS NOT NULL)
+          GROUP BY COALESCE("c_1"."continuation_group_id", "c_1"."id")
         )
- SELECT "ub"."id" AS "user_badge_id",
-    "ub"."user_id",
-    "ub"."badge_id",
-    "b"."slug" AS "badge_slug",
-    "b"."label" AS "badge_label",
-    "b"."description",
-    "b"."audience",
-    "b"."source",
-    "b"."tier",
-    "b"."is_event_based",
-    "b"."is_monthly",
-    "b"."is_auto_awarded",
-    "b"."is_active",
-    "b"."color_hex" AS "badge_color_hex",
-    "b"."icon" AS "badge_icon",
-    "b"."created_by" AS "badge_created_by",
-    "creator"."username" AS "badge_creator_username",
-    "ub"."awarded_at",
-    "ub"."awarded_by",
-    "ub"."context",
-    "ub"."is_permanent",
-    "ub"."revoked_at",
-    "ub"."revoked_reason",
-    "ub"."visible_on_profile",
-    "ub"."pinned_on_profile",
-    "ub"."period",
-        CASE
-            WHEN ("ub"."revoked_at" IS NULL) THEN 'active'::"text"
-            ELSE 'revoked'::"text"
-        END AS "status",
-    (("ub"."context" ->> 'rank'::"text"))::integer AS "rank",
-    (("ub"."context" ->> 'total_attendance'::"text"))::integer AS "total_attendance",
-    (("ub"."context" ->> 'unique_attendees'::"text"))::integer AS "unique_attendees",
-    (("ub"."context" ->> 'total_gross_cents'::"text"))::bigint AS "total_gross_cents",
-    (("ub"."context" ->> 'unique_buyers'::"text"))::integer AS "unique_buyers",
-    (("ub"."context" ->> 'follower_count'::"text"))::integer AS "follower_count",
-    (("ub"."context" ->> 'growth_ratio'::"text"))::numeric AS "growth_ratio",
-    (("ub"."context" ->> 'curr_sessions'::"text"))::integer AS "curr_sessions",
-    (("ub"."context" ->> 'prev_sessions'::"text"))::integer AS "prev_sessions",
-    (("ub"."context" ->> 'curr_value'::"text"))::numeric AS "curr_value",
-    (("ub"."context" ->> 'prev_value'::"text"))::numeric AS "prev_value"
-   FROM ((("public"."app_user_badge" "ub"
-     JOIN "me" ON (("me"."uid" = "ub"."user_id")))
-     JOIN "public"."app_badge" "b" ON (("b"."id" = "ub"."badge_id")))
-     LEFT JOIN "public"."app_profile" "creator" ON (("creator"."id" = "b"."created_by")))
-  ORDER BY "ub"."awarded_at" DESC;
+ SELECT "c"."id" AS "challenge_id",
+    COALESCE("c"."continuation_group_id", "c"."id") AS "group_key",
+    (COALESCE("g"."avg_rating", (0)::numeric))::numeric(3,2) AS "avg_rating",
+    COALESCE("g"."total_reviews", 0) AS "total_reviews"
+   FROM ("public"."app_challenge" "c"
+     LEFT JOIN "by_group" "g" ON (("g"."group_key" = COALESCE("c"."continuation_group_id", "c"."id"))))
+  WHERE ("c"."status" = ANY (ARRAY['published'::"public"."challenge_status", 'completed'::"public"."challenge_status"]));
 
 
-ALTER VIEW "public"."vw_my_badges" OWNER TO "postgres";
+ALTER VIEW "public"."vw_experience_review_stats" OWNER TO "postgres";
 
 
 CREATE OR REPLACE VIEW "public"."vw_my_challenges_overview" WITH ("security_invoker"='true') AS
@@ -10547,41 +8165,6 @@ Usage
 
 
 
-CREATE OR REPLACE VIEW "public"."vw_my_creator_badge_templates" WITH ("security_invoker"='true') AS
- WITH "me" AS (
-         SELECT "auth"."uid"() AS "uid"
-        )
- SELECT "b"."id" AS "badge_id",
-    "b"."slug" AS "badge_slug",
-    "b"."label" AS "badge_label",
-    "b"."description",
-    "b"."audience",
-    "b"."source",
-    "b"."tier",
-    "b"."is_event_based",
-    "b"."is_monthly",
-    "b"."is_auto_awarded",
-    "b"."is_active",
-    "b"."color_hex",
-    "b"."icon",
-    "b"."created_by",
-    "p"."username" AS "creator_username",
-    "b"."created_at",
-    "count"("ub"."id") AS "awards_count",
-    "min"("ub"."awarded_at") AS "first_awarded_at",
-    "max"("ub"."awarded_at") AS "last_awarded_at"
-   FROM ((("public"."app_badge" "b"
-     JOIN "me" ON (("me"."uid" = "b"."created_by")))
-     LEFT JOIN "public"."app_profile" "p" ON (("p"."id" = "b"."created_by")))
-     LEFT JOIN "public"."app_user_badge" "ub" ON (("ub"."badge_id" = "b"."id")))
-  WHERE ("b"."source" = 'creator_defined'::"text")
-  GROUP BY "b"."id", "b"."slug", "b"."label", "b"."description", "b"."audience", "b"."source", "b"."tier", "b"."is_event_based", "b"."is_monthly", "b"."is_auto_awarded", "b"."is_active", "b"."color_hex", "b"."icon", "b"."created_by", "p"."username", "b"."created_at"
-  ORDER BY "b"."created_at" DESC;
-
-
-ALTER VIEW "public"."vw_my_creator_badge_templates" OWNER TO "postgres";
-
-
 CREATE OR REPLACE VIEW "public"."vw_my_creator_earnings" WITH ("security_invoker"='true') AS
  WITH "base" AS (
          SELECT "t"."creator_id",
@@ -10685,38 +8268,6 @@ COMMENT ON VIEW "public"."vw_my_creator_summary" IS 'KPI header for the signed-i
 
 
 
-CREATE OR REPLACE VIEW "public"."vw_my_event_badges" WITH ("security_invoker"='true') AS
- WITH "me" AS (
-         SELECT "auth"."uid"() AS "uid"
-        )
- SELECT "ub"."id" AS "user_badge_id",
-    "ub"."user_id",
-    "ub"."badge_id",
-    "b"."slug",
-    "b"."label",
-    "b"."description",
-    "b"."tier",
-    "b"."color_hex",
-    "b"."icon",
-    "ub"."awarded_at",
-    "ub"."revoked_at",
-    "ub"."is_permanent",
-    "ub"."visible_on_profile",
-    "ub"."pinned_on_profile",
-    "ub"."context"
-   FROM (("public"."app_user_badge" "ub"
-     JOIN "public"."app_badge" "b" ON (("b"."id" = "ub"."badge_id")))
-     JOIN "me" ON (("me"."uid" = "ub"."user_id")))
-  WHERE (("ub"."period" IS NULL) AND ("b"."is_monthly" = false));
-
-
-ALTER VIEW "public"."vw_my_event_badges" OWNER TO "postgres";
-
-
-COMMENT ON VIEW "public"."vw_my_event_badges" IS 'Permanent (non-monthly) event-based badges for auth.uid(), including session milestones and challenge milestones.';
-
-
-
 CREATE OR REPLACE VIEW "public"."vw_my_lifetime_summary" AS
  WITH "me" AS (
          SELECT "auth"."uid"() AS "uid"
@@ -10747,13 +8298,6 @@ CREATE OR REPLACE VIEW "public"."vw_my_lifetime_summary" AS
          SELECT "count"(*) AS "joined_creator_tribes_count"
            FROM ("public"."app_creator_space_member" "m"
              JOIN "me" "me_1" ON (("me_1"."uid" = "m"."user_id")))
-        ), "badge_stats" AS (
-         SELECT "count"(*) AS "total_badges",
-            "count"(*) FILTER (WHERE ("ub"."is_permanent" AND ("ub"."revoked_at" IS NULL))) AS "permanent_badges_active",
-            "min"("ub"."awarded_at") AS "first_badge_at",
-            "max"("ub"."awarded_at") AS "last_badge_at"
-           FROM ("public"."app_user_badge" "ub"
-             JOIN "me" "me_1" ON (("me_1"."uid" = "ub"."user_id")))
         )
  SELECT "me"."uid" AS "user_id",
     COALESCE("att"."sessions_attended", (0)::bigint) AS "sessions_attended",
@@ -10762,229 +8306,17 @@ CREATE OR REPLACE VIEW "public"."vw_my_lifetime_summary" AS
     COALESCE("creator_tx"."creator_total_gross_cents", (0)::bigint) AS "creator_total_gross_cents",
     COALESCE("creator_tx"."creator_unique_buyers", 0) AS "creator_unique_buyers",
     COALESCE("creator_tribe_counts"."creator_tribe_members_count", (0)::bigint) AS "creator_tribe_members_count",
-    COALESCE("joined_tribe_counts"."joined_creator_tribes_count", (0)::bigint) AS "joined_creator_tribes_count",
-    COALESCE("badge_stats"."total_badges", (0)::bigint) AS "total_badges",
-    COALESCE("badge_stats"."permanent_badges_active", (0)::bigint) AS "permanent_badges_active",
-    "badge_stats"."first_badge_at",
-    "badge_stats"."last_badge_at"
-   FROM ((((((("me"
+    COALESCE("joined_tribe_counts"."joined_creator_tribes_count", (0)::bigint) AS "joined_creator_tribes_count"
+   FROM (((((("me"
      LEFT JOIN "att" ON (true))
      LEFT JOIN "hosted" ON (true))
      LEFT JOIN "challenges_owned" ON (true))
      LEFT JOIN "creator_tx" ON (true))
      LEFT JOIN "creator_tribe_counts" ON (true))
-     LEFT JOIN "joined_tribe_counts" ON (true))
-     LEFT JOIN "badge_stats" ON (true));
+     LEFT JOIN "joined_tribe_counts" ON (true));
 
 
 ALTER VIEW "public"."vw_my_lifetime_summary" OWNER TO "postgres";
-
-
-CREATE OR REPLACE VIEW "public"."vw_my_monthly_badges_flat" WITH ("security_invoker"='true') AS
- WITH "me" AS (
-         SELECT "auth"."uid"() AS "uid"
-        )
- SELECT "ub"."id" AS "user_badge_id",
-    "ub"."user_id",
-    "ub"."badge_id",
-    "b"."slug" AS "badge_slug",
-    "b"."label" AS "badge_label",
-    "b"."description",
-    "b"."audience",
-    "b"."tier",
-    "b"."is_monthly",
-    "ub"."period",
-        CASE
-            WHEN ("ub"."revoked_at" IS NULL) THEN 'awarded'::"text"
-            ELSE 'revoked'::"text"
-        END AS "status",
-    "ub"."awarded_at",
-    "ub"."revoked_at",
-    "ub"."revoked_reason",
-    "ub"."context",
-    (("ub"."context" ->> 'rank'::"text"))::integer AS "rank",
-    (("ub"."context" ->> 'total_attendance'::"text"))::integer AS "total_attendance",
-    (("ub"."context" ->> 'unique_attendees'::"text"))::integer AS "unique_attendees",
-    (("ub"."context" ->> 'total_gross_cents'::"text"))::bigint AS "total_gross_cents",
-    (("ub"."context" ->> 'unique_buyers'::"text"))::integer AS "unique_buyers",
-    (("ub"."context" ->> 'follower_count'::"text"))::integer AS "follower_count",
-    (("ub"."context" ->> 'growth_ratio'::"text"))::numeric AS "growth_ratio",
-    (("ub"."context" ->> 'curr_sessions'::"text"))::integer AS "curr_sessions",
-    (("ub"."context" ->> 'prev_sessions'::"text"))::integer AS "prev_sessions",
-    (("ub"."context" ->> 'curr_value'::"text"))::numeric AS "curr_value",
-    (("ub"."context" ->> 'prev_value'::"text"))::numeric AS "prev_value"
-   FROM (("public"."app_user_badge" "ub"
-     JOIN "public"."app_badge" "b" ON (("b"."id" = "ub"."badge_id")))
-     JOIN "me" ON (("me"."uid" = "ub"."user_id")))
-  WHERE ("b"."is_monthly" = true)
-  ORDER BY "ub"."period" DESC, "ub"."awarded_at" DESC;
-
-
-ALTER VIEW "public"."vw_my_monthly_badges_flat" OWNER TO "postgres";
-
-
-COMMENT ON VIEW "public"."vw_my_monthly_badges_flat" IS 'Flat per-badge view of all monthly badges for auth.uid(), including status (awarded/revoked), period, and typed metrics extracted from context.';
-
-
-
-CREATE OR REPLACE VIEW "public"."vw_my_monthly_creator_badges" WITH ("security_invoker"='true') AS
- WITH "me" AS (
-         SELECT "auth"."uid"() AS "uid"
-        )
- SELECT "ub"."id" AS "user_badge_id",
-    "ub"."user_id",
-    "ub"."badge_id",
-    "b"."slug",
-    "b"."label",
-    "b"."description",
-    "b"."tier",
-    "b"."color_hex",
-    "b"."icon",
-    "ub"."period",
-    "ub"."awarded_at",
-    "ub"."revoked_at",
-    "ub"."is_permanent",
-    "ub"."visible_on_profile",
-    "ub"."pinned_on_profile",
-    "ub"."context",
-    (("ub"."context" ->> 'rank'::"text"))::integer AS "rank",
-    (("ub"."context" ->> 'total_gross_cents'::"text"))::bigint AS "total_gross_cents",
-    (("ub"."context" ->> 'unique_buyers'::"text"))::integer AS "unique_buyers",
-    (("ub"."context" ->> 'total_attendance'::"text"))::integer AS "total_attendance",
-    (("ub"."context" ->> 'unique_attendees'::"text"))::integer AS "unique_attendees",
-    (("ub"."context" ->> 'follower_count'::"text"))::integer AS "follower_count",
-    (("ub"."context" ->> 'growth_ratio'::"text"))::numeric AS "growth_ratio",
-    (("ub"."context" ->> 'curr_value'::"text"))::numeric AS "curr_value",
-    (("ub"."context" ->> 'prev_value'::"text"))::numeric AS "prev_value"
-   FROM (("public"."app_user_badge" "ub"
-     JOIN "public"."app_badge" "b" ON (("b"."id" = "ub"."badge_id")))
-     JOIN "me" ON (("me"."uid" = "ub"."user_id")))
-  WHERE (("ub"."period" IS NOT NULL) AND ("b"."audience" = 'creator'::"text") AND ("b"."is_monthly" = true));
-
-
-ALTER VIEW "public"."vw_my_monthly_creator_badges" OWNER TO "postgres";
-
-
-COMMENT ON VIEW "public"."vw_my_monthly_creator_badges" IS 'Monthly creator badges for the signed-in user (auth.uid()), including revenue/attendance/follower leaderboard positions and growth stats via app_user_badge.context.';
-
-
-
-CREATE OR REPLACE VIEW "public"."vw_my_monthly_digest_history" WITH ("security_invoker"='true') AS
- WITH "me" AS (
-         SELECT "auth"."uid"() AS "uid"
-        ), "digests" AS (
-         SELECT "d"."user_id",
-            "d"."period",
-            "d"."summary",
-            "d"."awarded",
-            "d"."revoked",
-            "d"."created_at",
-            "s"."seen_at"
-           FROM (("public"."app_badge_monthly_digest" "d"
-             JOIN "me" ON (("me"."uid" = "d"."user_id")))
-             LEFT JOIN "public"."app_user_period_seen" "s" ON ((("s"."user_id" = "d"."user_id") AND ("s"."period" = "d"."period"))))
-        )
- SELECT "period",
-    "created_at" AS "digest_created_at",
-    "seen_at",
-    COALESCE("jsonb_array_length"("awarded"), 0) AS "awarded_count",
-    COALESCE("jsonb_array_length"("revoked"), 0) AS "revoked_count",
-    (("summary" ->> 'total_badges'::"text"))::integer AS "total_badges",
-    (("summary" ->> 'best_rank'::"text"))::integer AS "best_rank",
-    (("summary" ->> 'has_attendance_rank'::"text"))::boolean AS "has_attendance_rank",
-    (("summary" ->> 'has_revenue_rank'::"text"))::boolean AS "has_revenue_rank",
-    (("summary" ->> 'has_follower_rank'::"text"))::boolean AS "has_follower_rank",
-    (("summary" ->> 'has_growth_badge'::"text"))::boolean AS "has_growth_badge",
-    "summary",
-    "awarded",
-    "revoked"
-   FROM "digests" "g"
-  ORDER BY "period" DESC;
-
-
-ALTER VIEW "public"."vw_my_monthly_digest_history" OWNER TO "postgres";
-
-
-COMMENT ON VIEW "public"."vw_my_monthly_digest_history" IS 'Per-period monthly badge digest history for auth.uid(), including seen_at, counts, and summary flags unpacked from app_badge_monthly_digest.';
-
-
-
-CREATE OR REPLACE VIEW "public"."vw_my_monthly_participant_badges" WITH ("security_invoker"='true') AS
- WITH "me" AS (
-         SELECT "auth"."uid"() AS "uid"
-        )
- SELECT "ub"."id" AS "user_badge_id",
-    "ub"."user_id",
-    "ub"."badge_id",
-    "b"."slug",
-    "b"."label",
-    "b"."description",
-    "b"."tier",
-    "b"."color_hex",
-    "b"."icon",
-    "ub"."period",
-    "ub"."awarded_at",
-    "ub"."revoked_at",
-    "ub"."is_permanent",
-    "ub"."visible_on_profile",
-    "ub"."pinned_on_profile",
-    "ub"."context",
-    (("ub"."context" ->> 'rank'::"text"))::integer AS "rank",
-    (("ub"."context" ->> 'total_attendance'::"text"))::integer AS "total_attendance",
-    (("ub"."context" ->> 'unique_creators'::"text"))::integer AS "total_creators",
-    (("ub"."context" ->> 'growth_ratio'::"text"))::numeric AS "growth_ratio",
-    (("ub"."context" ->> 'curr_sessions'::"text"))::integer AS "curr_sessions",
-    (("ub"."context" ->> 'prev_sessions'::"text"))::integer AS "prev_sessions"
-   FROM (("public"."app_user_badge" "ub"
-     JOIN "public"."app_badge" "b" ON (("b"."id" = "ub"."badge_id")))
-     JOIN "me" ON (("me"."uid" = "ub"."user_id")))
-  WHERE (("ub"."period" IS NOT NULL) AND ("b"."audience" = 'participant'::"text") AND ("b"."is_monthly" = true));
-
-
-ALTER VIEW "public"."vw_my_monthly_participant_badges" OWNER TO "postgres";
-
-
-COMMENT ON VIEW "public"."vw_my_monthly_participant_badges" IS 'Monthly participant badges for the signed-in user (auth.uid()), including leaderboard positions and growth stats from app_user_badge.context.';
-
-
-
-CREATE OR REPLACE VIEW "public"."vw_my_monthly_summary" WITH ("security_invoker"='true') AS
- WITH "monthly" AS (
-         SELECT 'participant'::"text" AS "role",
-            "m"."slug",
-            "m"."tier",
-            "m"."period",
-            "m"."rank"
-           FROM "public"."vw_my_monthly_participant_badges" "m"
-        UNION ALL
-         SELECT 'creator'::"text" AS "role",
-            "m"."slug",
-            "m"."tier",
-            "m"."period",
-            "m"."rank"
-           FROM "public"."vw_my_monthly_creator_badges" "m"
-        )
- SELECT "period",
-    "count"(*) AS "total_badges",
-    "min"("rank") FILTER (WHERE ("rank" IS NOT NULL)) AS "best_rank",
-    "min"("rank") FILTER (WHERE (("role" = 'participant'::"text") AND ("rank" IS NOT NULL))) AS "best_participant_rank",
-    "min"("rank") FILTER (WHERE (("role" = 'creator'::"text") AND ("rank" IS NOT NULL))) AS "best_creator_rank",
-    "bool_or"(("role" = 'participant'::"text")) AS "has_participant_badges",
-    "bool_or"(("role" = 'creator'::"text")) AS "has_creator_badges",
-    "bool_or"(("slug" ~~ 'system:top_%attendance%'::"text")) AS "has_attendance_rank",
-    "bool_or"(("slug" ~~ 'system:top_%revenue%'::"text")) AS "has_revenue_rank",
-    "bool_or"(("slug" ~~ 'system:top_%followers%'::"text")) AS "has_follower_rank",
-    "bool_or"(("slug" ~~ 'system:monthly_%_growth%'::"text")) AS "has_growth_badge"
-   FROM "monthly"
-  GROUP BY "period"
-  ORDER BY "period" DESC;
-
-
-ALTER VIEW "public"."vw_my_monthly_summary" OWNER TO "postgres";
-
-
-COMMENT ON VIEW "public"."vw_my_monthly_summary" IS 'Per-period summary of all monthly badges for auth.uid(), including best rank and category flags (attendance, revenue, followers, growth).';
-
 
 
 CREATE OR REPLACE VIEW "public"."vw_my_notifications" WITH ("security_invoker"='true') AS
@@ -11414,14 +8746,6 @@ CREATE TABLE IF NOT EXISTS "public"."webhook_event_lock" (
 ALTER TABLE "public"."webhook_event_lock" OWNER TO "postgres";
 
 
-ALTER TABLE ONLY "public"."app_badge_monthly_digest" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."app_badge_monthly_digest_id_seq"'::"regclass");
-
-
-
-ALTER TABLE ONLY "public"."app_creator_badge_trigger" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."app_creator_badge_trigger_id_seq"'::"regclass");
-
-
-
 ALTER TABLE ONLY "public"."app_edge_call_log" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."app_edge_call_log_id_seq"'::"regclass");
 
 
@@ -11434,32 +8758,8 @@ ALTER TABLE ONLY "public"."app_transaction_audit" ALTER COLUMN "id" SET DEFAULT 
 
 
 
-ALTER TABLE ONLY "public"."app_user_badge" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."app_user_badge_id_seq"'::"regclass");
-
-
-
 ALTER TABLE ONLY "public"."app_attendance"
     ADD CONSTRAINT "app_attendance_pkey" PRIMARY KEY ("session_id", "user_id");
-
-
-
-ALTER TABLE ONLY "public"."app_badge_monthly_digest"
-    ADD CONSTRAINT "app_badge_monthly_digest_pkey" PRIMARY KEY ("id");
-
-
-
-ALTER TABLE ONLY "public"."app_badge_monthly_digest"
-    ADD CONSTRAINT "app_badge_monthly_digest_user_period_uniq" UNIQUE ("user_id", "period");
-
-
-
-ALTER TABLE ONLY "public"."app_badge"
-    ADD CONSTRAINT "app_badge_pkey" PRIMARY KEY ("id");
-
-
-
-ALTER TABLE ONLY "public"."app_badge"
-    ADD CONSTRAINT "app_badge_slug_key" UNIQUE ("slug");
 
 
 
@@ -11540,11 +8840,6 @@ ALTER TABLE ONLY "public"."app_collaboration_decline"
 
 ALTER TABLE ONLY "public"."app_collaboration_invite"
     ADD CONSTRAINT "app_collaboration_invite_pkey" PRIMARY KEY ("id");
-
-
-
-ALTER TABLE ONLY "public"."app_creator_badge_trigger"
-    ADD CONSTRAINT "app_creator_badge_trigger_pkey" PRIMARY KEY ("id");
 
 
 
@@ -11653,11 +8948,6 @@ ALTER TABLE ONLY "public"."app_review"
 
 
 
-ALTER TABLE ONLY "public"."app_review"
-    ADD CONSTRAINT "app_review_session_id_reviewer_id_key" UNIQUE ("session_id", "reviewer_id");
-
-
-
 ALTER TABLE ONLY "public"."app_session_cohost"
     ADD CONSTRAINT "app_session_cohost_pkey" PRIMARY KEY ("session_id", "cohost_id");
 
@@ -11718,11 +9008,6 @@ ALTER TABLE ONLY "public"."app_transaction"
 
 
 
-ALTER TABLE ONLY "public"."app_user_badge"
-    ADD CONSTRAINT "app_user_badge_pkey" PRIMARY KEY ("id");
-
-
-
 ALTER TABLE ONLY "public"."app_user_period_seen"
     ADD CONSTRAINT "app_user_period_seen_pkey" PRIMARY KEY ("user_id", "period");
 
@@ -11753,11 +9038,11 @@ ALTER TABLE ONLY "public"."webhook_event_lock"
 
 
 
-CREATE INDEX "app_creator_badge_trigger_badge_id_idx" ON "public"."app_creator_badge_trigger" USING "btree" ("badge_id");
+CREATE UNIQUE INDEX "app_review_uniq_challenge" ON "public"."app_review" USING "btree" ("reviewer_id", "challenge_id") WHERE ("challenge_id" IS NOT NULL);
 
 
 
-CREATE INDEX "app_creator_badge_trigger_creator_id_trigger_type_idx" ON "public"."app_creator_badge_trigger" USING "btree" ("creator_id", "trigger_type");
+CREATE UNIQUE INDEX "app_review_uniq_session" ON "public"."app_review" USING "btree" ("reviewer_id", "session_id") WHERE ("session_id" IS NOT NULL);
 
 
 
@@ -11770,10 +9055,6 @@ CREATE INDEX "idx_app_session_contract_id" ON "public"."app_session" USING "btre
 
 
 CREATE INDEX "idx_attendance_session" ON "public"."app_attendance" USING "btree" ("session_id");
-
-
-
-CREATE INDEX "idx_badge_created_by" ON "public"."app_badge" USING "btree" ("created_by");
 
 
 
@@ -11997,6 +9278,10 @@ CREATE INDEX "idx_pre_pulse_session" ON "public"."app_session_pre_pulse_response
 
 
 
+CREATE INDEX "idx_review_challenge" ON "public"."app_review" USING "btree" ("challenge_id") WHERE ("challenge_id" IS NOT NULL);
+
+
+
 CREATE INDEX "idx_review_creator" ON "public"."app_review" USING "btree" ("creator_id");
 
 
@@ -12086,22 +9371,6 @@ CREATE INDEX "idx_tx_session" ON "public"."app_transaction" USING "btree" ("sess
 
 
 CREATE INDEX "idx_tx_status" ON "public"."app_transaction" USING "btree" ("status");
-
-
-
-CREATE INDEX "idx_user_badge_awarded_by" ON "public"."app_user_badge" USING "btree" ("awarded_by");
-
-
-
-CREATE INDEX "idx_user_badge_badge" ON "public"."app_user_badge" USING "btree" ("badge_id", "awarded_at" DESC);
-
-
-
-CREATE UNIQUE INDEX "idx_user_badge_full" ON "public"."app_user_badge" USING "btree" ("user_id", "badge_id", COALESCE("period", ''::"text"));
-
-
-
-CREATE INDEX "idx_user_badge_user" ON "public"."app_user_badge" USING "btree" ("user_id", "awarded_at" DESC);
 
 
 
@@ -12265,14 +9534,6 @@ CREATE UNIQUE INDEX "ux_email_outbox_kind_tx" ON "public"."app_email_outbox" USI
 
 
 
-CREATE UNIQUE INDEX "ux_user_badge_event_once" ON "public"."app_user_badge" USING "btree" ("user_id", "badge_id") WHERE (("is_permanent" = true) AND ("revoked_at" IS NULL));
-
-
-
-CREATE UNIQUE INDEX "ux_user_badge_monthly_period" ON "public"."app_user_badge" USING "btree" ("user_id", "badge_id", COALESCE(("context" ->> 'period_month'::"text"), ''::"text")) WHERE (("is_permanent" = false) AND ("context" ? 'period_month'::"text") AND ("revoked_at" IS NULL));
-
-
-
 CREATE OR REPLACE VIEW "public"."app_session_financials" WITH ("security_invoker"='true') AS
  SELECT "s"."id" AS "session_id",
     "s"."title",
@@ -12298,22 +9559,6 @@ CREATE OR REPLACE TRIGGER "trg_app_tx_enqueue_receipt" AFTER INSERT OR UPDATE OF
 
 
 
-CREATE OR REPLACE TRIGGER "trg_badge_on_attendance" AFTER INSERT ON "public"."app_attendance" FOR EACH ROW EXECUTE FUNCTION "public"."fn_badge_on_attendance"();
-
-
-
-CREATE OR REPLACE TRIGGER "trg_badge_on_challenge_published" AFTER UPDATE ON "public"."app_challenge" FOR EACH ROW EXECUTE FUNCTION "public"."fn_badge_on_challenge_published"();
-
-
-
-CREATE OR REPLACE TRIGGER "trg_badge_on_session_cohost_insert" AFTER INSERT ON "public"."app_session_cohost" FOR EACH ROW EXECUTE FUNCTION "public"."fn_badge_on_session_cohost_insert"();
-
-
-
-CREATE OR REPLACE TRIGGER "trg_badge_on_session_insert" AFTER INSERT ON "public"."app_session" FOR EACH ROW EXECUTE FUNCTION "public"."fn_badge_on_session_insert"();
-
-
-
 CREATE OR REPLACE TRIGGER "trg_challenge_comment_set_updated_at" BEFORE UPDATE ON "public"."app_challenge_comment" FOR EACH ROW EXECUTE FUNCTION "public"."set_updated_at"();
 
 
@@ -12335,10 +9580,6 @@ CREATE OR REPLACE TRIGGER "trg_challenge_split_enforce" AFTER INSERT OR DELETE O
 
 
 CREATE OR REPLACE TRIGGER "trg_collab_review_new" AFTER INSERT ON "public"."app_collab_review" FOR EACH ROW EXECUTE FUNCTION "public"."on_collab_review_new"();
-
-
-
-CREATE OR REPLACE TRIGGER "trg_creator_badges_attendance" AFTER INSERT ON "public"."app_attendance" FOR EACH ROW EXECUTE FUNCTION "public"."f_check_creator_auto_badges_for_attendance"();
 
 
 
@@ -12378,19 +9619,11 @@ CREATE OR REPLACE TRIGGER "trg_guard_link_via_rpc" BEFORE INSERT OR DELETE OR UP
 
 
 
-CREATE OR REPLACE TRIGGER "trg_notify_badge_awarded" AFTER INSERT ON "public"."app_user_badge" FOR EACH ROW EXECUTE FUNCTION "public"."fn_notify_badge_awarded"();
-
-
-
 CREATE OR REPLACE TRIGGER "trg_published_session_time_change" AFTER UPDATE ON "public"."app_session" FOR EACH ROW EXECUTE FUNCTION "public"."on_published_session_time_change"();
 
 
 
 CREATE OR REPLACE TRIGGER "trg_review_new" AFTER INSERT ON "public"."app_review" FOR EACH ROW EXECUTE FUNCTION "public"."on_review_new"();
-
-
-
-CREATE OR REPLACE TRIGGER "trg_review_updated" AFTER UPDATE OF "rating", "comment" ON "public"."app_review" FOR EACH ROW EXECUTE FUNCTION "public"."on_review_updated"();
 
 
 
@@ -12456,16 +9689,6 @@ CREATE OR REPLACE TRIGGER "trg_tx_currency_consistency" BEFORE INSERT OR UPDATE 
 
 ALTER TABLE ONLY "public"."app_attendance"
     ADD CONSTRAINT "app_attendance_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."app_profile"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."app_badge"
-    ADD CONSTRAINT "app_badge_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."app_profile"("id");
-
-
-
-ALTER TABLE ONLY "public"."app_badge_monthly_digest"
-    ADD CONSTRAINT "app_badge_monthly_digest_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."app_profile"("id");
 
 
 
@@ -12624,16 +9847,6 @@ ALTER TABLE ONLY "public"."app_collaboration_invite"
 
 
 
-ALTER TABLE ONLY "public"."app_creator_badge_trigger"
-    ADD CONSTRAINT "app_creator_badge_trigger_badge_id_fkey" FOREIGN KEY ("badge_id") REFERENCES "public"."app_badge"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."app_creator_badge_trigger"
-    ADD CONSTRAINT "app_creator_badge_trigger_creator_id_fkey" FOREIGN KEY ("creator_id") REFERENCES "public"."app_profile"("id");
-
-
-
 ALTER TABLE ONLY "public"."app_creator_comment"
     ADD CONSTRAINT "app_creator_comment_author_id_fkey" FOREIGN KEY ("author_id") REFERENCES "public"."app_profile"("id") ON DELETE CASCADE;
 
@@ -12755,6 +9968,11 @@ ALTER TABLE ONLY "public"."app_profile"
 
 
 ALTER TABLE ONLY "public"."app_review"
+    ADD CONSTRAINT "app_review_challenge_id_fkey" FOREIGN KEY ("challenge_id") REFERENCES "public"."app_challenge"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."app_review"
     ADD CONSTRAINT "app_review_creator_id_fkey" FOREIGN KEY ("creator_id") REFERENCES "public"."app_profile"("id") ON DELETE CASCADE;
 
 
@@ -12869,21 +10087,6 @@ ALTER TABLE ONLY "public"."app_transaction"
 
 
 
-ALTER TABLE ONLY "public"."app_user_badge"
-    ADD CONSTRAINT "app_user_badge_awarded_by_fkey" FOREIGN KEY ("awarded_by") REFERENCES "public"."app_profile"("id");
-
-
-
-ALTER TABLE ONLY "public"."app_user_badge"
-    ADD CONSTRAINT "app_user_badge_badge_id_fkey" FOREIGN KEY ("badge_id") REFERENCES "public"."app_badge"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."app_user_badge"
-    ADD CONSTRAINT "app_user_badge_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."app_profile"("id") ON DELETE CASCADE;
-
-
-
 ALTER TABLE ONLY "public"."app_user_period_seen"
     ADD CONSTRAINT "app_user_period_seen_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."app_profile"("id");
 
@@ -12931,10 +10134,6 @@ CREATE POLICY "Users can insert their own period_seen rows" ON "public"."app_use
 
 
 
-CREATE POLICY "Users can read their own monthly badge digests" ON "public"."app_badge_monthly_digest" FOR SELECT TO "authenticated" USING (("user_id" = ( SELECT "auth"."uid"() AS "uid")));
-
-
-
 CREATE POLICY "Users can read their own period_seen rows" ON "public"."app_user_period_seen" FOR SELECT TO "authenticated" USING (("user_id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
@@ -12951,28 +10150,6 @@ CREATE POLICY "app_attendance_select_merged" ON "public"."app_attendance" FOR SE
   WHERE (("s"."id" = "app_attendance"."session_id") AND (("s"."host_id" = ( SELECT "auth"."uid"() AS "uid")) OR (EXISTS ( SELECT 1
            FROM "public"."app_session_cohost" "sc"
           WHERE (("sc"."session_id" = "s"."id") AND ("sc"."cohost_id" = ( SELECT "auth"."uid"() AS "uid")))))))))));
-
-
-
-ALTER TABLE "public"."app_badge" ENABLE ROW LEVEL SECURITY;
-
-
-CREATE POLICY "app_badge_admin_all" ON "public"."app_badge" TO "authenticated" USING ("public"."is_admin"(( SELECT "auth"."uid"() AS "uid"))) WITH CHECK ("public"."is_admin"(( SELECT "auth"."uid"() AS "uid")));
-
-
-
-CREATE POLICY "app_badge_creator_insert" ON "public"."app_badge" FOR INSERT TO "authenticated" WITH CHECK ((("source" = 'creator_defined'::"text") AND ("created_by" = ( SELECT "auth"."uid"() AS "uid")) AND ("audience" = 'participant'::"text") AND ("is_event_based" = true) AND ("is_monthly" = false) AND ("is_auto_awarded" = false)));
-
-
-
-CREATE POLICY "app_badge_creator_update_own" ON "public"."app_badge" FOR UPDATE TO "authenticated" USING ((("source" = 'creator_defined'::"text") AND ("created_by" = ( SELECT "auth"."uid"() AS "uid")))) WITH CHECK ((("source" = 'creator_defined'::"text") AND ("created_by" = ( SELECT "auth"."uid"() AS "uid")) AND ("audience" = 'participant'::"text")));
-
-
-
-ALTER TABLE "public"."app_badge_monthly_digest" ENABLE ROW LEVEL SECURITY;
-
-
-CREATE POLICY "app_badge_read_active" ON "public"."app_badge" FOR SELECT TO "authenticated" USING ((("is_active" = true) OR ("source" = 'creator_defined'::"text")));
 
 
 
@@ -13098,9 +10275,6 @@ CREATE POLICY "app_collaboration_decline_update_own" ON "public"."app_collaborat
 
 
 ALTER TABLE "public"."app_collaboration_invite" ENABLE ROW LEVEL SECURITY;
-
-
-ALTER TABLE "public"."app_creator_badge_trigger" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."app_creator_comment" ENABLE ROW LEVEL SECURITY;
@@ -13288,29 +10462,6 @@ CREATE POLICY "app_transaction_select_merged" ON "public"."app_transaction" FOR 
 
 
 
-ALTER TABLE "public"."app_user_badge" ENABLE ROW LEVEL SECURITY;
-
-
-CREATE POLICY "app_user_badge_admin_delete" ON "public"."app_user_badge" FOR DELETE TO "authenticated" USING ("public"."is_admin"(( SELECT "auth"."uid"() AS "uid")));
-
-
-
-CREATE POLICY "app_user_badge_insert_merged" ON "public"."app_user_badge" FOR INSERT TO "authenticated" WITH CHECK (("public"."is_admin"(( SELECT "auth"."uid"() AS "uid")) OR ((EXISTS ( SELECT 1
-   FROM "public"."app_badge" "b"
-  WHERE (("b"."id" = "app_user_badge"."badge_id") AND ("b"."source" = 'creator_defined'::"text") AND ("b"."created_by" = ( SELECT "auth"."uid"() AS "uid")) AND ("b"."audience" = 'participant'::"text") AND ("b"."is_event_based" = true) AND ("b"."is_monthly" = false) AND ("b"."is_auto_awarded" = false) AND ("b"."is_active" = true)))) AND (NOT (EXISTS ( SELECT 1
-   FROM "public"."app_profile" "p"
-  WHERE (("p"."id" = "app_user_badge"."user_id") AND ("p"."role" = 'creator'::"text"))))) AND ("is_permanent" = true) AND ("visible_on_profile" = true) AND ("pinned_on_profile" = false) AND ("period" IS NULL))));
-
-
-
-CREATE POLICY "app_user_badge_select_merged" ON "public"."app_user_badge" FOR SELECT TO "authenticated" USING (("public"."is_admin"(( SELECT "auth"."uid"() AS "uid")) OR ("user_id" = ( SELECT "auth"."uid"() AS "uid"))));
-
-
-
-CREATE POLICY "app_user_badge_update_own" ON "public"."app_user_badge" FOR UPDATE TO "authenticated" USING (("user_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("user_id" = ( SELECT "auth"."uid"() AS "uid")));
-
-
-
 ALTER TABLE "public"."app_user_period_seen" ENABLE ROW LEVEL SECURITY;
 
 
@@ -13465,7 +10616,7 @@ CREATE POLICY "collab_review_delete_window" ON "public"."app_collab_review" FOR 
 
 
 
-CREATE POLICY "collab_review_insert_guard" ON "public"."app_collab_review" FOR INSERT TO "authenticated" WITH CHECK ((("reviewer_id" = ( SELECT "auth"."uid"() AS "uid")) AND "public"."is_creator"(( SELECT "auth"."uid"() AS "uid")) AND "public"."is_creator"("subject_id") AND "public"."collab_had_shared_work"(( SELECT "auth"."uid"() AS "uid"), "subject_id") AND "public"."is_in_challenge"("challenge_id", ( SELECT "auth"."uid"() AS "uid")) AND "public"."is_in_challenge"("challenge_id", "subject_id")));
+CREATE POLICY "collab_review_insert_guard" ON "public"."app_collab_review" FOR INSERT TO "authenticated" WITH CHECK ((("reviewer_id" = ( SELECT "auth"."uid"() AS "uid")) AND "public"."is_creator"(( SELECT "auth"."uid"() AS "uid")) AND "public"."is_creator"("subject_id") AND "public"."collab_had_shared_work"(( SELECT "auth"."uid"() AS "uid"), "subject_id") AND "public"."is_in_challenge"("challenge_id", ( SELECT "auth"."uid"() AS "uid")) AND "public"."is_in_challenge"("challenge_id", "subject_id") AND "public"."experience_review_open"("challenge_id")));
 
 
 
@@ -13478,24 +10629,6 @@ CREATE POLICY "collab_review_update_window" ON "public"."app_collab_review" FOR 
 
 
 CREATE POLICY "creator can read own payouts" ON "public"."app_payout" FOR SELECT TO "authenticated" USING (("creator_id" = ( SELECT "auth"."uid"() AS "uid")));
-
-
-
-CREATE POLICY "creator_badge_trigger_delete" ON "public"."app_creator_badge_trigger" FOR DELETE TO "authenticated" USING (("creator_id" = ( SELECT "auth"."uid"() AS "uid")));
-
-
-
-CREATE POLICY "creator_badge_trigger_insert" ON "public"."app_creator_badge_trigger" FOR INSERT TO "authenticated" WITH CHECK ((("creator_id" = ( SELECT "auth"."uid"() AS "uid")) AND (EXISTS ( SELECT 1
-   FROM "public"."app_badge" "b"
-  WHERE (("b"."id" = "app_creator_badge_trigger"."badge_id") AND ("b"."source" = 'creator_defined'::"text") AND ("b"."created_by" = ( SELECT "auth"."uid"() AS "uid")))))));
-
-
-
-CREATE POLICY "creator_badge_trigger_select" ON "public"."app_creator_badge_trigger" FOR SELECT TO "authenticated" USING (("creator_id" = ( SELECT "auth"."uid"() AS "uid")));
-
-
-
-CREATE POLICY "creator_badge_trigger_update" ON "public"."app_creator_badge_trigger" FOR UPDATE TO "authenticated" USING (("creator_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("creator_id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
 
@@ -13746,11 +10879,15 @@ CREATE POLICY "review_delete_own_15m" ON "public"."app_review" AS RESTRICTIVE FO
 
 
 
-CREATE POLICY "review_insert_attended_ended" ON "public"."app_review" FOR INSERT TO "authenticated" WITH CHECK ((("reviewer_id" = ( SELECT "auth"."uid"() AS "uid")) AND (EXISTS ( SELECT 1
+CREATE POLICY "review_insert_product" ON "public"."app_review" FOR INSERT TO "authenticated" WITH CHECK ((("reviewer_id" = ( SELECT "auth"."uid"() AS "uid")) AND ((("session_id" IS NOT NULL) AND (EXISTS ( SELECT 1
    FROM "public"."app_attendance" "a"
   WHERE (("a"."session_id" = "app_review"."session_id") AND ("a"."user_id" = ( SELECT "auth"."uid"() AS "uid"))))) AND (EXISTS ( SELECT 1
    FROM "public"."app_session" "s"
-  WHERE (("s"."id" = "app_review"."session_id") AND ("s"."status" = 'ended'::"public"."session_status"))))));
+  WHERE (("s"."id" = "app_review"."session_id") AND ("s"."status" = ANY (ARRAY['ended'::"public"."session_status", 'completed'::"public"."session_status"]))))) AND (NOT (EXISTS ( SELECT 1
+   FROM "public"."app_challenge_session" "cs"
+  WHERE ("cs"."session_id" = "app_review"."session_id"))))) OR (("challenge_id" IS NOT NULL) AND (EXISTS ( SELECT 1
+   FROM "public"."app_challenge_member" "m"
+  WHERE (("m"."challenge_id" = "app_review"."challenge_id") AND ("m"."user_id" = ( SELECT "auth"."uid"() AS "uid"))))) AND "public"."experience_review_open"("challenge_id")))));
 
 
 
@@ -14246,29 +11383,8 @@ GRANT ALL ON FUNCTION "public"."accept_collab_invite"("p_invite_id" "uuid", "p_a
 
 
 
-GRANT SELECT,MAINTAIN ON TABLE "public"."app_user_badge" TO "anon";
-GRANT SELECT,INSERT,DELETE,MAINTAIN,UPDATE ON TABLE "public"."app_user_badge" TO "authenticated";
-GRANT ALL ON TABLE "public"."app_user_badge" TO "service_role";
-
-
-
-REVOKE ALL ON FUNCTION "public"."admin_award_creator_badge"("p_creator_id" "uuid", "p_badge_id" "uuid", "p_target_user_id" "uuid") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."admin_award_creator_badge"("p_creator_id" "uuid", "p_badge_id" "uuid", "p_target_user_id" "uuid") TO "service_role";
-
-
-
-REVOKE ALL ON FUNCTION "public"."admin_badge_award"("p_user_id" "uuid", "p_badge_slug" "text", "p_context" "jsonb") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."admin_badge_award"("p_user_id" "uuid", "p_badge_slug" "text", "p_context" "jsonb") TO "service_role";
-
-
-
 REVOKE ALL ON FUNCTION "public"."admin_email_enqueue_receipt"("p_tx_id" "uuid") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."admin_email_enqueue_receipt"("p_tx_id" "uuid") TO "service_role";
-
-
-
-REVOKE ALL ON FUNCTION "public"."admin_generate_monthly_badge_digest"("p_period" "text", "p_admin_id" "uuid") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."admin_generate_monthly_badge_digest"("p_period" "text", "p_admin_id" "uuid") TO "service_role";
 
 
 
@@ -14338,31 +11454,6 @@ GRANT ALL ON FUNCTION "public"."admin_regrant_entitlements_tx"("p_tx_id" "uuid")
 
 
 
-REVOKE ALL ON FUNCTION "public"."admin_run_monthly_attendance_badges"("p_year" integer, "p_month" integer) FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."admin_run_monthly_attendance_badges"("p_year" integer, "p_month" integer) TO "service_role";
-
-
-
-REVOKE ALL ON FUNCTION "public"."admin_run_monthly_creator_attendance_badges"("p_year" integer, "p_month" integer) FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."admin_run_monthly_creator_attendance_badges"("p_year" integer, "p_month" integer) TO "service_role";
-
-
-
-REVOKE ALL ON FUNCTION "public"."admin_run_monthly_creator_follower_badges"("p_year" integer, "p_month" integer) FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."admin_run_monthly_creator_follower_badges"("p_year" integer, "p_month" integer) TO "service_role";
-
-
-
-REVOKE ALL ON FUNCTION "public"."admin_run_monthly_creator_revenue_badges"("p_year" integer, "p_month" integer) FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."admin_run_monthly_creator_revenue_badges"("p_year" integer, "p_month" integer) TO "service_role";
-
-
-
-REVOKE ALL ON FUNCTION "public"."admin_run_monthly_participant_growth_badges"("p_year" integer, "p_month" integer) FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."admin_run_monthly_participant_growth_badges"("p_year" integer, "p_month" integer) TO "service_role";
-
-
-
 GRANT ALL ON FUNCTION "public"."app_handle_new_user"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."app_handle_new_user"() TO "service_role";
 
@@ -14371,12 +11462,6 @@ GRANT ALL ON FUNCTION "public"."app_handle_new_user"() TO "service_role";
 GRANT ALL ON FUNCTION "public"."app_session_assert_within_challenge_window"() TO "anon";
 GRANT ALL ON FUNCTION "public"."app_session_assert_within_challenge_window"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."app_session_assert_within_challenge_window"() TO "service_role";
-
-
-
-REVOKE ALL ON FUNCTION "public"."award_creator_badge"("p_badge_id" "uuid", "p_target_user_id" "uuid") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."award_creator_badge"("p_badge_id" "uuid", "p_target_user_id" "uuid") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."award_creator_badge"("p_badge_id" "uuid", "p_target_user_id" "uuid") TO "service_role";
 
 
 
@@ -14502,6 +11587,12 @@ GRANT ALL ON FUNCTION "public"."collab_reviews_for_creator"("p_subject" "uuid", 
 
 
 
+GRANT ALL ON FUNCTION "public"."complete_ended_experiences"() TO "anon";
+GRANT ALL ON FUNCTION "public"."complete_ended_experiences"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."complete_ended_experiences"() TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."create_challenge_comment"("p_post" "uuid", "p_body" "text") TO "anon";
 GRANT ALL ON FUNCTION "public"."create_challenge_comment"("p_post" "uuid", "p_body" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."create_challenge_comment"("p_post" "uuid", "p_body" "text") TO "service_role";
@@ -14523,30 +11614,6 @@ GRANT ALL ON FUNCTION "public"."create_challenge_post"("p_space" "uuid", "p_body
 REVOKE ALL ON FUNCTION "public"."create_challenge_session"("p_challenge_id" "uuid", "p_title" "text", "p_start_time" timestamp with time zone, "p_duration_minutes" integer, "p_price_cents" integer, "p_currency" "text") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."create_challenge_session"("p_challenge_id" "uuid", "p_title" "text", "p_start_time" timestamp with time zone, "p_duration_minutes" integer, "p_price_cents" integer, "p_currency" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."create_challenge_session"("p_challenge_id" "uuid", "p_title" "text", "p_start_time" timestamp with time zone, "p_duration_minutes" integer, "p_price_cents" integer, "p_currency" "text") TO "service_role";
-
-
-
-GRANT SELECT,MAINTAIN ON TABLE "public"."app_badge" TO "anon";
-GRANT SELECT,INSERT,DELETE,MAINTAIN,UPDATE ON TABLE "public"."app_badge" TO "authenticated";
-GRANT ALL ON TABLE "public"."app_badge" TO "service_role";
-
-
-
-REVOKE ALL ON FUNCTION "public"."create_creator_badge"("p_label" "text", "p_description" "text", "p_color_hex" "text", "p_icon" "text") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."create_creator_badge"("p_label" "text", "p_description" "text", "p_color_hex" "text", "p_icon" "text") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."create_creator_badge"("p_label" "text", "p_description" "text", "p_color_hex" "text", "p_icon" "text") TO "service_role";
-
-
-
-GRANT SELECT,MAINTAIN ON TABLE "public"."app_creator_badge_trigger" TO "anon";
-GRANT SELECT,INSERT,DELETE,MAINTAIN,UPDATE ON TABLE "public"."app_creator_badge_trigger" TO "authenticated";
-GRANT ALL ON TABLE "public"."app_creator_badge_trigger" TO "service_role";
-
-
-
-REVOKE ALL ON FUNCTION "public"."create_creator_badge_trigger"("p_badge_id" "uuid", "p_trigger_type" "text", "p_params" "jsonb") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."create_creator_badge_trigger"("p_badge_id" "uuid", "p_trigger_type" "text", "p_params" "jsonb") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."create_creator_badge_trigger"("p_badge_id" "uuid", "p_trigger_type" "text", "p_params" "jsonb") TO "service_role";
 
 
 
@@ -14680,38 +11747,9 @@ GRANT ALL ON FUNCTION "public"."ensure_creator_space"("p_creator" "uuid", "p_tit
 
 
 
-REVOKE ALL ON FUNCTION "public"."f_check_creator_auto_badges_challenge_completion"("p_user_id" "uuid", "p_challenge_id" "uuid") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."f_check_creator_auto_badges_challenge_completion"("p_user_id" "uuid", "p_challenge_id" "uuid") TO "service_role";
-
-
-
-REVOKE ALL ON FUNCTION "public"."f_check_creator_auto_badges_for_attendance"() FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."f_check_creator_auto_badges_for_attendance"() TO "service_role";
-
-
-
-REVOKE ALL ON FUNCTION "public"."fn_badge_on_attendance"() FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."fn_badge_on_attendance"() TO "service_role";
-
-
-
-REVOKE ALL ON FUNCTION "public"."fn_badge_on_challenge_published"() FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."fn_badge_on_challenge_published"() TO "service_role";
-
-
-
-REVOKE ALL ON FUNCTION "public"."fn_badge_on_session_cohost_insert"() FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."fn_badge_on_session_cohost_insert"() TO "service_role";
-
-
-
-REVOKE ALL ON FUNCTION "public"."fn_badge_on_session_insert"() FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."fn_badge_on_session_insert"() TO "service_role";
-
-
-
-REVOKE ALL ON FUNCTION "public"."fn_notify_badge_awarded"() FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."fn_notify_badge_awarded"() TO "service_role";
+GRANT ALL ON FUNCTION "public"."experience_review_open"("p_challenge" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."experience_review_open"("p_challenge" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."experience_review_open"("p_challenge" "uuid") TO "service_role";
 
 
 
@@ -14734,16 +11772,6 @@ GRANT ALL ON FUNCTION "public"."get_creator_dashboard_stats"("p_creator_id" "uui
 REVOKE ALL ON FUNCTION "public"."get_creator_space_by_creator"("p_creator" "uuid") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."get_creator_space_by_creator"("p_creator" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_creator_space_by_creator"("p_creator" "uuid") TO "service_role";
-
-
-
-GRANT ALL ON FUNCTION "public"."get_my_latest_unseen_monthly_digest"() TO "authenticated";
-GRANT ALL ON FUNCTION "public"."get_my_latest_unseen_monthly_digest"() TO "service_role";
-
-
-
-GRANT ALL ON FUNCTION "public"."get_my_monthly_digest"("p_period" "text") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."get_my_monthly_digest"("p_period" "text") TO "service_role";
 
 
 
@@ -14856,18 +11884,6 @@ REVOKE ALL ON FUNCTION "public"."is_session_host"("p_session_id" "uuid", "p_user
 GRANT ALL ON FUNCTION "public"."is_session_host"("p_session_id" "uuid", "p_user_id" "uuid") TO "service_role";
 GRANT ALL ON FUNCTION "public"."is_session_host"("p_session_id" "uuid", "p_user_id" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."is_session_host"("p_session_id" "uuid", "p_user_id" "uuid") TO "anon";
-
-
-
-REVOKE ALL ON FUNCTION "public"."join_creator_space"("p_space" "uuid") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."join_creator_space"("p_space" "uuid") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."join_creator_space"("p_space" "uuid") TO "service_role";
-
-
-
-REVOKE ALL ON FUNCTION "public"."leave_creator_space"("p_space" "uuid") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."leave_creator_space"("p_space" "uuid") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."leave_creator_space"("p_space" "uuid") TO "service_role";
 
 
 
@@ -15001,11 +12017,6 @@ GRANT ALL ON FUNCTION "public"."on_review_new"() TO "service_role";
 
 
 
-REVOKE ALL ON FUNCTION "public"."on_review_updated"() FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."on_review_updated"() TO "service_role";
-
-
-
 GRANT ALL ON FUNCTION "public"."post_workspace_log"("p_challenge_id" "uuid", "p_body" "text", "p_metadata" "jsonb") TO "anon";
 GRANT ALL ON FUNCTION "public"."post_workspace_log"("p_challenge_id" "uuid", "p_body" "text", "p_metadata" "jsonb") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."post_workspace_log"("p_challenge_id" "uuid", "p_body" "text", "p_metadata" "jsonb") TO "service_role";
@@ -15094,12 +12105,6 @@ GRANT ALL ON FUNCTION "public"."session_spots_left"("p_session" "uuid") TO "serv
 
 
 
-REVOKE ALL ON FUNCTION "public"."set_badge_visibility"("p_user_badge_id" bigint, "p_visible_on_profile" boolean, "p_pinned_on_profile" boolean) FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."set_badge_visibility"("p_user_badge_id" bigint, "p_visible_on_profile" boolean, "p_pinned_on_profile" boolean) TO "authenticated";
-GRANT ALL ON FUNCTION "public"."set_badge_visibility"("p_user_badge_id" bigint, "p_visible_on_profile" boolean, "p_pinned_on_profile" boolean) TO "service_role";
-
-
-
 GRANT ALL ON FUNCTION "public"."set_updated_at"() TO "anon";
 GRANT ALL ON FUNCTION "public"."set_updated_at"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."set_updated_at"() TO "service_role";
@@ -15174,9 +12179,23 @@ GRANT ALL ON FUNCTION "public"."update_weekly_arc_themes"("p_challenge_id" "uuid
 
 
 
-REVOKE ALL ON FUNCTION "public"."upsert_review"("p_session_id" "uuid", "p_rating" integer, "p_comment" "text") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."upsert_review"("p_session_id" "uuid", "p_rating" integer, "p_comment" "text") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."upsert_review"("p_session_id" "uuid", "p_rating" integer, "p_comment" "text") TO "service_role";
+GRANT MAINTAIN ON TABLE "public"."app_review" TO "anon";
+GRANT SELECT,INSERT,DELETE,MAINTAIN,UPDATE ON TABLE "public"."app_review" TO "authenticated";
+GRANT ALL ON TABLE "public"."app_review" TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."upsert_experience_review"("p_challenge_id" "uuid", "p_rating" integer, "p_comment" "text") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."upsert_experience_review"("p_challenge_id" "uuid", "p_rating" integer, "p_comment" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."upsert_experience_review"("p_challenge_id" "uuid", "p_rating" integer, "p_comment" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."upsert_experience_review"("p_challenge_id" "uuid", "p_rating" integer, "p_comment" "text") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."upsert_solo_session_review"("p_session_id" "uuid", "p_rating" integer, "p_comment" "text") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."upsert_solo_session_review"("p_session_id" "uuid", "p_rating" integer, "p_comment" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."upsert_solo_session_review"("p_session_id" "uuid", "p_rating" integer, "p_comment" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."upsert_solo_session_review"("p_session_id" "uuid", "p_rating" integer, "p_comment" "text") TO "service_role";
 
 
 
@@ -15209,17 +12228,6 @@ GRANT ALL ON FUNCTION "public"."upsert_transaction_from_checkout"("buyer_id" "uu
 
 
 
-
-
-
-GRANT MAINTAIN ON TABLE "public"."app_badge_monthly_digest" TO "anon";
-GRANT SELECT,INSERT,DELETE,MAINTAIN,UPDATE ON TABLE "public"."app_badge_monthly_digest" TO "authenticated";
-GRANT ALL ON TABLE "public"."app_badge_monthly_digest" TO "service_role";
-
-
-
-GRANT ALL ON SEQUENCE "public"."app_badge_monthly_digest_id_seq" TO "authenticated";
-GRANT ALL ON SEQUENCE "public"."app_badge_monthly_digest_id_seq" TO "service_role";
 
 
 
@@ -15289,11 +12297,6 @@ GRANT ALL ON TABLE "public"."app_collaboration_decline" TO "service_role";
 GRANT SELECT,MAINTAIN ON TABLE "public"."app_collaboration_invite" TO "anon";
 GRANT ALL ON TABLE "public"."app_collaboration_invite" TO "authenticated";
 GRANT ALL ON TABLE "public"."app_collaboration_invite" TO "service_role";
-
-
-
-GRANT ALL ON SEQUENCE "public"."app_creator_badge_trigger_id_seq" TO "authenticated";
-GRANT ALL ON SEQUENCE "public"."app_creator_badge_trigger_id_seq" TO "service_role";
 
 
 
@@ -15413,9 +12416,15 @@ GRANT ALL ON TABLE "public"."app_profile" TO "service_role";
 
 
 
-GRANT MAINTAIN ON TABLE "public"."app_review" TO "anon";
-GRANT SELECT,INSERT,DELETE,MAINTAIN,UPDATE ON TABLE "public"."app_review" TO "authenticated";
-GRANT ALL ON TABLE "public"."app_review" TO "service_role";
+GRANT SELECT,MAINTAIN ON TABLE "public"."app_session_cohost" TO "anon";
+GRANT SELECT,INSERT,DELETE,MAINTAIN,UPDATE ON TABLE "public"."app_session_cohost" TO "authenticated";
+GRANT ALL ON TABLE "public"."app_session_cohost" TO "service_role";
+
+
+
+GRANT SELECT,MAINTAIN ON TABLE "public"."vw_expert_review_stats" TO "anon";
+GRANT ALL ON TABLE "public"."vw_expert_review_stats" TO "authenticated";
+GRANT ALL ON TABLE "public"."vw_expert_review_stats" TO "service_role";
 
 
 
@@ -15428,12 +12437,6 @@ GRANT ALL ON TABLE "public"."app_profile_stats" TO "service_role";
 GRANT SELECT,MAINTAIN ON TABLE "public"."app_profile_public" TO "anon";
 GRANT ALL ON TABLE "public"."app_profile_public" TO "authenticated";
 GRANT ALL ON TABLE "public"."app_profile_public" TO "service_role";
-
-
-
-GRANT SELECT,MAINTAIN ON TABLE "public"."app_session_cohost" TO "anon";
-GRANT SELECT,INSERT,DELETE,MAINTAIN,UPDATE ON TABLE "public"."app_session_cohost" TO "authenticated";
-GRANT ALL ON TABLE "public"."app_session_cohost" TO "service_role";
 
 
 
@@ -15493,11 +12496,6 @@ GRANT ALL ON TABLE "public"."app_transaction_audit" TO "service_role";
 
 GRANT ALL ON SEQUENCE "public"."app_transaction_audit_id_seq" TO "authenticated";
 GRANT ALL ON SEQUENCE "public"."app_transaction_audit_id_seq" TO "service_role";
-
-
-
-GRANT ALL ON SEQUENCE "public"."app_user_badge_id_seq" TO "authenticated";
-GRANT ALL ON SEQUENCE "public"."app_user_badge_id_seq" TO "service_role";
 
 
 
@@ -15564,8 +12562,9 @@ GRANT ALL ON TABLE "public"."vw_email_outbox_pending" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."vw_my_badges" TO "service_role";
-GRANT SELECT ON TABLE "public"."vw_my_badges" TO "authenticated";
+GRANT SELECT,MAINTAIN ON TABLE "public"."vw_experience_review_stats" TO "anon";
+GRANT ALL ON TABLE "public"."vw_experience_review_stats" TO "authenticated";
+GRANT ALL ON TABLE "public"."vw_experience_review_stats" TO "service_role";
 
 
 
@@ -15579,11 +12578,6 @@ GRANT SELECT ON TABLE "public"."vw_my_challenges_progress" TO "authenticated";
 
 
 
-GRANT ALL ON TABLE "public"."vw_my_creator_badge_templates" TO "service_role";
-GRANT SELECT ON TABLE "public"."vw_my_creator_badge_templates" TO "authenticated";
-
-
-
 GRANT ALL ON TABLE "public"."vw_my_creator_earnings" TO "service_role";
 GRANT SELECT ON TABLE "public"."vw_my_creator_earnings" TO "authenticated";
 
@@ -15594,39 +12588,9 @@ GRANT SELECT ON TABLE "public"."vw_my_creator_summary" TO "authenticated";
 
 
 
-GRANT ALL ON TABLE "public"."vw_my_event_badges" TO "service_role";
-GRANT SELECT ON TABLE "public"."vw_my_event_badges" TO "authenticated";
-
-
-
 GRANT SELECT,MAINTAIN ON TABLE "public"."vw_my_lifetime_summary" TO "anon";
 GRANT ALL ON TABLE "public"."vw_my_lifetime_summary" TO "authenticated";
 GRANT ALL ON TABLE "public"."vw_my_lifetime_summary" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."vw_my_monthly_badges_flat" TO "service_role";
-GRANT SELECT ON TABLE "public"."vw_my_monthly_badges_flat" TO "authenticated";
-
-
-
-GRANT ALL ON TABLE "public"."vw_my_monthly_creator_badges" TO "service_role";
-GRANT SELECT ON TABLE "public"."vw_my_monthly_creator_badges" TO "authenticated";
-
-
-
-GRANT ALL ON TABLE "public"."vw_my_monthly_digest_history" TO "service_role";
-GRANT SELECT ON TABLE "public"."vw_my_monthly_digest_history" TO "authenticated";
-
-
-
-GRANT ALL ON TABLE "public"."vw_my_monthly_participant_badges" TO "service_role";
-GRANT SELECT ON TABLE "public"."vw_my_monthly_participant_badges" TO "authenticated";
-
-
-
-GRANT ALL ON TABLE "public"."vw_my_monthly_summary" TO "service_role";
-GRANT SELECT ON TABLE "public"."vw_my_monthly_summary" TO "authenticated";
 
 
 
