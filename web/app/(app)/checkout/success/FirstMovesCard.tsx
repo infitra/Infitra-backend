@@ -4,7 +4,6 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { saveFirstMoves } from "@/app/actions/profile";
 import { submitIntro } from "@/app/actions/intro";
-import { createClient } from "@/lib/supabase/client";
 
 const ORANGE = "#FF6130";
 const CYAN = "#0891b2";
@@ -60,28 +59,12 @@ export function FirstMovesCard({
     setBusy(true);
     setError(null);
 
-    // Upload the avatar CLIENT-SIDE: the browser client carries the user's
-    // session, so storage RLS sees `authenticated` and the bucket's
-    // profile_images_user_insert policy (folder = auth.uid()) passes. A server
-    // action would hit storage as anon and be rejected. Then we hand only the
-    // resulting URL to saveFirstMoves.
-    let avatarUrl: string | null = null;
-    if (avatarFile) {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setError("Your session expired — please sign in again."); setBusy(false); return; }
-      const ext = avatarFile.name.split(".").pop()?.toLowerCase() || "jpg";
-      const path = `${user.id}/avatar.${ext}`;
-      const { error: upErr } = await supabase.storage
-        .from("profile-images")
-        .upload(path, avatarFile, { upsert: true, contentType: avatarFile.type });
-      if (upErr) { setError(`Photo upload failed: ${upErr.message}`); setBusy(false); return; }
-      avatarUrl = supabase.storage.from("profile-images").getPublicUrl(path).data.publicUrl;
-    }
-
+    // Avatar + name go to saveFirstMoves, which uploads the photo server-side
+    // with the user's forwarded access token (the ssr/browser session doesn't
+    // reliably authenticate storage uploads otherwise).
     const fd = new FormData();
     if (displayName.trim()) fd.append("display_name", displayName.trim());
-    if (avatarUrl) fd.append("avatar_url", avatarUrl);
+    if (avatarFile) fd.append("avatar", avatarFile);
     const res = await saveFirstMoves(fd);
     if (res && "error" in res && res.error) {
       setError(res.error);

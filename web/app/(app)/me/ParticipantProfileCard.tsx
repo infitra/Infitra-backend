@@ -3,7 +3,6 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { saveFirstMoves } from "@/app/actions/profile";
-import { createClient } from "@/lib/supabase/client";
 
 const ORANGE = "#FF6130";
 const CYAN = "#0891b2";
@@ -71,29 +70,19 @@ export function ParticipantProfileCard({
     setBusy(true);
     setError(null);
 
-    let nextAvatarUrl = avatarUrl;
-    if (avatarFile) {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setError("Your session expired — please sign in again."); setBusy(false); return; }
-      const ext = avatarFile.name.split(".").pop()?.toLowerCase() || "jpg";
-      const path = `${user.id}/avatar.${ext}`;
-      const { error: upErr } = await supabase.storage
-        .from("profile-images")
-        .upload(path, avatarFile, { upsert: true, contentType: avatarFile.type });
-      if (upErr) { setError(`Photo upload failed: ${upErr.message}`); setBusy(false); return; }
-      const base = supabase.storage.from("profile-images").getPublicUrl(path).data.publicUrl;
-      nextAvatarUrl = `${base}?v=${Date.now()}`;
-    }
-
+    // Photo + name go to saveFirstMoves, which uploads server-side with the
+    // user's forwarded access token and returns the new avatar URL.
     const fd = new FormData();
     fd.append("display_name", name);
-    if (nextAvatarUrl) fd.append("avatar_url", nextAvatarUrl);
+    if (avatarFile) fd.append("avatar", avatarFile);
     const res = await saveFirstMoves(fd);
     if (res && "error" in res && res.error) { setError(res.error); setBusy(false); return; }
 
-    setAvatarUrl(nextAvatarUrl);
-    setPreview(nextAvatarUrl);
+    const newUrl = res && "avatar_url" in res ? (res.avatar_url as string | null) : null;
+    if (newUrl) {
+      setAvatarUrl(newUrl);
+      setPreview(newUrl);
+    }
     setAvatarFile(null);
     setEditing(false);
     setBusy(false);

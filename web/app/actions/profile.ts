@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { createClient as createSbClient } from "@supabase/supabase-js";
 
 export async function completeOnboarding(prevState: unknown, formData: FormData) {
   const supabase = await createClient();
@@ -118,17 +119,36 @@ export async function saveFirstMoves(formData: FormData) {
     updates.visibility = visibility;
   }
 
-  // The avatar is uploaded client-side (the browser client carries the user's
-  // session for storage RLS — a server-action upload hits storage as anon and
-  // the bucket's authenticated-only INSERT policy rejects it). Here we persist
-  // only the resulting URL, guarded to the user's own folder so a client can't
-  // point avatar_url at an arbitrary image.
-  const avatarUrl = (formData.get("avatar_url") as string)?.trim();
-  if (avatarUrl) {
-    if (!avatarUrl.includes(`/storage/v1/object/public/profile-images/${user.id}/`)) {
-      return { error: "Invalid photo path." };
-    }
-    updates.avatar_url = avatarUrl;
+  const avatarFile = formData.get("avatar") as File | null;
+  if (avatarFile && avatarFile.size > 0) {
+    if (avatarFile.size > 5 * 1024 * 1024) return { error: "Photo must be under 5MB." };
+    // The @supabase/ssr server client carries the user's session for DB writes
+    // but NOT for storage uploads — those reach storage as `anon` and the
+    // bucket's authenticated-only INSERT policy rejects them ("new row violates
+    // row-level security policy"). Forward the user's access token explicitly so
+    // the storage request is authenticated as them; the path is their own folder
+    // (matches profile_images_user_insert). This sidesteps the ssr/browser
+    // session→storage propagation gap entirely.
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) return { error: "Your session expired — please sign in again." };
+    const authed = createSbClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        global: { headers: { Authorization: `Bearer ${session.access_token}` } },
+        auth: { persistSession: false, autoRefreshToken: false },
+      },
+    );
+    const ext = avatarFile.name.split(".").pop()?.toLowerCase() || "jpg";
+    const path = `${user.id}/avatar.${ext}`;
+    const bytes = new Uint8Array(await avatarFile.arrayBuffer());
+    const { error: upErr } = await authed.storage
+      .from("profile-images")
+      .upload(path, bytes, { upsert: true, contentType: avatarFile.type });
+    if (upErr) return { error: `Photo upload failed: ${upErr.message}` };
+    const base = authed.storage.from("profile-images").getPublicUrl(path).data.publicUrl;
+    // cache-bust so a re-uploaded photo (same path, upsert) refreshes in the browser
+    updates.avatar_url = `${base}?v=${Date.now()}`;
   }
 
   // Nothing filled — treat as a no-op success (they hit "Later" on everything).
@@ -140,5 +160,5 @@ export async function saveFirstMoves(formData: FormData) {
     .update(updates)
     .eq("id", user.id);
   if (error) return { error: error.message };
-  return { success: true };
+  return { success: true, avatar_url: (updates.avatar_url as string | undefined) ?? null };
 }
