@@ -203,22 +203,17 @@ export async function saveFirstMoves(formData: FormData) {
     updates.visibility = visibility;
   }
 
-  const avatarFile = formData.get("avatar") as File | null;
-  if (avatarFile && avatarFile.size > 0) {
-    if (avatarFile.size > 5 * 1024 * 1024) {
-      return { error: "Photo must be under 5MB." };
+  // The avatar is uploaded client-side (the browser client carries the user's
+  // session for storage RLS — a server-action upload hits storage as anon and
+  // the bucket's authenticated-only INSERT policy rejects it). Here we persist
+  // only the resulting URL, guarded to the user's own folder so a client can't
+  // point avatar_url at an arbitrary image.
+  const avatarUrl = (formData.get("avatar_url") as string)?.trim();
+  if (avatarUrl) {
+    if (!avatarUrl.includes(`/storage/v1/object/public/profile-images/${user.id}/`)) {
+      return { error: "Invalid photo path." };
     }
-    const ext = avatarFile.name.split(".").pop()?.toLowerCase() || "jpg";
-    const path = `${user.id}/avatar.${ext}`;
-    const bytes = new Uint8Array(await avatarFile.arrayBuffer());
-    const { error: upErr } = await supabase.storage
-      .from("profile-images")
-      .upload(path, bytes, { upsert: true, contentType: avatarFile.type });
-    if (upErr) return { error: `Photo upload failed: ${upErr.message}` };
-    const { data: urlData } = supabase.storage
-      .from("profile-images")
-      .getPublicUrl(path);
-    updates.avatar_url = urlData.publicUrl;
+    updates.avatar_url = avatarUrl;
   }
 
   // Nothing filled — treat as a no-op success (they hit "Later" on everything).
