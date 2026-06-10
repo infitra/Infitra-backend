@@ -1,9 +1,14 @@
 import { createClient } from "@/lib/supabase/server";
-import Link from "next/link";
 
 export const metadata = {
   title: "Earnings — INFITRA",
 };
+
+const INK = "#0F2229";
+const MUTED = "#64748b";
+const FAINT = "#94a3b8";
+const GREEN = "#047857";
+const GREEN2 = "#059669";
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("en-GB", {
@@ -13,88 +18,95 @@ function formatDate(dateStr: string) {
   });
 }
 
-function formatTime(dateStr: string) {
-  return new Date(dateStr).toLocaleTimeString("en-GB", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
 function chf(cents: number) {
   return `CHF ${(cents / 100).toFixed(2)}`;
 }
 
+function pct(n: number) {
+  return `${Math.round(n)}%`;
+}
+
+const num = (v: unknown) => Number(v ?? 0);
+
+type EarningLine = {
+  id: string;
+  type: string;
+  created_at: string;
+  product_title: string | null;
+  buyer_id: string | null;
+  buyer_name: string | null;
+  amount_gross_cents: number | string;
+  platform_cut_cents: number | string;
+  creator_cut_cents: number | string;
+  effective_fee_percent: number | string;
+  my_role: "owner" | "cohost";
+  my_split_percent: number | null;
+  cohost_cut_cents: number | string | null;
+  cohost_count: number | null;
+  cohost_name: string | null;
+  your_cut_cents: number | string;
+};
+
 export default async function EarningsPage() {
   const supabase = await createClient();
 
-  // Summary stats
-  const { data: summary } = await supabase
-    .from("vw_my_creator_summary")
+  // Co-host-aware earnings: one attributed line per sale for the current user
+  // (owner remainder OR co-host split). SECURITY DEFINER view, scoped to auth.uid().
+  const { data } = await supabase
+    .from("vw_my_earnings_lines")
     .select("*")
-    .single();
+    .order("created_at", { ascending: false });
 
-  const grossCents = Number(summary?.gross_cents ?? 0);
-  const creatorCutCents = Number(summary?.creator_cut_cents ?? 0);
-  const platformCutCents = grossCents - creatorCutCents;
-  const uniqueBuyers = Number(summary?.unique_buyers ?? 0);
+  const rows = (data ?? []) as EarningLine[];
 
-  // Transaction history
-  const { data: transactions } = await supabase
-    .from("vw_my_transactions")
-    .select("*");
+  const totalEarned = rows.reduce((s, r) => s + num(r.your_cut_cents), 0);
+  const totalGross = rows.reduce((s, r) => s + num(r.amount_gross_cents), 0);
+  const totalPlatform = rows.reduce((s, r) => s + num(r.platform_cut_cents), 0);
+  const totalCohost = rows.reduce((s, r) => s + num(r.cohost_cut_cents), 0);
+  const salesCount = rows.length;
+  const buyers = new Set(rows.map((r) => r.buyer_id).filter(Boolean)).size;
+  const hasCohosts = rows.some((r) => num(r.cohost_cut_cents) > 0);
+  const hasRows = rows.length > 0;
 
-  const hasTransactions = transactions && transactions.length > 0;
-
-  // Compute totals by type
-  const sessionRevenue = (transactions ?? [])
-    .filter((t: any) => t.type === "ticket")
-    .reduce((sum: number, t: any) => sum + (t.creator_cut_cents ?? 0), 0);
-  const challengeRevenue = (transactions ?? [])
-    .filter((t: any) => t.type === "bundle")
-    .reduce((sum: number, t: any) => sum + (t.creator_cut_cents ?? 0), 0);
-  const totalFees = (transactions ?? []).reduce(
-    (sum: number, t: any) =>
-      sum +
-      (t.processing_fee_fixed_cents ?? 0) +
-      (t.processing_fee_percent_cents ?? 0),
-    0
-  );
+  // Column spans flex depending on whether the Co-host column is shown.
+  const C = hasCohosts
+    ? {
+        item: "col-span-3",
+        buyer: "col-span-1",
+        date: "col-span-2",
+        gross: "col-span-1",
+        platform: "col-span-1",
+        cohost: "col-span-2",
+        cut: "col-span-2",
+      }
+    : {
+        item: "col-span-3",
+        buyer: "col-span-2",
+        date: "col-span-2",
+        gross: "col-span-2",
+        platform: "col-span-1",
+        cohost: "",
+        cut: "col-span-2",
+      };
 
   return (
     <div className="py-10">
       <div className="mb-8">
         <h1
           className="text-3xl md:text-4xl font-black font-headline tracking-tight"
-          style={{ color: "#0F2229" }}
+          style={{ color: INK }}
         >
           Earnings
         </h1>
-        <p className="text-sm mt-1" style={{ color: "#64748b" }}>
-          Revenue breakdown across all your sessions and challenges.
+        <p className="text-sm mt-1" style={{ color: MUTED }}>
+          What you&rsquo;ve earned across your experiences and sessions.
         </p>
       </div>
 
-      {/* ── Summary Cards ────────────────────────────────── */}
+      {/* ── Top: net only ─────────────────────────────────── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-10">
-        <div className="p-5 rounded-2xl infitra-glass">
-          <p
-            className="text-[10px] font-bold uppercase tracking-widest font-headline mb-2"
-            style={{ color: "rgba(15, 34, 41, 0.55)" }}
-          >
-            Total Revenue
-          </p>
-          <p
-            className="text-2xl font-black font-headline tracking-tight"
-            style={{ color: "#0F2229" }}
-          >
-            {chf(grossCents)}
-          </p>
-          <p className="text-[10px] mt-1" style={{ color: "#94a3b8" }}>
-            Gross sales
-          </p>
-        </div>
         <div
-          className="p-5 rounded-2xl backdrop-blur-xl"
+          className="col-span-2 p-5 rounded-2xl backdrop-blur-xl"
           style={{
             backgroundColor: "rgba(220, 252, 231, 0.78)",
             border: "1px solid rgba(16, 185, 129, 0.30)",
@@ -104,37 +116,39 @@ export default async function EarningsPage() {
         >
           <p
             className="text-[10px] font-bold uppercase tracking-widest font-headline mb-2"
-            style={{ color: "#047857" }}
+            style={{ color: GREEN }}
           >
-            Your Earnings
+            Total earned
           </p>
           <p
-            className="text-2xl font-black font-headline tracking-tight"
-            style={{ color: "#047857" }}
+            className="text-3xl font-black font-headline tracking-tight"
+            style={{ color: GREEN }}
           >
-            {chf(creatorCutCents)}
+            {chf(totalEarned)}
           </p>
-          <p className="text-[10px] mt-1" style={{ color: "#059669" }}>
-            80% creator share
+          <p className="text-[10px] mt-1" style={{ color: GREEN2 }}>
+            Net to your account
           </p>
         </div>
+
         <div className="p-5 rounded-2xl infitra-glass">
           <p
             className="text-[10px] font-bold uppercase tracking-widest font-headline mb-2"
             style={{ color: "rgba(15, 34, 41, 0.55)" }}
           >
-            Platform Fee
+            Sales
           </p>
           <p
             className="text-2xl font-black font-headline tracking-tight"
-            style={{ color: "#64748b" }}
+            style={{ color: INK }}
           >
-            {chf(platformCutCents)}
+            {salesCount}
           </p>
-          <p className="text-[10px] mt-1" style={{ color: "#94a3b8" }}>
-            20% of gross
+          <p className="text-[10px] mt-1" style={{ color: FAINT }}>
+            Completed
           </p>
         </div>
+
         <div className="p-5 rounded-2xl infitra-glass">
           <p
             className="text-[10px] font-bold uppercase tracking-widest font-headline mb-2"
@@ -144,89 +158,26 @@ export default async function EarningsPage() {
           </p>
           <p
             className="text-2xl font-black font-headline tracking-tight"
-            style={{ color: "#0F2229" }}
+            style={{ color: INK }}
           >
-            {uniqueBuyers}
+            {buyers}
           </p>
-          <p className="text-[10px] mt-1" style={{ color: "#94a3b8" }}>
+          <p className="text-[10px] mt-1" style={{ color: FAINT }}>
             Unique customers
           </p>
         </div>
       </div>
 
-      {/* ── Revenue Breakdown ────────────────────────────── */}
-      {hasTransactions && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-10">
-          <div className="px-5 py-4 rounded-xl infitra-glass flex items-center justify-between">
-            <div>
-              <p
-                className="text-[10px] font-bold uppercase tracking-widest font-headline"
-                style={{ color: "rgba(15, 34, 41, 0.55)" }}
-              >
-                Sessions
-              </p>
-              <p className="text-xs mt-0.5" style={{ color: "#94a3b8" }}>
-                Ticket sales
-              </p>
-            </div>
-            <p
-              className="text-lg font-black font-headline"
-              style={{ color: "#0F2229" }}
-            >
-              {chf(sessionRevenue)}
-            </p>
-          </div>
-          <div className="px-5 py-4 rounded-xl infitra-glass flex items-center justify-between">
-            <div>
-              <p
-                className="text-[10px] font-bold uppercase tracking-widest font-headline"
-                style={{ color: "rgba(15, 34, 41, 0.55)" }}
-              >
-                Challenges
-              </p>
-              <p className="text-xs mt-0.5" style={{ color: "#94a3b8" }}>
-                Bundle sales
-              </p>
-            </div>
-            <p
-              className="text-lg font-black font-headline"
-              style={{ color: "#0F2229" }}
-            >
-              {chf(challengeRevenue)}
-            </p>
-          </div>
-          <div className="px-5 py-4 rounded-xl infitra-glass flex items-center justify-between">
-            <div>
-              <p
-                className="text-[10px] font-bold uppercase tracking-widest font-headline"
-                style={{ color: "rgba(15, 34, 41, 0.55)" }}
-              >
-                Processing
-              </p>
-              <p className="text-xs mt-0.5" style={{ color: "#94a3b8" }}>
-                Stripe fees
-              </p>
-            </div>
-            <p
-              className="text-lg font-black font-headline"
-              style={{ color: "#64748b" }}
-            >
-              {chf(totalFees)}
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* ── Transaction History ──────────────────────────── */}
+      {/* ── Transactions: full breakdown lives here ───────── */}
       <div>
         <h2
           className="text-lg font-black font-headline tracking-tight mb-4"
-          style={{ color: "#0F2229" }}
+          style={{ color: INK }}
         >
           Transactions
         </h2>
 
-        {!hasTransactions ? (
+        {!hasRows ? (
           <div
             className="text-center py-16 rounded-2xl border border-dashed"
             style={{
@@ -234,28 +185,30 @@ export default async function EarningsPage() {
               borderColor: "rgba(15, 34, 41, 0.15)",
             }}
           >
-            <p className="text-sm" style={{ color: "#64748b" }}>
-              No transactions yet. Revenue will appear here when participants
-              purchase your sessions or challenges.
+            <p className="text-sm" style={{ color: MUTED }}>
+              No earnings yet. Revenue will appear here when participants purchase
+              your experiences or sessions.
             </p>
           </div>
         ) : (
           <div className="rounded-2xl infitra-glass overflow-hidden">
-            {/* Table header */}
+            {/* Desktop header */}
             <div
-              className="hidden md:grid grid-cols-12 gap-4 px-5 py-3 border-b text-[10px] font-bold uppercase tracking-widest font-headline"
+              className="hidden md:grid grid-cols-12 gap-3 px-5 py-3 border-b text-[10px] font-bold uppercase tracking-widest font-headline"
               style={{
                 borderColor: "rgba(15, 34, 41, 0.10)",
                 color: "rgba(15, 34, 41, 0.55)",
               }}
             >
-              <div className="col-span-3">Item</div>
-              <div className="col-span-2">Buyer</div>
-              <div className="col-span-2">Date</div>
-              <div className="col-span-1 text-right">Gross</div>
-              <div className="col-span-1 text-right">Fees</div>
-              <div className="col-span-1 text-right">Platform</div>
-              <div className="col-span-2 text-right">Your Cut</div>
+              <div className={C.item}>Item</div>
+              <div className={C.buyer}>Buyer</div>
+              <div className={C.date}>Date</div>
+              <div className={`${C.gross} text-right`}>Gross</div>
+              <div className={`${C.platform} text-right`}>Platform</div>
+              {hasCohosts && (
+                <div className={`${C.cohost} text-right`}>Co-host</div>
+              )}
+              <div className={`${C.cut} text-right`}>Your cut</div>
             </div>
 
             {/* Rows */}
@@ -263,99 +216,246 @@ export default async function EarningsPage() {
               className="divide-y"
               style={{ borderColor: "rgba(15, 34, 41, 0.06)" }}
             >
-              {transactions!.map((tx: any) => {
-                const itemTitle =
-                  tx.type === "bundle"
-                    ? tx.challenge_title
-                    : tx.session_title;
-                const fees =
-                  (tx.processing_fee_fixed_cents ?? 0) +
-                  (tx.processing_fee_percent_cents ?? 0);
+              {rows.map((tx) => {
+                const isBundle = tx.type === "bundle";
+                const cohostCut = num(tx.cohost_cut_cents);
+                const cohostLabel =
+                  cohostCut > 0
+                    ? tx.cohost_name ??
+                      `${tx.cohost_count ?? ""} co-hosts`.trim()
+                    : null;
 
                 return (
-                  <div
-                    key={tx.id}
-                    className="grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-4 px-5 py-4 transition-colors"
-                  >
-                    {/* Item */}
-                    <div className="col-span-3 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`shrink-0 text-[8px] font-bold px-1.5 py-0.5 rounded font-headline border ${
-                            tx.type === "bundle"
-                              ? "text-orange-700 bg-orange-100/80 border-orange-200"
-                              : "text-cyan-700 bg-cyan-100/80 border-cyan-200"
-                          }`}
+                  <div key={tx.id} className="px-5 py-4">
+                    {/* Desktop row */}
+                    <div className="hidden md:grid grid-cols-12 gap-3 items-center">
+                      {/* Item */}
+                      <div className={`${C.item} min-w-0`}>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span
+                            className={`shrink-0 text-[8px] font-bold px-1.5 py-0.5 rounded font-headline border ${
+                              isBundle
+                                ? "text-orange-700 bg-orange-100/80 border-orange-200"
+                                : "text-cyan-700 bg-cyan-100/80 border-cyan-200"
+                            }`}
+                          >
+                            {isBundle ? "EXPERIENCE" : "SESSION"}
+                          </span>
+                          {tx.my_role === "cohost" && (
+                            <span className="shrink-0 text-[8px] font-bold px-1.5 py-0.5 rounded font-headline border text-emerald-700 bg-emerald-50 border-emerald-200">
+                              CO-HOST {pct(num(tx.my_split_percent))}
+                            </span>
+                          )}
+                        </div>
+                        <p
+                          className="text-sm font-bold font-headline truncate mt-1"
+                          style={{ color: INK }}
                         >
-                          {tx.type === "bundle" ? "CHALLENGE" : "SESSION"}
-                        </span>
+                          {tx.product_title ?? "Unknown"}
+                        </p>
                       </div>
-                      <p
-                        className="text-sm font-bold font-headline truncate mt-1"
-                        style={{ color: "#0F2229" }}
-                      >
-                        {itemTitle ?? "Unknown"}
-                      </p>
+
+                      {/* Buyer */}
+                      <div className={`${C.buyer} min-w-0`}>
+                        <p className="text-xs truncate" style={{ color: "#475569" }}>
+                          {tx.buyer_name ?? "—"}
+                        </p>
+                      </div>
+
+                      {/* Date */}
+                      <div className={C.date}>
+                        <p className="text-xs" style={{ color: MUTED }}>
+                          {formatDate(tx.created_at)}
+                        </p>
+                      </div>
+
+                      {/* Gross */}
+                      <div className={`${C.gross} text-right`}>
+                        <p
+                          className="text-xs font-headline font-bold"
+                          style={{ color: INK }}
+                        >
+                          {chf(num(tx.amount_gross_cents))}
+                        </p>
+                      </div>
+
+                      {/* Platform */}
+                      <div className={`${C.platform} text-right`}>
+                        <p className="text-xs" style={{ color: FAINT }}>
+                          -{chf(num(tx.platform_cut_cents))}
+                        </p>
+                        <p className="text-[9px]" style={{ color: FAINT }}>
+                          {pct(num(tx.effective_fee_percent))}
+                        </p>
+                      </div>
+
+                      {/* Co-host */}
+                      {hasCohosts && (
+                        <div className={`${C.cohost} text-right min-w-0`}>
+                          {cohostLabel ? (
+                            <>
+                              <p
+                                className="text-[11px] truncate"
+                                style={{ color: MUTED }}
+                              >
+                                {cohostLabel}
+                              </p>
+                              <p className="text-xs" style={{ color: FAINT }}>
+                                -{chf(cohostCut)}
+                              </p>
+                            </>
+                          ) : (
+                            <p className="text-xs" style={{ color: FAINT }}>
+                              —
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Your cut */}
+                      <div className={`${C.cut} text-right`}>
+                        <p
+                          className="text-sm font-black font-headline"
+                          style={{ color: GREEN }}
+                        >
+                          {chf(num(tx.your_cut_cents))}
+                        </p>
+                      </div>
                     </div>
 
-                    {/* Buyer — plain text (participant profile route removed for pilot) */}
-                    <div className="col-span-2 flex items-center">
-                      <p
-                        className="text-xs truncate"
-                        style={{ color: "#475569" }}
+                    {/* Mobile card */}
+                    <div className="md:hidden">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                            <span
+                              className={`shrink-0 text-[8px] font-bold px-1.5 py-0.5 rounded font-headline border ${
+                                isBundle
+                                  ? "text-orange-700 bg-orange-100/80 border-orange-200"
+                                  : "text-cyan-700 bg-cyan-100/80 border-cyan-200"
+                              }`}
+                            >
+                              {isBundle ? "EXPERIENCE" : "SESSION"}
+                            </span>
+                            {tx.my_role === "cohost" && (
+                              <span className="shrink-0 text-[8px] font-bold px-1.5 py-0.5 rounded font-headline border text-emerald-700 bg-emerald-50 border-emerald-200">
+                                CO-HOST {pct(num(tx.my_split_percent))}
+                              </span>
+                            )}
+                          </div>
+                          <p
+                            className="text-sm font-bold font-headline truncate"
+                            style={{ color: INK }}
+                          >
+                            {tx.product_title ?? "Unknown"}
+                          </p>
+                          <p className="text-[11px] mt-0.5" style={{ color: MUTED }}>
+                            {(tx.buyer_name ?? "—") + " · " + formatDate(tx.created_at)}
+                          </p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p
+                            className="text-base font-black font-headline"
+                            style={{ color: GREEN }}
+                          >
+                            {chf(num(tx.your_cut_cents))}
+                          </p>
+                          <p className="text-[10px]" style={{ color: FAINT }}>
+                            your cut
+                          </p>
+                        </div>
+                      </div>
+                      <div
+                        className="flex items-center gap-x-3 gap-y-1 flex-wrap mt-2 text-[11px]"
+                        style={{ color: MUTED }}
                       >
-                        {tx.buyer_id ? (tx.buyer_name ?? "—") : "—"}
-                      </p>
-                    </div>
-
-                    {/* Date */}
-                    <div className="col-span-2 flex items-center">
-                      <p className="text-xs" style={{ color: "#64748b" }}>
-                        {formatDate(tx.created_at)}{" "}
-                        <span style={{ color: "#94a3b8" }}>
-                          {formatTime(tx.created_at)}
+                        <span>Gross {chf(num(tx.amount_gross_cents))}</span>
+                        <span>
+                          Platform -{chf(num(tx.platform_cut_cents))} (
+                          {pct(num(tx.effective_fee_percent))})
                         </span>
-                      </p>
-                    </div>
-
-                    {/* Gross */}
-                    <div className="col-span-1 flex items-center justify-end">
-                      <p
-                        className="text-xs font-headline font-bold"
-                        style={{ color: "#0F2229" }}
-                      >
-                        {chf(tx.amount_gross_cents)}
-                      </p>
-                    </div>
-
-                    {/* Fees */}
-                    <div className="col-span-1 flex items-center justify-end">
-                      <p className="text-xs" style={{ color: "#94a3b8" }}>
-                        -{chf(fees)}
-                      </p>
-                    </div>
-
-                    {/* Platform */}
-                    <div className="col-span-1 flex items-center justify-end">
-                      <p className="text-xs" style={{ color: "#94a3b8" }}>
-                        -{chf(tx.platform_cut_cents)}
-                      </p>
-                    </div>
-
-                    {/* Your Cut */}
-                    <div className="col-span-2 flex items-center justify-end">
-                      <p
-                        className="text-sm font-black font-headline"
-                        style={{ color: "#047857" }}
-                      >
-                        {chf(tx.creator_cut_cents)}
-                      </p>
+                        {cohostLabel && (
+                          <span>
+                            {cohostLabel} -{chf(cohostCut)}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
               })}
             </div>
+
+            {/* Totals row — full reconciliation under the lines */}
+            <div
+              className="hidden md:grid grid-cols-12 gap-3 px-5 py-3 border-t text-xs font-headline"
+              style={{
+                borderColor: "rgba(15, 34, 41, 0.12)",
+                backgroundColor: "rgba(15, 34, 41, 0.02)",
+              }}
+            >
+              <div
+                className={`${C.item} font-bold uppercase tracking-widest text-[10px]`}
+                style={{ color: "rgba(15, 34, 41, 0.55)" }}
+              >
+                Totals
+              </div>
+              <div className={C.buyer} />
+              <div className={C.date} />
+              <div className={`${C.gross} text-right font-bold`} style={{ color: INK }}>
+                {chf(totalGross)}
+              </div>
+              <div className={`${C.platform} text-right`} style={{ color: MUTED }}>
+                -{chf(totalPlatform)}
+              </div>
+              {hasCohosts && (
+                <div className={`${C.cohost} text-right`} style={{ color: MUTED }}>
+                  -{chf(totalCohost)}
+                </div>
+              )}
+              <div
+                className={`${C.cut} text-right font-black`}
+                style={{ color: GREEN }}
+              >
+                {chf(totalEarned)}
+              </div>
+            </div>
+
+            {/* Mobile totals */}
+            <div
+              className="md:hidden px-5 py-4 border-t flex items-center justify-between"
+              style={{
+                borderColor: "rgba(15, 34, 41, 0.12)",
+                backgroundColor: "rgba(15, 34, 41, 0.02)",
+              }}
+            >
+              <div className="text-[11px]" style={{ color: MUTED }}>
+                <p>Gross {chf(totalGross)}</p>
+                <p>
+                  Platform -{chf(totalPlatform)}
+                  {hasCohosts ? ` · Co-hosts -${chf(totalCohost)}` : ""}
+                </p>
+              </div>
+              <div className="text-right">
+                <p
+                  className="text-lg font-black font-headline"
+                  style={{ color: GREEN }}
+                >
+                  {chf(totalEarned)}
+                </p>
+                <p className="text-[10px]" style={{ color: FAINT }}>
+                  total earned
+                </p>
+              </div>
+            </div>
           </div>
+        )}
+
+        {hasRows && (
+          <p className="text-[11px] mt-3" style={{ color: FAINT }}>
+            Card processing fees are covered by the buyer at checkout — they
+            don&rsquo;t affect your earnings.
+          </p>
         )}
       </div>
     </div>
