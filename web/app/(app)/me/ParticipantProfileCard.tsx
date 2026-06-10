@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { saveFirstMoves } from "@/app/actions/profile";
-import { uploadAvatar } from "@/lib/uploadAvatar";
+import { uploadImage } from "@/lib/uploadImage";
 
 const ORANGE = "#FF6130";
 const CYAN = "#0891b2";
@@ -71,16 +71,17 @@ export function ParticipantProfileCard({
     setBusy(true);
     setError(null);
 
-    // Photo → upload_avatar edge fn (service role); name → saveFirstMoves.
+    // Photo → upload_image edge fn (service role); name + URL → saveFirstMoves.
     let newUrl: string | null = null;
     if (avatarFile) {
-      const up = await uploadAvatar(avatarFile);
+      const up = await uploadImage(avatarFile, "avatar");
       if (up.error) { setError(up.error); setBusy(false); return; }
-      newUrl = up.avatar_url ?? null;
+      newUrl = up.url ?? null;
     }
 
     const fd = new FormData();
     fd.append("display_name", name);
+    if (newUrl) fd.append("avatar_url", newUrl);
     const res = await saveFirstMoves(fd);
     if (res && "error" in res && res.error) { setError(res.error); setBusy(false); return; }
 

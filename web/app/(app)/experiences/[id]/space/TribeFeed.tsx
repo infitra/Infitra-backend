@@ -16,6 +16,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from "react";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
+import { uploadImage } from "@/lib/uploadImage";
 import { createChallengePost, createChallengeComment, toggleChallengeLike } from "@/app/actions/community";
 import { useExperienceSpaceStore } from "@/lib/experienceSpace/StoreProvider";
 import type { ExperienceViewer, SpaceCreator, SpaceSession } from "@/lib/experienceSpace/store";
@@ -226,19 +227,10 @@ export function TribeFeed({
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) { setError("Image must be under 5MB."); return; }
     setUploading(true); setError(null);
-    try {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setError("Not signed in."); setUploading(false); return; }
-      const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
-      const path = `${user.id}/post-${Date.now()}.${ext}`;
-      const { error: upErr } = await supabase.storage.from("profile-images").upload(path, file, { upsert: true, contentType: file.type });
-      if (upErr) { setError(`Upload failed: ${upErr.message}`); setUploading(false); return; }
-      const { data: urlData } = supabase.storage.from("profile-images").getPublicUrl(path);
-      setMediaUrl(urlData.publicUrl);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed.");
-    }
+    // Service-role edge upload (direct client storage uploads are rejected as anon).
+    const up = await uploadImage(file, "post");
+    if (up.error) { setError(up.error); setUploading(false); return; }
+    if (up.url) setMediaUrl(up.url);
     setUploading(false);
   }
 

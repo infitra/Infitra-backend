@@ -103,42 +103,18 @@ export function ProfileEditForm({
         bio: bioVal,
       };
 
-      // Upload avatar directly from client
+      // Avatar + cover upload via the upload_image edge function (service role) —
+      // direct client storage uploads are currently rejected by storage as anon.
+      const { uploadImage } = await import("@/lib/uploadImage");
       if (avatarFileRef.current) {
-        const file = avatarFileRef.current;
-        const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
-        const path = `${user.id}/avatar.${ext}`;
-        const { error: upErr } = await supabase.storage
-          .from("profile-images")
-          .upload(path, file, { upsert: true, contentType: file.type });
-        if (upErr) {
-          setError(`Avatar upload failed: ${upErr.message}`);
-          setSaving(false);
-          return;
-        }
-        const { data: urlData } = supabase.storage
-          .from("profile-images")
-          .getPublicUrl(path);
-        updates.avatar_url = urlData.publicUrl;
+        const up = await uploadImage(avatarFileRef.current, "avatar");
+        if (up.error) { setError(`Avatar upload failed: ${up.error}`); setSaving(false); return; }
+        if (up.url) updates.avatar_url = up.url;
       }
-
-      // Upload cover directly from client
       if (coverFileRef.current) {
-        const file = coverFileRef.current;
-        const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
-        const path = `${user.id}/cover.${ext}`;
-        const { error: upErr } = await supabase.storage
-          .from("profile-images")
-          .upload(path, file, { upsert: true, contentType: file.type });
-        if (upErr) {
-          setError(`Cover upload failed: ${upErr.message}`);
-          setSaving(false);
-          return;
-        }
-        const { data: urlData } = supabase.storage
-          .from("profile-images")
-          .getPublicUrl(path);
-        updates.cover_image_url = urlData.publicUrl;
+        const up = await uploadImage(coverFileRef.current, "cover");
+        if (up.error) { setError(`Cover upload failed: ${up.error}`); setSaving(false); return; }
+        if (up.url) updates.cover_image_url = up.url;
       } else if (removeCoverFlag) {
         updates.cover_image_url = null;
       }

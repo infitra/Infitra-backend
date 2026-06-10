@@ -37,23 +37,11 @@ export function ImageSelector({
     }
 
     setUploading(true);
-    try {
-      const { createClient } = await import("@/lib/supabase/client");
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
-      const path = `${user.id}/content-${Date.now()}.${ext}`;
-      const { error } = await supabase.storage.from("profile-images").upload(path, file, { upsert: true, contentType: file.type });
-      if (error) { alert(`Upload failed: ${error.message}`); return; }
-
-      const { data: urlData } = supabase.storage.from("profile-images").getPublicUrl(path);
-      onSelect(urlData.publicUrl);
-      setCredit(null);
-    } catch (err: any) {
-      alert(err?.message || "Upload failed");
-    }
+    // Service-role edge upload (direct client storage uploads are rejected as anon).
+    const { uploadImage } = await import("@/lib/uploadImage");
+    const up = await uploadImage(file, "content");
+    if (up.error) { alert(up.error); setUploading(false); return; }
+    if (up.url) { onSelect(up.url); setCredit(null); }
     setUploading(false);
   }
 

@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { saveFirstMoves } from "@/app/actions/profile";
 import { submitIntro } from "@/app/actions/intro";
-import { uploadAvatar } from "@/lib/uploadAvatar";
+import { uploadImage } from "@/lib/uploadImage";
 
 const ORANGE = "#FF6130";
 const CYAN = "#0891b2";
@@ -60,16 +60,18 @@ export function FirstMovesCard({
     setBusy(true);
     setError(null);
 
-    // Photo → upload_avatar edge fn (service role; it persists avatar_url too).
-    // Name → saveFirstMoves. The edge fn is used because the in-app session
-    // doesn't authenticate storage uploads (they arrive as anon).
+    // Photo → upload_image edge fn (service role; bypasses the broken storage
+    // user-JWT auth). Name + the resulting URL → saveFirstMoves.
+    let avatarUrl: string | null = null;
     if (avatarFile) {
-      const up = await uploadAvatar(avatarFile);
+      const up = await uploadImage(avatarFile, "avatar");
       if (up.error) { setError(up.error); setBusy(false); return; }
+      avatarUrl = up.url ?? null;
     }
 
     const fd = new FormData();
     if (displayName.trim()) fd.append("display_name", displayName.trim());
+    if (avatarUrl) fd.append("avatar_url", avatarUrl);
     const res = await saveFirstMoves(fd);
     if (res && "error" in res && res.error) {
       setError(res.error);

@@ -118,10 +118,16 @@ export async function saveFirstMoves(formData: FormData) {
     updates.visibility = visibility;
   }
 
-  // Avatars are uploaded by the upload_avatar edge function (service role),
-  // which also persists app_profile.avatar_url — see web/lib/uploadAvatar.ts.
-  // (The in-app session can't authenticate storage uploads here.) This action
-  // only writes the display name + visibility.
+  // The avatar is uploaded via the upload_image edge function (service role);
+  // here we persist the resulting URL, guarded to the user's own folder so a
+  // client can't point avatar_url at an arbitrary image.
+  const avatarUrl = (formData.get("avatar_url") as string)?.trim();
+  if (avatarUrl) {
+    if (!avatarUrl.includes(`/storage/v1/object/public/profile-images/${user.id}/`)) {
+      return { error: "Invalid photo path." };
+    }
+    updates.avatar_url = avatarUrl;
+  }
 
   // Nothing filled — treat as a no-op success (they hit "Later" on everything).
   if (Object.keys(updates).length === 0) return { success: true };
