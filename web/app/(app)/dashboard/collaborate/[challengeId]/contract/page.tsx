@@ -54,10 +54,21 @@ export default async function ContractPage({
 
   const { data: contract } = await supabase
     .from("app_collaboration_contract")
-    .select("version, locked_at, sha256, snapshot_json, snapshot_text")
+    .select("version, locked_at, sha256, snapshot_json")
     .eq("id", challenge.contract_id)
     .maybeSingle();
   if (!contract || !contract.snapshot_json) redirect("/dashboard");
+
+  // Per-party signing times: co-hosts from their acceptance, owner from the
+  // lock. RLS lets either party read all acceptances for the contract.
+  const { data: accepts } = await supabase
+    .from("app_collaboration_acceptance")
+    .select("cohost_id, accepted_at")
+    .eq("contract_id", challenge.contract_id);
+  const acceptedAt: Record<string, string> = {};
+  for (const a of (accepts ?? []) as { cohost_id: string; accepted_at: string }[]) {
+    if (a.cohost_id && a.accepted_at) acceptedAt[a.cohost_id] = a.accepted_at;
+  }
 
   const viewerTimeZone = await resolveViewerTimeZone();
 
@@ -75,7 +86,7 @@ export default async function ContractPage({
         version={Number(contract.version)}
         lockedAt={contract.locked_at as string}
         sha256={(contract.sha256 as string | null) ?? null}
-        rawText={(contract.snapshot_text as string | null) ?? null}
+        acceptedAt={acceptedAt}
         timeZone={viewerTimeZone}
       />
     </div>
