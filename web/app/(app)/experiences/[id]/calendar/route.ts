@@ -1,5 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { buildICS, slugify, type ICSEvent } from "@/lib/ics";
+import {
+  resolveSessionExperts,
+  PUBLISHED_SESSION_STATES,
+} from "@/lib/challenges/sessionExperts";
 
 export const dynamic = "force-dynamic";
 
@@ -9,10 +13,11 @@ type SessionRow = {
   start_time: string | null;
   duration_minutes: number | null;
   status: string | null;
+  host_id: string | null;
 };
 
 /**
- * Participant calendar export for ONE experience: the sessions of the
+ * Participant calendar export for ONE experience: the published sessions of the
  * experience the caller is enrolled in, as a downloadable `.ics`.
  * Member-gated; runs with the caller's cookie auth so RLS applies.
  */
@@ -45,26 +50,36 @@ export async function GET(
 
   const { data: links } = await supabase
     .from("app_challenge_session")
-    .select("app_session(id, title, start_time, duration_minutes, status)")
+    .select("app_session(id, title, start_time, duration_minutes, status, host_id)")
     .eq("challenge_id", id);
+
+  const sessions: SessionRow[] = [];
+  for (const row of links ?? []) {
+    const raw = (row as { app_session: SessionRow | SessionRow[] | null }).app_session;
+    const s = Array.isArray(raw) ? raw[0] : raw;
+    if (!s || !s.start_time || !PUBLISHED_SESSION_STATES.has(s.status ?? "")) continue;
+    sessions.push(s);
+  }
+
+  const experts = await resolveSessionExperts(
+    supabase,
+    new Map(sessions.map((s) => [s.id, s.host_id ?? null]))
+  );
 
   const origin = new URL(request.url).origin;
   const spaceUrl = `${origin}/experiences/${id}/space`;
 
-  const events: ICSEvent[] = [];
-  for (const row of links ?? []) {
-    const raw = (row as { app_session: SessionRow | SessionRow[] | null }).app_session;
-    const s = Array.isArray(raw) ? raw[0] : raw;
-    if (!s || !s.start_time || s.status === "canceled") continue;
-    events.push({
+  const events: ICSEvent[] = sessions.map((s) => {
+    const who = experts.get(s.id);
+    return {
       uid: `${s.id}@infitra.fit`,
-      start: new Date(s.start_time),
+      start: new Date(s.start_time as string),
       durationMin: Number(s.duration_minutes) || 60,
       title: `INFITRA: ${s.title ?? "Session"}`,
-      description: `${expTitle} · Join in your Experience Space: ${spaceUrl}`,
+      description: `${who ? `With ${who} · ` : ""}${expTitle} · Join in your Experience Space: ${spaceUrl}`,
       url: spaceUrl,
-    });
-  }
+    };
+  });
   events.sort((a, b) => a.start.getTime() - b.start.getTime());
 
   const ics = buildICS({ calName: expTitle, events });

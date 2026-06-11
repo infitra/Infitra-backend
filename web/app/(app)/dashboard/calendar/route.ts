@@ -1,5 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { buildICS, type ICSEvent } from "@/lib/ics";
+import {
+  resolveSessionExperts,
+  PUBLISHED_SESSION_STATES,
+} from "@/lib/challenges/sessionExperts";
 
 export const dynamic = "force-dynamic";
 
@@ -9,12 +13,14 @@ type SessionRow = {
   start_time: string | null;
   duration_minutes: number | null;
   status: string | null;
+  host_id: string | null;
 };
 
 /**
- * Creator hosting calendar: every session the caller is involved in hosting —
- * sessions of experiences they own or co-host, plus sessions where they're the
- * host or a session-cohost. Deduped by session id. Runs with cookie auth (RLS).
+ * Creator hosting calendar: every PUBLISHED session the caller is involved in
+ * hosting — sessions of experiences they own or co-host, plus sessions where
+ * they're the host or a session-cohost. Drafts are excluded (they can still
+ * change). Deduped by session id. Runs with cookie auth (RLS).
  */
 export async function GET(request: Request) {
   const supabase = await createClient();
@@ -45,7 +51,7 @@ export async function GET(request: Request) {
   if (challengeIds.size > 0) {
     const { data: links } = await supabase
       .from("app_challenge_session")
-      .select("challenge_id, app_session(id, title, start_time, duration_minutes, status)")
+      .select("challenge_id, app_session(id, title, start_time, duration_minutes, status, host_id)")
       .in("challenge_id", Array.from(challengeIds));
     for (const row of links ?? []) {
       const r = row as {
@@ -59,7 +65,7 @@ export async function GET(request: Request) {
 
   const { data: hosted } = await supabase
     .from("app_session")
-    .select("id, title, start_time, duration_minutes, status")
+    .select("id, title, start_time, duration_minutes, status, host_id")
     .eq("host_id", me);
   for (const s of (hosted ?? []) as SessionRow[]) {
     if (s.id && !byId.has(s.id)) byId.set(s.id, { s });
@@ -67,7 +73,7 @@ export async function GET(request: Request) {
 
   const { data: scoh } = await supabase
     .from("app_session_cohost")
-    .select("app_session(id, title, start_time, duration_minutes, status)")
+    .select("app_session(id, title, start_time, duration_minutes, status, host_id)")
     .eq("cohost_id", me);
   for (const row of scoh ?? []) {
     const raw = (row as { app_session: SessionRow | SessionRow[] | null }).app_session;
@@ -75,19 +81,29 @@ export async function GET(request: Request) {
     if (s?.id && !byId.has(s.id)) byId.set(s.id, { s });
   }
 
+  // Only export published events — drafts can still change at any time.
+  const usable = [...byId.values()].filter(
+    ({ s }) => s.start_time && PUBLISHED_SESSION_STATES.has(s.status ?? "")
+  );
+
+  const experts = await resolveSessionExperts(
+    supabase,
+    new Map(usable.map(({ s }) => [s.id, s.host_id ?? null]))
+  );
+
   const origin = new URL(request.url).origin;
-  const events: ICSEvent[] = [];
-  for (const { s, exp } of byId.values()) {
-    if (!s.start_time || s.status === "canceled") continue;
-    events.push({
+  const events: ICSEvent[] = usable.map(({ s, exp }) => {
+    const who = experts.get(s.id);
+    const descParts = [who ? `With ${who}` : null, exp ?? null].filter(Boolean) as string[];
+    return {
       uid: `${s.id}@infitra.fit`,
-      start: new Date(s.start_time),
+      start: new Date(s.start_time as string),
       durationMin: Number(s.duration_minutes) || 60,
       title: `INFITRA: ${s.title ?? "Session"}`,
-      description: exp || undefined,
+      description: descParts.length > 0 ? descParts.join(" · ") : undefined,
       url: `${origin}/dashboard`,
-    });
-  }
+    };
+  });
   events.sort((a, b) => a.start.getTime() - b.start.getTime());
 
   const ics = buildICS({ calName: "INFITRA — Your sessions", events });

@@ -1,22 +1,43 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const CYAN = "#0891b2";
 const INK_BORDER = "rgba(15,34,41,0.10)";
 const MUTED = "#64748b";
 
+function fmtWhen(ts: number): string {
+  try {
+    return new Date(ts).toLocaleString(undefined, {
+      day: "numeric",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return "";
+  }
+}
+
+const CAL_ICON = (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="4" width="18" height="18" rx="2" />
+    <path d="M16 2v4M8 2v4M3 10h18" />
+  </svg>
+);
+
 /**
- * Calendar export link with a success acknowledgment.
+ * Calendar export link.
  *
- * The href points at an `.ics` route handler; the browser downloads it and the
- * OS hands off to the calendar app's import sheet. That sheet is OS-controlled
- * and never reports back to us, so the action otherwise feels like nothing
- * happened ("did it work?"). We confirm on click and tell the user the import
- * sheet IS the expected next step.
+ * The href is an `.ics` route handler; the browser downloads it and the OS
+ * hands off to the calendar app's import sheet (which never reports back). A
+ * transient on-click "success ✓" flashed and vanished — invisible on mobile
+ * (the calendar app takes over instantly) and pointless on desktop (you still
+ * have to open the file). Instead we persist a "Last exported <time>" line via
+ * localStorage: a durable, honest signal of when this calendar was last pulled.
  *
- *   variant="pill"   — filled cyan CTA (Experience Space, success page).
- *   variant="subtle" — quiet outline action (dashboard header, beside Edit).
+ *   variant="pill"   — filled cyan CTA with the timestamp underneath.
+ *   variant="subtle" — quiet outline action; timestamp shown as a tooltip.
  */
 export function CalendarButton({
   href,
@@ -29,24 +50,27 @@ export function CalendarButton({
   block?: boolean;
   variant?: "pill" | "subtle";
 }) {
-  const [done, setDone] = useState(false);
+  const key = `infitra:lastCalExport:${href}`;
+  const [lastExported, setLastExported] = useState<number | null>(null);
+
+  useEffect(() => {
+    try {
+      const v = window.localStorage.getItem(key);
+      if (v) setLastExported(Number(v));
+    } catch {
+      /* localStorage unavailable — no-op */
+    }
+  }, [key]);
 
   const onClick = () => {
-    setDone(true);
-    window.setTimeout(() => setDone(false), 6000);
+    const ts = Date.now();
+    try {
+      window.localStorage.setItem(key, String(ts));
+    } catch {
+      /* ignore */
+    }
+    setLastExported(ts);
   };
-
-  const CalIcon = (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="4" width="18" height="18" rx="2" />
-      <path d="M16 2v4M8 2v4M3 10h18" />
-    </svg>
-  );
-  const CheckIcon = (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M20 6L9 17l-5-5" />
-    </svg>
-  );
 
   if (variant === "subtle") {
     return (
@@ -54,17 +78,17 @@ export function CalendarButton({
         href={href}
         download
         onClick={onClick}
-        title="Download your sessions as a calendar file"
+        title={lastExported ? `Last exported ${fmtWhen(lastExported)}` : "Download your sessions as a calendar file"}
         className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-headline transition-colors hover:bg-[#0F2229]/[0.05]"
         style={{
-          color: done ? CYAN : "#475569",
-          border: `1px solid ${done ? `${CYAN}55` : INK_BORDER}`,
+          color: "#475569",
+          border: `1px solid ${INK_BORDER}`,
           backgroundColor: "rgba(255,255,255,0.55)",
           fontWeight: 700,
         }}
       >
-        {done ? CheckIcon : CalIcon}
-        {done ? "Exported ✓" : label}
+        {CAL_ICON}
+        {label}
       </a>
     );
   }
@@ -84,14 +108,14 @@ export function CalendarButton({
           boxShadow: `inset 0 0 0 1.5px ${CYAN}40`,
         }}
       >
-        {done ? CheckIcon : CalIcon}
-        {done ? "Exported to your calendar" : label}
+        {CAL_ICON}
+        {label}
       </a>
-      {done && (
-        <p className="text-[11px] mt-1.5 text-center" style={{ color: MUTED }}>
-          Opens in your calendar app — tap Add to confirm.
-        </p>
-      )}
+      <p className="text-[11px] mt-1.5 text-center" style={{ color: MUTED }}>
+        {lastExported
+          ? `Last exported ${fmtWhen(lastExported)}`
+          : "Opens in your calendar app to add your sessions"}
+      </p>
     </div>
   );
 }
