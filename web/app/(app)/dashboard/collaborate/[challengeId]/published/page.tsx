@@ -202,8 +202,22 @@ export default async function PublishedCelebrationPage({
         >
           This is what participants will see. Share the link with your community.
         </p>
-        <div className="mt-5 flex justify-center">
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
           <CalendarButton href="/dashboard/calendar" label="Add your sessions to your calendar" />
+          {cohostIds.length > 0 && (
+            <Link
+              href={`/dashboard/collaborate/${challengeId}/contract`}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-headline transition-colors hover:bg-[#0F2229]/[0.05]"
+              style={{
+                color: "#475569",
+                border: "1px solid rgba(15,34,41,0.10)",
+                backgroundColor: "rgba(255,255,255,0.55)",
+                fontWeight: 700,
+              }}
+            >
+              View collaboration contract
+            </Link>
+          )}
         </div>
       </header>
 

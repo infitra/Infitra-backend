@@ -1052,10 +1052,16 @@ function showsContract(stage: ProgramStage): boolean {
  */
 function SecondaryActions({ program }: { program: Program }) {
   if (!showsContract(program.stage)) return null;
-  // Polish v12.U: route to the workspace (which is the contract
-  // surface now). Label changed from "View contract" to "Review
-  // terms" so it matches the action the user is going to take.
-  const href = `/dashboard/collaborate/${program.id}`;
+  // Pre-publish (awaiting-signatures) the workspace IS the contract review +
+  // sign surface. Post-publish the workspace is gone, so route to the
+  // read-only contract view — the durable source of truth for the collab.
+  const postPublish =
+    program.stage === "published-pre-launch" ||
+    program.stage === "published-live" ||
+    program.stage === "completed";
+  const href = postPublish
+    ? `/dashboard/collaborate/${program.id}/contract`
+    : `/dashboard/collaborate/${program.id}`;
   return (
     <Link
       href={href}
@@ -1067,7 +1073,7 @@ function SecondaryActions({ program }: { program: Program }) {
         backgroundColor: "rgba(255,255,255,0.85)",
       }}
     >
-      Review terms
+      {postPublish ? "View contract" : "Review terms"}
     </Link>
   );
 }
