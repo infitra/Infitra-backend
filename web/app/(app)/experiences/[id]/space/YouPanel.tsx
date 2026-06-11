@@ -229,6 +229,22 @@ export function YouPanel() {
               <EngageBtn href="#tribe-composer" label="Ask your Experts" color={ORANGE} onClick={() => setComposeIntent("question")} />
             </div>
           </Section>
+
+          {/* ── YOUR CALENDAR ── one-tap .ics of this experience's sessions. */}
+          <Section label="Your calendar">
+            <a
+              href={`/experiences/${experience.id}/calendar`}
+              download
+              className="flex items-center justify-center gap-1.5 rounded-xl py-3 text-[13px] font-black font-headline transition-transform hover:scale-[1.01]"
+              style={{ backgroundColor: `${CYAN}14`, color: CYAN, boxShadow: `inset 0 0 0 1.5px ${CYAN}40` }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={CYAN} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" />
+                <path d="M16 2v4M8 2v4M3 10h18" />
+              </svg>
+              Add sessions to calendar
+            </a>
+          </Section>
         </>
       )}
 
