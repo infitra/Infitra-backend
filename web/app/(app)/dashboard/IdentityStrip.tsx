@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { SlideOver } from "@/app/components/SlideOver";
 import { ProfileEditForm } from "@/app/components/ProfileEditForm";
+import { CalendarButton } from "@/app/components/CalendarButton";
 
 /**
  * Identity strip — the "this is you" beat at the top of the dashboard.
@@ -138,18 +139,21 @@ export function IdentityStrip({
           >
             {pilotLine(joinedAt)}
           </p>
-          <button
-            onClick={() => setEditOpen(true)}
-            className="px-4 py-2 rounded-full text-xs font-headline transition-colors hover:bg-[#0F2229]/[0.05]"
-            style={{
-              color: "#475569",
-              border: "1px solid rgba(15,34,41,0.10)",
-              backgroundColor: "rgba(255,255,255,0.55)",
-              fontWeight: 700,
-            }}
-          >
-            Edit profile
-          </button>
+          <div className="flex items-center gap-2">
+            <CalendarButton href="/dashboard/calendar" label="Export calendar" variant="subtle" />
+            <button
+              onClick={() => setEditOpen(true)}
+              className="px-4 py-2 rounded-full text-xs font-headline transition-colors hover:bg-[#0F2229]/[0.05]"
+              style={{
+                color: "#475569",
+                border: "1px solid rgba(15,34,41,0.10)",
+                backgroundColor: "rgba(255,255,255,0.55)",
+                fontWeight: 700,
+              }}
+            >
+              Edit profile
+            </button>
+          </div>
         </div>
       </div>
 
@@ -162,18 +166,21 @@ export function IdentityStrip({
         >
           {pilotLine(joinedAt)}
         </p>
-        <button
-          onClick={() => setEditOpen(true)}
-          className="px-3 py-1.5 rounded-full text-xs font-headline"
-          style={{
-            color: "#475569",
-            border: "1px solid rgba(15,34,41,0.10)",
-            backgroundColor: "rgba(255,255,255,0.55)",
-            fontWeight: 700,
-          }}
-        >
-          Edit
-        </button>
+        <div className="flex items-center gap-2">
+          <CalendarButton href="/dashboard/calendar" label="Calendar" variant="subtle" />
+          <button
+            onClick={() => setEditOpen(true)}
+            className="px-3 py-1.5 rounded-full text-xs font-headline"
+            style={{
+              color: "#475569",
+              border: "1px solid rgba(15,34,41,0.10)",
+              backgroundColor: "rgba(255,255,255,0.55)",
+              fontWeight: 700,
+            }}
+          >
+            Edit
+          </button>
+        </div>
       </div>
 
       <SlideOver open={editOpen} onClose={() => setEditOpen(false)} title="Edit Profile">

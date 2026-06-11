@@ -8,6 +8,7 @@ import { PublishedShareBar } from "./PublishedShareBar";
 import { buildWeeks } from "@/lib/challenges/buildWeeks";
 import { loadSessionCohosts } from "@/lib/challenges/sessionCohosts";
 import { resolveViewerTimeZone } from "@/lib/time/viewerTimeZone";
+import { CalendarButton } from "@/app/components/CalendarButton";
 
 export const metadata = { title: "Collaboration Published — INFITRA" };
 
@@ -201,22 +202,9 @@ export default async function PublishedCelebrationPage({
         >
           This is what participants will see. Share the link with your community.
         </p>
-        <a
-          href="/dashboard/calendar"
-          download
-          className="inline-flex items-center gap-2 mt-5 px-4 py-2 rounded-full text-xs font-bold font-headline transition-transform hover:scale-[1.01]"
-          style={{
-            color: "#0891b2",
-            backgroundColor: "rgba(8,145,178,0.08)",
-            boxShadow: "inset 0 0 0 1.5px rgba(8,145,178,0.30)",
-          }}
-        >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0891b2" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="4" width="18" height="18" rx="2" />
-            <path d="M16 2v4M8 2v4M3 10h18" />
-          </svg>
-          Add your sessions to your calendar
-        </a>
+        <div className="mt-5 flex justify-center">
+          <CalendarButton href="/dashboard/calendar" label="Add your sessions to your calendar" />
+        </div>
       </header>
 
       {/* Sticky share bar — visible while the creator scrolls through

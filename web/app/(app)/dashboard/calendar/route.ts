@@ -83,7 +83,8 @@ export async function GET(request: Request) {
       uid: `${s.id}@infitra.fit`,
       start: new Date(s.start_time),
       durationMin: Number(s.duration_minutes) || 60,
-      title: exp ? `${s.title ?? "Session"} · ${exp}` : s.title ?? "Session",
+      title: `INFITRA: ${s.title ?? "Session"}`,
+      description: exp || undefined,
       url: `${origin}/dashboard`,
     });
   }

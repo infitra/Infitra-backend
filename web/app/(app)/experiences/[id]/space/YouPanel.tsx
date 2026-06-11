@@ -23,6 +23,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useExperienceSpaceStore } from "@/lib/experienceSpace/StoreProvider";
 import { buildWeekJourney, programStatus } from "@/lib/experienceSpace/weekJourney";
 import { Avatar } from "./Avatar";
+import { CalendarButton } from "@/app/components/CalendarButton";
 
 const ORANGE = "#FF6130";
 const CYAN = "#0891b2";
@@ -232,18 +233,11 @@ export function YouPanel() {
 
           {/* ── YOUR CALENDAR ── one-tap .ics of this experience's sessions. */}
           <Section label="Your calendar">
-            <a
+            <CalendarButton
               href={`/experiences/${experience.id}/calendar`}
-              download
-              className="flex items-center justify-center gap-1.5 rounded-xl py-3 text-[13px] font-black font-headline transition-transform hover:scale-[1.01]"
-              style={{ backgroundColor: `${CYAN}14`, color: CYAN, boxShadow: `inset 0 0 0 1.5px ${CYAN}40` }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={CYAN} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="4" width="18" height="18" rx="2" />
-                <path d="M16 2v4M8 2v4M3 10h18" />
-              </svg>
-              Add sessions to calendar
-            </a>
+              label="Add sessions to calendar"
+              block
+            />
           </Section>
         </>
       )}

@@ -60,8 +60,8 @@ export async function GET(
       uid: `${s.id}@infitra.fit`,
       start: new Date(s.start_time),
       durationMin: Number(s.duration_minutes) || 60,
-      title: `${s.title ?? "Session"} · ${expTitle}`,
-      description: `Join in your Experience Space: ${spaceUrl}`,
+      title: `INFITRA: ${s.title ?? "Session"}`,
+      description: `${expTitle} · Join in your Experience Space: ${spaceUrl}`,
       url: spaceUrl,
     });
   }
