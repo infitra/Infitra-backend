@@ -78,7 +78,7 @@ export function CalendarButton({
         href={href}
         download
         onClick={onClick}
-        title={lastExported ? `Last exported ${fmtWhen(lastExported)}` : "Download your sessions as a calendar file"}
+        title={lastExported ? `Exported at ${fmtWhen(lastExported)}` : "Download your sessions as a calendar file"}
         className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-headline transition-colors hover:bg-[#0F2229]/[0.05]"
         style={{
           color: "#475569",
@@ -113,7 +113,7 @@ export function CalendarButton({
       </a>
       <p className="text-[11px] mt-1.5 text-center" style={{ color: MUTED }}>
         {lastExported
-          ? `Last exported ${fmtWhen(lastExported)}`
+          ? `Exported at ${fmtWhen(lastExported)}`
           : "Opens in your calendar app to add your sessions"}
       </p>
     </div>
