@@ -5,8 +5,7 @@ import { PublicChallengeHero } from "@/app/(app)/experiences/[id]/PublicChalleng
 import { PublicCreatorsBlock } from "@/app/(app)/experiences/[id]/PublicCreatorsBlock";
 import { PublicBeyondLiveBlock } from "@/app/(app)/experiences/[id]/PublicBeyondLiveBlock";
 import { PublishedShareBar } from "./PublishedShareBar";
-import { buildWeeks } from "@/lib/challenges/buildWeeks";
-import { loadSessionCohosts } from "@/lib/challenges/sessionCohosts";
+import { loadBuyerRenderData } from "@/lib/challenges/buyerRenderData";
 import { resolveViewerTimeZone } from "@/lib/time/viewerTimeZone";
 import { CalendarButton } from "@/app/components/CalendarButton";
 
@@ -72,98 +71,18 @@ export default async function PublishedCelebrationPage({
     .select("promise_text, description")
     .eq("id", challengeId)
     .maybeSingle();
-  const rawPromise = challengeDetails?.promise_text?.trim() || null;
-  const rawDescription = challengeDetails?.description?.trim() || null;
-  const heroPromise = rawPromise ?? rawDescription;
-  const heroDescription = rawPromise ? rawDescription : null;
-
-  // All cohorts + profiles (for the creator block)
-  const { data: cohostRows } = await supabase
-    .from("app_challenge_cohost")
-    .select("cohost_id")
-    .eq("challenge_id", challengeId);
-  const cohostIds: string[] = (cohostRows ?? []).map((c: { cohost_id: string }) => c.cohost_id);
-
-  const allCreatorIds = [buyerView.owner_id, ...cohostIds];
-  const { data: creatorProfiles } = await supabase
-    .from("app_profile")
-    .select("id, display_name, avatar_url, bio, tagline, username")
-    .in("id", allCreatorIds);
-
-  const profileById = new Map<string, {
-    id: string;
-    display_name: string | null;
-    avatar_url: string | null;
-    bio: string | null;
-    tagline: string | null;
-    username: string | null;
-  }>();
-  for (const p of creatorProfiles ?? []) {
-    profileById.set((p as any).id, p as any);
-  }
-
-  const owner = profileById.get(buyerView.owner_id);
-  const cohostProfiles = cohostIds
-    .map((cid) => profileById.get(cid))
-    .filter((p): p is NonNullable<typeof p> => !!p);
-
-  const creators = [
-    ...(owner ? [{ ...owner, role: "owner" as const }] : []),
-    ...cohostProfiles.map((p) => ({ ...p, role: "cohost" as const })),
-  ];
-
-  // Sessions with cover + description + host (Bundle 4.2.14)
-  const { data: sessionRows } = await supabase
-    .from("app_challenge_session")
-    .select(
-      "session_id, app_session(id, title, description, image_url, start_time, duration_minutes, host_id)",
-    )
-    .eq("challenge_id", challengeId);
-
-  const sessions = ((sessionRows ?? [])
-    .map((r: any) => r.app_session)
-    .filter(Boolean) as Array<{
-      id: string;
-      title: string;
-      description: string | null;
-      image_url: string | null;
-      start_time: string;
-      duration_minutes: number;
-      host_id: string | null;
-    }>)
-    .sort(
-      (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime(),
-    );
-
-  const topicsByCreator: Record<string, string[]> =
-    (buyerView.topic_ownership as Record<string, string[]>) ?? {};
-
-  // Bundle 4.2.47: build the per-week structure for the now-canonical
-  // WeeklyJourneyCarousel inside PublicChallengeHero. Mirrors the
-  // buyer page's assembly so the post-publish preview shows exactly
-  // what participants will see.
-  const weeklyArc = (buyerView.weekly_arc as Array<{ week: number; theme: string }>) ?? [];
-  const rawWeeks = buildWeeks(
-    buyerView.start_date,
-    buyerView.end_date,
-    weeklyArc,
-    sessions,
-  );
-  const creatorsById = new Map(creators.map((c) => [c.id, c]));
-  // Per-session cohosts — same public-safe view path as the buyer page.
-  const cohostsBySession = await loadSessionCohosts(
-    supabase,
-    challengeId,
-    creatorsById,
-  );
-  const weeks = rawWeeks.map((week) => ({
-    ...week,
-    sessions: week.sessions.map((s) => ({
-      ...s,
-      host: s.host_id ? creatorsById.get(s.host_id) ?? null : null,
-      cohosts: cohostsBySession.get(s.id) ?? [],
-    })),
-  }));
+  // Shared with the pre-publish preview (H4) so the two renders never drift.
+  const { creators, topicsByCreator, weeks, sessions, heroPromise, heroDescription } =
+    await loadBuyerRenderData(supabase, {
+      id: challengeId,
+      owner_id: buyerView.owner_id,
+      start_date: buyerView.start_date,
+      end_date: buyerView.end_date,
+      weekly_arc: buyerView.weekly_arc,
+      topic_ownership: buyerView.topic_ownership,
+      promise_text: challengeDetails?.promise_text ?? null,
+      description: challengeDetails?.description ?? null,
+    });
 
   return (
     <>
@@ -204,7 +123,7 @@ export default async function PublishedCelebrationPage({
         </p>
         <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
           <CalendarButton href="/dashboard/calendar" label="Add your sessions to your calendar" />
-          {cohostIds.length > 0 && (
+          {creators.some((c) => c.role === "cohost") && (
             <Link
               href={`/dashboard/collaborate/${challengeId}/contract`}
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-headline transition-colors hover:bg-[#0F2229]/[0.05]"

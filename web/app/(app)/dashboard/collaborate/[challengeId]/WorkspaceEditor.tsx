@@ -1318,6 +1318,27 @@ export function WorkspaceEditor({
             <p className="text-sm text-red-500 mb-4">{error}</p>
           )}
 
+          {/* Preview the real buyer page from the current draft — see exactly
+              what participants get before publishing. Opens in a new tab so the
+              workspace stays put. */}
+          <a
+            href={`/dashboard/collaborate/${challenge.id}/preview`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 mb-5 px-5 py-2.5 rounded-full text-sm font-bold font-headline transition-colors hover:bg-[#0891b2]/[0.06]"
+            style={{
+              color: "#0891b2",
+              border: "1px solid rgba(8,145,178,0.30)",
+              backgroundColor: "rgba(8,145,178,0.05)",
+            }}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0891b2" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+            Preview your buyer page
+          </a>
+
           {!isLocked && isDraft && isOwner && (
             <div>
               <p className="text-base text-[#64748b] mb-4">
