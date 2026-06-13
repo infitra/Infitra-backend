@@ -24,24 +24,34 @@ import { ReflectionCard } from "./ReflectionCard";
 import { WeekJourney } from "./WeekJourney";
 import { YouPanel } from "./YouPanel";
 import { ProgressCard } from "./ProgressCard";
+import { ReviewCard } from "./ReviewCard";
+import { CollabReviewCard } from "./CollabReviewCard";
 import type { ExperienceSpaceSeed } from "@/lib/experienceSpace/mapSnapshot";
 import type { CreatorStats } from "@/lib/experienceSpace/store";
+
+type ReviewState = {
+  open: boolean;
+  hasExperienceReview: boolean;
+  reviewedSubjectIds: string[];
+};
 
 export function ExperienceSpaceShell({
   seed,
   initialCreatorStats,
+  reviewState,
 }: {
   seed: ExperienceSpaceSeed;
   initialCreatorStats?: CreatorStats | null;
+  reviewState?: ReviewState;
 }) {
   return (
     <ExperienceSpaceStoreProvider initialState={initFromSeed(seed, initialCreatorStats ?? null)}>
-      <SpaceBody />
+      <SpaceBody reviewState={reviewState} />
     </ExperienceSpaceStoreProvider>
   );
 }
 
-function SpaceBody() {
+function SpaceBody({ reviewState }: { reviewState?: ReviewState }) {
   const experience = useExperienceSpaceStore((s) => s.experience);
   const spaceId = useExperienceSpaceStore((s) => s.spaceId);
   const viewer = useExperienceSpaceStore((s) => s.viewer);
@@ -106,6 +116,17 @@ function SpaceBody() {
   // attends, so no extra membership check needed here.
   const pulseActions = actionItems.filter((a) => a.kind === "pre_pulse" && a.sessionId);
   const reflectionActions = actionItems.filter((a) => a.kind === "reflection" && a.sessionId);
+  // H3c review prompts — gated post-experience (experience_review_open).
+  const reviewOpen = !!reviewState?.open;
+  const reviewedSubjectIds = reviewState?.reviewedSubjectIds ?? [];
+  const showExperienceReview =
+    reviewOpen && isMember && !isCreator && !reviewState?.hasExperienceReview;
+  const coHostsToReview =
+    reviewOpen && isCreator
+      ? creators.filter(
+          (c) => c.id !== viewer.id && !reviewedSubjectIds.includes(c.id),
+        )
+      : [];
   const canPost = isMember || isCreator;
   const degraded = channelStatus === "reconnecting" || channelStatus === "error";
 
@@ -139,7 +160,7 @@ function SpaceBody() {
         </aside>
 
         <main className="space-y-6 min-w-0">
-          {(showIntro || pulseActions.length > 0 || reflectionActions.length > 0) && (
+          {(showIntro || pulseActions.length > 0 || reflectionActions.length > 0 || showExperienceReview || coHostsToReview.length > 0) && (
             <div id="your-move" className="scroll-mt-24 space-y-4">
               {/* Time-sensitive first: pulse (session imminent) → reflection
                   (just ended) → intro (ongoing onboarding). */}
@@ -158,6 +179,16 @@ function SpaceBody() {
                   sessionTitle={a.sessionTitle ?? "that session"}
                 />
               ))}
+              {showExperienceReview && (
+                <ReviewCard challengeId={experience.id} experienceTitle={experience.title} />
+              )}
+              {coHostsToReview.length > 0 && (
+                <CollabReviewCard
+                  challengeId={experience.id}
+                  experienceTitle={experience.title}
+                  coHosts={coHostsToReview.map((c) => ({ id: c.id, name: c.name }))}
+                />
+              )}
               {showIntro && (
                 <IntroActionCard spaceId={spaceId} prompt={introAction!.introPrompt ?? "Introduce yourself to the Tribe."} />
               )}

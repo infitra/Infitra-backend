@@ -55,11 +55,46 @@ export default async function ExperienceSpacePage({
     .eq("id", user.id)
     .single();
 
+  // Review state (H3c) — post-experience prompts in the Space.
+  // experience_review_open gates both the participant experience-review card
+  // and the creator collab-review card; the rest say what the viewer's rated.
+  const { data: reviewOpenRaw } = await supabase.rpc("experience_review_open", {
+    p_challenge: id,
+  });
+  const reviewOpen = reviewOpenRaw === true;
+  let reviewState: {
+    open: boolean;
+    hasExperienceReview: boolean;
+    reviewedSubjectIds: string[];
+  } = { open: reviewOpen, hasExperienceReview: false, reviewedSubjectIds: [] };
+  if (reviewOpen) {
+    const [{ data: myExpReview }, { data: myCollabRows }] = await Promise.all([
+      supabase
+        .from("app_review")
+        .select("id")
+        .eq("challenge_id", id)
+        .eq("reviewer_id", user.id)
+        .maybeSingle(),
+      supabase
+        .from("app_collab_review")
+        .select("subject_id")
+        .eq("challenge_id", id)
+        .eq("reviewer_id", user.id),
+    ]);
+    reviewState = {
+      open: true,
+      hasExperienceReview: !!myExpReview,
+      reviewedSubjectIds: (myCollabRows ?? []).map(
+        (r) => (r as { subject_id: string }).subject_id
+      ),
+    };
+  }
+
   return (
     <div className="min-h-screen">
       <ParticipantNav displayName={prof?.display_name ?? null} role={prof?.role} />
       <div className="pt-20">
-        <ExperienceSpaceShell seed={seed} initialCreatorStats={initialCreatorStats} />
+        <ExperienceSpaceShell seed={seed} initialCreatorStats={initialCreatorStats} reviewState={reviewState} />
       </div>
     </div>
   );
