@@ -68,6 +68,8 @@ export interface ProgramSummary {
   earningsCentsThisWeek?: number;
   newMembersThisWeek?: number;
   sessionsDoneThisWeek?: number;
+  pendingQuestions?: number;
+  newPosts?: number;
   nextSession?: {
     id: string;
     title: string;
@@ -395,6 +397,48 @@ async function loadDashboard(userId: string) {
           }
         : null;
     }
+
+    // Experience pulse (H5): waiting questions + recent tribe posts, so the
+    // dashboard card reflects what's actually moving in the Space.
+    const challengeBySpace = new Map<string, string>();
+    for (const p of activePrograms) {
+      const sid = spaceIds[p.id];
+      if (sid) challengeBySpace.set(sid, p.id);
+    }
+    const activeSpaceIds = [...challengeBySpace.keys()];
+
+    const [statsResults, postsResult] = await Promise.all([
+      Promise.all(
+        activePrograms.map((p) =>
+          supabase
+            .rpc("load_experience_creator_stats", { p_challenge_id: p.id })
+            .then(({ data }) => ({ id: p.id, data })),
+        ),
+      ),
+      activeSpaceIds.length > 0
+        ? supabase
+            .from("app_challenge_post")
+            .select("space_id")
+            .in("space_id", activeSpaceIds)
+            .neq("author_id", userId)
+            .gte("created_at", sevenDaysAgo)
+        : Promise.resolve({ data: [] as Array<{ space_id: string }> }),
+    ]);
+
+    const pendingByChallenge: Record<string, number> = {};
+    for (const r of statsResults) {
+      const d = r.data as { authorized?: boolean; pending_questions?: number } | null;
+      if (d?.authorized) pendingByChallenge[r.id] = d.pending_questions ?? 0;
+    }
+    const postsByChallenge: Record<string, number> = {};
+    for (const row of (postsResult.data ?? []) as Array<{ space_id: string }>) {
+      const cid = challengeBySpace.get(row.space_id);
+      if (cid) postsByChallenge[cid] = (postsByChallenge[cid] ?? 0) + 1;
+    }
+    for (const p of activePrograms) {
+      p.pendingQuestions = pendingByChallenge[p.id] ?? 0;
+      p.newPosts = postsByChallenge[p.id] ?? 0;
+    }
   }
 
   // Sort active by activeRank then by start_date for tiebreak
@@ -588,7 +632,7 @@ export default async function DashboardPage() {
         {/* CHALLENGE DRAFTS — pre-publish (drafting + awaiting-signatures) */}
         {draftsCount > 0 && (
           <Section
-            label="Challenge drafts"
+            label="Experience drafts"
             count={draftsCount}
             action={{ label: "+ Start new", href: "/dashboard/create" }}
           >
