@@ -178,19 +178,60 @@ function statusFor(program: Program): { label: string; live: boolean } {
   }
 }
 
-function StatusPill({ program }: { program: Program }) {
+function StatusPill({ program, overlay = false }: { program: Program; overlay?: boolean }) {
   const s = statusFor(program);
   const accent = s.live ? "#ef4444" : "#0891b2";
   return (
     <span
       className="inline-flex items-center gap-1.5 self-start px-2.5 py-1 rounded-full text-[10px] uppercase tracking-[0.16em] font-headline"
-      style={{ backgroundColor: `${accent}14`, color: accent, fontWeight: 800 }}
+      style={
+        overlay
+          ? { backgroundColor: "rgba(255,255,255,0.92)", color: accent, fontWeight: 800 }
+          : { backgroundColor: `${accent}14`, color: accent, fontWeight: 800 }
+      }
     >
       {s.live && (
         <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: accent }} />
       )}
       {s.label}
     </span>
+  );
+}
+
+// ─── Cover band (editorial anchor) ───────────────────────────
+// A contained banner — tall enough to give the experience a face, short
+// enough never to read as a brochure poster. Status chip overlays it (like
+// the draft cards). Falls back to the brand gradient when there's no photo.
+function CoverBand({ program, isHero }: { program: Program; isHero: boolean }) {
+  return (
+    <div
+      className={`relative w-full ${isHero ? "h-40 sm:h-44" : "h-28"}`}
+      style={{
+        backgroundColor: "#0F2229",
+        backgroundImage: program.imageUrl ? `url(${program.imageUrl})` : undefined,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }}
+    >
+      {!program.imageUrl && (
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(135deg, rgba(255,97,48,0.40), rgba(8,145,178,0.40)), #0F2229",
+          }}
+        />
+      )}
+      {/* Scrim so the overlaid pill stays legible on any photo. */}
+      <div
+        className="absolute inset-x-0 top-0 h-16"
+        style={{ background: "linear-gradient(180deg, rgba(15,34,41,0.30), rgba(15,34,41,0))" }}
+        aria-hidden
+      />
+      <div className="absolute top-3 left-3">
+        <StatusPill program={program} overlay />
+      </div>
+    </div>
   );
 }
 
@@ -522,44 +563,47 @@ export function ActiveProgramCard({ program, partner, user, density = "hero" }: 
 
   return (
     <article
-      className={`${isHero ? "rounded-3xl p-6 md:p-8" : "rounded-2xl p-5"} infitra-card-link transition-shadow flex flex-col`}
+      className={`${isHero ? "rounded-3xl" : "rounded-2xl"} infitra-card-link transition-shadow flex flex-col overflow-hidden`}
       style={{ border: "1px solid rgba(15,34,41,0.10)", backgroundColor: "#FFFFFF" }}
     >
-      <StatusPill program={program} />
+      {/* The face — cover band + overlaid status. */}
+      <CoverBand program={program} isHero={isHero} />
 
-      <h2
-        className={`${isHero ? "text-2xl md:text-3xl" : "text-lg md:text-xl"} font-headline tracking-tight mt-3`}
-        style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.02em" }}
-      >
-        {program.title || "Untitled"}
-      </h2>
+      <div className={`${isHero ? "p-6 md:p-7" : "p-5"} flex-1 flex flex-col`}>
+        <h2
+          className={`${isHero ? "text-2xl md:text-3xl" : "text-lg md:text-xl"} font-headline tracking-tight`}
+          style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.02em" }}
+        >
+          {program.title || "Untitled"}
+        </h2>
 
-      {/* People — the experts lead. */}
-      <div className="mt-4">
-        <PartiesRow user={user} partner={partner} isOwner={program.isOwner} density={density} />
-      </div>
+        {/* People — the experts lead. */}
+        <div className="mt-4">
+          <PartiesRow user={user} partner={partner} isOwner={program.isOwner} density={density} />
+        </div>
 
-      {/* The pulse — what's moving in the Experience Space. */}
-      <div className="mt-5">
-        <PulseStrip program={program} />
-      </div>
+        {/* The pulse — what's moving in the Experience Space. */}
+        <div className="mt-5">
+          <PulseStrip program={program} />
+        </div>
 
-      <div className="flex-1" />
-
-      {/* One door in. Share + contract are quiet secondaries. */}
-      <div className={`${isHero ? "mt-6" : "mt-5"} flex flex-wrap items-center gap-x-4 gap-y-2`}>
-        <PrimaryActionPill label={doorLabel} kind="navigate" href={doorHref} variant="filled" />
-        {showShare && (
-          <Link
-            href={`/experiences/${program.id}`}
-            className="text-xs md:text-sm font-headline transition-colors hover:text-[#0F2229]"
-            style={{ color: "#475569", fontWeight: 600 }}
-          >
-            Share →
-          </Link>
-        )}
         <div className="flex-1" />
-        <SecondaryActions program={program} />
+
+        {/* One door in. Share + contract are quiet secondaries. */}
+        <div className={`${isHero ? "mt-6" : "mt-5"} flex flex-wrap items-center gap-x-4 gap-y-2`}>
+          <PrimaryActionPill label={doorLabel} kind="navigate" href={doorHref} variant="filled" />
+          {showShare && (
+            <Link
+              href={`/experiences/${program.id}`}
+              className="text-xs md:text-sm font-headline transition-colors hover:text-[#0F2229]"
+              style={{ color: "#475569", fontWeight: 600 }}
+            >
+              Share →
+            </Link>
+          )}
+          <div className="flex-1" />
+          <SecondaryActions program={program} />
+        </div>
       </div>
     </article>
   );

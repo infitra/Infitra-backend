@@ -4,34 +4,33 @@ import { ActiveProgramCard, pickHero, type ProgramStage } from "./ActiveProgramC
 import { OtherProgramCard } from "./OtherProgramCard";
 import { TopAlert } from "./TopAlert";
 import { CollabInvitations } from "./CollabInvitations";
-import { IdentityStrip } from "./IdentityStrip";
+import { ProfilePanel } from "./ProfilePanel";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Home — INFITRA" };
 
 /**
- * Pilot dashboard — programs hub.
+ * Pilot dashboard — a console, not a feed.
  *
  * Composition:
- *   [TopAlert when live or going-live]
- *   [Identity strip — thin top bar with name + status + edit]
+ *   [TopAlert when live or going-live — full width]
+ *   [Console grid]
+ *     LEFT RAIL  — ProfilePanel: who you are + quick actions + a global
+ *                  "across your tribes" pulse. Sticky on desktop, the top
+ *                  card on mobile. Same grammar as the in-Space YouPanel.
+ *     RIGHT COL  — your work stream, top to bottom:
+ *                    ACTIVE NOW   — hero (cover band + experts + pulse +
+ *                                   one door) then tier-2 compact cards
+ *                    DRAFTS       — pre-publish, 2-up
+ *                    ARCHIVE      — completed runs, 2-up
+ *                    INVITATIONS  — collab requests waiting on you
  *
- *   ACTIVE PROGRAMS zone — adaptive layout:
- *     0 active: invite hero (if pending) OR "start your first" empty hero
- *     1 active: full-width hero card (rich treatment — insights + next
- *               session + multiple actions)
- *     2 active: side-by-side cards, equal weight, compact treatment
- *     3+ active: 3-col grid of compact cards
+ * "You" left, "what's happening" right — the same spatial language as
+ * stepping inside an Experience Space, so the product reads as one building.
  *
- *   OTHER PROGRAMS — compact grid below, drafts/awaiting/completed
- *
- *   INVITATIONS — full-width section if has active program + invite
- *
- * Notification bell (in top nav) carries the ambient "what's
- * happened" feed: collab events, partner DM/workspace activity,
- * system updates. Insights here on the dashboard are the operational
- * deltas (new members, sessions done, earnings this week).
+ * Notification bell (in top nav) carries the ambient "what's happened" feed;
+ * the dashboard carries the live state (tribe pulse, next session, earnings).
  */
 
 // ─── Types ──────────────────────────────────────────────────
@@ -559,6 +558,16 @@ export default async function DashboardPage() {
   const draftsCount = drafts.length;
   const archiveCount = archive.length;
 
+  // Global pulse for the profile rail — summed from the live experiences the
+  // page already loaded (zero extra queries). The feeling we're after:
+  // "this is happening, jump in."
+  const tribePulse = {
+    members: data.activePrograms.reduce((n, p) => n + (p.enrolledCount ?? 0), 0),
+    newPosts: data.activePrograms.reduce((n, p) => n + (p.newPosts ?? 0), 0),
+    pendingQuestions: data.activePrograms.reduce((n, p) => n + (p.pendingQuestions ?? 0), 0),
+    experiences: data.activePrograms.length,
+  };
+
   return (
     <div className="py-8">
       {/* TopAlert sits above everything else — global urgency signal,
@@ -573,33 +582,37 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {/* Personal touchstone — greeting, name, the user's footing.
-          Below it: a hairline divider. The greeting is the "this is
-          you" beat; everything below is "your programs" — the divider
-          marks the transition. */}
-      <IdentityStrip
-        displayName={data.profile.displayName}
-        avatarUrl={data.profile.avatarUrl}
-        tagline={data.profile.tagline}
-        bio={data.profile.bio}
-        coverImageUrl={data.profile.coverImageUrl}
-        joinedAt={data.profile.joinedAt}
-      />
-      <div
-        className="mt-8 mb-12 h-px"
-        style={{ backgroundColor: "rgba(15,34,41,0.08)" }}
-        aria-hidden
-      />
+      {/* Console layout — "you" on the left, "what's happening" on the
+          right. Same spatial grammar as the in-Space view (YouPanel left,
+          feed right), so the dashboard and the Experience Space feel like
+          one building. The rail sticks beside the work stream on desktop;
+          on mobile it's simply the top card of the stack. */}
+      <div className="lg:grid lg:grid-cols-[340px_minmax(0,1fr)] lg:gap-8 lg:items-start">
+        <aside className="mb-8 lg:mb-0 lg:sticky lg:top-24">
+          <ProfilePanel
+            displayName={data.profile.displayName}
+            avatarUrl={data.profile.avatarUrl}
+            tagline={data.profile.tagline}
+            bio={data.profile.bio}
+            coverImageUrl={data.profile.coverImageUrl}
+            joinedAt={data.profile.joinedAt}
+            tribePulse={tribePulse}
+            hasActivePrograms={activeCount > 0}
+          />
+        </aside>
 
-      {/* Section zones — each carries a quiet uppercase label so the
-          page reads as one document with consistent rhythm. The label
-          + count vocabulary is shared by all three zones (active,
-          other, invitations). */}
-      <div className="space-y-12">
-        {/* ACTIVE NOW — hero + tier-2, or empty state */}
-        {activeCount === 0 && !hasInvites && (
-          <ActiveProgramCard program={null} partner={null} user={userProp} density="hero" />
-        )}
+        {/* Right column — your work stream: active, drafts, archive,
+            invitations. Each zone keeps its quiet uppercase label so the
+            stream reads as one document with consistent rhythm. */}
+        <div className="space-y-12 min-w-0">
+          {/* ACTIVE NOW — hero + tier-2. The empty "start your first"
+              hero shows only when there's genuinely nothing else. */}
+          {activeCount === 0 &&
+            draftsCount === 0 &&
+            archiveCount === 0 &&
+            !hasInvites && (
+              <ActiveProgramCard program={null} partner={null} user={userProp} density="hero" />
+            )}
 
         {activeCount > 0 && (
           <Section label="Active now" count={activeCount}>
@@ -613,7 +626,7 @@ export default async function DashboardPage() {
                 />
               )}
               {tier2.length > 0 && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
                   {tier2.map((p) => (
                     <ActiveProgramCard
                       key={p.id}
@@ -636,7 +649,7 @@ export default async function DashboardPage() {
             count={draftsCount}
             action={{ label: "+ Start new", href: "/dashboard/create" }}
           >
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {drafts.map((p) => (
                 <OtherProgramCard key={p.id} program={p} />
               ))}
@@ -647,7 +660,7 @@ export default async function DashboardPage() {
         {/* ARCHIVE — completed programs, navigable but not promoted */}
         {archiveCount > 0 && (
           <Section label="Archive" count={archiveCount}>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {archive.map((p) => (
                 <OtherProgramCard key={p.id} program={p} />
               ))}
@@ -685,6 +698,7 @@ export default async function DashboardPage() {
             </div>
           </Section>
         )}
+        </div>
       </div>
     </div>
   );
