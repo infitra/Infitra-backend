@@ -112,7 +112,7 @@ function TribesPulse({ pulse }: { pulse: TribePulse }) {
     { value: newPosts, label: "new posts", accent: "cyan" },
   ];
   if (pendingQuestions > 0) {
-    metrics.push({ value: pendingQuestions, label: "waiting", accent: "orange" });
+    metrics.push({ value: pendingQuestions, label: "open questions", accent: "orange" });
   }
   return <MetricStrip metrics={metrics} />;
 }
@@ -207,9 +207,13 @@ export function ProfilePanel({
         {/* ── QUICK ACTIONS ── create leads (it's the primary creator act, and
             the only place it's reachable on mobile where the nav collapses). */}
         <Section label="Quick actions">
+          {/* Mobile-only: the top nav's "+ Create" is hidden behind the burger
+              on small screens. On desktop that nav button already exists, so a
+              second orange CTA here would only compete with the active card's
+              "Open Experience Space". */}
           <Link
             href="/dashboard/create"
-            className="flex w-full items-center justify-center gap-1.5 rounded-xl py-3 px-4 text-[13px] font-black font-headline text-white transition-transform hover:scale-[1.01] mb-2"
+            className="lg:hidden flex w-full items-center justify-center gap-1.5 rounded-xl py-3 px-4 text-[13px] font-black font-headline text-white transition-transform hover:scale-[1.01] mb-2"
             style={{ backgroundColor: ORANGE, boxShadow: "0 4px 14px rgba(255,97,48,0.30)" }}
           >
             {PLUS_ICON}

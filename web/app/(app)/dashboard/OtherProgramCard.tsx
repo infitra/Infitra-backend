@@ -123,10 +123,11 @@ export function OtherProgramCard({ program, user }: Props) {
   return (
     <Link
       href={destinationFor(program)}
-      className="group block w-full h-full rounded-2xl p-4 infitra-card-link"
+      className="group block w-full h-full rounded-2xl p-4 transition-transform hover:-translate-y-0.5"
       style={{
-        border: "1px solid rgba(15,34,41,0.08)",
+        backgroundColor: "#FFFFFF",
         borderLeft: `3px solid ${cfg.color}`,
+        boxShadow: "0 0 0 1px rgba(15,34,41,0.05), 0 6px 20px rgba(15,34,41,0.08)",
       }}
     >
       {/* WHO — the partner this collaboration is with. */}

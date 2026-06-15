@@ -1,25 +1,22 @@
 import Link from "next/link";
 import Image from "next/image";
 import { PrimaryActionPill } from "./PrimaryActionPill";
-import { MetricStrip, type Metric } from "./MetricStrip";
 
 /**
  * ActiveProgramCard — a live experience, side-by-side.
  *
- * Hero density (the one live experience that holds the page): the cover sits on
- * the LEFT at the buyer-page ratio (5:4 mobile, 3:2 desktop — identical box
- * everywhere so the auto-crop is identical everywhere), and the content reads
- * down the RIGHT in clear clusters:
- *   PEOPLE       — the experts (who).
- *   LIVE-STATE   — ONE panel: a metric strip (members · new posts · waiting /
- *                  week) on top, then the next session as a row WITH its image
- *                  and date. Replaces the old floating chip + bare-stat box.
- *   DOOR         — one way in; share + contract are quiet secondaries.
- * Stage lives only on the cover chip (no duplicate "pre-launch" labels).
+ * Hero density: the cover fills the LEFT column (no dead space — the content is
+ * taller than a fixed-ratio cover would be, so it fills like the Space header
+ * does); the content reads down the RIGHT:
+ *   PEOPLE    — the experts.
+ *   SIGNALS   — live stats: tribe (+ growth), new posts, open questions. Colour
+ *               + dots + deltas so it reads as movement, not a static table.
+ *   SESSION   — a cream, editorial card for the next session, with its image.
+ *   DOOR      — one way in; share + contract are quiet secondaries.
+ * Stage lives only on the cover chip. Soft shadow matches the Experience Space.
  *
- * Side-by-side engages at xl (where the cover's fixed ratio leaves room beside
- * the content); below xl the card stacks (cover on top). Compact density
- * (tier-2 when 2+ are live) always stacks.
+ * Side-by-side engages at xl; below xl the card stacks (cover on top at the
+ * buyer ratio). Compact density (tier-2 when 2+ are live) always stacks.
  */
 
 export type ProgramStage =
@@ -76,9 +73,16 @@ interface Props {
   partner: Partner | null;
   user: UserProfile;
   density?: "hero" | "compact";
-  /** Viewer's IANA timezone — for rendering the next session's date. */
+  /** Viewer's IANA timezone — for rendering the next session's date/time. */
   timeZone?: string;
 }
+
+const INK = "#0F2229";
+const CYAN = "#0891b2";
+const ORANGE_TXT = "#c2410c";
+const GREEN = "#1D9E75";
+const MUTED = "#94a3b8";
+const SOFT_SHADOW = "0 0 0 1px rgba(15,34,41,0.05), 0 10px 32px rgba(15,34,41,0.10)";
 
 // ─── Helpers ─────────────────────────────────────────────────
 
@@ -99,24 +103,6 @@ function currentWeek(startIso: string | null): number {
   return Math.max(1, Math.floor((t.getTime() - s.getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1);
 }
 
-function formatRelative(iso: string): string {
-  const ms = new Date(iso).getTime() - Date.now();
-  if (ms < 0) return "past";
-  const totalMin = Math.round(ms / 60000);
-  if (totalMin < 1) return "now";
-  if (totalMin < 60) return `in ${totalMin}m`;
-  const totalHours = Math.round(totalMin / 60);
-  if (totalHours < 24) return `in ${totalHours}h`;
-  const d = new Date(iso);
-  d.setHours(0, 0, 0, 0);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const diffDays = Math.round((d.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
-  if (diffDays === 0) return "today";
-  if (diffDays === 1) return "tomorrow";
-  return `in ${diffDays} days`;
-}
-
 function daysUntil(iso: string | null | undefined): number | null {
   if (!iso) return null;
   const d = new Date(iso);
@@ -126,17 +112,26 @@ function daysUntil(iso: string | null | undefined): number | null {
   return Math.round((d.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
 }
 
-// Near sessions (≤7d) read as a countdown ("tomorrow", "in 5 days"); far ones
-// show an absolute date in the viewer's zone ("3 Jan") — both more useful than,
-// and not redundant with, the stage countdown already on the cover chip.
-function nextWhen(iso: string, timeZone?: string): string {
-  const days = daysUntil(iso);
-  if (days !== null && days >= 0 && days <= 7) return formatRelative(iso);
+// Editorial date+time for the session card. Today/tomorrow read as words;
+// everything else is an absolute date in the viewer's zone ("Sun, 3 Jan · 19:00").
+function sessionWhen(iso: string, timeZone?: string): string {
+  const d = new Date(iso);
+  let time: string;
   try {
-    return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone });
+    time = d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone });
   } catch {
-    return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+    time = d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
   }
+  const days = daysUntil(iso);
+  if (days === 0) return `Today · ${time}`;
+  if (days === 1) return `Tomorrow · ${time}`;
+  let date: string;
+  try {
+    date = d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone });
+  } catch {
+    date = d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+  }
+  return `${date} · ${time}`;
 }
 
 function firstName(name: string | null | undefined): string {
@@ -208,7 +203,7 @@ function statusFor(program: Program): { label: string; live: boolean } {
 
 function StatusPill({ program }: { program: Program }) {
   const s = statusFor(program);
-  const accent = s.live ? "#ef4444" : "#0891b2";
+  const accent = s.live ? "#ef4444" : CYAN;
   return (
     <span
       className="inline-flex items-center gap-1.5 self-start px-2.5 py-1 rounded-full text-[10px] uppercase tracking-[0.16em] font-headline"
@@ -222,19 +217,17 @@ function StatusPill({ program }: { program: Program }) {
   );
 }
 
-// ─── Cover (editorial anchor) ────────────────────────────────
-// A FIXED ratio everywhere — 5:4 mobile, 3:2 desktop — identical to the buyer
-// page and the Experience Space header, so object-cover crops the photo the
-// same way in all three places. Hero stacks below xl; side-by-side at xl with
-// the cover top-aligned (self-start) so its ratio never gets stretched.
+// ─── Cover ───────────────────────────────────────────────────
+// Stacks on top (buyer ratio 5:4 / 3:2) below xl; fills the left column at xl
+// so the card never carries dead space beneath a fixed-ratio cover.
 function Cover({ program, density }: { program: Program; density: "hero" | "compact" }) {
   const isHero = density === "hero";
   return (
     <div
       className={`relative w-full overflow-hidden aspect-[5/4] lg:aspect-[3/2] ${
-        isHero ? "xl:w-[52%] xl:shrink-0 xl:self-start" : ""
+        isHero ? "xl:aspect-auto xl:w-[46%] xl:shrink-0 xl:min-h-[300px]" : ""
       }`}
-      style={{ backgroundColor: "#0F2229" }}
+      style={{ backgroundColor: INK }}
     >
       {program.imageUrl ? (
         <Image
@@ -253,7 +246,6 @@ function Cover({ program, density }: { program: Program; density: "hero" | "comp
           }}
         />
       )}
-      {/* Scrim so the overlaid pill stays legible on any photo. */}
       <div
         className="absolute inset-x-0 top-0 h-16"
         style={{ background: "linear-gradient(180deg, rgba(15,34,41,0.30), rgba(15,34,41,0))" }}
@@ -283,7 +275,7 @@ function PersonBox({
   accent: "orange" | "cyan";
   dim?: boolean;
 }) {
-  const color = accent === "orange" ? "#FF6130" : "#0891b2";
+  const color = accent === "orange" ? "#FF6130" : CYAN;
   const bg = accent === "orange" ? "rgba(255,97,48,0.04)" : "rgba(8,145,178,0.04)";
   const border = accent === "orange" ? "rgba(255,97,48,0.12)" : "rgba(8,145,178,0.12)";
   return (
@@ -305,7 +297,7 @@ function PersonBox({
         )}
       </span>
       <div className="min-w-0">
-        <p className="text-sm font-headline truncate" style={{ color: "#0F2229", fontWeight: 700 }}>
+        <p className="text-sm font-headline truncate" style={{ color: INK, fontWeight: 700 }}>
           {firstName(name)}
         </p>
         <p className="text-[10px] uppercase tracking-widest font-headline" style={{ color, fontWeight: 700 }}>
@@ -327,13 +319,7 @@ function PartiesRow({
 }) {
   if (!partner) {
     return (
-      <PersonBox
-        avatar={user.avatar}
-        initial={user.initial}
-        name={user.name}
-        role="OWNER"
-        accent="orange"
-      />
+      <PersonBox avatar={user.avatar} initial={user.initial} name={user.name} role="OWNER" accent="orange" />
     );
   }
   const userBox = (
@@ -363,9 +349,84 @@ function PartiesRow({
   );
 }
 
-// ─── NEXT session row (inside the live-state panel) ──────────
+// ─── SIGNALS — live stats that read as movement ──────────────
 
-function NextSessionRow({
+function SignalCell({
+  value,
+  delta,
+  label,
+  accent = "ink",
+  dot = false,
+  first = false,
+}: {
+  value: string | number;
+  delta?: string;
+  label: string;
+  accent?: "ink" | "cyan" | "orange";
+  dot?: boolean;
+  first?: boolean;
+}) {
+  const color = accent === "cyan" ? CYAN : accent === "orange" ? ORANGE_TXT : INK;
+  return (
+    <div
+      className="flex-1 text-center px-1.5 py-2.5"
+      style={{ borderLeft: first ? undefined : "1px solid rgba(15,34,41,0.08)" }}
+    >
+      <div className="flex items-center justify-center gap-1">
+        {dot && <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />}
+        <span className="text-lg font-black font-headline leading-none tabular-nums" style={{ color }}>
+          {value}
+        </span>
+        {delta && (
+          <span className="text-[10px] font-bold font-headline" style={{ color: GREEN }}>
+            {delta}
+          </span>
+        )}
+      </div>
+      <div className="text-[11px] mt-1" style={{ color: accent === "orange" ? ORANGE_TXT : MUTED }}>
+        {label}
+      </div>
+    </div>
+  );
+}
+
+function SignalStrip({ program }: { program: Program }) {
+  const enrolled = program.enrolledCount ?? 0;
+  const newMembers = program.newMembersThisWeek ?? 0;
+  const posts = program.newPosts ?? 0;
+  const questions = program.pendingQuestions ?? 0;
+  const isLive = program.stage === "published-live";
+  const tw = totalWeeks(program.startDate, program.endDate);
+  const cw = Math.min(currentWeek(program.startDate), tw || 1);
+
+  const cells: React.ReactNode[] = [
+    <SignalCell
+      key="tribe"
+      first
+      value={enrolled}
+      delta={newMembers > 0 ? `+${newMembers}` : undefined}
+      label="in the tribe"
+    />,
+    <SignalCell key="posts" value={posts} label="new posts" accent="cyan" dot={posts > 0} />,
+  ];
+  if (questions > 0) {
+    cells.push(
+      <SignalCell key="q" value={questions} label="open questions" accent="orange" dot />,
+    );
+  } else if (isLive && tw > 0) {
+    cells.push(<SignalCell key="week" value={`${cw}/${tw}`} label="week" />);
+  }
+
+  return (
+    <div className="flex rounded-xl overflow-hidden" style={{ border: "1px solid rgba(15,34,41,0.10)" }}>
+      {cells}
+    </div>
+  );
+}
+
+// ─── SESSION — cream editorial card, image-forward ───────────
+
+function SessionCard({
   session,
   fallbackImage,
   timeZone,
@@ -376,13 +437,16 @@ function NextSessionRow({
 }) {
   const img = session.imageUrl ?? fallbackImage;
   return (
-    <div className="flex items-center gap-3 p-2.5">
-      <div className="relative w-10 h-10 rounded-lg overflow-hidden shrink-0" style={{ backgroundColor: "#22424a" }}>
+    <div
+      className="flex items-center gap-3.5 rounded-xl p-2.5"
+      style={{ backgroundColor: "#F6F2EA", border: "1px solid rgba(15,34,41,0.06)" }}
+    >
+      <div className="relative w-28 h-[78px] rounded-lg overflow-hidden shrink-0" style={{ backgroundColor: "#22424a" }}>
         {img ? (
-          <Image src={img} alt="" fill sizes="40px" className="object-cover" />
+          <Image src={img} alt="" fill sizes="112px" className="object-cover" />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CF0FF" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9CF0FF" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="4" width="18" height="18" rx="2" />
               <path d="M16 2v4M8 2v4M3 10h18" />
             </svg>
@@ -390,67 +454,16 @@ function NextSessionRow({
         )}
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-[10px] uppercase tracking-[0.14em] font-headline" style={{ color: "#0891b2", fontWeight: 800 }}>
+        <p className="text-[10px] uppercase tracking-[0.16em] font-headline" style={{ color: CYAN, fontWeight: 800 }}>
           Next session
         </p>
-        <p className="text-[13px] font-bold font-headline truncate" style={{ color: "#0F2229" }}>
+        <p className="text-[15px] font-bold font-headline truncate mt-0.5" style={{ color: INK }}>
           {session.title}
         </p>
+        <p className="text-[12px] font-medium mt-1" style={{ color: "#64748b" }} suppressHydrationWarning>
+          {sessionWhen(session.startTime, timeZone)}
+        </p>
       </div>
-      <span
-        className="text-[12px] font-bold font-headline shrink-0 pr-1 tabular-nums"
-        style={{ color: "#0F2229" }}
-        suppressHydrationWarning
-      >
-        {nextWhen(session.startTime, timeZone)}
-      </span>
-    </div>
-  );
-}
-
-// ─── LIVE-STATE panel — one structured unit (metrics + next) ──
-
-function LiveStatePanel({ program, timeZone }: { program: Program; timeZone?: string }) {
-  const enrolled = program.enrolledCount ?? 0;
-  const questions = program.pendingQuestions ?? 0;
-  const posts = program.newPosts ?? 0;
-  const next = program.nextSession;
-  const isLive = program.stage === "published-live";
-  const tw = totalWeeks(program.startDate, program.endDate);
-  const cw = Math.min(currentWeek(program.startDate), tw || 1);
-
-  if (enrolled === 0 && posts === 0 && questions === 0 && !next) {
-    return (
-      <div
-        className="rounded-xl p-3.5 text-[12px] font-bold font-headline"
-        style={{ backgroundColor: "#F8F6F0", border: "1px solid rgba(15,34,41,0.06)", color: "#94a3b8" }}
-      >
-        Your tribe is forming — share to fill it
-      </div>
-    );
-  }
-
-  const metrics: Metric[] = [
-    { value: enrolled, label: enrolled === 1 ? "member" : "members" },
-    { value: posts, label: "new posts", accent: "cyan" },
-  ];
-  if (questions > 0) {
-    metrics.push({ value: questions, label: "waiting", accent: "orange" });
-  } else if (isLive && tw > 0) {
-    metrics.push({ value: `${cw}/${tw}`, label: "week" });
-  }
-
-  return (
-    <div
-      className="rounded-xl overflow-hidden"
-      style={{ border: "1px solid rgba(15,34,41,0.08)", backgroundColor: "#F8F6F0" }}
-    >
-      <MetricStrip metrics={metrics} framed={false} />
-      {next && (
-        <div style={{ borderTop: "1px solid rgba(15,34,41,0.08)", backgroundColor: "#FFFFFF" }}>
-          <NextSessionRow session={next} fallbackImage={program.imageUrl} timeZone={timeZone} />
-        </div>
-      )}
     </div>
   );
 }
@@ -459,7 +472,10 @@ function LiveStatePanel({ program, timeZone }: { program: Program; timeZone?: st
 
 function EmptyState({ user }: { user: UserProfile }) {
   return (
-    <div className="rounded-3xl p-8 md:p-10 infitra-card" style={{ border: "1px solid rgba(255,97,48,0.20)" }}>
+    <div
+      className="rounded-3xl p-8 md:p-10"
+      style={{ backgroundColor: "#FFFFFF", boxShadow: SOFT_SHADOW }}
+    >
       <p
         className="text-[10px] uppercase tracking-[0.25em] font-headline mb-4"
         style={{ color: "#FF6130", fontWeight: 700 }}
@@ -502,7 +518,7 @@ function EmptyState({ user }: { user: UserProfile }) {
         <div className="flex-1 min-w-0">
           <h2
             className="text-2xl md:text-3xl font-headline tracking-tight mb-2"
-            style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.02em" }}
+            style={{ color: INK, fontWeight: 700, letterSpacing: "-0.02em" }}
           >
             Build an experience with another expert.
           </h2>
@@ -552,7 +568,7 @@ function SecondaryActions({ program }: { program: Program }) {
       href={href}
       className="text-[11px] uppercase tracking-widest font-headline px-3 py-1.5 rounded-full transition-colors hover:bg-[#0F2229]/[0.05]"
       style={{
-        color: "#0891b2",
+        color: CYAN,
         border: "1px solid rgba(8,145,178,0.25)",
         fontWeight: 700,
         backgroundColor: "rgba(255,255,255,0.85)",
@@ -583,12 +599,16 @@ export function ActiveProgramCard({ program, partner, user, density = "hero", ti
   const showShare =
     program.stage === "published-pre-launch" || program.stage === "published-live";
 
+  const enrolled = program.enrolledCount ?? 0;
+  const warmingUp =
+    enrolled === 0 && (program.newPosts ?? 0) === 0 && (program.pendingQuestions ?? 0) === 0;
+
   return (
     <article
-      className={`infitra-card-link transition-shadow flex flex-col overflow-hidden ${
+      className={`transition-shadow flex flex-col overflow-hidden ${
         isHero ? "rounded-3xl xl:flex-row" : "rounded-2xl"
       }`}
-      style={{ border: "1px solid rgba(15,34,41,0.10)", backgroundColor: "#FFFFFF" }}
+      style={{ backgroundColor: "#FFFFFF", boxShadow: SOFT_SHADOW }}
     >
       {/* The face — cover + overlaid status. */}
       <Cover program={program} density={density} />
@@ -596,7 +616,7 @@ export function ActiveProgramCard({ program, partner, user, density = "hero", ti
       <div className={`${isHero ? "p-6 md:p-7 xl:flex-1 xl:justify-center" : "p-5"} flex flex-col min-w-0`}>
         <h2
           className={`${isHero ? "text-2xl md:text-3xl" : "text-lg md:text-xl"} font-headline tracking-tight`}
-          style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.02em" }}
+          style={{ color: INK, fontWeight: 700, letterSpacing: "-0.02em" }}
         >
           {program.title || "Untitled"}
         </h2>
@@ -606,10 +626,26 @@ export function ActiveProgramCard({ program, partner, user, density = "hero", ti
           <PartiesRow user={user} partner={partner} isOwner={program.isOwner} />
         </div>
 
-        {/* LIVE-STATE — one structured panel: metrics + next session. */}
+        {/* SIGNALS — live stats, or the warming-up line. */}
         <div className="mt-3.5">
-          <LiveStatePanel program={program} timeZone={timeZone} />
+          {warmingUp ? (
+            <div
+              className="rounded-xl p-3.5 text-[12px] font-bold font-headline"
+              style={{ border: "1px solid rgba(15,34,41,0.10)", color: MUTED }}
+            >
+              Your tribe is forming — share to fill it
+            </div>
+          ) : (
+            <SignalStrip program={program} />
+          )}
         </div>
+
+        {/* SESSION — cream editorial card with the session image. */}
+        {program.nextSession && (
+          <div className="mt-2.5">
+            <SessionCard session={program.nextSession} fallbackImage={program.imageUrl} timeZone={timeZone} />
+          </div>
+        )}
 
         {/* DOOR — one way in. Share + contract are quiet secondaries. */}
         <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2">

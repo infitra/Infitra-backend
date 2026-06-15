@@ -571,11 +571,10 @@ export default async function DashboardPage() {
   };
 
   return (
-    // overflow-x-clip (mobile only) guards against any stray child widening
-    // the page — the cause of the "loads zoomed in" wobble on iOS Safari.
-    // `clip` (not `hidden`) keeps vertical flow normal and doesn't break the
-    // lg:sticky rail, which we re-enable at lg with overflow-x-visible.
-    <div className="py-8 overflow-x-clip lg:overflow-x-visible">
+    // Horizontal overflow is already guarded by the (app) layout root
+    // (overflow-x-clip there) — adding it again here created a nested clip
+    // context that broke the wave background on iOS scroll-up.
+    <div className="py-8">
       {/* TopAlert sits above everything else — global urgency signal,
           rendered without a section heading because it speaks for
           itself when present. */}
