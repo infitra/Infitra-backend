@@ -2,72 +2,66 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ParticipantNav } from "@/app/components/ParticipantNav";
-import { ParticipantProfileCard } from "./ParticipantProfileCard";
+import { ParticipantPanel } from "./ParticipantPanel";
+import {
+  ParticipantExperienceCard,
+  CompletedExperienceCard,
+  type MeExperience,
+} from "./ParticipantExperienceCard";
+import { resolveViewerTimeZone } from "@/lib/time/viewerTimeZone";
 
-export const metadata = { title: "My programs — INFITRA" };
+export const dynamic = "force-dynamic";
+export const metadata = { title: "Your experiences — INFITRA" };
 
 /**
- * /me — participant home.
- *
- * Bundle 4.1 seed: a minimal "My programs" landing that lists every
- * challenge the viewer has purchased + a door into the cohort space.
- * It exists so participants — who otherwise have no home in INFITRA —
- * have somewhere meaningful to land after sign-in, and a place to come
- * back to once they're inside the ecosystem.
- *
- * Post-pilot, this is the natural shell for a richer participant
- * dashboard (analytics, achievements, active vs. upcoming programs,
- * past wins) — the symmetric counterpart to the creator dashboard.
- * For the pilot we ship just the doorway pattern; everything else can
- * grow inside this same surface without breaking links.
+ * /me — the participant home, rendered from the creator dashboard's vocabulary:
+ * a lean profile console on the left, the experiences you've joined as cards on
+ * the right (cover · momentum · next moment · Enter your space), and completed
+ * experiences below with a "Rate this experience" nudge.
  */
-export default async function MeHomePage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login?returnTo=/me");
 
-  // Viewer profile for nav chrome
+type StageM = "pre-launch" | "live" | "completed";
+
+function computeStage(status: string, startDate: string | null, endDate: string | null): StageM {
+  const today = new Date().toISOString().slice(0, 10);
+  if (status === "completed" || (endDate && endDate < today)) return "completed";
+  if (startDate && startDate <= today && (!endDate || endDate >= today)) return "live";
+  return "pre-launch";
+}
+
+interface ChallengeRow {
+  id: string;
+  title: string;
+  image_url: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  status: string;
+}
+
+// All data loading lives here (not in the component body) so the impure
+// time calls stay out of render — same pattern as the creator dashboard.
+async function loadMe(userId: string) {
+  const supabase = await createClient();
+
   const { data: profile } = await supabase
     .from("app_profile")
-    .select("display_name, role, avatar_url")
-    .eq("id", user.id)
+    .select("display_name, role, avatar_url, created_at")
+    .eq("id", userId)
     .maybeSingle();
 
-  // Active + completed memberships, with the underlying challenge row
-  // and the cohort space ID (for the doorway). One round-trip via a
-  // nested PostgREST select — the joins respect RLS.
   const { data: memberships } = await supabase
     .from("app_challenge_member")
-    .select(
-      "challenge_id, joined_at, app_challenge(id, title, image_url, start_date, end_date, status, owner_id)",
-    )
-    .eq("user_id", user.id)
+    .select("challenge_id, app_challenge(id, title, image_url, start_date, end_date, status)")
+    .eq("user_id", userId)
     .order("joined_at", { ascending: false });
 
-  type ChallengeRow = {
-    id: string;
-    title: string;
-    image_url: string | null;
-    start_date: string;
-    end_date: string;
-    status: string;
-    owner_id: string;
-  };
-  type MembershipRow = {
-    challenge_id: string;
-    joined_at: string;
-    app_challenge: ChallengeRow | null;
-  };
+  const rows = ((memberships ?? []) as Array<{ app_challenge: ChallengeRow | ChallengeRow[] | null }>)
+    .map((m) => (Array.isArray(m.app_challenge) ? m.app_challenge[0] : m.app_challenge))
+    .filter((c): c is ChallengeRow => !!c);
 
-  const rows = ((memberships ?? []) as unknown as MembershipRow[]).filter(
-    (m): m is MembershipRow & { app_challenge: ChallengeRow } => !!m.app_challenge,
-  );
+  const challengeIds = rows.map((r) => r.id);
 
-  // Resolve space IDs in one query so we can render proper doorway links.
-  // app_challenge_space.id !== source_challenge_id, so we need to map.
-  const challengeIds = rows.map((r) => r.challenge_id);
+  // ── Spaces (the doorway) ──
   const { data: spaces } = challengeIds.length
     ? await supabase
         .from("app_challenge_space")
@@ -75,185 +69,204 @@ export default async function MeHomePage() {
         .in("source_challenge_id", challengeIds)
     : { data: [] };
   const spaceByChallenge = new Map<string, string>();
+  const challengeBySpace = new Map<string, string>();
   for (const s of (spaces ?? []) as Array<{ id: string; source_challenge_id: string | null }>) {
-    if (s.source_challenge_id) spaceByChallenge.set(s.source_challenge_id, s.id);
+    if (s.source_challenge_id) {
+      spaceByChallenge.set(s.source_challenge_id, s.id);
+      challengeBySpace.set(s.id, s.source_challenge_id);
+    }
   }
+
+  const stageById = new Map<string, StageM>();
+  for (const r of rows) stageById.set(r.id, computeStage(r.status, r.start_date, r.end_date));
+
+  // ── Next session per experience ──
+  const nextByChallenge = new Map<string, MeExperience["nextSession"]>();
+  if (challengeIds.length) {
+    const { data: links } = await supabase
+      .from("app_challenge_session")
+      .select("challenge_id, app_session(id, title, start_time, status, image_url)")
+      .in("challenge_id", challengeIds);
+    const nowMs = Date.now();
+    const byChallenge = new Map<
+      string,
+      Array<{ title: string; start_time: string; status: string; image_url: string | null }>
+    >();
+    for (const l of (links ?? []) as Array<{ challenge_id: string; app_session: unknown }>) {
+      const s = (Array.isArray(l.app_session) ? l.app_session[0] : l.app_session) as
+        | { title: string; start_time: string; status: string; image_url: string | null }
+        | null;
+      if (!s) continue;
+      const arr = byChallenge.get(l.challenge_id) ?? [];
+      arr.push(s);
+      byChallenge.set(l.challenge_id, arr);
+    }
+    for (const [cid, sess] of byChallenge) {
+      const upcoming = sess
+        .filter((s) => s.status === "published" && new Date(s.start_time).getTime() > nowMs)
+        .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+      if (upcoming[0]) {
+        nextByChallenge.set(cid, {
+          title: upcoming[0].title,
+          startTime: upcoming[0].start_time,
+          imageUrl: upcoming[0].image_url ?? null,
+        });
+      }
+    }
+  }
+
+  // ── New posts (last 7d) across the active experiences' spaces ──
+  const postsByChallenge = new Map<string, number>();
+  const activeSpaceIds = rows
+    .filter((r) => stageById.get(r.id) !== "completed")
+    .map((r) => spaceByChallenge.get(r.id))
+    .filter((x): x is string => !!x);
+  if (activeSpaceIds.length) {
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const { data: posts } = await supabase
+      .from("app_challenge_post")
+      .select("space_id")
+      .in("space_id", activeSpaceIds)
+      .neq("author_id", userId)
+      .gte("created_at", sevenDaysAgo);
+    for (const p of (posts ?? []) as Array<{ space_id: string }>) {
+      const cid = challengeBySpace.get(p.space_id);
+      if (cid) postsByChallenge.set(cid, (postsByChallenge.get(cid) ?? 0) + 1);
+    }
+  }
+
+  // ── Which completed experiences the viewer has already rated ──
+  const ratedSet = new Set<string>();
+  const completedIds = rows.filter((r) => stageById.get(r.id) === "completed").map((r) => r.id);
+  if (completedIds.length) {
+    const { data: reviews } = await supabase
+      .from("app_review")
+      .select("challenge_id")
+      .eq("reviewer_id", userId)
+      .in("challenge_id", completedIds);
+    for (const rv of (reviews ?? []) as Array<{ challenge_id: string }>) ratedSet.add(rv.challenge_id);
+  }
+
+  const experiences: MeExperience[] = rows.map((r) => ({
+    id: r.id,
+    title: r.title,
+    imageUrl: r.image_url,
+    startDate: r.start_date,
+    endDate: r.end_date,
+    spaceId: spaceByChallenge.get(r.id) ?? null,
+    stage: stageById.get(r.id) ?? "pre-launch",
+    nextSession: nextByChallenge.get(r.id) ?? null,
+    newPosts: postsByChallenge.get(r.id) ?? 0,
+    rated: ratedSet.has(r.id),
+  }));
+
+  const active = experiences.filter((e) => e.stage !== "completed");
+  const completed = experiences.filter((e) => e.stage === "completed");
+  const tribePulse = {
+    newPosts: active.reduce((n, e) => n + e.newPosts, 0),
+    experiences: active.length,
+  };
+
+  return { profile, active, completed, tribePulse };
+}
+
+export default async function MeHomePage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login?returnTo=/me");
+
+  const viewerTimeZone = await resolveViewerTimeZone();
+  const { profile, active, completed, tribePulse } = await loadMe(user.id);
 
   return (
     <>
-      <ParticipantNav
-        displayName={profile?.display_name ?? null}
-        role={profile?.role ?? undefined}
-      />
+      <ParticipantNav displayName={profile?.display_name ?? null} role={profile?.role ?? undefined} />
 
-      <main className="pt-28 pb-16 px-6 lg:px-12 max-w-5xl mx-auto">
-        <header className="mb-10 lg:mb-14">
-          <p
-            className="text-[11px] font-bold font-headline uppercase tracking-[0.25em] mb-3"
-            style={{ color: "#FF6130" }}
+      <div className="pt-20 px-6">
+        <div className="max-w-7xl mx-auto py-8">
+          {/* Console — "you" left, your experiences right. Equal height when
+              there's a single active experience (mirrors the creator card);
+              top-aligned when there are several. */}
+          <div
+            className={`lg:grid lg:grid-cols-[340px_minmax(0,1fr)] lg:gap-8 ${
+              active.length === 1 ? "lg:items-stretch" : "lg:items-start"
+            }`}
           >
-            Your space
-          </p>
-          <h1
-            className="text-3xl sm:text-4xl lg:text-5xl font-black font-headline tracking-tight"
-            style={{ color: "#0F2229" }}
-          >
-            My programs
-          </h1>
-          <p
-            className="text-base lg:text-lg mt-4 max-w-xl leading-relaxed"
-            style={{ color: "#475569" }}
-          >
-            Every challenge you&apos;ve joined. Open the cohort space to
-            chat with your coaches and fellow participants.
-          </p>
-        </header>
-
-        <ParticipantProfileCard
-          initialDisplayName={profile?.display_name ?? ""}
-          initialAvatarUrl={profile?.avatar_url ?? null}
-        />
-
-        {rows.length === 0 ? (
-          <EmptyState />
-        ) : (
-          <ul className="grid gap-4 sm:grid-cols-2">
-            {rows.map((r) => (
-              <ProgramCard
-                key={r.challenge_id}
-                challenge={r.app_challenge}
-                spaceId={spaceByChallenge.get(r.challenge_id) ?? null}
+            <aside className="mb-8 lg:mb-0">
+              <ParticipantPanel
+                displayName={profile?.display_name ?? ""}
+                avatarUrl={profile?.avatar_url ?? null}
+                joinedAt={(profile as { created_at?: string } | null)?.created_at ?? null}
+                tribePulse={tribePulse}
+                hasActiveExperiences={active.length > 0}
               />
-            ))}
-          </ul>
-        )}
-      </main>
+            </aside>
+
+            <div className="min-w-0 space-y-5">
+              {active.length > 0 ? (
+                active.map((e) => (
+                  <ParticipantExperienceCard key={e.id} exp={e} timeZone={viewerTimeZone} />
+                ))
+              ) : (
+                <EmptyState hasCompleted={completed.length > 0} />
+              )}
+            </div>
+          </div>
+
+          {/* Completed — with the rate nudge. */}
+          {completed.length > 0 && (
+            <div className="mt-14">
+              <p
+                className="text-[11px] uppercase tracking-[0.22em] font-headline mb-5 px-1"
+                style={{ color: "#475569", fontWeight: 700 }}
+              >
+                Completed
+                <span style={{ color: "#94a3b8" }}> · {completed.length}</span>
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {completed.map((e) => (
+                  <CompletedExperienceCard key={e.id} exp={e} />
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </>
   );
 }
 
-function EmptyState() {
+function EmptyState({ hasCompleted }: { hasCompleted: boolean }) {
   return (
     <div
-      className="rounded-3xl p-10 lg:p-14 text-center"
-      style={{
-        backgroundColor: "rgba(255,255,255,0.65)",
-        border: "1px solid rgba(15,34,41,0.08)",
-      }}
+      className="rounded-3xl p-8 md:p-10"
+      style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.05), 0 10px 32px rgba(15,34,41,0.10)" }}
     >
       <p
-        className="text-[10px] font-bold font-headline uppercase tracking-[0.25em] mb-3"
-        style={{ color: "#94a3b8" }}
+        className="text-[10px] uppercase tracking-[0.25em] font-headline mb-3"
+        style={{ color: "#0891b2", fontWeight: 700 }}
       >
-        Nothing yet
+        {hasCompleted ? "Nothing live right now" : "Welcome"}
       </p>
       <h2
-        className="text-2xl font-black font-headline tracking-tight mb-3"
-        style={{ color: "#0F2229" }}
+        className="text-2xl md:text-3xl font-headline tracking-tight mb-3"
+        style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.02em" }}
       >
-        You haven&apos;t joined a program yet
+        {hasCompleted ? "No active experiences" : "You haven’t joined an experience yet"}
       </h2>
-      <p className="text-sm max-w-md mx-auto" style={{ color: "#475569" }}>
-        When you join a challenge, it&apos;ll show up here with a door
-        into the cohort space.
+      <p className="text-sm md:text-base max-w-md" style={{ color: "#64748b" }}>
+        When you join a live experience, it shows up here — with the next moment and a
+        door straight into your tribe.
       </p>
+      <Link
+        href="/"
+        className="inline-block mt-6 px-6 py-3 rounded-full text-white text-sm font-black font-headline transition-transform hover:scale-[1.02]"
+        style={{ backgroundColor: "#0891b2", boxShadow: "0 4px 14px rgba(8,145,178,0.30)" }}
+      >
+        Explore experiences →
+      </Link>
     </div>
   );
-}
-
-function ProgramCard({
-  challenge,
-  spaceId,
-}: {
-  challenge: {
-    id: string;
-    title: string;
-    image_url: string | null;
-    start_date: string;
-    end_date: string;
-    status: string;
-  };
-  spaceId: string | null;
-}) {
-  const dateRange = `${formatShortDate(challenge.start_date)} → ${formatShortDate(
-    challenge.end_date,
-  )}`;
-  const today = new Date().toISOString().slice(0, 10);
-  const isCompleted = challenge.status === "completed" || challenge.end_date < today;
-
-  return (
-    <li
-      className="rounded-3xl overflow-hidden flex flex-col"
-      style={{
-        backgroundColor: "#FFFFFF",
-        border: "1px solid rgba(15,34,41,0.08)",
-        boxShadow: "0 4px 14px rgba(15,34,41,0.04)",
-      }}
-    >
-      {/* Cover image */}
-      <div
-        className="relative aspect-[16/9]"
-        style={{
-          backgroundColor: "#0F2229",
-          backgroundImage: challenge.image_url
-            ? `url(${challenge.image_url})`
-            : undefined,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
-      >
-        <span
-          className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-[10px] font-bold font-headline uppercase tracking-[0.18em]"
-          style={{
-            backgroundColor: isCompleted
-              ? "rgba(255,255,255,0.85)"
-              : "rgba(255,97,48,0.95)",
-            color: isCompleted ? "#475569" : "#FFFFFF",
-          }}
-        >
-          {isCompleted ? "Completed" : "Active"}
-        </span>
-      </div>
-
-      {/* Body */}
-      <div className="p-5 flex-1 flex flex-col">
-        <h3
-          className="text-lg font-black font-headline tracking-tight mb-1.5"
-          style={{ color: "#0F2229" }}
-        >
-          {challenge.title}
-        </h3>
-        <p className="text-xs mb-5" style={{ color: "#64748b" }}>
-          {dateRange}
-        </p>
-
-        <div className="mt-auto flex items-center gap-3">
-          <Link
-            href={spaceId ? `/experiences/${challenge.id}/space` : `/experiences/${challenge.id}`}
-            className="flex-1 text-center py-2.5 rounded-full text-white text-xs font-bold font-headline"
-            style={{
-              backgroundColor: "#0891b2",
-              boxShadow: "0 4px 14px rgba(8,145,178,0.25)",
-            }}
-          >
-            {spaceId ? "Open space →" : "Open page →"}
-          </Link>
-          <Link
-            href={`/experiences/${challenge.id}`}
-            className="text-xs font-bold font-headline px-3 py-2.5"
-            style={{ color: "#64748b" }}
-          >
-            Details
-          </Link>
-        </div>
-      </div>
-    </li>
-  );
-}
-
-function formatShortDate(iso: string): string {
-  return new Date(iso + "T00:00:00").toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-  });
 }
