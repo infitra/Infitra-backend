@@ -2,48 +2,84 @@ import Link from "next/link";
 import type { ProgramSummary } from "./page";
 
 /**
- * OtherProgramCard — a program that isn't live yet (draft, awaiting-signatures)
- * or has wrapped (completed). A real card with a cover, a clear state, and the
- * one next step — not a footnote. Whole card is one click to its destination:
+ * OtherProgramCard — a collaboration that isn't live yet (draft, awaiting
+ * signatures) or has wrapped (completed). Deliberately NOT a product card: a
+ * draft has a different job than a published experience, so it leads with the
+ * two things that matter while it's in motion —
+ *   WHO it's with   (the partner)  and
+ *   STATE + NEXT     (where it is in the process, and the one next step).
+ * No cover. The title is a quiet subtitle, not the headline. Whole card is one
+ * click to its destination:
  *   drafting-* / awaiting-signatures → workspace
- *   completed                        → challenge space (read-only)
+ *   completed                        → experience space (read-only)
  */
+
+interface UserLite {
+  name: string;
+  avatar: string | null;
+  initial: string;
+}
 
 interface Props {
   program: ProgramSummary;
+  user: UserLite;
 }
+
+const ORANGE = "#FF6130";
+const CYAN = "#0891b2";
+const SLATE = "#64748b";
+
+const SIGN_ICON = (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 19h18" />
+    <path d="M5 15l9-9a1.5 1.5 0 0 1 2 2l-9 9-3 1Z" />
+  </svg>
+);
+const EDIT_ICON = (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 20h9" />
+    <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+  </svg>
+);
+const WAIT_ICON = (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 7v5l3 2" />
+  </svg>
+);
+const CHECK_ICON = (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20 6L9 17l-5-5" />
+  </svg>
+);
 
 const stageConfig: Record<
   string,
-  { label: string; color: string; chipBg: string; cta: string; hint: string }
+  { label: string; color: string; icon: React.ReactNode; cta: string }
 > = {
   "drafting-solo": {
     label: "Awaiting partner",
-    color: "#FF6130",
-    chipBg: "rgba(255,97,48,0.95)",
+    color: CYAN,
+    icon: WAIT_ICON,
     cta: "Open workspace →",
-    hint: "Invite a collaborator to begin",
   },
   "drafting-jointly": {
-    label: "Drafting",
-    color: "#0891b2",
-    chipBg: "rgba(8,145,178,0.95)",
+    label: "Drafting together",
+    color: CYAN,
+    icon: EDIT_ICON,
     cta: "Open workspace →",
-    hint: "Shaping the program together",
   },
   "awaiting-signatures": {
     label: "Awaiting signatures",
-    color: "#0891b2",
-    chipBg: "rgba(8,145,178,0.95)",
+    color: ORANGE,
+    icon: SIGN_ICON,
     cta: "Review contract →",
-    hint: "Terms are locked for review",
   },
   completed: {
     label: "Completed",
-    color: "#475569",
-    chipBg: "rgba(15,34,41,0.85)",
-    cta: "Open program →",
-    hint: "Wrapped up",
+    color: SLATE,
+    icon: CHECK_ICON,
+    cta: "Open experience →",
   },
 };
 
@@ -54,105 +90,100 @@ function destinationFor(p: ProgramSummary): string {
   return `/dashboard/collaborate/${p.id}`;
 }
 
-export function OtherProgramCard({ program }: Props) {
+function Avatar({ src, initial, accent, dim }: { src: string | null; initial: string; accent: string; dim?: boolean }) {
+  return (
+    <span
+      className="w-7 h-7 rounded-full overflow-hidden inline-flex items-center justify-center shrink-0"
+      style={{
+        border: "2px solid #FFFFFF",
+        backgroundColor: src ? "transparent" : `${accent}22`,
+        opacity: dim ? 0.55 : 1,
+      }}
+    >
+      {src ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={src} alt="" className="w-full h-full object-cover" />
+      ) : (
+        <span className="text-[10px] font-black font-headline" style={{ color: accent }}>
+          {initial}
+        </span>
+      )}
+    </span>
+  );
+}
+
+export function OtherProgramCard({ program, user }: Props) {
   const cfg = stageConfig[program.stage] ?? stageConfig["drafting-jointly"];
   const isUntitled =
     !program.title ||
     program.title === "Untitled Challenge" ||
     program.title === "Untitled Collaboration";
+  const partner = program.partner;
 
   return (
     <Link
       href={destinationFor(program)}
-      className="group block rounded-2xl overflow-hidden infitra-card-link flex flex-col"
-      style={{ border: "1px solid rgba(15,34,41,0.08)" }}
+      className="group block w-full h-full rounded-2xl p-4 infitra-card-link"
+      style={{
+        border: "1px solid rgba(15,34,41,0.08)",
+        borderLeft: `3px solid ${cfg.color}`,
+      }}
     >
-      {/* Cover banner — gives the in-progress program real presence. */}
-      <div
-        className="relative w-full"
-        style={{
-          aspectRatio: "16 / 9",
-          backgroundColor: "#0F2229",
-          backgroundImage: program.imageUrl ? `url(${program.imageUrl})` : undefined,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
-      >
-        {!program.imageUrl && (
-          <div
-            className="absolute inset-0"
-            style={{
-              background:
-                "linear-gradient(135deg, rgba(255,97,48,0.40), rgba(8,145,178,0.40)), #0F2229",
-            }}
-          />
-        )}
-        <span
-          className="absolute top-3 left-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] uppercase tracking-[0.16em] font-headline backdrop-blur-sm"
-          style={{ backgroundColor: cfg.chipBg, color: "#FFFFFF", fontWeight: 800 }}
-        >
-          {cfg.label}
-        </span>
-      </div>
-
-      {/* Body */}
-      <div className="p-4 flex-1 flex flex-col">
-        <h3
-          className="text-base font-black font-headline tracking-tight truncate group-hover:text-[#FF6130] transition-colors"
-          style={{
-            color: "#0F2229",
-            fontStyle: isUntitled ? "italic" : "normal",
-            opacity: isUntitled ? 0.8 : 1,
-          }}
-        >
-          {isUntitled ? "Untitled" : program.title}
-        </h3>
-
-        {program.partner ? (
-          <div className="flex items-center gap-2 mt-2.5">
-            {program.partner.avatar ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={program.partner.avatar}
-                alt=""
-                className="w-6 h-6 rounded-full object-cover shrink-0"
+      {/* WHO — the partner this collaboration is with. */}
+      <div className="flex items-center gap-2.5">
+        <div className="flex items-center">
+          <Avatar src={user.avatar} initial={user.initial} accent={ORANGE} />
+          {partner && (
+            <span className="-ml-2">
+              <Avatar
+                src={partner.avatar}
+                initial={(partner.name?.[0] ?? "?").toUpperCase()}
+                accent={CYAN}
+                dim={partner.pendingInvite}
               />
-            ) : (
-              <div
-                className="w-6 h-6 rounded-full shrink-0 flex items-center justify-center"
-                style={{ backgroundColor: "rgba(8,145,178,0.15)" }}
-              >
-                <span className="text-[10px] font-black font-headline" style={{ color: "#0891b2" }}>
-                  {(program.partner.name?.[0] ?? "?").toUpperCase()}
-                </span>
-              </div>
-            )}
-            <p className="text-xs truncate" style={{ color: "#64748b" }}>
-              with{" "}
-              <span style={{ color: "#0F2229", fontWeight: 600 }}>{program.partner.name}</span>
-              {program.partner.pendingInvite && (
-                <span
-                  className="ml-1.5 text-[9px] uppercase tracking-widest"
-                  style={{ color: "#FF6130", fontWeight: 700 }}
-                >
+            </span>
+          )}
+        </div>
+        <p className="text-xs truncate" style={{ color: SLATE }}>
+          {partner ? (
+            <>
+              with <span style={{ color: "#0F2229", fontWeight: 600 }}>{partner.name}</span>
+              {partner.pendingInvite && (
+                <span className="ml-1.5 text-[9px] uppercase tracking-widest" style={{ color: ORANGE, fontWeight: 700 }}>
                   · pending
                 </span>
               )}
-            </p>
-          </div>
-        ) : (
-          <p className="text-xs mt-2.5" style={{ color: "#94a3b8" }}>
-            {cfg.hint}
-          </p>
-        )}
-
-        <p
-          className="text-[11px] uppercase tracking-widest font-headline mt-auto pt-3 transition-colors group-hover:text-[#FF6130]"
-          style={{ color: cfg.color, fontWeight: 700 }}
-        >
-          {cfg.cta}
+            </>
+          ) : (
+            "Awaiting a partner"
+          )}
         </p>
       </div>
+
+      {/* STATE — where this is in the process (the loud part). */}
+      <div className="flex items-center gap-1.5 mt-3.5" style={{ color: cfg.color }}>
+        {cfg.icon}
+        <span className="text-[13px] font-black font-headline">{cfg.label}</span>
+      </div>
+
+      {/* Title — a quiet subtitle, not the headline. */}
+      <p
+        className="text-xs mt-1 truncate"
+        style={{
+          color: "#94a3b8",
+          fontStyle: isUntitled ? "italic" : "normal",
+        }}
+      >
+        {isUntitled ? "Untitled experience" : program.title}
+      </p>
+
+      {/* NEXT STEP. */}
+      <p
+        className="text-[11px] uppercase tracking-widest font-headline mt-3.5 transition-colors group-hover:text-[#FF6130]"
+        style={{ color: "#0F2229", fontWeight: 700 }}
+      >
+        {cfg.cta}
+      </p>
     </Link>
   );
 }

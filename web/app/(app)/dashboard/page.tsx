@@ -569,7 +569,11 @@ export default async function DashboardPage() {
   };
 
   return (
-    <div className="py-8">
+    // overflow-x-clip (mobile only) guards against any stray child widening
+    // the page — the cause of the "loads zoomed in" wobble on iOS Safari.
+    // `clip` (not `hidden`) keeps vertical flow normal and doesn't break the
+    // lg:sticky rail, which we re-enable at lg with overflow-x-visible.
+    <div className="py-8 overflow-x-clip lg:overflow-x-visible">
       {/* TopAlert sits above everything else — global urgency signal,
           rendered without a section heading because it speaks for
           itself when present. */}
@@ -601,12 +605,13 @@ export default async function DashboardPage() {
           />
         </aside>
 
-        {/* Right column — your work stream: active, drafts, archive,
-            invitations. Each zone keeps its quiet uppercase label so the
-            stream reads as one document with consistent rhythm. */}
+        {/* Right column — the headliner. When an experience is live it holds
+            the active card; the rest (drafts/archive/invites) flows in
+            full-width bands BELOW. When nothing is live, the work stream
+            (drafts/archive/invites) carries this column instead. */}
         <div className="space-y-12 min-w-0">
-          {/* ACTIVE NOW — hero + tier-2. The empty "start your first"
-              hero shows only when there's genuinely nothing else. */}
+          {/* Empty "start your first" hero — only when there's genuinely
+              nothing at all. */}
           {activeCount === 0 &&
             draftsCount === 0 &&
             archiveCount === 0 &&
@@ -614,93 +619,164 @@ export default async function DashboardPage() {
               <ActiveProgramCard program={null} partner={null} user={userProp} density="hero" />
             )}
 
-        {activeCount > 0 && (
-          <Section label="Active now" count={activeCount}>
-            <div className="space-y-5">
-              {hero && (
-                <ActiveProgramCard
-                  program={hero}
-                  partner={hero.partner}
-                  user={userProp}
-                  density="hero"
-                />
+          {activeCount > 0 && (
+            <Section label="Active now" count={activeCount}>
+              <div className="space-y-5">
+                {hero && (
+                  <ActiveProgramCard
+                    program={hero}
+                    partner={hero.partner}
+                    user={userProp}
+                    density="hero"
+                  />
+                )}
+                {tier2.length > 0 && (
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                    {tier2.map((p) => (
+                      <ActiveProgramCard
+                        key={p.id}
+                        program={p}
+                        partner={p.partner}
+                        user={userProp}
+                        density="compact"
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </Section>
+          )}
+
+          {/* No active experience → the work stream lives here, in the
+              column beside the profile. */}
+          {activeCount === 0 && (
+            <>
+              {draftsCount > 0 && (
+                <Section
+                  label="Experience drafts"
+                  count={draftsCount}
+                  action={{ label: "+ Start new", href: "/dashboard/create" }}
+                >
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {drafts.map((p) => (
+                      <OtherProgramCard key={p.id} program={p} user={userProp} />
+                    ))}
+                  </div>
+                </Section>
               )}
-              {tier2.length > 0 && (
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                  {tier2.map((p) => (
-                    <ActiveProgramCard
-                      key={p.id}
-                      program={p}
-                      partner={p.partner}
-                      user={userProp}
-                      density="compact"
-                    />
-                  ))}
-                </div>
+              {archiveCount > 0 && (
+                <Section label="Archive" count={archiveCount}>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {archive.map((p) => (
+                      <OtherProgramCard key={p.id} program={p} user={userProp} />
+                    ))}
+                  </div>
+                </Section>
               )}
-            </div>
-          </Section>
-        )}
-
-        {/* CHALLENGE DRAFTS — pre-publish (drafting + awaiting-signatures) */}
-        {draftsCount > 0 && (
-          <Section
-            label="Experience drafts"
-            count={draftsCount}
-            action={{ label: "+ Start new", href: "/dashboard/create" }}
-          >
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {drafts.map((p) => (
-                <OtherProgramCard key={p.id} program={p} />
-              ))}
-            </div>
-          </Section>
-        )}
-
-        {/* ARCHIVE — completed programs, navigable but not promoted */}
-        {archiveCount > 0 && (
-          <Section label="Archive" count={archiveCount}>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {archive.map((p) => (
-                <OtherProgramCard key={p.id} program={p} />
-              ))}
-            </div>
-          </Section>
-        )}
-
-        {/* + Start new — quiet inline CTA when there are no drafts to
-            label. Sits in the same position as a Section, sans heading. */}
-        {draftsCount === 0 && activeCount > 0 && (
-          <div className="flex justify-center">
-            <Link
-              href="/dashboard/create"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-headline transition-colors"
-              style={{
-                color: "#0891b2",
-                border: "1.5px dashed rgba(8,145,178,0.40)",
-                backgroundColor: "rgba(156,240,255,0.06)",
-                fontWeight: 700,
-              }}
-            >
-              + Start a new program
-            </Link>
-          </div>
-        )}
-
-        {/* COLLABORATION INVITATIONS — collab requests waiting on the user */}
-        {hasInvites && (
-          <Section
-            label="Collaboration invitations"
-            count={data.pendingReceivedInvites.length}
-          >
-            <div id="invitations">
-              <CollabInvitations invites={data.pendingReceivedInvites} />
-            </div>
-          </Section>
-        )}
+              {hasInvites && (
+                <Section
+                  label="Collaboration invitations"
+                  count={data.pendingReceivedInvites.length}
+                >
+                  <div id="invitations">
+                    <CollabInvitations invites={data.pendingReceivedInvites} />
+                  </div>
+                </Section>
+              )}
+            </>
+          )}
         </div>
       </div>
+
+      {/* Full-width bands BELOW the console — only when an active experience
+          holds the top zone. Drafts/archive scroll horizontally so they read
+          as a supporting strip, not a vertical pile; invitations span full
+          width. This also fills the space beneath the (shorter) profile rail. */}
+      {activeCount > 0 && (
+        <div className="mt-14 space-y-12">
+          {draftsCount > 0 ? (
+            <Section label="Experience drafts" count={draftsCount}>
+              <ProgramBand>
+                {drafts.map((p) => (
+                  <div key={p.id} className="w-[300px] shrink-0">
+                    <OtherProgramCard program={p} user={userProp} />
+                  </div>
+                ))}
+                <StartNewTile />
+              </ProgramBand>
+            </Section>
+          ) : (
+            <div className="flex justify-center">
+              <Link
+                href="/dashboard/create"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-headline transition-colors"
+                style={{
+                  color: "#0891b2",
+                  border: "1.5px dashed rgba(8,145,178,0.40)",
+                  backgroundColor: "rgba(156,240,255,0.06)",
+                  fontWeight: 700,
+                }}
+              >
+                + Start a new experience
+              </Link>
+            </div>
+          )}
+
+          {archiveCount > 0 && (
+            <Section label="Archive" count={archiveCount}>
+              <ProgramBand>
+                {archive.map((p) => (
+                  <div key={p.id} className="w-[300px] shrink-0">
+                    <OtherProgramCard program={p} user={userProp} />
+                  </div>
+                ))}
+              </ProgramBand>
+            </Section>
+          )}
+
+          {hasInvites && (
+            <Section
+              label="Collaboration invitations"
+              count={data.pendingReceivedInvites.length}
+            >
+              <div id="invitations">
+                <CollabInvitations invites={data.pendingReceivedInvites} />
+              </div>
+            </Section>
+          )}
+        </div>
+      )}
     </div>
+  );
+}
+
+/**
+ * ProgramBand — a horizontal strip of fixed-width tiles that scrolls on
+ * overflow. Vertical padding leaves room for the cards' hover shadow (an
+ * overflow-x container clips the y-axis otherwise).
+ */
+function ProgramBand({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex gap-3 overflow-x-auto pt-1 pb-3">{children}</div>
+  );
+}
+
+/** Dashed "start a new experience" tile that lives at the end of the band. */
+function StartNewTile() {
+  return (
+    <Link
+      href="/dashboard/create"
+      className="w-[300px] shrink-0 rounded-2xl flex items-center justify-center text-sm font-headline transition-colors hover:bg-[rgba(156,240,255,0.10)]"
+      style={{
+        border: "1.5px dashed rgba(8,145,178,0.40)",
+        color: "#0891b2",
+        backgroundColor: "rgba(156,240,255,0.06)",
+        fontWeight: 700,
+        minHeight: "132px",
+      }}
+    >
+      + Start a new experience
+    </Link>
   );
 }
 

@@ -1,12 +1,22 @@
 import Link from "next/link";
+import Image from "next/image";
 import { PrimaryActionPill } from "./PrimaryActionPill";
 
 /**
- * ActiveProgramCard — a live experience as a *pulse of its Experience Space*:
- * the people (experts), then the tribe's heartbeat (members, new posts, waiting
- * questions, next session, progress) — what's actually moving — and one door in.
- * No brochure cover; the action lives inside the experience, this just pulls you
- * in. Two states: "warming up" (quiet) and "moving" (activity to act on).
+ * ActiveProgramCard — a live experience, side-by-side.
+ *
+ * Hero density (the one live experience that holds the page): the cover sits
+ * on the LEFT at the buyer-page ratio (5:4 mobile, fills the column on
+ * desktop) so the photo never crops to a letterbox, and the content reads
+ * down the RIGHT in clear clusters:
+ *   PEOPLE  — the experts (who).
+ *   NEXT    — the next session as a real card, WITH its image + time.
+ *   PULSE   — the cohort heartbeat: tribe size + status/progress, then the
+ *             activity that's moving (new posts · waiting questions).
+ *   DOOR    — one way in; share + contract are quiet secondaries.
+ *
+ * Compact density (tier-2 when 2+ are live): the same clusters, stacked, with
+ * the cover on top at 3:2.
  */
 
 export type ProgramStage =
@@ -178,17 +188,13 @@ function statusFor(program: Program): { label: string; live: boolean } {
   }
 }
 
-function StatusPill({ program, overlay = false }: { program: Program; overlay?: boolean }) {
+function StatusPill({ program }: { program: Program }) {
   const s = statusFor(program);
   const accent = s.live ? "#ef4444" : "#0891b2";
   return (
     <span
       className="inline-flex items-center gap-1.5 self-start px-2.5 py-1 rounded-full text-[10px] uppercase tracking-[0.16em] font-headline"
-      style={
-        overlay
-          ? { backgroundColor: "rgba(255,255,255,0.92)", color: accent, fontWeight: 800 }
-          : { backgroundColor: `${accent}14`, color: accent, fontWeight: 800 }
-      }
+      style={{ backgroundColor: "rgba(255,255,255,0.92)", color: accent, fontWeight: 800 }}
     >
       {s.live && (
         <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: accent }} />
@@ -198,44 +204,53 @@ function StatusPill({ program, overlay = false }: { program: Program; overlay?: 
   );
 }
 
-// ─── Cover band (editorial anchor) ───────────────────────────
-// A contained banner — tall enough to give the experience a face, short
-// enough never to read as a brochure poster. Status chip overlays it (like
-// the draft cards). Falls back to the brand gradient when there's no photo.
-function CoverBand({ program, isHero }: { program: Program; isHero: boolean }) {
+// ─── Cover (editorial anchor) ────────────────────────────────
+// Hero: a left column on desktop that stretches to the card's height with the
+// photo object-covered (never a thin letterbox); on mobile it sits on top at
+// the buyer ratio (5:4). Compact: cover on top at 3:2. Falls back to the brand
+// gradient when there's no photo. Status chip overlays it.
+function Cover({ program, density }: { program: Program; density: "hero" | "compact" }) {
+  const isHero = density === "hero";
   return (
-    <div
-      className={`relative w-full ${isHero ? "h-40 sm:h-44" : "h-28"}`}
-      style={{
-        backgroundColor: "#0F2229",
-        backgroundImage: program.imageUrl ? `url(${program.imageUrl})` : undefined,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-      }}
-    >
-      {!program.imageUrl && (
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "linear-gradient(135deg, rgba(255,97,48,0.40), rgba(8,145,178,0.40)), #0F2229",
-          }}
-        />
-      )}
-      {/* Scrim so the overlaid pill stays legible on any photo. */}
+    <div className={isHero ? "relative lg:w-[42%] lg:shrink-0" : "relative w-full"}>
       <div
-        className="absolute inset-x-0 top-0 h-16"
-        style={{ background: "linear-gradient(180deg, rgba(15,34,41,0.30), rgba(15,34,41,0))" }}
-        aria-hidden
-      />
-      <div className="absolute top-3 left-3">
-        <StatusPill program={program} overlay />
+        className={`relative w-full overflow-hidden aspect-[5/4] md:aspect-[3/2] ${
+          isHero ? "lg:aspect-auto lg:h-full lg:min-h-[280px]" : ""
+        }`}
+        style={{ backgroundColor: "#0F2229" }}
+      >
+        {program.imageUrl ? (
+          <Image
+            src={program.imageUrl}
+            alt=""
+            fill
+            sizes="(max-width: 1024px) 100vw, 40vw"
+            className="object-cover"
+          />
+        ) : (
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "linear-gradient(135deg, rgba(255,97,48,0.40), rgba(8,145,178,0.40)), #0F2229",
+            }}
+          />
+        )}
+        {/* Scrim so the overlaid pill stays legible on any photo. */}
+        <div
+          className="absolute inset-x-0 top-0 h-16"
+          style={{ background: "linear-gradient(180deg, rgba(15,34,41,0.30), rgba(15,34,41,0))" }}
+          aria-hidden
+        />
+        <div className="absolute top-3 left-3">
+          <StatusPill program={program} />
+        </div>
       </div>
     </div>
   );
 }
 
-// ─── People row (the experts) ────────────────────────────────
+// ─── People (the experts) ────────────────────────────────────
 
 function PersonBox({
   avatar,
@@ -243,7 +258,6 @@ function PersonBox({
   name,
   role,
   accent,
-  density,
   dim = false,
 }: {
   avatar: string | null;
@@ -251,39 +265,34 @@ function PersonBox({
   name: string;
   role: string;
   accent: "orange" | "cyan";
-  density: "hero" | "compact";
   dim?: boolean;
 }) {
   const color = accent === "orange" ? "#FF6130" : "#0891b2";
   const bg = accent === "orange" ? "rgba(255,97,48,0.04)" : "rgba(8,145,178,0.04)";
   const border = accent === "orange" ? "rgba(255,97,48,0.12)" : "rgba(8,145,178,0.12)";
-  const isHero = density === "hero";
-  const avatarSize = isHero ? "w-10 h-10" : "w-8 h-8";
-  const nameSize = isHero ? "text-sm" : "text-xs";
-  const roleSize = isHero ? "text-[10px]" : "text-[9px]";
   return (
     <div
-      className={`flex items-center gap-2.5 ${isHero ? "p-2.5" : "px-2.5 py-1.5"} rounded-2xl min-w-0`}
+      className="flex items-center gap-2.5 p-2 rounded-xl min-w-0"
       style={{ backgroundColor: bg, border: `1px solid ${border}`, opacity: dim ? 0.55 : 1 }}
     >
       <span
-        className={`shrink-0 ${avatarSize} rounded-full overflow-hidden inline-flex items-center justify-center`}
+        className="shrink-0 w-9 h-9 rounded-full overflow-hidden inline-flex items-center justify-center"
         style={{ border: `1.5px solid ${color}40`, backgroundColor: avatar ? "transparent" : `${color}20` }}
       >
         {avatar ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={avatar} alt="" className="w-full h-full object-cover" />
         ) : (
-          <span className={`${nameSize} font-headline`} style={{ color, fontWeight: 700 }}>
+          <span className="text-xs font-headline" style={{ color, fontWeight: 700 }}>
             {initial}
           </span>
         )}
       </span>
       <div className="min-w-0">
-        <p className={`${nameSize} font-headline truncate`} style={{ color: "#0F2229", fontWeight: 700 }}>
+        <p className="text-sm font-headline truncate" style={{ color: "#0F2229", fontWeight: 700 }}>
           {firstName(name)}
         </p>
-        <p className={`${roleSize} uppercase tracking-widest font-headline`} style={{ color, fontWeight: 700 }}>
+        <p className="text-[10px] uppercase tracking-widest font-headline" style={{ color, fontWeight: 700 }}>
           {role}
         </p>
       </div>
@@ -295,12 +304,10 @@ function PartiesRow({
   user,
   partner,
   isOwner,
-  density = "hero",
 }: {
   user: UserProfile;
   partner: Partner | null;
   isOwner: boolean;
-  density?: "hero" | "compact";
 }) {
   if (!partner) {
     return (
@@ -310,7 +317,6 @@ function PartiesRow({
         name={user.name}
         role="OWNER"
         accent="orange"
-        density={density}
       />
     );
   }
@@ -321,7 +327,6 @@ function PartiesRow({
       name={user.name}
       role={isOwner ? "OWNER" : "COHOST"}
       accent={isOwner ? "orange" : "cyan"}
-      density={density}
     />
   );
   const partnerBox = (
@@ -331,7 +336,6 @@ function PartiesRow({
       name={partner.name}
       role={partner.pendingInvite ? "PENDING" : isOwner ? "COHOST" : "OWNER"}
       accent={isOwner ? "cyan" : "orange"}
-      density={density}
       dim={partner.pendingInvite}
     />
   );
@@ -343,92 +347,119 @@ function PartiesRow({
   );
 }
 
-// ─── The pulse — the Experience Space heartbeat ──────────────
+// ─── NEXT — the next session as a real card, with its image ───
 
-function PulseStrip({ program }: { program: Program }) {
+function NextSessionCard({
+  session,
+  fallbackImage,
+}: {
+  session: ProgramSession;
+  fallbackImage: string | null;
+}) {
+  const img = session.imageUrl ?? fallbackImage;
+  return (
+    <div
+      className="flex items-center gap-3 rounded-xl p-2"
+      style={{ border: "1px solid rgba(15,34,41,0.08)", backgroundColor: "#FFFFFF" }}
+    >
+      <div className="relative w-11 h-11 rounded-lg overflow-hidden shrink-0" style={{ backgroundColor: "#22424a" }}>
+        {img ? (
+          <Image src={img} alt="" fill sizes="44px" className="object-cover" />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9CF0FF" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" />
+              <path d="M16 2v4M8 2v4M3 10h18" />
+            </svg>
+          </div>
+        )}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-[9px] uppercase tracking-[0.16em] font-headline" style={{ color: "#0891b2", fontWeight: 800 }}>
+          Next
+        </p>
+        <p className="text-sm font-bold font-headline truncate" style={{ color: "#0F2229" }}>
+          {session.title}
+        </p>
+      </div>
+      <span
+        className="text-[12px] font-black font-headline tabular-nums shrink-0 pr-1"
+        style={{ color: "#0F2229" }}
+        suppressHydrationWarning
+      >
+        {formatRelative(session.startTime)}
+      </span>
+    </div>
+  );
+}
+
+// ─── PULSE — the cohort heartbeat ────────────────────────────
+
+function PulseBox({ program }: { program: Program }) {
   const enrolled = program.enrolledCount ?? 0;
   const questions = program.pendingQuestions ?? 0;
   const posts = program.newPosts ?? 0;
-  const next = program.nextSession;
   const isLive = program.stage === "published-live";
   const tw = totalWeeks(program.startDate, program.endDate);
   const cw = Math.min(currentWeek(program.startDate), tw || 1);
   const hasActivity = questions > 0 || posts > 0;
+  const statusLabel =
+    isLive && tw > 0 ? `Week ${cw} of ${tw}` : program.stage === "completed" ? "Wrapped up" : "Pre-launch";
 
   return (
     <div
-      className="rounded-2xl p-4 space-y-3.5"
+      className="rounded-xl p-3.5"
       style={{ backgroundColor: "#F8F6F0", border: "1px solid rgba(15,34,41,0.06)" }}
     >
-      {/* Tribe + progress */}
-      <div>
-        <div className="flex items-center justify-between text-[11px] font-bold font-headline mb-1.5">
-          <span style={{ color: "#0F2229" }}>
-            {enrolled} in the tribe
-          </span>
-          <span style={{ color: "#94a3b8" }}>
-            {isLive && tw > 0 ? `Week ${cw} of ${tw}` : "Pre-launch"}
-          </span>
-        </div>
-        {isLive && tw > 0 && (
-          <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: "rgba(15,34,41,0.08)" }}>
-            <div
-              className="h-full rounded-full"
-              style={{ width: `${Math.round((cw / tw) * 100)}%`, backgroundColor: "#0891b2" }}
-            />
-          </div>
-        )}
+      <div className="flex items-center justify-between">
+        <span className="text-[13px] font-bold font-headline" style={{ color: "#0F2229" }}>
+          {enrolled} in the tribe
+        </span>
+        <span
+          className="text-[10px] uppercase tracking-[0.12em] font-headline"
+          style={{ color: "#94a3b8", fontWeight: 700 }}
+        >
+          {statusLabel}
+        </span>
       </div>
 
-      {/* Next moment */}
-      {next && (
-        <div className="flex items-center gap-2">
-          <span
-            className="text-[9px] uppercase tracking-[0.16em] font-headline shrink-0"
-            style={{ color: "#0891b2", fontWeight: 800 }}
-          >
-            Next
-          </span>
-          <span className="text-sm font-bold font-headline truncate flex-1" style={{ color: "#0F2229" }}>
-            {next.title}
-          </span>
-          <span
-            className="text-[12px] font-black font-headline tabular-nums shrink-0"
-            style={{ color: "#0F2229" }}
-            suppressHydrationWarning
-          >
-            {formatRelative(next.startTime)}
-          </span>
+      {isLive && tw > 0 && (
+        <div className="h-1.5 rounded-full overflow-hidden mt-2.5" style={{ backgroundColor: "rgba(15,34,41,0.08)" }}>
+          <div
+            className="h-full rounded-full"
+            style={{ width: `${Math.round((cw / tw) * 100)}%`, backgroundColor: "#0891b2" }}
+          />
         </div>
       )}
 
-      {/* What's moving — or the warming-up state. */}
-      {hasActivity ? (
-        <div className="flex flex-wrap items-center gap-2">
-          {questions > 0 && (
-            <span
-              className="inline-flex items-center gap-1 text-[11px] font-black font-headline px-2.5 py-1 rounded-full"
-              style={{ backgroundColor: "rgba(255,97,48,0.12)", color: "#c2410c" }}
-            >
-              {questions} waiting {questions === 1 ? "question" : "questions"}
-            </span>
-          )}
-          {posts > 0 && (
-            <span
-              className="inline-flex items-center gap-1 text-[11px] font-bold font-headline px-2.5 py-1 rounded-full"
-              style={{ backgroundColor: "rgba(8,145,178,0.10)", color: "#0891b2" }}
-            >
-              {posts} new {posts === 1 ? "post" : "posts"}
-            </span>
-          )}
-        </div>
-      ) : (
-        <p className="text-[11px] font-bold font-headline" style={{ color: "#94a3b8" }}>
-          {enrolled > 0
-            ? "Quiet in the tribe — drop in to spark it"
-            : "Your tribe is forming — share to fill it"}
-        </p>
-      )}
+      <div className="mt-2.5">
+        {hasActivity ? (
+          <div className="flex flex-wrap gap-2">
+            {questions > 0 && (
+              <span
+                className="inline-flex items-center text-[11px] font-black font-headline px-2.5 py-1 rounded-full"
+                style={{ backgroundColor: "rgba(255,97,48,0.12)", color: "#c2410c" }}
+              >
+                {questions} waiting {questions === 1 ? "question" : "questions"}
+              </span>
+            )}
+            {posts > 0 && (
+              <span
+                className="inline-flex items-center text-[11px] font-bold font-headline px-2.5 py-1 rounded-full"
+                style={{ backgroundColor: "rgba(8,145,178,0.10)", color: "#0891b2" }}
+              >
+                {posts} new {posts === 1 ? "post" : "posts"}
+              </span>
+            )}
+          </div>
+        ) : (
+          <p className="text-[11px] font-bold font-headline" style={{ color: "#94a3b8" }}>
+            {enrolled > 0
+              ? "Quiet in the tribe — drop in to spark it"
+              : "Your tribe is forming — share to fill it"}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
@@ -563,13 +594,15 @@ export function ActiveProgramCard({ program, partner, user, density = "hero" }: 
 
   return (
     <article
-      className={`${isHero ? "rounded-3xl" : "rounded-2xl"} infitra-card-link transition-shadow flex flex-col overflow-hidden`}
+      className={`infitra-card-link transition-shadow flex flex-col overflow-hidden ${
+        isHero ? "rounded-3xl lg:flex-row" : "rounded-2xl"
+      }`}
       style={{ border: "1px solid rgba(15,34,41,0.10)", backgroundColor: "#FFFFFF" }}
     >
-      {/* The face — cover band + overlaid status. */}
-      <CoverBand program={program} isHero={isHero} />
+      {/* The face — cover + overlaid status. */}
+      <Cover program={program} density={density} />
 
-      <div className={`${isHero ? "p-6 md:p-7" : "p-5"} flex-1 flex flex-col`}>
+      <div className={`${isHero ? "p-6 md:p-7 lg:flex-1" : "p-5"} flex flex-col min-w-0`}>
         <h2
           className={`${isHero ? "text-2xl md:text-3xl" : "text-lg md:text-xl"} font-headline tracking-tight`}
           style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.02em" }}
@@ -577,19 +610,26 @@ export function ActiveProgramCard({ program, partner, user, density = "hero" }: 
           {program.title || "Untitled"}
         </h2>
 
-        {/* People — the experts lead. */}
+        {/* PEOPLE — the experts. */}
         <div className="mt-4">
-          <PartiesRow user={user} partner={partner} isOwner={program.isOwner} density={density} />
+          <PartiesRow user={user} partner={partner} isOwner={program.isOwner} />
         </div>
 
-        {/* The pulse — what's moving in the Experience Space. */}
-        <div className="mt-5">
-          <PulseStrip program={program} />
+        {/* NEXT — the upcoming session, with its image. */}
+        {program.nextSession && (
+          <div className="mt-3.5">
+            <NextSessionCard session={program.nextSession} fallbackImage={program.imageUrl} />
+          </div>
+        )}
+
+        {/* PULSE — the cohort heartbeat. */}
+        <div className="mt-3">
+          <PulseBox program={program} />
         </div>
 
         <div className="flex-1" />
 
-        {/* One door in. Share + contract are quiet secondaries. */}
+        {/* DOOR — one way in. Share + contract are quiet secondaries. */}
         <div className={`${isHero ? "mt-6" : "mt-5"} flex flex-wrap items-center gap-x-4 gap-y-2`}>
           <PrimaryActionPill label={doorLabel} kind="navigate" href={doorHref} variant="filled" />
           {showShare && (
