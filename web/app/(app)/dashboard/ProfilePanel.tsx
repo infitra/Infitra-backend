@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { SlideOver } from "@/app/components/SlideOver";
 import { ProfileEditForm } from "@/app/components/ProfileEditForm";
 import { CalendarButton } from "@/app/components/CalendarButton";
+import { MetricStrip, type Metric } from "./MetricStrip";
 
 /**
  * ProfilePanel — the "this is you" console in the dashboard's left rail.
@@ -76,6 +78,12 @@ const EDIT_ICON = (
   </svg>
 );
 
+const PLUS_ICON = (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round">
+    <path d="M12 5v14M5 12h14" />
+  </svg>
+);
+
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="px-5 py-4" style={{ borderTop: "1px solid rgba(15,34,41,0.06)" }}>
@@ -91,48 +99,22 @@ function Section({ label, children }: { label: string; children: React.ReactNode
 }
 
 function TribesPulse({ pulse }: { pulse: TribePulse }) {
-  const { members, newPosts, pendingQuestions, experiences } = pulse;
-  const hasActivity = newPosts > 0 || pendingQuestions > 0;
-  const context =
-    members > 0
-      ? `${members} ${members === 1 ? "member" : "members"} · ${experiences} ${
-          experiences === 1 ? "experience" : "experiences"
-        }`
-      : "Your space is live — share to fill it";
-
-  return (
-    <div>
-      {hasActivity ? (
-        <div className="flex flex-wrap gap-2 mb-2.5">
-          {newPosts > 0 && (
-            <span
-              className="inline-flex items-center text-[11px] font-bold font-headline px-2.5 py-1 rounded-full"
-              style={{ backgroundColor: "rgba(8,145,178,0.10)", color: CYAN }}
-            >
-              {newPosts} new {newPosts === 1 ? "post" : "posts"}
-            </span>
-          )}
-          {pendingQuestions > 0 && (
-            <span
-              className="inline-flex items-center text-[11px] font-black font-headline px-2.5 py-1 rounded-full"
-              style={{ backgroundColor: "rgba(255,97,48,0.12)", color: "#c2410c" }}
-            >
-              {pendingQuestions} waiting
-            </span>
-          )}
-        </div>
-      ) : (
-        members > 0 && (
-          <p className="text-[11px] font-bold font-headline mb-1" style={{ color: "#94a3b8" }}>
-            Quiet right now
-          </p>
-        )
-      )}
-      <p className="text-[12px] font-bold font-headline" style={{ color: hasActivity ? INK : "#94a3b8" }}>
-        {context}
+  const { members, newPosts, pendingQuestions } = pulse;
+  if (members === 0 && newPosts === 0 && pendingQuestions === 0) {
+    return (
+      <p className="text-[12px] font-bold font-headline" style={{ color: "#94a3b8" }}>
+        Your tribes are forming — share to fill them
       </p>
-    </div>
-  );
+    );
+  }
+  const metrics: Metric[] = [
+    { value: members, label: members === 1 ? "member" : "members" },
+    { value: newPosts, label: "new posts", accent: "cyan" },
+  ];
+  if (pendingQuestions > 0) {
+    metrics.push({ value: pendingQuestions, label: "waiting", accent: "orange" });
+  }
+  return <MetricStrip metrics={metrics} />;
 }
 
 export function ProfilePanel({
@@ -222,8 +204,17 @@ export function ProfilePanel({
           )}
         </div>
 
-        {/* ── QUICK ACTIONS ── */}
+        {/* ── QUICK ACTIONS ── create leads (it's the primary creator act, and
+            the only place it's reachable on mobile where the nav collapses). */}
         <Section label="Quick actions">
+          <Link
+            href="/dashboard/create"
+            className="flex w-full items-center justify-center gap-1.5 rounded-xl py-3 px-4 text-[13px] font-black font-headline text-white transition-transform hover:scale-[1.01] mb-2"
+            style={{ backgroundColor: ORANGE, boxShadow: "0 4px 14px rgba(255,97,48,0.30)" }}
+          >
+            {PLUS_ICON}
+            New experience
+          </Link>
           <button
             onClick={() => setEditOpen(true)}
             className="flex w-full items-center justify-center gap-1.5 rounded-xl py-3 px-4 text-[13px] font-black font-headline transition-colors mb-2"

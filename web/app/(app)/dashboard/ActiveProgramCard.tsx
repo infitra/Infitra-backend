@@ -1,22 +1,25 @@
 import Link from "next/link";
 import Image from "next/image";
 import { PrimaryActionPill } from "./PrimaryActionPill";
+import { MetricStrip, type Metric } from "./MetricStrip";
 
 /**
  * ActiveProgramCard — a live experience, side-by-side.
  *
- * Hero density (the one live experience that holds the page): the cover sits
- * on the LEFT at the buyer-page ratio (5:4 mobile, fills the column on
- * desktop) so the photo never crops to a letterbox, and the content reads
+ * Hero density (the one live experience that holds the page): the cover sits on
+ * the LEFT at the buyer-page ratio (5:4 mobile, 3:2 desktop — identical box
+ * everywhere so the auto-crop is identical everywhere), and the content reads
  * down the RIGHT in clear clusters:
- *   PEOPLE  — the experts (who).
- *   NEXT    — the next session as a real card, WITH its image + time.
- *   PULSE   — the cohort heartbeat: tribe size + status/progress, then the
- *             activity that's moving (new posts · waiting questions).
- *   DOOR    — one way in; share + contract are quiet secondaries.
+ *   PEOPLE       — the experts (who).
+ *   LIVE-STATE   — ONE panel: a metric strip (members · new posts · waiting /
+ *                  week) on top, then the next session as a row WITH its image
+ *                  and date. Replaces the old floating chip + bare-stat box.
+ *   DOOR         — one way in; share + contract are quiet secondaries.
+ * Stage lives only on the cover chip (no duplicate "pre-launch" labels).
  *
- * Compact density (tier-2 when 2+ are live): the same clusters, stacked, with
- * the cover on top at 3:2.
+ * Side-by-side engages at xl (where the cover's fixed ratio leaves room beside
+ * the content); below xl the card stacks (cover on top). Compact density
+ * (tier-2 when 2+ are live) always stacks.
  */
 
 export type ProgramStage =
@@ -73,6 +76,8 @@ interface Props {
   partner: Partner | null;
   user: UserProfile;
   density?: "hero" | "compact";
+  /** Viewer's IANA timezone — for rendering the next session's date. */
+  timeZone?: string;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────
@@ -119,6 +124,19 @@ function daysUntil(iso: string | null | undefined): number | null {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   return Math.round((d.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
+}
+
+// Near sessions (≤7d) read as a countdown ("tomorrow", "in 5 days"); far ones
+// show an absolute date in the viewer's zone ("3 Jan") — both more useful than,
+// and not redundant with, the stage countdown already on the cover chip.
+function nextWhen(iso: string, timeZone?: string): string {
+  const days = daysUntil(iso);
+  if (days !== null && days >= 0 && days <= 7) return formatRelative(iso);
+  try {
+    return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone });
+  } catch {
+    return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  }
 }
 
 function firstName(name: string | null | undefined): string {
@@ -205,46 +223,44 @@ function StatusPill({ program }: { program: Program }) {
 }
 
 // ─── Cover (editorial anchor) ────────────────────────────────
-// Hero: a left column on desktop that stretches to the card's height with the
-// photo object-covered (never a thin letterbox); on mobile it sits on top at
-// the buyer ratio (5:4). Compact: cover on top at 3:2. Falls back to the brand
-// gradient when there's no photo. Status chip overlays it.
+// A FIXED ratio everywhere — 5:4 mobile, 3:2 desktop — identical to the buyer
+// page and the Experience Space header, so object-cover crops the photo the
+// same way in all three places. Hero stacks below xl; side-by-side at xl with
+// the cover top-aligned (self-start) so its ratio never gets stretched.
 function Cover({ program, density }: { program: Program; density: "hero" | "compact" }) {
   const isHero = density === "hero";
   return (
-    <div className={isHero ? "relative lg:w-[42%] lg:shrink-0" : "relative w-full"}>
-      <div
-        className={`relative w-full overflow-hidden aspect-[5/4] md:aspect-[3/2] ${
-          isHero ? "lg:aspect-auto lg:h-full lg:min-h-[280px]" : ""
-        }`}
-        style={{ backgroundColor: "#0F2229" }}
-      >
-        {program.imageUrl ? (
-          <Image
-            src={program.imageUrl}
-            alt=""
-            fill
-            sizes="(max-width: 1024px) 100vw, 40vw"
-            className="object-cover"
-          />
-        ) : (
-          <div
-            className="absolute inset-0"
-            style={{
-              background:
-                "linear-gradient(135deg, rgba(255,97,48,0.40), rgba(8,145,178,0.40)), #0F2229",
-            }}
-          />
-        )}
-        {/* Scrim so the overlaid pill stays legible on any photo. */}
-        <div
-          className="absolute inset-x-0 top-0 h-16"
-          style={{ background: "linear-gradient(180deg, rgba(15,34,41,0.30), rgba(15,34,41,0))" }}
-          aria-hidden
+    <div
+      className={`relative w-full overflow-hidden aspect-[5/4] lg:aspect-[3/2] ${
+        isHero ? "xl:w-[52%] xl:shrink-0 xl:self-start" : ""
+      }`}
+      style={{ backgroundColor: "#0F2229" }}
+    >
+      {program.imageUrl ? (
+        <Image
+          src={program.imageUrl}
+          alt=""
+          fill
+          sizes="(max-width: 1280px) 100vw, 40vw"
+          className="object-cover"
         />
-        <div className="absolute top-3 left-3">
-          <StatusPill program={program} />
-        </div>
+      ) : (
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(135deg, rgba(255,97,48,0.40), rgba(8,145,178,0.40)), #0F2229",
+          }}
+        />
+      )}
+      {/* Scrim so the overlaid pill stays legible on any photo. */}
+      <div
+        className="absolute inset-x-0 top-0 h-16"
+        style={{ background: "linear-gradient(180deg, rgba(15,34,41,0.30), rgba(15,34,41,0))" }}
+        aria-hidden
+      />
+      <div className="absolute top-3 left-3">
+        <StatusPill program={program} />
       </div>
     </div>
   );
@@ -347,27 +363,26 @@ function PartiesRow({
   );
 }
 
-// ─── NEXT — the next session as a real card, with its image ───
+// ─── NEXT session row (inside the live-state panel) ──────────
 
-function NextSessionCard({
+function NextSessionRow({
   session,
   fallbackImage,
+  timeZone,
 }: {
   session: ProgramSession;
   fallbackImage: string | null;
+  timeZone?: string;
 }) {
   const img = session.imageUrl ?? fallbackImage;
   return (
-    <div
-      className="flex items-center gap-3 rounded-xl p-2"
-      style={{ border: "1px solid rgba(15,34,41,0.08)", backgroundColor: "#FFFFFF" }}
-    >
-      <div className="relative w-11 h-11 rounded-lg overflow-hidden shrink-0" style={{ backgroundColor: "#22424a" }}>
+    <div className="flex items-center gap-3 p-2.5">
+      <div className="relative w-10 h-10 rounded-lg overflow-hidden shrink-0" style={{ backgroundColor: "#22424a" }}>
         {img ? (
-          <Image src={img} alt="" fill sizes="44px" className="object-cover" />
+          <Image src={img} alt="" fill sizes="40px" className="object-cover" />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9CF0FF" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CF0FF" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="4" width="18" height="18" rx="2" />
               <path d="M16 2v4M8 2v4M3 10h18" />
             </svg>
@@ -375,91 +390,67 @@ function NextSessionCard({
         )}
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-[9px] uppercase tracking-[0.16em] font-headline" style={{ color: "#0891b2", fontWeight: 800 }}>
-          Next
+        <p className="text-[10px] uppercase tracking-[0.14em] font-headline" style={{ color: "#0891b2", fontWeight: 800 }}>
+          Next session
         </p>
-        <p className="text-sm font-bold font-headline truncate" style={{ color: "#0F2229" }}>
+        <p className="text-[13px] font-bold font-headline truncate" style={{ color: "#0F2229" }}>
           {session.title}
         </p>
       </div>
       <span
-        className="text-[12px] font-black font-headline tabular-nums shrink-0 pr-1"
+        className="text-[12px] font-bold font-headline shrink-0 pr-1 tabular-nums"
         style={{ color: "#0F2229" }}
         suppressHydrationWarning
       >
-        {formatRelative(session.startTime)}
+        {nextWhen(session.startTime, timeZone)}
       </span>
     </div>
   );
 }
 
-// ─── PULSE — the cohort heartbeat ────────────────────────────
+// ─── LIVE-STATE panel — one structured unit (metrics + next) ──
 
-function PulseBox({ program }: { program: Program }) {
+function LiveStatePanel({ program, timeZone }: { program: Program; timeZone?: string }) {
   const enrolled = program.enrolledCount ?? 0;
   const questions = program.pendingQuestions ?? 0;
   const posts = program.newPosts ?? 0;
+  const next = program.nextSession;
   const isLive = program.stage === "published-live";
   const tw = totalWeeks(program.startDate, program.endDate);
   const cw = Math.min(currentWeek(program.startDate), tw || 1);
-  const hasActivity = questions > 0 || posts > 0;
-  const statusLabel =
-    isLive && tw > 0 ? `Week ${cw} of ${tw}` : program.stage === "completed" ? "Wrapped up" : "Pre-launch";
+
+  if (enrolled === 0 && posts === 0 && questions === 0 && !next) {
+    return (
+      <div
+        className="rounded-xl p-3.5 text-[12px] font-bold font-headline"
+        style={{ backgroundColor: "#F8F6F0", border: "1px solid rgba(15,34,41,0.06)", color: "#94a3b8" }}
+      >
+        Your tribe is forming — share to fill it
+      </div>
+    );
+  }
+
+  const metrics: Metric[] = [
+    { value: enrolled, label: enrolled === 1 ? "member" : "members" },
+    { value: posts, label: "new posts", accent: "cyan" },
+  ];
+  if (questions > 0) {
+    metrics.push({ value: questions, label: "waiting", accent: "orange" });
+  } else if (isLive && tw > 0) {
+    metrics.push({ value: `${cw}/${tw}`, label: "week" });
+  }
 
   return (
     <div
-      className="rounded-xl p-3.5"
-      style={{ backgroundColor: "#F8F6F0", border: "1px solid rgba(15,34,41,0.06)" }}
+      className="rounded-xl overflow-hidden"
+      style={{ border: "1px solid rgba(15,34,41,0.08)", backgroundColor: "#F8F6F0" }}
     >
-      <div className="flex items-center justify-between">
-        <span className="text-[13px] font-bold font-headline" style={{ color: "#0F2229" }}>
-          {enrolled} in the tribe
-        </span>
-        <span
-          className="text-[10px] uppercase tracking-[0.12em] font-headline"
-          style={{ color: "#94a3b8", fontWeight: 700 }}
-        >
-          {statusLabel}
-        </span>
-      </div>
-
-      {isLive && tw > 0 && (
-        <div className="h-1.5 rounded-full overflow-hidden mt-2.5" style={{ backgroundColor: "rgba(15,34,41,0.08)" }}>
-          <div
-            className="h-full rounded-full"
-            style={{ width: `${Math.round((cw / tw) * 100)}%`, backgroundColor: "#0891b2" }}
-          />
+      <MetricStrip metrics={metrics} framed={false} />
+      {next && (
+        <div style={{ borderTop: "1px solid rgba(15,34,41,0.08)", backgroundColor: "#FFFFFF" }}>
+          <NextSessionRow session={next} fallbackImage={program.imageUrl} timeZone={timeZone} />
         </div>
       )}
-
-      <div className="mt-2.5">
-        {hasActivity ? (
-          <div className="flex flex-wrap gap-2">
-            {questions > 0 && (
-              <span
-                className="inline-flex items-center text-[11px] font-black font-headline px-2.5 py-1 rounded-full"
-                style={{ backgroundColor: "rgba(255,97,48,0.12)", color: "#c2410c" }}
-              >
-                {questions} waiting {questions === 1 ? "question" : "questions"}
-              </span>
-            )}
-            {posts > 0 && (
-              <span
-                className="inline-flex items-center text-[11px] font-bold font-headline px-2.5 py-1 rounded-full"
-                style={{ backgroundColor: "rgba(8,145,178,0.10)", color: "#0891b2" }}
-              >
-                {posts} new {posts === 1 ? "post" : "posts"}
-              </span>
-            )}
-          </div>
-        ) : (
-          <p className="text-[11px] font-bold font-headline" style={{ color: "#94a3b8" }}>
-            {enrolled > 0
-              ? "Quiet in the tribe — drop in to spark it"
-              : "Your tribe is forming — share to fill it"}
-          </p>
-        )}
-      </div>
     </div>
   );
 }
@@ -574,7 +565,7 @@ function SecondaryActions({ program }: { program: Program }) {
 
 // ─── Main ────────────────────────────────────────────────────
 
-export function ActiveProgramCard({ program, partner, user, density = "hero" }: Props) {
+export function ActiveProgramCard({ program, partner, user, density = "hero", timeZone }: Props) {
   if (!program) {
     return <EmptyState user={user} />;
   }
@@ -595,14 +586,14 @@ export function ActiveProgramCard({ program, partner, user, density = "hero" }: 
   return (
     <article
       className={`infitra-card-link transition-shadow flex flex-col overflow-hidden ${
-        isHero ? "rounded-3xl lg:flex-row" : "rounded-2xl"
+        isHero ? "rounded-3xl xl:flex-row" : "rounded-2xl"
       }`}
       style={{ border: "1px solid rgba(15,34,41,0.10)", backgroundColor: "#FFFFFF" }}
     >
       {/* The face — cover + overlaid status. */}
       <Cover program={program} density={density} />
 
-      <div className={`${isHero ? "p-6 md:p-7 lg:flex-1" : "p-5"} flex flex-col min-w-0`}>
+      <div className={`${isHero ? "p-6 md:p-7 xl:flex-1 xl:justify-center" : "p-5"} flex flex-col min-w-0`}>
         <h2
           className={`${isHero ? "text-2xl md:text-3xl" : "text-lg md:text-xl"} font-headline tracking-tight`}
           style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.02em" }}
@@ -615,22 +606,13 @@ export function ActiveProgramCard({ program, partner, user, density = "hero" }: 
           <PartiesRow user={user} partner={partner} isOwner={program.isOwner} />
         </div>
 
-        {/* NEXT — the upcoming session, with its image. */}
-        {program.nextSession && (
-          <div className="mt-3.5">
-            <NextSessionCard session={program.nextSession} fallbackImage={program.imageUrl} />
-          </div>
-        )}
-
-        {/* PULSE — the cohort heartbeat. */}
-        <div className="mt-3">
-          <PulseBox program={program} />
+        {/* LIVE-STATE — one structured panel: metrics + next session. */}
+        <div className="mt-3.5">
+          <LiveStatePanel program={program} timeZone={timeZone} />
         </div>
 
-        <div className="flex-1" />
-
         {/* DOOR — one way in. Share + contract are quiet secondaries. */}
-        <div className={`${isHero ? "mt-6" : "mt-5"} flex flex-wrap items-center gap-x-4 gap-y-2`}>
+        <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2">
           <PrimaryActionPill label={doorLabel} kind="navigate" href={doorHref} variant="filled" />
           {showShare && (
             <Link

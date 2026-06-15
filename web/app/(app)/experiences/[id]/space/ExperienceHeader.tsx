@@ -65,22 +65,12 @@ export function ExperienceHeader() {
         boxShadow: "0 0 0 1px rgba(15,34,41,0.05), 0 10px 32px rgba(15,34,41,0.10)",
       }}
     >
-      <style>{`
-        .exp-cover {
-          -webkit-mask-image: linear-gradient(to bottom, #000 64%, transparent);
-          mask-image: linear-gradient(to bottom, #000 64%, transparent);
-        }
-        @media (min-width: 1024px) {
-          .exp-cover {
-            -webkit-mask-image: linear-gradient(to right, #000 68%, transparent);
-            mask-image: linear-gradient(to right, #000 68%, transparent);
-          }
-        }
-      `}</style>
-
-      {/* TOP ZONE — cover (constrained here) + identity + status + pills */}
-      <div className="relative">
-        <div className="exp-cover relative w-full aspect-[5/4] lg:absolute lg:left-0 lg:top-0 lg:bottom-0 lg:w-[360px] lg:aspect-auto" style={{ backgroundColor: "#ECE7DD" }}>
+      {/* TOP ZONE — cover (left) + identity + status + pills. The cover is a
+          FIXED ratio — 5:4 mobile, 3:2 desktop — identical to the buyer page
+          and the dashboard card, so object-cover crops the photo the same way
+          everywhere. self-start keeps the ratio when the content is taller. */}
+      <div className="relative lg:flex">
+        <div className="relative w-full aspect-[5/4] lg:w-[360px] lg:aspect-[3/2] lg:shrink-0 lg:self-start overflow-hidden" style={{ backgroundColor: "#ECE7DD" }}>
           {experience.imageUrl && (
             <Image
               src={experience.imageUrl}
@@ -95,8 +85,7 @@ export function ExperienceHeader() {
           )}
         </div>
 
-        <div className="relative lg:pl-[340px]">
-          <div className="relative p-5 lg:p-7">
+        <div className="relative flex-1 min-w-0 p-5 lg:p-7">
             {/* Identity */}
             <div className="lg:pr-64">
               <h1
@@ -158,7 +147,6 @@ export function ExperienceHeader() {
               {hasStructure && <Toggle label="Structure" active={open === "structure"} onClick={() => toggle("structure")} />}
             </div>
           </div>
-        </div>
       </div>
 
       {/* Expanded panels — below the top zone, so the cover never stretches into them */}

@@ -5,6 +5,7 @@ import { OtherProgramCard } from "./OtherProgramCard";
 import { TopAlert } from "./TopAlert";
 import { CollabInvitations } from "./CollabInvitations";
 import { ProfilePanel } from "./ProfilePanel";
+import { resolveViewerTimeZone } from "@/lib/time/viewerTimeZone";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -531,6 +532,7 @@ export default async function DashboardPage() {
   if (!user) redirect("/login");
 
   const data = await loadDashboard(user.id);
+  const viewerTimeZone = await resolveViewerTimeZone();
   const userInitial = data.profile.displayName?.[0]?.toUpperCase() ?? "?";
   const userProp = {
     name: data.profile.displayName,
@@ -628,6 +630,7 @@ export default async function DashboardPage() {
                     partner={hero.partner}
                     user={userProp}
                     density="hero"
+                    timeZone={viewerTimeZone}
                   />
                 )}
                 {tier2.length > 0 && (
@@ -639,6 +642,7 @@ export default async function DashboardPage() {
                         partner={p.partner}
                         user={userProp}
                         density="compact"
+                        timeZone={viewerTimeZone}
                       />
                     ))}
                   </div>
