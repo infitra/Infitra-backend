@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { PrimaryActionPill } from "./PrimaryActionPill";
+import { ShareButton } from "./ShareButton";
 
 /**
  * ActiveProgramCard — a live experience, side-by-side.
@@ -605,17 +606,20 @@ export function ActiveProgramCard({ program, partner, user, density = "hero", ti
 
   return (
     <article
-      className={`transition-shadow flex flex-col overflow-hidden ${
+      className={`relative transition-shadow flex flex-col overflow-hidden ${
         isHero ? "rounded-3xl xl:flex-row" : "rounded-2xl"
       }`}
       style={{ backgroundColor: "#FFFFFF", boxShadow: SOFT_SHADOW }}
     >
+      {/* Share the card — copies the public buyer-page link. Top-right corner. */}
+      {showShare && <ShareButton challengeId={program.id} />}
+
       {/* The face — cover + overlaid status. */}
       <Cover program={program} density={density} />
 
       <div className={`${isHero ? "p-7 md:p-8 xl:flex-1 xl:justify-center" : "p-5"} flex flex-col min-w-0`}>
         <h2
-          className={`${isHero ? "text-2xl md:text-3xl" : "text-lg md:text-xl"} font-headline tracking-tight`}
+          className={`${isHero ? "text-2xl md:text-3xl xl:pr-12" : "text-lg md:text-xl pr-12"} font-headline tracking-tight`}
           style={{ color: INK, fontWeight: 700, letterSpacing: "-0.02em" }}
         >
           {program.title || "Untitled"}
@@ -647,24 +651,11 @@ export function ActiveProgramCard({ program, partner, user, density = "hero", ti
           </div>
         )}
 
-        {/* DOOR — primary on top (heaviest), the two secondaries beneath it
-            with real breathing space. */}
-        <div className="mt-7">
+        {/* DOOR — Open Experience Space (heaviest) + View contract. Share is
+            the top-right icon now, so the bottom stays to two clean actions. */}
+        <div className="mt-7 flex flex-wrap items-center gap-x-4 gap-y-3">
           <PrimaryActionPill label={doorLabel} kind="navigate" href={doorHref} variant="filled" />
-          {(showShare || showsContract(program.stage)) && (
-            <div className="mt-4 flex items-center gap-5">
-              {showShare && (
-                <Link
-                  href={`/experiences/${program.id}`}
-                  className="text-sm font-headline transition-colors hover:text-[#0F2229]"
-                  style={{ color: "#475569", fontWeight: 600 }}
-                >
-                  Share →
-                </Link>
-              )}
-              <SecondaryActions program={program} />
-            </div>
-          )}
+          <SecondaryActions program={program} />
         </div>
       </div>
     </article>

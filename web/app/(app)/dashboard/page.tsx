@@ -590,9 +590,9 @@ export default async function DashboardPage() {
       {/* Console layout — "you" on the left, "what's happening" on the
           right. Same spatial grammar as the in-Space view (YouPanel left,
           feed right), so the dashboard and the Experience Space feel like
-          one building. The rail sticks beside the work stream on desktop;
-          on mobile it's simply the top card of the stack. */}
-      <div className="lg:grid lg:grid-cols-[340px_minmax(0,1fr)] lg:gap-8 lg:items-start">
+          one building. items-stretch keeps the console and the active card the
+          same height; on mobile it's simply the top card of the stack. */}
+      <div className="lg:grid lg:grid-cols-[340px_minmax(0,1fr)] lg:gap-8 lg:items-stretch">
         <aside className="mb-8 lg:mb-0">
           <ProfilePanel
             displayName={data.profile.displayName}
@@ -620,10 +620,12 @@ export default async function DashboardPage() {
               <ActiveProgramCard program={null} partner={null} user={userProp} density="hero" />
             )}
 
+          {/* No "Active now" heading — the cover's status chip already names
+              the state, and a heading here pushed the card out of alignment
+              with the profile console. */}
           {activeCount > 0 && (
-            <Section label="Active now" count={activeCount}>
-              <div className="space-y-5">
-                {hero && (
+            <div className="space-y-5">
+              {hero && (
                   <ActiveProgramCard
                     program={hero}
                     partner={hero.partner}
@@ -647,7 +649,6 @@ export default async function DashboardPage() {
                   </div>
                 )}
               </div>
-            </Section>
           )}
 
           {/* No active experience → the work stream lives here, in the

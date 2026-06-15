@@ -136,7 +136,7 @@ export function ProfilePanel({
   return (
     <>
       <div
-        className="rounded-2xl overflow-hidden"
+        className="rounded-2xl overflow-hidden h-full"
         style={{
           backgroundColor: "#FFFFFF",
           boxShadow: "0 0 0 1px rgba(15,34,41,0.05), 0 8px 26px rgba(15,34,41,0.08)",
