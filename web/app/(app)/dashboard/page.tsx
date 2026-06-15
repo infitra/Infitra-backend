@@ -593,7 +593,7 @@ export default async function DashboardPage() {
           one building. The rail sticks beside the work stream on desktop;
           on mobile it's simply the top card of the stack. */}
       <div className="lg:grid lg:grid-cols-[340px_minmax(0,1fr)] lg:gap-8 lg:items-start">
-        <aside className="mb-8 lg:mb-0 lg:sticky lg:top-24">
+        <aside className="mb-8 lg:mb-0">
           <ProfilePanel
             displayName={data.profile.displayName}
             avatarUrl={data.profile.avatarUrl}

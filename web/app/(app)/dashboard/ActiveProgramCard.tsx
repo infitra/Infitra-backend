@@ -369,7 +369,7 @@ function SignalCell({
   const color = accent === "cyan" ? CYAN : accent === "orange" ? ORANGE_TXT : INK;
   return (
     <div
-      className="flex-1 text-center px-1.5 py-2.5"
+      className="flex-1 text-center px-1.5 py-3"
       style={{ borderLeft: first ? undefined : "1px solid rgba(15,34,41,0.08)" }}
     >
       <div className="flex items-center justify-center gap-1">
@@ -438,7 +438,7 @@ function SessionCard({
   const img = session.imageUrl ?? fallbackImage;
   return (
     <div
-      className="flex items-center gap-3.5 rounded-xl p-2.5"
+      className="flex items-center gap-4 rounded-xl p-3"
       style={{ backgroundColor: "#F6F2EA", border: "1px solid rgba(15,34,41,0.06)" }}
     >
       <div className="relative w-28 h-[78px] rounded-lg overflow-hidden shrink-0" style={{ backgroundColor: "#22424a" }}>
@@ -455,7 +455,7 @@ function SessionCard({
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-[10px] uppercase tracking-[0.16em] font-headline" style={{ color: CYAN, fontWeight: 800 }}>
-          Next session
+          Next moment
         </p>
         <p className="text-[15px] font-bold font-headline truncate mt-0.5" style={{ color: INK }}>
           {session.title}
@@ -613,7 +613,7 @@ export function ActiveProgramCard({ program, partner, user, density = "hero", ti
       {/* The face — cover + overlaid status. */}
       <Cover program={program} density={density} />
 
-      <div className={`${isHero ? "p-6 md:p-7 xl:flex-1 xl:justify-center" : "p-5"} flex flex-col min-w-0`}>
+      <div className={`${isHero ? "p-7 md:p-8 xl:flex-1 xl:justify-center" : "p-5"} flex flex-col min-w-0`}>
         <h2
           className={`${isHero ? "text-2xl md:text-3xl" : "text-lg md:text-xl"} font-headline tracking-tight`}
           style={{ color: INK, fontWeight: 700, letterSpacing: "-0.02em" }}
@@ -622,12 +622,12 @@ export function ActiveProgramCard({ program, partner, user, density = "hero", ti
         </h2>
 
         {/* PEOPLE — the experts. */}
-        <div className="mt-4">
+        <div className="mt-5">
           <PartiesRow user={user} partner={partner} isOwner={program.isOwner} />
         </div>
 
         {/* SIGNALS — live stats, or the warming-up line. */}
-        <div className="mt-3.5">
+        <div className="mt-5">
           {warmingUp ? (
             <div
               className="rounded-xl p-3.5 text-[12px] font-bold font-headline"
@@ -642,25 +642,29 @@ export function ActiveProgramCard({ program, partner, user, density = "hero", ti
 
         {/* SESSION — cream editorial card with the session image. */}
         {program.nextSession && (
-          <div className="mt-2.5">
+          <div className="mt-4">
             <SessionCard session={program.nextSession} fallbackImage={program.imageUrl} timeZone={timeZone} />
           </div>
         )}
 
-        {/* DOOR — one way in. Share + contract are quiet secondaries. */}
-        <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2">
+        {/* DOOR — primary on top (heaviest), the two secondaries beneath it
+            with real breathing space. */}
+        <div className="mt-7">
           <PrimaryActionPill label={doorLabel} kind="navigate" href={doorHref} variant="filled" />
-          {showShare && (
-            <Link
-              href={`/experiences/${program.id}`}
-              className="text-xs md:text-sm font-headline transition-colors hover:text-[#0F2229]"
-              style={{ color: "#475569", fontWeight: 600 }}
-            >
-              Share →
-            </Link>
+          {(showShare || showsContract(program.stage)) && (
+            <div className="mt-4 flex items-center gap-5">
+              {showShare && (
+                <Link
+                  href={`/experiences/${program.id}`}
+                  className="text-sm font-headline transition-colors hover:text-[#0F2229]"
+                  style={{ color: "#475569", fontWeight: 600 }}
+                >
+                  Share →
+                </Link>
+              )}
+              <SecondaryActions program={program} />
+            </div>
           )}
-          <div className="flex-1" />
-          <SecondaryActions program={program} />
         </div>
       </div>
     </article>
