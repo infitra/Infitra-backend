@@ -91,18 +91,6 @@ export default async function EarningsPage() {
 
   return (
     <div className="py-10">
-      <div className="mb-8">
-        <h1
-          className="text-3xl md:text-4xl font-black font-headline tracking-tight"
-          style={{ color: INK }}
-        >
-          Earnings
-        </h1>
-        <p className="text-sm mt-1" style={{ color: MUTED }}>
-          What you&rsquo;ve earned across your experiences and sessions.
-        </p>
-      </div>
-
       {/* ── Top: net only ─────────────────────────────────── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-10">
         <div

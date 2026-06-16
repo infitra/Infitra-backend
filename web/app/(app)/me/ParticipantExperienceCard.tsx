@@ -26,6 +26,7 @@ export interface MeExperience {
   endDate: string | null;
   spaceId: string | null;
   stage: "pre-launch" | "live" | "completed";
+  experts: { id: string; name: string; avatar: string | null; role: "owner" | "cohost" }[];
   nextSession: { title: string; startTime: string; imageUrl: string | null } | null;
   newPosts: number;
   rated: boolean;
@@ -181,14 +182,112 @@ function NextMoment({
   );
 }
 
+// ─── Experts (your coaches) ──────────────────────────────────
+
+function PersonBox({ name, avatar, role }: { name: string; avatar: string | null; role: "owner" | "cohost" }) {
+  const isOwner = role === "owner";
+  const color = isOwner ? ORANGE : CYAN;
+  const bg = isOwner ? "rgba(255,97,48,0.04)" : "rgba(8,145,178,0.04)";
+  const border = isOwner ? "rgba(255,97,48,0.12)" : "rgba(8,145,178,0.12)";
+  const initial = (name?.[0] ?? "?").toUpperCase();
+  const first = name?.split(" ")[0] || name || "Expert";
+  return (
+    <div className="flex items-center gap-2.5 p-2 rounded-xl min-w-0" style={{ backgroundColor: bg, border: `1px solid ${border}` }}>
+      <span
+        className="shrink-0 w-9 h-9 rounded-full overflow-hidden inline-flex items-center justify-center"
+        style={{ border: `1.5px solid ${color}40`, backgroundColor: avatar ? "transparent" : `${color}20` }}
+      >
+        {avatar ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={avatar} alt="" className="w-full h-full object-cover" />
+        ) : (
+          <span className="text-xs font-headline" style={{ color, fontWeight: 700 }}>
+            {initial}
+          </span>
+        )}
+      </span>
+      <div className="min-w-0">
+        <p className="text-sm font-headline truncate" style={{ color: INK, fontWeight: 700 }}>
+          {first}
+        </p>
+        <p className="text-[10px] uppercase tracking-widest font-headline" style={{ color, fontWeight: 700 }}>
+          {isOwner ? "OWNER" : "COHOST"}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function ExpertsRow({ experts }: { experts: MeExperience["experts"] }) {
+  const shown = experts.slice(0, 2);
+  if (!shown.length) return null;
+  return (
+    <div className={`grid gap-2.5 ${shown.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
+      {shown.map((e) => (
+        <PersonBox key={e.id} name={e.name} avatar={e.avatar} role={e.role} />
+      ))}
+    </div>
+  );
+}
+
+// ─── Momentum — where you are + what's moving ────────────────
+
+function Momentum({ exp }: { exp: MeExperience }) {
+  const isLive = exp.stage === "live";
+  const tw = totalWeeks(exp.startDate, exp.endDate);
+  const cw = Math.min(currentWeek(exp.startDate), tw || 1);
+
+  if (isLive && tw > 0) {
+    return (
+      <div className="rounded-xl p-4" style={{ backgroundColor: "#F8F6F0", border: "1px solid rgba(15,34,41,0.06)" }}>
+        <div className="flex items-center justify-between">
+          <span className="text-[13px] font-bold font-headline" style={{ color: INK }}>
+            Week {cw} of {tw}
+          </span>
+          {exp.newPosts > 0 && (
+            <span
+              className="inline-flex items-center gap-1.5 text-[11px] font-bold font-headline px-2.5 py-1 rounded-full"
+              style={{ backgroundColor: "rgba(8,145,178,0.10)", color: CYAN }}
+            >
+              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: CYAN }} />
+              {exp.newPosts} new {exp.newPosts === 1 ? "post" : "posts"}
+            </span>
+          )}
+        </div>
+        <div className="h-1.5 rounded-full overflow-hidden mt-3" style={{ backgroundColor: "rgba(15,34,41,0.08)" }}>
+          <div className="h-full rounded-full" style={{ width: `${Math.round((cw / tw) * 100)}%`, backgroundColor: CYAN }} />
+        </div>
+      </div>
+    );
+  }
+
+  // Pre-launch — lead with the tribe activity (positive), not the long countdown
+  // (the cover chip already carries the "starts in N days").
+  return (
+    <div className="rounded-xl p-4" style={{ backgroundColor: "rgba(8,145,178,0.05)", border: "1px solid rgba(8,145,178,0.12)" }}>
+      {exp.newPosts > 0 ? (
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: CYAN }} />
+          <span className="text-[14px] font-black font-headline" style={{ color: CYAN }}>
+            {exp.newPosts} new {exp.newPosts === 1 ? "post" : "posts"}
+          </span>
+          <span className="text-[12px]" style={{ color: "#64748b" }}>
+            · your tribe&apos;s already active
+          </span>
+        </div>
+      ) : (
+        <p className="text-[12px] font-bold font-headline" style={{ color: "#0e7490" }}>
+          Your tribe is forming — be one of the first in.
+        </p>
+      )}
+    </div>
+  );
+}
+
 // ─── Active card (side-by-side, like the creator hero) ───────
 
 export function ParticipantExperienceCard({ exp, timeZone }: { exp: MeExperience; timeZone?: string }) {
   const spaceHref = exp.spaceId ? `/experiences/${exp.id}/space` : `/experiences/${exp.id}`;
-  const isLive = exp.stage === "live";
-  const tw = totalWeeks(exp.startDate, exp.endDate);
-  const cw = Math.min(currentWeek(exp.startDate), tw || 1);
-  const s = statusLabel(exp);
 
   return (
     <article
@@ -205,27 +304,16 @@ export function ParticipantExperienceCard({ exp, timeZone }: { exp: MeExperience
           {exp.title || "Untitled experience"}
         </h2>
 
-        {/* MOMENTUM — where you are + what's moving. */}
-        <div className="mt-5 rounded-xl p-4" style={{ border: "1px solid rgba(15,34,41,0.10)" }}>
-          <div className="flex items-center justify-between">
-            <span className="text-[13px] font-bold font-headline" style={{ color: isLive ? INK : "#475569" }}>
-              {s.label}
-            </span>
-            {exp.newPosts > 0 && (
-              <span
-                className="inline-flex items-center gap-1.5 text-[11px] font-bold font-headline px-2.5 py-1 rounded-full"
-                style={{ backgroundColor: "rgba(8,145,178,0.10)", color: CYAN }}
-              >
-                <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: CYAN }} />
-                {exp.newPosts} new {exp.newPosts === 1 ? "post" : "posts"}
-              </span>
-            )}
+        {/* PEOPLE — your experts. */}
+        {exp.experts.length > 0 && (
+          <div className="mt-5">
+            <ExpertsRow experts={exp.experts} />
           </div>
-          {isLive && tw > 0 && (
-            <div className="h-1.5 rounded-full overflow-hidden mt-3" style={{ backgroundColor: "rgba(15,34,41,0.08)" }}>
-              <div className="h-full rounded-full" style={{ width: `${Math.round((cw / tw) * 100)}%`, backgroundColor: CYAN }} />
-            </div>
-          )}
+        )}
+
+        {/* MOMENTUM — where you are + what's moving. */}
+        <div className="mt-4">
+          <Momentum exp={exp} />
         </div>
 
         {/* NEXT moment. */}

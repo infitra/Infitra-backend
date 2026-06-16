@@ -36,6 +36,7 @@ interface ChallengeRow {
   start_date: string | null;
   end_date: string | null;
   status: string;
+  owner_id: string;
 }
 
 // All data loading lives here (not in the component body) so the impure
@@ -51,7 +52,7 @@ async function loadMe(userId: string) {
 
   const { data: memberships } = await supabase
     .from("app_challenge_member")
-    .select("challenge_id, app_challenge(id, title, image_url, start_date, end_date, status)")
+    .select("challenge_id, app_challenge(id, title, image_url, start_date, end_date, status, owner_id)")
     .eq("user_id", userId)
     .order("joined_at", { ascending: false });
 
@@ -79,6 +80,46 @@ async function loadMe(userId: string) {
 
   const stageById = new Map<string, StageM>();
   for (const r of rows) stageById.set(r.id, computeStage(r.status, r.start_date, r.end_date));
+
+  // ── Experts (owner + co-hosts) per experience ──
+  // Same RLS-safe path the public buyer page uses (app_challenge_cohost.cohost_id
+  // + app_profile), so a member can read who's leading.
+  const expertsByChallenge = new Map<string, MeExperience["experts"]>();
+  if (challengeIds.length) {
+    const { data: cohostRows } = await supabase
+      .from("app_challenge_cohost")
+      .select("challenge_id, cohost_id")
+      .in("challenge_id", challengeIds);
+    const cohostsByChallenge = new Map<string, string[]>();
+    const personIds = new Set<string>();
+    for (const r of rows) personIds.add(r.owner_id);
+    for (const c of (cohostRows ?? []) as Array<{ challenge_id: string; cohost_id: string }>) {
+      const arr = cohostsByChallenge.get(c.challenge_id) ?? [];
+      arr.push(c.cohost_id);
+      cohostsByChallenge.set(c.challenge_id, arr);
+      personIds.add(c.cohost_id);
+    }
+    const profById = new Map<string, { name: string; avatar: string | null }>();
+    if (personIds.size) {
+      const { data: profs } = await supabase
+        .from("app_profile")
+        .select("id, display_name, avatar_url")
+        .in("id", [...personIds]);
+      for (const p of (profs ?? []) as Array<{ id: string; display_name: string | null; avatar_url: string | null }>) {
+        profById.set(p.id, { name: p.display_name ?? "Expert", avatar: p.avatar_url });
+      }
+    }
+    for (const r of rows) {
+      const list: MeExperience["experts"] = [];
+      const owner = profById.get(r.owner_id);
+      if (owner) list.push({ id: r.owner_id, name: owner.name, avatar: owner.avatar, role: "owner" });
+      for (const cid of cohostsByChallenge.get(r.id) ?? []) {
+        const p = profById.get(cid);
+        if (p) list.push({ id: cid, name: p.name, avatar: p.avatar, role: "cohost" });
+      }
+      expertsByChallenge.set(r.id, list);
+    }
+  }
 
   // ── Next session per experience ──
   const nextByChallenge = new Map<string, MeExperience["nextSession"]>();
@@ -155,6 +196,7 @@ async function loadMe(userId: string) {
     endDate: r.end_date,
     spaceId: spaceByChallenge.get(r.id) ?? null,
     stage: stageById.get(r.id) ?? "pre-launch",
+    experts: expertsByChallenge.get(r.id) ?? [],
     nextSession: nextByChallenge.get(r.id) ?? null,
     newPosts: postsByChallenge.get(r.id) ?? 0,
     rated: ratedSet.has(r.id),
@@ -229,6 +271,44 @@ export default async function MeHomePage() {
                 {completed.map((e) => (
                   <CompletedExperienceCard key={e.id} exp={e} />
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Discover — fills the footer + invites joining more. */}
+          {(active.length > 0 || completed.length > 0) && (
+            <div className="mt-14">
+              <div
+                className="rounded-2xl px-6 py-8 lg:px-10 lg:py-9 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5"
+                style={{
+                  background: "linear-gradient(120deg, rgba(8,145,178,0.08), rgba(255,97,48,0.08))",
+                  border: "1px solid rgba(15,34,41,0.06)",
+                }}
+              >
+                <div className="min-w-0">
+                  <p
+                    className="text-[10px] uppercase tracking-[0.25em] font-headline mb-1.5"
+                    style={{ color: "#0891b2", fontWeight: 700 }}
+                  >
+                    Discover
+                  </p>
+                  <h2
+                    className="text-xl lg:text-2xl font-headline tracking-tight"
+                    style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.015em" }}
+                  >
+                    Looking for your next experience?
+                  </h2>
+                  <p className="text-sm mt-1.5" style={{ color: "#64748b" }}>
+                    Browse live experiences from creators across INFITRA.
+                  </p>
+                </div>
+                <Link
+                  href="/"
+                  className="shrink-0 inline-flex items-center justify-center px-6 py-3 rounded-full text-white text-sm font-black font-headline transition-transform hover:scale-[1.02]"
+                  style={{ backgroundColor: "#0891b2", boxShadow: "0 4px 14px rgba(8,145,178,0.30)" }}
+                >
+                  Explore experiences →
+                </Link>
               </div>
             </div>
           )}
