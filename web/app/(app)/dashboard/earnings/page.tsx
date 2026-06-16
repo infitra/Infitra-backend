@@ -159,8 +159,8 @@ export default async function EarningsPage() {
       {/* ── Transactions: full breakdown lives here ───────── */}
       <div>
         <h2
-          className="text-lg font-black font-headline tracking-tight mb-4"
-          style={{ color: INK }}
+          className="text-[11px] uppercase tracking-[0.22em] font-headline mb-5"
+          style={{ color: "#475569", fontWeight: 700 }}
         >
           Transactions
         </h2>

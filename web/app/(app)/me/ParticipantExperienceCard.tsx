@@ -272,7 +272,7 @@ function Momentum({ exp }: { exp: MeExperience }) {
             {exp.newPosts} new {exp.newPosts === 1 ? "post" : "posts"}
           </span>
           <span className="text-[12px]" style={{ color: "#64748b" }}>
-            · your tribe&apos;s already active
+            · your tribe is already active
           </span>
         </div>
       ) : (
@@ -328,9 +328,9 @@ export function ParticipantExperienceCard({ exp, timeZone }: { exp: MeExperience
           <Link
             href={spaceHref}
             className="inline-flex items-center justify-center px-6 py-3 rounded-full text-white text-sm font-black font-headline transition-transform hover:scale-[1.02]"
-            style={{ backgroundColor: CYAN, boxShadow: "0 6px 18px rgba(8,145,178,0.30), 0 2px 6px rgba(8,145,178,0.18)" }}
+            style={{ backgroundColor: ORANGE, boxShadow: "0 6px 18px rgba(255,97,48,0.32), 0 2px 6px rgba(255,97,48,0.20)" }}
           >
-            Enter your space →
+            Enter your experience →
           </Link>
         </div>
       </div>
