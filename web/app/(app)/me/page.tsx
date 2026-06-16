@@ -302,13 +302,20 @@ export default async function MeHomePage() {
                     Browse live experiences from creators across INFITRA.
                   </p>
                 </div>
-                <Link
-                  href="/"
-                  className="shrink-0 inline-flex items-center justify-center px-6 py-3 rounded-full text-white text-sm font-black font-headline transition-transform hover:scale-[1.02]"
-                  style={{ backgroundColor: "#0891b2", boxShadow: "0 4px 14px rgba(8,145,178,0.30)" }}
+                <span
+                  className="shrink-0 inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full text-sm font-bold font-headline"
+                  style={{
+                    color: "#94a3b8",
+                    border: "1px solid rgba(15,34,41,0.12)",
+                    backgroundColor: "rgba(255,255,255,0.5)",
+                  }}
                 >
-                  Explore experiences →
-                </Link>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="9" />
+                    <path d="M12 7v5l3 2" />
+                  </svg>
+                  Coming soon
+                </span>
               </div>
             </div>
           )}
