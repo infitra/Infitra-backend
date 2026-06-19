@@ -287,7 +287,9 @@ function Momentum({ exp }: { exp: MeExperience }) {
 // ─── Active card (side-by-side, like the creator hero) ───────
 
 export function ParticipantExperienceCard({ exp, timeZone }: { exp: MeExperience; timeZone?: string }) {
-  const spaceHref = exp.spaceId ? `/experiences/${exp.id}/space` : `/experiences/${exp.id}`;
+  // Always /space — load_experience_space resolves the space across the lineage
+  // (a continuation run shares the source's space, so it has no own spaceId).
+  const spaceHref = `/experiences/${exp.id}/space`;
 
   return (
     <article
@@ -341,7 +343,7 @@ export function ParticipantExperienceCard({ exp, timeZone }: { exp: MeExperience
 // ─── Completed card (compact, with the rate nudge) ───────────
 
 export function CompletedExperienceCard({ exp }: { exp: MeExperience }) {
-  const spaceHref = exp.spaceId ? `/experiences/${exp.id}/space` : `/experiences/${exp.id}`;
+  const spaceHref = `/experiences/${exp.id}/space`;
   const dateRange = `${shortDate(exp.startDate)} → ${shortDate(exp.endDate)}`;
 
   return (

@@ -85,7 +85,7 @@ const stageConfig: Record<
 
 function destinationFor(p: ProgramSummary): string {
   if (p.stage === "completed") {
-    return p.spaceId ? `/experiences/${p.id}/space` : `/experiences/${p.id}`;
+    return `/experiences/${p.id}/space`;
   }
   return `/dashboard/collaborate/${p.id}`;
 }

@@ -592,10 +592,13 @@ export function ActiveProgramCard({ program, partner, user, density = "hero", ti
     program.stage === "drafting-solo" ||
     program.stage === "drafting-jointly" ||
     program.stage === "awaiting-signatures";
-  const spaceHref = program.spaceId
-    ? `/experiences/${program.id}/space`
-    : `/experiences/${program.id}`;
-  const doorHref = isDraftStage ? `/dashboard/collaborate/${program.id}` : spaceHref;
+  // A published experience always has a space (its own, or the lineage's for a
+  // continuation run). Link straight to /space and let load_experience_space
+  // resolve it across the lineage — pre-resolving by source_challenge_id misses
+  // continuation runs and wrongly bounces them to the buyer page.
+  const doorHref = isDraftStage
+    ? `/dashboard/collaborate/${program.id}`
+    : `/experiences/${program.id}/space`;
   const doorLabel = isDraftStage ? "Open workspace" : "Open Experience Space";
   const showShare =
     program.stage === "published-pre-launch" || program.stage === "published-live";
