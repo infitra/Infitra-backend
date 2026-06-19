@@ -19,6 +19,7 @@ import { initFromSeed } from "./initState";
 import { ExperienceHeader } from "./ExperienceHeader";
 import { TribeFeed } from "./TribeFeed";
 import { IntroActionCard } from "./IntroActionCard";
+import { ViewOnlyBanner } from "./ViewOnlyBanner";
 import { PrePulseCard } from "./PrePulseCard";
 import { ReflectionCard } from "./ReflectionCard";
 import { WeekJourney } from "./WeekJourney";
@@ -57,6 +58,10 @@ function SpaceBody({ reviewState }: { reviewState?: ReviewState }) {
   const viewer = useExperienceSpaceStore((s) => s.viewer);
   const isCreator = useExperienceSpaceStore((s) => s.isCreator);
   const isMember = useExperienceSpaceStore((s) => s.isMember);
+  const canPost = useExperienceSpaceStore((s) => s.canPost);
+  const viewerState = useExperienceSpaceStore((s) => s.viewerState);
+  const viewerRunStart = useExperienceSpaceStore((s) => s.viewerRunStart);
+  const nextChapter = useExperienceSpaceStore((s) => s.nextChapter);
   const creators = useExperienceSpaceStore((s) => s.creators);
   const sessions = useExperienceSpaceStore((s) => s.sessions);
   const actionItems = useExperienceSpaceStore((s) => s.actionItems);
@@ -111,7 +116,10 @@ function SpaceBody({ reviewState }: { reviewState?: ReviewState }) {
   }, []);
 
   const introAction = actionItems.find((a) => a.kind === "intro");
-  const showIntro = !!introAction && isMember;
+  // The server only emits the intro action when the viewer can post in the
+  // ACTIVE run (can_post) and isn't a creator — so a future-run buyer isn't
+  // prompted until their chapter goes live (case 3). Presence is the gate.
+  const showIntro = !!introAction;
   // Engagement check-ins (Bundle 6/7) — server-gated to sessions the viewer
   // attends, so no extra membership check needed here.
   const pulseActions = actionItems.filter((a) => a.kind === "pre_pulse" && a.sessionId);
@@ -127,8 +135,11 @@ function SpaceBody({ reviewState }: { reviewState?: ReviewState }) {
           (c) => c.id !== viewer.id && !reviewedSubjectIds.includes(c.id),
         )
       : [];
-  const canPost = isMember || isCreator;
   const degraded = channelStatus === "reconnecting" || channelStatus === "error";
+  // Read-only viewers: lineage members whose run isn't the live one (case 3 =
+  // upcoming, or post-completion = ended). They get the signal-on-top banner +
+  // the ~75%-whitened tribe below.
+  const viewOnly = viewerState === "upcoming" || viewerState === "ended";
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
@@ -145,6 +156,17 @@ function SpaceBody({ reviewState }: { reviewState?: ReviewState }) {
 
       {/* ── HEADER — slim, expandable ── */}
       <ExperienceHeader />
+
+      {/* ── VIEW-ONLY SIGNAL — on top, full width (case 3 / post-completion) ── */}
+      {viewOnly && (
+        <div className="mb-6">
+          <ViewOnlyBanner
+            state={viewerState as "upcoming" | "ended"}
+            runStart={viewerRunStart}
+            nextChapter={nextChapter}
+          />
+        </div>
+      )}
 
       {/* ── MOBILE: personal hub + progress up top ── */}
       <div className="lg:hidden mb-6 space-y-4">
@@ -194,9 +216,11 @@ function SpaceBody({ reviewState }: { reviewState?: ReviewState }) {
               )}
             </div>
           )}
-          <WeekJourney />
-          <div id="tribe" className="scroll-mt-24">
-            <TribeFeed spaceId={spaceId} viewer={viewer} canPost={canPost} creators={creators} />
+          <div className={viewOnly ? "space-y-6 opacity-75 pointer-events-none" : "space-y-6"}>
+            <WeekJourney />
+            <div id="tribe" className="scroll-mt-24">
+              <TribeFeed spaceId={spaceId} viewer={viewer} canPost={canPost} creators={creators} />
+            </div>
           </div>
         </main>
       </div>

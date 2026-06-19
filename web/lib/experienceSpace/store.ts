@@ -106,6 +106,21 @@ export interface ExperienceProgress {
   progressPercent: number;
 }
 
+/** The purchasable next run in this lineage — drives the ended-state Continue. */
+export interface NextChapter {
+  id: string;
+  title: string;
+  startDate: string;
+  priceCents: number;
+  currency: string;
+}
+
+/** Where the viewer stands relative to the run that's live in this space:
+ *  creator = host/co-host; active = your run is the live one (full posting);
+ *  upcoming = you hold a future run while a prior one is live (case 3, read-only);
+ *  ended = your run is over and a later one is live (read-only + Continue). */
+export type ViewerState = "creator" | "active" | "upcoming" | "ended";
+
 /** Hub → feed intent: which composer mode to open when jumping to the feed. */
 export type ComposeIntent = "share" | "question" | null;
 
@@ -142,6 +157,14 @@ export interface ExperienceSpaceState {
   isCreator: boolean;
   isOwner: boolean;
   isMember: boolean;
+  /** Can the viewer post in the space's ACTIVE run right now (server-authoritative —
+   *  bundle on the live run, or admin). Drives the composer + the intro card. */
+  canPost: boolean;
+  viewerState: ViewerState;
+  /** When the viewer's own (upcoming) run opens — for the read-along banner. */
+  viewerRunStart: string | null;
+  /** The purchasable next chapter, when the viewer's run has ended. */
+  nextChapter: NextChapter | null;
   programState: ProgramState | null;
   creators: SpaceCreator[];
   sessions: SpaceSession[];

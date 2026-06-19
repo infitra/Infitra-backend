@@ -17,6 +17,8 @@ import type {
   SpaceSession,
   TribeMember,
   ActionItem,
+  ViewerState,
+  NextChapter,
 } from "./store";
 
 export interface RawExperienceSpaceSnapshot {
@@ -24,6 +26,10 @@ export interface RawExperienceSpaceSnapshot {
   is_creator?: boolean;
   is_owner?: boolean;
   is_member?: boolean;
+  can_post?: boolean;
+  viewer_state?: ViewerState;
+  viewer_run_start?: string | null;
+  next_chapter?: NextChapter | null;
   space_id?: string;
   viewer?: ExperienceViewer;
   progress?: ExperienceProgress | null;
@@ -57,6 +63,12 @@ export function mapSnapshot(
     isCreator: raw.is_creator ?? false,
     isOwner: raw.is_owner ?? false,
     isMember: raw.is_member ?? false,
+    // can_post is server-authoritative; the ?? fallback only matters if a stale
+    // backend omits it, in which case we degrade to the old member/creator rule.
+    canPost: raw.can_post ?? (raw.is_creator || raw.is_member) ?? false,
+    viewerState: raw.viewer_state ?? "active",
+    viewerRunStart: raw.viewer_run_start ?? null,
+    nextChapter: raw.next_chapter ?? null,
     programState: raw.program_state ?? null,
     creators: raw.creators ?? [],
     sessions: raw.sessions ?? [],
