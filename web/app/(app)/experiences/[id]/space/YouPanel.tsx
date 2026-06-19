@@ -28,7 +28,6 @@ import { CalendarButton } from "@/app/components/CalendarButton";
 
 const ORANGE = "#FF6130";
 const CYAN = "#0891b2";
-const GREEN = "#1D9E75";
 const RED = "#ef4444";
 const INK = "#0F2229";
 
@@ -361,12 +360,12 @@ function NextChapterSection({
   const href = published
     ? `/experiences/${continuation.nextRunId}`
     : `/dashboard/collaborate/${continuation.nextRunId}`;
-  const color = published ? GREEN : CYAN;
+  const color = published ? ORANGE : CYAN;
   const label = published ? "Next run is live" : "Draft in progress";
   const line = published
-    ? continuation.nextRunStart ? `Starts ${fmtRunDate(continuation.nextRunStart)}` : "Open the next run"
+    ? continuation.nextRunStart ? `Starts ${fmtRunDate(continuation.nextRunStart)}` : "View the next run"
     : "Finish & publish the next run";
-  const cta = published ? "Open" : "Finish";
+  const cta = published ? "View" : "Finish";
 
   return (
     <Section label="Next chapter">
