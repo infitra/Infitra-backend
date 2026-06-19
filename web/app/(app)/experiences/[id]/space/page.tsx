@@ -49,6 +49,29 @@ export default async function ExperienceSpacePage({
     }
   }
 
+  // Creator-only continuation signal: the next run in this lineage (if any) and
+  // whether this run has started — you continue a running/wrapped experience, not
+  // an upcoming one. Drives the "Next chapter" console action. (continued_from
+  // children are own/visible drafts + published siblings, so RLS allows the read.)
+  let continuation:
+    | { status: string; nextRunId: string | null; nextRunStart: string | null }
+    | null = null;
+  if (seed.isCreator && seed.experience.startDate <= new Date().toISOString().split("T")[0]) {
+    const { data: nextRun } = await supabase
+      .from("app_challenge")
+      .select("id, status, start_date")
+      .eq("continued_from_challenge_id", id)
+      .order("start_date", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const nr = nextRun as { id: string; status: string; start_date: string } | null;
+    continuation = {
+      status: nr?.status ?? "none",
+      nextRunId: nr?.id ?? null,
+      nextRunStart: nr?.start_date ?? null,
+    };
+  }
+
   const { data: prof } = await supabase
     .from("app_profile")
     .select("display_name, role")
@@ -94,7 +117,7 @@ export default async function ExperienceSpacePage({
     <div className="min-h-screen">
       <ParticipantNav displayName={prof?.display_name ?? null} role={prof?.role} />
       <div className="pt-20">
-        <ExperienceSpaceShell seed={seed} initialCreatorStats={initialCreatorStats} reviewState={reviewState} />
+        <ExperienceSpaceShell seed={seed} initialCreatorStats={initialCreatorStats} reviewState={reviewState} continuation={continuation} />
       </div>
     </div>
   );

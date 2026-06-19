@@ -88,6 +88,48 @@ export async function createDraftChallenge() {
 }
 
 /**
+ * Starts the next run of an experience — the creator-facing continuation entry
+ * point. Clones the source (sessions, co-hosts + their splits, per-session hosts,
+ * structure) into a draft via create_challenge_continuation_draft, stamps the
+ * shared lineage (continuation_group_id), and drops the owner in the workspace to
+ * adjust dates/details and publish through the normal flow. Owner-only (the RPC
+ * enforces it). Default dates: the day after this run ends, for the same length —
+ * the creator edits them in the workspace.
+ */
+export async function createContinuationDraft(sourceChallengeId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+
+  const { data: src, error: srcErr } = await supabase
+    .from("app_challenge")
+    .select("start_date, end_date")
+    .eq("id", sourceChallengeId)
+    .single();
+  if (srcErr || !src) throw new Error(srcErr?.message ?? "Experience not found");
+
+  const dayMs = 24 * 60 * 60 * 1000;
+  const srcStart = new Date(src.start_date as string);
+  const srcEnd = new Date(src.end_date as string);
+  const durationDays = Math.max(0, Math.round((srcEnd.getTime() - srcStart.getTime()) / dayMs));
+  const start = new Date(srcEnd.getTime() + dayMs);
+  const end = new Date(start.getTime() + durationDays * dayMs);
+  const fmt = (d: Date) => d.toISOString().split("T")[0];
+
+  const { data: newId, error } = await supabase.rpc("create_challenge_continuation_draft", {
+    p_source_challenge: sourceChallengeId,
+    p_start_date: fmt(start),
+    p_end_date: fmt(end),
+  });
+  if (error) throw new Error(error.message);
+
+  redirect(`/dashboard/collaborate/${newId}`);
+}
+
+/**
  * Updates a draft challenge. Owner OR any cohost may edit while drafting and
  * before the contract is locked. Calls update_challenge_workspace (SECURITY
  * DEFINER) so the same path serves both roles. Locked-down columns

@@ -23,7 +23,7 @@ import { ViewOnlyBanner } from "./ViewOnlyBanner";
 import { PrePulseCard } from "./PrePulseCard";
 import { ReflectionCard } from "./ReflectionCard";
 import { WeekJourney } from "./WeekJourney";
-import { YouPanel } from "./YouPanel";
+import { YouPanel, type CreatorContinuation } from "./YouPanel";
 import { ProgressCard } from "./ProgressCard";
 import { ReviewCard } from "./ReviewCard";
 import { CollabReviewCard } from "./CollabReviewCard";
@@ -40,19 +40,21 @@ export function ExperienceSpaceShell({
   seed,
   initialCreatorStats,
   reviewState,
+  continuation,
 }: {
   seed: ExperienceSpaceSeed;
   initialCreatorStats?: CreatorStats | null;
   reviewState?: ReviewState;
+  continuation?: CreatorContinuation | null;
 }) {
   return (
     <ExperienceSpaceStoreProvider initialState={initFromSeed(seed, initialCreatorStats ?? null)}>
-      <SpaceBody reviewState={reviewState} />
+      <SpaceBody reviewState={reviewState} continuation={continuation} />
     </ExperienceSpaceStoreProvider>
   );
 }
 
-function SpaceBody({ reviewState }: { reviewState?: ReviewState }) {
+function SpaceBody({ reviewState, continuation }: { reviewState?: ReviewState; continuation?: CreatorContinuation | null }) {
   const experience = useExperienceSpaceStore((s) => s.experience);
   const spaceId = useExperienceSpaceStore((s) => s.spaceId);
   const viewer = useExperienceSpaceStore((s) => s.viewer);
@@ -170,14 +172,14 @@ function SpaceBody({ reviewState }: { reviewState?: ReviewState }) {
 
       {/* ── MOBILE: personal hub + progress up top ── */}
       <div className="lg:hidden mb-6 space-y-4">
-        <YouPanel />
+        <YouPanel continuation={continuation} />
         <ProgressCard />
       </div>
 
       {/* ── LOCKER ROOM: sticky hub rail + main content ── */}
       <div className="lg:grid lg:grid-cols-[340px_minmax(0,1fr)] lg:gap-6 lg:items-start">
         <aside className="hidden lg:flex lg:flex-col lg:gap-4 lg:sticky lg:top-24">
-          <YouPanel />
+          <YouPanel continuation={continuation} />
           <ProgressCard />
         </aside>
 

@@ -19,14 +19,16 @@
  * red = live.
  */
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, useTransition, type ReactNode } from "react";
 import { useExperienceSpaceStore } from "@/lib/experienceSpace/StoreProvider";
 import { buildWeekJourney, programStatus } from "@/lib/experienceSpace/weekJourney";
+import { createContinuationDraft } from "@/app/actions/challenge";
 import { Avatar } from "./Avatar";
 import { CalendarButton } from "@/app/components/CalendarButton";
 
 const ORANGE = "#FF6130";
 const CYAN = "#0891b2";
+const GREEN = "#1D9E75";
 const RED = "#ef4444";
 const INK = "#0F2229";
 
@@ -48,12 +50,20 @@ function countdown(iso: string, now: number) {
   return `${Math.floor(h / 24)}d`;
 }
 
-export function YouPanel() {
+/** The creator-facing continuation signal for this experience's lineage. */
+export type CreatorContinuation = {
+  status: string;
+  nextRunId: string | null;
+  nextRunStart: string | null;
+};
+
+export function YouPanel({ continuation }: { continuation?: CreatorContinuation | null }) {
   const viewer = useExperienceSpaceStore((s) => s.viewer);
   const experience = useExperienceSpaceStore((s) => s.experience);
   const programState = useExperienceSpaceStore((s) => s.programState);
   const sessions = useExperienceSpaceStore((s) => s.sessions);
   const isCreator = useExperienceSpaceStore((s) => s.isCreator);
+  const isOwner = useExperienceSpaceStore((s) => s.isOwner);
   const memberCount = useExperienceSpaceStore((s) => s.memberCount);
   const setComposeIntent = useExperienceSpaceStore((s) => s.setComposeIntent);
 
@@ -203,6 +213,9 @@ export function YouPanel() {
           <Section label="Engagement">
             <EngageBtn href="#tribe-composer" label="Share with your Tribe" color={CYAN} onClick={() => setComposeIntent("share")} />
           </Section>
+
+          {/* ── NEXT CHAPTER ── continuation signal + action, once this run has started. */}
+          <NextChapterSection continuation={continuation ?? null} sourceId={experience.id} isOwner={isOwner} />
         </>
       ) : (
         <>
@@ -291,5 +304,86 @@ function EngageBtn({ href, label, color, onClick }: { href: string; label: strin
         <polyline points="9 18 15 12 9 6" />
       </svg>
     </a>
+  );
+}
+
+function fmtRunDate(iso: string): string {
+  return new Date(`${iso}T00:00:00`).toLocaleDateString("en-GB", { day: "numeric", month: "long" });
+}
+
+// Owner-only: clone this run into the next draft and land in the workspace.
+function StartNextRunButton({ sourceId }: { sourceId: string }) {
+  const [starting, startTransition] = useTransition();
+  return (
+    <button
+      type="button"
+      onClick={() => startTransition(() => createContinuationDraft(sourceId))}
+      disabled={starting}
+      className="flex w-full items-center justify-center gap-1.5 rounded-xl py-3 text-[13px] font-black font-headline transition-transform hover:scale-[1.01] disabled:opacity-60"
+      style={{ backgroundColor: `${CYAN}14`, color: CYAN, boxShadow: `inset 0 0 0 1.5px ${CYAN}40` }}
+    >
+      {starting ? "Starting…" : "Start the next run"}
+      {!starting && (
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={CYAN} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="9 18 15 12 9 6" />
+        </svg>
+      )}
+    </button>
+  );
+}
+
+// The continuation signal. Renders nothing unless this is a creator on a run that
+// has started. none → owner gets the start action; draft/published → a link.
+function NextChapterSection({
+  continuation,
+  sourceId,
+  isOwner,
+}: {
+  continuation: CreatorContinuation | null;
+  sourceId: string;
+  isOwner: boolean;
+}) {
+  if (!continuation) return null;
+
+  if (continuation.status === "none") {
+    if (!isOwner) return null;
+    return (
+      <Section label="Next chapter">
+        <p className="text-[12px] font-bold font-headline mb-2.5" style={{ color: "#64748b" }}>
+          Bring your group into the next run — we&apos;ll copy your sessions and team into a draft you can adjust.
+        </p>
+        <StartNextRunButton sourceId={sourceId} />
+      </Section>
+    );
+  }
+
+  const published = continuation.status === "published";
+  const href = published
+    ? `/experiences/${continuation.nextRunId}`
+    : `/dashboard/collaborate/${continuation.nextRunId}`;
+  const color = published ? GREEN : CYAN;
+  const label = published ? "Next run is live" : "Draft in progress";
+  const line = published
+    ? continuation.nextRunStart ? `Starts ${fmtRunDate(continuation.nextRunStart)}` : "Open the next run"
+    : "Finish & publish the next run";
+  const cta = published ? "Open" : "Finish";
+
+  return (
+    <Section label="Next chapter">
+      <a
+        href={href}
+        className="flex items-center gap-2 rounded-xl px-3.5 py-3 transition-transform hover:scale-[1.01]"
+        style={{ backgroundColor: `${color}14`, boxShadow: `inset 0 0 0 1.5px ${color}40` }}
+      >
+        <div className="min-w-0 flex-1">
+          <p className="text-[9px] uppercase tracking-[0.16em] font-headline" style={{ color, fontWeight: 800 }}>{label}</p>
+          <p className="text-[13px] font-black font-headline" style={{ color: INK }} suppressHydrationWarning>{line}</p>
+        </div>
+        <span className="text-[11px] font-black font-headline shrink-0" style={{ color }}>{cta}</span>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="9 18 15 12 9 6" />
+        </svg>
+      </a>
+    </Section>
   );
 }
