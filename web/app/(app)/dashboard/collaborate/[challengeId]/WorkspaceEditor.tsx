@@ -65,6 +65,9 @@ interface Props {
     promiseEditorName: string | null;
   };
   isOwner: boolean;
+  /** Continuation: earliest allowed start (day after the previous run ends).
+   *  null for a normal draft — no lower bound beyond "must be in the future". */
+  minStartDate?: string | null;
   currentUserId: string;
   ownerProfile: {
     id: string;
@@ -133,6 +136,7 @@ export function WorkspaceEditor({
   isOwner,
   currentUserId,
   activity,
+  minStartDate,
 }: Props) {
   const router = useRouter();
   const { status: saveStatus, runSave } = useSaveStatus();
@@ -455,6 +459,10 @@ export function WorkspaceEditor({
     if (!startDate) { setError("Start date is required."); return; }
     if (new Date(startDate) <= new Date()) {
       setError("Start date must be in the future.");
+      return;
+    }
+    if (minStartDate && startDate < minStartDate) {
+      setError("The next run must start after the previous run ends.");
       return;
     }
     // When start moves, end_date moves with it (in lock-step, preserving
@@ -979,6 +987,7 @@ export function WorkspaceEditor({
                   <input
                     type="date"
                     value={startDate}
+                    min={minStartDate || undefined}
                     onChange={(e) => setStartDate(e.target.value)}
                     onBlur={commitStartDate}
                     className="w-full rounded-xl p-2.5 text-sm font-bold font-headline focus:outline-none"

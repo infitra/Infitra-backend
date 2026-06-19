@@ -30,6 +30,7 @@ interface WorkspaceSnapshot {
   status: string;
   space_id: string | null;
   owner_split: number;
+  min_start_date: string | null;
   dm_conversation_id: string | null;
   challenge: WorkspaceChallenge;
   owner_profile: WorkspaceProfile;
@@ -111,6 +112,7 @@ export default async function CollaborateWorkspacePage({
           currentUserId={user.id}
           profileMap={ws.profile_map}
           challenge={ws.challenge}
+          minStartDate={ws.min_start_date}
           isOwner={ws.is_owner}
           ownerProfile={ws.owner_profile}
           ownerSplit={ws.owner_split}

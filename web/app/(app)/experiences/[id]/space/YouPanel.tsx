@@ -319,12 +319,12 @@ function StartNextRunButton({ sourceId }: { sourceId: string }) {
       type="button"
       onClick={() => startTransition(() => createContinuationDraft(sourceId))}
       disabled={starting}
-      className="flex w-full items-center justify-center gap-1.5 rounded-xl py-3 text-[13px] font-black font-headline transition-transform hover:scale-[1.01] disabled:opacity-60"
-      style={{ backgroundColor: `${CYAN}14`, color: CYAN, boxShadow: `inset 0 0 0 1.5px ${CYAN}40` }}
+      className="flex w-full items-center justify-center gap-1.5 rounded-xl py-3 text-[13px] font-black font-headline text-white transition-transform hover:scale-[1.01] disabled:opacity-60"
+      style={{ backgroundColor: ORANGE, boxShadow: "0 4px 14px rgba(255,97,48,0.32)" }}
     >
-      {starting ? "Starting…" : "Start the next run"}
+      {starting ? "Preparing…" : "Prepare next run"}
       {!starting && (
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={CYAN} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="9 18 15 12 9 6" />
         </svg>
       )}
