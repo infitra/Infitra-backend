@@ -106,13 +106,16 @@ export interface ExperienceProgress {
   progressPercent: number;
 }
 
-/** The purchasable next run in this lineage — drives the ended-state Continue. */
-export interface NextChapter {
+/** A run in this lineage the viewer can still buy (active or upcoming) — drives
+ *  the ended member's join-chooser and an active member's "continue". */
+export interface JoinableRun {
   id: string;
   title: string;
   startDate: string;
+  endDate: string;
   priceCents: number;
   currency: string;
+  isActive: boolean;
 }
 
 /** Where the viewer stands relative to the run that's live in this space:
@@ -163,8 +166,8 @@ export interface ExperienceSpaceState {
   viewerState: ViewerState;
   /** When the viewer's own (upcoming) run opens — for the read-along banner. */
   viewerRunStart: string | null;
-  /** The purchasable next chapter, when the viewer's run has ended. */
-  nextChapter: NextChapter | null;
+  /** Purchasable runs in this lineage the viewer doesn't hold (active + upcoming). */
+  joinableRuns: JoinableRun[];
   programState: ProgramState | null;
   creators: SpaceCreator[];
   sessions: SpaceSession[];

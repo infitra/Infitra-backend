@@ -19,7 +19,8 @@ import { initFromSeed } from "./initState";
 import { ExperienceHeader } from "./ExperienceHeader";
 import { TribeFeed } from "./TribeFeed";
 import { IntroActionCard } from "./IntroActionCard";
-import { ViewOnlyBanner } from "./ViewOnlyBanner";
+import { ViewOnlyBanner, ContinueStrip } from "./ViewOnlyBanner";
+import { Antechamber } from "./Antechamber";
 import { PrePulseCard } from "./PrePulseCard";
 import { ReflectionCard } from "./ReflectionCard";
 import { WeekJourney } from "./WeekJourney";
@@ -63,7 +64,7 @@ function SpaceBody({ reviewState, continuation }: { reviewState?: ReviewState; c
   const canPost = useExperienceSpaceStore((s) => s.canPost);
   const viewerState = useExperienceSpaceStore((s) => s.viewerState);
   const viewerRunStart = useExperienceSpaceStore((s) => s.viewerRunStart);
-  const nextChapter = useExperienceSpaceStore((s) => s.nextChapter);
+  const joinableRuns = useExperienceSpaceStore((s) => s.joinableRuns);
   const creators = useExperienceSpaceStore((s) => s.creators);
   const sessions = useExperienceSpaceStore((s) => s.sessions);
   const actionItems = useExperienceSpaceStore((s) => s.actionItems);
@@ -138,10 +139,20 @@ function SpaceBody({ reviewState, continuation }: { reviewState?: ReviewState; c
         )
       : [];
   const degraded = channelStatus === "reconnecting" || channelStatus === "error";
-  // Read-only viewers: lineage members whose run isn't the live one (case 3 =
-  // upcoming, or post-completion = ended). They get the signal-on-top banner +
-  // the ~75%-whitened tribe below.
-  const viewOnly = viewerState === "upcoming" || viewerState === "ended";
+  // Only the ENDED viewer sees the whitened live room + join-chooser. UPCOMING
+  // gets a focused antechamber (below) — nothing of the current cohort. An ACTIVE
+  // member with a future run gets a subtle "continue" nudge.
+  const isEnded = viewerState === "ended";
+  const futureRun = joinableRuns.find((r) => !r.isActive) ?? null;
+
+  // Upcoming: a future-run buyer while a prior run is still live. Focused wait.
+  if (viewerState === "upcoming") {
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        <Antechamber experience={experience} runStart={viewerRunStart} creators={creators} />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
@@ -159,14 +170,15 @@ function SpaceBody({ reviewState, continuation }: { reviewState?: ReviewState; c
       {/* ── HEADER — slim, expandable ── */}
       <ExperienceHeader />
 
-      {/* ── VIEW-ONLY SIGNAL — on top, full width (case 3 / post-completion) ── */}
-      {viewOnly && (
+      {/* ── ENDED: read-along + join-chooser · ACTIVE: continue nudge ── */}
+      {isEnded && (
         <div className="mb-6">
-          <ViewOnlyBanner
-            state={viewerState as "upcoming" | "ended"}
-            runStart={viewerRunStart}
-            nextChapter={nextChapter}
-          />
+          <ViewOnlyBanner joinableRuns={joinableRuns} />
+        </div>
+      )}
+      {viewerState === "active" && futureRun && (
+        <div className="mb-6">
+          <ContinueStrip run={futureRun} />
         </div>
       )}
 
@@ -218,7 +230,7 @@ function SpaceBody({ reviewState, continuation }: { reviewState?: ReviewState; c
               )}
             </div>
           )}
-          <div className={viewOnly ? "space-y-6 opacity-75 pointer-events-none" : "space-y-6"}>
+          <div className={isEnded ? "space-y-6 opacity-75 pointer-events-none" : "space-y-6"}>
             <WeekJourney />
             <div id="tribe" className="scroll-mt-24">
               <TribeFeed spaceId={spaceId} viewer={viewer} canPost={canPost} creators={creators} />

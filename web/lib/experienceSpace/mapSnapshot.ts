@@ -18,7 +18,7 @@ import type {
   TribeMember,
   ActionItem,
   ViewerState,
-  NextChapter,
+  JoinableRun,
 } from "./store";
 
 export interface RawExperienceSpaceSnapshot {
@@ -29,7 +29,7 @@ export interface RawExperienceSpaceSnapshot {
   can_post?: boolean;
   viewer_state?: ViewerState;
   viewer_run_start?: string | null;
-  next_chapter?: NextChapter | null;
+  joinable_runs?: JoinableRun[];
   space_id?: string;
   viewer?: ExperienceViewer;
   progress?: ExperienceProgress | null;
@@ -68,7 +68,7 @@ export function mapSnapshot(
     canPost: raw.can_post ?? (raw.is_creator || raw.is_member) ?? false,
     viewerState: raw.viewer_state ?? "active",
     viewerRunStart: raw.viewer_run_start ?? null,
-    nextChapter: raw.next_chapter ?? null,
+    joinableRuns: raw.joinable_runs ?? [],
     programState: raw.program_state ?? null,
     creators: raw.creators ?? [],
     sessions: raw.sessions ?? [],
