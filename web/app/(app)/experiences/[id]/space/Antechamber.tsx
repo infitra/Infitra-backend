@@ -53,10 +53,10 @@ export function Antechamber({
           {experience.title}
         </h1>
         <p className="text-lg sm:text-xl font-black font-headline mt-4" style={{ color: INK }} suppressHydrationWarning>
-          Your chapter opens {runStart ? fmtChapterDate(runStart) : "soon"}
+          Your experience starts {runStart ? fmtChapterDate(runStart) : "soon"}
         </p>
         <p className="text-[14px] font-medium mt-2.5 max-w-md mx-auto" style={{ color: "#5b7886" }}>
-          The current group is mid-run. We&apos;ll bring you into the tribe when your chapter opens — and invite you to introduce yourself then.
+          Infitra experiences are alive and all about momentum. The current tribe is mid-run. We&apos;ll bring you into the tribe when the experience opens its next run with you as a vital part!
         </p>
         {creators.length > 0 && (
           <div className="mt-7">
