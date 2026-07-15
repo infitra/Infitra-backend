@@ -55,6 +55,9 @@ interface Program {
   newPosts?: number;
   nextSession?: ProgramSession | null;
   sessions?: ProgramSession[];
+  /** The upcoming next run in this lineage, folded into this card (it flips to
+   *  become the active run once this one ends). */
+  nextRun?: { id: string; title: string; startDate: string | null; stage: ProgramStage } | null;
 }
 
 interface Partner {
@@ -580,6 +583,28 @@ function SecondaryActions({ program }: { program: Program }) {
   );
 }
 
+// The next run in this lineage, folded into the active run's card — one lineage,
+// one card. Links to the next run's public page (to preview / share).
+function NextRunChip({ nextRun }: { nextRun: NonNullable<Program["nextRun"]> }) {
+  return (
+    <Link
+      href={`/experiences/${nextRun.id}`}
+      className="inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 transition-colors hover:bg-[#0891b2]/[0.06]"
+      style={{ backgroundColor: "rgba(8,145,178,0.07)", boxShadow: "inset 0 0 0 1px rgba(8,145,178,0.20)" }}
+    >
+      <span className="text-[10px] uppercase tracking-[0.14em] font-headline" style={{ color: CYAN, fontWeight: 800 }}>
+        Next run
+      </span>
+      <span className="text-[12px] font-bold font-headline" style={{ color: INK }} suppressHydrationWarning>
+        starts {formatEndDate(nextRun.startDate)}
+      </span>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={CYAN} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="9 18 15 12 9 6" />
+      </svg>
+    </Link>
+  );
+}
+
 // ─── Main ────────────────────────────────────────────────────
 
 export function ActiveProgramCard({ program, partner, user, density = "hero", timeZone }: Props) {
@@ -660,6 +685,12 @@ export function ActiveProgramCard({ program, partner, user, density = "hero", ti
           <PrimaryActionPill label={doorLabel} kind="navigate" href={doorHref} variant="filled" />
           <SecondaryActions program={program} />
         </div>
+
+        {program.nextRun && (
+          <div className="mt-4">
+            <NextRunChip nextRun={program.nextRun} />
+          </div>
+        )}
       </div>
     </article>
   );

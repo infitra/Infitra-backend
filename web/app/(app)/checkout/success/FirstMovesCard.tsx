@@ -11,6 +11,14 @@ const CYAN = "#0891b2";
 const INK = "#0F2229";
 const MUTED = "#64748b";
 
+function fmtChapterOpens(iso: string): string {
+  return new Date(`${iso}T00:00:00`).toLocaleDateString("en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+}
+
 /**
  * Post-purchase "first moves" card. Sits below the "You're in!" confirmation.
  * Everything is optional — the escape is labelled "Later", never "Skip".
@@ -27,12 +35,16 @@ const MUTED = "#64748b";
 export function FirstMovesCard({
   challengeId,
   entitled,
+  canIntro,
+  chapterOpens,
   introPrompt,
   initialDisplayName,
   initialAvatarUrl,
 }: {
   challengeId: string;
   entitled: boolean;
+  canIntro: boolean;
+  chapterOpens: string | null;
   introPrompt: string;
   initialDisplayName: string;
   initialAvatarUrl: string | null;
@@ -79,8 +91,10 @@ export function FirstMovesCard({
       return;
     }
 
+    // Intro only when the run they bought is live (canIntro). An upcoming buyer
+    // introduces at kickoff, not here.
     const intro = introText.trim();
-    if (intro) {
+    if (canIntro && intro) {
       // Fire-and-forget: if not enrolled yet, it defers to the in-space prompt.
       await submitIntro(challengeId, intro);
     }
@@ -161,30 +175,49 @@ export function FirstMovesCard({
         How your tribe sees you.
       </p>
 
-      {/* Intro */}
-      <div
-        className="rounded-2xl p-4 mb-6"
-        style={{ backgroundColor: "rgba(8,145,178,0.06)", boxShadow: `inset 3.5px 0 0 ${CYAN}` }}
-      >
-        <p
-          className="text-[11px] font-black font-headline uppercase tracking-[0.12em] mb-1.5"
-          style={{ color: CYAN }}
+      {/* Intro — offered only when the run they bought is live. An upcoming buyer
+          (bought a future run while a prior one runs) is told it comes at kickoff. */}
+      {canIntro ? (
+        <div
+          className="rounded-2xl p-4 mb-6"
+          style={{ backgroundColor: "rgba(8,145,178,0.06)", boxShadow: `inset 3.5px 0 0 ${CYAN}` }}
         >
-          Your experts asked
-        </p>
-        <p className="text-sm font-semibold mb-3" style={{ color: INK }}>
-          {introPrompt}
-        </p>
-        <textarea
-          value={introText}
-          onChange={(e) => setIntroText(e.target.value)}
-          maxLength={2000}
-          rows={3}
-          placeholder="Share a little about yourself with the tribe…"
-          className="w-full px-3.5 py-2.5 rounded-xl text-sm outline-none resize-none"
-          style={{ border: "1px solid rgba(8,145,178,0.25)", color: INK, backgroundColor: "white" }}
-        />
-      </div>
+          <p
+            className="text-[11px] font-black font-headline uppercase tracking-[0.12em] mb-1.5"
+            style={{ color: CYAN }}
+          >
+            Your experts asked
+          </p>
+          <p className="text-sm font-semibold mb-3" style={{ color: INK }}>
+            {introPrompt}
+          </p>
+          <textarea
+            value={introText}
+            onChange={(e) => setIntroText(e.target.value)}
+            maxLength={2000}
+            rows={3}
+            placeholder="Share a little about yourself with the tribe…"
+            className="w-full px-3.5 py-2.5 rounded-xl text-sm outline-none resize-none"
+            style={{ border: "1px solid rgba(8,145,178,0.25)", color: INK, backgroundColor: "white" }}
+          />
+        </div>
+      ) : (
+        <div
+          className="rounded-2xl p-4 mb-6"
+          style={{ backgroundColor: "rgba(8,145,178,0.06)", boxShadow: `inset 3.5px 0 0 ${CYAN}` }}
+        >
+          <p
+            className="text-[11px] font-black font-headline uppercase tracking-[0.12em] mb-1.5"
+            style={{ color: CYAN }}
+          >
+            Your chapter is next
+          </p>
+          <p className="text-sm font-semibold" style={{ color: INK }} suppressHydrationWarning>
+            {chapterOpens ? `Opens ${fmtChapterOpens(chapterOpens)}.` : "Opens soon."} We&apos;ll invite you
+            to introduce yourself the moment it does.
+          </p>
+        </div>
+      )}
 
       {error && (
         <p className="text-xs mb-3 text-center" style={{ color: "#b91c1c" }}>

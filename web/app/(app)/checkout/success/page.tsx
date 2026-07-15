@@ -76,16 +76,34 @@ export default async function CheckoutSuccessPage({
     }
   }
 
-  // The experts' intro question for the resolved Experience (with a fallback).
+  // The experts' intro question for the resolved Experience (with a fallback), plus
+  // whether to offer the intro NOW. Only when the run they bought is the one live
+  // in its lineage: a continuation bought while a prior run is still running (the
+  // buyer is "upcoming") suppresses the intro here — it'd land in a cohort they
+  // aren't part of yet. The antechamber promises it at kickoff instead.
   let introPrompt = DEFAULT_INTRO_PROMPT;
+  let canIntro = true;
+  let chapterOpens: string | null = null;
   if (challengeId) {
     const { data: ch } = await supabase
       .from("app_challenge")
-      .select("intro_prompt")
+      .select("intro_prompt, continuation_group_id, start_date")
       .eq("id", challengeId)
       .maybeSingle();
-    const p = (ch?.intro_prompt as string | null)?.trim();
+    const c = ch as
+      | { intro_prompt: string | null; continuation_group_id: string | null; start_date: string | null }
+      | null;
+    const p = c?.intro_prompt?.trim();
     if (p) introPrompt = p;
+    if (c?.continuation_group_id) {
+      const { data: active } = await supabase.rpc("current_active_challenge_in_group", {
+        p_continuation_group: c.continuation_group_id,
+      });
+      if (active && active !== challengeId) {
+        canIntro = false;
+        chapterOpens = c.start_date;
+      }
+    }
   }
 
   return (
@@ -134,6 +152,8 @@ export default async function CheckoutSuccessPage({
             <FirstMovesCard
               challengeId={challengeId}
               entitled={entitled}
+              canIntro={canIntro}
+              chapterOpens={chapterOpens}
               introPrompt={introPrompt}
               initialDisplayName={profile?.display_name ?? ""}
               initialAvatarUrl={(profile?.avatar_url as string | null) ?? null}

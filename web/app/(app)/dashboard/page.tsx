@@ -46,6 +46,7 @@ interface ChallengeRow {
   owner_id: string;
   contract_id: string | null;
   created_at: string;
+  continuation_group_id: string | null;
 }
 
 export interface ProgramSummary {
@@ -57,6 +58,10 @@ export interface ProgramSummary {
   endDate: string | null;
   isOwner: boolean;
   spaceId: string | null;
+  continuationGroupId: string | null;
+  /** The upcoming next run in this lineage, folded into the active run's card
+   *  (set by collapseLineages). null when there is no distinct next run. */
+  nextRun: { id: string; title: string; startDate: string | null; stage: ProgramStage } | null;
   partner: {
     id: string;
     name: string;
@@ -128,6 +133,51 @@ function otherRank(s: ProgramStage): number {
   return 99;
 }
 
+function isDraftStage(s: ProgramStage): boolean {
+  return s === "drafting-solo" || s === "drafting-jointly" || s === "awaiting-signatures";
+}
+
+// One card per lineage: a continuation group's PUBLISHED runs collapse into the
+// currently-active run, carrying the upcoming next run as an inside-the-card chip
+// (the card "flips" to the next run once the live one ends). Drafts are never
+// collapsed — they stay in the Drafts section.
+function collapseLineages(programs: ProgramSummary[]): ProgramSummary[] {
+  const byGroup = new Map<string, ProgramSummary[]>();
+  const passthrough: ProgramSummary[] = [];
+  for (const p of programs) {
+    if (p.continuationGroupId && !isDraftStage(p.stage)) {
+      const arr = byGroup.get(p.continuationGroupId) ?? [];
+      arr.push(p);
+      byGroup.set(p.continuationGroupId, arr);
+    } else {
+      passthrough.push(p);
+    }
+  }
+  const collapsed: ProgramSummary[] = [];
+  for (const runs of byGroup.values()) {
+    if (runs.length === 1) {
+      collapsed.push(runs[0]);
+      continue;
+    }
+    const byStart = (a: ProgramSummary, b: ProgramSummary) =>
+      (a.startDate ?? "").localeCompare(b.startDate ?? "");
+    const live = runs.filter((r) => r.stage === "published-live").sort(byStart);
+    const upcoming = runs.filter((r) => r.stage === "published-pre-launch").sort(byStart);
+    const rest = runs
+      .filter((r) => r.stage !== "published-live" && r.stage !== "published-pre-launch")
+      .sort((a, b) => byStart(b, a));
+    const rep = live[0] ?? upcoming[0] ?? rest[0] ?? runs[0];
+    const next = upcoming.find((r) => r.id !== rep.id) ?? null;
+    collapsed.push({
+      ...rep,
+      nextRun: next
+        ? { id: next.id, title: next.title, startDate: next.startDate, stage: next.stage }
+        : null,
+    });
+  }
+  return [...passthrough, ...collapsed];
+}
+
 // ─── Data loader ────────────────────────────────────────────
 
 async function loadDashboard(userId: string) {
@@ -143,13 +193,13 @@ async function loadDashboard(userId: string) {
         .single(),
       supabase
         .from("app_challenge")
-        .select("id, title, image_url, status, start_date, end_date, owner_id, contract_id, created_at")
+        .select("id, title, image_url, status, start_date, end_date, owner_id, contract_id, created_at, continuation_group_id")
         .eq("owner_id", userId)
         .order("created_at", { ascending: false }),
       supabase
         .from("app_challenge_cohost")
         .select(
-          "challenge_id, app_challenge(id, title, image_url, status, start_date, end_date, owner_id, contract_id, created_at)",
+          "challenge_id, app_challenge(id, title, image_url, status, start_date, end_date, owner_id, contract_id, created_at, continuation_group_id)",
         )
         .eq("cohost_id", userId),
       supabase
@@ -261,7 +311,7 @@ async function loadDashboard(userId: string) {
   }
 
   // Build program summaries with stage + partner
-  const programs: ProgramSummary[] = allChallenges
+  const rawPrograms: ProgramSummary[] = allChallenges
     .map((ch) => {
       const cohostIds = cohostMap[ch.id] ?? [];
       const pendingTo = pendingPartnerInvites[ch.id] ?? null;
@@ -291,12 +341,18 @@ async function loadDashboard(userId: string) {
         endDate: ch.end_date,
         isOwner: ch.isOwner,
         spaceId: spaceIds[ch.id] ?? null,
+        continuationGroupId: ch.continuation_group_id,
+        nextRun: null,
         partner,
       };
     })
     // Hide stale empty drafts (defensive — the create-page cleanup
     // also handles this on its own visit)
     .filter((p) => p.stage !== ("completed" as ProgramStage) || p.endDate);
+
+  // One card per lineage: collapse a continuation group's published runs into the
+  // active run, carrying the upcoming next run as an inside-the-card chip.
+  const programs = collapseLineages(rawPrograms);
 
   // Phase D — for ACTIVE programs, enrich with insights + next session
   const activePrograms = programs.filter((p) => isActiveStage(p.stage));
