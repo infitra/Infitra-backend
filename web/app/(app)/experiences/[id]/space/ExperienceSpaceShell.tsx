@@ -19,7 +19,7 @@ import { initFromSeed } from "./initState";
 import { ExperienceHeader } from "./ExperienceHeader";
 import { TribeFeed } from "./TribeFeed";
 import { IntroActionCard } from "./IntroActionCard";
-import { ViewOnlyBanner, ContinueStrip } from "./ViewOnlyBanner";
+import { ReactivateCard, ContinueStrip } from "./ViewOnlyBanner";
 import { Antechamber } from "./Antechamber";
 import { PrePulseCard } from "./PrePulseCard";
 import { ReflectionCard } from "./ReflectionCard";
@@ -139,10 +139,10 @@ function SpaceBody({ reviewState, continuation }: { reviewState?: ReviewState; c
         )
       : [];
   const degraded = channelStatus === "reconnecting" || channelStatus === "error";
-  // Only the ENDED viewer sees the whitened live room + join-chooser. UPCOMING
-  // gets a focused antechamber (below) — nothing of the current cohort. An ACTIVE
-  // member with a future run gets a subtle "continue" nudge.
-  const isEnded = viewerState === "ended";
+  // Threshold viewers don't get the normal room. UPCOMING → a focused antechamber
+  // (nothing of the current cohort). ENDED → the live room strongly frosted +
+  // inert behind a centered re-activate card. ACTIVE member with a future run →
+  // a subtle "continue" nudge (below, inside the room).
   const futureRun = joinableRuns.find((r) => !r.isActive) ?? null;
 
   // Upcoming: a future-run buyer while a prior run is still live. Focused wait.
@@ -150,6 +150,27 @@ function SpaceBody({ reviewState, continuation }: { reviewState?: ReviewState; c
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <Antechamber experience={experience} runStart={viewerRunStart} creators={creators} />
+      </div>
+    );
+  }
+
+  // Ended: this viewer's run wrapped and the lineage moved on. The live room is
+  // rendered strongly frosted + non-interactive as a backdrop; a centered
+  // re-activate card owns the screen so it's unmistakable you're outside this
+  // run — it keeps going without you unless you rejoin.
+  if (viewerState === "ended") {
+    return (
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 min-h-[80vh]">
+        <div className="opacity-[0.28] blur-[3px] pointer-events-none select-none" aria-hidden="true">
+          <ExperienceHeader />
+          <div className="mt-6 space-y-6">
+            <WeekJourney />
+            <TribeFeed spaceId={spaceId} viewer={viewer} canPost={false} creators={creators} />
+          </div>
+        </div>
+        <div className="absolute inset-0 z-10 flex items-start justify-center px-4 pt-[7vh] sm:pt-[11vh] pointer-events-none">
+          <ReactivateCard experience={experience} joinableRuns={joinableRuns} creators={creators} />
+        </div>
       </div>
     );
   }
@@ -170,12 +191,7 @@ function SpaceBody({ reviewState, continuation }: { reviewState?: ReviewState; c
       {/* ── HEADER — slim, expandable ── */}
       <ExperienceHeader />
 
-      {/* ── ENDED: read-along + join-chooser · ACTIVE: continue nudge ── */}
-      {isEnded && (
-        <div className="mb-6">
-          <ViewOnlyBanner joinableRuns={joinableRuns} />
-        </div>
-      )}
+      {/* ── ACTIVE member with a published future run: subtle continue nudge ── */}
       {viewerState === "active" && futureRun && (
         <div className="mb-6">
           <ContinueStrip run={futureRun} />
@@ -230,7 +246,7 @@ function SpaceBody({ reviewState, continuation }: { reviewState?: ReviewState; c
               )}
             </div>
           )}
-          <div className={isEnded ? "space-y-6 opacity-75 pointer-events-none" : "space-y-6"}>
+          <div className="space-y-6">
             <WeekJourney />
             <div id="tribe" className="scroll-mt-24">
               <TribeFeed spaceId={spaceId} viewer={viewer} canPost={canPost} creators={creators} />

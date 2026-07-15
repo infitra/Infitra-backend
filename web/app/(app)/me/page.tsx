@@ -188,6 +188,50 @@ async function loadMe(userId: string) {
     for (const rv of (reviews ?? []) as Array<{ challenge_id: string }>) ratedSet.add(rv.challenge_id);
   }
 
+  // ── Continuation: for a completed run, the lineage's joinable run (live now or
+  // the next upcoming) the viewer doesn't already hold — so the completed card
+  // can signal "this moved on" and offer the way back in. Mirrors the backend's
+  // joinable_runs rule (published · not held · not ended · live-first).
+  const continuationByChallenge = new Map<string, { id: string; startDate: string | null; isActive: boolean }>();
+  if (completedIds.length) {
+    const { data: grpRows } = await supabase
+      .from("app_challenge")
+      .select("id, continuation_group_id")
+      .in("id", completedIds);
+    const groupByCompleted = new Map<string, string>();
+    const groupIds = new Set<string>();
+    for (const g of (grpRows ?? []) as Array<{ id: string; continuation_group_id: string | null }>) {
+      if (g.continuation_group_id) {
+        groupByCompleted.set(g.id, g.continuation_group_id);
+        groupIds.add(g.continuation_group_id);
+      }
+    }
+    if (groupIds.size) {
+      const today = new Date().toISOString().slice(0, 10);
+      const { data: runs } = await supabase
+        .from("app_challenge")
+        .select("id, continuation_group_id, start_date, end_date")
+        .in("continuation_group_id", [...groupIds])
+        .eq("status", "published");
+      const held = new Set(challengeIds);
+      const byGroup = new Map<string, Array<{ id: string; start_date: string | null; end_date: string | null }>>();
+      for (const run of (runs ?? []) as Array<{ id: string; continuation_group_id: string | null; start_date: string | null; end_date: string | null }>) {
+        if (!run.continuation_group_id || held.has(run.id)) continue; // already a member
+        if (run.end_date && run.end_date < today) continue; // already ended
+        const arr = byGroup.get(run.continuation_group_id) ?? [];
+        arr.push(run);
+        byGroup.set(run.continuation_group_id, arr);
+      }
+      for (const [cid, group] of groupByCompleted) {
+        const cands = byGroup.get(group) ?? [];
+        if (!cands.length) continue;
+        const live = cands.find((r) => r.start_date && r.start_date <= today && (!r.end_date || r.end_date >= today));
+        const chosen = live ?? [...cands].sort((a, b) => (a.start_date ?? "").localeCompare(b.start_date ?? ""))[0];
+        continuationByChallenge.set(cid, { id: chosen.id, startDate: chosen.start_date, isActive: !!live });
+      }
+    }
+  }
+
   const experiences: MeExperience[] = rows.map((r) => ({
     id: r.id,
     title: r.title,
@@ -200,6 +244,7 @@ async function loadMe(userId: string) {
     nextSession: nextByChallenge.get(r.id) ?? null,
     newPosts: postsByChallenge.get(r.id) ?? 0,
     rated: ratedSet.has(r.id),
+    continuation: continuationByChallenge.get(r.id) ?? null,
   }));
 
   const active = experiences.filter((e) => e.stage !== "completed");

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { RateExperienceButton } from "./RateExperienceButton";
 
 /**
  * The participant's view of an experience they've joined — the symmetric
@@ -30,6 +31,9 @@ export interface MeExperience {
   nextSession: { title: string; startTime: string; imageUrl: string | null } | null;
   newPosts: number;
   rated: boolean;
+  /** For a completed run whose lineage moved on: the joinable next/live run the
+   *  viewer doesn't already hold. Drives the "this continued — rejoin" strip. */
+  continuation: { id: string; startDate: string | null; isActive: boolean } | null;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────
@@ -382,6 +386,30 @@ export function CompletedExperienceCard({ exp }: { exp: MeExperience }) {
           {dateRange}
         </p>
 
+        {/* CONTINUATION — the lineage moved on. Signal "not done, it continues"
+            and offer the door back in (→ the ended re-activate card in the space,
+            which resolves to the live/next run). */}
+        {exp.continuation && (
+          <Link
+            href={`/experiences/${exp.continuation.id}/space`}
+            className="mt-3 flex items-center justify-between gap-2 rounded-xl px-3 py-2 transition-transform hover:scale-[1.01]"
+            style={{ backgroundColor: "rgba(255,97,48,0.06)", boxShadow: "0 0 0 1px rgba(255,97,48,0.18)" }}
+          >
+            <div className="min-w-0">
+              <p className="text-[10px] uppercase tracking-[0.14em] font-headline flex items-center gap-1.5" style={{ color: ORANGE, fontWeight: 800 }}>
+                {exp.continuation.isActive && <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ backgroundColor: ORANGE }} />}
+                {exp.continuation.isActive ? "Continues · live now" : "This continues"}
+              </p>
+              <p className="text-[12px] font-bold font-headline truncate mt-0.5" style={{ color: INK }} suppressHydrationWarning>
+                {exp.continuation.isActive
+                  ? "The tribe moved on — jump back in"
+                  : `Next run · starts ${shortDate(exp.continuation.startDate)}`}
+              </p>
+            </div>
+            <span className="shrink-0 text-sm font-black font-headline" style={{ color: ORANGE }}>→</span>
+          </Link>
+        )}
+
         <div className="mt-auto pt-4 flex items-center gap-3">
           {exp.rated ? (
             <span className="inline-flex items-center gap-1 text-[12px] font-bold font-headline" style={{ color: "#475569" }}>
@@ -391,16 +419,7 @@ export function CompletedExperienceCard({ exp }: { exp: MeExperience }) {
               Rated
             </span>
           ) : (
-            <Link
-              href={spaceHref}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-white text-xs font-black font-headline transition-transform hover:scale-[1.02]"
-              style={{ backgroundColor: ORANGE, boxShadow: "0 4px 14px rgba(255,97,48,0.30)" }}
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="#FFFFFF" stroke="#FFFFFF" strokeWidth="1.5" strokeLinejoin="round">
-                <path d="M12 2l2.9 6.3 6.9.7-5.1 4.6 1.4 6.8L12 17.8 5.9 20.4l1.4-6.8L2.2 9l6.9-.7z" />
-              </svg>
-              Rate this experience
-            </Link>
+            <RateExperienceButton challengeId={exp.id} experienceTitle={exp.title} />
           )}
           <Link
             href={spaceHref}
