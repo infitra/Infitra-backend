@@ -2,29 +2,26 @@ import { EX, ALEX, MIRA } from "./content";
 import { INK, ORANGE, CYAN, FAINT, PRODUCT_SHADOW, Person } from "./ui";
 
 /**
- * Faithful mock of the real buyer page's hero card (PublicChallengeHero):
- * cover + LIVE pill, kicker title, promise headline, experts, stats, price CTA.
- * `compact` renders the smaller Move-4 variant ("publish → it's real").
- * Labeled "Example experience" — Alex & Mira are demo personas, never
- * presented as customer proof.
+ * Faithful, STRIPPED mock of the real buyer page's hero card: cover + LIVE
+ * pill, kicker title, promise headline, experts, CTA. Conceptual by design —
+ * no price, no dates, no operational chrome (polish round 1).
+ *
+ * `compact`   — smaller paddings, no stats line (the Move-04 payoff).
+ * `frameless` — no outer radius/shadow; the browser frame supplies the chrome.
  */
-export function MockBuyerCard({ compact = false }: { compact?: boolean }) {
+export function MockBuyerCard({
+  compact = false,
+  frameless = false,
+}: {
+  compact?: boolean;
+  frameless?: boolean;
+}) {
   return (
     <div
-      className="rounded-3xl overflow-hidden text-left"
-      style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }}
+      className={`${frameless ? "" : "rounded-3xl"} overflow-hidden text-left`}
+      style={{ backgroundColor: "#FFFFFF", ...(frameless ? {} : { boxShadow: PRODUCT_SHADOW }) }}
       aria-hidden
     >
-      {/* Top strip — what this is + honesty label */}
-      <div className="flex items-center justify-between px-5 pt-3.5 pb-2.5">
-        <span className="text-[9px] uppercase tracking-[0.22em] font-headline" style={{ color: CYAN, fontWeight: 800 }}>
-          INFITRA Experience
-        </span>
-        <span className="text-[9px] uppercase tracking-[0.18em] font-headline" style={{ color: FAINT, fontWeight: 700 }}>
-          Example experience
-        </span>
-      </div>
-
       {/* Cover */}
       <div className={`relative overflow-hidden ${compact ? "aspect-[16/8]" : "aspect-[16/9]"}`} style={{ backgroundColor: INK }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -42,7 +39,7 @@ export function MockBuyerCard({ compact = false }: { compact?: boolean }) {
         </span>
       </div>
 
-      <div className={compact ? "p-5" : "p-5 md:p-6"}>
+      <div className={compact ? "p-5" : "p-6"}>
         <p className="text-[10px] uppercase tracking-[0.2em] font-headline mb-1.5" style={{ color: FAINT, fontWeight: 800 }}>
           {EX.title}
         </p>
@@ -53,27 +50,24 @@ export function MockBuyerCard({ compact = false }: { compact?: boolean }) {
           {EX.promise}
         </p>
 
-        {!compact && (
-          <div className="grid grid-cols-2 gap-3 mt-4">
-            <Person avatar={ALEX.avatar} name={ALEX.name} tag={ALEX.tag} color={ORANGE} size={36} />
-            <Person avatar={MIRA.avatar} name={MIRA.name} tag={MIRA.tag} color={CYAN} size={36} />
-          </div>
-        )}
+        <div className="grid grid-cols-2 gap-3 mt-4">
+          <Person avatar={ALEX.avatar} name={ALEX.name} tag={ALEX.tag} color={ORANGE} size={compact ? 32 : 36} />
+          <Person avatar={MIRA.avatar} name={MIRA.name} tag={MIRA.tag} color={CYAN} size={compact ? 32 : 36} />
+        </div>
 
-        <p className="text-[11.5px] font-bold font-headline mt-4" style={{ color: "#5b7886" }}>
-          {EX.weeks} weeks · {EX.sessions} live sessions
-          <span style={{ color: FAINT, fontWeight: 600 }}> · Always on: Tribe + Expert access</span>
-        </p>
+        {!compact && (
+          <p className="text-[12px] font-bold font-headline mt-4" style={{ color: "#5b7886" }}>
+            {EX.weeks} weeks · {EX.sessions} live sessions
+            <span style={{ color: FAINT, fontWeight: 600 }}> · Always on: Tribe + Expert access</span>
+          </p>
+        )}
 
         <div
           className="mt-4 rounded-full py-3 text-center text-white text-sm font-black font-headline"
           style={{ backgroundColor: ORANGE, boxShadow: "0 4px 14px rgba(255,97,48,0.32)" }}
         >
-          I&apos;m in · CHF {EX.priceChf}
+          I&apos;m in →
         </div>
-        <p className="text-[10.5px] text-center mt-2" style={{ color: FAINT }}>
-          {EX.dates} · one checkout, receipts included
-        </p>
       </div>
     </div>
   );
