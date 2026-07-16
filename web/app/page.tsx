@@ -852,6 +852,172 @@ export default function LandingPage() {
             </div>
           </section>
 
+          {/* ── [4.5] THE LIVING EXPERIENCE — how it actually looks now ── */}
+          <section className="px-6 py-24">
+            <div className="max-w-4xl mx-auto">
+              <div className="text-center mb-12">
+                <p
+                  className="text-xs uppercase tracking-[0.25em] mb-3 font-headline"
+                  style={{ color: "#0891b2", fontWeight: 700 }}
+                >
+                  The living experience
+                </p>
+                <h2
+                  className="text-3xl md:text-4xl lg:text-5xl font-headline tracking-tight"
+                  style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.02em" }}
+                >
+                  Not a video library.<br className="hidden sm:block" /> A room they show up to.
+                </h2>
+                <p className="text-base md:text-lg mt-5 max-w-xl mx-auto leading-relaxed" style={{ color: "#475569" }}>
+                  Every program becomes a live space — the week&apos;s sessions, a shared tribe, and
+                  real-time progress. This is what your members actually open.
+                </p>
+              </div>
+
+              {/* Framed app mockup — the Experience Space (locker room) */}
+              <div
+                className="rounded-3xl overflow-hidden"
+                style={{
+                  backgroundColor: "#FFFFFF",
+                  border: "1px solid rgba(15,34,41,0.08)",
+                  boxShadow: "0 30px 80px rgba(15,34,41,0.18), 0 10px 30px rgba(15,34,41,0.08)",
+                }}
+              >
+                {/* Header strip */}
+                <div
+                  className="flex items-center justify-between gap-3 px-5 md:px-6 py-4"
+                  style={{ borderBottom: "1px solid rgba(15,34,41,0.07)" }}
+                >
+                  <div className="min-w-0">
+                    <span
+                      className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-widest font-headline"
+                      style={{ color: "#ef4444", fontWeight: 800 }}
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#ef4444] animate-pulse" />
+                      Live · Week 1 of 4
+                    </span>
+                    <p
+                      className="text-lg md:text-xl font-headline tracking-tight"
+                      style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.02em" }}
+                    >
+                      The Reset
+                    </p>
+                  </div>
+                  <div className="flex items-center -space-x-2 shrink-0">
+                    <img src="/landing/avatar-alex.jpg" alt="" className="w-8 h-8 rounded-full object-cover" style={{ border: "2px solid #FFFFFF" }} />
+                    <img src="/landing/avatar-mira.jpg" alt="" className="w-8 h-8 rounded-full object-cover" style={{ border: "2px solid #FFFFFF" }} />
+                  </div>
+                </div>
+
+                {/* Body — hub + journey/tribe */}
+                <div
+                  className="p-5 md:p-6 grid gap-5 md:grid-cols-[230px_minmax(0,1fr)]"
+                  style={{ backgroundColor: "#FAF8F3" }}
+                >
+                  {/* HUB — you */}
+                  <div className="rounded-2xl p-4" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.05)" }}>
+                    <div className="flex items-center gap-2.5">
+                      <span
+                        className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
+                        style={{ backgroundColor: "rgba(8,145,178,0.14)", border: "2px solid rgba(8,145,178,0.35)" }}
+                      >
+                        <span className="text-sm font-headline" style={{ color: "#0891b2", fontWeight: 700 }}>A</span>
+                      </span>
+                      <div>
+                        <p className="text-sm font-headline" style={{ color: "#0F2229", fontWeight: 700 }}>Anna</p>
+                        <p className="text-[10px] uppercase tracking-widest font-headline" style={{ color: "#0891b2", fontWeight: 700 }}>Member</p>
+                      </div>
+                    </div>
+
+                    {/* progress ring */}
+                    <div className="mt-4 flex items-center gap-3">
+                      <div className="relative shrink-0" style={{ width: 52, height: 52 }}>
+                        <svg width="52" height="52" viewBox="0 0 36 36">
+                          <circle cx="18" cy="18" r="15.9" fill="none" stroke="#ECE7DD" strokeWidth="3.2" />
+                          <circle cx="18" cy="18" r="15.9" fill="none" stroke="#0891b2" strokeWidth="3.2" strokeLinecap="round" strokeDasharray="12 100" transform="rotate(-90 18 18)" />
+                        </svg>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <span className="text-[11px] font-black font-headline" style={{ color: "#0F2229" }}>12%</span>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-[13px] font-headline" style={{ color: "#0F2229", fontWeight: 700 }}>1 of 8 attended</p>
+                        <p className="text-[11px]" style={{ color: "#64748b" }}>7 sessions ahead</p>
+                      </div>
+                    </div>
+
+                    {/* engagement */}
+                    <div className="mt-4 space-y-2">
+                      <div className="rounded-xl py-2 text-center text-[12px] font-headline" style={{ color: "#0891b2", fontWeight: 700, backgroundColor: "rgba(8,145,178,0.08)" }}>
+                        Share with your Tribe
+                      </div>
+                      <div className="rounded-xl py-2 text-center text-[12px] font-headline" style={{ color: "#FF6130", fontWeight: 700, backgroundColor: "rgba(255,97,48,0.07)" }}>
+                        Ask your Experts
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* MAIN — journey + tribe */}
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.22em] font-headline mb-3" style={{ color: "#0F2229", fontWeight: 800 }}>
+                      The journey · Week 1 of 4
+                    </p>
+                    <div className="space-y-2">
+                      {/* DONE */}
+                      <div className="flex items-center gap-3 rounded-xl px-3.5 py-3" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.05)" }}>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[9px] uppercase tracking-widest font-headline" style={{ color: "#94a3b8", fontWeight: 700 }}>Week 1 · Mon</p>
+                          <p className="text-[13px] font-headline truncate" style={{ color: "#0F2229", fontWeight: 700 }}>Kickoff — meet your coaches</p>
+                        </div>
+                        <span className="shrink-0 inline-flex items-center gap-1 text-[11px] font-headline" style={{ color: "#475569", fontWeight: 700 }}>
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0891b2" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+                          Done
+                        </span>
+                      </div>
+                      {/* NEXT — highlighted */}
+                      <div className="flex items-center gap-3 rounded-xl px-3.5 py-3" style={{ backgroundColor: "rgba(255,97,48,0.05)", boxShadow: "0 0 0 1.5px rgba(255,97,48,0.30)" }}>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[9px] uppercase tracking-widest font-headline" style={{ color: "#FF6130", fontWeight: 800 }}>Next moment · Thu</p>
+                          <p className="text-[13px] font-headline truncate" style={{ color: "#0F2229", fontWeight: 700 }}>Build your base · Alex</p>
+                        </div>
+                        <span className="shrink-0 text-[12px] font-black font-headline" style={{ color: "#FF6130" }}>in 2d</span>
+                      </div>
+                      {/* UPCOMING */}
+                      <div className="flex items-center gap-3 rounded-xl px-3.5 py-3" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.05)" }}>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[9px] uppercase tracking-widest font-headline" style={{ color: "#94a3b8", fontWeight: 700 }}>Week 2 · Tue</p>
+                          <p className="text-[13px] font-headline truncate" style={{ color: "#0F2229", fontWeight: 700 }}>Eat for energy · Mira</p>
+                        </div>
+                        <span className="shrink-0 text-[10px] uppercase tracking-widest font-headline" style={{ color: "#94a3b8", fontWeight: 700 }}>Upcoming</span>
+                      </div>
+                    </div>
+
+                    {/* TRIBE */}
+                    <p className="text-[10px] uppercase tracking-[0.22em] font-headline mt-5 mb-3" style={{ color: "#0F2229", fontWeight: 800 }}>
+                      The tribe
+                    </p>
+                    <div className="rounded-xl px-3.5 py-3 flex gap-2.5" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.05)" }}>
+                      <span
+                        className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
+                        style={{ backgroundColor: "rgba(8,145,178,0.14)" }}
+                      >
+                        <span className="text-[11px] font-headline" style={{ color: "#0891b2", fontWeight: 700 }}>A</span>
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-[12px] font-headline" style={{ color: "#0F2229", fontWeight: 700 }}>
+                          Anna <span style={{ color: "#94a3b8", fontWeight: 600 }}>· just now</span>
+                        </p>
+                        <p className="text-[13px]" style={{ color: "#475569" }}>
+                          So ready for this — first time training live with a group! 💪
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
           {/* ── [5] FINAL CTA ──────────────────────────── */}
           <section className="px-6 py-32 text-center">
             <div className="max-w-3xl mx-auto">
@@ -881,7 +1047,7 @@ export default function LandingPage() {
                 Apply for the pilot
               </Link>
               <p className="text-xs mt-4 tracking-wide" style={{ color: "#94a3b8" }}>
-                Reviewed individually. Pilot launches Q3.
+                Reviewed individually · starting now. Founding cohort — 90% of revenue stays with creators.
               </p>
             </div>
           </section>

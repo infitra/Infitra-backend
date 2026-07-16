@@ -2205,3 +2205,90 @@ Discovered mid-Phase-2 during a notifications pass; cleanup + a review-model cor
 
 ### Gate before building: architecture + safety/DR analysis — ✅ DONE & CLEARED
 `ARCHITECTURE_AND_SAFETY.md` written and cleared: where everything lives (Supabase, Vercel, GitHub origin, Stripe, Daily, domain/DNS, env/secrets) + safety against loss (git/origin redundancy, Supabase backups/PITR + restore drill, secrets/env backup, account access + 2FA, single-points-of-failure, device-loss resilience, recovery runbook) + prioritized fix-list.
+
+---
+
+## 11. v6 — ASAP pilot: recruit now, finish in parallel (AUTHORITATIVE)
+
+> Supersedes §10's ordering. Trigger (2026-07-16): founder is ready to reach out to
+> real pilot creators **now**. §10's last big pre-pilot build item — the
+> **continuation flow** — is **DONE**. So the gating constraint flips from "finish
+> building" to "start recruiting": outreach → conversations → approval → onboarding
+> → a creator designing + publishing a real program is **weeks of calendar time**.
+> Recruit in parallel with the short remaining build to the first REAL paid run.
+
+### What changed since §10
+- **Continuation flow — ✅ DONE & simulated** (Phases 0–7, deployed; see
+  `project_continuation_strategy` memory). Room = the active run; per-viewer states
+  (creator / active / upcoming / ended); ended = strongly-frosted room + centered
+  re-activate card with dated Join/Enroll + "See full details"; upcoming =
+  antechamber; creator self-serve "prepare next run"; dashboard lineage-collapse;
+  per-run reviews reachable (rate modal on `/me` + console "To do"); warmer copy.
+  This was §10's last major pre-pilot build item → **pre-pilot build set is now
+  effectively complete** bar the finishing items in Track B.
+- **Founder is outreach-ready** → the **recruitment vehicle (landing + `/apply`)**
+  is now the critical path, not more product build.
+
+### Locked pilot parameters (confirmed 2026-07-16)
+- **Real money**, **founding 10%** platform fee (time-limited; → **15%** post-pilot).
+  10% is already built + live (H2, `app_setting` + per-creator override).
+- **Manual payout** for the pilot; **Stripe Connect deferred** until *after* a
+  successful pilot (needs incorporation + business account — founder does this
+  post-pilot only).
+- **5 pilot pairs max.** Then a scale gate → **20 active creators + ≥10 active
+  products** before considering public creator sign-up.
+- **Before public creator go-live (hard gate, post-pilot):** content-safety /
+  regulation layer — banned-content detection, moderation tooling, staff-governance
+  activation.
+- **Vercel Pro** flipped **just before** the first real-money run; all current data
+  is dummy/test, so Hobby is fine until then.
+- **Reviews captured from pilot day 1** (submission is done; *visibility* is Track B).
+
+### Two tracks, run in parallel
+
+**Track A — Recruit NOW (unblocks the calendar; do first):**
+- **H6 · Landing refresh = the recruitment vehicle.** Rewrite the landing to promote
+  INFITRA *as it actually is now* — real product insight (collaboration workspace,
+  buyer page, live Experience Space, transparent revenue split, continuation), a
+  single strong CTA → `/apply`, founding-creator framing (10% founding fee, hands-on
+  pilot support, reference-partner status). The current landing predates most of the
+  built product; make it read true.
+- **`/apply` pass** — the pilot application flow already exists
+  (`app_pilot_application` + form + `/pilot-terms`). Review the ask/fields + copy for
+  the founding-creator pitch; confirm admin can triage (`status`:
+  new→contacted→accepted→declined). Onboarding captures payout details **off-DB**.
+- Outreach begins the moment landing + apply read true to the product.
+
+**Track B — Finish to the first REAL run (before any real-money session goes live):**
+- **Bundle 11 · Dress rehearsal / E2E verification — highest technical priority.**
+  Drive the REAL loop once, Stripe test-mode + a real Daily.co session:
+  apply → approve → onboard → create → publish → buy (webhook → entitlement) →
+  join token → live video → engagement loop → reflect → review → earnings accrual.
+  Fix what breaks. This is the one thing we have NOT proven end-to-end on real
+  integrations (states/entitlements were verified at the data layer + fabricated).
+- **Bundle 10 · Emails (lean)** — minimum: **session reminder** ("starts in ~1h");
+  then kickoff + missed-session. Turnout is everything for live.
+- **Review visibility (lean)** — surface the rating on the **buyer page + expert
+  profile** (H3's deferred social-proof; ratings are lineage-cumulative via
+  `continuation_group_id` — design the carry-across, then show).
+- **H1 · Vercel Pro + spend cap** — compliance gate; flip immediately before real money.
+- **H5 polish (as needed)** — creator dashboard / `/me` / earnings; already advanced
+  through the continuation work.
+
+### Order
+```
+NOW:          H6 landing + /apply pass   → begin creator outreach
+IN PARALLEL:  Bundle 11 dress rehearsal (real buy→live loop)
+              → Bundle 10 emails (session reminder first)
+              → review visibility (buyer page + expert profile)
+              → H1 Vercel Pro (immediately before first real run)
+POST-PILOT:   Stripe Connect · tiered pricing · scale to 20/10
+              · content-safety layer → public creator sign-up
+```
+
+### First-real-run gate (all true before a paid session runs)
+1. ≥1 real creator onboarded with a published real program.
+2. Dress rehearsal green (real buy → live → reflect → earnings accrual).
+3. Session-reminder email firing.
+4. Vercel Pro live + spend cap set.
+5. Payout details captured (off-DB) for that creator.
