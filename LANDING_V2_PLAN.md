@@ -1,7 +1,21 @@
-# LANDING V2 — The Product-Showcase Landing (plan · pre-implementation)
+# LANDING V2 — The Product-Showcase Landing (plan · CONFIRMED & BUILT)
 
-> Status: PLAN ONLY — awaiting Yves' confirmation before any implementation.
-> Goal date: ASAP (Track A of PILOT_PLAN §11 — the recruitment vehicle).
+> Status: **LIVE at infitra.fit/new** (commit 933ef94) as the production polishing
+> workspace — noindex until promoted to `/`. Goal: Track A of PILOT_PLAN §11.
+>
+> **Decisions confirmed (2026-07-16):** D1 yes — real flagship with "Example
+> experience" label. D2 pilot-only 10%, kept QUIET (numbers in the earnings mock
+> + one bullet in pilot terms; the platform speaks, not the economics). D3
+> mockups only. D4 English only. D5 "program" is legacy — **experiences
+> vocabulary everywhere** (hero: "Build an experience beyond what you can offer
+> alone."); "platform" accepted for now.
+>
+> **Also fixed while building:** proxy.ts beta gate was blocking /apply +
+> /pilot-terms (funnel-breaking for outreach) — now PUBLIC_ROUTES with /new.
+> Implementation: `web/app/new/` (content.ts single source; ui.tsx primitives;
+> Hero / FourMoves / Money / TheRoom / Continues / Handled / FoundingPilot /
+> Process / Depth). Promotion = render the same sections from `app/page.tsx`,
+> remove noindex, delete /new.
 
 ---
 
