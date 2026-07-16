@@ -1,8 +1,19 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { updateSession } from "@/lib/supabase/proxy";
 
-// Routes that are always public — no beta gate, no auth required
-const PUBLIC_ROUTES = ["/", "/beta-access", "/auth/callback", "/test-wave-light"];
+// Routes that are always public — no beta gate, no auth required.
+// /apply + /pilot-terms are the outreach funnel — a creator clicking
+// "Apply for the pilot" from the landing must NEVER hit the beta gate.
+// /new is the landing-V2 polishing workspace (noindex; promoted to / later).
+const PUBLIC_ROUTES = [
+  "/",
+  "/new",
+  "/apply",
+  "/pilot-terms",
+  "/beta-access",
+  "/auth/callback",
+  "/test-wave-light",
+];
 
 // Public prefixes — any path starting with one of these is treated
 // as public (no beta gate, no auth required). Used for routes that
