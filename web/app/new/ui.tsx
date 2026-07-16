@@ -86,54 +86,6 @@ export function ApplyCTA({
   );
 }
 
-/**
- * The 60/40 split bar — THE number of the whole system. Used identically in
- * the contract mock (the handshake) and the money mock (the payout), so the
- * two rhyme: the split you signed is the split that books itself.
- */
-export function SplitBar({
-  left,
-  right,
-}: {
-  left: { avatar: string; name: string; role: string; pct: number; color: string };
-  right: { avatar: string; name: string; role: string; pct: number; color: string };
-}) {
-  return (
-    <div aria-hidden>
-      <div className="flex items-center justify-between mb-2.5 gap-3">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <span className="shrink-0 w-9 h-9 rounded-full overflow-hidden" style={{ border: `1.5px solid ${left.color}59` }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={left.avatar} alt="" className="w-full h-full object-cover" />
-          </span>
-          <span className="min-w-0">
-            <span className="block text-[13px] font-headline truncate" style={{ color: INK, fontWeight: 800 }}>{left.name}</span>
-            <span className="block text-[9.5px] uppercase tracking-widest font-headline" style={{ color: left.color, fontWeight: 800 }}>{left.role}</span>
-          </span>
-        </div>
-        <div className="flex items-center gap-2.5 min-w-0 text-right">
-          <span className="min-w-0">
-            <span className="block text-[13px] font-headline truncate" style={{ color: INK, fontWeight: 800 }}>{right.name}</span>
-            <span className="block text-[9.5px] uppercase tracking-widest font-headline" style={{ color: right.color, fontWeight: 800 }}>{right.role}</span>
-          </span>
-          <span className="shrink-0 w-9 h-9 rounded-full overflow-hidden" style={{ border: `1.5px solid ${right.color}59` }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={right.avatar} alt="" className="w-full h-full object-cover" />
-          </span>
-        </div>
-      </div>
-      <div className="flex h-8 rounded-full overflow-hidden text-white text-[13px] font-black font-headline">
-        <div className="flex items-center pl-4" style={{ width: `${left.pct}%`, backgroundColor: left.color }}>
-          {left.pct}%
-        </div>
-        <div className="flex items-center justify-end pr-4" style={{ width: `${right.pct}%`, backgroundColor: right.color }}>
-          {right.pct}%
-        </div>
-      </div>
-    </div>
-  );
-}
-
 /** Tiny person chip — avatar + name + role-colored tagline. */
 export function Person({
   avatar,

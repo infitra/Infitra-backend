@@ -1,28 +1,31 @@
 import Link from "next/link";
 import { WaveFlowingBackground } from "@/app/components/WaveFlowingBackground";
 import { Hero } from "./Hero";
-import { FourMoves } from "./FourMoves";
-import { Money } from "./Money";
+import { WhatYouCanBuild } from "./WhatYouCanBuild";
+import { HowItWorks } from "./HowItWorks";
+import { TakenCareOf } from "./TakenCareOf";
 import { Bridge, TheRoom } from "./TheRoom";
-import { Continues } from "./Continues";
-import { Handled } from "./Handled";
 import { FoundingPilot } from "./FoundingPilot";
 import { Process } from "./Process";
 import { Depth, Footer } from "./Depth";
 
 /**
- * LANDING V2 — the product-showcase landing (LANDING_V2_PLAN.md, confirmed).
+ * LANDING V2 — the product-showcase landing (LANDING_V2_PLAN.md, round 2
+ * structure per founder direction).
  *
  * Lives at /new as the production polishing workspace; promoted to / once
  * approved (then this route goes away). noindex until promotion.
  *
  * One story, one runway to Apply:
- *   Hero (the claim + the artifact) → Four moves (yours) → The fifth move
- *   (money, automatic) → bridge → The room (theirs) → It continues →
- *   Everything handled → The founding pilot → The path + final CTA → depth.
+ *   Hero (headline only) → What you can build (compressed buyer-page port)
+ *   → How it works (the 6-step swipe-flow container) → Everything taken
+ *   care of (typographic cascade + CTA) → bridge → Inside the experience
+ *   (the room, ported + the continuation beat) → The founding pilot →
+ *   The path + final CTA → depth.
  *
- * Every mockup is populated from ./content.ts — real flagship data, labeled
- * "Example experience". Vocabulary: experiences, never "program".
+ * Every visual is a PORT of a real INFITRA surface fed from ./content.ts —
+ * real flagship data, one "example experience" caption. Vocabulary:
+ * experiences, never "program".
  */
 
 export const metadata = {
@@ -73,12 +76,11 @@ export default function LandingV2Page() {
 
         <main>
           <Hero />
-          <FourMoves />
-          <Money />
+          <WhatYouCanBuild />
+          <HowItWorks />
+          <TakenCareOf />
           <Bridge />
           <TheRoom />
-          <Continues />
-          <Handled />
           <FoundingPilot />
           <Process />
           <Depth />
