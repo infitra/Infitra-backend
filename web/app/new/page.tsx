@@ -16,16 +16,19 @@ import { Depth, Footer } from "./Depth";
  * Lives at /new as the production polishing workspace; promoted to / once
  * approved (then this route goes away). noindex until promotion.
  *
- * One story, one runway to Apply:
- *   Hero (headline only) → What you can build (compressed buyer-page port)
- *   → How it works (the 6-step swipe-flow container) → Everything taken
- *   care of (typographic cascade + CTA) → bridge → Inside the experience
- *   (the room, ported + the continuation beat) → The founding pilot →
- *   The path + final CTA → depth.
+ * One story in two acts, one runway to Apply:
+ *   Hero (headline only) → What you can build (the marketing-page example
+ *   with the real browsable carousel) → ACT 1 · How it works (4-page swipe
+ *   flow ending at publish) → bridge ("Published. Now it comes alive.") →
+ *   ACT 2 · How it unfolds (the space with its real header, the engagement
+ *   loop, the live moment, the continuation) → Everything taken care of
+ *   (the two-act manifest recap + CTA) → The founding pilot → The path +
+ *   final CTA → depth.
  *
- * Every visual is a PORT of a real INFITRA surface fed from ./content.ts —
- * real flagship data, one "example experience" caption. Vocabulary:
- * experiences, never "program".
+ * ONE experience threads it all: the real flagship "6-Week Sustainable
+ * Fitness Reset" (./content.ts). Every visual is a PORT of a real INFITRA
+ * surface. Vocabulary: experiences, never "program"; the public page is the
+ * marketing page.
  */
 
 export const metadata = {
@@ -78,9 +81,9 @@ export default function LandingV2Page() {
           <Hero />
           <WhatYouCanBuild />
           <HowItWorks />
-          <TakenCareOf />
           <Bridge />
           <TheRoom />
+          <TakenCareOf />
           <FoundingPilot />
           <Process />
           <Depth />

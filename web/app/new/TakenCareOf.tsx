@@ -1,44 +1,65 @@
-import { INK, CYAN, FAINT, MUTED, SectionHead, ApplyCTA } from "./ui";
+import { INK, ORANGE, CYAN, MUTED, FAINT, PRODUCT_SHADOW, SectionHead, ApplyCTA } from "./ui";
 
 /**
- * M4 · EVERYTHING TAKEN CARE OF — a typographic cascade, not a feature grid.
- * Lists ONLY what the platform actually provides/automates. The tribe is
- * deliberately "the space for your tribe" — engaging and leading it is the
- * creator's job, and the closing line owns that division honestly.
+ * M5 · EVERYTHING TAKEN CARE OF — the recap AFTER the full story, mirroring
+ * the page's two acts: while you build / while it runs. One composed
+ * manifest card, then the honest division — the platform provides the space
+ * for the tribe; engaging and leading it is the creator's craft.
  */
 
-const LINES = [
-  "The shared workspace.",
-  "Clear ownership.",
-  "The signed contract.",
-  "The revenue split — on every sale.",
-  "Your page and checkout.",
-  "Receipts and calendars.",
-  "The live rooms.",
-  "The space for your tribe.",
-  "Progress and check-ins.",
-  "Reviews that credit every expert.",
+const BUILD = [
+  "The shared workspace",
+  "Clear ownership",
+  "The agreement — recorded",
+  "The contract — sealed automatically",
 ] as const;
+
+const RUN = [
+  "The marketing page + checkout",
+  "The revenue split — booked on every sale",
+  "Receipts + calendars",
+  "The live rooms",
+  "The space for your tribe",
+  "Check-ins + reflections",
+  "Reviews that credit every expert",
+] as const;
+
+function Column({ label, color, items }: { label: string; color: string; items: readonly string[] }) {
+  return (
+    <div>
+      <p className="text-[10px] uppercase tracking-[0.2em] font-headline mb-4" style={{ color, fontWeight: 800 }}>
+        {label}
+      </p>
+      <ul className="space-y-2.5">
+        {items.map((t) => (
+          <li key={t} className="flex items-start gap-2.5">
+            <span className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center mt-[1px]" style={{ backgroundColor: `${color}14` }}>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M20 6 9 17l-5-5" />
+              </svg>
+            </span>
+            <span className="text-[15px] font-headline leading-snug" style={{ color: INK, fontWeight: 700 }}>
+              {t}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 export function TakenCareOf() {
   return (
     <section className="px-6 py-28">
-      <div className="max-w-2xl mx-auto text-center">
+      <div className="max-w-3xl mx-auto text-center">
         <SectionHead eyebrow="All of it, taken care of" title="Everything around the coaching." />
 
-        <div className="space-y-3.5">
-          {LINES.map((line) => (
-            <p key={line} className="flex items-center justify-center gap-3">
-              <span className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(8,145,178,0.10)" }}>
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={CYAN} strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                  <path d="M20 6 9 17l-5-5" />
-                </svg>
-              </span>
-              <span className="text-lg md:text-2xl font-headline tracking-tight" style={{ color: INK, fontWeight: 700, letterSpacing: "-0.015em" }}>
-                {line}
-              </span>
-            </p>
-          ))}
+        <div
+          className="rounded-3xl p-7 md:p-10 grid sm:grid-cols-2 gap-8 md:gap-12 text-left"
+          style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }}
+        >
+          <Column label="While you build" color={CYAN} items={BUILD} />
+          <Column label="While it runs" color={ORANGE} items={RUN} />
         </div>
 
         {/* the honest division */}

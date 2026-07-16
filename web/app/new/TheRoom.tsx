@@ -2,27 +2,28 @@ import { EX, ALEX, MIRA, ROOM } from "./content";
 import { INK, ORANGE, CYAN, MUTED, FAINT, PRODUCT_SHADOW, SectionHead } from "./ui";
 
 /**
- * Bridge + M5 · INSIDE THE EXPERIENCE — the participant side, PORTED to the
- * real Experience Space grammar: the WeekJourney's display type ("WEEK 2
- * <ghost>OF 6</ghost>" + orange theme), the timeline dots, session rows with
- * image thumbs, the YouPanel (momentum · engagement · progress ring), the
- * tribe feed, and the phone with a pre-session pulse. Closes with the
- * continuation beat: runs end, the experience doesn't.
+ * Bridge + M4 · HOW IT UNFOLDS — the experience's own story, answering the
+ * question the publish raises. The SAME flagship experience continues: the
+ * space with its REAL header (cover + title + experts + expandable chips +
+ * live/active state), the you-panel, the journey (ghost week type, timeline,
+ * session rows with thumbs), the tribe — then the built-in engagement loop
+ * (intro · pulse · reflection · directed Q&A answered once, visible to all),
+ * the live-room moment, and the continuation beat. No phone (founder call).
  */
 
 export function Bridge() {
   return (
-    <section className="px-6 py-16 text-center">
+    <section className="px-6 pt-4 pb-14 text-center">
       <div className="max-w-3xl mx-auto">
         <p
           className="text-2xl md:text-4xl font-headline tracking-tight leading-[1.15]"
           style={{ color: INK, fontWeight: 700, letterSpacing: "-0.02em" }}
         >
-          That&apos;s your side.
+          Published.
           <br />
-          <span style={{ color: ORANGE }}>Here&apos;s the room your tribe lives in.</span>
+          <span style={{ color: ORANGE }}>Now it comes alive.</span>
         </p>
-        <div className="mt-10 flex items-center justify-center" aria-hidden>
+        <div className="mt-9 flex items-center justify-center" aria-hidden>
           <svg viewBox="0 0 600 80" className="w-full max-w-xl h-10 md:h-14" fill="none">
             <path d="M 0 40 L 600 40" stroke="rgba(15,34,41,0.10)" strokeWidth={1} strokeDasharray="2 4" />
             <path
@@ -51,7 +52,70 @@ const CHECK = (color: string, size = 12) => (
   </svg>
 );
 
-/* ── Session row — the journey's agenda card, with its image thumb ── */
+const CHEVRON_DOWN = (
+  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <path d="M6 9l6 6 6-6" />
+  </svg>
+);
+
+/* ── The space's REAL header — connects the story to what was published ── */
+function SpaceHeader() {
+  return (
+    <div style={{ borderBottom: "1px solid rgba(15,34,41,0.07)" }}>
+      <div className="flex items-stretch gap-4 px-4 sm:px-5 pt-4 pb-3">
+        {/* cover thumb */}
+        <span className="relative shrink-0 w-24 sm:w-28 rounded-xl overflow-hidden hidden sm:block" style={{ backgroundColor: INK }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={EX.cover} alt="" className="absolute inset-0 w-full h-full object-cover" />
+        </span>
+        {/* title + experts + chips */}
+        <div className="min-w-0 flex-1">
+          <p className="text-[16px] sm:text-[18px] font-headline tracking-tight leading-snug" style={{ color: INK, fontWeight: 800, letterSpacing: "-0.015em" }}>
+            {EX.title}
+          </p>
+          <span className="flex items-center gap-1.5 mt-1">
+            <span className="flex -space-x-1.5">
+              {[ALEX.avatar, MIRA.avatar].map((a) => (
+                <span key={a} className="w-5 h-5 rounded-full overflow-hidden" style={{ border: "1.5px solid #FFFFFF" }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={a} alt="" className="w-full h-full object-cover" />
+                </span>
+              ))}
+            </span>
+            <span className="text-[11px] font-bold" style={{ color: MUTED }}>
+              with <span style={{ color: INK }}>{ALEX.name} &amp; {MIRA.name}</span>
+            </span>
+          </span>
+          <span className="flex flex-wrap gap-1.5 mt-2.5">
+            {["Meet your Experts", "Structure"].map((c) => (
+              <span key={c} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[9.5px] font-headline" style={{ color: INK, backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.10)", fontWeight: 800 }}>
+                {c} <span style={{ color: FAINT }}>{CHEVRON_DOWN}</span>
+              </span>
+            ))}
+          </span>
+        </div>
+        {/* live + active-now state */}
+        <div className="shrink-0 text-right flex flex-col items-end justify-center gap-1.5">
+          <span className="inline-flex items-center gap-1.5 text-[9px] uppercase tracking-widest font-headline" style={{ color: "#ef4444", fontWeight: 800 }}>
+            <span className="w-1.5 h-1.5 rounded-full bg-[#ef4444] animate-pulse" />
+            Live · Week {ROOM.week} of {EX.weeks}
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="relative w-5 h-5 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(8,145,178,0.14)" }}>
+              <span className="text-[8px] font-headline" style={{ color: CYAN, fontWeight: 800 }}>A</span>
+              <span className="absolute -bottom-0 -right-0 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "#22c55e", border: "1px solid #FFF" }} />
+            </span>
+            <span className="text-[8.5px] uppercase tracking-widest font-headline" style={{ color: MUTED, fontWeight: 800 }}>
+              Active now <span style={{ color: INK }}>{ROOM.activeNow}</span>
+            </span>
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Session row — the journey's agenda card with its image thumb ── */
 function SessionRow({
   img,
   title,
@@ -109,31 +173,14 @@ function SessionRow({
   );
 }
 
-/* ── The space — header + hub + journey + tribe ─────────────── */
+/* ── The space — real header + hub + journey + tribe ────────── */
 function MockSpace() {
   return (
-    <div className="rounded-3xl overflow-hidden h-full" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }} aria-hidden>
-      {/* header */}
-      <div className="flex items-center justify-between gap-3 px-5 py-3.5" style={{ borderBottom: "1px solid rgba(15,34,41,0.07)" }}>
-        <div className="min-w-0">
-          <span className="inline-flex items-center gap-1.5 text-[9px] uppercase tracking-widest font-headline" style={{ color: "#ef4444", fontWeight: 800 }}>
-            <span className="w-1.5 h-1.5 rounded-full bg-[#ef4444] animate-pulse" />
-            Live · Week {ROOM.week} of {EX.weeks}
-          </span>
-          <p className="text-[13.5px] font-headline truncate" style={{ color: INK, fontWeight: 800 }}>{EX.title}</p>
-        </div>
-        <div className="flex -space-x-2 shrink-0">
-          {[ALEX.avatar, MIRA.avatar].map((a) => (
-            <span key={a} className="w-7 h-7 rounded-full overflow-hidden" style={{ border: "2px solid #FFFFFF" }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={a} alt="" className="w-full h-full object-cover" />
-            </span>
-          ))}
-        </div>
-      </div>
+    <div className="rounded-3xl overflow-hidden" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }} aria-hidden>
+      <SpaceHeader />
 
-      <div className="p-4 sm:p-5 grid sm:grid-cols-[180px_1fr] gap-4" style={{ backgroundColor: "#FAF8F3" }}>
-        {/* YOU panel port */}
+      <div className="p-4 sm:p-5 grid sm:grid-cols-[185px_1fr] gap-4" style={{ backgroundColor: "#FAF8F3" }}>
+        {/* YOU panel */}
         <div className="rounded-2xl p-3.5 self-start" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.05)" }}>
           <div className="flex items-center gap-2">
             <span className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: "rgba(8,145,178,0.14)", border: "1.5px solid rgba(8,145,178,0.35)" }}>
@@ -150,6 +197,12 @@ function MockSpace() {
           <div className="h-1.5 rounded-full overflow-hidden mt-1.5" style={{ backgroundColor: "rgba(15,34,41,0.08)" }}>
             <div className="h-full rounded-full" style={{ width: "33%", backgroundColor: ORANGE }} />
           </div>
+
+          <p className="text-[8px] uppercase tracking-[0.18em] font-headline mt-3.5 mb-1.5" style={{ color: FAINT, fontWeight: 800 }}>Next moment</p>
+          <p className="text-[10.5px] font-black font-headline leading-snug" style={{ color: INK }}>
+            {ROOM.next.title}
+            <span className="block text-[9px] font-bold mt-0.5" style={{ color: ORANGE }}>{ROOM.next.inLabel}</span>
+          </p>
 
           <p className="text-[8px] uppercase tracking-[0.18em] font-headline mt-3.5 mb-1.5" style={{ color: FAINT, fontWeight: 800 }}>Engagement</p>
           <div className="rounded-lg px-2 py-1.5 text-center text-[9.5px] font-headline" style={{ color: CYAN, backgroundColor: "rgba(8,145,178,0.08)", fontWeight: 800 }}>
@@ -177,11 +230,10 @@ function MockSpace() {
 
         {/* journey + tribe */}
         <div className="min-w-0">
-          {/* THE JOURNEY — the real display grammar */}
           <p className="text-[8px] uppercase tracking-[0.2em] font-headline" style={{ color: FAINT, fontWeight: 800 }}>The journey</p>
           <p className="font-headline leading-none mt-1" style={{ fontWeight: 800, letterSpacing: "-0.02em" }} aria-hidden>
-            <span className="text-[26px]" style={{ color: INK }}>WEEK {ROOM.week} </span>
-            <span className="text-[26px]" style={{ color: "rgba(15,34,41,0.18)" }}>OF {EX.weeks}</span>
+            <span className="text-[27px]" style={{ color: INK }}>WEEK {ROOM.week} </span>
+            <span className="text-[27px]" style={{ color: "rgba(15,34,41,0.18)" }}>OF {EX.weeks}</span>
           </p>
           <p className="text-[10px] uppercase tracking-[0.16em] font-headline mt-1" style={{ color: ORANGE, fontWeight: 800 }}>
             {ROOM.theme}
@@ -210,7 +262,6 @@ function MockSpace() {
             <SessionRow img={ROOM.upcoming.img} title={ROOM.upcoming.title} host={ROOM.upcoming.host} state="upcoming" />
           </div>
 
-          {/* THE TRIBE */}
           <p className="text-[8px] uppercase tracking-[0.2em] font-headline mt-4 mb-2" style={{ color: FAINT, fontWeight: 800 }}>The tribe</p>
           <div className="space-y-1.5">
             <div className="rounded-xl px-3 py-2.5 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.05)" }}>
@@ -234,18 +285,15 @@ function MockSpace() {
             <div className="rounded-xl px-3 py-2.5 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.05)" }}>
               <div className="flex gap-2">
                 <span className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(255,97,48,0.12)" }}>
-                  <span className="text-[9px] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>L</span>
+                  <span className="text-[9px] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>S</span>
                 </span>
                 <div className="min-w-0">
                   <p className="text-[10px] font-headline" style={{ color: INK, fontWeight: 800 }}>
-                    Lea <span style={{ color: FAINT, fontWeight: 600 }}>· question for {MIRA.first}</span>
+                    Sam <span style={{ color: FAINT, fontWeight: 600 }}>· just now</span>
                   </p>
                   <p className="text-[11px] leading-snug" style={{ color: MUTED }}>
-                    High-protein options when I&apos;m traveling all week?
+                    Session 5 ✓ — see everyone tonight!
                   </p>
-                  <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-[8px] font-headline" style={{ color: "#16a34a", backgroundColor: "rgba(22,163,74,0.08)", fontWeight: 800 }}>
-                    {CHECK("#16a34a", 9)} Answered by {MIRA.first}
-                  </span>
                 </div>
               </div>
             </div>
@@ -256,59 +304,173 @@ function MockSpace() {
   );
 }
 
-/* ── Phone — the pocket version with the pre-session pulse ── */
-function MockPhone() {
+/* ── The engagement loop — built in ─────────────────────────── */
+function EngagementLoop() {
   return (
-    <div className="mx-auto w-[225px]" aria-hidden>
-      <div className="rounded-[2.2rem] p-2.5" style={{ backgroundColor: INK, boxShadow: "0 24px 60px rgba(15,34,41,0.28)" }}>
-        <div className="rounded-[1.7rem] overflow-hidden" style={{ backgroundColor: "#F2EFE8" }}>
-          <div className="flex items-center justify-center pt-2 pb-1.5">
-            <span className="w-14 h-1.5 rounded-full" style={{ backgroundColor: "rgba(15,34,41,0.14)" }} />
-          </div>
-          <div className="px-3 pb-4">
-            <p className="text-[8px] uppercase tracking-widest font-headline flex items-center gap-1" style={{ color: "#ef4444", fontWeight: 800 }}>
-              <span className="w-1 h-1 rounded-full bg-[#ef4444] animate-pulse" /> Live · Week {ROOM.week}
+    <div className="mt-16">
+      <div className="text-center max-w-2xl mx-auto mb-9">
+        <h3 className="text-2xl md:text-3xl font-headline tracking-tight mb-3" style={{ color: INK, fontWeight: 700, letterSpacing: "-0.02em" }}>
+          The engagement loop — built in.
+        </h3>
+        <p className="text-[15px] md:text-base leading-relaxed" style={{ color: MUTED }}>
+          Intros when someone joins. A pulse before each session. A reflection after.
+          And questions routed to the expert who owns the topic — answered once, visible to all.
+        </p>
+      </div>
+
+      <div className="grid md:grid-cols-[1fr_1.15fr] gap-4 items-start" aria-hidden>
+        {/* the three action cards — ports of the real primitives */}
+        <div className="space-y-3">
+          {/* intro */}
+          <div className="rounded-2xl p-4 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.06), inset 3.5px 0 0 " + CYAN }}>
+            <p className="text-[9px] uppercase tracking-[0.16em] font-headline" style={{ color: CYAN, fontWeight: 800 }}>
+              New in the tribe · Your experts asked
             </p>
-            <div className="mt-2 rounded-2xl p-3" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.06)" }}>
-              <p className="text-[8px] uppercase tracking-widest font-headline" style={{ color: ORANGE, fontWeight: 800 }}>
-                Tonight · 19:00
-              </p>
-              <p className="text-[11px] font-black font-headline leading-snug mt-0.5" style={{ color: INK }}>
-                {ROOM.next.title}
-              </p>
-              <p className="text-[10px] mt-2 font-semibold" style={{ color: MUTED }}>How ready are you?</p>
-              <div className="mt-1.5 relative h-1.5 rounded-full" style={{ backgroundColor: "rgba(15,34,41,0.08)" }}>
-                <div className="absolute inset-y-0 left-0 rounded-full" style={{ width: "80%", backgroundColor: CYAN }} />
-                <span className="absolute -top-[3px] w-3 h-3 rounded-full" style={{ left: "76%", backgroundColor: "#FFFFFF", boxShadow: `0 0 0 2px ${CYAN}` }} />
-              </div>
-              <div className="flex items-center justify-between mt-1">
-                <span className="text-[8px]" style={{ color: FAINT }}>0</span>
-                <span className="text-[9px] font-black font-headline" style={{ color: CYAN }}>8/10</span>
-                <span className="text-[8px]" style={{ color: FAINT }}>10</span>
-              </div>
-              <div className="mt-2 rounded-full py-1.5 text-center text-[9px] font-black font-headline text-white" style={{ backgroundColor: ORANGE }}>
-                Send to your Experts
-              </div>
+            <p className="text-[12.5px] font-bold font-headline leading-snug mt-1.5" style={{ color: INK }}>
+              {EX.introPrompt}
+            </p>
+            <div className="mt-2.5 rounded-full px-3.5 py-2 text-[10.5px]" style={{ backgroundColor: "#F8F6F0", color: FAINT }}>
+              Introduce yourself to the tribe…
             </div>
-            <div className="mt-2 rounded-2xl p-3" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.06)" }}>
-              <p className="text-[9px] font-headline" style={{ color: INK, fontWeight: 800 }}>
-                Sam <span style={{ color: FAINT, fontWeight: 600 }}>· just now</span>
-              </p>
-              <p className="text-[10px] leading-snug mt-0.5" style={{ color: MUTED }}>
-                Session 5 ✓ — see everyone tonight!
-              </p>
+          </div>
+          {/* pulse */}
+          <div className="rounded-2xl p-4 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.06), inset 3.5px 0 0 " + ORANGE }}>
+            <p className="text-[9px] uppercase tracking-[0.16em] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>
+              Before tonight · 19:00
+            </p>
+            <p className="text-[12.5px] font-bold font-headline leading-snug mt-1.5" style={{ color: INK }}>
+              {ROOM.next.title} — how ready are you?
+            </p>
+            <div className="mt-3 relative h-1.5 rounded-full" style={{ backgroundColor: "rgba(15,34,41,0.08)" }}>
+              <div className="absolute inset-y-0 left-0 rounded-full" style={{ width: "80%", backgroundColor: CYAN }} />
+              <span className="absolute -top-[4px] w-3.5 h-3.5 rounded-full" style={{ left: "77%", backgroundColor: "#FFFFFF", boxShadow: `0 0 0 2px ${CYAN}` }} />
+            </div>
+            <div className="flex items-center justify-between mt-1.5">
+              <span className="text-[8.5px]" style={{ color: FAINT }}>0</span>
+              <span className="text-[10px] font-black font-headline" style={{ color: CYAN }}>8 / 10</span>
+              <span className="text-[8.5px]" style={{ color: FAINT }}>10</span>
+            </div>
+          </div>
+          {/* reflection */}
+          <div className="rounded-2xl p-4 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.06), inset 3.5px 0 0 " + CYAN }}>
+            <p className="text-[9px] uppercase tracking-[0.16em] font-headline" style={{ color: CYAN, fontWeight: 800 }}>
+              After the session
+            </p>
+            <p className="text-[12.5px] font-bold font-headline leading-snug mt-1.5" style={{ color: INK }}>
+              How was &ldquo;{ROOM.done.title}&rdquo;?
+            </p>
+            <div className="flex items-center gap-2 mt-2.5">
+              <span className="px-2 py-0.5 rounded-full text-[9px] font-headline" style={{ color: CYAN, backgroundColor: "rgba(8,145,178,0.08)", fontWeight: 800 }}>
+                Energy after · 8/10
+              </span>
+              <span className="text-[10px] flex-1 truncate" style={{ color: FAINT }}>Share a takeaway with the tribe…</span>
             </div>
           </div>
         </div>
+
+        {/* the featured directed question — ask one, everyone learns */}
+        <div className="rounded-2xl p-5 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }}>
+          <div className="flex gap-2.5">
+            <span className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(255,97,48,0.12)" }}>
+              <span className="text-[11px] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>L</span>
+            </span>
+            <div className="min-w-0">
+              <p className="text-[11.5px] font-headline" style={{ color: INK, fontWeight: 800 }}>
+                {ROOM.qa.asker} <span style={{ color: FAINT, fontWeight: 600 }}>· 3h</span>
+              </p>
+              <span className="inline-flex items-center gap-1.5 mt-1 px-2 py-0.5 rounded-full text-[8.5px] font-headline" style={{ color: CYAN, backgroundColor: "rgba(8,145,178,0.08)", fontWeight: 800 }}>
+                Question for
+                <span className="w-3.5 h-3.5 rounded-full overflow-hidden inline-block">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={MIRA.avatar} alt="" className="w-full h-full object-cover" />
+                </span>
+                {MIRA.first}
+              </span>
+              <p className="text-[13px] leading-snug mt-2" style={{ color: INK, fontWeight: 600 }}>
+                {ROOM.qa.question}
+              </p>
+            </div>
+          </div>
+
+          {/* the pinned coach answer */}
+          <div className="mt-4 rounded-2xl p-4" style={{ backgroundColor: "rgba(8,145,178,0.06)", boxShadow: "inset 3.5px 0 0 " + CYAN }}>
+            <div className="flex items-center gap-2">
+              <span className="shrink-0 w-7 h-7 rounded-full overflow-hidden" style={{ border: `1.5px solid ${CYAN}59` }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={MIRA.avatar} alt="" className="w-full h-full object-cover" />
+              </span>
+              <span className="text-[11.5px] font-headline" style={{ color: INK, fontWeight: 800 }}>{MIRA.name}</span>
+              <span className="px-2 py-0.5 rounded-full text-[8px] uppercase tracking-widest font-headline text-white" style={{ backgroundColor: CYAN, fontWeight: 800 }}>
+                Coach answer
+              </span>
+            </div>
+            <p className="text-[12.5px] leading-relaxed mt-2" style={{ color: MUTED }}>
+              {ROOM.qa.answer}
+            </p>
+          </div>
+          <p className="text-[10px] font-bold font-headline mt-3 text-center" style={{ color: FAINT }}>
+            Answered once — visible to the whole tribe.
+          </p>
+        </div>
       </div>
-      <p className="text-center text-[10px] font-bold font-headline mt-3" style={{ color: FAINT }}>
-        …and in their pocket.
+    </div>
+  );
+}
+
+/* ── The live moment — one click into the room ──────────────── */
+function LiveMoment() {
+  return (
+    <div className="mt-16">
+      <div className="text-center max-w-2xl mx-auto mb-8">
+        <h3 className="text-2xl md:text-3xl font-headline tracking-tight" style={{ color: INK, fontWeight: 700, letterSpacing: "-0.02em" }}>
+          And when it&apos;s time — <span style={{ color: ORANGE }}>one click into the room.</span>
+        </h3>
+      </div>
+      <div className="max-w-2xl mx-auto rounded-3xl overflow-hidden" style={{ backgroundColor: INK, boxShadow: "0 24px 60px rgba(15,34,41,0.28)" }} aria-hidden>
+        <div className="flex items-center justify-between gap-3 px-5 py-3" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+          <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-widest font-headline min-w-0" style={{ fontWeight: 800 }}>
+            <span className="w-1.5 h-1.5 rounded-full bg-[#ef4444] animate-pulse shrink-0" />
+            <span className="truncate" style={{ color: "#FFFFFF" }}>Live — {ROOM.next.title}</span>
+          </span>
+          <span className="text-[9px] uppercase tracking-widest font-headline shrink-0" style={{ color: "#9CF0FF", fontWeight: 800 }}>
+            Week {ROOM.week} of {EX.weeks}
+          </span>
+        </div>
+        <div className="p-3 grid grid-cols-4 gap-2">
+          {[
+            { p: ALEX, color: ORANGE },
+            { p: MIRA, color: CYAN },
+          ].map(({ p, color }) => (
+            <div key={p.name} className="relative col-span-2 aspect-[16/10] rounded-xl overflow-hidden" style={{ backgroundColor: "#16323b" }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={p.avatar} alt="" className="absolute inset-0 w-full h-full object-cover" />
+              <span className="absolute bottom-1.5 left-1.5 px-2 py-0.5 rounded-full text-[8px] font-headline" style={{ backgroundColor: "rgba(15,34,41,0.75)", color: "#FFFFFF", fontWeight: 800 }}>
+                {p.first} · <span style={{ color }}>HOST</span>
+              </span>
+            </div>
+          ))}
+          {["A", "S", "L", "J"].map((i) => (
+            <div key={i} className="aspect-[16/10] rounded-xl flex items-center justify-center" style={{ backgroundColor: "#16323b" }}>
+              <span className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-headline" style={{ backgroundColor: "rgba(156,240,255,0.12)", color: "#9CF0FF", fontWeight: 800 }}>
+                {i}
+              </span>
+            </div>
+          ))}
+        </div>
+        <div className="flex items-center justify-center gap-2.5 pb-3.5">
+          {["rgba(255,255,255,0.16)", "rgba(255,255,255,0.16)", "rgba(239,68,68,0.85)"].map((c, i) => (
+            <span key={i} className="w-7 h-7 rounded-full" style={{ backgroundColor: c }} />
+          ))}
+        </div>
+      </div>
+      <p className="text-center text-[12px] font-bold font-headline mt-4" style={{ color: FAINT }}>
+        No links, no logins — the room opens from the space.
       </p>
     </div>
   );
 }
 
-/* ── The continuation beat — runs end, the experience doesn't ── */
+/* ── The continuation beat ──────────────────────────────────── */
 function ContinuesBeat() {
   return (
     <div className="mt-16 max-w-2xl mx-auto text-center">
@@ -363,18 +525,12 @@ export function TheRoom() {
       <div className="max-w-5xl mx-auto">
         <SectionHead
           eyebrow="Inside the experience"
-          title={
-            <>
-              Not a video library.
-              <br className="hidden sm:block" /> A room they show up to.
-            </>
-          }
-          sub="Live sessions anchor every week. Between them, the tribe shares progress, reflections and questions — routed to the expert who owns that topic. This is what your members open, day after day."
+          title="How it unfolds."
+          sub="What you published isn't a video library — it's a room your tribe shows up to. Live sessions anchor each week; between them, the space runs the rhythm."
         />
-        <div className="grid lg:grid-cols-[1fr_auto] gap-8 items-start">
-          <MockSpace />
-          <MockPhone />
-        </div>
+        <MockSpace />
+        <EngagementLoop />
+        <LiveMoment />
         <ContinuesBeat />
       </div>
     </section>

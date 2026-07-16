@@ -1,35 +1,44 @@
+"use client";
+
+import { useState } from "react";
 import { EX, ALEX, MIRA } from "./content";
-import { INK, ORANGE, CYAN, FAINT, PRODUCT_SHADOW, SectionHead } from "./ui";
+import { INK, ORANGE, CYAN, MUTED, FAINT, PRODUCT_SHADOW } from "./ui";
 
 /**
- * M2 · WHAT YOU CAN BUILD — a very compressed PORT of the real buyer page
- * (PublicChallengeHero grammar): INFITRA EXPERIENCE eyebrow → the promise as
- * the big headline → cover with LIVE pill → experts with their real taglines
- * → stats → the weekly journey strip (week pills + agenda session cards with
- * image thumbs) → the real positioning lines → the join pill. Real imagery,
- * real editorial type — no invented layout.
+ * M2 · WHAT YOU CAN BUILD — no wrapper framing: the example IS the card,
+ * a compressed PORT of the real marketing page (PublicChallengeHero):
+ * INFITRA EXPERIENCE eyebrow → the promise as the headline → cover with
+ * LIVE pill → title kicker + one-line description → experts with real
+ * taglines → stats → the REAL WeeklyJourneyCarousel (clickable W1–W6 pills,
+ * real theme headers, real agenda session rows) → the page's positioning
+ * lines → the join pill. Small client island for the carousel only.
  */
 export function WhatYouCanBuild() {
-  return (
-    <section className="px-6 py-24">
-      <div className="max-w-3xl mx-auto">
-        <SectionHead eyebrow="An example" title="What you can build." />
+  const [week, setWeek] = useState(0);
+  const sessions = EX.agenda[week];
 
-        <div className="rounded-3xl overflow-hidden" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }} aria-hidden>
+  return (
+    <section className="px-4 sm:px-6 py-24">
+      <div className="max-w-3xl mx-auto">
+        <p className="text-[10px] uppercase tracking-[0.25em] font-headline text-center mb-8" style={{ color: CYAN, fontWeight: 700 }}>
+          An example — what you can build
+        </p>
+
+        {/* THE CARD IS THE PAGE */}
+        <div className="rounded-3xl overflow-hidden" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }}>
           <div className="p-6 md:p-10">
-            {/* the real page opens: eyebrow → promise as H1 */}
             <p className="text-[10px] uppercase tracking-[0.25em] font-headline mb-3" style={{ color: CYAN, fontWeight: 800 }}>
               INFITRA Experience
             </p>
-            <h3
-              className="text-2xl md:text-[2.1rem] font-headline tracking-tight leading-[1.12] mb-6"
+            <h2
+              className="text-2xl md:text-[2.1rem] font-headline tracking-tight leading-[1.12]"
               style={{ color: INK, fontWeight: 700, letterSpacing: "-0.02em" }}
             >
               {EX.promise}
-            </h3>
+            </h2>
 
             {/* cover */}
-            <div className="relative rounded-2xl overflow-hidden aspect-[2/1]" style={{ backgroundColor: INK }}>
+            <div className="relative rounded-2xl overflow-hidden aspect-[2/1] mt-6" style={{ backgroundColor: INK }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={EX.cover} alt="" className="absolute inset-0 w-full h-full object-cover" />
               <div
@@ -43,16 +52,18 @@ export function WhatYouCanBuild() {
                 <span className="w-1.5 h-1.5 rounded-full bg-[#9CF0FF] animate-pulse" />
                 Live · {EX.weeks} weeks
               </span>
-              <span
-                className="absolute bottom-4 left-4 text-[11px] uppercase tracking-[0.2em] font-headline"
-                style={{ color: "rgba(255,255,255,0.92)", fontWeight: 800 }}
-              >
-                {EX.title}
-              </span>
             </div>
 
-            {/* experts — real taglines, role colors */}
-            <div className="grid sm:grid-cols-2 gap-3 mt-6">
+            {/* kicker + one-line description */}
+            <p className="text-[11px] uppercase tracking-[0.2em] font-headline mt-5" style={{ color: FAINT, fontWeight: 800 }}>
+              {EX.title}
+            </p>
+            <p className="text-[14px] leading-relaxed mt-2" style={{ color: MUTED }}>
+              {EX.blurb}
+            </p>
+
+            {/* experts — real taglines */}
+            <div className="grid sm:grid-cols-2 gap-3 mt-5">
               {[
                 { p: ALEX, color: ORANGE },
                 { p: MIRA, color: CYAN },
@@ -70,58 +81,52 @@ export function WhatYouCanBuild() {
               ))}
             </div>
 
-            {/* stats — the real page's line */}
+            {/* stats */}
             <p className="text-[13px] font-bold font-headline mt-5 text-center" style={{ color: "#5b7886" }}>
               {EX.weeks} weeks · {EX.sessions} live sessions
               <span style={{ color: FAINT, fontWeight: 600 }}> · Always on: Tribe Space + Expert access</span>
             </p>
 
-            {/* the weekly journey — week pills + agenda cards with thumbs */}
-            <div className="mt-7">
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-[10px] uppercase tracking-[0.2em] font-headline" style={{ color: INK, fontWeight: 800 }}>
-                  The weekly journey
-                </p>
-                <div className="flex gap-1.5">
-                  {EX.arc.map((_, i) => (
-                    <span
-                      key={i}
-                      className="px-2 py-0.5 rounded-full text-[9px] font-black font-headline"
-                      style={
-                        i === 0
-                          ? { backgroundColor: ORANGE, color: "#FFFFFF" }
-                          : { backgroundColor: "rgba(15,34,41,0.05)", color: "#94a3b8" }
-                      }
-                    >
-                      W{i + 1}
-                    </span>
-                  ))}
-                </div>
+            {/* ── THE WEEKLY JOURNEY — the real carousel, browsable ── */}
+            <div className="mt-7 rounded-2xl p-4 sm:p-5" style={{ backgroundColor: "#FAF8F3" }}>
+              <div className="flex flex-wrap items-center justify-center gap-1.5 mb-4">
+                {EX.arc.map((_, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setWeek(i)}
+                    className="px-3 py-1.5 rounded-full text-[11px] font-black font-headline transition-colors"
+                    style={
+                      i === week
+                        ? { backgroundColor: ORANGE, color: "#FFFFFF", boxShadow: "0 4px 12px rgba(255,97,48,0.30)" }
+                        : { backgroundColor: "#FFFFFF", color: FAINT, boxShadow: "0 0 0 1px rgba(15,34,41,0.08)" }
+                    }
+                  >
+                    W{i + 1}
+                  </button>
+                ))}
               </div>
-              <p className="text-[11px] uppercase tracking-[0.16em] font-headline mb-3" style={{ color: ORANGE, fontWeight: 800 }}>
-                Week 1 · {EX.arc[0]}
+              <p className="text-[11px] uppercase tracking-[0.18em] font-headline text-center mb-4" style={{ color: ORANGE, fontWeight: 800 }}>
+                Week {week + 1}: {EX.arc[week]}
               </p>
-              <div className="-mx-6 md:-mx-10 px-6 md:px-10 overflow-x-auto">
-                <div className="grid grid-cols-3 gap-3 min-w-[520px]">
-                  {EX.week1.map((s) => (
-                    <div key={s.title} className="rounded-2xl overflow-hidden" style={{ backgroundColor: "#F8F6F0", border: "1px solid rgba(15,34,41,0.06)" }}>
-                      <div className="relative aspect-[16/10] overflow-hidden" style={{ backgroundColor: INK }}>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={s.img} alt="" className="absolute inset-0 w-full h-full object-cover" />
-                      </div>
-                      <div className="p-3">
-                        <p className="text-[12px] font-headline leading-snug" style={{ color: INK, fontWeight: 800 }}>{s.title}</p>
-                        <p className="text-[10px] font-bold mt-1" style={{ color: FAINT }}>
-                          {s.host} · live · {s.dur}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+              <div className="space-y-2">
+                {sessions.map((s) => (
+                  <div key={s.title} className="flex items-center gap-3.5 rounded-xl px-3.5 py-2.5" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.05)" }}>
+                    <span className="shrink-0 w-16 text-left">
+                      <span className="block text-[11px] uppercase tracking-widest font-headline" style={{ color: INK, fontWeight: 800 }}>{s.day}</span>
+                      <span className="block text-[9.5px] font-semibold" style={{ color: FAINT }}>{s.time} — {s.dur}</span>
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-[13px] font-headline leading-snug" style={{ color: INK, fontWeight: 800 }}>{s.title}</span>
+                      <span className="block text-[10px] font-bold" style={{ color: FAINT }}>{s.host}</span>
+                    </span>
+                    <span className="shrink-0 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "rgba(8,145,178,0.45)" }} />
+                  </div>
+                ))}
               </div>
             </div>
 
-            {/* the real positioning lines + join pill */}
+            {/* positioning + CTA — the real page's close */}
             <div className="mt-8 text-center">
               <p className="text-[17px] md:text-lg font-headline leading-snug" style={{ color: INK, fontWeight: 700 }}>
                 {EX.positioning[0]}
@@ -131,6 +136,7 @@ export function WhatYouCanBuild() {
               <span
                 className="inline-block mt-5 px-12 py-3.5 rounded-full text-white text-sm font-black font-headline"
                 style={{ backgroundColor: ORANGE, boxShadow: "0 4px 14px rgba(255,97,48,0.32)" }}
+                aria-hidden
               >
                 I&apos;m in →
               </span>
