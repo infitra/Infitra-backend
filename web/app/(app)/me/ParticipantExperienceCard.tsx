@@ -386,27 +386,32 @@ export function CompletedExperienceCard({ exp }: { exp: MeExperience }) {
           {dateRange}
         </p>
 
-        {/* CONTINUATION — the lineage moved on. Signal "not done, it continues"
-            and offer the door back in (→ the ended re-activate card in the space,
-            which resolves to the live/next run). */}
+        {/* CONTINUATION — the lineage moved on. A bold call back in (→ the ended
+            re-activate card in the space, which resolves to the live/next run). */}
         {exp.continuation && (
           <Link
             href={`/experiences/${exp.continuation.id}/space`}
-            className="mt-3 flex items-center justify-between gap-2 rounded-xl px-3 py-2 transition-transform hover:scale-[1.01]"
-            style={{ backgroundColor: "rgba(255,97,48,0.06)", boxShadow: "0 0 0 1px rgba(255,97,48,0.18)" }}
+            className="mt-4 block rounded-xl p-3.5 transition-transform hover:scale-[1.02]"
+            style={{
+              background: "linear-gradient(135deg, rgba(255,97,48,0.15), rgba(255,97,48,0.06))",
+              boxShadow: "0 0 0 1px rgba(255,97,48,0.28)",
+            }}
           >
-            <div className="min-w-0">
-              <p className="text-[10px] uppercase tracking-[0.14em] font-headline flex items-center gap-1.5" style={{ color: ORANGE, fontWeight: 800 }}>
-                {exp.continuation.isActive && <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ backgroundColor: ORANGE }} />}
-                {exp.continuation.isActive ? "Continues · live now" : "This continues"}
-              </p>
-              <p className="text-[12px] font-bold font-headline truncate mt-0.5" style={{ color: INK }} suppressHydrationWarning>
-                {exp.continuation.isActive
-                  ? "The tribe moved on — jump back in"
-                  : `Next run · starts ${shortDate(exp.continuation.startDate)}`}
-              </p>
-            </div>
-            <span className="shrink-0 text-sm font-black font-headline" style={{ color: ORANGE }}>→</span>
+            <p className="text-[10px] uppercase tracking-[0.16em] font-headline flex items-center gap-1.5" style={{ color: ORANGE, fontWeight: 800 }}>
+              {exp.continuation.isActive && <span className="inline-block w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: ORANGE }} />}
+              {exp.continuation.isActive ? "Continues · live now" : "This continues"}
+            </p>
+            <p className="text-[15px] font-black font-headline leading-snug mt-1" style={{ color: INK }} suppressHydrationWarning>
+              {exp.continuation.isActive
+                ? "Your tribe is live — don't miss it"
+                : `The next run starts ${shortDate(exp.continuation.startDate)}`}
+            </p>
+            <span
+              className="inline-flex items-center gap-1.5 mt-2.5 px-4 py-2 rounded-full text-white text-[12px] font-black font-headline"
+              style={{ backgroundColor: ORANGE, boxShadow: "0 4px 12px rgba(255,97,48,0.30)" }}
+            >
+              Jump back in →
+            </span>
           </Link>
         )}
 

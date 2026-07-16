@@ -34,9 +34,13 @@ function RatedBadge() {
 export function RateExperienceButton({
   challengeId,
   experienceTitle,
+  variant = "pill",
 }: {
   challengeId: string;
   experienceTitle: string;
+  /** "pill" = the completed-card CTA. "console" = a full-width action row for
+   *  the /me profile console's to-do list. */
+  variant?: "pill" | "console";
 }) {
   const [open, setOpen] = useState(false);
   const [done, setDone] = useState(false);
@@ -45,7 +49,18 @@ export function RateExperienceButton({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (done) return <RatedBadge />;
+  if (done) {
+    return variant === "console" ? (
+      <div
+        className="flex items-center gap-1.5 rounded-xl py-2.5 px-3 text-[13px] font-bold font-headline"
+        style={{ color: "#475569", backgroundColor: "rgba(15,34,41,0.03)" }}
+      >
+        <StarGlyph filled={false} /> Rated — thank you!
+      </div>
+    ) : (
+      <RatedBadge />
+    );
+  }
 
   async function submit() {
     if (rating < 1) {
@@ -66,14 +81,29 @@ export function RateExperienceButton({
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-white text-xs font-black font-headline transition-transform hover:scale-[1.02]"
-        style={{ backgroundColor: ORANGE, boxShadow: "0 4px 14px rgba(255,97,48,0.30)" }}
-      >
-        <StarGlyph filled /> Rate this experience
-      </button>
+      {variant === "console" ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="flex w-full items-center justify-between gap-2 rounded-xl py-2.5 px-3 text-[13px] font-black font-headline transition-colors"
+          style={{ color: ORANGE, backgroundColor: "rgba(255,97,48,0.08)", boxShadow: "0 0 0 1px rgba(255,97,48,0.20)" }}
+        >
+          <span className="flex items-center gap-2 min-w-0">
+            <StarGlyph filled={false} />
+            <span className="truncate">Rate {experienceTitle}</span>
+          </span>
+          <span aria-hidden>→</span>
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-white text-xs font-black font-headline transition-transform hover:scale-[1.02]"
+          style={{ backgroundColor: ORANGE, boxShadow: "0 4px 14px rgba(255,97,48,0.30)" }}
+        >
+          <StarGlyph filled /> Rate this experience
+        </button>
+      )}
 
       {open && (
         <div

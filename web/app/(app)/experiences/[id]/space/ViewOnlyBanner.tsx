@@ -16,6 +16,7 @@
  * Both reuse PurchaseButton (→ create_checkout_session).
  */
 
+import Link from "next/link";
 import { PurchaseButton } from "@/app/components/PurchaseButton";
 import { Avatar } from "./Avatar";
 import type { JoinableRun, ExperienceSummary, SpaceCreator } from "@/lib/experienceSpace/store";
@@ -83,15 +84,20 @@ export function ReactivateCard({
   experience,
   joinableRuns,
   creators,
+  sessionCount,
 }: {
   experience: ExperienceSummary;
   joinableRuns: JoinableRun[];
   creators: SpaceCreator[];
+  sessionCount: number;
 }) {
   const hasRuns = joinableRuns.length > 0;
+  const primary = joinableRuns[0] ?? null;
+  const blurb = experience.promiseText?.trim() || experience.description?.trim() || "";
+  const weeks = experience.weeklyArc?.length ?? 0;
   return (
     <div
-      className="pointer-events-auto w-full max-w-md rounded-3xl px-6 py-7 sm:px-8"
+      className="pointer-events-auto w-full max-w-lg rounded-3xl px-7 py-8 sm:px-9 sm:py-9"
       style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.08), 0 26px 64px rgba(15,34,41,0.24)" }}
     >
       <div className="flex items-center gap-2.5">
@@ -106,12 +112,12 @@ export function ReactivateCard({
         </p>
       </div>
 
-      <h2 className="text-xl sm:text-2xl font-headline tracking-tight mt-4" style={{ color: INK, fontWeight: 700, letterSpacing: "-0.02em" }}>
+      <h2 className="text-2xl sm:text-3xl font-headline tracking-tight mt-4" style={{ color: INK, fontWeight: 700, letterSpacing: "-0.02em" }}>
         {experience.title}
       </h2>
-      <p className="text-[14px] font-medium mt-2" style={{ color: "#5b7886" }}>
+      <p className="text-[15px] font-medium mt-2.5 leading-relaxed" style={{ color: "#5b7886" }}>
         {hasRuns
-          ? "The tribe moved on to its next run — and it keeps going without you unless you jump back in."
+          ? "Infitra experiences are alive and all about momentum. This tribe moved on to its next run — jump back in and continue your journey!"
           : "This experience has wrapped. Thanks for showing up — watch this space for the next run."}
       </p>
 
@@ -119,10 +125,32 @@ export function ReactivateCard({
         <div className="mt-5 flex items-center gap-x-3 gap-y-1.5 flex-wrap">
           {creators.map((c) => (
             <div key={c.id} className="flex items-center gap-1.5">
-              <Avatar src={c.avatar} name={c.name} size={22} ring={c.role === "owner" ? ORANGE : CYAN} />
-              <span className="text-[12px] font-bold font-headline" style={{ color: INK }}>{c.name}</span>
+              <Avatar src={c.avatar} name={c.name} size={24} ring={c.role === "owner" ? ORANGE : CYAN} />
+              <span className="text-[13px] font-bold font-headline" style={{ color: INK }}>{c.name}</span>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* What you're joining — what continues (the promise) + what's in the run. */}
+      {hasRuns && (blurb || sessionCount > 0) && (
+        <div className="mt-6 rounded-2xl p-4" style={{ backgroundColor: "#F7FAFB", boxShadow: "inset 0 0 0 1px rgba(15,34,41,0.06)" }}>
+          <p className="text-[10px] uppercase tracking-[0.16em] font-headline" style={{ color: CYAN, fontWeight: 800 }}>
+            What you&apos;re joining
+          </p>
+          {blurb && (
+            <p className="text-[13px] font-medium mt-1.5 leading-relaxed" style={{ color: INK }}>
+              {blurb}
+            </p>
+          )}
+          {sessionCount > 0 && (
+            <p className="text-[12px] font-bold font-headline mt-2 flex items-center gap-1.5" style={{ color: "#5b7886" }}>
+              <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ backgroundColor: CYAN }} />
+              {sessionCount} live session{sessionCount === 1 ? "" : "s"}
+              {weeks > 0 && ` · ${weeks} week${weeks === 1 ? "" : "s"}`}
+              {" · led live by your experts"}
+            </p>
+          )}
         </div>
       )}
 
@@ -131,6 +159,19 @@ export function ReactivateCard({
           {joinableRuns.map((r, i) => (
             <RunRow key={r.id} run={r} primary={i === 0} />
           ))}
+        </div>
+      )}
+
+      {/* Calm secondary — full details on the experience's own page. */}
+      {primary && (
+        <div className="mt-4 text-center">
+          <Link
+            href={`/experiences/${primary.id}`}
+            className="text-[12px] font-bold font-headline transition-colors hover:text-[#0F2229]"
+            style={{ color: "#94a3b8" }}
+          >
+            See full details →
+          </Link>
         </div>
       )}
     </div>

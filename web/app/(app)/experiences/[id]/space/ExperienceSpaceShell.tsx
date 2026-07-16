@@ -168,8 +168,8 @@ function SpaceBody({ reviewState, continuation }: { reviewState?: ReviewState; c
             <TribeFeed spaceId={spaceId} viewer={viewer} canPost={false} creators={creators} />
           </div>
         </div>
-        <div className="absolute inset-0 z-10 flex items-start justify-center px-4 pt-[7vh] sm:pt-[11vh] pointer-events-none">
-          <ReactivateCard experience={experience} joinableRuns={joinableRuns} creators={creators} />
+        <div className="absolute inset-0 z-10 flex items-start justify-center px-4 pt-[6vh] sm:pt-[9vh] pointer-events-none">
+          <ReactivateCard experience={experience} joinableRuns={joinableRuns} creators={creators} sessionCount={sessions.length} />
         </div>
       </div>
     );

@@ -266,6 +266,7 @@ export default async function MeHomePage() {
 
   const viewerTimeZone = await resolveViewerTimeZone();
   const { profile, active, completed, tribePulse } = await loadMe(user.id);
+  const pendingReviews = completed.filter((e) => !e.rated).map((e) => ({ id: e.id, title: e.title }));
 
   return (
     <>
@@ -288,6 +289,7 @@ export default async function MeHomePage() {
                 joinedAt={(profile as { created_at?: string } | null)?.created_at ?? null}
                 tribePulse={tribePulse}
                 hasActiveExperiences={active.length > 0}
+                pendingReviews={pendingReviews}
               />
             </aside>
 

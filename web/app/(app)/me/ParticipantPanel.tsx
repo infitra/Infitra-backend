@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { saveFirstMoves } from "@/app/actions/profile";
 import { uploadImage } from "@/lib/uploadImage";
 import { MetricStrip, type Metric } from "@/app/(app)/dashboard/MetricStrip";
+import { RateExperienceButton } from "./RateExperienceButton";
 
 /**
  * ParticipantPanel — the participant's "this is you" console, the lean
@@ -24,6 +25,9 @@ interface Props {
   joinedAt: string | null;
   tribePulse: { newPosts: number; experiences: number };
   hasActiveExperiences: boolean;
+  /** Completed experiences the member hasn't rated yet — the console is the main
+   *  action collector, so pending ratings surface here as a to-do. */
+  pendingReviews: { id: string; title: string }[];
 }
 
 function timeOfDayGreeting(): string {
@@ -60,7 +64,7 @@ function Section({ label, children }: { label: string; children: React.ReactNode
   );
 }
 
-export function ParticipantPanel({ displayName, avatarUrl, joinedAt, tribePulse, hasActiveExperiences }: Props) {
+export function ParticipantPanel({ displayName, avatarUrl, joinedAt, tribePulse, hasActiveExperiences, pendingReviews }: Props) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -260,6 +264,17 @@ export function ParticipantPanel({ displayName, avatarUrl, joinedAt, tribePulse,
           </>
         )}
       </Section>
+
+      {/* ── TO DO — the console collects pending actions (ratings for now) ── */}
+      {pendingReviews.length > 0 && (
+        <Section label="To do">
+          <div className="space-y-2">
+            {pendingReviews.map((r) => (
+              <RateExperienceButton key={r.id} challengeId={r.id} experienceTitle={r.title} variant="console" />
+            ))}
+          </div>
+        </Section>
+      )}
 
       {/* ── ACROSS YOUR TRIBES ── */}
       {hasActiveExperiences && (
