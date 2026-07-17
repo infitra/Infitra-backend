@@ -15,7 +15,7 @@
  * lives. Vocabulary: experiences — never "program".
  */
 
-export type AgendaSession = { day: string; time: string; dur: string; title: string; host: string };
+export type AgendaSession = { day: string; time: string; dur: string; title: string; host: string; img: string };
 
 export const EX = {
   title: "6-Week Sustainable Fitness Reset",
@@ -35,38 +35,40 @@ export const EX = {
     "Building Long-Term Habits",
     "Transition & Sustainability",
   ],
-  /** Real sessions per week (weekday · time · duration · title · host). */
+  /** Real sessions per week (weekday · time · duration · title · host).
+   *  W1 images are the sessions' REAL images; later weeks rotate the real
+   *  asset pool by session type (nutrition / strength / recovery). */
   agenda: [
     [
-      { day: "Sun", time: "13:00", dur: "45 min", title: "Meet your Experts", host: "Alex & Mira" },
-      { day: "Mon", time: "13:00", dur: "45 min", title: "Nutrition Foundations & Weekly Setup", host: "Mira" },
-      { day: "Tue", time: "13:00", dur: "1 h", title: "Full Body Strength Foundations", host: "Alex" },
-      { day: "Thu", time: "13:00", dur: "45 min", title: "Movement, Mobility & Routine Reset", host: "Alex" },
+      { day: "Sun", time: "13:00", dur: "45 min", title: "Meet your Experts", host: "Alex & Mira", img: "/landing/session-meet.jpg" },
+      { day: "Mon", time: "13:00", dur: "45 min", title: "Nutrition Foundations & Weekly Setup", host: "Mira", img: "/landing/session-nutrition.jpg" },
+      { day: "Tue", time: "13:00", dur: "1 h", title: "Full Body Strength Foundations", host: "Alex", img: "/landing/session-strength.jpg" },
+      { day: "Thu", time: "13:00", dur: "45 min", title: "Movement, Mobility & Routine Reset", host: "Alex", img: "/landing/session-mobility.jpg" },
     ],
     [
-      { day: "Mon", time: "13:00", dur: "45 min", title: "Sustainable Eating in Real Life", host: "Mira" },
-      { day: "Tue", time: "13:00", dur: "1 h", title: "Full Body Strength & Stability", host: "Alex" },
-      { day: "Thu", time: "13:00", dur: "45 min", title: "Conditioning, Core & Recovery Flow", host: "Alex" },
+      { day: "Mon", time: "13:00", dur: "45 min", title: "Sustainable Eating in Real Life", host: "Mira", img: "/landing/session-nutritionist.jpg" },
+      { day: "Tue", time: "13:00", dur: "1 h", title: "Full Body Strength & Stability", host: "Alex", img: "/landing/session-trainer.jpg" },
+      { day: "Thu", time: "13:00", dur: "45 min", title: "Conditioning, Core & Recovery Flow", host: "Alex", img: "/landing/session-mobility.jpg" },
     ],
     [
-      { day: "Mon", time: "13:00", dur: "45 min", title: "Fueling Energy Without Overshooting", host: "Mira" },
-      { day: "Tue", time: "13:00", dur: "1 h", title: "Full Body Strength & Energy", host: "Alex" },
-      { day: "Thu", time: "13:00", dur: "45 min", title: "Mobility, Core & Recovery Reset", host: "Alex" },
+      { day: "Mon", time: "13:00", dur: "45 min", title: "Fueling Energy Without Overshooting", host: "Mira", img: "/landing/session-nutrition.jpg" },
+      { day: "Tue", time: "13:00", dur: "1 h", title: "Full Body Strength & Energy", host: "Alex", img: "/landing/session-strength.jpg" },
+      { day: "Thu", time: "13:00", dur: "45 min", title: "Mobility, Core & Recovery Reset", host: "Alex", img: "/landing/session-mobility.jpg" },
     ],
     [
-      { day: "Mon", time: "13:00", dur: "45 min", title: "Cravings, Cheat Meals & Staying Consistent", host: "Mira" },
-      { day: "Tue", time: "13:00", dur: "1 h", title: "Strength Under Pressure", host: "Alex" },
-      { day: "Thu", time: "13:00", dur: "45 min", title: "Recovery, Mobility & Reset Flow", host: "Alex" },
+      { day: "Mon", time: "13:00", dur: "45 min", title: "Cravings, Cheat Meals & Staying Consistent", host: "Mira", img: "/landing/session-nutritionist.jpg" },
+      { day: "Tue", time: "13:00", dur: "1 h", title: "Strength Under Pressure", host: "Alex", img: "/landing/session-trainer.jpg" },
+      { day: "Thu", time: "13:00", dur: "45 min", title: "Recovery, Mobility & Reset Flow", host: "Alex", img: "/landing/session-mobility.jpg" },
     ],
     [
-      { day: "Mon", time: "13:00", dur: "45 min", title: "Building Sustainable Eating Habits", host: "Mira" },
-      { day: "Tue", time: "13:00", dur: "1 h", title: "Strength, Control & Confidence", host: "Alex" },
-      { day: "Thu", time: "13:00", dur: "45 min", title: "Mobility, Recovery & Sustainable Training", host: "Alex" },
+      { day: "Mon", time: "13:00", dur: "45 min", title: "Building Sustainable Eating Habits", host: "Mira", img: "/landing/session-nutrition.jpg" },
+      { day: "Tue", time: "13:00", dur: "1 h", title: "Strength, Control & Confidence", host: "Alex", img: "/landing/session-strength.jpg" },
+      { day: "Thu", time: "13:00", dur: "45 min", title: "Mobility, Recovery & Sustainable Training", host: "Alex", img: "/landing/session-mobility.jpg" },
     ],
     [
-      { day: "Mon", time: "13:00", dur: "45 min", title: "Making Healthy Eating Enjoyable Long-Term", host: "Mira" },
-      { day: "Tue", time: "13:00", dur: "1 h", title: "Full Body Strength & Momentum", host: "Alex" },
-      { day: "Sat", time: "12:00", dur: "45 min", title: "Continue Your Journey", host: "Alex & Mira" },
+      { day: "Mon", time: "13:00", dur: "45 min", title: "Making Healthy Eating Enjoyable Long-Term", host: "Mira", img: "/landing/session-nutritionist.jpg" },
+      { day: "Tue", time: "13:00", dur: "1 h", title: "Full Body Strength & Momentum", host: "Alex", img: "/landing/session-trainer.jpg" },
+      { day: "Sat", time: "12:00", dur: "45 min", title: "Continue Your Journey", host: "Alex & Mira", img: "/landing/session-meet.jpg" },
     ],
   ] as AgendaSession[][],
   /** The real marketing page's positioning lines. */

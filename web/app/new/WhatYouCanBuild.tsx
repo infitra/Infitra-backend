@@ -5,13 +5,12 @@ import { EX, ALEX, MIRA } from "./content";
 import { INK, ORANGE, CYAN, MUTED, FAINT, PRODUCT_SHADOW } from "./ui";
 
 /**
- * M2 · WHAT YOU CAN BUILD — no wrapper framing: the example IS the card,
- * a compressed PORT of the real marketing page (PublicChallengeHero):
- * INFITRA EXPERIENCE eyebrow → the promise as the headline → cover with
- * LIVE pill → title kicker + one-line description → experts with real
- * taglines → stats → the REAL WeeklyJourneyCarousel (clickable W1–W6 pills,
- * real theme headers, real agenda session rows) → the page's positioning
- * lines → the join pill. Small client island for the carousel only.
+ * M2 · WHAT YOU CAN BUILD — the card IS the product, like the real marketing
+ * page: one caption line, then the card opening with its cover full-bleed,
+ * ONE weighty title block (orange tracked kicker + big promise + centered
+ * description), experts, stats, and the REAL weekly-journey carousel — all
+ * 20 real sessions browsable across W1–W6 as image cards, so a visitor can
+ * walk the whole flow and see how two complementary experts design together.
  */
 export function WhatYouCanBuild() {
   const [week, setWeek] = useState(0);
@@ -20,114 +19,120 @@ export function WhatYouCanBuild() {
   return (
     <section className="px-4 sm:px-6 py-24">
       <div className="max-w-3xl mx-auto">
-        <p className="text-[10px] uppercase tracking-[0.25em] font-headline text-center mb-8" style={{ color: CYAN, fontWeight: 700 }}>
-          An example — what you can build
+        <p className="text-[12px] font-bold font-headline text-center mb-8 tracking-wide" style={{ color: FAINT }}>
+          An example experience, built on INFITRA.
         </p>
 
-        {/* THE CARD IS THE PAGE */}
+        {/* THE CARD IS THE PRODUCT — cover first, full bleed */}
         <div className="rounded-3xl overflow-hidden" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }}>
-          <div className="p-6 md:p-10">
-            <p className="text-[10px] uppercase tracking-[0.25em] font-headline mb-3" style={{ color: CYAN, fontWeight: 800 }}>
-              INFITRA Experience
+          <div className="relative aspect-[16/9] sm:aspect-[2/1]" style={{ backgroundColor: INK }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={EX.cover} alt="" className="absolute inset-0 w-full h-full object-cover" />
+            <div
+              className="absolute inset-x-0 bottom-0 h-1/2 pointer-events-none"
+              style={{ background: "linear-gradient(to top, rgba(15,34,41,0.45), rgba(15,34,41,0))" }}
+            />
+            <span
+              className="absolute top-4 left-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] uppercase tracking-widest font-headline"
+              style={{ backgroundColor: "rgba(15,34,41,0.85)", color: "#9CF0FF", fontWeight: 700 }}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-[#9CF0FF] animate-pulse" />
+              Live · {EX.weeks} weeks
+            </span>
+          </div>
+
+          <div className="p-6 md:p-10 text-center">
+            {/* ONE title block — real page grammar, real weight */}
+            <p
+              className="text-[15px] md:text-[17px] uppercase tracking-[0.18em] font-headline"
+              style={{ color: ORANGE, fontWeight: 800 }}
+            >
+              {EX.title}
             </p>
             <h2
-              className="text-2xl md:text-[2.1rem] font-headline tracking-tight leading-[1.12]"
+              className="text-2xl md:text-[2.1rem] font-headline tracking-tight leading-[1.15] mt-3 max-w-2xl mx-auto"
               style={{ color: INK, fontWeight: 700, letterSpacing: "-0.02em" }}
             >
               {EX.promise}
             </h2>
-
-            {/* cover */}
-            <div className="relative rounded-2xl overflow-hidden aspect-[2/1] mt-6" style={{ backgroundColor: INK }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={EX.cover} alt="" className="absolute inset-0 w-full h-full object-cover" />
-              <div
-                className="absolute inset-x-0 bottom-0 h-1/2 pointer-events-none"
-                style={{ background: "linear-gradient(to top, rgba(15,34,41,0.50), rgba(15,34,41,0))" }}
-              />
-              <span
-                className="absolute top-4 left-4 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] uppercase tracking-widest font-headline"
-                style={{ backgroundColor: "rgba(15,34,41,0.85)", color: "#9CF0FF", fontWeight: 700 }}
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-[#9CF0FF] animate-pulse" />
-                Live · {EX.weeks} weeks
-              </span>
-            </div>
-
-            {/* kicker + one-line description */}
-            <p className="text-[11px] uppercase tracking-[0.2em] font-headline mt-5" style={{ color: FAINT, fontWeight: 800 }}>
-              {EX.title}
-            </p>
-            <p className="text-[14px] leading-relaxed mt-2" style={{ color: MUTED }}>
+            <p className="text-[15px] leading-relaxed mt-4 max-w-xl mx-auto" style={{ color: MUTED }}>
               {EX.blurb}
             </p>
 
-            {/* experts — real taglines */}
-            <div className="grid sm:grid-cols-2 gap-3 mt-5">
+            {/* experts — real taglines, role colors */}
+            <div className="grid sm:grid-cols-2 gap-3 mt-7 text-left">
               {[
                 { p: ALEX, color: ORANGE },
                 { p: MIRA, color: CYAN },
               ].map(({ p, color }) => (
-                <div key={p.name} className="flex items-center gap-3 p-3 rounded-2xl" style={{ backgroundColor: `${color}0a`, border: `1px solid ${color}26` }}>
-                  <span className="shrink-0 w-11 h-11 rounded-full overflow-hidden" style={{ border: `1.5px solid ${color}59` }}>
+                <div key={p.name} className="flex items-center gap-3 p-3.5 rounded-2xl" style={{ backgroundColor: `${color}0a`, border: `1px solid ${color}26` }}>
+                  <span className="shrink-0 w-12 h-12 rounded-full overflow-hidden" style={{ border: `1.5px solid ${color}59` }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={p.avatar} alt="" className="w-full h-full object-cover" />
                   </span>
                   <span className="min-w-0">
-                    <span className="block text-[14px] font-headline" style={{ color: INK, fontWeight: 800 }}>{p.name}</span>
-                    <span className="block text-[11px] font-semibold leading-snug" style={{ color }}>{p.tagline}</span>
+                    <span className="block text-[15px] font-headline" style={{ color: INK, fontWeight: 800 }}>{p.name}</span>
+                    <span className="block text-[11.5px] font-semibold leading-snug" style={{ color }}>{p.tagline}</span>
                   </span>
                 </div>
               ))}
             </div>
 
-            {/* stats */}
-            <p className="text-[13px] font-bold font-headline mt-5 text-center" style={{ color: "#5b7886" }}>
+            {/* stats — the real page's line */}
+            <p className="text-[13.5px] font-bold font-headline mt-6" style={{ color: "#5b7886" }}>
               {EX.weeks} weeks · {EX.sessions} live sessions
               <span style={{ color: FAINT, fontWeight: 600 }}> · Always on: Tribe Space + Expert access</span>
             </p>
 
-            {/* ── THE WEEKLY JOURNEY — the real carousel, browsable ── */}
-            <div className="mt-7 rounded-2xl p-4 sm:p-5" style={{ backgroundColor: "#FAF8F3" }}>
+            {/* ── THE WEEKLY JOURNEY — the real carousel, all 20 sessions ── */}
+            <div className="mt-8">
               <div className="flex flex-wrap items-center justify-center gap-1.5 mb-4">
                 {EX.arc.map((_, i) => (
                   <button
                     key={i}
                     type="button"
                     onClick={() => setWeek(i)}
-                    className="px-3 py-1.5 rounded-full text-[11px] font-black font-headline transition-colors"
+                    className="px-3.5 py-1.5 rounded-full text-[12px] font-black font-headline transition-colors"
                     style={
                       i === week
                         ? { backgroundColor: ORANGE, color: "#FFFFFF", boxShadow: "0 4px 12px rgba(255,97,48,0.30)" }
-                        : { backgroundColor: "#FFFFFF", color: FAINT, boxShadow: "0 0 0 1px rgba(15,34,41,0.08)" }
+                        : { backgroundColor: "#FFFFFF", color: FAINT, boxShadow: "0 0 0 1px rgba(15,34,41,0.10)" }
                     }
                   >
                     W{i + 1}
                   </button>
                 ))}
               </div>
-              <p className="text-[11px] uppercase tracking-[0.18em] font-headline text-center mb-4" style={{ color: ORANGE, fontWeight: 800 }}>
+              <p className="text-[12px] uppercase tracking-[0.18em] font-headline mb-4" style={{ color: ORANGE, fontWeight: 800 }}>
                 Week {week + 1}: {EX.arc[week]}
               </p>
-              <div className="space-y-2">
+
+              {/* session image cards — 2-col grid, the editorial weight */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
                 {sessions.map((s) => (
-                  <div key={s.title} className="flex items-center gap-3.5 rounded-xl px-3.5 py-2.5" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.05)" }}>
-                    <span className="shrink-0 w-16 text-left">
-                      <span className="block text-[11px] uppercase tracking-widest font-headline" style={{ color: INK, fontWeight: 800 }}>{s.day}</span>
-                      <span className="block text-[9.5px] font-semibold" style={{ color: FAINT }}>{s.time} — {s.dur}</span>
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-[13px] font-headline leading-snug" style={{ color: INK, fontWeight: 800 }}>{s.title}</span>
-                      <span className="block text-[10px] font-bold" style={{ color: FAINT }}>{s.host}</span>
-                    </span>
-                    <span className="shrink-0 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "rgba(8,145,178,0.45)" }} />
+                  <div key={s.title} className="rounded-2xl overflow-hidden" style={{ backgroundColor: "#F8F6F0", border: "1px solid rgba(15,34,41,0.06)" }}>
+                    <div className="relative aspect-[16/8]" style={{ backgroundColor: INK }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={s.img} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
+                    </div>
+                    <div className="p-3.5">
+                      <p className="text-[10px] uppercase tracking-widest font-headline" style={{ color: FAINT, fontWeight: 800 }}>
+                        {s.day} · {s.time} — {s.dur}
+                      </p>
+                      <p className="text-[13.5px] font-headline leading-snug mt-1" style={{ color: INK, fontWeight: 800 }}>
+                        {s.title}
+                      </p>
+                      <p className="text-[10.5px] font-bold mt-0.5" style={{ color: s.host.includes("&") ? MUTED : s.host === "Mira" ? CYAN : ORANGE }}>
+                        {s.host}
+                      </p>
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
 
             {/* positioning + CTA — the real page's close */}
-            <div className="mt-8 text-center">
+            <div className="mt-9">
               <p className="text-[17px] md:text-lg font-headline leading-snug" style={{ color: INK, fontWeight: 700 }}>
                 {EX.positioning[0]}
                 <br />
@@ -143,10 +148,6 @@ export function WhatYouCanBuild() {
             </div>
           </div>
         </div>
-
-        <p className="text-center text-[11px] mt-4 tracking-wide" style={{ color: FAINT }}>
-          An example experience, built on INFITRA.
-        </p>
       </div>
     </section>
   );
