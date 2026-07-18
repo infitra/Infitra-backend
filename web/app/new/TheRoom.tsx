@@ -488,6 +488,22 @@ function ContinuesBeat() {
 export function TheRoom() {
   return (
     <section className="px-6 pb-24">
+      {/* the heartbeat's tail — the chapter's pulse hands the story over */}
+      <div className="flex justify-center pt-2 pb-10" aria-hidden>
+        <svg viewBox="0 0 320 40" className="w-64 h-8" fill="none">
+          <path
+            d="M0,20 H120 L134,20 L143,6 L154,34 L164,20 H320"
+            stroke={ORANGE}
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            opacity={0.35}
+          />
+          <circle cx="149" cy="20" r="3.5" fill={ORANGE} opacity={0.5}>
+            <animate attributeName="opacity" values="0.2;0.7;0.2" dur="2.4s" repeatCount="indefinite" />
+          </circle>
+        </svg>
+      </div>
       <div className="max-w-5xl mx-auto">
         <SectionHead
           eyebrow="Inside the experience"

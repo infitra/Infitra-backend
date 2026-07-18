@@ -25,9 +25,19 @@ export function WhatYouCanBuild() {
       }}
     >
       <div className="max-w-3xl mx-auto">
-        <p className="text-[12px] font-bold font-headline text-center mb-8 tracking-wide" style={{ color: FAINT }}>
-          An example experience, built on INFITRA.
-        </p>
+        {/* the section's title moment — weighty, two-tone, and still the honesty label */}
+        <div className="flex items-center gap-4 sm:gap-5 mb-10">
+          <div className="hidden sm:block flex-1 h-px" style={{ backgroundColor: "rgba(8,145,178,0.30)" }} />
+          <h2
+            className="mx-auto text-center text-2xl md:text-[2rem] font-headline tracking-tight leading-snug"
+            style={{ color: INK, fontWeight: 700, letterSpacing: "-0.02em" }}
+          >
+            An example experience,
+            <br className="sm:hidden" />
+            <span style={{ color: ORANGE }}> built on INFITRA.</span>
+          </h2>
+          <div className="hidden sm:block flex-1 h-px" style={{ backgroundColor: "rgba(8,145,178,0.30)" }} />
+        </div>
 
         {/* ── the cover as backdrop plate ── */}
         <Drift depth={6}>
