@@ -6,16 +6,26 @@ import { INK, ORANGE, CYAN, MUTED, FAINT, CARD_SHADOW, PRODUCT_SHADOW, SectionHe
 import { MockBuyerCard } from "./MockBuyerCard";
 
 /**
- * M3 · HOW TO COLLABORATE ON INFITRA — the creator's build story, ending at
- * publish. Natural page scroll with a STICKY step rail (no inner scroll box):
- * the rail tracks the step in view and jumps on click; each step gets full
- * width and air. The flagship threads every step.
+ * M3 · HOW TO COLLABORATE ON INFITRA — the pinned chapter (pliability-style).
  *
- *   01 invitation → 02 workspace (structured frame + team chat beside) →
- *   03 agreement (the whole design locks; partner agrees; recorded) →
- *   04 publish ("from publishing to promoting in one click" — the browser-
- *      framed marketing page + everything handled in the same click).
+ * A tall scroll RUNWAY with a full-viewport sticky STAGE pinned inside it:
+ * the page scrolls natively (no nested scrollers, no wheel capture), the
+ * stage stays put, and scroll progress switches the step panels in place
+ * with eased transitions. Full-bleed per-step background washes make every
+ * switch read as a page change. The rail carries a progress line that fills
+ * with scroll; clicking a step scrolls the page to its runway segment.
+ *
+ * Feel-tuning constants below. Fallback: reduced-motion or short viewports
+ * get a plain stacked flow.
  */
+
+/* ── Feel constants — tune these two on deploy ─────────────── */
+const RUNWAY_VH_PER_STEP = 115; // scroll distance per step (vh)
+const TRANSITION_MS = 450; // panel switch duration
+const EASE = "cubic-bezier(.22,.61,.36,1)";
+/** Full-bleed stage wash per step: invitation cream → workspace warm white →
+ *  agreement cool white → publish soft orange. */
+const STAGE_BG = ["#F5F1E8", "#FAF8F2", "#F3F5F4", "#FAF0E8"];
 
 const CHECK = (color: string, size = 12) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -357,101 +367,178 @@ const STEPS = [
   },
 ] as const;
 
+/** One step's text block + mock — shared by the pinned stage and the
+ *  stacked fallback. `fit` scales tall mocks down on short viewports so a
+ *  panel always fits the 100vh stage. */
+function StepContent({ i, fit }: { i: number; fit?: boolean }) {
+  const s = STEPS[i];
+  return (
+    <>
+      <p className="text-[10px] uppercase tracking-[0.25em] font-headline mb-3" style={{ color: CYAN, fontWeight: 700 }}>
+        Step 0{i + 1} · {s.label}
+      </p>
+      <h3
+        className="text-3xl md:text-4xl font-headline tracking-tight mb-3.5 max-w-2xl mx-auto"
+        style={{ color: INK, fontWeight: 700, letterSpacing: "-0.02em" }}
+      >
+        {s.title}
+      </h3>
+      <p className="text-base md:text-lg leading-relaxed max-w-xl mx-auto mb-8 md:mb-10" style={{ color: MUTED }}>
+        {s.copy}
+      </p>
+      <div
+        className={
+          fit
+            ? "w-full origin-top [@media(max-height:900px)]:scale-[0.92] [@media(max-height:800px)]:scale-[0.82] [@media(max-height:700px)]:scale-[0.72]"
+            : "w-full"
+        }
+      >
+        <s.Mock />
+      </div>
+    </>
+  );
+}
+
 export function HowItWorks() {
-  const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
+  const [progress, setProgress] = useState(0);
+  const [pinned, setPinned] = useState(true);
 
   useEffect(() => {
-    // Active step = the one whose center is nearest the viewport center.
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches || window.innerHeight < 600) {
+      const raf0 = requestAnimationFrame(() => setPinned(false));
+      return () => cancelAnimationFrame(raf0);
+    }
+    let raf = 0;
     const onScroll = () => {
-      let best = 0;
-      let bestDist = Infinity;
-      stepRefs.current.forEach((el, i) => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        const el = wrapperRef.current;
         if (!el) return;
         const r = el.getBoundingClientRect();
-        const d = Math.abs(r.top + r.height / 2 - window.innerHeight / 2);
-        if (d < bestDist) {
-          bestDist = d;
-          best = i;
-        }
+        const total = r.height - window.innerHeight;
+        if (total <= 0) return;
+        const p = Math.min(0.9999, Math.max(0, -r.top / total));
+        setProgress(p);
+        setActive(Math.min(STEPS.length - 1, Math.floor(p * STEPS.length)));
       });
-      setActive(best);
     };
     window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
     onScroll();
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
   }, []);
 
+  /** Native page-scroll to the middle of step i's runway segment. */
   function jumpTo(i: number) {
+    const el = wrapperRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const total = r.height - window.innerHeight;
+    window.scrollTo({ top: window.scrollY + r.top + ((i + 0.5) / STEPS.length) * total, behavior: "smooth" });
     setActive(i);
-    stepRefs.current[i]?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   return (
-    <section className="px-4 sm:px-6 py-24">
-      <div className="max-w-6xl mx-auto">
-        <SectionHead
-          eyebrow="How it works"
-          title="How to collaborate on INFITRA."
-          sub="Four moves. Everything else is handled."
-        />
+    <section>
+      {/* Chapter head — normal flow */}
+      <div className="px-6 pt-24 pb-2">
+        <SectionHead eyebrow="How it works" title="How to collaborate on INFITRA." sub="Four moves. Everything else is handled." />
+      </div>
 
-        <div className="lg:grid lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-12">
-          {/* Sticky step rail */}
-          <aside className="hidden lg:block">
-            <div className="sticky top-36 flex flex-col gap-7">
-              {STEPS.map((s, i) => (
-                <button
-                  key={s.label}
-                  type="button"
-                  onClick={() => jumpTo(i)}
-                  className="flex items-center gap-3 text-left transition-opacity"
-                  style={{ opacity: active === i ? 1 : 0.38 }}
-                >
-                  <span className="shrink-0 w-2 h-2 rounded-full transition-colors" style={{ backgroundColor: active === i ? ORANGE : "rgba(15,34,41,0.25)" }} />
-                  <span className="min-w-0">
-                    <span className="block text-[9.5px] uppercase tracking-widest font-headline" style={{ color: active === i ? ORANGE : FAINT, fontWeight: 800 }}>
-                      0{i + 1}
+      {pinned ? (
+        /* ── The runway + pinned stage ── */
+        <div ref={wrapperRef} className="relative" style={{ height: `${STEPS.length * RUNWAY_VH_PER_STEP}vh` }}>
+          <div
+            className="sticky top-0 w-full overflow-hidden h-screen"
+            style={{ height: "100dvh", backgroundColor: STAGE_BG[active], transition: `background-color 650ms ${EASE}` }}
+          >
+            {/* Rail — desktop */}
+            <div className="hidden lg:flex absolute left-8 xl:left-14 top-1/2 -translate-y-1/2 z-20 items-stretch gap-5">
+              <div className="relative w-px rounded-full" style={{ backgroundColor: "rgba(15,34,41,0.12)" }}>
+                <div
+                  className="absolute top-0 left-0 w-px rounded-full"
+                  style={{ height: `${progress * 100}%`, backgroundColor: ORANGE, transition: "height 100ms linear" }}
+                />
+              </div>
+              <div className="flex flex-col justify-between gap-8 py-0.5">
+                {STEPS.map((s, i) => (
+                  <button
+                    key={s.label}
+                    type="button"
+                    onClick={() => jumpTo(i)}
+                    className="flex items-center gap-3 text-left transition-opacity duration-300"
+                    style={{ opacity: active === i ? 1 : 0.38 }}
+                  >
+                    <span className="shrink-0 w-2 h-2 rounded-full transition-colors" style={{ backgroundColor: active === i ? ORANGE : "rgba(15,34,41,0.25)" }} />
+                    <span className="min-w-0">
+                      <span className="block text-[9.5px] uppercase tracking-widest font-headline" style={{ color: active === i ? ORANGE : FAINT, fontWeight: 800 }}>
+                        0{i + 1}
+                      </span>
+                      <span className="block text-[13px] font-headline leading-tight whitespace-nowrap" style={{ color: INK, fontWeight: 700 }}>
+                        {s.label}
+                      </span>
                     </span>
-                    <span className="block text-[13px] font-headline leading-tight" style={{ color: INK, fontWeight: 700 }}>
-                      {s.label}
-                    </span>
-                  </span>
-                </button>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Progress dots — mobile */}
+            <div className="lg:hidden absolute top-5 inset-x-0 z-20 flex justify-center gap-1.5" aria-hidden>
+              {STEPS.map((_, i) => (
+                <span
+                  key={i}
+                  className="h-1.5 rounded-full transition-all duration-300"
+                  style={{ width: active === i ? 18 : 6, backgroundColor: active === i ? ORANGE : "rgba(15,34,41,0.18)" }}
+                />
               ))}
             </div>
-          </aside>
 
-          {/* The steps — natural flow, full width, air */}
-          <div>
+            {/* Panels — switch in place */}
+            {STEPS.map((s, i) => {
+              const state = i === active ? "in" : i < active ? "above" : "below";
+              return (
+                <div
+                  key={s.label}
+                  aria-hidden={i !== active}
+                  className="absolute inset-0 flex flex-col items-center justify-center text-center px-5 sm:px-8 lg:pl-64 lg:pr-16 pt-10 pb-6 lg:pt-4"
+                  style={{
+                    opacity: state === "in" ? 1 : 0,
+                    transform: state === "in" ? "none" : state === "above" ? "translateY(-30px)" : "translateY(30px)",
+                    transition: `opacity ${TRANSITION_MS}ms ${EASE}, transform ${TRANSITION_MS}ms ${EASE}`,
+                    pointerEvents: state === "in" ? "auto" : "none",
+                  }}
+                >
+                  <div className="w-full max-w-5xl mx-auto">
+                    <StepContent i={i} fit />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+        /* ── Fallback: plain stacked flow (reduced motion / short viewports) ── */
+        <div className="px-4 sm:px-6 pb-10">
+          <div className="max-w-6xl mx-auto">
             {STEPS.map((s, i) => (
               <div key={s.label}>
                 {i > 0 && <div className="h-px max-w-[240px] mx-auto" style={{ backgroundColor: "rgba(15,34,41,0.08)" }} aria-hidden />}
-                <div
-                  ref={(el) => {
-                    stepRefs.current[i] = el;
-                  }}
-                  className="py-14 md:py-20 scroll-mt-32 text-center"
-                >
-                  <p className="text-[10px] uppercase tracking-[0.25em] font-headline mb-3" style={{ color: CYAN, fontWeight: 700 }}>
-                    Step 0{i + 1} · {s.label}
-                  </p>
-                  <h3
-                    className="text-3xl md:text-4xl font-headline tracking-tight mb-3.5 max-w-2xl mx-auto"
-                    style={{ color: INK, fontWeight: 700, letterSpacing: "-0.02em" }}
-                  >
-                    {s.title}
-                  </h3>
-                  <p className="text-base md:text-lg leading-relaxed max-w-xl mx-auto mb-10" style={{ color: MUTED }}>
-                    {s.copy}
-                  </p>
-                  <s.Mock />
+                <div className="py-14 md:py-20 text-center">
+                  <StepContent i={i} />
                 </div>
               </div>
             ))}
           </div>
         </div>
-      </div>
+      )}
     </section>
   );
 }

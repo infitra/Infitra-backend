@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { EX, ALEX, MIRA } from "./content";
 import { INK, ORANGE, CYAN, MUTED, FAINT, PRODUCT_SHADOW } from "./ui";
+import { Reveal } from "./Reveal";
 
 /**
  * M2 · WHAT YOU CAN BUILD — the card IS the product, like the real marketing
@@ -17,13 +18,14 @@ export function WhatYouCanBuild() {
   const sessions = EX.agenda[week];
 
   return (
-    <section className="px-4 sm:px-6 py-24">
+    <section className="px-4 sm:px-6 py-24" style={{ backgroundColor: "rgba(255,255,255,0.45)" }}>
       <div className="max-w-3xl mx-auto">
         <p className="text-[12px] font-bold font-headline text-center mb-8 tracking-wide" style={{ color: FAINT }}>
           An example experience, built on INFITRA.
         </p>
 
         {/* THE CARD IS THE PRODUCT — cover first, full bleed */}
+        <Reveal>
         <div className="rounded-3xl overflow-hidden" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }}>
           <div className="relative aspect-[16/9] sm:aspect-[2/1]" style={{ backgroundColor: INK }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -148,6 +150,7 @@ export function WhatYouCanBuild() {
             </div>
           </div>
         </div>
+        </Reveal>
       </div>
     </section>
   );

@@ -1,5 +1,6 @@
 import { EX, ALEX, MIRA, ROOM } from "./content";
 import { INK, ORANGE, CYAN, MUTED, FAINT, PRODUCT_SHADOW, SectionHead } from "./ui";
+import { Reveal } from "./Reveal";
 
 /**
  * Bridge + M4 · HOW IT UNFOLDS — the experience's own story, answering the
@@ -528,10 +529,10 @@ export function TheRoom() {
           title="How it unfolds."
           sub="What you published isn't a video library — it's a room your tribe shows up to. Live sessions anchor each week; between them, the space runs the rhythm."
         />
-        <MockSpace />
-        <EngagementLoop />
-        <LiveMoment />
-        <ContinuesBeat />
+        <Reveal><MockSpace /></Reveal>
+        <Reveal><EngagementLoop /></Reveal>
+        <Reveal><LiveMoment /></Reveal>
+        <Reveal><ContinuesBeat /></Reveal>
       </div>
     </section>
   );

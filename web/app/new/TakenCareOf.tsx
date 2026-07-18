@@ -1,4 +1,5 @@
 import { INK, ORANGE, CYAN, MUTED, FAINT, PRODUCT_SHADOW, SectionHead, ApplyCTA } from "./ui";
+import { Reveal } from "./Reveal";
 
 /**
  * M5 · EVERYTHING TAKEN CARE OF — the recap AFTER the full story, mirroring
@@ -50,10 +51,11 @@ function Column({ label, color, items }: { label: string; color: string; items: 
 
 export function TakenCareOf() {
   return (
-    <section className="px-6 py-28">
+    <section className="px-6 py-28" style={{ backgroundColor: "rgba(255,255,255,0.5)" }}>
       <div className="max-w-3xl mx-auto text-center">
         <SectionHead eyebrow="All of it, taken care of" title="Everything around the coaching." />
 
+        <Reveal>
         <div
           className="rounded-3xl p-7 md:p-10 grid sm:grid-cols-2 gap-8 md:gap-12 text-left"
           style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }}
@@ -61,6 +63,7 @@ export function TakenCareOf() {
           <Column label="While you build" color={CYAN} items={BUILD} />
           <Column label="While it runs" color={ORANGE} items={RUN} />
         </div>
+        </Reveal>
 
         {/* the honest division */}
         <div className="mt-14">

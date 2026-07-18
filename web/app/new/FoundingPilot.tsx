@@ -1,4 +1,5 @@
 import { INK, ORANGE, CYAN, MUTED, FAINT, CARD_SHADOW, SectionHead } from "./ui";
+import { Reveal } from "./Reveal";
 
 /**
  * M7 · THE FOUNDING PILOT — honest terms, two columns. Economics stay quiet:
@@ -45,6 +46,7 @@ export function FoundingPilot() {
           title="Deliberately small. Deliberately early."
           sub="Everything you just saw is built and running. The pilot is where it meets real audiences — that's why it's 5 pairs, not 500."
         />
+        <Reveal>
         <div
           className="rounded-3xl p-7 md:p-10 grid md:grid-cols-2 gap-8 md:gap-12"
           style={{ backgroundColor: "rgba(255,255,255,0.72)", boxShadow: CARD_SHADOW }}
@@ -62,6 +64,7 @@ export function FoundingPilot() {
             <List items={ASK} color={CYAN} />
           </div>
         </div>
+        </Reveal>
         <p className="text-center text-xs mt-6 tracking-wide" style={{ color: FAINT }}>
           No fixed costs. The platform only earns when you do.
         </p>
