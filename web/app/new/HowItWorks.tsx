@@ -22,7 +22,9 @@ import { INK, ORANGE, CYAN, MUTED, FAINT } from "./ui";
 
 /* ── Feel constants — tune on deploy ───────────────────────── */
 const BEAT_VH = 70; // runway per beat unit
-const CATCHUP_MS = 240; // damping: max one beat per this interval
+const CATCHUP_MS = 240; // damping (touch/keyboard fallback)
+const GESTURE_LOCK_MS = 800; // wheel: one gesture = one beat, then lock
+const WHEEL_STEP_THRESHOLD = 40; // accumulated deltaY to count as a gesture
 const CUT_MS = 260; // frame hard-cut duration
 const POP_MS = 340; // phase reveal duration
 const CASCADE_MS = 170; // published-items stagger
@@ -543,7 +545,7 @@ function PublishFrame({ phase, onPublish }: { phase: number; onPublish: () => vo
   return (
     <div className={`w-full max-w-2xl mx-auto ${FIT}`}>
       {/* two-state head, crisp swap */}
-      <div className="relative mb-6" style={{ minHeight: 140 }}>
+      <div className="relative mb-6" style={{ minHeight: 200 }}>
         <div className="absolute inset-x-0 top-0" style={{ opacity: published ? 0 : 1, transition: `opacity ${CUT_MS}ms ${EASE}` }}>
           <StepHead kicker="Step 04 · The publish" accent={ORANGE} title="All agreed. One move left." />
         </div>
@@ -555,7 +557,7 @@ function PublishFrame({ phase, onPublish }: { phase: number; onPublish: () => vo
       <div className="relative" style={{ minHeight: 460 }}>
         {/* state 1 — full focus on the CTA */}
         <div
-          className="absolute inset-0 flex flex-col items-center justify-start pt-6"
+          className="absolute inset-0 flex flex-col items-center justify-center"
           style={{ opacity: published ? 0 : 1, transform: published ? "translateY(-14px)" : "none", transition: `opacity ${CUT_MS}ms ${EASE}, transform ${CUT_MS}ms ${EASE}`, pointerEvents: published ? "none" : "auto" }}
         >
           <button
@@ -571,7 +573,7 @@ function PublishFrame({ phase, onPublish }: { phase: number; onPublish: () => vo
 
         {/* state 2 — everything in between, one by one, with weight */}
         <div
-          className="absolute inset-0 flex flex-col gap-3 text-left"
+          className="absolute inset-0 flex flex-col justify-center gap-3 text-left"
           style={{ opacity: published ? 1 : 0, transition: `opacity ${CUT_MS}ms ${EASE} 100ms`, pointerEvents: published ? "auto" : "none" }}
         >
           {HANDLED.map(({ t, d, icon, color }, i) => (
@@ -685,6 +687,10 @@ export function HowItWorks() {
   const beatRef = useRef(0);
   const jumpGuardRef = useRef(false);
   const jumpTimerRef = useRef(0);
+  const coveringRef = useRef(false);
+  const gestureLockRef = useRef(false);
+  const gestureTimerRef = useRef(0);
+  const wheelAccRef = useRef(0);
 
   const frame = BEATS[beat].f;
   const phase = BEATS[beat].p;
@@ -712,6 +718,46 @@ export function HowItWorks() {
       return () => cancelAnimationFrame(raf0);
     }
     let raf = 0;
+    /** Anchor the page to a beat (outro anchors at its start so the
+     *  heartbeat still scrub-draws on the released exit). */
+    const anchorTo = (i: number) => {
+      const el = wrapperRef.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      const total = r.height - window.innerHeight;
+      const posT = i === BEATS.length - 1 ? BOUNDS[i][0] + 0.05 : (BOUNDS[i][0] + BOUNDS[i][1]) / 2;
+      window.scrollTo({ top: window.scrollY + r.top + (posT / TOTAL_W) * total, behavior: "auto" });
+    };
+    /** Wheel = quantized: while the stage covers the viewport, one gesture
+     *  advances exactly ONE beat, then locks until the momentum train dies.
+     *  Control releases at the chapter's two exits. */
+    const onWheel = (e: WheelEvent) => {
+      if (!coveringRef.current) return;
+      if (jumpGuardRef.current) {
+        e.preventDefault();
+        return;
+      }
+      const b = beatRef.current;
+      if ((b === 0 && e.deltaY < 0) || (b === BEATS.length - 1 && e.deltaY > 0)) return; // natural entry/exit
+      e.preventDefault();
+      if (gestureLockRef.current) return;
+      wheelAccRef.current = Math.sign(e.deltaY) === Math.sign(wheelAccRef.current) ? wheelAccRef.current + e.deltaY : e.deltaY;
+      if (Math.abs(wheelAccRef.current) < WHEEL_STEP_THRESHOLD) return;
+      const dir = Math.sign(wheelAccRef.current);
+      wheelAccRef.current = 0;
+      const next = Math.min(BEATS.length - 1, Math.max(0, b + dir));
+      if (next === b) return;
+      gestureLockRef.current = true;
+      window.clearTimeout(gestureTimerRef.current);
+      gestureTimerRef.current = window.setTimeout(() => {
+        gestureLockRef.current = false;
+        wheelAccRef.current = 0;
+      }, GESTURE_LOCK_MS);
+      beatRef.current = next;
+      setBeat(next);
+      setTarget(next);
+      anchorTo(next);
+    };
     const tick = () => {
       raf = 0;
       const el = wrapperRef.current;
@@ -720,11 +766,30 @@ export function HowItWorks() {
       const total = r.height - window.innerHeight;
       if (total <= 0) return;
       let pos = clamp01(-r.top / total) * TOTAL_W;
+      const covering = r.top <= 2 && r.bottom >= window.innerHeight - 2;
+      coveringRef.current = covering;
 
-      // THE LEASH: the page can never be more than one beat ahead/behind the
-      // displayed beat — a fling gets held at the next beat's edge and flows
-      // through beat by beat at CATCHUP pace. Explicit jumps bypass via guard.
-      if (!jumpGuardRef.current) {
+      // Outside the pinned region: sync beat straight from position (clean
+      // entry/exit, no stale-state yanks on re-entry).
+      if (!covering) {
+        let fi = BEATS.length - 1;
+        for (let i = 0; i < BOUNDS.length; i++) {
+          if (pos >= BOUNDS[i][0] && pos < BOUNDS[i][1]) {
+            fi = i;
+            break;
+          }
+        }
+        if (beatRef.current !== fi) {
+          beatRef.current = fi;
+          setBeat(fi);
+          setTarget(fi);
+        }
+      }
+
+      // THE LEASH (touch/keyboard fallback while pinned): the page can never
+      // be more than one beat ahead/behind the displayed beat. Wheel input
+      // never reaches here (quantized + prevented above).
+      if (covering && !jumpGuardRef.current) {
         const bcur = beatRef.current;
         const maxPos = bcur >= BEATS.length - 1 ? Infinity : BOUNDS[bcur + 1][1] - 0.04;
         const minPos = bcur <= 0 ? -Infinity : BOUNDS[bcur - 1][0] + 0.02;
@@ -758,10 +823,12 @@ export function HowItWorks() {
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll);
+    window.addEventListener("wheel", onWheel, { passive: false });
     onScroll();
     return () => {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
+      window.removeEventListener("wheel", onWheel);
       if (raf) cancelAnimationFrame(raf);
     };
   }, []);

@@ -6,6 +6,12 @@
       "runtimeExecutable": "/usr/local/bin/node",
       "runtimeArgs": ["/Users/yvesimhasly/supabase/web/node_modules/.bin/next", "dev", "--port", "3001"],
       "port": 3001
+    },
+    {
+      "name": "web-prod",
+      "runtimeExecutable": "/usr/local/bin/node",
+      "runtimeArgs": ["/Users/yvesimhasly/supabase/web/node_modules/.bin/next", "start", "--port", "3002"],
+      "port": 3002
     }
   ]
 }
