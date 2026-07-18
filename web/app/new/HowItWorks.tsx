@@ -22,7 +22,7 @@ import { INK, ORANGE, CYAN, MUTED, FAINT } from "./ui";
 
 /* ── Feel constants — tune on deploy ───────────────────────── */
 const BEAT_VH = 70; // runway per beat unit
-const CATCHUP_MS = 150; // damping: max one beat per this interval
+const CATCHUP_MS = 240; // damping: max one beat per this interval
 const CUT_MS = 260; // frame hard-cut duration
 const POP_MS = 340; // phase reveal duration
 const CASCADE_MS = 170; // published-items stagger
@@ -34,6 +34,7 @@ const LIGHT = "#F6F3EC";
 const LIGHT_MUTED = "rgba(244,241,232,0.72)";
 const CYAN_BRIGHT = "#9CF0FF";
 const CARD_POP = "0 0 0 1px rgba(255,255,255,0.06), 0 26px 60px rgba(0,0,0,0.38)";
+const FIT = "origin-center [@media(max-height:900px)]:scale-[0.93] [@media(max-height:820px)]:scale-[0.85] [@media(max-height:730px)]:scale-[0.76]";
 
 /* ── The beat map — every entry is one scroll notch ────────── */
 type BeatDef = { f: number; p: number; w: number };
@@ -108,66 +109,34 @@ const ICON_SPLIT = (color: string, size = 20) => (
   </svg>
 );
 
-/* ── The brand waves, dark theme — same paths as the light bg ── */
+/* ── The brand waves, dark theme — still, discreet, just hinted ── */
 function DarkWaves({ hidden }: { hidden: boolean }) {
   return (
     <div aria-hidden className="absolute inset-0 pointer-events-none overflow-hidden" style={{ opacity: hidden ? 0 : 1, transition: `opacity 450ms ${EASE}` }}>
-      {/* back — big, blurred, deep */}
-      <div className="absolute inset-0 wfg-wave wfg-wave-1">
-        <svg viewBox="0 0 1600 1000" preserveAspectRatio="none" className="absolute inset-0 w-full h-full">
-          <defs>
-            <linearGradient id="dw-flow-1" x1="0%" y1="100%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#9CF0FF" stopOpacity="0.30" />
-              <stop offset="38%" stopColor="#9CF0FF" stopOpacity="0.14" />
-              <stop offset="52%" stopColor="#0C262E" stopOpacity="0" />
-              <stop offset="66%" stopColor="#FF6130" stopOpacity="0.16" />
-              <stop offset="100%" stopColor="#FF6130" stopOpacity="0.34" />
-            </linearGradient>
-            <filter id="dw-blur" x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur stdDeviation="18" />
-            </filter>
-          </defs>
-          <path
-            d="M -400 1700 C 100 1300, 500 1500, 900 1100 C 1300 700, 1700 950, 2100 -400 L 2100 -1400 C 1700 -200, 1300 -500, 900 -100 C 500 300, 100 50, -400 600 Z"
-            fill="url(#dw-flow-1)"
-            filter="url(#dw-blur)"
-          />
-        </svg>
-      </div>
-      {/* middle */}
-      <div className="absolute inset-0 wfg-wave wfg-wave-2">
-        <svg viewBox="0 0 1600 1000" preserveAspectRatio="none" className="absolute inset-0 w-full h-full">
-          <defs>
-            <linearGradient id="dw-flow-2" x1="0%" y1="100%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#9CF0FF" stopOpacity="0.22" />
-              <stop offset="40%" stopColor="#9CF0FF" stopOpacity="0.10" />
-              <stop offset="52%" stopColor="#0C262E" stopOpacity="0" />
-              <stop offset="64%" stopColor="#FF6130" stopOpacity="0.11" />
-              <stop offset="100%" stopColor="#FF6130" stopOpacity="0.24" />
-            </linearGradient>
-          </defs>
-          <path
-            d="M -300 1500 C 150 1180, 500 1330, 850 980 C 1200 620, 1550 800, 1950 -300 L 1950 -1000 C 1550 -50, 1200 -250, 850 100 C 500 460, 150 250, -300 720 Z"
-            fill="url(#dw-flow-2)"
-          />
-        </svg>
-      </div>
-      {/* front — the vivid band, kept subtle in the dark */}
-      <div className="absolute inset-0 wfg-wave wfg-wave-3">
-        <svg viewBox="0 0 1600 1000" preserveAspectRatio="none" className="absolute inset-0 w-full h-full">
-          <defs>
-            <linearGradient id="dw-flow-3" x1="0%" y1="100%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#9CF0FF" stopOpacity="0.34" />
-              <stop offset="50%" stopColor="#0C262E" stopOpacity="0" />
-              <stop offset="100%" stopColor="#FF6130" stopOpacity="0.30" />
-            </linearGradient>
-          </defs>
-          <path
-            d="M -200 1300 C 150 1020, 480 1180, 820 880 C 1160 580, 1480 740, 1800 -100 L 1800 -550 C 1480 250, 1160 80, 820 380 C 480 680, 150 520, -200 880 Z"
-            fill="url(#dw-flow-3)"
-          />
-        </svg>
-      </div>
+      <svg viewBox="0 0 1600 1000" preserveAspectRatio="none" className="absolute inset-0 w-full h-full">
+        <defs>
+          <linearGradient id="dw-flow-1" x1="0%" y1="100%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#9CF0FF" stopOpacity="0.10" />
+            <stop offset="40%" stopColor="#9CF0FF" stopOpacity="0.045" />
+            <stop offset="52%" stopColor="#0C262E" stopOpacity="0" />
+            <stop offset="64%" stopColor="#FF6130" stopOpacity="0.05" />
+            <stop offset="100%" stopColor="#FF6130" stopOpacity="0.11" />
+          </linearGradient>
+          <linearGradient id="dw-flow-2" x1="0%" y1="100%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#9CF0FF" stopOpacity="0.07" />
+            <stop offset="50%" stopColor="#0C262E" stopOpacity="0" />
+            <stop offset="100%" stopColor="#FF6130" stopOpacity="0.07" />
+          </linearGradient>
+        </defs>
+        <path
+          d="M -400 1700 C 100 1300, 500 1500, 900 1100 C 1300 700, 1700 950, 2100 -400 L 2100 -1400 C 1700 -200, 1300 -500, 900 -100 C 500 300, 100 50, -400 600 Z"
+          fill="url(#dw-flow-1)"
+        />
+        <path
+          d="M -200 1300 C 150 1020, 480 1180, 820 880 C 1160 580, 1480 740, 1800 -100 L 1800 -550 C 1480 250, 1160 80, 820 380 C 480 680, 150 520, -200 880 Z"
+          fill="url(#dw-flow-2)"
+        />
+      </svg>
     </div>
   );
 }
@@ -204,7 +173,7 @@ function Pop({
 /* ── Step head (dark room) ─────────────────────────────────── */
 function StepHead({ kicker, accent, title, copy }: { kicker: string; accent: string; title: string; copy?: string }) {
   return (
-    <div className="mb-10">
+    <div className="mb-8">
       <p className="text-[10.5px] uppercase tracking-[0.25em] font-headline mb-3.5" style={{ color: accent, fontWeight: 800 }}>
         {kicker}
       </p>
@@ -238,12 +207,12 @@ function PortraitCard({ p, color }: { p: { name: string; tag: string; avatar: st
 function InvitationFrame({ phase }: { phase: number }) {
   const accepted = phase >= 1;
   return (
-    <div className="w-full max-w-2xl mx-auto">
+    <div className={`w-full max-w-2xl mx-auto ${FIT}`}>
       <StepHead
         kicker="Step 01 · The invitation"
         accent={CYAN_BRIGHT}
         title="Pick your complement."
-        copy="One invitation starts a shared draft with the expert who completes what you teach. INFITRA supports multiple creators inside one experience."
+        copy="One invitation starts a shared draft with the expert who complements you. INFITRA supports multiple creators inside one experience."
       />
 
       {/* the invitation — the only place the accepted state lives */}
@@ -328,7 +297,7 @@ function InvitationFrame({ phase }: { phase: number }) {
 function WorkspaceFrame({ phase }: { phase: number }) {
   const ringOn = (target: number) => (phase === target ? `0 0 0 2.5px ${ORANGE}80, ` : "");
   return (
-    <div className="w-full max-w-4xl mx-auto origin-top [@media(max-height:840px)]:scale-[0.9] [@media(max-height:740px)]:scale-[0.8]">
+    <div className={`w-full max-w-4xl mx-auto ${FIT}`}>
       <StepHead kicker="Step 02 · The workspace" accent={ORANGE} title="Design it together." copy="A pre-structured experience to create inside — add a session, set the split, talk it through, right there." />
 
       <div className="grid md:grid-cols-[1.55fr_1fr] gap-5 items-start text-left">
@@ -505,7 +474,7 @@ function WorkspaceFrame({ phase }: { phase: number }) {
 
 function AgreementFrame({ phase }: { phase: number }) {
   return (
-    <div className="w-full max-w-xl mx-auto">
+    <div className={`w-full max-w-xl mx-auto ${FIT}`}>
       <StepHead kicker="Step 03 · The agreement" accent={CYAN_BRIGHT} title="Lock it. Review. Agree." copy="The whole design locks as one. Your partner reviews and agrees to exactly that." />
 
       <div className="flex flex-col items-center">
@@ -572,9 +541,9 @@ const HANDLED = [
 function PublishFrame({ phase, onPublish }: { phase: number; onPublish: () => void }) {
   const published = phase >= 1;
   return (
-    <div className="w-full max-w-2xl mx-auto origin-top [@media(max-height:840px)]:scale-[0.9] [@media(max-height:740px)]:scale-[0.8]">
+    <div className={`w-full max-w-2xl mx-auto ${FIT}`}>
       {/* two-state head, crisp swap */}
-      <div className="relative mb-8" style={{ minHeight: 150 }}>
+      <div className="relative mb-6" style={{ minHeight: 140 }}>
         <div className="absolute inset-x-0 top-0" style={{ opacity: published ? 0 : 1, transition: `opacity ${CUT_MS}ms ${EASE}` }}>
           <StepHead kicker="Step 04 · The publish" accent={ORANGE} title="All agreed. One move left." />
         </div>
@@ -583,7 +552,7 @@ function PublishFrame({ phase, onPublish }: { phase: number; onPublish: () => vo
         </div>
       </div>
 
-      <div className="relative" style={{ minHeight: 380 }}>
+      <div className="relative" style={{ minHeight: 460 }}>
         {/* state 1 — full focus on the CTA */}
         <div
           className="absolute inset-0 flex flex-col items-center justify-start pt-6"
@@ -713,6 +682,9 @@ export function HowItWorks() {
   const [target, setTarget] = useState(0);
   const [beat, setBeat] = useState(0);
   const [pinned, setPinned] = useState(true);
+  const beatRef = useRef(0);
+  const jumpGuardRef = useRef(false);
+  const jumpTimerRef = useRef(0);
 
   const frame = BEATS[beat].f;
   const phase = BEATS[beat].p;
@@ -722,7 +694,15 @@ export function HowItWorks() {
      scroll strength can never skip story */
   useEffect(() => {
     if (beat === target) return;
-    const t = setTimeout(() => setBeat((b) => b + Math.sign(target - b)), CATCHUP_MS);
+    const t = setTimeout(
+      () =>
+        setBeat((b) => {
+          const nb = b + Math.sign(target - b);
+          beatRef.current = nb;
+          return nb;
+        }),
+      CATCHUP_MS,
+    );
     return () => clearTimeout(t);
   }, [beat, target]);
 
@@ -739,7 +719,21 @@ export function HowItWorks() {
       const r = el.getBoundingClientRect();
       const total = r.height - window.innerHeight;
       if (total <= 0) return;
-      const pos = clamp01(-r.top / total) * TOTAL_W;
+      let pos = clamp01(-r.top / total) * TOTAL_W;
+
+      // THE LEASH: the page can never be more than one beat ahead/behind the
+      // displayed beat — a fling gets held at the next beat's edge and flows
+      // through beat by beat at CATCHUP pace. Explicit jumps bypass via guard.
+      if (!jumpGuardRef.current) {
+        const bcur = beatRef.current;
+        const maxPos = bcur >= BEATS.length - 1 ? Infinity : BOUNDS[bcur + 1][1] - 0.04;
+        const minPos = bcur <= 0 ? -Infinity : BOUNDS[bcur - 1][0] + 0.02;
+        if (pos > maxPos || pos < minPos) {
+          const held = Math.min(Math.max(pos, minPos), maxPos);
+          window.scrollTo({ top: window.scrollY + r.top + (held / TOTAL_W) * total, behavior: "auto" });
+          pos = held;
+        }
+      }
 
       let bi = BEATS.length - 1;
       for (let i = 0; i < BOUNDS.length; i++) {
@@ -779,6 +773,14 @@ export function HowItWorks() {
     const r = el.getBoundingClientRect();
     const total = r.height - window.innerHeight;
     const mid = (BOUNDS[i][0] + BOUNDS[i][1]) / 2;
+    jumpGuardRef.current = true;
+    window.clearTimeout(jumpTimerRef.current);
+    jumpTimerRef.current = window.setTimeout(() => {
+      jumpGuardRef.current = false;
+    }, 1100);
+    beatRef.current = i;
+    setBeat(i);
+    setTarget(i);
     window.scrollTo({ top: window.scrollY + r.top + (mid / TOTAL_W) * total, behavior: "smooth" });
   }
 
@@ -861,7 +863,7 @@ export function HowItWorks() {
                   frameRefs.current[f] = el;
                 }}
                 aria-hidden={!active}
-                className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center px-5 sm:px-8 lg:pl-60 lg:pr-16"
+                className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center px-5 sm:px-8 lg:pl-60 lg:pr-16 pt-24 pb-14"
                 style={{
                   opacity: active ? 1 : 0,
                   transform: active ? "none" : "translateY(12px)",
