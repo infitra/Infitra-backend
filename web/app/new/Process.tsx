@@ -16,7 +16,7 @@ const STEPS = [
 
 export function Process() {
   return (
-    <section className="px-6 pt-24 pb-32" style={{ backgroundColor: "rgba(255,255,255,0.4)" }}>
+    <section className="px-6 pt-24 pb-32" style={{ background: "linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.45) 16%, rgba(255,255,255,0.45) 100%)" }}>
       <div className="max-w-4xl mx-auto text-center">
         <p className="text-[10px] uppercase tracking-[0.25em] font-headline mb-3" style={{ color: CYAN, fontWeight: 700 }}>
           From here

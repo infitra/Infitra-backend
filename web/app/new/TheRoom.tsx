@@ -12,41 +12,6 @@ import { Reveal } from "./Reveal";
  * the live-room moment, and the continuation beat. No phone (founder call).
  */
 
-export function Bridge() {
-  return (
-    <section className="px-6 pt-4 pb-14 text-center">
-      <div className="max-w-3xl mx-auto">
-        <p
-          className="text-2xl md:text-4xl font-headline tracking-tight leading-[1.15]"
-          style={{ color: INK, fontWeight: 700, letterSpacing: "-0.02em" }}
-        >
-          Published.
-          <br />
-          <span style={{ color: ORANGE }}>Now it comes alive.</span>
-        </p>
-        <div className="mt-9 flex items-center justify-center" aria-hidden>
-          <svg viewBox="0 0 600 80" className="w-full max-w-xl h-10 md:h-14" fill="none">
-            <path d="M 0 40 L 600 40" stroke="rgba(15,34,41,0.10)" strokeWidth={1} strokeDasharray="2 4" />
-            <path
-              d="M 0 40 L 140 40 L 160 40 L 175 10 L 195 70 L 210 40 L 390 40 L 405 10 L 425 70 L 440 40 L 600 40"
-              stroke={CYAN}
-              strokeWidth={2.25}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            <circle cx="185" cy="40" r="5" fill={CYAN}>
-              <animate attributeName="opacity" values="0.3;1;0.3" dur="2.4s" repeatCount="indefinite" />
-            </circle>
-            <circle cx="415" cy="40" r="5" fill={CYAN}>
-              <animate attributeName="opacity" values="0.3;1;0.3" dur="2.4s" begin="1.2s" repeatCount="indefinite" />
-            </circle>
-          </svg>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 const CHECK = (color: string, size = 12) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
     <path d="M20 6 9 17l-5-5" />

@@ -51,7 +51,7 @@ function Column({ label, color, items }: { label: string; color: string; items: 
 
 export function TakenCareOf() {
   return (
-    <section className="px-6 py-28" style={{ backgroundColor: "rgba(255,255,255,0.5)" }}>
+    <section className="px-6 py-28" style={{ background: "linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.55) 14%, rgba(255,255,255,0.55) 86%, rgba(255,255,255,0) 100%)" }}>
       <div className="max-w-3xl mx-auto text-center">
         <SectionHead eyebrow="All of it, taken care of" title="Everything around the coaching." />
 

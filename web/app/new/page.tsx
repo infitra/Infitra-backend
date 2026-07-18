@@ -4,7 +4,7 @@ import { Hero } from "./Hero";
 import { WhatYouCanBuild } from "./WhatYouCanBuild";
 import { HowItWorks } from "./HowItWorks";
 import { TakenCareOf } from "./TakenCareOf";
-import { Bridge, TheRoom } from "./TheRoom";
+import { TheRoom } from "./TheRoom";
 import { FoundingPilot } from "./FoundingPilot";
 import { Process } from "./Process";
 import { Depth, Footer } from "./Depth";
@@ -81,7 +81,6 @@ export default function LandingV2Page() {
           <Hero />
           <WhatYouCanBuild />
           <HowItWorks />
-          <Bridge />
           <TheRoom />
           <TakenCareOf />
           <FoundingPilot />
