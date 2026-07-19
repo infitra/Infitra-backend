@@ -4,7 +4,7 @@ import { Hero } from "./Hero";
 import { WhatYouCanBuild } from "./WhatYouCanBuild";
 import { HowItWorks } from "./HowItWorks";
 import { TakenCareOf } from "./TakenCareOf";
-import { TheRoom } from "./TheRoom";
+import { LiveWeek } from "./LiveWeek";
 import { FoundingPilot } from "./FoundingPilot";
 import { Process } from "./Process";
 import { Depth, Footer } from "./Depth";
@@ -19,9 +19,10 @@ import { Depth, Footer } from "./Depth";
  * One story in two acts, one runway to Apply:
  *   Hero (headline only) → What you can build (the marketing-page example
  *   with the real browsable carousel) → ACT 1 · How it works (4-page swipe
- *   flow ending at publish) → bridge ("Published. Now it comes alive.") →
- *   ACT 2 · How it unfolds (the space with its real header, the engagement
- *   loop, the live moment, the continuation) → Everything taken care of
+ *   flow ending at publish) → bridge ("Now it comes alive.") →
+ *   ACT 2 · One live week (the pinned time-thread chapter: the space, the
+ *   pulse, LIVE, the loop, the directed Q&A, the week turning) →
+ *   Everything taken care of
  *   (the two-act manifest recap + CTA) → The founding pilot → The path +
  *   final CTA → depth.
  *
@@ -81,7 +82,7 @@ export default function LandingV2Page() {
           <Hero />
           <WhatYouCanBuild />
           <HowItWorks />
-          <TheRoom />
+          <LiveWeek />
           <TakenCareOf />
           <FoundingPilot />
           <Process />
