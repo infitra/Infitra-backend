@@ -623,53 +623,50 @@ function LoopFrame({ phase, onJoin }: { phase: number; onJoin: () => void }) {
           style={{ opacity: phase === 1 ? 1 : 0, transform: phase === 1 ? "none" : "translateY(14px)", transition: `opacity ${CUT_MS}ms ${EASE} ${phase === 1 ? 80 : 0}ms, transform ${CUT_MS}ms ${EASE} ${phase === 1 ? 80 : 0}ms`, pointerEvents: phase === 1 ? "auto" : "none" }}
         >
           <MechHead kicker="03 · The loop" accent={ORANGE} title="The moment arrives." copy="The reset's first live moment is open — your tribe is walking in." />
-          {/* the session card, exactly as it reads live in the space */}
-          <div className="w-full max-w-lg rounded-3xl overflow-hidden" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1.5px rgba(239,68,68,0.22), 0 26px 64px rgba(15,34,41,0.18)" }} aria-hidden>
-            <div className="relative aspect-[16/8]" style={{ backgroundColor: INK }}>
+          {/* The real live/join card — a faithful copy of the Experience
+             Space's HeroSessionCard in its "live" state (WeekJourney.tsx):
+             image left, red pulsing "Live now", meta line, cohort-energy chip,
+             and the red "Join the room →" that carries you into the room. */}
+          <div
+            onClick={onJoin}
+            role="button"
+            tabIndex={0}
+            className="w-full max-w-xl rounded-2xl overflow-hidden flex items-stretch cursor-pointer transition-transform hover:-translate-y-0.5"
+            style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1.5px #ef4444, 0 14px 40px rgba(239,68,68,0.18)" }}
+          >
+            <div className="relative shrink-0 w-32 sm:w-44" style={{ backgroundColor: "#ECE7DD" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={MEET.img} alt="" className="absolute inset-0 w-full h-full object-cover" />
-              <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(15,34,41,0.82) 8%, rgba(15,34,41,0.15) 55%, rgba(15,34,41,0) 100%)" }} />
-              {/* the live sign — red, pulsing (the only red on the frame) */}
-              <span className="absolute top-3.5 left-3.5 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] uppercase tracking-widest font-headline text-white" style={{ backgroundColor: "rgba(239,68,68,0.95)", fontWeight: 800, boxShadow: "0 4px 14px rgba(239,68,68,0.45)" }}>
-                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> Live now
+            </div>
+            <div className="flex-1 min-w-0 p-4 sm:p-5 flex flex-col text-left">
+              <p className="text-[11px] uppercase tracking-[0.18em] font-headline flex items-center gap-1.5" style={{ color: "#ef4444", fontWeight: 800 }}>
+                <span className="inline-block w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: "#ef4444" }} />
+                Live now
+              </p>
+              <h3 className="font-black font-headline tracking-tight mt-1.5 leading-tight" style={{ color: INK, fontSize: "clamp(1.2rem, 3.6vw, 1.55rem)", letterSpacing: "-0.015em" }}>
+                {MEET.title}
+              </h3>
+              <p className="text-xs mt-1.5" style={{ color: "#64748b" }}>
+                {MEET.day} · {MEET.time} · {MEET.dur} · {MEET.host}
+              </p>
+              <span className="inline-flex items-center gap-1.5 mt-2 self-start px-2.5 py-1 rounded-full text-[11px] font-bold font-headline" style={{ backgroundColor: "rgba(8,145,178,0.10)", color: CYAN }}>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={CYAN} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M22 12h-4l-3 9L9 3l-3 9H2" /></svg>
+                Cohort energy 8/10
               </span>
-              <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5 text-left">
-                <p className="text-[10px] uppercase tracking-[0.18em] font-headline" style={{ color: "#9CF0FF", fontWeight: 800 }}>Week {ROOM.week} · The live moment</p>
-                <p className="text-[21px] sm:text-[23px] font-headline tracking-tight leading-tight mt-1" style={{ color: "#FFFFFF", fontWeight: 800, letterSpacing: "-0.015em" }}>{MEET.title}</p>
-                <div className="flex items-center gap-2 mt-2">
-                  <span className="flex -space-x-1.5">
-                    {[ALEX.avatar, MIRA.avatar].map((a) => (
-                      <span key={a} className="w-5 h-5 rounded-full overflow-hidden" style={{ border: "1.5px solid rgba(255,255,255,0.9)" }}>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={a} alt="" className="w-full h-full object-cover" />
-                      </span>
-                    ))}
-                  </span>
-                  <span className="text-[11.5px] font-bold" style={{ color: "rgba(255,255,255,0.9)" }}>{MEET.host}</span>
-                </div>
+              <div className="flex items-center justify-between gap-3 mt-auto pt-3.5">
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onJoin(); }}
+                  className="px-6 py-2.5 rounded-full text-white text-sm font-black font-headline transition-transform hover:scale-[1.03]"
+                  style={{ backgroundColor: "#ef4444", boxShadow: "0 4px 14px rgba(239,68,68,0.35)" }}
+                >
+                  Join the room →
+                </button>
+                <span className="text-[11px] font-bold" style={{ color: "#94a3b8" }}>8 in the room</span>
               </div>
             </div>
-            <div className="flex items-center justify-between px-5 py-4">
-              <span className="text-[12px] font-bold" style={{ color: MUTED }}>{MEET.dur} · the reset&apos;s first live moment</span>
-              <span className="inline-flex items-center gap-1.5 text-[11px] font-black font-headline" style={{ color: ORANGE }}>
-                <span className="flex -space-x-1">
-                  {["A", "S", "L"].map((m) => (
-                    <span key={m} className="w-4 h-4 rounded-full flex items-center justify-center text-[7px] font-headline" style={{ backgroundColor: "rgba(8,145,178,0.16)", color: CYAN, fontWeight: 800, border: "1px solid #FFF" }}>{m}</span>
-                  ))}
-                </span>
-                8 in the room
-              </span>
-            </div>
           </div>
-          <button
-            type="button"
-            onClick={onJoin}
-            className="mt-8 px-16 py-6 rounded-full text-white text-xl font-black font-headline transition-transform hover:scale-[1.05]"
-            style={{ backgroundColor: ORANGE, boxShadow: "0 18px 54px rgba(255,97,48,0.5), 0 5px 18px rgba(255,97,48,0.32)" }}
-          >
-            Join now →
-          </button>
-          <p className="text-[13px] mt-5" style={{ color: MUTED }}>Your move — or keep scrolling.</p>
+          <p className="text-[13px] mt-6" style={{ color: MUTED }}>Your move — or keep scrolling.</p>
         </div>
 
         {/* p2 — THE PEAK: the room, as energy */}
