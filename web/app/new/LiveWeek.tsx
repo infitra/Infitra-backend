@@ -2,7 +2,7 @@
 
 import { EX, ALEX, MIRA, ROOM } from "./content";
 import { INK, ORANGE, CYAN, MUTED, FAINT, PRODUCT_SHADOW } from "./ui";
-import { type BeatDef, useBeatChapter, computeBounds, Phase, Pop, CUT_MS, CASCADE_MS, EASE, FIT } from "./chapterEngine";
+import { type BeatDef, useBeatChapter, computeBounds, Phase, Pop, CUT_MS, CASCADE_MS, EASE, FIT, AutoFit } from "./chapterEngine";
 
 /**
  * ACT 2 · ALIVE BY DESIGN — the engagement story.
@@ -1010,12 +1010,14 @@ export function LiveWeek() {
                   pointerEvents: active ? "auto" : "none",
                 }}
               >
-                <div className="w-full max-w-5xl mx-auto">
-                  {f === 0 && <IntroFrame />}
-                  {f === 1 && <SpaceFrame phase={active ? phase : 0} />}
-                  {f === 2 && <HandsFrame phase={active ? phase : 0} />}
-                  {f === 3 && <LoopFrame phase={active ? phase : 0} onJoin={() => jumpToBeat(PEAK_BEAT)} />}
-                  {f === 4 && <CompoundFrame phase={active ? phase : 0} active={active} />}
+                <div className="w-full max-w-5xl mx-auto flex-1 min-h-0 flex flex-col">
+                  <AutoFit>
+                    {f === 0 && <IntroFrame />}
+                    {f === 1 && <SpaceFrame phase={active ? phase : 0} />}
+                    {f === 2 && <HandsFrame phase={active ? phase : 0} />}
+                    {f === 3 && <LoopFrame phase={active ? phase : 0} onJoin={() => jumpToBeat(PEAK_BEAT)} />}
+                    {f === 4 && <CompoundFrame phase={active ? phase : 0} active={active} />}
+                  </AutoFit>
                 </div>
               </div>
             );

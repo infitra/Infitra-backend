@@ -23,7 +23,12 @@ export const CUT_MS = 260; // frame hard-cut duration
 export const POP_MS = 340; // phase reveal duration
 export const CASCADE_MS = 170; // cascading-items stagger
 export const EASE = "cubic-bezier(.3,.7,.3,1)";
-export const FIT = "origin-center [@media(max-height:900px)]:scale-[0.93] [@media(max-height:820px)]:scale-[0.85] [@media(max-height:730px)]:scale-[0.76]";
+// Desktop-only short-viewport fit ladder. Gated to lg+ on purpose: below lg
+// the pinned frames are fitted by <AutoFit> (measured, per-frame), and letting
+// FIT's `scale` also apply there double-scaled the content unpredictably. On
+// desktop AutoFit is inert, so FIT is the sole fit mechanism; below lg it is a
+// no-op and AutoFit owns fitting.
+export const FIT = "origin-center lg:[@media(max-height:900px)]:scale-[0.93] lg:[@media(max-height:820px)]:scale-[0.85] lg:[@media(max-height:730px)]:scale-[0.76]";
 
 /* ── Feel constants (approved on deploy — tune here for BOTH chapters) ── */
 const BEAT_VH = 70; // runway per beat unit
@@ -77,15 +82,18 @@ export function useBeatChapter({
   });
 
   useEffect(() => {
-    // Static story below lg: touch scrolling and the pace-car don't mix, the
-    // rail is hidden there anyway, and the frames' stacked layouts are built
-    // for desktop heights. Mobile gets the sequential fallback narrative.
-    // matchMedia (not innerWidth/innerHeight) — it reads the real CSS
-    // viewport even in embedded/virtualized contexts.
+    // Three modes, decided once on mount (matchMedia — not innerWidth — so
+    // the real CSS viewport is read even in embedded/virtualized contexts):
+    //  - static: reduced motion or very short viewports → sequential story.
+    //  - scrub:  below lg → the chapter still PINS and steps beat by beat,
+    //            but the beat follows scroll POSITION (quantized into the
+    //            same bands) instead of policing gestures. Native touch
+    //            momentum is never fought — no wall, no re-anchor, no
+    //            arming. A slow swipe advances one beat; a fling may skip.
+    //  - paced:  desktop → the full velocity pace-car below.
     if (
       window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
-      window.matchMedia("(max-height: 599px)").matches ||
-      window.matchMedia("(max-width: 1023px)").matches
+      window.matchMedia("(max-height: 599px)").matches
     ) {
       // Microtask, not rAF — browsers throttle rAF in background and
       // virtualized contexts, and the swap to the static story must never
@@ -96,6 +104,44 @@ export function useBeatChapter({
       });
       return () => {
         cancelled = true;
+      };
+    }
+
+    if (window.matchMedia("(max-width: 1023px)").matches) {
+      // SCRUB — position-quantized beats on a passive scroll listener.
+      const onScroll = () => {
+        const el = wrapperRef.current;
+        if (!el) return;
+        const { bounds: BOUNDS, totalW: TOTAL_W } = cfgRef.current;
+        const r = el.getBoundingClientRect();
+        const total = r.height - window.innerHeight;
+        if (total <= 0) return;
+        const pos = clamp01(-r.top / total) * TOTAL_W;
+        // A jump (rail tap / join) owns the beat while its smooth scroll is
+        // in flight — don't flicker through the bands it passes.
+        if (jumpGuardRef.current) {
+          onTickRef.current?.(pos, beatRef.current);
+          return;
+        }
+        let fi = BOUNDS.length - 1;
+        for (let i = 0; i < BOUNDS.length; i++) {
+          if (pos >= BOUNDS[i][0] && pos < BOUNDS[i][1]) {
+            fi = i;
+            break;
+          }
+        }
+        if (beatRef.current !== fi) {
+          beatRef.current = fi;
+          setBeat(fi);
+        }
+        onTickRef.current?.(pos, fi);
+      };
+      onScroll();
+      window.addEventListener("scroll", onScroll, { passive: true });
+      window.addEventListener("resize", onScroll, { passive: true });
+      return () => {
+        window.removeEventListener("scroll", onScroll);
+        window.removeEventListener("resize", onScroll);
       };
     }
     let raf = 0;
@@ -253,6 +299,53 @@ export function useBeatChapter({
   }
 
   return { beat, pinned, wrapperRef, jumpToBeat, bounds, totalW, runwayVh: totalW * BEAT_VH };
+}
+
+/* ── AutoFit — mobile frame scaler ───────────────────────────
+ * Below lg the pinned frames keep their desktop compositions but must fit
+ * a phone-height stage: measure the content against the available box and
+ * scale down (floored — legibility beats completeness; the floor only
+ * matters on the very tallest beats). Desktop is untouched: the effect
+ * never activates, scale stays 1, and the wrapper is layout-neutral. */
+export function AutoFit({ children }: { children: React.ReactNode }) {
+  const outerRef = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+
+  useEffect(() => {
+    if (!window.matchMedia("(max-width: 1023px)").matches) return;
+    const measure = () => {
+      const outer = outerRef.current;
+      const inner = innerRef.current;
+      if (!outer || !inner) return;
+      const avail = outer.clientHeight;
+      const need = inner.scrollHeight;
+      if (avail > 0 && need > 0) {
+        // Fit to 94% of the box, not 100% — tall frames kept sitting edge-to-
+        // edge (and the tallest clipped at the old 0.68 floor). The 6% keeps a
+        // little breathing room top and bottom; the lower floor lets the very
+        // tallest frames shrink to fit rather than clip on short phones.
+        setScale(Math.max(0.5, Math.min(1, (avail * 0.94) / need)));
+      }
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (outerRef.current) ro.observe(outerRef.current);
+    if (innerRef.current) ro.observe(innerRef.current);
+    return () => ro.disconnect();
+  }, []);
+
+  return (
+    <div ref={outerRef} className="w-full flex-1 min-h-0 flex items-center justify-center">
+      <div
+        ref={innerRef}
+        className="w-full"
+        style={scale < 1 ? { transform: `scale(${scale})`, transformOrigin: "center" } : undefined}
+      >
+        {children}
+      </div>
+    </div>
+  );
 }
 
 /* ── One phase of a pinned frame ─────────────────────────────

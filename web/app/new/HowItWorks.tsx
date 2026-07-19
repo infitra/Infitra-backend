@@ -3,7 +3,7 @@
 import { useRef } from "react";
 import { EX, CONTRACT, ALEX, MIRA } from "./content";
 import { INK, ORANGE, CYAN, MUTED, FAINT } from "./ui";
-import { type BeatDef, useBeatChapter, computeBounds, clamp01, Phase, Pop, CUT_MS, POP_MS, CASCADE_MS, EASE, FIT } from "./chapterEngine";
+import { type BeatDef, useBeatChapter, computeBounds, clamp01, Phase, Pop, CUT_MS, POP_MS, CASCADE_MS, EASE, FIT, AutoFit } from "./chapterEngine";
 
 /**
  * M3 · HOW TO COLLABORATE ON INFITRA — the beat engine, in the dark room.
@@ -737,13 +737,15 @@ export function HowItWorks() {
                   pointerEvents: active ? "auto" : "none",
                 }}
               >
-                <div className="w-full max-w-5xl mx-auto">
-                  {f === 0 && <IntroFrame />}
-                  {f === 1 && <InvitationFrame phase={active ? phase : 0} />}
-                  {f === 2 && <WorkspaceFrame phase={active ? phase : 0} />}
-                  {f === 3 && <AgreementFrame phase={active ? phase : 0} />}
-                  {f === 4 && <PublishFrame phase={active ? phase : 0} onPublish={() => jumpToBeat(10)} />}
-                  {f === 5 && <OutroFrame />}
+                <div className="w-full max-w-5xl mx-auto flex-1 min-h-0 flex flex-col">
+                  <AutoFit>
+                    {f === 0 && <IntroFrame />}
+                    {f === 1 && <InvitationFrame phase={active ? phase : 0} />}
+                    {f === 2 && <WorkspaceFrame phase={active ? phase : 0} />}
+                    {f === 3 && <AgreementFrame phase={active ? phase : 0} />}
+                    {f === 4 && <PublishFrame phase={active ? phase : 0} onPublish={() => jumpToBeat(10)} />}
+                    {f === 5 && <OutroFrame />}
+                  </AutoFit>
                 </div>
               </div>
             );
