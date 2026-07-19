@@ -6,7 +6,7 @@ import { HowItWorks } from "./HowItWorks";
 import { TakenCareOf } from "./TakenCareOf";
 import { LiveWeek } from "./LiveWeek";
 import { FoundingPilot } from "./FoundingPilot";
-import { Process } from "./Process";
+import { Finale } from "./Finale";
 import { Depth, Footer } from "./Depth";
 
 /**
@@ -85,7 +85,7 @@ export default function LandingV2Page() {
           <LiveWeek />
           <TakenCareOf />
           <FoundingPilot />
-          <Process />
+          <Finale />
           <Depth />
         </main>
 

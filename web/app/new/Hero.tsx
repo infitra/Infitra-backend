@@ -9,10 +9,11 @@ export function Hero() {
   return (
     <section className="relative min-h-[92vh] flex flex-col items-center justify-center px-6 pt-28 pb-16 text-center">
       <div className="max-w-4xl mx-auto w-full flex flex-col items-center">
+        {/* The mission axis — the movement in one line, before the claim */}
         <div className="flex items-center gap-3 mb-6 max-w-2xl w-full">
           <div className="flex-1 h-px" style={{ backgroundColor: "rgba(8,145,178,0.30)" }} />
           <p className="text-[10px] uppercase tracking-[0.25em] font-headline text-center shrink-0" style={{ color: CYAN, fontWeight: 700 }}>
-            The platform for live, co-created fitness experiences
+            From content you consume to experiences you join
           </p>
           <div className="flex-1 h-px" style={{ backgroundColor: "rgba(8,145,178,0.30)" }} />
         </div>
@@ -40,6 +41,15 @@ export function Hero() {
         </p>
 
         <ApplyCTA micro="5 founding pairs · DACH · reviewed individually · starting now" />
+
+        {/* The quiet second door — participants self-sort without competing */}
+        <a
+          href="#join"
+          className="mt-7 text-[13px] transition-opacity hover:opacity-70"
+          style={{ color: MUTED }}
+        >
+          Here to train, not to build? <span style={{ color: CYAN, fontWeight: 700 }}>Join the participant waitlist →</span>
+        </a>
       </div>
     </section>
   );

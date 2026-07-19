@@ -1,4 +1,4 @@
-import { INK, ORANGE, CYAN, MUTED, FAINT, PRODUCT_SHADOW, SectionHead, ApplyCTA } from "./ui";
+import { INK, ORANGE, CYAN, MUTED, FAINT, PRODUCT_SHADOW, SectionHead } from "./ui";
 import { Reveal } from "./Reveal";
 
 /**
@@ -81,10 +81,6 @@ export function TakenCareOf() {
           <p className="text-base md:text-lg mt-4 max-w-md mx-auto" style={{ color: MUTED }}>
             The platform runs everything around you.
           </p>
-        </div>
-
-        <div className="mt-14">
-          <ApplyCTA small micro="5 founding pairs · starting now" />
         </div>
       </div>
     </section>
