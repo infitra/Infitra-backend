@@ -28,6 +28,7 @@ const ACCEL_GRACE_MS = 250; // ignore acceleration re-arms this soon after a cut
 const SETTLE_SPEED = 0.05; // px/ms — below this the reader has stopped
 const SETTLE_MS = 140; // rest this long before the silent re-anchor
 const STEP_GAP_MS = 320; // minimum time between beat cuts
+const WALL_OVERHANG = 0.35; // beats of free travel beyond the current band before the wall
 const OUTRO_FREE_ZONE = 0.12; // inside the outro past this depth, the heartbeat scrubs freely
 const CUT_MS = 260; // frame hard-cut duration
 const POP_MS = 340; // phase reveal duration
@@ -795,6 +796,23 @@ export function HowItWorks() {
             const blocked = b === last && dir < 0 && pos > BOUNDS[last][0] + OUTRO_FREE_ZONE;
             const next = Math.min(last, Math.max(0, b + dir));
             if (!blocked && next !== b) step(next, now);
+          }
+          // THE WALL: the page can never physically leave the current
+          // beat's neighborhood — however hard the fling, the excess
+          // momentum dies here (invisible under the sticky stage; a push
+          // moves the beat, and the wall opens by exactly one band).
+          // Beat 0 stays open upward and the outro downward — the
+          // chapter's two natural exits.
+          {
+            const bw = beatRef.current;
+            const lo =
+              bw === 0 ? -Infinity : bw === last ? BOUNDS[last][0] - 0.3 : BOUNDS[bw][0] - WALL_OVERHANG;
+            const hi = bw === last ? Infinity : BOUNDS[bw][1] + WALL_OVERHANG;
+            if (pos < lo || pos > hi) {
+              const held = Math.min(Math.max(pos, lo), hi);
+              window.scrollTo({ top: y + r.top + (held / TOTAL_W) * total, behavior: "instant" });
+              prevY = window.scrollY; // this frame already measured the attempted motion
+            }
           }
           // silent re-anchor once the reader rests — invisible under the
           // sticky stage, keeps position and story aligned
