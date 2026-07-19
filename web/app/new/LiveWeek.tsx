@@ -111,12 +111,56 @@ function MechHead({ kicker, accent, title, copy, light = false }: { kicker: stri
   );
 }
 
-/** Small labelled piece — names ONE artifact clearly. */
-function PieceLabel({ label, color }: { label: string; color: string }) {
+/** A full feed post — header, the prompt it answers, the member's own words,
+ *  reactions. The same grammar as the answered-question post. */
+function FeedPost({
+  initial,
+  color,
+  name,
+  when,
+  promptLabel,
+  promptColor,
+  prompt,
+  body,
+  chip,
+  comments = 0,
+}: {
+  initial: string;
+  color: string;
+  name: string;
+  when: string;
+  promptLabel: string;
+  promptColor: string;
+  prompt: string;
+  body: string;
+  chip?: string;
+  comments?: number;
+}) {
   return (
-    <p className="text-[10px] uppercase tracking-[0.22em] font-headline mb-2.5 text-left" style={{ color, fontWeight: 800 }}>
-      {label}
-    </p>
+    <div className="rounded-3xl p-6 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }} aria-hidden>
+      <div className="flex items-center gap-3">
+        <span className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: `${color}24` }}>
+          <span className="text-[13px] font-headline" style={{ color, fontWeight: 800 }}>{initial}</span>
+        </span>
+        <span className="text-[15px] font-headline" style={{ color: INK, fontWeight: 800 }}>{name}</span>
+        <span className="ml-auto text-[11px] font-bold" style={{ color: FAINT }}>{when}</span>
+      </div>
+      {/* the prompt this post answers */}
+      <div className="mt-4 rounded-xl px-4 py-3" style={{ backgroundColor: `${promptColor}12`, boxShadow: `inset 3.5px 0 0 ${promptColor}` }}>
+        <p className="text-[10.5px] uppercase tracking-[0.16em] font-headline" style={{ color: promptColor, fontWeight: 800 }}>{promptLabel}</p>
+        <p className="text-[14px] font-bold font-headline leading-snug mt-1.5" style={{ color: INK }}>{prompt}</p>
+      </div>
+      {/* the member's own words */}
+      <p className="text-[15.5px] leading-relaxed mt-4" style={{ color: INK, fontWeight: 500 }}>{body}</p>
+      {chip && (
+        <span className="inline-flex mt-3.5 px-3 py-1 rounded-full text-[10.5px] font-headline" style={{ color: promptColor, backgroundColor: `${promptColor}14`, fontWeight: 800 }}>{chip}</span>
+      )}
+      <div className="flex items-center gap-5 mt-4 pt-3.5" style={{ borderTop: "1px solid rgba(15,34,41,0.06)" }}>
+        <span className="inline-flex items-center gap-1.5 text-[12.5px] font-bold" style={{ color: MUTED }}>{ICON_HEART(MUTED)} Like</span>
+        <span className="inline-flex items-center gap-1.5 text-[12.5px] font-bold" style={{ color: MUTED }}>{ICON_COMMENT(MUTED)} {comments}</span>
+        <span className="ml-auto text-[11px]" style={{ color: FAINT }}>In the tribe feed</span>
+      </div>
+    </div>
   );
 }
 
@@ -274,12 +318,17 @@ function SpaceFrame({ phase }: { phase: number }) {
                 </span>
               ))}
             </div>
-            {/* the progress tracker */}
-            <p className="text-[9px] uppercase tracking-[0.18em] font-headline mt-4 mb-1.5" style={{ color: FAINT, fontWeight: 800 }}>Your progress</p>
-            <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: "rgba(15,34,41,0.08)" }}>
-              <div className="h-full rounded-full" style={{ width: "25%", backgroundColor: CYAN }} />
+            {/* the progress tracker — the whole experience, attendance */}
+            <div className="mt-7 pt-5" style={{ borderTop: "1px solid rgba(15,34,41,0.07)" }}>
+              <div className="flex items-baseline justify-between mb-2">
+                <p className="text-[9px] uppercase tracking-[0.18em] font-headline" style={{ color: FAINT, fontWeight: 800 }}>Progress of the whole experience</p>
+                <p className="text-[11px] font-black font-headline" style={{ color: CYAN }}>25%</p>
+              </div>
+              <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: "rgba(15,34,41,0.08)" }}>
+                <div className="h-full rounded-full" style={{ width: "25%", backgroundColor: CYAN }} />
+              </div>
+              <p className="text-[10.5px] font-bold mt-2" style={{ color: MUTED }}>5 of {EX.sessions} live moments attended</p>
             </div>
-            <p className="text-[10.5px] font-bold mt-1.5" style={{ color: MUTED }}>5 of {EX.sessions} moments · 25%</p>
           </div>
         </Pop>
         <Pop show={out} d={140 + CASCADE_MS}>
@@ -345,33 +394,36 @@ function HandsFrame({ phase }: { phase: number }) {
       </div>
 
       <div className="relative" style={{ minHeight: 460 }}>
-        {/* p0 — the introduction: the cold start, solved */}
+        {/* p0 — the introduction post: the cold start, solved */}
         <div
-          className="absolute inset-0 flex flex-col justify-center gap-4"
+          className="absolute inset-0 flex flex-col justify-center"
           style={{ opacity: phase === 0 ? 1 : 0, transform: phase === 0 ? "none" : "translateY(-14px)", transition: `opacity ${CUT_MS}ms ${EASE}, transform ${CUT_MS}ms ${EASE}`, pointerEvents: "none" }}
         >
-          <div className="mx-auto w-full max-w-2xl rounded-2xl p-5 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.06), inset 4px 0 0 " + CYAN }} aria-hidden>
-            <p className="text-[10px] uppercase tracking-[0.16em] font-headline" style={{ color: CYAN, fontWeight: 800 }}>
-              New in the tribe · Your experts asked
-            </p>
-            <p className="text-[15px] font-bold font-headline leading-snug mt-2" style={{ color: INK }}>
-              {EX.introPrompt}
-            </p>
+          <div className="mx-auto w-full max-w-2xl">
+            <FeedPost
+              initial="N"
+              color={ORANGE}
+              name="Nina"
+              when="just now"
+              promptLabel="New in the tribe · Your experts asked"
+              promptColor={CYAN}
+              prompt={EX.introPrompt}
+              body="Desk job, two kids, and every plan I've started before fizzled by week two. I'm here to finally build energy that lasts — and to stick with it because this time there's a group. Can't wait to meet you all! 💪"
+              chip="Introduction"
+              comments={3}
+            />
           </div>
-          <Pop show={phase === 0} d={300} className="mx-auto w-full max-w-2xl">
-            <TribePost initial="N" color={ORANGE} name="Nina" when="just now" text="Joined! Desk job, two kids — here to get my energy back 💪" chip="Introduction" />
-          </Pop>
         </div>
 
         {/* p1 — the four tools, four distinct pieces */}
         <div
-          className="absolute inset-0 flex flex-col justify-center"
+          className="absolute inset-0 flex flex-col justify-start"
           style={{ opacity: phase === 1 ? 1 : 0, transform: phase === 1 ? "none" : "translateY(14px)", transition: `opacity ${CUT_MS}ms ${EASE} ${phase === 1 ? 80 : 0}ms, transform ${CUT_MS}ms ${EASE} ${phase === 1 ? 80 : 0}ms`, pointerEvents: "none" }}
         >
-          <div className="grid sm:grid-cols-2 gap-5 text-left" aria-hidden>
+          <div className="grid sm:grid-cols-2 gap-6 text-left" aria-hidden>
             {/* share — members */}
             <Pop show={phase === 1} d={120}>
-              <div className="h-full rounded-2xl p-5" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.06), 0 16px 40px rgba(15,34,41,0.08), inset 4px 0 0 " + CYAN }}>
+              <div className="h-full rounded-2xl p-6" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.06), 0 16px 40px rgba(15,34,41,0.08), inset 4px 0 0 " + CYAN }}>
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-[11px] uppercase tracking-[0.18em] font-headline" style={{ color: CYAN, fontWeight: 800 }}>Share</p>
                   <span className="px-2.5 py-1 rounded-full text-[9px] uppercase tracking-widest font-headline" style={{ color: CYAN, backgroundColor: "rgba(8,145,178,0.08)", fontWeight: 800 }}>Members</span>
@@ -384,7 +436,7 @@ function HandsFrame({ phase }: { phase: number }) {
             </Pop>
             {/* question post — members */}
             <Pop show={phase === 1} d={120 + CASCADE_MS}>
-              <div className="h-full rounded-2xl p-5" style={{ backgroundColor: "#FFFFFF", boxShadow: `0 0 0 1px rgba(15,34,41,0.06), 0 16px 40px rgba(15,34,41,0.08), inset 4px 0 0 ${CYAN}` }}>
+              <div className="h-full rounded-2xl p-6" style={{ backgroundColor: "#FFFFFF", boxShadow: `0 0 0 1px rgba(15,34,41,0.06), 0 16px 40px rgba(15,34,41,0.08), inset 4px 0 0 ${CYAN}` }}>
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-[11px] uppercase tracking-[0.18em] font-headline" style={{ color: CYAN, fontWeight: 800 }}>Ask inside a post</p>
                   <span className="px-2.5 py-1 rounded-full text-[9px] uppercase tracking-widest font-headline" style={{ color: CYAN, backgroundColor: "rgba(8,145,178,0.08)", fontWeight: 800 }}>Members</span>
@@ -403,7 +455,7 @@ function HandsFrame({ phase }: { phase: number }) {
             </Pop>
             {/* context post — creators */}
             <Pop show={phase === 1} d={120 + CASCADE_MS * 2}>
-              <div className="h-full rounded-2xl p-5" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.06), 0 16px 40px rgba(15,34,41,0.08), inset 4px 0 0 " + ORANGE }}>
+              <div className="h-full rounded-2xl p-6" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.06), 0 16px 40px rgba(15,34,41,0.08), inset 4px 0 0 " + ORANGE }}>
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-[11px] uppercase tracking-[0.18em] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>Post with context</p>
                   <span className="px-2.5 py-1 rounded-full text-[9px] uppercase tracking-widest font-headline" style={{ color: ORANGE, backgroundColor: "rgba(255,97,48,0.08)", fontWeight: 800 }}>Creators</span>
@@ -423,7 +475,7 @@ function HandsFrame({ phase }: { phase: number }) {
             </Pop>
             {/* calendar export — equal citizen */}
             <Pop show={phase === 1} d={120 + CASCADE_MS * 3}>
-              <div className="h-full rounded-2xl p-5" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.06), 0 16px 40px rgba(15,34,41,0.08), inset 4px 0 0 " + CYAN }}>
+              <div className="h-full rounded-2xl p-6" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.06), 0 16px 40px rgba(15,34,41,0.08), inset 4px 0 0 " + CYAN }}>
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-[11px] uppercase tracking-[0.18em] font-headline" style={{ color: CYAN, fontWeight: 800 }}>Calendar export</p>
                   <span className="px-2.5 py-1 rounded-full text-[9px] uppercase tracking-widest font-headline" style={{ color: CYAN, backgroundColor: "rgba(8,145,178,0.08)", fontWeight: 800 }}>Members</span>
@@ -445,14 +497,13 @@ function HandsFrame({ phase }: { phase: number }) {
 
         {/* p2 — TWO pieces: the notification, and the console that collects it */}
         <div
-          className="absolute inset-0 flex flex-col justify-center"
+          className="absolute inset-0 flex flex-col justify-start"
           style={{ opacity: phase === 2 ? 1 : 0, transform: phase === 2 ? "none" : "translateY(14px)", transition: `opacity ${CUT_MS}ms ${EASE} ${phase === 2 ? 80 : 0}ms, transform ${CUT_MS}ms ${EASE} ${phase === 2 ? 80 : 0}ms`, pointerEvents: "none" }}
         >
           <div className="grid sm:grid-cols-2 gap-6 items-start" aria-hidden>
             {/* piece 1 — the notification */}
             <div className="text-left">
-              <PieceLabel label="The notification — the moment it lands" color={ORANGE} />
-              <div className="rounded-2xl p-5" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }}>
+              <div className="rounded-2xl p-6" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }}>
                 <div className="flex items-center gap-2.5 pb-3 mb-3" style={{ borderBottom: "1px solid rgba(15,34,41,0.07)" }}>
                   <span className="relative">
                     {ICON_BELL(INK, 20)}
@@ -475,8 +526,7 @@ function HandsFrame({ phase }: { phase: number }) {
             </div>
             {/* piece 2 — the console */}
             <div className="text-left">
-              <PieceLabel label="Your console — until it's answered" color={ORANGE} />
-              <div className="rounded-2xl p-5" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }}>
+              <div className="rounded-2xl p-6" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }}>
                 <div className="flex items-center gap-2.5 pb-3 mb-3" style={{ borderBottom: "1px solid rgba(15,34,41,0.07)" }}>
                   <span className="w-7 h-7 rounded-full overflow-hidden shrink-0" style={{ border: `1.5px solid ${ORANGE}59` }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -563,10 +613,10 @@ function LoopFrame({ phase, onJoin }: { phase: number; onJoin: () => void }) {
           },
           {
             on: phase === 1,
-            kicker: "Right now",
-            accent: "#ef4444",
-            title: "Live — Meet your Experts.",
-            copy: "The room is open. Your tribe is walking in.",
+            kicker: "03 · The loop",
+            accent: ORANGE,
+            title: "The moment arrives.",
+            copy: "The reset's first live moment is open — your tribe is walking in.",
             light: false,
           },
           {
@@ -595,56 +645,98 @@ function LoopFrame({ phase, onJoin }: { phase: number; onJoin: () => void }) {
       <div className="relative" style={{ minHeight: 440 }}>
         {/* p0 — the pulse: momentum building */}
         <div
-          className="absolute inset-0 flex flex-col justify-center gap-4"
+          className="absolute inset-0 flex flex-col justify-start gap-4"
           style={{ opacity: phase === 0 ? 1 : 0, transform: phase === 0 ? "none" : "translateY(-14px)", transition: `opacity ${CUT_MS}ms ${EASE}, transform ${CUT_MS}ms ${EASE}`, pointerEvents: "none" }}
         >
-          <div className="mx-auto w-full max-w-2xl rounded-2xl p-5 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.06), inset 4px 0 0 " + ORANGE }} aria-hidden>
-            <p className="text-[10px] uppercase tracking-[0.16em] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>
+          <div className="mx-auto w-full max-w-2xl rounded-2xl p-6 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.06), inset 4px 0 0 " + ORANGE }} aria-hidden>
+            <p className="text-[11px] uppercase tracking-[0.16em] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>
               Pulse · before the live moment
             </p>
-            <p className="text-[15px] font-bold font-headline leading-snug mt-2" style={{ color: INK }}>
+            <p className="text-[16.5px] font-bold font-headline leading-snug mt-2" style={{ color: INK }}>
               {MEET.title} — how ready are you?
             </p>
-            <div className="mt-4 relative h-2 rounded-full" style={{ backgroundColor: "rgba(15,34,41,0.08)" }}>
+            <div className="mt-4 relative h-2.5 rounded-full" style={{ backgroundColor: "rgba(15,34,41,0.08)" }}>
               <div className="absolute inset-y-0 left-0 rounded-full" style={{ width: "80%", backgroundColor: CYAN }} />
               <span className="absolute -top-[5px] w-4 h-4 rounded-full" style={{ left: "77%", backgroundColor: "#FFFFFF", boxShadow: `0 0 0 2px ${CYAN}` }} />
             </div>
             <div className="flex items-center justify-between mt-2">
-              <span className="text-[9.5px]" style={{ color: FAINT }}>0</span>
-              <span className="text-[11.5px] font-black font-headline" style={{ color: CYAN }}>8 / 10</span>
-              <span className="text-[9.5px]" style={{ color: FAINT }}>10</span>
+              <span className="text-[10px]" style={{ color: FAINT }}>0</span>
+              <span className="text-[12.5px] font-black font-headline" style={{ color: CYAN }}>8 / 10</span>
+              <span className="text-[10px]" style={{ color: FAINT }}>10</span>
             </div>
           </div>
           <Pop show={phase === 0} d={300} className="mx-auto w-full max-w-2xl">
-            <TribePost initial="L" color={ORANGE} name="Lea" when="just now" text="Ready! Can't wait to meet everyone 😅" chip="Pulse · 8/10" />
+            <div className="rounded-2xl px-5 py-4 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.05), 0 12px 30px rgba(15,34,41,0.06)" }} aria-hidden>
+              <div className="flex gap-3.5">
+                <span className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(255,97,48,0.14)" }}>
+                  <span className="text-[13px] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>L</span>
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[13px] font-headline" style={{ color: INK, fontWeight: 800 }}>
+                    Lea <span style={{ color: FAINT, fontWeight: 600 }}>· just now</span>
+                  </p>
+                  <p className="text-[14.5px] leading-relaxed mt-1" style={{ color: INK, fontWeight: 500 }}>
+                    Ready! First live moment of the reset — nervous and excited. Can&apos;t wait to meet everyone 😅
+                  </p>
+                  <span className="inline-flex mt-2 px-3 py-1 rounded-full text-[10.5px] font-headline" style={{ color: CYAN, backgroundColor: "rgba(8,145,178,0.10)", fontWeight: 800 }}>
+                    Pulse · 8/10
+                  </span>
+                </div>
+              </div>
+            </div>
           </Pop>
         </div>
 
-        {/* p1 — LIVE NOW: the visitor's own join moment */}
+        {/* p1 — THE MOMENT ARRIVES: the real live session card + Join CTA */}
         <div
           className="absolute inset-0 flex flex-col items-center justify-center"
           style={{ opacity: phase === 1 ? 1 : 0, transform: phase === 1 ? "none" : "translateY(14px)", transition: `opacity ${CUT_MS}ms ${EASE} ${phase === 1 ? 80 : 0}ms, transform ${CUT_MS}ms ${EASE} ${phase === 1 ? 80 : 0}ms`, pointerEvents: phase === 1 ? "auto" : "none" }}
         >
-          <div className="w-full max-w-xl rounded-2xl p-4 flex items-center gap-4" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1.5px rgba(239,68,68,0.35), 0 20px 50px rgba(15,34,41,0.14)" }} aria-hidden>
-            <span className="relative shrink-0 w-20 h-14 rounded-xl overflow-hidden" style={{ backgroundColor: INK }}>
+          {/* the session card, exactly as it reads live in the space */}
+          <div className="w-full max-w-lg rounded-3xl overflow-hidden" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1.5px rgba(239,68,68,0.22), 0 26px 64px rgba(15,34,41,0.18)" }} aria-hidden>
+            <div className="relative aspect-[16/8]" style={{ backgroundColor: INK }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={MEET.img} alt="" className="absolute inset-0 w-full h-full object-cover" />
-              <span className="absolute top-1 left-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[7px] uppercase tracking-widest font-headline text-white" style={{ backgroundColor: "rgba(239,68,68,0.9)", fontWeight: 800 }}>
-                <span className="w-1 h-1 rounded-full bg-white animate-pulse" /> Live
+              <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(15,34,41,0.82) 8%, rgba(15,34,41,0.15) 55%, rgba(15,34,41,0) 100%)" }} />
+              {/* the live sign — red, pulsing (the only red on the frame) */}
+              <span className="absolute top-3.5 left-3.5 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] uppercase tracking-widest font-headline text-white" style={{ backgroundColor: "rgba(239,68,68,0.95)", fontWeight: 800, boxShadow: "0 4px 14px rgba(239,68,68,0.45)" }}>
+                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> Live now
               </span>
-            </span>
-            <span className="min-w-0 flex-1 text-left">
-              <span className="block text-[15px] font-headline leading-snug" style={{ color: INK, fontWeight: 800 }}>{MEET.title}</span>
-              <span className="block text-[11px] font-bold mt-0.5" style={{ color: MUTED }}>{MEET.host} · the reset&apos;s first live moment</span>
-            </span>
+              <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5 text-left">
+                <p className="text-[10px] uppercase tracking-[0.18em] font-headline" style={{ color: "#9CF0FF", fontWeight: 800 }}>Week {ROOM.week} · The live moment</p>
+                <p className="text-[21px] sm:text-[23px] font-headline tracking-tight leading-tight mt-1" style={{ color: "#FFFFFF", fontWeight: 800, letterSpacing: "-0.015em" }}>{MEET.title}</p>
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="flex -space-x-1.5">
+                    {[ALEX.avatar, MIRA.avatar].map((a) => (
+                      <span key={a} className="w-5 h-5 rounded-full overflow-hidden" style={{ border: "1.5px solid rgba(255,255,255,0.9)" }}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={a} alt="" className="w-full h-full object-cover" />
+                      </span>
+                    ))}
+                  </span>
+                  <span className="text-[11.5px] font-bold" style={{ color: "rgba(255,255,255,0.9)" }}>{MEET.host}</span>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-between px-5 py-4">
+              <span className="text-[12px] font-bold" style={{ color: MUTED }}>{MEET.dur} · the reset&apos;s first live moment</span>
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-black font-headline" style={{ color: ORANGE }}>
+                <span className="flex -space-x-1">
+                  {["A", "S", "L"].map((m) => (
+                    <span key={m} className="w-4 h-4 rounded-full flex items-center justify-center text-[7px] font-headline" style={{ backgroundColor: "rgba(8,145,178,0.16)", color: CYAN, fontWeight: 800, border: "1px solid #FFF" }}>{m}</span>
+                  ))}
+                </span>
+                8 in the room
+              </span>
+            </div>
           </div>
           <button
             type="button"
             onClick={onJoin}
             className="mt-8 px-16 py-6 rounded-full text-white text-xl font-black font-headline transition-transform hover:scale-[1.05]"
-            style={{ backgroundColor: "#ef4444", boxShadow: "0 18px 54px rgba(239,68,68,0.5), 0 5px 18px rgba(239,68,68,0.32)" }}
+            style={{ backgroundColor: ORANGE, boxShadow: "0 18px 54px rgba(255,97,48,0.5), 0 5px 18px rgba(255,97,48,0.32)" }}
           >
-            Join live →
+            Join now →
           </button>
           <p className="text-[13px] mt-5" style={{ color: MUTED }}>Your move — or keep scrolling.</p>
         </div>
@@ -711,31 +803,25 @@ function LoopFrame({ phase, onJoin }: { phase: number; onJoin: () => void }) {
           </svg>
         </div>
 
-        {/* p3 — the reflection */}
+        {/* p3 — the reflection post closes the loop */}
         <div
-          className="absolute inset-0 flex flex-col justify-center gap-4"
+          className="absolute inset-0 flex flex-col justify-center"
           style={{ opacity: phase >= 3 ? 1 : 0, transform: phase >= 3 ? "none" : "translateY(14px)", transition: `opacity ${CUT_MS}ms ${EASE} ${phase >= 3 ? 80 : 0}ms, transform ${CUT_MS}ms ${EASE} ${phase >= 3 ? 80 : 0}ms`, pointerEvents: "none" }}
         >
-          <div className="mx-auto w-full max-w-2xl rounded-2xl p-5 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.06), inset 4px 0 0 " + CYAN }} aria-hidden>
-            <p className="text-[10px] uppercase tracking-[0.16em] font-headline" style={{ color: CYAN, fontWeight: 800 }}>
-              Reflection · after the live moment
-            </p>
-            <p className="text-[15px] font-bold font-headline leading-snug mt-2" style={{ color: INK }}>
-              How was &ldquo;{MEET.title}&rdquo;?
-            </p>
-            <div className="flex items-center gap-2.5 mt-3">
-              <span className="px-2.5 py-1 rounded-full text-[10px] font-headline" style={{ color: CYAN, backgroundColor: "rgba(8,145,178,0.08)", fontWeight: 800 }}>
-                Energy after · 9/10
-              </span>
-              <span className="text-[11.5px] flex-1 truncate" style={{ color: FAINT }}>Share a takeaway with the tribe…</span>
-            </div>
+          <div className="mx-auto w-full max-w-2xl">
+            <FeedPost
+              initial="A"
+              color={CYAN}
+              name="Anna"
+              when="just now"
+              promptLabel="Reflection · after the live moment"
+              promptColor={CYAN}
+              prompt={`How was “${MEET.title}”?`}
+              body="Didn't expect to laugh that much on day one — Alex and Mira had us moving in minutes and it felt like a team, not a class. Already counting down to Tuesday. This group 🔥"
+              chip="Energy after · 9/10"
+              comments={5}
+            />
           </div>
-          <Pop show={phase >= 3} d={250} className="mx-auto w-full max-w-2xl">
-            <TribePost initial="A" color={CYAN} name="Anna" when="just now" text="Didn't expect to laugh that much on day one. This group 🔥" chip="Energy after · 9/10" />
-          </Pop>
-          <Pop show={phase >= 3} d={250 + CASCADE_MS} className="mx-auto w-full max-w-2xl">
-            <TribePost initial="S" color={ORANGE} name="Sam" when="just now" text="Same. Nina — welcome, you picked the right tribe ✓" />
-          </Pop>
         </div>
       </div>
     </div>
@@ -749,8 +835,8 @@ function CompoundFrame({ phase, active }: { phase: number; active: boolean }) {
   const litWeeks = !active ? 1 : wrapped ? 6 : 5;
   return (
     <div className={`w-full max-w-3xl mx-auto ${FIT}`}>
-      {/* two-state head */}
-      <div className="relative mb-9" style={{ minHeight: 150 }}>
+      {/* two-state head — extra reserve; the wrapped title runs two lines */}
+      <div className="relative mb-9" style={{ minHeight: 210 }}>
         <div className="absolute inset-x-0 top-0" style={{ opacity: wrapped ? 0 : 1, transition: `opacity ${CUT_MS}ms ${EASE}` }}>
           <MechHead
             kicker="04 · It compounds"
@@ -811,53 +897,53 @@ function CompoundFrame({ phase, active }: { phase: number; active: boolean }) {
 
         {/* THE RETENTION LOOP — pops when the run wraps */}
         <Pop show={wrapped} d={450} from="translateY(16px)">
-          <div className="mt-7 text-left">
-            <div className="flex items-center gap-3">
-              <div className="flex-1 rounded-2xl p-4 opacity-70" style={{ backgroundColor: "rgba(250,248,243,1)", boxShadow: "0 0 0 1px rgba(15,34,41,0.08)" }}>
-                <p className="text-[9px] uppercase tracking-widest font-headline" style={{ color: FAINT, fontWeight: 800 }}>Run 1</p>
-                <p className="text-[13.5px] font-black font-headline mt-1" style={{ color: MUTED }}>✓ Completed</p>
+          <div className="mt-8 text-left">
+            <div className="flex items-center gap-4">
+              <div className="flex-1 rounded-2xl p-5 opacity-70" style={{ backgroundColor: "rgba(250,248,243,1)", boxShadow: "0 0 0 1px rgba(15,34,41,0.08)" }}>
+                <p className="text-[10px] uppercase tracking-widest font-headline" style={{ color: FAINT, fontWeight: 800 }}>Run 1</p>
+                <p className="text-[16px] font-black font-headline mt-1.5" style={{ color: MUTED }}>✓ Completed</p>
               </div>
-              <svg width="28" height="14" viewBox="0 0 26 14" fill="none" className="shrink-0" aria-hidden>
+              <svg width="32" height="16" viewBox="0 0 26 14" fill="none" className="shrink-0" aria-hidden>
                 <line x1="1" y1="7" x2="20" y2="7" stroke={CYAN} strokeWidth={1.6} strokeLinecap="round" />
                 <path d="M16 2 L23 7 L16 12" stroke={CYAN} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-              <div className="flex-1 rounded-2xl p-4" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1.5px rgba(255,97,48,0.30), 0 12px 32px rgba(15,34,41,0.10)" }}>
-                <p className="text-[9px] uppercase tracking-widest font-headline flex items-center gap-1" style={{ color: "#ef4444", fontWeight: 800 }}>
+              <div className="flex-1 rounded-2xl p-5" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1.5px rgba(255,97,48,0.30), 0 12px 32px rgba(15,34,41,0.10)" }}>
+                <p className="text-[10px] uppercase tracking-widest font-headline flex items-center gap-1.5" style={{ color: "#ef4444", fontWeight: 800 }}>
                   <span className="w-1.5 h-1.5 rounded-full bg-[#ef4444] animate-pulse" /> Run 2 · Enrolling
                 </p>
-                <p className="text-[13.5px] font-black font-headline mt-1" style={{ color: INK }}>Same space, next chapter</p>
+                <p className="text-[16px] font-black font-headline mt-1.5" style={{ color: INK }}>Same space, next chapter</p>
               </div>
             </div>
 
             {/* you shape the next run */}
-            <p className="text-[10px] uppercase tracking-[0.2em] font-headline mt-5 mb-2" style={{ color: ORANGE, fontWeight: 800 }}>You shape the next run</p>
-            <div className="grid grid-cols-3 gap-2.5">
+            <p className="text-[11px] uppercase tracking-[0.2em] font-headline mt-6 mb-3" style={{ color: ORANGE, fontWeight: 800 }}>You shape the next run</p>
+            <div className="grid grid-cols-3 gap-3">
               {[
                 { t: "Repeat it", d: "Same design, next cohort" },
                 { t: "Reshape it", d: "New terms — the agreement re-locks" },
                 { t: "New collaborator", d: "Invite another expert in" },
               ].map(({ t, d }) => (
-                <div key={t} className="rounded-xl px-3 py-2.5" style={{ backgroundColor: "#FAF8F3", boxShadow: "0 0 0 1px rgba(15,34,41,0.06)" }}>
-                  <p className="text-[11.5px] font-black font-headline" style={{ color: INK }}>{t}</p>
-                  <p className="text-[9.5px] font-bold mt-0.5 leading-snug" style={{ color: FAINT }}>{d}</p>
+                <div key={t} className="rounded-xl px-4 py-3.5" style={{ backgroundColor: "#FAF8F3", boxShadow: "0 0 0 1px rgba(15,34,41,0.06)" }}>
+                  <p className="text-[13.5px] font-black font-headline" style={{ color: INK }}>{t}</p>
+                  <p className="text-[11px] font-bold mt-1 leading-snug" style={{ color: MUTED }}>{d}</p>
                 </div>
               ))}
             </div>
 
             {/* the tribe carries over + new members */}
             <div
-              className="mt-3 rounded-2xl px-4 py-3.5 flex items-center justify-between gap-3"
+              className="mt-4 rounded-2xl px-5 py-4 flex items-center justify-between gap-4"
               style={{ background: "linear-gradient(135deg, rgba(255,97,48,0.14), rgba(255,97,48,0.05))", boxShadow: "0 0 0 1px rgba(255,97,48,0.26)" }}
             >
               <div className="min-w-0">
-                <p className="text-[9.5px] uppercase tracking-[0.16em] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>
+                <p className="text-[10.5px] uppercase tracking-[0.16em] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>
                   Retention, built in
                 </p>
-                <p className="text-[13.5px] font-black font-headline mt-0.5" style={{ color: INK }}>
+                <p className="text-[15px] font-black font-headline mt-1 leading-snug" style={{ color: INK }}>
                   Your tribe re-enrolls in one tap — new members join the same run.
                 </p>
               </div>
-              <span className="shrink-0 px-4 py-2 rounded-full text-white text-[11.5px] font-black font-headline" style={{ backgroundColor: ORANGE, boxShadow: "0 4px 12px rgba(255,97,48,0.30)" }}>
+              <span className="shrink-0 px-5 py-2.5 rounded-full text-white text-[12.5px] font-black font-headline" style={{ backgroundColor: ORANGE, boxShadow: "0 4px 12px rgba(255,97,48,0.30)" }}>
                 Enroll in Run 2 →
               </span>
             </div>
