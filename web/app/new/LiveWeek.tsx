@@ -355,50 +355,16 @@ function SpaceFrame({ phase }: { phase: number }) {
 function HandsFrame({ phase }: { phase: number }) {
   return (
     <div className={`w-full max-w-3xl mx-auto ${FIT}`}>
-      {/* four-state head */}
-      <div className="relative mb-9" style={{ minHeight: 150 }}>
-        {[
-          {
-            on: phase === 0,
-            kicker: "02 · In everyone's hands — when someone joins",
-            accent: CYAN,
-            title: "No cold start.",
-            copy: "The moment someone joins, the space asks them to introduce themselves.",
-          },
-          {
-            on: phase === 1,
-            kicker: "02 · In everyone's hands",
-            accent: CYAN,
-            title: "Anyone can engage at any time.",
-            copy: "Four tools, for members and creators — no permission needed, no cold silence.",
-          },
-          {
-            on: phase === 2,
-            kicker: "02 · In everyone's hands — creator view",
-            accent: ORANGE,
-            title: "A question finds you.",
-            copy: "A notification the moment it lands — and your console collects it until it's answered.",
-          },
-          {
-            on: phase >= 3,
-            kicker: "02 · In everyone's hands",
-            accent: CYAN,
-            title: "Answered once. Everyone learns.",
-            copy: "Answers are pinned inside posts — visible to the whole tribe. Everybody can react with likes or comments.",
-          },
-        ].map((h, i) => (
-          <div key={i} className="absolute inset-x-0 top-0" style={{ opacity: h.on ? 1 : 0, transition: `opacity ${CUT_MS}ms ${EASE} ${h.on ? 80 : 0}ms` }}>
-            <MechHead kicker={h.kicker} accent={h.accent} title={h.title} copy={h.copy} />
-          </div>
-        ))}
-      </div>
-
-      <div className="relative" style={{ minHeight: 460 }}>
+      {/* Each phase is a self-contained, centered [head + content] block — the
+         same treatment as the dark chapter's frames, so short phases stay
+         centered instead of leaving a gap under a top-pinned title. */}
+      <div className="relative" style={{ minHeight: 580 }}>
         {/* p0 — the introduction post: the cold start, solved */}
         <div
           className="absolute inset-0 flex flex-col justify-center"
           style={{ opacity: phase === 0 ? 1 : 0, transform: phase === 0 ? "none" : "translateY(-14px)", transition: `opacity ${CUT_MS}ms ${EASE}, transform ${CUT_MS}ms ${EASE}`, pointerEvents: "none" }}
         >
+          <MechHead kicker="02 · In everyone's hands — when someone joins" accent={CYAN} title="No cold start." copy="The moment someone joins, the space asks them to introduce themselves." />
           <div className="mx-auto w-full max-w-2xl">
             <FeedPost
               initial="N"
@@ -417,9 +383,10 @@ function HandsFrame({ phase }: { phase: number }) {
 
         {/* p1 — the four tools, four distinct pieces */}
         <div
-          className="absolute inset-0 flex flex-col justify-start"
+          className="absolute inset-0 flex flex-col justify-center"
           style={{ opacity: phase === 1 ? 1 : 0, transform: phase === 1 ? "none" : "translateY(14px)", transition: `opacity ${CUT_MS}ms ${EASE} ${phase === 1 ? 80 : 0}ms, transform ${CUT_MS}ms ${EASE} ${phase === 1 ? 80 : 0}ms`, pointerEvents: "none" }}
         >
+          <MechHead kicker="02 · In everyone's hands" accent={CYAN} title="Anyone can engage at any time." copy="Four tools, for members and creators — no permission needed, no cold silence." />
           <div className="grid sm:grid-cols-2 gap-6 text-left" aria-hidden>
             {/* share — members */}
             <Pop show={phase === 1} d={120}>
@@ -497,9 +464,10 @@ function HandsFrame({ phase }: { phase: number }) {
 
         {/* p2 — TWO pieces: the notification, and the console that collects it */}
         <div
-          className="absolute inset-0 flex flex-col justify-start"
+          className="absolute inset-0 flex flex-col justify-center"
           style={{ opacity: phase === 2 ? 1 : 0, transform: phase === 2 ? "none" : "translateY(14px)", transition: `opacity ${CUT_MS}ms ${EASE} ${phase === 2 ? 80 : 0}ms, transform ${CUT_MS}ms ${EASE} ${phase === 2 ? 80 : 0}ms`, pointerEvents: "none" }}
         >
+          <MechHead kicker="02 · In everyone's hands — creator view" accent={ORANGE} title="A question finds you." copy="A notification the moment it lands — and your console collects it until it's answered." />
           <div className="grid sm:grid-cols-2 gap-6 items-start" aria-hidden>
             {/* piece 1 — the notification */}
             <div className="text-left">
@@ -552,7 +520,8 @@ function HandsFrame({ phase }: { phase: number }) {
           className="absolute inset-0 flex flex-col justify-center"
           style={{ opacity: phase >= 3 ? 1 : 0, transform: phase >= 3 ? "none" : "translateY(14px)", transition: `opacity ${CUT_MS}ms ${EASE} ${phase >= 3 ? 80 : 0}ms, transform ${CUT_MS}ms ${EASE} ${phase >= 3 ? 80 : 0}ms`, pointerEvents: "none" }}
         >
-          <div className="rounded-3xl p-6 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }} aria-hidden>
+          <MechHead kicker="02 · In everyone's hands" accent={CYAN} title="Answered once. Everyone learns." copy="Answers are pinned inside posts — visible to the whole tribe. Everybody can react with likes or comments." />
+          <div className="mx-auto w-full max-w-2xl rounded-3xl p-6 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }} aria-hidden>
             <div className="flex items-center gap-3">
               <span className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(8,145,178,0.14)" }}>
                 <span className="text-[12px] font-headline" style={{ color: CYAN, fontWeight: 800 }}>T</span>
@@ -600,54 +569,15 @@ function LoopFrame({ phase, onJoin }: { phase: number; onJoin: () => void }) {
   const isPeak = phase === 2;
   return (
     <div className={`w-full max-w-3xl mx-auto ${FIT}`}>
-      {/* four-state head */}
-      <div className="relative mb-9" style={{ minHeight: 150 }}>
-        {[
-          {
-            on: phase === 0,
-            kicker: "03 · The loop — before every live moment",
-            accent: ORANGE,
-            title: "Momentum is building.",
-            copy: "The tribe shares its readiness — and everyone feels it.",
-            light: false,
-          },
-          {
-            on: phase === 1,
-            kicker: "03 · The loop",
-            accent: ORANGE,
-            title: "The moment arrives.",
-            copy: "The reset's first live moment is open — your tribe is walking in.",
-            light: false,
-          },
-          {
-            on: phase === 2,
-            kicker: "And then",
-            accent: "#ef4444",
-            title: "You're live.",
-            copy: "No new login, no external link — training together, right here, right now.",
-            light: true,
-          },
-          {
-            on: phase >= 3,
-            kicker: "After the live moment",
-            accent: CYAN,
-            title: "The reflection closes the loop.",
-            copy: "Every prompt becomes a post — the feed keeps its own rhythm.",
-            light: false,
-          },
-        ].map((h, i) => (
-          <div key={i} className="absolute inset-x-0 top-0" style={{ opacity: h.on ? 1 : 0, transition: `opacity ${CUT_MS}ms ${EASE} ${h.on ? 80 : 0}ms` }}>
-            <MechHead kicker={h.kicker} accent={h.accent} title={h.title} copy={h.copy} light={h.light} />
-          </div>
-        ))}
-      </div>
-
-      <div className="relative" style={{ minHeight: 440 }}>
+      {/* Each phase carries its own head and centers as one block (dark-frame
+         treatment) — no gap under a pinned title on the lighter phases. */}
+      <div className="relative" style={{ minHeight: 600 }}>
         {/* p0 — the pulse: momentum building */}
         <div
-          className="absolute inset-0 flex flex-col justify-start gap-4"
+          className="absolute inset-0 flex flex-col justify-center"
           style={{ opacity: phase === 0 ? 1 : 0, transform: phase === 0 ? "none" : "translateY(-14px)", transition: `opacity ${CUT_MS}ms ${EASE}, transform ${CUT_MS}ms ${EASE}`, pointerEvents: "none" }}
         >
+          <MechHead kicker="03 · The loop — before every live moment" accent={ORANGE} title="Momentum is building." copy="The tribe shares its readiness — and everyone feels it." />
           <div className="mx-auto w-full max-w-2xl rounded-2xl p-6 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.06), inset 4px 0 0 " + ORANGE }} aria-hidden>
             <p className="text-[11px] uppercase tracking-[0.16em] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>
               Pulse · before the live moment
@@ -665,7 +595,7 @@ function LoopFrame({ phase, onJoin }: { phase: number; onJoin: () => void }) {
               <span className="text-[10px]" style={{ color: FAINT }}>10</span>
             </div>
           </div>
-          <Pop show={phase === 0} d={300} className="mx-auto w-full max-w-2xl">
+          <Pop show={phase === 0} d={300} className="mx-auto w-full max-w-2xl mt-4">
             <div className="rounded-2xl px-5 py-4 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.05), 0 12px 30px rgba(15,34,41,0.06)" }} aria-hidden>
               <div className="flex gap-3.5">
                 <span className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(255,97,48,0.14)" }}>
@@ -692,6 +622,7 @@ function LoopFrame({ phase, onJoin }: { phase: number; onJoin: () => void }) {
           className="absolute inset-0 flex flex-col items-center justify-center"
           style={{ opacity: phase === 1 ? 1 : 0, transform: phase === 1 ? "none" : "translateY(14px)", transition: `opacity ${CUT_MS}ms ${EASE} ${phase === 1 ? 80 : 0}ms, transform ${CUT_MS}ms ${EASE} ${phase === 1 ? 80 : 0}ms`, pointerEvents: phase === 1 ? "auto" : "none" }}
         >
+          <MechHead kicker="03 · The loop" accent={ORANGE} title="The moment arrives." copy="The reset's first live moment is open — your tribe is walking in." />
           {/* the session card, exactly as it reads live in the space */}
           <div className="w-full max-w-lg rounded-3xl overflow-hidden" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1.5px rgba(239,68,68,0.22), 0 26px 64px rgba(15,34,41,0.18)" }} aria-hidden>
             <div className="relative aspect-[16/8]" style={{ backgroundColor: INK }}>
@@ -747,6 +678,7 @@ function LoopFrame({ phase, onJoin }: { phase: number; onJoin: () => void }) {
           style={{ opacity: isPeak ? 1 : 0, transition: `opacity ${CUT_MS + 100}ms ${EASE} ${isPeak ? 120 : 0}ms`, pointerEvents: "none" }}
           aria-hidden
         >
+          <MechHead kicker="And then" accent="#ef4444" title="You're live." copy="No new login, no external link — training together, right here, right now." light />
           <div className="relative flex items-center justify-center" style={{ width: 330, height: 330 }}>
             {/* pulsing rings — training, together, right now */}
             {[215, 275, 330].map((s, i) => (
@@ -808,6 +740,7 @@ function LoopFrame({ phase, onJoin }: { phase: number; onJoin: () => void }) {
           className="absolute inset-0 flex flex-col justify-center"
           style={{ opacity: phase >= 3 ? 1 : 0, transform: phase >= 3 ? "none" : "translateY(14px)", transition: `opacity ${CUT_MS}ms ${EASE} ${phase >= 3 ? 80 : 0}ms, transform ${CUT_MS}ms ${EASE} ${phase >= 3 ? 80 : 0}ms`, pointerEvents: "none" }}
         >
+          <MechHead kicker="After the live moment" accent={CYAN} title="The reflection closes the loop." copy="Every prompt becomes a post — the feed keeps its own rhythm." />
           <div className="mx-auto w-full max-w-2xl">
             <FeedPost
               initial="A"
@@ -1067,11 +1000,15 @@ export function LiveWeek() {
           {/* Frames — hard cuts, one visible at a time, all centered */}
           {[0, 1, 2, 3, 4, 5].map((f) => {
             const active = frame === f;
+            // During the dark peak the rail is hidden — reclaim the whole
+            // viewport (drop the rail offset + top padding) so the moment is
+            // truly centered, not pushed right by the navigation gutter.
+            const bleed = peak && f === 3;
             return (
               <div
                 key={f}
                 aria-hidden={!active}
-                className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center px-5 sm:px-8 lg:pl-64 lg:pr-16 pt-24 pb-14"
+                className={`absolute inset-0 z-10 flex flex-col items-center justify-center text-center ${bleed ? "p-0" : "px-5 sm:px-8 lg:pl-64 lg:pr-16 pt-24 pb-14"}`}
                 style={{
                   opacity: active ? 1 : 0,
                   transform: active ? "none" : "translateY(12px)",
@@ -1081,7 +1018,7 @@ export function LiveWeek() {
                   pointerEvents: active ? "auto" : "none",
                 }}
               >
-                <div className="w-full max-w-5xl mx-auto">
+                <div className={bleed ? "w-full" : "w-full max-w-5xl mx-auto"}>
                   {f === 0 && <IntroFrame />}
                   {f === 1 && <SpaceFrame phase={active ? phase : 0} />}
                   {f === 2 && <HandsFrame phase={active ? phase : 0} />}
