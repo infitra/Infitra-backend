@@ -7,12 +7,11 @@ import { INK, ORANGE, CYAN, MUTED, FAINT } from "./ui";
 /**
  * M3 · HOW TO COLLABORATE ON INFITRA — the beat engine, in the dark room.
  *
- * Scroll is quantized into discrete BEATS — and DAMPED: however hard the
- * fling, the displayed beat advances at most one step per CATCHUP_MS toward
- * the scroll target, so every beat is always seen and scroll strength never
- * skips story. Each beat is one hard cut: a frame change or a phase reveal.
- * The Publish click fast-forwards by scrolling the page (scroll stays the
- * single source of truth).
+ * The story is discrete BEATS; each is one hard cut (frame change or phase
+ * reveal). The page scrolls fully natively — the PACE CAR (see the effect
+ * below) watches scroll VELOCITY and advances exactly one beat per fresh
+ * push, so a fling can never speed-run the story yet every gentle swipe
+ * responds instantly. The Publish click fast-forwards by scrolling the page.
  *
  * The room is dark teal wearing the ACTUAL brand waves in a dark theme —
  * the same three wave paths as WaveFlowingBackground, gradient-tuned for
@@ -22,13 +21,12 @@ import { INK, ORANGE, CYAN, MUTED, FAINT } from "./ui";
 
 /* ── Feel constants — tune on deploy ───────────────────────── */
 const BEAT_VH = 70; // runway per beat unit
-const CATCHUP_MS = 240; // damping (touch/keyboard fallback)
-const GESTURE_MIN_MS = 300; // wheel lock: minimum hold after a step
-const GESTURE_QUIET_MS = 160; // wheel lock: releases this long after the train quiets down
-const WHEEL_NOISE = 4; // |deltaY| at or below this is a momentum tail, not activity
-const SPIKE_MARGIN = 10; // |deltaY| jump over the previous event = a NEW intentional gesture
-const WHEEL_STEP_THRESHOLD = 24; // accumulated deltaY to count as a gesture
-const WHEEL_IDLE_MS = 1200; // wheel counts as the active driver this long after its last event
+const PUSH_SPEED = 0.35; // px/ms — a deliberate swipe reads at/above this
+const REARM_SPEED = 0.15; // px/ms — speed must fall below this before the next push counts
+const ACCEL_REARM = 0.3; // px/ms jump frame-over-frame = a fresh human push mid-tail
+const SETTLE_SPEED = 0.05; // px/ms — below this the reader has stopped
+const SETTLE_MS = 140; // rest this long before the silent re-anchor
+const STEP_GAP_MS = 320; // minimum time between beat cuts
 const OUTRO_FREE_ZONE = 0.12; // inside the outro past this depth, the heartbeat scrubs freely
 const CUT_MS = 260; // frame hard-cut duration
 const POP_MS = 340; // phase reveal duration
@@ -686,227 +684,146 @@ export function HowItWorks() {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const railFillRef = useRef<HTMLDivElement>(null);
   const frameRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const [target, setTarget] = useState(0);
   const [beat, setBeat] = useState(0);
   const [pinned, setPinned] = useState(true);
   const beatRef = useRef(0);
   const jumpGuardRef = useRef(false);
   const jumpTimerRef = useRef(0);
-  const coveringRef = useRef(false);
-  const prevCoveringRef = useRef(false);
-  const posRef = useRef(0);
-  const gestureLockRef = useRef(false);
-  const gestureMinDoneRef = useRef(false);
-  const gestureMinTimerRef = useRef(0);
-  const gestureQuietTimerRef = useRef(0);
-  const lastMagRef = useRef(999);
-  const wheelActiveRef = useRef(false);
-  const wheelIdleTimerRef = useRef(0);
-  const wheelAccRef = useRef(0);
 
   const frame = BEATS[beat].f;
   const phase = BEATS[beat].p;
   const isOutro = frame === 5;
 
-  /* damping: step at most ONE beat toward the scroll target per interval —
-     scroll strength can never skip story */
-  useEffect(() => {
-    if (beat === target) return;
-    const t = setTimeout(
-      () =>
-        setBeat((b) => {
-          const nb = b + Math.sign(target - b);
-          beatRef.current = nb;
-          return nb;
-        }),
-      CATCHUP_MS,
-    );
-    return () => clearTimeout(t);
-  }, [beat, target]);
-
+  /* ── THE PACE CAR ─────────────────────────────────────────────
+     The page scrolls 100% natively — nothing is ever prevented or
+     fought, so it always feels smooth. The stage renders from `beat`,
+     not from the scroll position, and the beat is driven by VELOCITY:
+     a fresh push (speed rising from rest, or accelerating mid-tail —
+     momentum only ever decays, so acceleration = a human) advances
+     exactly one beat. The decaying tail of the same gesture grants
+     nothing. When motion settles, the position is silently re-aligned
+     under the sticky stage. One system for trackpad, wheel, touch
+     and keyboard. */
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches || window.innerHeight < 600) {
       const raf0 = requestAnimationFrame(() => setPinned(false));
       return () => cancelAnimationFrame(raf0);
     }
     let raf = 0;
-    /** Anchor the page to a beat (outro anchors at its start so the
-     *  heartbeat still scrub-draws on the released exit). */
-    const anchorTo = (i: number) => {
-      const el = wrapperRef.current;
-      if (!el) return;
-      const r = el.getBoundingClientRect();
-      const total = r.height - window.innerHeight;
-      const posT = i === BEATS.length - 1 ? BOUNDS[i][0] + 0.05 : (BOUNDS[i][0] + BOUNDS[i][1]) / 2;
-      window.scrollTo({ top: window.scrollY + r.top + (posT / TOTAL_W) * total, behavior: "auto" });
-    };
-    /** The lock releases GESTURE_QUIET_MS after the momentum train quiets
-     *  down (events at/below WHEEL_NOISE don't keep it alive — macOS tails
-     *  trickle tiny deltas for seconds), and never before GESTURE_MIN_MS.
-     *  A magnitude SPIKE mid-train is a new intentional gesture and breaks
-     *  the lock immediately. */
-    const armQuiet = () => {
-      window.clearTimeout(gestureQuietTimerRef.current);
-      gestureQuietTimerRef.current = window.setTimeout(() => {
-        if (gestureMinDoneRef.current) {
-          gestureLockRef.current = false;
-          wheelAccRef.current = 0;
-        } else {
-          armQuiet();
-        }
-      }, GESTURE_QUIET_MS);
-    };
-    const engageLock = () => {
-      gestureLockRef.current = true;
-      gestureMinDoneRef.current = false;
-      lastMagRef.current = 999;
-      wheelAccRef.current = 0;
-      window.clearTimeout(gestureMinTimerRef.current);
-      gestureMinTimerRef.current = window.setTimeout(() => {
-        gestureMinDoneRef.current = true;
-      }, GESTURE_MIN_MS);
-      armQuiet();
-    };
-    /** Wheel = quantized: while the stage covers the viewport, one gesture
-     *  advances exactly ONE beat, then locks until the momentum train dies.
-     *  Control releases at the chapter's two exits, and the outro's
-     *  heartbeat is a free scrub zone in both directions. */
-    const onWheel = (e: WheelEvent) => {
-      if (!coveringRef.current) return;
-      // wheel is now the active driver — tick's leash/catch-up stands down
-      wheelActiveRef.current = true;
-      window.clearTimeout(wheelIdleTimerRef.current);
-      wheelIdleTimerRef.current = window.setTimeout(() => {
-        wheelActiveRef.current = false;
-      }, WHEEL_IDLE_MS);
-      if (jumpGuardRef.current) {
-        e.preventDefault();
-        return;
-      }
-      const b = beatRef.current;
-      const last = BEATS.length - 1;
-      if ((b === 0 && e.deltaY < 0) || (b === last && e.deltaY > 0)) return; // natural entry/exit
-      // outro: scrub the heartbeat freely; only at its very top edge does one
-      // decisive cut step back to the publish frame
-      if (b === last && posRef.current > BOUNDS[last][0] + OUTRO_FREE_ZONE) return;
-      e.preventDefault();
-      const mag = Math.abs(e.deltaY);
-      if (gestureLockRef.current) {
-        const spike = gestureMinDoneRef.current && mag > lastMagRef.current + SPIKE_MARGIN && mag > 12;
-        lastMagRef.current = mag;
-        if (!spike) {
-          if (mag > WHEEL_NOISE) armQuiet(); // loud events keep the lock alive; tails let it run out
-          return;
-        }
-        // a fresh swipe mid-train: break the lock and let this event count
-        gestureLockRef.current = false;
-        wheelAccRef.current = 0;
-      }
-      lastMagRef.current = mag;
-      wheelAccRef.current = Math.sign(e.deltaY) === Math.sign(wheelAccRef.current) ? wheelAccRef.current + e.deltaY : e.deltaY;
-      if (Math.abs(wheelAccRef.current) < WHEEL_STEP_THRESHOLD) return;
-      const dir = Math.sign(wheelAccRef.current);
-      const next = Math.min(last, Math.max(0, b + dir));
-      if (next === b) return;
-      engageLock();
+    let prevY = window.scrollY;
+    let prevT = performance.now();
+    let lastInstAbs = 0;
+    let vel = 0; // EMA, px/ms, signed
+    let armed = false;
+    let settledSince = 0;
+    let lastStepT = 0;
+    let prevCovering = false;
+
+    const step = (next: number, now: number) => {
+      lastStepT = now;
+      armed = false;
       beatRef.current = next;
       setBeat(next);
-      setTarget(next);
-      anchorTo(next);
     };
-    const tick = () => {
-      raf = 0;
+
+    const loop = (now: number) => {
+      raf = requestAnimationFrame(loop);
       const el = wrapperRef.current;
       if (!el) return;
+      const y = window.scrollY;
+      const dt = Math.max(1, now - prevT);
+      const inst = (y - prevY) / dt;
+      prevY = y;
+      prevT = now;
+      vel = vel * 0.65 + inst * 0.35;
+      const speed = Math.abs(vel);
+      const instAbs = Math.abs(inst);
+      // momentum only decays — a frame-over-frame acceleration is a human push
+      if (instAbs > lastInstAbs + ACCEL_REARM) armed = true;
+      lastInstAbs = instAbs;
+
       const r = el.getBoundingClientRect();
+      if (r.top > window.innerHeight * 2 || r.bottom < -window.innerHeight) return; // far away — idle
       const total = r.height - window.innerHeight;
       if (total <= 0) return;
-      let pos = clamp01(-r.top / total) * TOTAL_W;
-      posRef.current = pos;
+      const pos = clamp01(-r.top / total) * TOTAL_W;
       const covering = r.top <= 2 && r.bottom >= window.innerHeight - 2;
-      const entered = covering && !prevCoveringRef.current;
-      prevCoveringRef.current = covering;
-      coveringRef.current = covering;
+      const entered = covering && !prevCovering;
+      prevCovering = covering;
+      const last = BEATS.length - 1;
+      const b = beatRef.current;
 
-      // HARD CUT on entry from above: whatever momentum carried the visitor
-      // in, they land settled on the chapter title with the lock engaged.
-      // (Entry from below lands in the outro's free scrub zone — no arrest.)
-      if (entered && !jumpGuardRef.current && pos < TOTAL_W / 2) {
-        beatRef.current = 0;
-        setBeat(0);
-        setTarget(0);
-        engageLock();
-        anchorTo(0);
-        return;
-      }
-
-      // Outside the pinned region: sync beat straight from position (clean
-      // entry/exit, no stale-state yanks on re-entry).
       if (!covering) {
-        let fi = BEATS.length - 1;
+        // outside the pin the beat follows position directly
+        let fi = last;
         for (let i = 0; i < BOUNDS.length; i++) {
           if (pos >= BOUNDS[i][0] && pos < BOUNDS[i][1]) {
             fi = i;
             break;
           }
         }
-        if (beatRef.current !== fi) {
+        if (b !== fi) {
           beatRef.current = fi;
           setBeat(fi);
-          setTarget(fi);
+        }
+      } else if (!jumpGuardRef.current) {
+        if (entered && pos < TOTAL_W / 2) {
+          // HARD CUT on entry from above: whatever momentum carried the
+          // reader in, the chapter opens on its title — the fling is one
+          // continuous motion and grants no steps until they push again.
+          if (b !== 0) {
+            beatRef.current = 0;
+            setBeat(0);
+          }
+          armed = false;
+          settledSince = 0;
+        } else {
+          if (speed < REARM_SPEED) armed = true;
+          if (armed && speed >= PUSH_SPEED && now - lastStepT >= STEP_GAP_MS) {
+            const dir = vel > 0 ? 1 : -1;
+            // the outro heartbeat is a free scrub zone — no step-back
+            // until the reader has scrubbed to its very top edge
+            const blocked = b === last && dir < 0 && pos > BOUNDS[last][0] + OUTRO_FREE_ZONE;
+            const next = Math.min(last, Math.max(0, b + dir));
+            if (!blocked && next !== b) step(next, now);
+          }
+          // silent re-anchor once the reader rests — invisible under the
+          // sticky stage, keeps position and story aligned
+          if (speed < SETTLE_SPEED) {
+            if (!settledSince) settledSince = now;
+          } else {
+            settledSince = 0;
+          }
+          if (settledSince && now - settledSince >= SETTLE_MS) {
+            const bNow = beatRef.current;
+            const anchor =
+              bNow === last ? BOUNDS[last][0] + 0.05 : (BOUNDS[bNow][0] + BOUNDS[bNow][1]) / 2;
+            const wantsAnchor = bNow !== last || pos < BOUNDS[last][0] + 0.02;
+            const targetY = y + r.top + (anchor / TOTAL_W) * total;
+            if (wantsAnchor && Math.abs(targetY - y) > 24) {
+              window.scrollTo({ top: targetY, behavior: "auto" });
+              prevY = targetY; // the correction is not motion
+            }
+            settledSince = 0;
+          }
         }
       }
 
-      // While the wheel is driving, it is the ONLY beat authority — the
-      // leash + target catch-up below would fight the quantizer at the
-      // chapter edges (that fight was the outro ping-pong). Touch input
-      // fires no wheel events, so it keeps both.
-      const wheelDriven = covering && wheelActiveRef.current;
-
-      // THE LEASH (touch/keyboard fallback while pinned): the page can never
-      // be more than one beat ahead/behind the displayed beat.
-      if (covering && !wheelDriven && !jumpGuardRef.current) {
-        const bcur = beatRef.current;
-        const maxPos = bcur >= BEATS.length - 1 ? Infinity : BOUNDS[bcur + 1][1] - 0.04;
-        const minPos = bcur <= 0 ? -Infinity : BOUNDS[bcur - 1][0] + 0.02;
-        if (pos > maxPos || pos < minPos) {
-          const held = Math.min(Math.max(pos, minPos), maxPos);
-          window.scrollTo({ top: window.scrollY + r.top + (held / TOTAL_W) * total, behavior: "auto" });
-          pos = held;
-        }
-      }
-
-      let bi = BEATS.length - 1;
-      for (let i = 0; i < BOUNDS.length; i++) {
-        if (pos >= BOUNDS[i][0] && pos < BOUNDS[i][1]) {
-          bi = i;
-          break;
-        }
-      }
-      if (!wheelDriven) setTarget((prev) => (prev === bi ? prev : bi));
-
-      const sp = clamp01((pos - STEP_SPAN[0]) / (STEP_SPAN[1] - STEP_SPAN[0]));
+      // rail fill — driven by the story beat, smoothed by CSS
+      const bNow = beatRef.current;
+      const bMid = BOUNDS[bNow][0] + BEATS[bNow].w / 2;
+      const sp = clamp01((bMid - STEP_SPAN[0]) / (STEP_SPAN[1] - STEP_SPAN[0]));
       if (railFillRef.current) railFillRef.current.style.height = `${(sp * 100).toFixed(1)}%`;
 
-      const [oa, ob] = BOUNDS[BOUNDS.length - 1];
+      // the heartbeat draws from live position — natively smooth
+      const [oa, ob] = BOUNDS[last];
       const draw = clamp01((pos - oa) / ((ob - oa) * 0.75));
-      frameRefs.current[5]?.querySelectorAll<SVGPathElement>("[data-ecg]").forEach((p) => {
-        p.style.strokeDashoffset = String(1 - draw);
+      frameRefs.current[5]?.querySelectorAll<SVGPathElement>("[data-ecg]").forEach((path) => {
+        path.style.strokeDashoffset = String(1 - draw);
       });
     };
-    const onScroll = () => {
-      if (!raf) raf = requestAnimationFrame(tick);
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
-    window.addEventListener("wheel", onWheel, { passive: false });
-    onScroll();
-    return () => {
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
-      window.removeEventListener("wheel", onWheel);
-      if (raf) cancelAnimationFrame(raf);
-    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
   }, []);
 
   /** Scroll the page to a beat's midpoint — scroll stays the source of truth. */
@@ -923,7 +840,6 @@ export function HowItWorks() {
     }, 1100);
     beatRef.current = i;
     setBeat(i);
-    setTarget(i);
     window.scrollTo({ top: window.scrollY + r.top + (mid / TOTAL_W) * total, behavior: "smooth" });
   }
 
@@ -964,7 +880,7 @@ export function HowItWorks() {
           {/* Rail — desktop */}
           <div className="hidden lg:flex absolute left-8 xl:left-14 top-1/2 -translate-y-1/2 z-20 items-stretch gap-5" style={{ opacity: frame >= 1 && frame <= 4 ? 1 : 0.2, transition: "opacity 400ms ease" }}>
             <div className="relative w-[3px] rounded-full" style={{ backgroundColor: "rgba(255,255,255,0.16)" }}>
-              <div ref={railFillRef} className="absolute top-0 left-0 w-full rounded-full" style={{ height: "0%", backgroundColor: ORANGE, boxShadow: "0 0 10px rgba(255,97,48,0.45)" }} />
+              <div ref={railFillRef} className="absolute top-0 left-0 w-full rounded-full" style={{ height: "0%", backgroundColor: ORANGE, boxShadow: "0 0 10px rgba(255,97,48,0.45)", transition: `height 600ms ${EASE}` }} />
             </div>
             <div className="flex flex-col justify-between gap-10 py-1">
               {RAIL.map((s) => (
