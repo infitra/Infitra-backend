@@ -1,4 +1,5 @@
 import { INK, CYAN, MUTED, ApplyCTA } from "./ui";
+import { HeroWaitlist } from "./HeroWaitlist";
 
 /**
  * M1 · HERO — headline only (polish round 2). One centered claim, nothing
@@ -42,14 +43,8 @@ export function Hero() {
 
         <ApplyCTA micro="5 founding pairs · DACH · reviewed individually · starting now" />
 
-        {/* The quiet second door — participants self-sort without competing */}
-        <a
-          href="#join"
-          className="mt-7 text-[13px] transition-opacity hover:opacity-70"
-          style={{ color: MUTED }}
-        >
-          Here to train, not to build? <span style={{ color: CYAN, fontWeight: 700 }}>Join the participant waitlist →</span>
-        </a>
+        {/* The quiet second door — extends into the form right here */}
+        <HeroWaitlist />
       </div>
     </section>
   );

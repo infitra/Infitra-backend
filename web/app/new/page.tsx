@@ -3,11 +3,9 @@ import { WaveFlowingBackground } from "@/app/components/WaveFlowingBackground";
 import { Hero } from "./Hero";
 import { WhatYouCanBuild } from "./WhatYouCanBuild";
 import { HowItWorks } from "./HowItWorks";
-import { TakenCareOf } from "./TakenCareOf";
 import { LiveWeek } from "./LiveWeek";
-import { FoundingPilot } from "./FoundingPilot";
 import { Finale } from "./Finale";
-import { Depth, Footer } from "./Depth";
+import { Footer } from "./Footer";
 
 /**
  * LANDING V2 — the product-showcase landing (LANDING_V2_PLAN.md, round 2
@@ -83,10 +81,7 @@ export default function LandingV2Page() {
           <WhatYouCanBuild />
           <HowItWorks />
           <LiveWeek />
-          <TakenCareOf />
-          <FoundingPilot />
           <Finale />
-          <Depth />
         </main>
 
         <Footer />

@@ -884,15 +884,17 @@ function CompoundFrame({ phase, active }: { phase: number; active: boolean }) {
   );
 }
 
-/* ══ Frame 5 · Outro ════════════════════════════════════════ */
+/* ══ Frame 5 · Outro — the bridge into conversion ═══════════ */
 function HandoffFrame() {
   return (
     <div className="w-full max-w-3xl mx-auto text-center">
       <p className="text-4xl md:text-6xl font-headline tracking-tight leading-[1.1]" style={{ color: INK, fontWeight: 700, letterSpacing: "-0.025em" }}>
-        Designed to <span style={{ color: ORANGE }}>feel alive.</span>
+        Ready to join <span style={{ color: ORANGE }}>the movement?</span>
       </p>
       <p className="text-base md:text-lg mt-6 max-w-xl mx-auto leading-relaxed" style={{ color: MUTED }}>
-        Real people bring the life — the space gives them every reason.
+        Everything you just scrolled through is heading into its founding
+        pilot — the first experiences, the first tribes. Shape what INFITRA
+        becomes and position yourself early.
       </p>
     </div>
   );
