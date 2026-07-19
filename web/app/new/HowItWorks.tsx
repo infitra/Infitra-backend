@@ -57,7 +57,7 @@ const BEATS: BeatDef[] = [
   { f: 3, p: 1, w: 1.1 }, // agreement — agreed by all collaborators
   { f: 4, p: 0, w: 1.2 }, // publish — the CTA
   { f: 4, p: 1, w: 1.3 }, // publish — everything in between
-  { f: 5, p: 0, w: 1.6 }, // outro — the heartbeat
+  { f: 5, p: 0, w: 3.4 }, // outro — the heartbeat (long free scrub)
 ];
 const TOTAL_W = BEATS.reduce((a, b) => a + b.w, 0);
 const BOUNDS: [number, number][] = (() => {
@@ -549,22 +549,14 @@ function PublishFrame({ phase, onPublish }: { phase: number; onPublish: () => vo
   const published = phase >= 1;
   return (
     <div className={`w-full max-w-2xl mx-auto ${FIT}`}>
-      {/* two-state head, crisp swap */}
-      <div className="relative mb-6" style={{ minHeight: 200 }}>
-        <div className="absolute inset-x-0 top-0" style={{ opacity: published ? 0 : 1, transition: `opacity ${CUT_MS}ms ${EASE}` }}>
-          <StepHead kicker="Step 04 · The publish" accent={ORANGE} title="All agreed. One move left." />
-        </div>
-        <div className="absolute inset-x-0 top-0" style={{ opacity: published ? 1 : 0, transition: `opacity ${CUT_MS}ms ${EASE} 80ms` }}>
-          <StepHead kicker="Step 04 · The publish" accent={ORANGE} title="One click from agreement to promotion and sales." copy="INFITRA takes care of everything in between." />
-        </div>
-      </div>
-
-      <div className="relative" style={{ minHeight: 460 }}>
-        {/* state 1 — full focus on the CTA */}
+      {/* two full states, each its own centered column — crisp swap */}
+      <div className="relative" style={{ minHeight: 620 }}>
+        {/* state 1 — head and CTA travel together, one tight group */}
         <div
           className="absolute inset-0 flex flex-col items-center justify-center"
           style={{ opacity: published ? 0 : 1, transform: published ? "translateY(-14px)" : "none", transition: `opacity ${CUT_MS}ms ${EASE}, transform ${CUT_MS}ms ${EASE}`, pointerEvents: published ? "none" : "auto" }}
         >
+          <StepHead kicker="Step 04 · The publish" accent={ORANGE} title="All agreed. One move left." />
           <button
             type="button"
             onClick={onPublish}
@@ -581,6 +573,9 @@ function PublishFrame({ phase, onPublish }: { phase: number; onPublish: () => vo
           className="absolute inset-0 flex flex-col justify-center gap-3 text-left"
           style={{ opacity: published ? 1 : 0, transition: `opacity ${CUT_MS}ms ${EASE} 100ms`, pointerEvents: published ? "auto" : "none" }}
         >
+          <div className="text-center">
+            <StepHead kicker="Step 04 · The publish" accent={ORANGE} title="One click from agreement to promotion and sales." copy="INFITRA takes care of everything in between." />
+          </div>
           {HANDLED.map(({ t, d, icon, color }, i) => (
             <Pop key={t} show={published} d={250 + i * CASCADE_MS} from="translateY(16px) scale(0.97)">
               <div className="flex items-center gap-4 rounded-2xl px-5 py-4" style={{ backgroundColor: "#FFFFFF", boxShadow: CARD_POP }}>
@@ -614,11 +609,11 @@ function OutroFrame({ instant = false }: { instant?: boolean }) {
           <defs>
             <linearGradient id="ecgGrad" x1="0" y1="0" x2="1" y2="0">
               <stop offset="0%" stopColor={CYAN} />
-              <stop offset="55%" stopColor={CYAN} />
+              <stop offset="38%" stopColor={CYAN} />
+              <stop offset="60%" stopColor={ORANGE} />
               <stop offset="100%" stopColor={ORANGE} />
             </linearGradient>
           </defs>
-          <path d="M0,80 L1200,80" stroke="rgba(15,34,41,0.08)" strokeWidth={2} strokeDasharray="3 7" />
           <path
             d="M0,80 H400 L430,80 L452,18 L478,142 L502,80 H740 L772,80 L794,24 L820,136 L844,80 H1200"
             stroke="url(#ecgGrad)"
@@ -720,6 +715,7 @@ export function HowItWorks() {
     let settledSince = 0;
     let lastStepT = 0;
     let prevCovering = false;
+    let ecgShown = 0; // eased heartbeat draw
 
     const step = (next: number, now: number) => {
       lastStepT = now;
@@ -847,11 +843,13 @@ export function HowItWorks() {
       const sp = clamp01((bMid - STEP_SPAN[0]) / (STEP_SPAN[1] - STEP_SPAN[0]));
       if (railFillRef.current) railFillRef.current.style.height = `${(sp * 100).toFixed(1)}%`;
 
-      // the heartbeat draws from live position — natively smooth
+      // the heartbeat draws from live position, eased — smooth but energetic
       const [oa, ob] = BOUNDS[last];
       const draw = clamp01((pos - oa) / ((ob - oa) * 0.75));
+      ecgShown += (draw - ecgShown) * 0.11;
+      if (Math.abs(draw - ecgShown) < 0.001) ecgShown = draw;
       frameRefs.current[5]?.querySelectorAll<SVGPathElement>("[data-ecg]").forEach((path) => {
-        path.style.strokeDashoffset = String(1 - draw);
+        path.style.strokeDashoffset = String(1 - ecgShown);
       });
     };
     raf = requestAnimationFrame(loop);
@@ -910,7 +908,7 @@ export function HowItWorks() {
           <DarkWaves hidden={isOutro} />
 
           {/* Rail — desktop */}
-          <div className="hidden lg:flex absolute left-8 xl:left-14 top-1/2 -translate-y-1/2 z-20 items-stretch gap-5" style={{ opacity: frame >= 1 && frame <= 4 ? 1 : 0.2, transition: "opacity 400ms ease" }}>
+          <div className="hidden lg:flex absolute left-8 xl:left-14 top-1/2 -translate-y-1/2 z-20 items-stretch gap-5" style={{ opacity: frame >= 1 && frame <= 4 ? 1 : 0, transition: "opacity 400ms ease" }}>
             <div className="relative w-[3px] rounded-full" style={{ backgroundColor: "rgba(255,255,255,0.16)" }}>
               <div ref={railFillRef} className="absolute top-0 left-0 w-full rounded-full" style={{ height: "0%", backgroundColor: ORANGE, boxShadow: "0 0 10px rgba(255,97,48,0.45)", transition: `height 600ms ${EASE}` }} />
             </div>
