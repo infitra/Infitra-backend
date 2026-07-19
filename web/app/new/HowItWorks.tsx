@@ -24,6 +24,7 @@ const BEAT_VH = 70; // runway per beat unit
 const PUSH_SPEED = 0.35; // px/ms — a deliberate swipe reads at/above this
 const REARM_SPEED = 0.15; // px/ms — speed must fall below this before the next push counts
 const ACCEL_REARM = 0.3; // px/ms jump frame-over-frame = a fresh human push mid-tail
+const ACCEL_GRACE_MS = 250; // ignore acceleration re-arms this soon after a cut (same gesture's ramp)
 const SETTLE_SPEED = 0.05; // px/ms — below this the reader has stopped
 const SETTLE_MS = 140; // rest this long before the silent re-anchor
 const STEP_GAP_MS = 320; // minimum time between beat cuts
@@ -738,8 +739,16 @@ export function HowItWorks() {
       vel = vel * 0.65 + inst * 0.35;
       const speed = Math.abs(vel);
       const instAbs = Math.abs(inst);
-      // momentum only decays — a frame-over-frame acceleration is a human push
-      if (instAbs > lastInstAbs + ACCEL_REARM) armed = true;
+      // momentum only decays — a genuine frame-over-frame acceleration is a
+      // human push. It must clearly beat the current speed (fast flings are
+      // noisy) and can't be the same gesture's own ramp right after a cut.
+      if (
+        instAbs > lastInstAbs + ACCEL_REARM &&
+        instAbs > speed * 1.5 + 0.2 &&
+        now - lastStepT > ACCEL_GRACE_MS
+      ) {
+        armed = true;
+      }
       lastInstAbs = instAbs;
 
       const r = el.getBoundingClientRect();
@@ -801,8 +810,13 @@ export function HowItWorks() {
             const wantsAnchor = bNow !== last || pos < BOUNDS[last][0] + 0.02;
             const targetY = y + r.top + (anchor / TOTAL_W) * total;
             if (wantsAnchor && Math.abs(targetY - y) > 24) {
-              window.scrollTo({ top: targetY, behavior: "auto" });
-              prevY = targetY; // the correction is not motion
+              // "instant", NOT "auto": the page CSS sets scroll-behavior:
+              // smooth, and "auto" defers to it — the correction would
+              // become an animated scroll the pace car reads as a push
+              window.scrollTo({ top: targetY, behavior: "instant" });
+              prevY = window.scrollY; // the correction is not motion
+              vel = 0;
+              lastInstAbs = 0;
             }
             settledSince = 0;
           }
