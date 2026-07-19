@@ -5,41 +5,41 @@ import { INK, ORANGE, CYAN, MUTED, FAINT, PRODUCT_SHADOW } from "./ui";
 import { type BeatDef, useBeatChapter, computeBounds, Pop, CUT_MS, CASCADE_MS, EASE, FIT } from "./chapterEngine";
 
 /**
- * ACT 2 · ONE LIVE WEEK — the pinned time-thread chapter.
+ * ACT 2 · DESIGNED TO FEEL ALIVE — the mechanics chapter.
  *
- * The heartbeat promised something alive; this chapter delivers it in the
- * same beat grammar as Act 1, with one inversion: in Act 1 YOU acted —
- * here the experience acts on its own. The rail is a CLOCK (Week 2 of the
- * real flagship, its real session titles and times), and every beat is an
- * event ARRIVING: the pulse lands, the room goes live, the loop breathes,
- * a question finds its expert, the week turns. Light world — the published
- * experience lives in daylight, on the brand waves.
- *
- * Truth guardrails: only real UI compositions (space header, session rows,
- * live room, Q&A), pilot-scale numbers, the one flagship experience.
+ * Not a scripted week (that would quietly claim the outcome) — a
+ * demonstration of the MACHINE that invites engagement. Real people bring
+ * the life; the space gives them every reason and every rail. Each beat is
+ * one mechanic doing its job, cause → visible effect: sessions land in the
+ * calendar (and open into the live room), built-in prompts fill the tribe
+ * feed, and a question asked inside a post makes the full round-trip —
+ * member composer → creator's bell + console → answered once, pinned for
+ * all. Every surface is a port of the real product UI (bell dropdown,
+ * WAITING ON YOU console card, the QUESTION FOR / ANSWERED BY post — with
+ * Alex's real answer copy).
  */
 
-/* ── The week's beats ──────────────────────────────────────── */
+/* ── The beats — one mechanic per frame ────────────────────── */
 const BEATS: BeatDef[] = [
-  { f: 0, p: 0, w: 1 }, // intro — the chapter title
+  { f: 0, p: 0, w: 1 }, // intro
   { f: 1, p: 0, w: 1.1 }, // the space, real
-  { f: 2, p: 0, w: 1 }, // Tuesday — the pulse lands
-  { f: 2, p: 1, w: 1.1 }, // 13:00 — it goes live
-  { f: 3, p: 0, w: 1 }, // after — the loop breathes
-  { f: 4, p: 0, w: 1 }, // Thursday — a question
-  { f: 4, p: 1, w: 1.1 }, // — finds its expert
-  { f: 5, p: 0, w: 1.2 }, // Sunday — the week turns
-  { f: 6, p: 0, w: 1.8 }, // outro — the handoff glide
+  { f: 2, p: 0, w: 1 }, // your calendar
+  { f: 2, p: 1, w: 1.1 }, // — one click into the room
+  { f: 3, p: 0, w: 1 }, // the feed's drivers
+  { f: 3, p: 1, w: 1.1 }, // — the feed fills
+  { f: 4, p: 0, w: 1 }, // ask: member composer
+  { f: 4, p: 1, w: 1.1 }, // ask: it finds the creator
+  { f: 4, p: 2, w: 1.1 }, // ask: answered once
+  { f: 5, p: 0, w: 1.8 }, // outro — alive by design
 ];
 const BOUNDS = computeBounds(BEATS);
-const STEP_SPAN: [number, number] = [BOUNDS[1][0], BOUNDS[7][1]];
+const STEP_SPAN: [number, number] = [BOUNDS[1][0], BOUNDS[8][1]];
 
 const RAIL = [
-  { time: "Week 2", label: "The space", frame: 1, firstBeat: 1 },
-  { time: "Tue · 13:00", label: "It goes live", frame: 2, firstBeat: 2 },
-  { time: "Tue · later", label: "The loop", frame: 3, firstBeat: 4 },
-  { time: "Thu", label: "Ask your expert", frame: 4, firstBeat: 5 },
-  { time: "Sun", label: "The week turns", frame: 5, firstBeat: 7 },
+  { n: "01", label: "The space", frame: 1, firstBeat: 1 },
+  { n: "02", label: "Your calendar", frame: 2, firstBeat: 2 },
+  { n: "03", label: "The tribe feed", frame: 3, firstBeat: 4 },
+  { n: "04", label: "Ask your expert", frame: 4, firstBeat: 6 },
 ];
 
 /* ── Small shared bits ─────────────────────────────────────── */
@@ -55,8 +55,47 @@ const CHEVRON_DOWN = (
   </svg>
 );
 
-/** Light-world step head — the time-thread's voice. */
-function TimeHead({ kicker, accent, title, copy }: { kicker: string; accent: string; title: string; copy?: string }) {
+const ICON_BELL = (color: string, size = 16) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+    <path d="M13.7 21a2 2 0 0 1-3.4 0" />
+  </svg>
+);
+
+const ICON_MIC = (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <rect x="9" y="2" width="6" height="12" rx="3" />
+    <path d="M5 10a7 7 0 0 0 14 0M12 17v4" />
+  </svg>
+);
+
+const ICON_CAM = (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <path d="M23 7l-7 5 7 5V7z" />
+    <rect x="1" y="5" width="15" height="14" rx="2" />
+  </svg>
+);
+
+const ICON_LEAVE = (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <path d="M10.7 5.8A15 15 0 0 1 12 5.7c5.5 0 10 2.7 10 6 0 .9-.3 1.7-.9 2.4l-3.4-1.4v-2.2a13 13 0 0 0-11.4 0v2.2L2.9 14.1A3.6 3.6 0 0 1 2 11.7c0-3.3 4.5-6 10-6z" />
+  </svg>
+);
+
+const ICON_HEART = (color: string) => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z" />
+  </svg>
+);
+
+const ICON_COMMENT = (color: string) => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5c-1.6 0-3.1-.4-4.4-1.2L3 20l1.2-5.1A8.5 8.5 0 1 1 21 11.5z" />
+  </svg>
+);
+
+/** Light-world step head. */
+function MechHead({ kicker, accent, title, copy }: { kicker: string; accent: string; title: string; copy?: string }) {
   return (
     <div className="mb-8 text-center">
       <p className="text-[10.5px] uppercase tracking-[0.25em] font-headline mb-3.5" style={{ color: accent, fontWeight: 800 }}>
@@ -74,13 +113,11 @@ function TimeHead({ kicker, accent, title, copy }: { kicker: string; accent: str
   );
 }
 
-/** Ambient typing dots — life that doesn't wait for a push. */
-function Typing() {
+/** Member / creator perspective chip. */
+function ViewChip({ label, color }: { label: string; color: string }) {
   return (
-    <span className="inline-flex items-center gap-1" aria-hidden>
-      {[0, 1, 2].map((i) => (
-        <span key={i} className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ backgroundColor: FAINT, animationDelay: `${i * 0.16}s` }} />
-      ))}
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] uppercase tracking-widest font-headline" style={{ color, backgroundColor: `${color}14`, fontWeight: 800 }}>
+      {label}
     </span>
   );
 }
@@ -139,7 +176,7 @@ function SpaceHeader() {
   );
 }
 
-/* ── Session row — the journey's agenda card ───────────────── */
+/* ── Session row ───────────────────────────────────────────── */
 function SessionRow({ img, title, host, state, right }: { img: string; title: string; host: string; state: "done" | "next" | "upcoming"; right?: string }) {
   const isNext = state === "next";
   return (
@@ -176,13 +213,13 @@ function SessionRow({ img, title, host, state, right }: { img: string; title: st
   );
 }
 
-/* ── The journey block — ghost week type + dots + rows ─────── */
+/* ── The journey block ─────────────────────────────────────── */
 function Journey({ week, theme }: { week: number; theme: string }) {
   return (
     <div className="text-left">
       <p className="text-[8px] uppercase tracking-[0.2em] font-headline" style={{ color: FAINT, fontWeight: 800 }}>The journey</p>
       <p className="font-headline leading-none mt-1" style={{ fontWeight: 800, letterSpacing: "-0.02em" }} aria-hidden>
-        <span className="text-[27px]" style={{ color: INK, transition: `color ${CUT_MS}ms ${EASE}` }}>WEEK {week} </span>
+        <span className="text-[27px]" style={{ color: INK }}>WEEK {week} </span>
         <span className="text-[27px]" style={{ color: "rgba(15,34,41,0.18)" }}>OF {EX.weeks}</span>
       </p>
       <p className="text-[10px] uppercase tracking-[0.16em] font-headline mt-1" style={{ color: ORANGE, fontWeight: 800 }}>{theme}</p>
@@ -193,8 +230,8 @@ function Journey({ week, theme }: { week: number; theme: string }) {
               className="shrink-0 rounded-full"
               style={
                 i === week - 1
-                  ? { width: 12, height: 12, backgroundColor: ORANGE, boxShadow: "0 0 0 3px rgba(255,97,48,0.20)", transition: `all ${CUT_MS}ms ${EASE}` }
-                  : { width: 7, height: 7, backgroundColor: i < week - 1 ? "rgba(255,97,48,0.5)" : "rgba(15,34,41,0.14)", transition: `all ${CUT_MS}ms ${EASE}` }
+                  ? { width: 12, height: 12, backgroundColor: ORANGE, boxShadow: "0 0 0 3px rgba(255,97,48,0.20)" }
+                  : { width: 7, height: 7, backgroundColor: i < week - 1 ? "rgba(255,97,48,0.5)" : "rgba(15,34,41,0.14)" }
               }
             />
             {i < EX.arc.length - 1 && <span className="flex-1 h-px" style={{ backgroundColor: "rgba(15,34,41,0.10)" }} />}
@@ -233,8 +270,8 @@ function TribePost({ initial, color, name, when, text, chip }: { initial: string
 function SpaceFrame() {
   return (
     <div className={`w-full max-w-2xl mx-auto ${FIT}`}>
-      <TimeHead
-        kicker={`Week ${ROOM.week} · The space`}
+      <MechHead
+        kicker="01 · The space"
         accent={CYAN}
         title="The room your tribe lives in."
         copy="Not a video library — the space you published, live in its second week."
@@ -254,61 +291,83 @@ function SpaceFrame() {
   );
 }
 
-/* ══ Frame 2 · Tuesday — the pulse, then LIVE ═══════════════ */
-function LiveFrame({ phase }: { phase: number }) {
+/* ══ Frame 2 · Your calendar → the live room ════════════════ */
+
+const CAL_DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
+const CAL_ENTRIES: Record<string, { title: string; color: string; hot?: boolean }> = {
+  Mon: { title: ROOM.done.title, color: CYAN },
+  Tue: { title: ROOM.next.title, color: ORANGE, hot: true },
+  Thu: { title: ROOM.upcoming.title, color: CYAN },
+};
+
+function CalendarFrame({ phase }: { phase: number }) {
   const live = phase >= 1;
   return (
     <div className={`w-full max-w-2xl mx-auto ${FIT}`}>
       {/* two-state head */}
       <div className="relative mb-8" style={{ minHeight: 150 }}>
         <div className="absolute inset-x-0 top-0" style={{ opacity: live ? 0 : 1, transition: `opacity ${CUT_MS}ms ${EASE}` }}>
-          <TimeHead
-            kicker="Tuesday · before the session"
+          <MechHead
+            kicker="02 · Your calendar"
             accent={ORANGE}
-            title="The space warms up."
-            copy="A pulse lands before every session — the tribe arrives ready."
+            title="Every session lands in your calendar."
+            copy="Synced the moment someone joins — 20 live moments, never missed."
           />
         </div>
         <div className="absolute inset-x-0 top-0" style={{ opacity: live ? 1 : 0, transition: `opacity ${CUT_MS}ms ${EASE} 80ms` }}>
-          <TimeHead
-            kicker="Tuesday · 13:00"
+          <MechHead
+            kicker="And when it's time"
             accent="#ef4444"
-            title="It goes live."
+            title="One click into the room."
             copy="No links, no logins — the room opens from the space."
           />
         </div>
       </div>
 
       <div className="relative" style={{ minHeight: 420 }}>
-        {/* state 1 — the pulse card + tonight's session */}
+        {/* state 1 — the calendar week */}
         <div
-          className="absolute inset-0 flex flex-col justify-center gap-3"
+          className="absolute inset-0 flex flex-col justify-center"
           style={{ opacity: live ? 0 : 1, transform: live ? "translateY(-14px)" : "none", transition: `opacity ${CUT_MS}ms ${EASE}, transform ${CUT_MS}ms ${EASE}`, pointerEvents: "none" }}
         >
-          <SessionRow img={ROOM.next.img} title={ROOM.next.title} host={ROOM.next.host} state="next" right="Today · 13:00" />
-          <div className="rounded-2xl p-4 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.06), inset 3.5px 0 0 " + ORANGE }}>
-            <p className="text-[9px] uppercase tracking-[0.16em] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>
-              Before today · 12:00
-            </p>
-            <p className="text-[12.5px] font-bold font-headline leading-snug mt-1.5" style={{ color: INK }}>
-              {ROOM.next.title} — how ready are you?
-            </p>
-            <div className="mt-3 relative h-1.5 rounded-full" style={{ backgroundColor: "rgba(15,34,41,0.08)" }}>
-              <div className="absolute inset-y-0 left-0 rounded-full" style={{ width: "80%", backgroundColor: CYAN }} />
-              <span className="absolute -top-[4px] w-3.5 h-3.5 rounded-full" style={{ left: "77%", backgroundColor: "#FFFFFF", boxShadow: `0 0 0 2px ${CYAN}` }} />
+          <div className="rounded-3xl p-5" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }} aria-hidden>
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-[10px] uppercase tracking-[0.2em] font-headline" style={{ color: FAINT, fontWeight: 800 }}>
+                Your calendar · Week {ROOM.week}
+              </p>
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-headline" style={{ color: "#16a34a", backgroundColor: "rgba(22,163,74,0.08)", fontWeight: 800 }}>
+                {CHECK("#16a34a", 10)} Synced · all {EX.sessions} sessions
+              </span>
             </div>
-            <div className="flex items-center justify-between mt-1.5">
-              <span className="text-[8.5px]" style={{ color: FAINT }}>0</span>
-              <span className="text-[10px] font-black font-headline" style={{ color: CYAN }}>8 / 10</span>
-              <span className="text-[8.5px]" style={{ color: FAINT }}>10</span>
+            <div className="grid grid-cols-7 gap-1.5">
+              {CAL_DAYS.map((d) => {
+                const e = CAL_ENTRIES[d];
+                return (
+                  <div key={d} className="min-h-[104px] rounded-xl p-1.5 flex flex-col" style={{ backgroundColor: "#FAF8F3", boxShadow: "0 0 0 1px rgba(15,34,41,0.04)" }}>
+                    <span className="text-[8.5px] uppercase tracking-widest font-headline text-center" style={{ color: FAINT, fontWeight: 800 }}>{d}</span>
+                    {e && (
+                      <div
+                        className="mt-1.5 rounded-lg px-1.5 py-1.5 text-left"
+                        style={{
+                          backgroundColor: `${e.color}${e.hot ? "14" : "0D"}`,
+                          boxShadow: e.hot ? `0 0 0 1.5px ${e.color}4D` : `inset 2px 0 0 ${e.color}`,
+                        }}
+                      >
+                        <span className="block text-[8px] font-black font-headline" style={{ color: e.color }}>13:00</span>
+                        <span className="block text-[8.5px] font-bold leading-tight mt-0.5" style={{ color: INK }}>{e.title}</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
+            <p className="text-[10.5px] font-bold font-headline mt-4 text-center" style={{ color: FAINT }}>
+              With reminders — the structure follows your tribe out of the app.
+            </p>
           </div>
-          <p className="text-center text-[12px] font-bold font-headline" style={{ color: FAINT }}>
-            Sam · just now — &ldquo;Session 5 ✓ — see everyone at 13:00!&rdquo;
-          </p>
         </div>
 
-        {/* state 2 — the live room */}
+        {/* state 2 — the live room, everyone an equal tile */}
         <div
           className="absolute inset-0 flex flex-col justify-center"
           style={{ opacity: live ? 1 : 0, transition: `opacity ${CUT_MS}ms ${EASE} 100ms`, pointerEvents: "none" }}
@@ -320,137 +379,311 @@ function LiveFrame({ phase }: { phase: number }) {
                 <span className="truncate" style={{ color: "#FFFFFF" }}>Live — {ROOM.next.title}</span>
               </span>
               <span className="text-[9px] uppercase tracking-widest font-headline shrink-0" style={{ color: "#9CF0FF", fontWeight: 800 }}>
-                Week {ROOM.week} of {EX.weeks}
+                8 in the room · Week {ROOM.week} of {EX.weeks}
               </span>
             </div>
             <div className="p-3 grid grid-cols-4 gap-2">
               {[
-                { p: ALEX, color: ORANGE },
-                { p: MIRA, color: CYAN },
-              ].map(({ p, color }) => (
-                <div key={p.name} className="relative col-span-2 aspect-[16/10] rounded-xl overflow-hidden" style={{ backgroundColor: "#16323b" }}>
+                { kind: "host" as const, p: ALEX, color: ORANGE },
+                { kind: "member" as const, i: "A" },
+                { kind: "member" as const, i: "S" },
+                { kind: "host" as const, p: MIRA, color: CYAN },
+                { kind: "member" as const, i: "L" },
+                { kind: "member" as const, i: "J" },
+                { kind: "member" as const, i: "M" },
+                { kind: "member" as const, i: "E" },
+              ].map((t, idx) =>
+                t.kind === "host" ? (
+                  <div key={idx} className="relative aspect-[16/11] rounded-xl overflow-hidden" style={{ backgroundColor: "#16323b" }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={t.p.avatar} alt="" className="absolute inset-0 w-full h-full object-cover" />
+                    <span className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded-full text-[7px] font-headline" style={{ backgroundColor: "rgba(15,34,41,0.75)", color: "#FFFFFF", fontWeight: 800 }}>
+                      {t.p.first} · <span style={{ color: t.color }}>HOST</span>
+                    </span>
+                  </div>
+                ) : (
+                  <div key={idx} className="aspect-[16/11] rounded-xl flex items-center justify-center" style={{ backgroundColor: "#16323b" }}>
+                    <span className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-headline" style={{ backgroundColor: "rgba(156,240,255,0.12)", color: "#9CF0FF", fontWeight: 800 }}>
+                      {t.i}
+                    </span>
+                  </div>
+                ),
+              )}
+            </div>
+            <div className="flex items-center justify-center gap-2.5 pb-3.5 pt-0.5">
+              <span className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(255,255,255,0.14)" }}>{ICON_MIC}</span>
+              <span className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(255,255,255,0.14)" }}>{ICON_CAM}</span>
+              <span className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(239,68,68,0.85)" }}>{ICON_LEAVE}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ══ Frame 3 · What fills the feed ══════════════════════════ */
+function FeedFrame({ phase }: { phase: number }) {
+  const filled = phase >= 1;
+  return (
+    <div className={`w-full max-w-4xl mx-auto ${FIT}`}>
+      <MechHead
+        kicker="03 · The tribe feed"
+        accent={CYAN}
+        title="The feed doesn't wait for luck."
+        copy="Built-in prompts do the asking — a pulse before each session, a reflection after, sharing anytime. Watch them fill it."
+      />
+      <div className="grid md:grid-cols-[1fr_1.1fr] gap-4 items-start text-left" aria-hidden>
+        {/* the drivers */}
+        <div className="space-y-3">
+          {[
+            {
+              k: "Pulse · before each session",
+              color: ORANGE,
+              body: (
+                <>
+                  <p className="text-[12.5px] font-bold font-headline leading-snug" style={{ color: INK }}>
+                    {ROOM.next.title} — how ready are you?
+                  </p>
+                  <div className="mt-2.5 relative h-1.5 rounded-full" style={{ backgroundColor: "rgba(15,34,41,0.08)" }}>
+                    <div className="absolute inset-y-0 left-0 rounded-full" style={{ width: "80%", backgroundColor: CYAN }} />
+                    <span className="absolute -top-[4px] w-3.5 h-3.5 rounded-full" style={{ left: "77%", backgroundColor: "#FFFFFF", boxShadow: `0 0 0 2px ${CYAN}` }} />
+                  </div>
+                </>
+              ),
+              delay: 250,
+            },
+            {
+              k: "Reflection · after each session",
+              color: CYAN,
+              body: (
+                <p className="text-[12.5px] font-bold font-headline leading-snug" style={{ color: INK }}>
+                  How was &ldquo;{ROOM.next.title}&rdquo;?
+                </p>
+              ),
+              delay: 250 + CASCADE_MS,
+            },
+            {
+              k: "Share · anytime",
+              color: CYAN,
+              body: (
+                <div className="rounded-full px-3.5 py-2 text-[10.5px]" style={{ backgroundColor: "#F8F6F0", color: FAINT }}>
+                  Share with your Tribe…
+                </div>
+              ),
+              delay: 250 + CASCADE_MS * 2,
+            },
+          ].map(({ k, color, body, delay }) => (
+            <div
+              key={k}
+              className="rounded-2xl p-4"
+              style={{
+                backgroundColor: "#FFFFFF",
+                boxShadow: filled
+                  ? `0 0 0 2px ${color}59, 0 12px 30px rgba(15,34,41,0.08), inset 3.5px 0 0 ${color}`
+                  : "0 0 0 1px rgba(15,34,41,0.06), inset 3.5px 0 0 " + color,
+                transition: `box-shadow ${CUT_MS}ms ${EASE} ${delay}ms`,
+              }}
+            >
+              <p className="text-[9px] uppercase tracking-[0.16em] font-headline mb-1.5" style={{ color, fontWeight: 800 }}>{k}</p>
+              {body}
+            </div>
+          ))}
+        </div>
+
+        {/* the effect — the feed */}
+        <div className="space-y-2">
+          <p className="text-[9px] uppercase tracking-[0.2em] font-headline" style={{ color: FAINT, fontWeight: 800 }}>The tribe feed</p>
+          <Pop show={filled} d={250}>
+            <TribePost initial="L" color={ORANGE} name="Lea" when="12:04" text="Ready! Legs still remembering Monday though 😅" chip="Pulse · 8/10" />
+          </Pop>
+          <Pop show={filled} d={250 + CASCADE_MS}>
+            <TribePost initial="A" color={CYAN} name="Anna" when="14:12" text="That last set — didn't think I had it in me. This group 🔥" chip="Energy after · 9/10" />
+          </Pop>
+          <Pop show={filled} d={250 + CASCADE_MS * 2}>
+            <TribePost initial="S" color={ORANGE} name="Sam" when="16:40" text="Meal-prepped Mira's plate formula for the week. Photo in the thread ✓" />
+          </Pop>
+          <Pop show={filled} d={250 + CASCADE_MS * 3}>
+            <p className="text-[10.5px] font-bold font-headline text-center pt-1" style={{ color: FAINT }}>
+              Every prompt becomes a post — the feed keeps its own rhythm.
+            </p>
+          </Pop>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ══ Frame 4 · Ask your expert — the full round-trip ════════ */
+function AskFrame({ phase }: { phase: number }) {
+  return (
+    <div className={`w-full max-w-2xl mx-auto ${FIT}`}>
+      {/* three-state head */}
+      <div className="relative mb-8" style={{ minHeight: 150 }}>
+        {[
+          {
+            on: phase === 0,
+            kicker: "04 · Ask your expert — member view",
+            accent: CYAN,
+            title: "Any post can carry a question.",
+            copy: "Attached inside the post — routed to the expert who owns the topic.",
+          },
+          {
+            on: phase === 1,
+            kicker: "04 · Ask your expert — creator view",
+            accent: ORANGE,
+            title: "It finds you.",
+            copy: "In your bell and on your console — nothing slips through.",
+          },
+          {
+            on: phase >= 2,
+            kicker: "04 · Ask your expert",
+            accent: CYAN,
+            title: "Answered once. Everyone learns.",
+            copy: "Pinned inside the post — visible to the whole tribe.",
+          },
+        ].map((h, i) => (
+          <div key={i} className="absolute inset-x-0 top-0" style={{ opacity: h.on ? 1 : 0, transition: `opacity ${CUT_MS}ms ${EASE} ${h.on ? 80 : 0}ms` }}>
+            <MechHead kicker={h.kicker} accent={h.accent} title={h.title} copy={h.copy} />
+          </div>
+        ))}
+      </div>
+
+      <div className="relative" style={{ minHeight: 430 }}>
+        {/* state 1 — the composer, the mechanic in hand */}
+        <div
+          className="absolute inset-0 flex flex-col justify-center"
+          style={{ opacity: phase === 0 ? 1 : 0, transform: phase === 0 ? "none" : "translateY(-14px)", transition: `opacity ${CUT_MS}ms ${EASE}, transform ${CUT_MS}ms ${EASE}`, pointerEvents: "none" }}
+        >
+          <div className="mx-auto w-full max-w-xl">
+            <div className="mb-3 text-left"><ViewChip label="Member view · Tim" color={CYAN} /></div>
+            <div className="rounded-2xl p-5 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }} aria-hidden>
+              <div className="flex items-center gap-2.5 mb-3">
+                <span className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(8,145,178,0.14)" }}>
+                  <span className="text-[11px] font-headline" style={{ color: CYAN, fontWeight: 800 }}>T</span>
+                </span>
+                <span className="text-[12px] font-headline" style={{ color: INK, fontWeight: 800 }}>New post</span>
+              </div>
+              <div className="rounded-2xl px-4 py-3.5" style={{ backgroundColor: "#F8F6F0" }}>
+                <p className="text-[13px] leading-snug" style={{ color: INK, fontWeight: 600 }}>
+                  {ROOM.qa.question}
+                </p>
+              </div>
+              {/* THE mechanic — the attached, routed question */}
+              <div className="mt-3 rounded-xl px-3.5 py-2.5 flex items-center gap-2" style={{ backgroundColor: "rgba(8,145,178,0.07)", boxShadow: `inset 3px 0 0 ${CYAN}, 0 0 0 1.5px ${CYAN}40` }}>
+                <span className="text-[9px] uppercase tracking-[0.16em] font-headline shrink-0" style={{ color: CYAN, fontWeight: 800 }}>
+                  Question for
+                </span>
+                <span className="w-[18px] h-[18px] rounded-full overflow-hidden shrink-0">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={p.avatar} alt="" className="absolute inset-0 w-full h-full object-cover" />
-                  <span className="absolute bottom-1.5 left-1.5 px-2 py-0.5 rounded-full text-[8px] font-headline" style={{ backgroundColor: "rgba(15,34,41,0.75)", color: "#FFFFFF", fontWeight: 800 }}>
-                    {p.first} · <span style={{ color }}>HOST</span>
-                  </span>
-                </div>
-              ))}
-              {["A", "S", "L", "J"].map((i) => (
-                <div key={i} className="aspect-[16/10] rounded-xl flex items-center justify-center" style={{ backgroundColor: "#16323b" }}>
-                  <span className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-headline" style={{ backgroundColor: "rgba(156,240,255,0.12)", color: "#9CF0FF", fontWeight: 800 }}>
-                    {i}
-                  </span>
-                </div>
-              ))}
-            </div>
-            <div className="flex items-center justify-center gap-2.5 pb-3.5">
-              {["rgba(255,255,255,0.16)", "rgba(255,255,255,0.16)", "rgba(239,68,68,0.85)"].map((c, i) => (
-                <span key={i} className="w-7 h-7 rounded-full" style={{ backgroundColor: c }} />
-              ))}
+                  <img src={ALEX.avatar} alt="" className="w-full h-full object-cover" />
+                </span>
+                <span className="text-[12px] font-headline" style={{ color: INK, fontWeight: 800 }}>{ALEX.name}</span>
+                <span className="ml-auto text-[9px] font-bold shrink-0" style={{ color: FAINT }}>routed ✓</span>
+              </div>
+              <div className="flex items-center justify-between mt-3.5">
+                <span className="text-[10px] font-bold" style={{ color: FAINT }}>Ask an expert · attach to any post</span>
+                <span className="px-5 py-2 rounded-full text-white text-[11px] font-black font-headline" style={{ backgroundColor: ORANGE, boxShadow: "0 4px 12px rgba(255,97,48,0.30)" }}>
+                  Post
+                </span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </div>
-  );
-}
 
-/* ══ Frame 3 · After — the loop breathes ════════════════════ */
-function LoopFrame({ phase }: { phase: number }) {
-  const on = phase >= 0;
-  return (
-    <div className={`w-full max-w-2xl mx-auto ${FIT}`}>
-      <TimeHead
-        kicker="Tuesday · after the session"
-        accent={CYAN}
-        title="The loop breathes."
-        copy="A reflection lands — and the tribe answers each other, not just you."
-      />
-      <div className="flex flex-col gap-3">
-        <Pop show={on} d={150}>
-          <div className="rounded-2xl p-4 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.06), inset 3.5px 0 0 " + CYAN }}>
-            <p className="text-[9px] uppercase tracking-[0.16em] font-headline" style={{ color: CYAN, fontWeight: 800 }}>
-              After the session
-            </p>
-            <p className="text-[12.5px] font-bold font-headline leading-snug mt-1.5" style={{ color: INK }}>
-              How was &ldquo;{ROOM.next.title}&rdquo;?
-            </p>
-            <div className="flex items-center gap-2 mt-2.5">
-              <span className="px-2 py-0.5 rounded-full text-[9px] font-headline" style={{ color: CYAN, backgroundColor: "rgba(8,145,178,0.08)", fontWeight: 800 }}>
-                Energy after · 8/10
-              </span>
-              <span className="text-[10px] flex-1 truncate" style={{ color: FAINT }}>Share a takeaway with the tribe…</span>
-            </div>
-          </div>
-        </Pop>
-        <Pop show={on} d={150 + CASCADE_MS}>
-          <TribePost initial="A" color={CYAN} name="Anna" when="just now" text="That last set — didn't think I had it in me. This group 🔥" chip="Energy after · 9/10" />
-        </Pop>
-        <Pop show={on} d={150 + CASCADE_MS * 2}>
-          <TribePost initial="S" color={ORANGE} name="Sam" when="just now" text="Same. Anna, your pacing tip from week 1 carried me today ✓" />
-        </Pop>
-      </div>
-    </div>
-  );
-}
-
-/* ══ Frame 4 · Thursday — a question finds its expert ═══════ */
-function QAFrame({ phase }: { phase: number }) {
-  const answered = phase >= 1;
-  return (
-    <div className={`w-full max-w-2xl mx-auto ${FIT}`}>
-      <TimeHead
-        kicker="Thursday"
-        accent={CYAN}
-        title="A question finds its expert."
-        copy="Directed to whoever owns the topic — answered once, visible to all."
-      />
-      <div className="rounded-2xl p-5 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }}>
-        <div className="flex gap-2.5">
-          <span className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(255,97,48,0.12)" }}>
-            <span className="text-[11px] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>L</span>
-          </span>
-          <div className="min-w-0">
-            <p className="text-[11.5px] font-headline" style={{ color: INK, fontWeight: 800 }}>
-              {ROOM.qa.asker} <span style={{ color: FAINT, fontWeight: 600 }}>· just now</span>
-            </p>
-            <span className="inline-flex items-center gap-1.5 mt-1 px-2 py-0.5 rounded-full text-[8.5px] font-headline" style={{ color: CYAN, backgroundColor: "rgba(8,145,178,0.08)", fontWeight: 800 }}>
-              Question for
-              <span className="w-3.5 h-3.5 rounded-full overflow-hidden inline-block">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={MIRA.avatar} alt="" className="w-full h-full object-cover" />
-              </span>
-              {MIRA.first}
-            </span>
-            <p className="text-[13px] leading-snug mt-2" style={{ color: INK, fontWeight: 600 }}>
-              {ROOM.qa.question}
-            </p>
-          </div>
-        </div>
-
-        {/* typing… then the pinned coach answer */}
-        <div className="mt-4" style={{ minHeight: 128 }}>
-          {!answered ? (
-            <div className="flex items-center gap-2 px-4 py-3">
-              <span className="shrink-0 w-6 h-6 rounded-full overflow-hidden" style={{ border: `1.5px solid ${CYAN}59` }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={MIRA.avatar} alt="" className="w-full h-full object-cover" />
-              </span>
-              <Typing />
-              <span className="text-[10px] font-bold" style={{ color: FAINT }}>{MIRA.first} is answering…</span>
-            </div>
-          ) : (
-            <Pop show d={80}>
-              <div className="rounded-2xl p-4" style={{ backgroundColor: "rgba(8,145,178,0.06)", boxShadow: "inset 3.5px 0 0 " + CYAN }}>
-                <div className="flex items-center gap-2">
-                  <span className="shrink-0 w-7 h-7 rounded-full overflow-hidden" style={{ border: `1.5px solid ${CYAN}59` }}>
+        {/* state 2 — the creator's bell + console */}
+        <div
+          className="absolute inset-0 flex flex-col justify-center"
+          style={{ opacity: phase === 1 ? 1 : 0, transform: phase === 1 ? "none" : "translateY(14px)", transition: `opacity ${CUT_MS}ms ${EASE} ${phase === 1 ? 80 : 0}ms, transform ${CUT_MS}ms ${EASE} ${phase === 1 ? 80 : 0}ms`, pointerEvents: "none" }}
+        >
+          <div className="mx-auto w-full max-w-xl">
+            <div className="mb-3 text-left"><ViewChip label={`Creator view · ${ALEX.first}`} color={ORANGE} /></div>
+            <div className="rounded-2xl overflow-hidden text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }} aria-hidden>
+              {/* console top bar with the bell */}
+              <div className="flex items-center justify-between px-4 py-2.5" style={{ backgroundColor: "#FAF8F3", borderBottom: "1px solid rgba(15,34,41,0.06)" }}>
+                <span className="px-3.5 py-1.5 rounded-full text-white text-[9.5px] uppercase tracking-widest font-headline" style={{ backgroundColor: ORANGE, fontWeight: 800 }}>
+                  + Create
+                </span>
+                <span className="flex items-center gap-2.5">
+                  <span className="relative">
+                    {ICON_BELL(INK, 16)}
+                    <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: ORANGE, border: "1.5px solid #FAF8F3" }} />
+                  </span>
+                  <span className="text-[11px] font-headline" style={{ color: INK, fontWeight: 800 }}>{ALEX.name}</span>
+                </span>
+              </div>
+              {/* the notifications dropdown — real port */}
+              <div className="px-4 pt-3 pb-1.5 flex items-center justify-between">
+                <span className="text-[10px] uppercase tracking-[0.16em] font-headline" style={{ color: INK, fontWeight: 800 }}>Notifications</span>
+                <span className="text-[9px] uppercase tracking-widest font-headline" style={{ color: FAINT, fontWeight: 800 }}>Mark all read</span>
+              </div>
+              <div className="px-2 pb-2">
+                <div className="rounded-xl px-3 py-2.5 flex items-center gap-2.5" style={{ backgroundColor: "rgba(255,97,48,0.06)", boxShadow: `inset 3px 0 0 ${ORANGE}` }}>
+                  <span className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(8,145,178,0.14)" }}>
+                    <span className="text-[10px] font-headline" style={{ color: CYAN, fontWeight: 800 }}>T</span>
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[12px] font-headline leading-tight" style={{ color: INK, fontWeight: 800 }}>{ROOM.qa.asker} asked you a question</span>
+                    <span className="block text-[10.5px] mt-0.5" style={{ color: MUTED }}>Open your Tribe to answer</span>
+                  </span>
+                  <span className="shrink-0 text-[9px] font-bold" style={{ color: FAINT }}>just now</span>
+                </div>
+                <div className="rounded-xl px-3 py-2.5 flex items-center gap-2.5 mt-1 opacity-60" style={{ boxShadow: `inset 3px 0 0 ${CYAN}` }}>
+                  <span className="shrink-0 w-7 h-7 rounded-full overflow-hidden">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={MIRA.avatar} alt="" className="w-full h-full object-cover" />
                   </span>
-                  <span className="text-[11.5px] font-headline" style={{ color: INK, fontWeight: 800 }}>{MIRA.name}</span>
-                  <span className="px-2 py-0.5 rounded-full text-[8px] uppercase tracking-widest font-headline text-white" style={{ backgroundColor: CYAN, fontWeight: 800 }}>
-                    Coach answer
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[12px] font-headline leading-tight" style={{ color: INK, fontWeight: 800 }}>{MIRA.name} accepted the terms</span>
+                    <span className="block text-[10.5px] mt-0.5 truncate" style={{ color: MUTED }}>When everyone has accepted, you can publish</span>
+                  </span>
+                  <span className="shrink-0 text-[9px] font-bold" style={{ color: FAINT }}>19h</span>
+                </div>
+              </div>
+            </div>
+            {/* the console card — WAITING ON YOU */}
+            <div className="mt-3 rounded-2xl p-4 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }} aria-hidden>
+              <p className="text-[9px] uppercase tracking-[0.2em] font-headline mb-2" style={{ color: FAINT, fontWeight: 800 }}>Needs you</p>
+              <div className="rounded-xl px-3.5 py-2.5 flex items-center justify-between" style={{ backgroundColor: "rgba(255,97,48,0.06)", boxShadow: "0 0 0 1.5px rgba(255,97,48,0.30)" }}>
+                <span>
+                  <span className="block text-[9px] uppercase tracking-[0.16em] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>Waiting on you</span>
+                  <span className="block text-[13px] font-black font-headline mt-0.5" style={{ color: INK }}>1 question</span>
+                </span>
+                <span className="text-[11px] font-black font-headline" style={{ color: ORANGE }}>Answer →</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* state 3 — the answered post, real port */}
+        <div
+          className="absolute inset-0 flex flex-col justify-center"
+          style={{ opacity: phase >= 2 ? 1 : 0, transform: phase >= 2 ? "none" : "translateY(14px)", transition: `opacity ${CUT_MS}ms ${EASE} ${phase >= 2 ? 80 : 0}ms, transform ${CUT_MS}ms ${EASE} ${phase >= 2 ? 80 : 0}ms`, pointerEvents: "none" }}
+        >
+          <div className="rounded-2xl p-5 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }} aria-hidden>
+            <div className="flex items-center gap-2.5">
+              <span className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(8,145,178,0.14)" }}>
+                <span className="text-[11px] font-headline" style={{ color: CYAN, fontWeight: 800 }}>T</span>
+              </span>
+              <span className="text-[12.5px] font-headline" style={{ color: INK, fontWeight: 800 }}>{ROOM.qa.asker}</span>
+              <span className="ml-auto text-[9.5px] font-bold" style={{ color: FAINT }}>just now</span>
+            </div>
+            <div className="mt-3 rounded-xl px-3.5 py-2 inline-flex items-center gap-2" style={{ backgroundColor: "rgba(8,145,178,0.07)", boxShadow: `inset 3px 0 0 ${CYAN}` }}>
+              <span className="text-[9px] uppercase tracking-[0.16em] font-headline" style={{ color: CYAN, fontWeight: 800 }}>Question for</span>
+              <span className="text-[12px] font-headline" style={{ color: CYAN, fontWeight: 800 }}>{ALEX.name}</span>
+            </div>
+            <p className="text-[13.5px] leading-snug mt-2.5" style={{ color: INK, fontWeight: 600 }}>
+              {ROOM.qa.question}
+            </p>
+            <Pop show={phase >= 2} d={250}>
+              <div className="mt-3.5 rounded-2xl p-4" style={{ backgroundColor: "rgba(255,97,48,0.06)", boxShadow: `inset 3.5px 0 0 ${ORANGE}` }}>
+                <div className="flex items-center gap-2">
+                  <span className="shrink-0 w-7 h-7 rounded-full overflow-hidden" style={{ border: `1.5px solid ${ORANGE}59` }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={ALEX.avatar} alt="" className="w-full h-full object-cover" />
+                  </span>
+                  <span className="text-[10px] uppercase tracking-[0.14em] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>
+                    Answered by {ALEX.name}
                   </span>
                 </div>
                 <p className="text-[12.5px] leading-relaxed mt-2" style={{ color: MUTED }}>
@@ -458,39 +691,31 @@ function QAFrame({ phase }: { phase: number }) {
                 </p>
               </div>
             </Pop>
-          )}
+            <div className="flex items-center gap-4 mt-3.5 pt-3" style={{ borderTop: "1px solid rgba(15,34,41,0.06)" }}>
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold" style={{ color: MUTED }}>{ICON_HEART(MUTED)} Like</span>
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold" style={{ color: MUTED }}>{ICON_COMMENT(MUTED)} 1</span>
+              <span className="ml-auto text-[10px]" style={{ color: FAINT }}>Answered once — visible to the whole tribe.</span>
+            </div>
+          </div>
         </div>
       </div>
-      <Pop show={answered} d={300}>
-        <p className="text-[11px] font-bold font-headline mt-4 text-center" style={{ color: FAINT }}>
-          Answered once — visible to the whole tribe.
-        </p>
-      </Pop>
     </div>
   );
 }
 
-/* ══ Frame 5 · Sunday — the week turns ══════════════════════ */
-function TurnFrame({ phase }: { phase: number }) {
-  const on = phase >= 0;
+/* ══ Frame 5 · Outro — alive by design ══════════════════════ */
+function HandoffFrame({ active = true }: { active?: boolean }) {
   return (
-    <div className={`w-full max-w-2xl mx-auto ${FIT}`}>
-      <TimeHead
-        kicker="Sunday"
-        accent={ORANGE}
-        title="The week turns by itself."
-        copy="Structure carries everyone forward — week 3 opens, no ops behind it."
-      />
-      <div className="rounded-3xl p-5" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }} aria-hidden>
-        <Journey week={3} theme={EX.arc[2]} />
-        <div className="space-y-1.5 mt-3">
-          <SessionRow img={EX.agenda[2][0].img} title={EX.agenda[2][0].title} host={EX.agenda[2][0].host} state="next" right="Mon · 13:00" />
-          <SessionRow img={EX.agenda[2][1].img} title={EX.agenda[2][1].title} host={EX.agenda[2][1].host} state="upcoming" />
-        </div>
-      </div>
-      <Pop show={on} d={350}>
+    <div className="w-full max-w-3xl mx-auto text-center">
+      <p className="text-4xl md:text-6xl font-headline tracking-tight leading-[1.1]" style={{ color: INK, fontWeight: 700, letterSpacing: "-0.025em" }}>
+        Alive <span style={{ color: ORANGE }}>by design.</span>
+      </p>
+      <p className="text-base md:text-lg mt-6 max-w-xl mx-auto leading-relaxed" style={{ color: MUTED }}>
+        The rhythm is built in — your tribe brings it to life.
+      </p>
+      <Pop show={active} d={400}>
         <div
-          className="mt-4 rounded-2xl px-4 py-3 flex items-center justify-between gap-3 text-left"
+          className="mt-9 mx-auto max-w-md rounded-2xl px-4 py-3 flex items-center justify-between gap-3 text-left"
           style={{ background: "linear-gradient(135deg, rgba(255,97,48,0.14), rgba(255,97,48,0.05))", boxShadow: "0 0 0 1px rgba(255,97,48,0.26)" }}
         >
           <div className="min-w-0">
@@ -510,22 +735,6 @@ function TurnFrame({ phase }: { phase: number }) {
   );
 }
 
-/* ══ Frame 6 · Outro — the handoff ══════════════════════════ */
-function HandoffFrame() {
-  return (
-    <div className="w-full max-w-3xl mx-auto text-center">
-      <p className="text-4xl md:text-6xl font-headline tracking-tight leading-[1.1]" style={{ color: INK, fontWeight: 700, letterSpacing: "-0.025em" }}>
-        A week that <span style={{ color: ORANGE }}>runs itself</span>
-        <br />
-        around your sessions.
-      </p>
-      <p className="text-base md:text-lg mt-6 max-w-xl mx-auto leading-relaxed" style={{ color: MUTED }}>
-        Six of them, until the finale — then it can run again.
-      </p>
-    </div>
-  );
-}
-
 /* ══ Frame 0 · Intro ════════════════════════════════════════ */
 function IntroFrame() {
   return (
@@ -534,11 +743,11 @@ function IntroFrame() {
         Inside the experience
       </p>
       <h2 className="text-4xl md:text-6xl font-headline tracking-tight leading-[1.08] mb-6" style={{ color: INK, fontWeight: 700, letterSpacing: "-0.025em" }}>
-        How it unfolds.
+        Designed to feel alive.
       </h2>
       <p className="text-base md:text-xl leading-relaxed max-w-2xl mx-auto" style={{ color: MUTED }}>
-        What you published isn&apos;t a video library — it&apos;s a room your tribe
-        shows up to. One week of it, as it happens.
+        Real people bring the life — the space gives them every reason.
+        These are the mechanics.
       </p>
     </div>
   );
@@ -560,10 +769,9 @@ export function LiveWeek() {
         <div className="max-w-5xl mx-auto text-center">
           <div className="py-8"><IntroFrame /></div>
           <div className="py-12"><SpaceFrame /></div>
-          <div className="py-12"><LiveFrame phase={1} /></div>
-          <div className="py-12"><LoopFrame phase={0} /></div>
-          <div className="py-12"><QAFrame phase={1} /></div>
-          <div className="py-12"><TurnFrame phase={0} /></div>
+          <div className="py-12"><CalendarFrame phase={1} /></div>
+          <div className="py-12"><FeedFrame phase={1} /></div>
+          <div className="py-12"><AskFrame phase={2} /></div>
           <div className="py-12"><HandoffFrame /></div>
         </div>
       </section>
@@ -576,12 +784,12 @@ export function LiveWeek() {
       <div className="h-[26vh]" aria-hidden />
       <div ref={wrapperRef} className="relative" style={{ height: `${runwayVh}vh` }}>
         <div className="sticky top-0 w-full overflow-hidden h-screen" style={{ height: "100dvh" }}>
-          {/* Time rail — desktop */}
-          <div className="hidden lg:flex absolute left-8 xl:left-14 top-1/2 -translate-y-1/2 z-20 items-stretch gap-4" style={{ opacity: frame >= 1 && frame <= 5 ? 1 : 0, transition: "opacity 400ms ease" }}>
+          {/* Mechanics rail — desktop */}
+          <div className="hidden lg:flex absolute left-8 xl:left-14 top-1/2 -translate-y-1/2 z-20 items-stretch gap-4" style={{ opacity: frame >= 1 && frame <= 4 ? 1 : 0, transition: "opacity 400ms ease" }}>
             <div className="relative w-[3px] rounded-full" style={{ backgroundColor: "rgba(15,34,41,0.12)" }}>
               <div className="absolute top-0 left-0 w-full rounded-full" style={{ height: `${(railSp * 100).toFixed(1)}%`, backgroundColor: ORANGE, boxShadow: "0 0 10px rgba(255,97,48,0.35)", transition: `height 600ms ${EASE}` }} />
             </div>
-            <div className="flex flex-col justify-between gap-9 py-1">
+            <div className="flex flex-col justify-between gap-10 py-1">
               {RAIL.map((s) => (
                 <button
                   key={s.label}
@@ -599,7 +807,7 @@ export function LiveWeek() {
                   />
                   <span className="min-w-0">
                     <span className="block text-[11px] uppercase tracking-[0.2em] font-headline" style={{ color: frame === s.frame ? ORANGE : FAINT, fontWeight: 800 }}>
-                      {s.time}
+                      {s.n}
                     </span>
                     <span className="block text-[17px] font-headline leading-tight whitespace-nowrap" style={{ color: INK, fontWeight: 700 }}>
                       {s.label}
@@ -611,14 +819,14 @@ export function LiveWeek() {
           </div>
 
           {/* Progress dots — mobile */}
-          <div className="lg:hidden absolute top-5 inset-x-0 z-20 flex justify-center gap-1.5" aria-hidden style={{ opacity: frame >= 1 && frame <= 5 ? 1 : 0, transition: "opacity 400ms ease" }}>
+          <div className="lg:hidden absolute top-5 inset-x-0 z-20 flex justify-center gap-1.5" aria-hidden style={{ opacity: frame >= 1 && frame <= 4 ? 1 : 0, transition: "opacity 400ms ease" }}>
             {RAIL.map((s) => (
               <span key={s.frame} className="h-1.5 rounded-full transition-all duration-300" style={{ width: frame === s.frame ? 18 : 6, backgroundColor: frame === s.frame ? ORANGE : "rgba(15,34,41,0.20)" }} />
             ))}
           </div>
 
           {/* Frames — hard cuts, one visible at a time, all centered */}
-          {[0, 1, 2, 3, 4, 5, 6].map((f) => {
+          {[0, 1, 2, 3, 4, 5].map((f) => {
             const active = frame === f;
             return (
               <div
@@ -637,11 +845,10 @@ export function LiveWeek() {
                 <div className="w-full max-w-5xl mx-auto">
                   {f === 0 && <IntroFrame />}
                   {f === 1 && <SpaceFrame />}
-                  {f === 2 && <LiveFrame phase={active ? phase : 0} />}
-                  {f === 3 && <LoopFrame phase={active ? phase : 0} />}
-                  {f === 4 && <QAFrame phase={active ? phase : 0} />}
-                  {f === 5 && <TurnFrame phase={active ? phase : 0} />}
-                  {f === 6 && <HandoffFrame />}
+                  {f === 2 && <CalendarFrame phase={active ? phase : 0} />}
+                  {f === 3 && <FeedFrame phase={active ? phase : 0} />}
+                  {f === 4 && <AskFrame phase={active ? phase : 0} />}
+                  {f === 5 && <HandoffFrame active={active} />}
                 </div>
               </div>
             );

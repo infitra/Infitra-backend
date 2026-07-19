@@ -111,11 +111,12 @@ export const ROOM = {
   done: { title: "Sustainable Eating in Real Life", host: "Mira", img: "/landing/session-nutritionist.jpg" },
   next: { title: "Full Body Strength & Stability", host: "Alex", inLabel: "in 1d 22h", img: "/landing/session-trainer.jpg" },
   upcoming: { title: "Conditioning, Core & Recovery Flow", host: "Alex", img: "/landing/session-intro.jpg" },
-  /** The directed-question thread — ask one expert, everyone learns. */
+  /** The directed-question thread — REAL copy from the live product
+   *  (Tim's question + Alex's actual answer). Ask one expert, everyone learns. */
   qa: {
-    asker: "Lea",
-    question: "High-protein options when I'm traveling all week?",
+    asker: "Tim",
+    question: "Hi Alex, should I train besides the live sessions?",
     answer:
-      "Batch-cook once, then build plates around protein first — skyr, tuna packs, deli turkey. I'll bring my full travel list to tonight's session.",
+      "Hi Tim! Recovery is a very important part of training and you need to give your body time to reset for the next sessions. That being said, an active lifestyle besides our sessions or lighter activity like some jogging, a walk or even a Padel session with a friend is great! Just make sure to not tire yourself out fully!",
   },
 } as const;
