@@ -568,7 +568,7 @@ function HandsFrame({ phase }: { phase: number }) {
 function LoopFrame({ phase, onJoin }: { phase: number; onJoin: () => void }) {
   const isPeak = phase === 2;
   return (
-    <div className={`w-full max-w-3xl mx-auto ${FIT}`}>
+    <div className={`w-full max-w-4xl mx-auto ${FIT}`}>
       {/* Each phase carries its own head and centers as one block (dark-frame
          treatment) — no gap under a pinned title on the lighter phases. */}
       <div className="relative" style={{ minHeight: 600 }}>
@@ -631,42 +631,42 @@ function LoopFrame({ phase, onJoin }: { phase: number; onJoin: () => void }) {
             onClick={onJoin}
             role="button"
             tabIndex={0}
-            className="w-full max-w-xl rounded-2xl overflow-hidden flex items-stretch cursor-pointer transition-transform hover:-translate-y-0.5"
-            style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1.5px #ef4444, 0 14px 40px rgba(239,68,68,0.18)" }}
+            className="w-full rounded-3xl overflow-hidden flex flex-col sm:flex-row items-stretch cursor-pointer transition-transform hover:-translate-y-0.5"
+            style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 2px #ef4444, 0 28px 72px rgba(239,68,68,0.20)" }}
           >
-            <div className="relative shrink-0 w-32 sm:w-44" style={{ backgroundColor: "#ECE7DD" }}>
+            <div className="relative shrink-0 w-full h-48 sm:h-auto sm:w-72 lg:w-80" style={{ backgroundColor: "#ECE7DD", minHeight: 280 }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={MEET.img} alt="" className="absolute inset-0 w-full h-full object-cover" />
             </div>
-            <div className="flex-1 min-w-0 p-4 sm:p-5 flex flex-col text-left">
-              <p className="text-[11px] uppercase tracking-[0.18em] font-headline flex items-center gap-1.5" style={{ color: "#ef4444", fontWeight: 800 }}>
-                <span className="inline-block w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: "#ef4444" }} />
+            <div className="flex-1 min-w-0 p-7 sm:p-9 flex flex-col text-left">
+              <p className="text-[13px] uppercase tracking-[0.2em] font-headline flex items-center gap-2" style={{ color: "#ef4444", fontWeight: 800 }}>
+                <span className="inline-block w-2.5 h-2.5 rounded-full animate-pulse" style={{ backgroundColor: "#ef4444" }} />
                 Live now
               </p>
-              <h3 className="font-black font-headline tracking-tight mt-1.5 leading-tight" style={{ color: INK, fontSize: "clamp(1.2rem, 3.6vw, 1.55rem)", letterSpacing: "-0.015em" }}>
+              <h3 className="font-black font-headline tracking-tight mt-3 leading-[1.08]" style={{ color: INK, fontSize: "clamp(1.7rem, 4vw, 2.3rem)", letterSpacing: "-0.02em" }}>
                 {MEET.title}
               </h3>
-              <p className="text-xs mt-1.5" style={{ color: "#64748b" }}>
+              <p className="text-[15px] sm:text-base mt-3" style={{ color: "#64748b" }}>
                 {MEET.day} · {MEET.time} · {MEET.dur} · {MEET.host}
               </p>
-              <span className="inline-flex items-center gap-1.5 mt-2 self-start px-2.5 py-1 rounded-full text-[11px] font-bold font-headline" style={{ backgroundColor: "rgba(8,145,178,0.10)", color: CYAN }}>
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={CYAN} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M22 12h-4l-3 9L9 3l-3 9H2" /></svg>
+              <span className="inline-flex items-center gap-2 mt-4 self-start px-3.5 py-1.5 rounded-full text-[13px] font-bold font-headline" style={{ backgroundColor: "rgba(8,145,178,0.10)", color: CYAN }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={CYAN} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M22 12h-4l-3 9L9 3l-3 9H2" /></svg>
                 Cohort energy 8/10
               </span>
-              <div className="flex items-center justify-between gap-3 mt-auto pt-3.5">
+              <div className="flex items-center justify-between gap-4 mt-auto pt-7">
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); onJoin(); }}
-                  className="px-6 py-2.5 rounded-full text-white text-sm font-black font-headline transition-transform hover:scale-[1.03]"
-                  style={{ backgroundColor: "#ef4444", boxShadow: "0 4px 14px rgba(239,68,68,0.35)" }}
+                  className="px-9 py-4 rounded-full text-white text-base font-black font-headline transition-transform hover:scale-[1.03]"
+                  style={{ backgroundColor: "#ef4444", boxShadow: "0 6px 20px rgba(239,68,68,0.38)" }}
                 >
                   Join the room →
                 </button>
-                <span className="text-[11px] font-bold" style={{ color: "#94a3b8" }}>8 in the room</span>
+                <span className="text-sm font-bold" style={{ color: "#94a3b8" }}>8 in the room</span>
               </div>
             </div>
           </div>
-          <p className="text-[13px] mt-6" style={{ color: MUTED }}>Your move — or keep scrolling.</p>
+          <p className="text-[15px] mt-8" style={{ color: MUTED }}>Your move — or keep scrolling.</p>
         </div>
 
         {/* p2 — THE PEAK: the room, as energy */}
