@@ -23,9 +23,12 @@ import { INK, ORANGE, CYAN, MUTED, FAINT } from "./ui";
 /* ── Feel constants — tune on deploy ───────────────────────── */
 const BEAT_VH = 70; // runway per beat unit
 const CATCHUP_MS = 240; // damping (touch/keyboard fallback)
-const GESTURE_MIN_MS = 500; // wheel lock: minimum hold after a step
-const GESTURE_QUIET_MS = 160; // wheel lock: releases this long after the momentum train dies
-const WHEEL_STEP_THRESHOLD = 40; // accumulated deltaY to count as a gesture
+const GESTURE_MIN_MS = 300; // wheel lock: minimum hold after a step
+const GESTURE_QUIET_MS = 160; // wheel lock: releases this long after the train quiets down
+const WHEEL_NOISE = 4; // |deltaY| at or below this is a momentum tail, not activity
+const SPIKE_MARGIN = 10; // |deltaY| jump over the previous event = a NEW intentional gesture
+const WHEEL_STEP_THRESHOLD = 24; // accumulated deltaY to count as a gesture
+const WHEEL_IDLE_MS = 1200; // wheel counts as the active driver this long after its last event
 const OUTRO_FREE_ZONE = 0.12; // inside the outro past this depth, the heartbeat scrubs freely
 const CUT_MS = 260; // frame hard-cut duration
 const POP_MS = 340; // phase reveal duration
@@ -696,6 +699,9 @@ export function HowItWorks() {
   const gestureMinDoneRef = useRef(false);
   const gestureMinTimerRef = useRef(0);
   const gestureQuietTimerRef = useRef(0);
+  const lastMagRef = useRef(999);
+  const wheelActiveRef = useRef(false);
+  const wheelIdleTimerRef = useRef(0);
   const wheelAccRef = useRef(0);
 
   const frame = BEATS[beat].f;
@@ -734,9 +740,11 @@ export function HowItWorks() {
       const posT = i === BEATS.length - 1 ? BOUNDS[i][0] + 0.05 : (BOUNDS[i][0] + BOUNDS[i][1]) / 2;
       window.scrollTo({ top: window.scrollY + r.top + (posT / TOTAL_W) * total, behavior: "auto" });
     };
-    /** The lock releases only when the momentum train has actually DIED:
-     *  no wheel events for GESTURE_QUIET_MS, and at least GESTURE_MIN_MS
-     *  since the step. Every prevented wheel event re-arms the quiet timer. */
+    /** The lock releases GESTURE_QUIET_MS after the momentum train quiets
+     *  down (events at/below WHEEL_NOISE don't keep it alive — macOS tails
+     *  trickle tiny deltas for seconds), and never before GESTURE_MIN_MS.
+     *  A magnitude SPIKE mid-train is a new intentional gesture and breaks
+     *  the lock immediately. */
     const armQuiet = () => {
       window.clearTimeout(gestureQuietTimerRef.current);
       gestureQuietTimerRef.current = window.setTimeout(() => {
@@ -751,6 +759,7 @@ export function HowItWorks() {
     const engageLock = () => {
       gestureLockRef.current = true;
       gestureMinDoneRef.current = false;
+      lastMagRef.current = 999;
       wheelAccRef.current = 0;
       window.clearTimeout(gestureMinTimerRef.current);
       gestureMinTimerRef.current = window.setTimeout(() => {
@@ -764,6 +773,12 @@ export function HowItWorks() {
      *  heartbeat is a free scrub zone in both directions. */
     const onWheel = (e: WheelEvent) => {
       if (!coveringRef.current) return;
+      // wheel is now the active driver — tick's leash/catch-up stands down
+      wheelActiveRef.current = true;
+      window.clearTimeout(wheelIdleTimerRef.current);
+      wheelIdleTimerRef.current = window.setTimeout(() => {
+        wheelActiveRef.current = false;
+      }, WHEEL_IDLE_MS);
       if (jumpGuardRef.current) {
         e.preventDefault();
         return;
@@ -775,10 +790,19 @@ export function HowItWorks() {
       // decisive cut step back to the publish frame
       if (b === last && posRef.current > BOUNDS[last][0] + OUTRO_FREE_ZONE) return;
       e.preventDefault();
+      const mag = Math.abs(e.deltaY);
       if (gestureLockRef.current) {
-        armQuiet(); // momentum keeps the lock alive
-        return;
+        const spike = gestureMinDoneRef.current && mag > lastMagRef.current + SPIKE_MARGIN && mag > 12;
+        lastMagRef.current = mag;
+        if (!spike) {
+          if (mag > WHEEL_NOISE) armQuiet(); // loud events keep the lock alive; tails let it run out
+          return;
+        }
+        // a fresh swipe mid-train: break the lock and let this event count
+        gestureLockRef.current = false;
+        wheelAccRef.current = 0;
       }
+      lastMagRef.current = mag;
       wheelAccRef.current = Math.sign(e.deltaY) === Math.sign(wheelAccRef.current) ? wheelAccRef.current + e.deltaY : e.deltaY;
       if (Math.abs(wheelAccRef.current) < WHEEL_STEP_THRESHOLD) return;
       const dir = Math.sign(wheelAccRef.current);
@@ -833,10 +857,15 @@ export function HowItWorks() {
         }
       }
 
+      // While the wheel is driving, it is the ONLY beat authority — the
+      // leash + target catch-up below would fight the quantizer at the
+      // chapter edges (that fight was the outro ping-pong). Touch input
+      // fires no wheel events, so it keeps both.
+      const wheelDriven = covering && wheelActiveRef.current;
+
       // THE LEASH (touch/keyboard fallback while pinned): the page can never
-      // be more than one beat ahead/behind the displayed beat. Wheel input
-      // never reaches here (quantized + prevented above).
-      if (covering && !jumpGuardRef.current) {
+      // be more than one beat ahead/behind the displayed beat.
+      if (covering && !wheelDriven && !jumpGuardRef.current) {
         const bcur = beatRef.current;
         const maxPos = bcur >= BEATS.length - 1 ? Infinity : BOUNDS[bcur + 1][1] - 0.04;
         const minPos = bcur <= 0 ? -Infinity : BOUNDS[bcur - 1][0] + 0.02;
@@ -854,7 +883,7 @@ export function HowItWorks() {
           break;
         }
       }
-      setTarget((prev) => (prev === bi ? prev : bi));
+      if (!wheelDriven) setTarget((prev) => (prev === bi ? prev : bi));
 
       const sp = clamp01((pos - STEP_SPAN[0]) / (STEP_SPAN[1] - STEP_SPAN[0]));
       if (railFillRef.current) railFillRef.current.style.height = `${(sp * 100).toFixed(1)}%`;
