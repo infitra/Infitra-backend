@@ -5,44 +5,50 @@ import { INK, ORANGE, CYAN, MUTED, FAINT, PRODUCT_SHADOW } from "./ui";
 import { type BeatDef, useBeatChapter, computeBounds, Pop, CUT_MS, CASCADE_MS, EASE, FIT } from "./chapterEngine";
 
 /**
- * ACT 2 · DESIGNED TO FEEL ALIVE — the mechanics chapter.
+ * ACT 2 · DESIGNED TO FEEL ALIVE — the engagement story.
  *
- * Not a scripted week (that would quietly claim the outcome) — a
- * demonstration of the MACHINE that invites engagement. Real people bring
- * the life; the space gives them every reason and every rail. Each beat is
- * one mechanic doing its job, cause → visible effect: sessions land in the
- * calendar (and open into the live room), built-in prompts fill the tribe
- * feed, and a question asked inside a post makes the full round-trip —
- * member composer → creator's bell + console → answered once, pinned for
- * all. Every surface is a port of the real product UI (bell dropdown,
- * WAITING ON YOU console card, the QUESTION FOR / ANSWERED BY post — with
- * Alex's real answer copy).
+ * Confirmed storyline (round 20): the space decomposed powerfully → the
+ * tools in EVERYONE's hands (people-initiated: share, question, context,
+ * calendar export — truthfully one-click, never "automatic") → what the
+ * space starts ON ITS OWN (the engagement loop, chronological: intro
+ * prompt / pulse / THE PEAK — a one-beat cut back to the dark room, live
+ * energy, no video-chat UI / reflection closes the loop) → it compounds
+ * (attendance + progression fill, the run wraps, the SAME space carries
+ * the next run). Real people bring the life; these are the mechanics.
  */
 
-/* ── The beats — one mechanic per frame ────────────────────── */
+/* dark peak palette — Act 1's room, back for one breath */
+const TEAL = "#0C262E";
+const LIGHT = "#F6F3EC";
+const LIGHT_MUTED = "rgba(244,241,232,0.72)";
+
+/* ── The beats ─────────────────────────────────────────────── */
 const BEATS: BeatDef[] = [
   { f: 0, p: 0, w: 1 }, // intro
-  { f: 1, p: 0, w: 1.1 }, // the space, real
-  { f: 2, p: 0, w: 1 }, // your calendar
-  { f: 2, p: 1, w: 1.1 }, // — one click into the room
-  { f: 3, p: 0, w: 1 }, // the feed's drivers
-  { f: 3, p: 1, w: 1.1 }, // — the feed fills
-  { f: 4, p: 0, w: 1 }, // ask: member composer
-  { f: 4, p: 1, w: 1.1 }, // ask: it finds the creator
-  { f: 4, p: 2, w: 1.1 }, // ask: answered once
-  { f: 5, p: 0, w: 1.8 }, // outro — alive by design
+  { f: 1, p: 0, w: 1 }, // the space — the header lands
+  { f: 1, p: 1, w: 1.1 }, // — the components fan out
+  { f: 2, p: 0, w: 1.1 }, // in everyone's hands — the four tools
+  { f: 2, p: 1, w: 1 }, // — a question finds its creator
+  { f: 2, p: 2, w: 1 }, // — answered once
+  { f: 3, p: 0, w: 1 }, // the loop — no cold start
+  { f: 3, p: 1, w: 0.9 }, // — the pulse
+  { f: 3, p: 2, w: 1.3 }, // — THE PEAK: it's live
+  { f: 3, p: 3, w: 1 }, // — the reflection closes it
+  { f: 4, p: 0, w: 1.1 }, // it compounds — the run builds
+  { f: 4, p: 1, w: 1.1 }, // — the run wraps, the space stays open
+  { f: 5, p: 0, w: 1.6 }, // outro
 ];
 const BOUNDS = computeBounds(BEATS);
-const STEP_SPAN: [number, number] = [BOUNDS[1][0], BOUNDS[8][1]];
+const STEP_SPAN: [number, number] = [BOUNDS[1][0], BOUNDS[11][1]];
 
 const RAIL = [
   { n: "01", label: "The space", frame: 1, firstBeat: 1 },
-  { n: "02", label: "Your calendar", frame: 2, firstBeat: 2 },
-  { n: "03", label: "The tribe feed", frame: 3, firstBeat: 4 },
-  { n: "04", label: "Ask your expert", frame: 4, firstBeat: 6 },
+  { n: "02", label: "In your hands", frame: 2, firstBeat: 3 },
+  { n: "03", label: "The loop", frame: 3, firstBeat: 6 },
+  { n: "04", label: "It compounds", frame: 4, firstBeat: 10 },
 ];
 
-/* ── Small shared bits ─────────────────────────────────────── */
+/* ── Icons ─────────────────────────────────────────────────── */
 const CHECK = (color: string, size = 12) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
     <path d="M20 6 9 17l-5-5" />
@@ -62,23 +68,10 @@ const ICON_BELL = (color: string, size = 16) => (
   </svg>
 );
 
-const ICON_MIC = (
-  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-    <rect x="9" y="2" width="6" height="12" rx="3" />
-    <path d="M5 10a7 7 0 0 0 14 0M12 17v4" />
-  </svg>
-);
-
-const ICON_CAM = (
-  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-    <path d="M23 7l-7 5 7 5V7z" />
-    <rect x="1" y="5" width="15" height="14" rx="2" />
-  </svg>
-);
-
-const ICON_LEAVE = (
-  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-    <path d="M10.7 5.8A15 15 0 0 1 12 5.7c5.5 0 10 2.7 10 6 0 .9-.3 1.7-.9 2.4l-3.4-1.4v-2.2a13 13 0 0 0-11.4 0v2.2L2.9 14.1A3.6 3.6 0 0 1 2 11.7c0-3.3 4.5-6 10-6z" />
+const ICON_CAL = (color: string, size = 16) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <rect x="3" y="4" width="18" height="18" rx="2" />
+    <path d="M16 2v4M8 2v4M3 10h18" />
   </svg>
 );
 
@@ -94,18 +87,18 @@ const ICON_COMMENT = (color: string) => (
   </svg>
 );
 
-/** Light-world step head. */
-function MechHead({ kicker, accent, title, copy }: { kicker: string; accent: string; title: string; copy?: string }) {
+/** Light-world (or dark-peak) step head. */
+function MechHead({ kicker, accent, title, copy, light = false }: { kicker: string; accent: string; title: string; copy?: string; light?: boolean }) {
   return (
     <div className="mb-8 text-center">
       <p className="text-[10.5px] uppercase tracking-[0.25em] font-headline mb-3.5" style={{ color: accent, fontWeight: 800 }}>
         {kicker}
       </p>
-      <h3 className="text-3xl md:text-[2.6rem] md:leading-[1.12] font-headline tracking-tight mb-4 max-w-3xl mx-auto" style={{ color: INK, fontWeight: 700, letterSpacing: "-0.02em" }}>
+      <h3 className="text-3xl md:text-[2.6rem] md:leading-[1.12] font-headline tracking-tight mb-4 max-w-3xl mx-auto" style={{ color: light ? LIGHT : INK, fontWeight: 700, letterSpacing: "-0.02em" }}>
         {title}
       </h3>
       {copy && (
-        <p className="text-[15.5px] md:text-lg leading-relaxed max-w-2xl mx-auto" style={{ color: MUTED }}>
+        <p className="text-[15.5px] md:text-lg leading-relaxed max-w-2xl mx-auto" style={{ color: light ? LIGHT_MUTED : MUTED }}>
           {copy}
         </p>
       )}
@@ -122,11 +115,11 @@ function ViewChip({ label, color }: { label: string; color: string }) {
   );
 }
 
-/* ── The space's REAL header — the anchor of truth ─────────── */
+/* ── The space's REAL header ───────────────────────────────── */
 function SpaceHeader() {
   return (
-    <div style={{ borderBottom: "1px solid rgba(15,34,41,0.07)" }}>
-      <div className="flex items-stretch gap-4 px-4 sm:px-5 pt-4 pb-3">
+    <div className="rounded-3xl overflow-hidden" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }}>
+      <div className="flex items-stretch gap-4 px-4 sm:px-5 py-4">
         <span className="relative shrink-0 w-24 sm:w-28 rounded-xl overflow-hidden hidden sm:block" style={{ backgroundColor: INK }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={EX.cover} alt="" className="absolute inset-0 w-full h-full object-cover" />
@@ -176,7 +169,7 @@ function SpaceHeader() {
   );
 }
 
-/* ── Session row ───────────────────────────────────────────── */
+/* ── Session row (compact) ─────────────────────────────────── */
 function SessionRow({ img, title, host, state, right }: { img: string; title: string; host: string; state: "done" | "next" | "upcoming"; right?: string }) {
   const isNext = state === "next";
   return (
@@ -188,12 +181,12 @@ function SessionRow({ img, title, host, state, right }: { img: string; title: st
           : { backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.05)" }
       }
     >
-      <span className="relative shrink-0 w-16 h-11 rounded-lg overflow-hidden" style={{ backgroundColor: INK }}>
+      <span className="relative shrink-0 w-14 h-10 rounded-lg overflow-hidden" style={{ backgroundColor: INK }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={img} alt="" className="absolute inset-0 w-full h-full object-cover" style={state === "done" ? { opacity: 0.55 } : undefined} />
       </span>
       <span className="min-w-0 flex-1 text-left">
-        <span className="block text-[12.5px] font-headline leading-snug" style={{ color: INK, fontWeight: 800 }}>{title}</span>
+        <span className="block text-[12px] font-headline leading-snug" style={{ color: INK, fontWeight: 800 }}>{title}</span>
         <span className="block text-[9.5px] font-bold" style={{ color: FAINT }}>{host}</span>
       </span>
       <span className="shrink-0">
@@ -202,42 +195,13 @@ function SessionRow({ img, title, host, state, right }: { img: string; title: st
             {CHECK(CYAN, 11)} Done
           </span>
         )}
-        {state === "next" && <span className="text-[11px] font-black font-headline" style={{ color: ORANGE }}>{right ?? ROOM.next.inLabel}</span>}
+        {state === "next" && <span className="text-[10.5px] font-black font-headline" style={{ color: ORANGE }}>{right ?? ROOM.next.inLabel}</span>}
         {state === "upcoming" && (
           <span className="text-[8.5px] uppercase tracking-widest font-headline" style={{ color: FAINT, fontWeight: 800 }}>
             Upcoming
           </span>
         )}
       </span>
-    </div>
-  );
-}
-
-/* ── The journey block ─────────────────────────────────────── */
-function Journey({ week, theme }: { week: number; theme: string }) {
-  return (
-    <div className="text-left">
-      <p className="text-[8px] uppercase tracking-[0.2em] font-headline" style={{ color: FAINT, fontWeight: 800 }}>The journey</p>
-      <p className="font-headline leading-none mt-1" style={{ fontWeight: 800, letterSpacing: "-0.02em" }} aria-hidden>
-        <span className="text-[27px]" style={{ color: INK }}>WEEK {week} </span>
-        <span className="text-[27px]" style={{ color: "rgba(15,34,41,0.18)" }}>OF {EX.weeks}</span>
-      </p>
-      <p className="text-[10px] uppercase tracking-[0.16em] font-headline mt-1" style={{ color: ORANGE, fontWeight: 800 }}>{theme}</p>
-      <div className="flex items-center gap-1 mt-3" aria-hidden>
-        {EX.arc.map((_, i) => (
-          <span key={i} className="flex items-center flex-1 last:flex-none">
-            <span
-              className="shrink-0 rounded-full"
-              style={
-                i === week - 1
-                  ? { width: 12, height: 12, backgroundColor: ORANGE, boxShadow: "0 0 0 3px rgba(255,97,48,0.20)" }
-                  : { width: 7, height: 7, backgroundColor: i < week - 1 ? "rgba(255,97,48,0.5)" : "rgba(15,34,41,0.14)" }
-              }
-            />
-            {i < EX.arc.length - 1 && <span className="flex-1 h-px" style={{ backgroundColor: "rgba(15,34,41,0.10)" }} />}
-          </span>
-        ))}
-      </div>
     </div>
   );
 }
@@ -266,256 +230,68 @@ function TribePost({ initial, color, name, when, text, chip }: { initial: string
   );
 }
 
-/* ══ Frame 1 · The space, real ══════════════════════════════ */
-function SpaceFrame() {
+/* ══ Frame 1 · The space, decomposed ════════════════════════ */
+function SpaceFrame({ phase }: { phase: number }) {
+  const out = phase >= 1;
   return (
-    <div className={`w-full max-w-2xl mx-auto ${FIT}`}>
+    <div className={`w-full max-w-3xl mx-auto ${FIT}`}>
       <MechHead
         kicker="01 · The space"
         accent={CYAN}
         title="The room your tribe lives in."
-        copy="Not a video library — the space you published, live in its second week."
+        copy="Not a video library — a space with structure, presence and a feed of its own."
       />
-      <div className="rounded-3xl overflow-hidden" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }} aria-hidden>
+      {/* the header lands center, then docks up as the components fan out */}
+      <div style={{ transform: out ? "none" : "translateY(110px)", transition: `transform ${CUT_MS + 120}ms ${EASE}` }} aria-hidden>
         <SpaceHeader />
-        <div className="p-4 sm:p-5" style={{ backgroundColor: "#FAF8F3" }}>
-          <Journey week={ROOM.week} theme={ROOM.theme} />
-          <div className="space-y-1.5 mt-3">
+      </div>
+      <div className="grid sm:grid-cols-3 gap-3 mt-4 items-start" aria-hidden>
+        <Pop show={out} d={140}>
+          <div className="rounded-2xl p-4 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.06), 0 16px 40px rgba(15,34,41,0.10)" }}>
+            <p className="text-[8px] uppercase tracking-[0.2em] font-headline" style={{ color: FAINT, fontWeight: 800 }}>The journey</p>
+            <p className="font-headline leading-none mt-1.5" style={{ fontWeight: 800, letterSpacing: "-0.02em" }}>
+              <span className="text-[22px]" style={{ color: INK }}>WEEK {ROOM.week} </span>
+              <span className="text-[22px]" style={{ color: "rgba(15,34,41,0.18)" }}>OF {EX.weeks}</span>
+            </p>
+            <p className="text-[9px] uppercase tracking-[0.14em] font-headline mt-1" style={{ color: ORANGE, fontWeight: 800 }}>{ROOM.theme}</p>
+            <div className="flex items-center gap-1 mt-3">
+              {EX.arc.map((_, i) => (
+                <span key={i} className="flex items-center flex-1 last:flex-none">
+                  <span
+                    className="shrink-0 rounded-full"
+                    style={
+                      i === ROOM.week - 1
+                        ? { width: 10, height: 10, backgroundColor: ORANGE, boxShadow: "0 0 0 3px rgba(255,97,48,0.20)" }
+                        : { width: 6, height: 6, backgroundColor: i < ROOM.week - 1 ? "rgba(255,97,48,0.5)" : "rgba(15,34,41,0.14)" }
+                    }
+                  />
+                  {i < EX.arc.length - 1 && <span className="flex-1 h-px" style={{ backgroundColor: "rgba(15,34,41,0.10)" }} />}
+                </span>
+              ))}
+            </div>
+          </div>
+        </Pop>
+        <Pop show={out} d={140 + CASCADE_MS}>
+          <div className="rounded-2xl p-3 space-y-1.5" style={{ backgroundColor: "#FAF8F3", boxShadow: "0 0 0 1px rgba(15,34,41,0.05), 0 16px 40px rgba(15,34,41,0.08)" }}>
+            <p className="text-[8px] uppercase tracking-[0.2em] font-headline text-left px-1" style={{ color: FAINT, fontWeight: 800 }}>Live sessions</p>
             <SessionRow img={ROOM.done.img} title={ROOM.done.title} host={ROOM.done.host} state="done" />
-            <SessionRow img={ROOM.next.img} title={ROOM.next.title} host={ROOM.next.host} state="next" right="Tue · 13:00" />
-            <SessionRow img={ROOM.upcoming.img} title={ROOM.upcoming.title} host={ROOM.upcoming.host} state="upcoming" />
+            <SessionRow img={ROOM.next.img} title={ROOM.next.title} host={ROOM.next.host} state="next" right="Next" />
           </div>
-        </div>
+        </Pop>
+        <Pop show={out} d={140 + CASCADE_MS * 2}>
+          <div className="rounded-2xl p-3 space-y-1.5" style={{ backgroundColor: "#FAF8F3", boxShadow: "0 0 0 1px rgba(15,34,41,0.05), 0 16px 40px rgba(15,34,41,0.08)" }}>
+            <p className="text-[8px] uppercase tracking-[0.2em] font-headline text-left px-1" style={{ color: FAINT, fontWeight: 800 }}>The tribe feed</p>
+            <TribePost initial="A" color={CYAN} name="Anna" when="2h" text="Week 1 done — first plan I've actually kept up with 🔥" />
+            <TribePost initial="S" color={ORANGE} name="Sam" when="just now" text="Session 5 ✓ — see everyone Tuesday!" />
+          </div>
+        </Pop>
       </div>
     </div>
   );
 }
 
-/* ══ Frame 2 · Your calendar → the live room ════════════════ */
-
-const CAL_DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
-const CAL_ENTRIES: Record<string, { title: string; color: string; hot?: boolean }> = {
-  Mon: { title: ROOM.done.title, color: CYAN },
-  Tue: { title: ROOM.next.title, color: ORANGE, hot: true },
-  Thu: { title: ROOM.upcoming.title, color: CYAN },
-};
-
-function CalendarFrame({ phase }: { phase: number }) {
-  const live = phase >= 1;
-  return (
-    <div className={`w-full max-w-2xl mx-auto ${FIT}`}>
-      {/* two-state head */}
-      <div className="relative mb-8" style={{ minHeight: 150 }}>
-        <div className="absolute inset-x-0 top-0" style={{ opacity: live ? 0 : 1, transition: `opacity ${CUT_MS}ms ${EASE}` }}>
-          <MechHead
-            kicker="02 · Your calendar"
-            accent={ORANGE}
-            title="Every session lands in your calendar."
-            copy="Synced the moment someone joins — 20 live moments, never missed."
-          />
-        </div>
-        <div className="absolute inset-x-0 top-0" style={{ opacity: live ? 1 : 0, transition: `opacity ${CUT_MS}ms ${EASE} 80ms` }}>
-          <MechHead
-            kicker="And when it's time"
-            accent="#ef4444"
-            title="One click into the room."
-            copy="No links, no logins — the room opens from the space."
-          />
-        </div>
-      </div>
-
-      <div className="relative" style={{ minHeight: 420 }}>
-        {/* state 1 — the calendar week */}
-        <div
-          className="absolute inset-0 flex flex-col justify-center"
-          style={{ opacity: live ? 0 : 1, transform: live ? "translateY(-14px)" : "none", transition: `opacity ${CUT_MS}ms ${EASE}, transform ${CUT_MS}ms ${EASE}`, pointerEvents: "none" }}
-        >
-          <div className="rounded-3xl p-5" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }} aria-hidden>
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-[10px] uppercase tracking-[0.2em] font-headline" style={{ color: FAINT, fontWeight: 800 }}>
-                Your calendar · Week {ROOM.week}
-              </p>
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-headline" style={{ color: "#16a34a", backgroundColor: "rgba(22,163,74,0.08)", fontWeight: 800 }}>
-                {CHECK("#16a34a", 10)} Synced · all {EX.sessions} sessions
-              </span>
-            </div>
-            <div className="grid grid-cols-7 gap-1.5">
-              {CAL_DAYS.map((d) => {
-                const e = CAL_ENTRIES[d];
-                return (
-                  <div key={d} className="min-h-[104px] rounded-xl p-1.5 flex flex-col" style={{ backgroundColor: "#FAF8F3", boxShadow: "0 0 0 1px rgba(15,34,41,0.04)" }}>
-                    <span className="text-[8.5px] uppercase tracking-widest font-headline text-center" style={{ color: FAINT, fontWeight: 800 }}>{d}</span>
-                    {e && (
-                      <div
-                        className="mt-1.5 rounded-lg px-1.5 py-1.5 text-left"
-                        style={{
-                          backgroundColor: `${e.color}${e.hot ? "14" : "0D"}`,
-                          boxShadow: e.hot ? `0 0 0 1.5px ${e.color}4D` : `inset 2px 0 0 ${e.color}`,
-                        }}
-                      >
-                        <span className="block text-[8px] font-black font-headline" style={{ color: e.color }}>13:00</span>
-                        <span className="block text-[8.5px] font-bold leading-tight mt-0.5" style={{ color: INK }}>{e.title}</span>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-            <p className="text-[10.5px] font-bold font-headline mt-4 text-center" style={{ color: FAINT }}>
-              With reminders — the structure follows your tribe out of the app.
-            </p>
-          </div>
-        </div>
-
-        {/* state 2 — the live room, everyone an equal tile */}
-        <div
-          className="absolute inset-0 flex flex-col justify-center"
-          style={{ opacity: live ? 1 : 0, transition: `opacity ${CUT_MS}ms ${EASE} 100ms`, pointerEvents: "none" }}
-        >
-          <div className="rounded-3xl overflow-hidden" style={{ backgroundColor: INK, boxShadow: "0 24px 60px rgba(15,34,41,0.28)" }} aria-hidden>
-            <div className="flex items-center justify-between gap-3 px-5 py-3" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-              <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-widest font-headline min-w-0" style={{ fontWeight: 800 }}>
-                <span className="w-1.5 h-1.5 rounded-full bg-[#ef4444] animate-pulse shrink-0" />
-                <span className="truncate" style={{ color: "#FFFFFF" }}>Live — {ROOM.next.title}</span>
-              </span>
-              <span className="text-[9px] uppercase tracking-widest font-headline shrink-0" style={{ color: "#9CF0FF", fontWeight: 800 }}>
-                8 in the room · Week {ROOM.week} of {EX.weeks}
-              </span>
-            </div>
-            <div className="p-3 grid grid-cols-4 gap-2">
-              {[
-                { kind: "host" as const, p: ALEX, color: ORANGE },
-                { kind: "member" as const, i: "A" },
-                { kind: "member" as const, i: "S" },
-                { kind: "host" as const, p: MIRA, color: CYAN },
-                { kind: "member" as const, i: "L" },
-                { kind: "member" as const, i: "J" },
-                { kind: "member" as const, i: "M" },
-                { kind: "member" as const, i: "E" },
-              ].map((t, idx) =>
-                t.kind === "host" ? (
-                  <div key={idx} className="relative aspect-[16/11] rounded-xl overflow-hidden" style={{ backgroundColor: "#16323b" }}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={t.p.avatar} alt="" className="absolute inset-0 w-full h-full object-cover" />
-                    <span className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded-full text-[7px] font-headline" style={{ backgroundColor: "rgba(15,34,41,0.75)", color: "#FFFFFF", fontWeight: 800 }}>
-                      {t.p.first} · <span style={{ color: t.color }}>HOST</span>
-                    </span>
-                  </div>
-                ) : (
-                  <div key={idx} className="aspect-[16/11] rounded-xl flex items-center justify-center" style={{ backgroundColor: "#16323b" }}>
-                    <span className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-headline" style={{ backgroundColor: "rgba(156,240,255,0.12)", color: "#9CF0FF", fontWeight: 800 }}>
-                      {t.i}
-                    </span>
-                  </div>
-                ),
-              )}
-            </div>
-            <div className="flex items-center justify-center gap-2.5 pb-3.5 pt-0.5">
-              <span className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(255,255,255,0.14)" }}>{ICON_MIC}</span>
-              <span className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(255,255,255,0.14)" }}>{ICON_CAM}</span>
-              <span className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(239,68,68,0.85)" }}>{ICON_LEAVE}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ══ Frame 3 · What fills the feed ══════════════════════════ */
-function FeedFrame({ phase }: { phase: number }) {
-  const filled = phase >= 1;
-  return (
-    <div className={`w-full max-w-4xl mx-auto ${FIT}`}>
-      <MechHead
-        kicker="03 · The tribe feed"
-        accent={CYAN}
-        title="The feed doesn't wait for luck."
-        copy="Built-in prompts do the asking — a pulse before each session, a reflection after, sharing anytime. Watch them fill it."
-      />
-      <div className="grid md:grid-cols-[1fr_1.1fr] gap-4 items-start text-left" aria-hidden>
-        {/* the drivers */}
-        <div className="space-y-3">
-          {[
-            {
-              k: "Pulse · before each session",
-              color: ORANGE,
-              body: (
-                <>
-                  <p className="text-[12.5px] font-bold font-headline leading-snug" style={{ color: INK }}>
-                    {ROOM.next.title} — how ready are you?
-                  </p>
-                  <div className="mt-2.5 relative h-1.5 rounded-full" style={{ backgroundColor: "rgba(15,34,41,0.08)" }}>
-                    <div className="absolute inset-y-0 left-0 rounded-full" style={{ width: "80%", backgroundColor: CYAN }} />
-                    <span className="absolute -top-[4px] w-3.5 h-3.5 rounded-full" style={{ left: "77%", backgroundColor: "#FFFFFF", boxShadow: `0 0 0 2px ${CYAN}` }} />
-                  </div>
-                </>
-              ),
-              delay: 250,
-            },
-            {
-              k: "Reflection · after each session",
-              color: CYAN,
-              body: (
-                <p className="text-[12.5px] font-bold font-headline leading-snug" style={{ color: INK }}>
-                  How was &ldquo;{ROOM.next.title}&rdquo;?
-                </p>
-              ),
-              delay: 250 + CASCADE_MS,
-            },
-            {
-              k: "Share · anytime",
-              color: CYAN,
-              body: (
-                <div className="rounded-full px-3.5 py-2 text-[10.5px]" style={{ backgroundColor: "#F8F6F0", color: FAINT }}>
-                  Share with your Tribe…
-                </div>
-              ),
-              delay: 250 + CASCADE_MS * 2,
-            },
-          ].map(({ k, color, body, delay }) => (
-            <div
-              key={k}
-              className="rounded-2xl p-4"
-              style={{
-                backgroundColor: "#FFFFFF",
-                boxShadow: filled
-                  ? `0 0 0 2px ${color}59, 0 12px 30px rgba(15,34,41,0.08), inset 3.5px 0 0 ${color}`
-                  : "0 0 0 1px rgba(15,34,41,0.06), inset 3.5px 0 0 " + color,
-                transition: `box-shadow ${CUT_MS}ms ${EASE} ${delay}ms`,
-              }}
-            >
-              <p className="text-[9px] uppercase tracking-[0.16em] font-headline mb-1.5" style={{ color, fontWeight: 800 }}>{k}</p>
-              {body}
-            </div>
-          ))}
-        </div>
-
-        {/* the effect — the feed */}
-        <div className="space-y-2">
-          <p className="text-[9px] uppercase tracking-[0.2em] font-headline" style={{ color: FAINT, fontWeight: 800 }}>The tribe feed</p>
-          <Pop show={filled} d={250}>
-            <TribePost initial="L" color={ORANGE} name="Lea" when="12:04" text="Ready! Legs still remembering Monday though 😅" chip="Pulse · 8/10" />
-          </Pop>
-          <Pop show={filled} d={250 + CASCADE_MS}>
-            <TribePost initial="A" color={CYAN} name="Anna" when="14:12" text="That last set — didn't think I had it in me. This group 🔥" chip="Energy after · 9/10" />
-          </Pop>
-          <Pop show={filled} d={250 + CASCADE_MS * 2}>
-            <TribePost initial="S" color={ORANGE} name="Sam" when="16:40" text="Meal-prepped Mira's plate formula for the week. Photo in the thread ✓" />
-          </Pop>
-          <Pop show={filled} d={250 + CASCADE_MS * 3}>
-            <p className="text-[10.5px] font-bold font-headline text-center pt-1" style={{ color: FAINT }}>
-              Every prompt becomes a post — the feed keeps its own rhythm.
-            </p>
-          </Pop>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ══ Frame 4 · Ask your expert — the full round-trip ════════ */
-function AskFrame({ phase }: { phase: number }) {
+/* ══ Frame 2 · In everyone's hands ══════════════════════════ */
+function HandsFrame({ phase }: { phase: number }) {
   return (
     <div className={`w-full max-w-2xl mx-auto ${FIT}`}>
       {/* three-state head */}
@@ -523,21 +299,21 @@ function AskFrame({ phase }: { phase: number }) {
         {[
           {
             on: phase === 0,
-            kicker: "04 · Ask your expert — member view",
+            kicker: "02 · In everyone's hands",
             accent: CYAN,
-            title: "Any post can carry a question.",
-            copy: "Attached inside the post — routed to the expert who owns the topic.",
+            title: "Anyone can start a moment.",
+            copy: "Tools for members and creators — no permission needed, no cold silence.",
           },
           {
             on: phase === 1,
-            kicker: "04 · Ask your expert — creator view",
+            kicker: "02 · In everyone's hands — creator view",
             accent: ORANGE,
-            title: "It finds you.",
+            title: "A question finds you.",
             copy: "In your bell and on your console — nothing slips through.",
           },
           {
             on: phase >= 2,
-            kicker: "04 · Ask your expert",
+            kicker: "02 · In everyone's hands",
             accent: CYAN,
             title: "Answered once. Everyone learns.",
             copy: "Pinned inside the post — visible to the whole tribe.",
@@ -550,44 +326,76 @@ function AskFrame({ phase }: { phase: number }) {
       </div>
 
       <div className="relative" style={{ minHeight: 430 }}>
-        {/* state 1 — the composer, the mechanic in hand */}
+        {/* state 1 — the four tools */}
         <div
           className="absolute inset-0 flex flex-col justify-center"
           style={{ opacity: phase === 0 ? 1 : 0, transform: phase === 0 ? "none" : "translateY(-14px)", transition: `opacity ${CUT_MS}ms ${EASE}, transform ${CUT_MS}ms ${EASE}`, pointerEvents: "none" }}
         >
-          <div className="mx-auto w-full max-w-xl">
-            <div className="mb-3 text-left"><ViewChip label="Member view · Tim" color={CYAN} /></div>
-            <div className="rounded-2xl p-5 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }} aria-hidden>
-              <div className="flex items-center gap-2.5 mb-3">
-                <span className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(8,145,178,0.14)" }}>
-                  <span className="text-[11px] font-headline" style={{ color: CYAN, fontWeight: 800 }}>T</span>
-                </span>
-                <span className="text-[12px] font-headline" style={{ color: INK, fontWeight: 800 }}>New post</span>
+          <div className="grid sm:grid-cols-2 gap-3 text-left" aria-hidden>
+            {/* share — members */}
+            <Pop show={phase === 0} d={120}>
+              <div className="rounded-2xl p-4" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.06), inset 3.5px 0 0 " + CYAN }}>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[9px] uppercase tracking-[0.16em] font-headline" style={{ color: CYAN, fontWeight: 800 }}>Share</p>
+                  <ViewChip label="Members" color={CYAN} />
+                </div>
+                <div className="rounded-full px-3.5 py-2 text-[10.5px]" style={{ backgroundColor: "#F8F6F0", color: FAINT }}>
+                  Share with your Tribe…
+                </div>
+                <p className="text-[10px] font-bold mt-2" style={{ color: FAINT }}>Anyone, anytime.</p>
               </div>
-              <div className="rounded-2xl px-4 py-3.5" style={{ backgroundColor: "#F8F6F0" }}>
-                <p className="text-[13px] leading-snug" style={{ color: INK, fontWeight: 600 }}>
-                  {ROOM.qa.question}
+            </Pop>
+            {/* question post — members */}
+            <Pop show={phase === 0} d={120 + CASCADE_MS}>
+              <div className="rounded-2xl p-4" style={{ backgroundColor: "#FFFFFF", boxShadow: `0 0 0 2px ${CYAN}40, 0 16px 40px rgba(15,34,41,0.10), inset 3.5px 0 0 ${CYAN}` }}>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[9px] uppercase tracking-[0.16em] font-headline" style={{ color: CYAN, fontWeight: 800 }}>Ask inside a post</p>
+                  <ViewChip label="Members" color={CYAN} />
+                </div>
+                <p className="text-[11.5px] leading-snug" style={{ color: INK, fontWeight: 600 }}>{ROOM.qa.question}</p>
+                <div className="mt-2 rounded-lg px-2.5 py-1.5 inline-flex items-center gap-1.5" style={{ backgroundColor: "rgba(8,145,178,0.07)", boxShadow: `inset 2.5px 0 0 ${CYAN}` }}>
+                  <span className="text-[8px] uppercase tracking-[0.14em] font-headline" style={{ color: CYAN, fontWeight: 800 }}>Question for</span>
+                  <span className="w-4 h-4 rounded-full overflow-hidden shrink-0">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={ALEX.avatar} alt="" className="w-full h-full object-cover" />
+                  </span>
+                  <span className="text-[10.5px] font-headline" style={{ color: INK, fontWeight: 800 }}>{ALEX.name}</span>
+                  <span className="text-[8.5px] font-bold" style={{ color: FAINT }}>routed ✓</span>
+                </div>
+              </div>
+            </Pop>
+            {/* context post — creators */}
+            <Pop show={phase === 0} d={120 + CASCADE_MS * 2}>
+              <div className="rounded-2xl p-4" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.06), inset 3.5px 0 0 " + ORANGE }}>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[9px] uppercase tracking-[0.16em] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>Post with context</p>
+                  <ViewChip label="Creators" color={ORANGE} />
+                </div>
+                <p className="text-[11.5px] leading-snug" style={{ color: INK, fontWeight: 600 }}>
+                  Tuesday we build on Monday&apos;s flow — bring water and a mat!
                 </p>
+                <div className="mt-2 flex items-center gap-2 rounded-lg p-1.5" style={{ backgroundColor: "#F8F6F0", boxShadow: "0 0 0 1px rgba(15,34,41,0.06)" }}>
+                  <span className="relative shrink-0 w-10 h-7 rounded-md overflow-hidden" style={{ backgroundColor: INK }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={ROOM.next.img} alt="" className="absolute inset-0 w-full h-full object-cover" />
+                  </span>
+                  <span className="min-w-0 text-[9.5px] font-bold truncate" style={{ color: INK }}>{ROOM.next.title}</span>
+                  <span className="ml-auto text-[8px] uppercase tracking-widest font-headline shrink-0" style={{ color: FAINT, fontWeight: 800 }}>Session</span>
+                </div>
               </div>
-              {/* THE mechanic — the attached, routed question */}
-              <div className="mt-3 rounded-xl px-3.5 py-2.5 flex items-center gap-2" style={{ backgroundColor: "rgba(8,145,178,0.07)", boxShadow: `inset 3px 0 0 ${CYAN}, 0 0 0 1.5px ${CYAN}40` }}>
-                <span className="text-[9px] uppercase tracking-[0.16em] font-headline shrink-0" style={{ color: CYAN, fontWeight: 800 }}>
-                  Question for
+            </Pop>
+            {/* calendar export — the smallest tile, truthfully one click */}
+            <Pop show={phase === 0} d={120 + CASCADE_MS * 3}>
+              <div className="rounded-2xl px-4 py-3 flex items-center gap-3" style={{ backgroundColor: "rgba(255,255,255,0.75)", boxShadow: "0 0 0 1px rgba(15,34,41,0.06)" }}>
+                <span className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: "rgba(8,145,178,0.10)" }}>
+                  {ICON_CAL(CYAN, 16)}
                 </span>
-                <span className="w-[18px] h-[18px] rounded-full overflow-hidden shrink-0">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={ALEX.avatar} alt="" className="w-full h-full object-cover" />
-                </span>
-                <span className="text-[12px] font-headline" style={{ color: INK, fontWeight: 800 }}>{ALEX.name}</span>
-                <span className="ml-auto text-[9px] font-bold shrink-0" style={{ color: FAINT }}>routed ✓</span>
-              </div>
-              <div className="flex items-center justify-between mt-3.5">
-                <span className="text-[10px] font-bold" style={{ color: FAINT }}>Ask an expert · attach to any post</span>
-                <span className="px-5 py-2 rounded-full text-white text-[11px] font-black font-headline" style={{ backgroundColor: ORANGE, boxShadow: "0 4px 12px rgba(255,97,48,0.30)" }}>
-                  Post
+                <span className="min-w-0">
+                  <span className="block text-[12px] font-headline leading-tight" style={{ color: INK, fontWeight: 800 }}>Export your calendar</span>
+                  <span className="block text-[9.5px] font-bold mt-0.5" style={{ color: FAINT }}>Every session · one click</span>
                 </span>
               </div>
-            </div>
+            </Pop>
           </div>
         </div>
 
@@ -599,7 +407,6 @@ function AskFrame({ phase }: { phase: number }) {
           <div className="mx-auto w-full max-w-xl">
             <div className="mb-3 text-left"><ViewChip label={`Creator view · ${ALEX.first}`} color={ORANGE} /></div>
             <div className="rounded-2xl overflow-hidden text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }} aria-hidden>
-              {/* console top bar with the bell */}
               <div className="flex items-center justify-between px-4 py-2.5" style={{ backgroundColor: "#FAF8F3", borderBottom: "1px solid rgba(15,34,41,0.06)" }}>
                 <span className="px-3.5 py-1.5 rounded-full text-white text-[9.5px] uppercase tracking-widest font-headline" style={{ backgroundColor: ORANGE, fontWeight: 800 }}>
                   + Create
@@ -612,7 +419,6 @@ function AskFrame({ phase }: { phase: number }) {
                   <span className="text-[11px] font-headline" style={{ color: INK, fontWeight: 800 }}>{ALEX.name}</span>
                 </span>
               </div>
-              {/* the notifications dropdown — real port */}
               <div className="px-4 pt-3 pb-1.5 flex items-center justify-between">
                 <span className="text-[10px] uppercase tracking-[0.16em] font-headline" style={{ color: INK, fontWeight: 800 }}>Notifications</span>
                 <span className="text-[9px] uppercase tracking-widest font-headline" style={{ color: FAINT, fontWeight: 800 }}>Mark all read</span>
@@ -641,7 +447,6 @@ function AskFrame({ phase }: { phase: number }) {
                 </div>
               </div>
             </div>
-            {/* the console card — WAITING ON YOU */}
             <div className="mt-3 rounded-2xl p-4 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }} aria-hidden>
               <p className="text-[9px] uppercase tracking-[0.2em] font-headline mb-2" style={{ color: FAINT, fontWeight: 800 }}>Needs you</p>
               <div className="rounded-xl px-3.5 py-2.5 flex items-center justify-between" style={{ backgroundColor: "rgba(255,97,48,0.06)", boxShadow: "0 0 0 1.5px rgba(255,97,48,0.30)" }}>
@@ -655,7 +460,7 @@ function AskFrame({ phase }: { phase: number }) {
           </div>
         </div>
 
-        {/* state 3 — the answered post, real port */}
+        {/* state 3 — the answered post */}
         <div
           className="absolute inset-0 flex flex-col justify-center"
           style={{ opacity: phase >= 2 ? 1 : 0, transform: phase >= 2 ? "none" : "translateY(14px)", transition: `opacity ${CUT_MS}ms ${EASE} ${phase >= 2 ? 80 : 0}ms, transform ${CUT_MS}ms ${EASE} ${phase >= 2 ? 80 : 0}ms`, pointerEvents: "none" }}
@@ -703,8 +508,284 @@ function AskFrame({ phase }: { phase: number }) {
   );
 }
 
-/* ══ Frame 5 · Outro — alive by design ══════════════════════ */
-function HandoffFrame({ active = true }: { active?: boolean }) {
+/* ══ Frame 3 · The engagement loop ══════════════════════════ */
+function LoopFrame({ phase }: { phase: number }) {
+  const isPeak = phase === 2;
+  return (
+    <div className={`w-full max-w-2xl mx-auto ${FIT}`}>
+      {/* four-state head — the peak's head lives inside its own state */}
+      <div className="relative mb-8" style={{ minHeight: 150 }}>
+        {[
+          {
+            on: phase === 0,
+            kicker: "03 · The engagement loop — when someone joins",
+            accent: CYAN,
+            title: "No cold start.",
+            copy: "The moment someone joins, the space asks them to introduce themselves.",
+            light: false,
+          },
+          {
+            on: phase === 1,
+            kicker: "Before every session",
+            accent: ORANGE,
+            title: "The pulse takes the temperature.",
+            copy: "A check-in lands — the tribe arrives ready, and everyone sees it.",
+            light: false,
+          },
+          {
+            on: phase === 2,
+            kicker: "And then",
+            accent: "#ef4444",
+            title: "It's live.",
+            copy: "No links, no logins — training together, right now.",
+            light: true,
+          },
+          {
+            on: phase >= 3,
+            kicker: "After the session",
+            accent: CYAN,
+            title: "The reflection closes the loop.",
+            copy: "Every prompt becomes a post — the feed keeps its own rhythm.",
+            light: false,
+          },
+        ].map((h, i) => (
+          <div key={i} className="absolute inset-x-0 top-0" style={{ opacity: h.on ? 1 : 0, transition: `opacity ${CUT_MS}ms ${EASE} ${h.on ? 80 : 0}ms` }}>
+            <MechHead kicker={h.kicker} accent={h.accent} title={h.title} copy={h.copy} light={h.light} />
+          </div>
+        ))}
+      </div>
+
+      <div className="relative" style={{ minHeight: 400 }}>
+        {/* p0 — the intro prompt */}
+        <div
+          className="absolute inset-0 flex flex-col justify-center gap-3"
+          style={{ opacity: phase === 0 ? 1 : 0, transform: phase === 0 ? "none" : "translateY(-14px)", transition: `opacity ${CUT_MS}ms ${EASE}, transform ${CUT_MS}ms ${EASE}`, pointerEvents: "none" }}
+        >
+          <div className="mx-auto w-full max-w-xl rounded-2xl p-4 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.06), inset 3.5px 0 0 " + CYAN }} aria-hidden>
+            <p className="text-[9px] uppercase tracking-[0.16em] font-headline" style={{ color: CYAN, fontWeight: 800 }}>
+              New in the tribe · Your experts asked
+            </p>
+            <p className="text-[12.5px] font-bold font-headline leading-snug mt-1.5" style={{ color: INK }}>
+              {EX.introPrompt}
+            </p>
+          </div>
+          <Pop show={phase === 0} d={300} className="mx-auto w-full max-w-xl">
+            <TribePost initial="N" color={ORANGE} name="Nina" when="just now" text="Joined! Desk job, two kids — here to get my energy back 💪" chip="Introduction" />
+          </Pop>
+        </div>
+
+        {/* p1 — the pulse */}
+        <div
+          className="absolute inset-0 flex flex-col justify-center gap-3"
+          style={{ opacity: phase === 1 ? 1 : 0, transform: phase === 1 ? "none" : "translateY(14px)", transition: `opacity ${CUT_MS}ms ${EASE} ${phase === 1 ? 80 : 0}ms, transform ${CUT_MS}ms ${EASE} ${phase === 1 ? 80 : 0}ms`, pointerEvents: "none" }}
+        >
+          <div className="mx-auto w-full max-w-xl rounded-2xl p-4 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.06), inset 3.5px 0 0 " + ORANGE }} aria-hidden>
+            <p className="text-[9px] uppercase tracking-[0.16em] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>
+              Pulse · before the session
+            </p>
+            <p className="text-[12.5px] font-bold font-headline leading-snug mt-1.5" style={{ color: INK }}>
+              {ROOM.next.title} — how ready are you?
+            </p>
+            <div className="mt-3 relative h-1.5 rounded-full" style={{ backgroundColor: "rgba(15,34,41,0.08)" }}>
+              <div className="absolute inset-y-0 left-0 rounded-full" style={{ width: "80%", backgroundColor: CYAN }} />
+              <span className="absolute -top-[4px] w-3.5 h-3.5 rounded-full" style={{ left: "77%", backgroundColor: "#FFFFFF", boxShadow: `0 0 0 2px ${CYAN}` }} />
+            </div>
+            <div className="flex items-center justify-between mt-1.5">
+              <span className="text-[8.5px]" style={{ color: FAINT }}>0</span>
+              <span className="text-[10px] font-black font-headline" style={{ color: CYAN }}>8 / 10</span>
+              <span className="text-[8.5px]" style={{ color: FAINT }}>10</span>
+            </div>
+          </div>
+          <Pop show={phase === 1} d={300} className="mx-auto w-full max-w-xl">
+            <TribePost initial="L" color={ORANGE} name="Lea" when="just now" text="Ready! Legs still remembering Monday though 😅" chip="Pulse · 8/10" />
+          </Pop>
+        </div>
+
+        {/* p2 — THE PEAK: the room, as energy */}
+        <div
+          className="absolute inset-0 flex flex-col items-center justify-center"
+          style={{ opacity: isPeak ? 1 : 0, transition: `opacity ${CUT_MS + 100}ms ${EASE} ${isPeak ? 120 : 0}ms`, pointerEvents: "none" }}
+          aria-hidden
+        >
+          <div className="relative flex items-center justify-center" style={{ width: 260, height: 260 }}>
+            {/* pulsing rings — training, together, right now */}
+            {[170, 220, 260].map((s, i) => (
+              <span
+                key={s}
+                className="absolute rounded-full animate-ping"
+                style={{
+                  width: s,
+                  height: s,
+                  border: `1.5px solid ${i === 1 ? "rgba(255,97,48,0.5)" : "rgba(156,240,255,0.4)"}`,
+                  animationDuration: "2.6s",
+                  animationDelay: `${i * 0.45}s`,
+                }}
+              />
+            ))}
+            <span className="absolute rounded-full" style={{ width: 150, height: 150, backgroundColor: "rgba(156,240,255,0.06)", border: "1px solid rgba(156,240,255,0.25)" }} />
+            {/* the hosts, present */}
+            <div className="relative flex flex-col items-center gap-2.5">
+              <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.2em] font-headline" style={{ color: "#ef4444", fontWeight: 800 }}>
+                <span className="w-2 h-2 rounded-full bg-[#ef4444] animate-pulse" />
+                Live
+              </span>
+              <span className="flex -space-x-2.5">
+                {[ALEX.avatar, MIRA.avatar].map((a) => (
+                  <span key={a} className="w-12 h-12 rounded-full overflow-hidden" style={{ border: "2px solid rgba(246,243,236,0.9)" }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={a} alt="" className="w-full h-full object-cover" />
+                  </span>
+                ))}
+              </span>
+              <span className="flex -space-x-1">
+                {["A", "S", "L", "J", "N", "E"].map((m) => (
+                  <span key={m} className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-headline" style={{ backgroundColor: "rgba(156,240,255,0.14)", color: "#9CF0FF", fontWeight: 800, border: "1px solid rgba(12,38,46,0.8)" }}>
+                    {m}
+                  </span>
+                ))}
+              </span>
+            </div>
+          </div>
+          <p className="text-[13px] font-bold font-headline mt-2" style={{ color: LIGHT_MUTED }}>
+            8 in the room — training together.
+          </p>
+          {/* the heartbeat, drawn — Act 1's promise, kept */}
+          <svg width="340" height="44" viewBox="0 0 340 44" fill="none" className="mt-4" aria-hidden>
+            <defs>
+              <linearGradient id="lw-peak-grad" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="#9CF0FF" />
+                <stop offset="45%" stopColor="#9CF0FF" />
+                <stop offset="70%" stopColor="#FF6130" />
+                <stop offset="100%" stopColor="#FF6130" />
+              </linearGradient>
+            </defs>
+            <path d="M0,22 H120 L138,22 L150,6 L164,38 L176,22 H340" stroke="url(#lw-peak-grad)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
+
+        {/* p3 — the reflection */}
+        <div
+          className="absolute inset-0 flex flex-col justify-center gap-3"
+          style={{ opacity: phase >= 3 ? 1 : 0, transform: phase >= 3 ? "none" : "translateY(14px)", transition: `opacity ${CUT_MS}ms ${EASE} ${phase >= 3 ? 80 : 0}ms, transform ${CUT_MS}ms ${EASE} ${phase >= 3 ? 80 : 0}ms`, pointerEvents: "none" }}
+        >
+          <div className="mx-auto w-full max-w-xl rounded-2xl p-4 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.06), inset 3.5px 0 0 " + CYAN }} aria-hidden>
+            <p className="text-[9px] uppercase tracking-[0.16em] font-headline" style={{ color: CYAN, fontWeight: 800 }}>
+              Reflection · after the session
+            </p>
+            <p className="text-[12.5px] font-bold font-headline leading-snug mt-1.5" style={{ color: INK }}>
+              How was &ldquo;{ROOM.next.title}&rdquo;?
+            </p>
+          </div>
+          <Pop show={phase >= 3} d={250} className="mx-auto w-full max-w-xl">
+            <TribePost initial="A" color={CYAN} name="Anna" when="just now" text="That last set — didn't think I had it in me. This group 🔥" chip="Energy after · 9/10" />
+          </Pop>
+          <Pop show={phase >= 3} d={250 + CASCADE_MS} className="mx-auto w-full max-w-xl">
+            <TribePost initial="S" color={ORANGE} name="Sam" when="just now" text="Same. Nina — welcome, you picked the right tribe ✓" />
+          </Pop>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ══ Frame 4 · It compounds ═════════════════════════════════ */
+function CompoundFrame({ phase, active }: { phase: number; active: boolean }) {
+  const wrapped = phase >= 1;
+  const fill = !active ? "25%" : wrapped ? "100%" : "85%";
+  const litWeeks = !active ? 2 : wrapped ? 6 : 5;
+  return (
+    <div className={`w-full max-w-2xl mx-auto ${FIT}`}>
+      {/* two-state head */}
+      <div className="relative mb-8" style={{ minHeight: 150 }}>
+        <div className="absolute inset-x-0 top-0" style={{ opacity: wrapped ? 0 : 1, transition: `opacity ${CUT_MS}ms ${EASE}` }}>
+          <MechHead
+            kicker="04 · It compounds"
+            accent={ORANGE}
+            title="Every session builds the run."
+            copy="Attendance and progression — tracked in the space, for you and every member."
+          />
+        </div>
+        <div className="absolute inset-x-0 top-0" style={{ opacity: wrapped ? 1 : 0, transition: `opacity ${CUT_MS}ms ${EASE} 80ms` }}>
+          <MechHead
+            kicker="04 · It compounds"
+            accent={ORANGE}
+            title="The run wraps — the space stays open."
+            copy="The tribe rejoins for the next run; new members jump in."
+          />
+        </div>
+      </div>
+
+      {/* the progress — one persistent composition, the bar carries through */}
+      <div className="rounded-3xl p-6" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }} aria-hidden>
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-[10px] uppercase tracking-[0.2em] font-headline" style={{ color: FAINT, fontWeight: 800 }}>
+            {EX.title}
+          </p>
+          <span className="text-[11px] font-black font-headline" style={{ color: wrapped ? "#16a34a" : ORANGE, transition: `color ${CUT_MS}ms ${EASE}` }}>
+            {wrapped ? <>Run complete {CHECK("#16a34a", 11)}</> : "Session by session"}
+          </span>
+        </div>
+        <div className="h-3 rounded-full overflow-hidden" style={{ backgroundColor: "rgba(15,34,41,0.08)" }}>
+          <div
+            className="h-full rounded-full"
+            style={{
+              width: fill,
+              background: `linear-gradient(90deg, ${CYAN}, ${ORANGE})`,
+              transition: `width 1400ms ${EASE}`,
+            }}
+          />
+        </div>
+        <div className="flex items-center justify-between mt-3">
+          {EX.arc.map((theme, i) => (
+            <span key={theme} className="flex flex-col items-center gap-1" style={{ width: `${100 / 6}%` }}>
+              <span
+                className="rounded-full"
+                style={{
+                  width: i < litWeeks ? 10 : 7,
+                  height: i < litWeeks ? 10 : 7,
+                  backgroundColor: i < litWeeks ? ORANGE : "rgba(15,34,41,0.14)",
+                  boxShadow: i < litWeeks ? "0 0 0 3px rgba(255,97,48,0.15)" : undefined,
+                  transition: `all 400ms ${EASE} ${i * 130}ms`,
+                }}
+              />
+              <span className="text-[8px] uppercase tracking-widest font-headline" style={{ color: i < litWeeks ? ORANGE : FAINT, fontWeight: 800, transition: `color 400ms ${EASE} ${i * 130}ms` }}>
+                W{i + 1}
+              </span>
+            </span>
+          ))}
+        </div>
+
+        {/* the retention loop — pops when the run wraps, space reserved */}
+        <Pop show={wrapped} d={500} from="translateY(16px)">
+          <div className="mt-6 text-left">
+            <div className="flex items-center gap-3">
+              <div className="flex-1 rounded-2xl p-3.5 opacity-70" style={{ backgroundColor: "rgba(250,248,243,1)", boxShadow: "0 0 0 1px rgba(15,34,41,0.08)" }}>
+                <p className="text-[8px] uppercase tracking-widest font-headline" style={{ color: FAINT, fontWeight: 800 }}>Run 1</p>
+                <p className="text-[12.5px] font-black font-headline mt-1" style={{ color: MUTED }}>✓ Completed</p>
+              </div>
+              <svg width="26" height="14" viewBox="0 0 26 14" fill="none" className="shrink-0" aria-hidden>
+                <line x1="1" y1="7" x2="20" y2="7" stroke={CYAN} strokeWidth={1.6} strokeLinecap="round" />
+                <path d="M16 2 L23 7 L16 12" stroke={CYAN} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <div className="flex-1 rounded-2xl p-3.5" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1.5px rgba(255,97,48,0.30), 0 12px 32px rgba(15,34,41,0.10)" }}>
+                <p className="text-[8px] uppercase tracking-widest font-headline flex items-center gap-1" style={{ color: "#ef4444", fontWeight: 800 }}>
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#ef4444] animate-pulse" /> Run 2 · Live now
+                </p>
+                <p className="text-[12.5px] font-black font-headline mt-1" style={{ color: INK }}>Same space, next chapter</p>
+              </div>
+            </div>
+            <p className="text-[11px] font-bold font-headline mt-3 text-center" style={{ color: FAINT }}>
+              The tribe carries over — rejoining is one tap, new members jump in.
+            </p>
+          </div>
+        </Pop>
+      </div>
+    </div>
+  );
+}
+
+/* ══ Frame 5 · Outro ════════════════════════════════════════ */
+function HandoffFrame() {
   return (
     <div className="w-full max-w-3xl mx-auto text-center">
       <p className="text-4xl md:text-6xl font-headline tracking-tight leading-[1.1]" style={{ color: INK, fontWeight: 700, letterSpacing: "-0.025em" }}>
@@ -713,24 +794,6 @@ function HandoffFrame({ active = true }: { active?: boolean }) {
       <p className="text-base md:text-lg mt-6 max-w-xl mx-auto leading-relaxed" style={{ color: MUTED }}>
         The rhythm is built in — your tribe brings it to life.
       </p>
-      <Pop show={active} d={400}>
-        <div
-          className="mt-9 mx-auto max-w-md rounded-2xl px-4 py-3 flex items-center justify-between gap-3 text-left"
-          style={{ background: "linear-gradient(135deg, rgba(255,97,48,0.14), rgba(255,97,48,0.05))", boxShadow: "0 0 0 1px rgba(255,97,48,0.26)" }}
-        >
-          <div className="min-w-0">
-            <p className="text-[9px] uppercase tracking-[0.16em] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>
-              And when the run wraps
-            </p>
-            <p className="text-[13px] font-black font-headline truncate mt-0.5" style={{ color: INK }}>
-              The next one opens — the tribe carries over
-            </p>
-          </div>
-          <span className="shrink-0 px-4 py-2 rounded-full text-white text-[11px] font-black font-headline" style={{ backgroundColor: ORANGE, boxShadow: "0 4px 12px rgba(255,97,48,0.30)" }}>
-            Join →
-          </span>
-        </div>
-      </Pop>
     </div>
   );
 }
@@ -746,8 +809,8 @@ function IntroFrame() {
         Designed to feel alive.
       </h2>
       <p className="text-base md:text-xl leading-relaxed max-w-2xl mx-auto" style={{ color: MUTED }}>
-        Real people bring the life — the space gives them every reason.
-        These are the mechanics.
+        What you published isn&apos;t a video library — it&apos;s a room your
+        tribe shows up to.
       </p>
     </div>
   );
@@ -759,6 +822,7 @@ export function LiveWeek() {
 
   const frame = BEATS[beat].f;
   const phase = BEATS[beat].p;
+  const peak = frame === 3 && phase === 2;
 
   const railMid = BOUNDS[beat][0] + BEATS[beat].w / 2;
   const railSp = Math.min(1, Math.max(0, (railMid - STEP_SPAN[0]) / (STEP_SPAN[1] - STEP_SPAN[0])));
@@ -768,10 +832,11 @@ export function LiveWeek() {
       <section className="px-4 sm:px-6 py-20">
         <div className="max-w-5xl mx-auto text-center">
           <div className="py-8"><IntroFrame /></div>
-          <div className="py-12"><SpaceFrame /></div>
-          <div className="py-12"><CalendarFrame phase={1} /></div>
-          <div className="py-12"><FeedFrame phase={1} /></div>
-          <div className="py-12"><AskFrame phase={2} /></div>
+          <div className="py-12"><SpaceFrame phase={1} /></div>
+          <div className="py-12"><HandsFrame phase={0} /></div>
+          <div className="py-12"><HandsFrame phase={2} /></div>
+          <div className="py-12"><LoopFrame phase={3} /></div>
+          <div className="py-12"><CompoundFrame phase={1} active /></div>
           <div className="py-12"><HandoffFrame /></div>
         </div>
       </section>
@@ -783,9 +848,12 @@ export function LiveWeek() {
       {/* breathing gap between the two chapters — the waves, alone */}
       <div className="h-[26vh]" aria-hidden />
       <div ref={wrapperRef} className="relative" style={{ height: `${runwayVh}vh` }}>
-        <div className="sticky top-0 w-full overflow-hidden h-screen" style={{ height: "100dvh" }}>
-          {/* Mechanics rail — desktop */}
-          <div className="hidden lg:flex absolute left-8 xl:left-14 top-1/2 -translate-y-1/2 z-20 items-stretch gap-4" style={{ opacity: frame >= 1 && frame <= 4 ? 1 : 0, transition: "opacity 400ms ease" }}>
+        <div
+          className="sticky top-0 w-full overflow-hidden h-screen"
+          style={{ height: "100dvh", backgroundColor: peak ? TEAL : "rgba(12,38,46,0)", transition: `background-color 500ms ${EASE}` }}
+        >
+          {/* Mechanics rail — desktop (stands down during the dark peak) */}
+          <div className="hidden lg:flex absolute left-8 xl:left-14 top-1/2 -translate-y-1/2 z-20 items-stretch gap-4" style={{ opacity: frame >= 1 && frame <= 4 && !peak ? 1 : 0, transition: "opacity 400ms ease" }}>
             <div className="relative w-[3px] rounded-full" style={{ backgroundColor: "rgba(15,34,41,0.12)" }}>
               <div className="absolute top-0 left-0 w-full rounded-full" style={{ height: `${(railSp * 100).toFixed(1)}%`, backgroundColor: ORANGE, boxShadow: "0 0 10px rgba(255,97,48,0.35)", transition: `height 600ms ${EASE}` }} />
             </div>
@@ -819,7 +887,7 @@ export function LiveWeek() {
           </div>
 
           {/* Progress dots — mobile */}
-          <div className="lg:hidden absolute top-5 inset-x-0 z-20 flex justify-center gap-1.5" aria-hidden style={{ opacity: frame >= 1 && frame <= 4 ? 1 : 0, transition: "opacity 400ms ease" }}>
+          <div className="lg:hidden absolute top-5 inset-x-0 z-20 flex justify-center gap-1.5" aria-hidden style={{ opacity: frame >= 1 && frame <= 4 && !peak ? 1 : 0, transition: "opacity 400ms ease" }}>
             {RAIL.map((s) => (
               <span key={s.frame} className="h-1.5 rounded-full transition-all duration-300" style={{ width: frame === s.frame ? 18 : 6, backgroundColor: frame === s.frame ? ORANGE : "rgba(15,34,41,0.20)" }} />
             ))}
@@ -844,11 +912,11 @@ export function LiveWeek() {
               >
                 <div className="w-full max-w-5xl mx-auto">
                   {f === 0 && <IntroFrame />}
-                  {f === 1 && <SpaceFrame />}
-                  {f === 2 && <CalendarFrame phase={active ? phase : 0} />}
-                  {f === 3 && <FeedFrame phase={active ? phase : 0} />}
-                  {f === 4 && <AskFrame phase={active ? phase : 0} />}
-                  {f === 5 && <HandoffFrame active={active} />}
+                  {f === 1 && <SpaceFrame phase={active ? phase : 0} />}
+                  {f === 2 && <HandsFrame phase={active ? phase : 0} />}
+                  {f === 3 && <LoopFrame phase={active ? phase : 0} />}
+                  {f === 4 && <CompoundFrame phase={active ? phase : 0} active={active} />}
+                  {f === 5 && <HandoffFrame />}
                 </div>
               </div>
             );
