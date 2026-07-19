@@ -31,7 +31,7 @@ export function WaitlistForm() {
 
   return (
     <form action={action}>
-      <div className="flex flex-col sm:flex-row gap-2.5">
+      <div className="flex flex-col gap-3">
         {/* Honeypot — hidden from real users, tempting to bots. */}
         <input type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden className="hidden" />
         <input
@@ -39,13 +39,13 @@ export function WaitlistForm() {
           name="email"
           required
           placeholder="you@email.com"
-          className="flex-1 min-w-0 rounded-full px-5 py-3.5 text-[15px] outline-none"
+          className="w-full rounded-full px-6 py-4 text-base outline-none"
           style={{ backgroundColor: "#FFFFFF", color: "#0F2229", boxShadow: "0 0 0 1.5px rgba(8,145,178,0.30)" }}
         />
         <button
           type="submit"
           disabled={pending}
-          className="shrink-0 px-7 py-3.5 rounded-full text-white text-[15px] font-headline transition-transform hover:scale-[1.02] disabled:opacity-60"
+          className="w-full px-7 py-4 rounded-full text-white text-base font-headline transition-transform hover:scale-[1.02] disabled:opacity-60 whitespace-nowrap"
           style={{ backgroundColor: CYAN, fontWeight: 800, boxShadow: "0 6px 20px rgba(8,145,178,0.30)" }}
         >
           {pending ? "Joining…" : "Join the waitlist"}

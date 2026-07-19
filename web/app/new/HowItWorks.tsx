@@ -723,6 +723,9 @@ export function HowItWorks() {
           {/* Frames — hard cuts, one visible at a time, all centered */}
           {[0, 1, 2, 3, 4, 5].map((f) => {
             const active = frame === f;
+            // The rail gutter applies only to railed frames — the intro and
+            // outro center on the full page, like the rail isn't there.
+            const railed = f >= 1 && f <= 4;
             return (
               <div
                 key={f}
@@ -730,7 +733,7 @@ export function HowItWorks() {
                   frameRefs.current[f] = el;
                 }}
                 aria-hidden={!active}
-                className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center px-5 sm:px-8 lg:pl-64 lg:pr-16 pt-24 pb-14"
+                className={`absolute inset-0 z-10 flex flex-col items-center justify-center text-center pt-24 pb-14 ${railed ? "px-5 sm:px-8 lg:pl-64 lg:pr-16" : "px-5 sm:px-8"}`}
                 style={{
                   opacity: active ? 1 : 0,
                   transform: active ? "none" : "translateY(12px)",

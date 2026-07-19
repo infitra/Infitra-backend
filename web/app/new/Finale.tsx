@@ -1,4 +1,4 @@
-import { INK, ORANGE, CYAN, MUTED, FAINT, ApplyCTA } from "./ui";
+import { INK, ORANGE, CYAN, MUTED, ApplyCTA } from "./ui";
 import { Reveal } from "./Reveal";
 import { WaitlistForm } from "./WaitlistForm";
 
@@ -13,20 +13,24 @@ export function Finale() {
   return (
     <section id="join" className="px-6 pt-24 pb-32" style={{ background: "linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.45) 16%, rgba(255,255,255,0.45) 100%)" }}>
       <div className="max-w-5xl mx-auto">
-        {/* The answer to "Ready to join the movement?" */}
+        {/* Question → answer → doors, one viewport. Act 2 releases into this. */}
         <div className="text-center max-w-3xl mx-auto mb-14 md:mb-16">
-          <p className="text-[10.5px] uppercase tracking-[0.25em] font-headline mb-4" style={{ color: ORANGE, fontWeight: 800 }}>
-            This is how you can be part
+          <p
+            className="text-xl md:text-3xl font-headline tracking-tight mb-4"
+            style={{ color: INK, fontWeight: 700, letterSpacing: "-0.02em" }}
+          >
+            Ready to join <span style={{ color: ORANGE }}>the movement?</span>
           </p>
           <h2
-            className="text-4xl md:text-6xl font-headline tracking-tight leading-[1.05] mb-6"
+            className="text-4xl md:text-7xl font-headline tracking-tight leading-[1.02] mb-6"
             style={{ color: INK, fontWeight: 700, letterSpacing: "-0.025em" }}
           >
             The room <span style={{ color: ORANGE }}>is open.</span>
           </h2>
           <p className="text-base md:text-xl leading-relaxed max-w-2xl mx-auto" style={{ color: MUTED }}>
             Digital fitness is shifting — from paying for access to content, to
-            participating in live experiences built together. Two ways in.
+            participating in live experiences built together. Shape what INFITRA
+            becomes and position yourself early. Two ways in.
           </p>
         </div>
 
@@ -49,18 +53,8 @@ export function Finale() {
                 running for your audience.
               </p>
 
-              <div className="flex flex-col sm:flex-row sm:items-center gap-5 mt-auto pt-9">
-                <ApplyCTA />
-                <div>
-                  <span className="flex items-center gap-1.5" aria-hidden>
-                    {[0, 1, 2, 3, 4].map((i) => (
-                      <span key={i} className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "rgba(255,97,48,0.30)", boxShadow: "inset 0 0 0 1.5px rgba(255,97,48,0.55)" }} />
-                    ))}
-                  </span>
-                  <p className="text-[11px] mt-2 tracking-wide" style={{ color: FAINT }}>
-                    5 founding slots · DACH · reviewed individually
-                  </p>
-                </div>
+              <div className="mt-auto pt-9 flex justify-center">
+                <ApplyCTA micro="5 founding pairs · reviewed individually · starting now" />
               </div>
             </div>
 

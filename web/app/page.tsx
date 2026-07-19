@@ -1031,7 +1031,7 @@ export default function LandingPage() {
                 className="text-base md:text-lg max-w-xl mx-auto leading-relaxed mb-10"
                 style={{ color: "#475569" }}
               >
-                Closed pilot with fitness creator pairs in DACH (Switzerland, Germany, Austria).
+                Closed pilot with fitness creator pairs.
                 One joint challenge per pair, run live with direct support.
               </p>
 

@@ -6,6 +6,7 @@ import { HowItWorks } from "./HowItWorks";
 import { LiveWeek } from "./LiveWeek";
 import { Finale } from "./Finale";
 import { Footer } from "./Footer";
+import { JoinWaitlistLink } from "./JoinWaitlistLink";
 
 /**
  * LANDING V2 — the product-showcase landing (LANDING_V2_PLAN.md, round 2
@@ -66,13 +67,16 @@ export default function LandingV2Page() {
                 INFITRA
               </span>
             </Link>
-            <Link
-              href="/apply"
-              className="px-5 py-2 rounded-full text-xs font-headline font-bold text-white uppercase tracking-widest"
-              style={{ backgroundColor: "#FF6130", boxShadow: "0 2px 8px rgba(255,97,48,0.3)" }}
-            >
-              Apply
-            </Link>
+            <div className="flex items-center gap-2.5">
+              <JoinWaitlistLink />
+              <Link
+                href="/apply"
+                className="px-5 py-2 rounded-full text-xs font-headline font-bold text-white uppercase tracking-widest whitespace-nowrap"
+                style={{ backgroundColor: "#FF6130", boxShadow: "0 2px 8px rgba(255,97,48,0.3)" }}
+              >
+                Apply as creator
+              </Link>
+            </div>
           </div>
         </nav>
 

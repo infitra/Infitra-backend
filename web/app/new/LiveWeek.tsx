@@ -39,8 +39,7 @@ const BEATS: BeatDef[] = [
   { f: 3, p: 2, w: 1.3 }, // — THE PEAK: you're live
   { f: 3, p: 3, w: 1 }, // — the reflection closes it
   { f: 4, p: 0, w: 1.1 }, // it compounds — the run builds
-  { f: 4, p: 1, w: 1.2 }, // — the retention loop opens
-  { f: 5, p: 0, w: 1.5 }, // outro
+  { f: 4, p: 1, w: 1.2 }, // — the retention loop opens; releases into the finale
 ];
 const BOUNDS = computeBounds(BEATS);
 const STEP_SPAN: [number, number] = [BOUNDS[1][0], BOUNDS[12][1]];
@@ -884,21 +883,9 @@ function CompoundFrame({ phase, active }: { phase: number; active: boolean }) {
   );
 }
 
-/* ══ Frame 5 · Outro — the bridge into conversion ═══════════ */
-function HandoffFrame() {
-  return (
-    <div className="w-full max-w-3xl mx-auto text-center">
-      <p className="text-4xl md:text-6xl font-headline tracking-tight leading-[1.1]" style={{ color: INK, fontWeight: 700, letterSpacing: "-0.025em" }}>
-        Ready to join <span style={{ color: ORANGE }}>the movement?</span>
-      </p>
-      <p className="text-base md:text-lg mt-6 max-w-xl mx-auto leading-relaxed" style={{ color: MUTED }}>
-        Everything you just scrolled through is heading into its founding
-        pilot — the first experiences, the first tribes. Shape what INFITRA
-        becomes and position yourself early.
-      </p>
-    </div>
-  );
-}
+/* The outro beat is gone by design: Act 2 ends on the retention loop and
+   releases straight into the Finale, which opens with the question
+   ("Ready to join the movement?") and answers it in the same viewport. */
 
 /* ══ Frame 0 · Intro ════════════════════════════════════════ */
 function IntroFrame() {
@@ -940,7 +927,6 @@ export function LiveWeek() {
           <div className="py-12"><HandsFrame phase={3} /></div>
           <div className="py-12"><LoopFrame phase={3} onJoin={() => {}} /></div>
           <div className="py-12"><CompoundFrame phase={1} active /></div>
-          <div className="py-12"><HandoffFrame /></div>
         </div>
       </section>
     );
@@ -1001,13 +987,16 @@ export function LiveWeek() {
              stays in the same rail-gutter position as every other beat — it's
              part of the same swipe sequence, dramatized only by the background
              shift, not by a full-bleed takeover. */}
-          {[0, 1, 2, 3, 4, 5].map((f) => {
+          {[0, 1, 2, 3, 4].map((f) => {
             const active = frame === f;
+            // The rail gutter applies only to railed frames — the intro
+            // centers on the full page, like the rail isn't there (it isn't).
+            const railed = f >= 1 && f <= 4;
             return (
               <div
                 key={f}
                 aria-hidden={!active}
-                className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center px-5 sm:px-8 lg:pl-64 lg:pr-16 pt-24 pb-14"
+                className={`absolute inset-0 z-10 flex flex-col items-center justify-center text-center pt-24 pb-14 ${railed ? "px-5 sm:px-8 lg:pl-64 lg:pr-16" : "px-5 sm:px-8"}`}
                 style={{
                   opacity: active ? 1 : 0,
                   transform: active ? "none" : "translateY(12px)",
@@ -1023,7 +1012,6 @@ export function LiveWeek() {
                   {f === 2 && <HandsFrame phase={active ? phase : 0} />}
                   {f === 3 && <LoopFrame phase={active ? phase : 0} onJoin={() => jumpToBeat(PEAK_BEAT)} />}
                   {f === 4 && <CompoundFrame phase={active ? phase : 0} active={active} />}
-                  {f === 5 && <HandoffFrame />}
                 </div>
               </div>
             );

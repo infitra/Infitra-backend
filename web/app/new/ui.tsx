@@ -63,10 +63,10 @@ export function ApplyCTA({
   micro?: string;
 }) {
   return (
-    <div className={small ? "text-center" : ""}>
+    <div className="text-center">
       <Link
         href="/apply"
-        className={`inline-block rounded-full text-white font-headline tracking-wide transition-transform hover:scale-[1.03] ${
+        className={`inline-block whitespace-nowrap rounded-full text-white font-headline tracking-wide transition-transform hover:scale-[1.03] ${
           small ? "px-8 py-3 text-base" : "px-12 py-4 text-lg"
         }`}
         style={{
