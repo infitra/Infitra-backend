@@ -953,9 +953,10 @@ export function LiveWeek() {
           className="sticky top-0 w-full overflow-hidden h-screen"
           style={{ height: "100dvh", backgroundColor: peak ? TEAL : "rgba(12,38,46,0)", transition: `background-color 500ms ${EASE}` }}
         >
-          {/* Mechanics rail — desktop (stands down during the dark peak) */}
-          <div className="hidden lg:flex absolute left-8 xl:left-14 top-1/2 -translate-y-1/2 z-20 items-stretch gap-4" style={{ opacity: frame >= 1 && frame <= 4 && !peak ? 1 : 0, transition: "opacity 400ms ease" }}>
-            <div className="relative w-[3px] rounded-full" style={{ backgroundColor: "rgba(15,34,41,0.12)" }}>
+          {/* Mechanics rail — desktop (stays through the peak; colors adapt to
+             the dark background so the swipe progress keeps reading) */}
+          <div className="hidden lg:flex absolute left-8 xl:left-14 top-1/2 -translate-y-1/2 z-20 items-stretch gap-4" style={{ opacity: frame >= 1 && frame <= 4 ? 1 : 0, transition: "opacity 400ms ease" }}>
+            <div className="relative w-[3px] rounded-full" style={{ backgroundColor: peak ? "rgba(246,243,236,0.20)" : "rgba(15,34,41,0.12)", transition: `background-color 400ms ${EASE}` }}>
               <div className="absolute top-0 left-0 w-full rounded-full" style={{ height: `${(railSp * 100).toFixed(1)}%`, backgroundColor: ORANGE, boxShadow: "0 0 10px rgba(255,97,48,0.35)", transition: `height 600ms ${EASE}` }} />
             </div>
             <div className="flex flex-col justify-between gap-10 py-1">
@@ -970,15 +971,15 @@ export function LiveWeek() {
                   <span
                     className="shrink-0 w-3 h-3 rounded-full transition-all duration-300"
                     style={{
-                      backgroundColor: frame === s.frame ? ORANGE : "rgba(15,34,41,0.22)",
+                      backgroundColor: frame === s.frame ? ORANGE : peak ? "rgba(246,243,236,0.38)" : "rgba(15,34,41,0.22)",
                       boxShadow: frame === s.frame ? "0 0 14px rgba(255,97,48,0.45)" : undefined,
                     }}
                   />
                   <span className="min-w-0">
-                    <span className="block text-[11px] uppercase tracking-[0.2em] font-headline" style={{ color: frame === s.frame ? ORANGE : FAINT, fontWeight: 800 }}>
+                    <span className="block text-[11px] uppercase tracking-[0.2em] font-headline" style={{ color: frame === s.frame ? ORANGE : peak ? "rgba(246,243,236,0.55)" : FAINT, fontWeight: 800, transition: `color 400ms ${EASE}` }}>
                       {s.n}
                     </span>
-                    <span className="block text-[17px] font-headline leading-tight whitespace-nowrap" style={{ color: INK, fontWeight: 700 }}>
+                    <span className="block text-[17px] font-headline leading-tight whitespace-nowrap" style={{ color: peak ? LIGHT : INK, fontWeight: 700, transition: `color 400ms ${EASE}` }}>
                       {s.label}
                     </span>
                   </span>
@@ -988,24 +989,23 @@ export function LiveWeek() {
           </div>
 
           {/* Progress dots — mobile */}
-          <div className="lg:hidden absolute top-5 inset-x-0 z-20 flex justify-center gap-1.5" aria-hidden style={{ opacity: frame >= 1 && frame <= 4 && !peak ? 1 : 0, transition: "opacity 400ms ease" }}>
+          <div className="lg:hidden absolute top-5 inset-x-0 z-20 flex justify-center gap-1.5" aria-hidden style={{ opacity: frame >= 1 && frame <= 4 ? 1 : 0, transition: "opacity 400ms ease" }}>
             {RAIL.map((s) => (
-              <span key={s.frame} className="h-1.5 rounded-full transition-all duration-300" style={{ width: frame === s.frame ? 18 : 6, backgroundColor: frame === s.frame ? ORANGE : "rgba(15,34,41,0.20)" }} />
+              <span key={s.frame} className="h-1.5 rounded-full transition-all duration-300" style={{ width: frame === s.frame ? 18 : 6, backgroundColor: frame === s.frame ? ORANGE : peak ? "rgba(246,243,236,0.38)" : "rgba(15,34,41,0.20)" }} />
             ))}
           </div>
 
-          {/* Frames — hard cuts, one visible at a time, all centered */}
+          {/* Frames — hard cuts, one visible at a time, all centered. The peak
+             stays in the same rail-gutter position as every other beat — it's
+             part of the same swipe sequence, dramatized only by the background
+             shift, not by a full-bleed takeover. */}
           {[0, 1, 2, 3, 4, 5].map((f) => {
             const active = frame === f;
-            // During the dark peak the rail is hidden — reclaim the whole
-            // viewport (drop the rail offset + top padding) so the moment is
-            // truly centered, not pushed right by the navigation gutter.
-            const bleed = peak && f === 3;
             return (
               <div
                 key={f}
                 aria-hidden={!active}
-                className={`absolute inset-0 z-10 flex flex-col items-center justify-center text-center ${bleed ? "p-0" : "px-5 sm:px-8 lg:pl-64 lg:pr-16 pt-24 pb-14"}`}
+                className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center px-5 sm:px-8 lg:pl-64 lg:pr-16 pt-24 pb-14"
                 style={{
                   opacity: active ? 1 : 0,
                   transform: active ? "none" : "translateY(12px)",
@@ -1015,7 +1015,7 @@ export function LiveWeek() {
                   pointerEvents: active ? "auto" : "none",
                 }}
               >
-                <div className={bleed ? "w-full" : "w-full max-w-5xl mx-auto"}>
+                <div className="w-full max-w-5xl mx-auto">
                   {f === 0 && <IntroFrame />}
                   {f === 1 && <SpaceFrame phase={active ? phase : 0} />}
                   {f === 2 && <HandsFrame phase={active ? phase : 0} />}
