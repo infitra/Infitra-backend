@@ -23,8 +23,10 @@ import { INK, ORANGE, CYAN, MUTED, FAINT } from "./ui";
 /* ── Feel constants — tune on deploy ───────────────────────── */
 const BEAT_VH = 70; // runway per beat unit
 const CATCHUP_MS = 240; // damping (touch/keyboard fallback)
-const GESTURE_LOCK_MS = 800; // wheel: one gesture = one beat, then lock
+const GESTURE_MIN_MS = 500; // wheel lock: minimum hold after a step
+const GESTURE_QUIET_MS = 160; // wheel lock: releases this long after the momentum train dies
 const WHEEL_STEP_THRESHOLD = 40; // accumulated deltaY to count as a gesture
+const OUTRO_FREE_ZONE = 0.12; // inside the outro past this depth, the heartbeat scrubs freely
 const CUT_MS = 260; // frame hard-cut duration
 const POP_MS = 340; // phase reveal duration
 const CASCADE_MS = 170; // published-items stagger
@@ -688,8 +690,12 @@ export function HowItWorks() {
   const jumpGuardRef = useRef(false);
   const jumpTimerRef = useRef(0);
   const coveringRef = useRef(false);
+  const prevCoveringRef = useRef(false);
+  const posRef = useRef(0);
   const gestureLockRef = useRef(false);
-  const gestureTimerRef = useRef(0);
+  const gestureMinDoneRef = useRef(false);
+  const gestureMinTimerRef = useRef(0);
+  const gestureQuietTimerRef = useRef(0);
   const wheelAccRef = useRef(0);
 
   const frame = BEATS[beat].f;
@@ -728,9 +734,34 @@ export function HowItWorks() {
       const posT = i === BEATS.length - 1 ? BOUNDS[i][0] + 0.05 : (BOUNDS[i][0] + BOUNDS[i][1]) / 2;
       window.scrollTo({ top: window.scrollY + r.top + (posT / TOTAL_W) * total, behavior: "auto" });
     };
+    /** The lock releases only when the momentum train has actually DIED:
+     *  no wheel events for GESTURE_QUIET_MS, and at least GESTURE_MIN_MS
+     *  since the step. Every prevented wheel event re-arms the quiet timer. */
+    const armQuiet = () => {
+      window.clearTimeout(gestureQuietTimerRef.current);
+      gestureQuietTimerRef.current = window.setTimeout(() => {
+        if (gestureMinDoneRef.current) {
+          gestureLockRef.current = false;
+          wheelAccRef.current = 0;
+        } else {
+          armQuiet();
+        }
+      }, GESTURE_QUIET_MS);
+    };
+    const engageLock = () => {
+      gestureLockRef.current = true;
+      gestureMinDoneRef.current = false;
+      wheelAccRef.current = 0;
+      window.clearTimeout(gestureMinTimerRef.current);
+      gestureMinTimerRef.current = window.setTimeout(() => {
+        gestureMinDoneRef.current = true;
+      }, GESTURE_MIN_MS);
+      armQuiet();
+    };
     /** Wheel = quantized: while the stage covers the viewport, one gesture
      *  advances exactly ONE beat, then locks until the momentum train dies.
-     *  Control releases at the chapter's two exits. */
+     *  Control releases at the chapter's two exits, and the outro's
+     *  heartbeat is a free scrub zone in both directions. */
     const onWheel = (e: WheelEvent) => {
       if (!coveringRef.current) return;
       if (jumpGuardRef.current) {
@@ -738,21 +769,22 @@ export function HowItWorks() {
         return;
       }
       const b = beatRef.current;
-      if ((b === 0 && e.deltaY < 0) || (b === BEATS.length - 1 && e.deltaY > 0)) return; // natural entry/exit
+      const last = BEATS.length - 1;
+      if ((b === 0 && e.deltaY < 0) || (b === last && e.deltaY > 0)) return; // natural entry/exit
+      // outro: scrub the heartbeat freely; only at its very top edge does one
+      // decisive cut step back to the publish frame
+      if (b === last && posRef.current > BOUNDS[last][0] + OUTRO_FREE_ZONE) return;
       e.preventDefault();
-      if (gestureLockRef.current) return;
+      if (gestureLockRef.current) {
+        armQuiet(); // momentum keeps the lock alive
+        return;
+      }
       wheelAccRef.current = Math.sign(e.deltaY) === Math.sign(wheelAccRef.current) ? wheelAccRef.current + e.deltaY : e.deltaY;
       if (Math.abs(wheelAccRef.current) < WHEEL_STEP_THRESHOLD) return;
       const dir = Math.sign(wheelAccRef.current);
-      wheelAccRef.current = 0;
-      const next = Math.min(BEATS.length - 1, Math.max(0, b + dir));
+      const next = Math.min(last, Math.max(0, b + dir));
       if (next === b) return;
-      gestureLockRef.current = true;
-      window.clearTimeout(gestureTimerRef.current);
-      gestureTimerRef.current = window.setTimeout(() => {
-        gestureLockRef.current = false;
-        wheelAccRef.current = 0;
-      }, GESTURE_LOCK_MS);
+      engageLock();
       beatRef.current = next;
       setBeat(next);
       setTarget(next);
@@ -766,8 +798,23 @@ export function HowItWorks() {
       const total = r.height - window.innerHeight;
       if (total <= 0) return;
       let pos = clamp01(-r.top / total) * TOTAL_W;
+      posRef.current = pos;
       const covering = r.top <= 2 && r.bottom >= window.innerHeight - 2;
+      const entered = covering && !prevCoveringRef.current;
+      prevCoveringRef.current = covering;
       coveringRef.current = covering;
+
+      // HARD CUT on entry from above: whatever momentum carried the visitor
+      // in, they land settled on the chapter title with the lock engaged.
+      // (Entry from below lands in the outro's free scrub zone — no arrest.)
+      if (entered && !jumpGuardRef.current && pos < TOTAL_W / 2) {
+        beatRef.current = 0;
+        setBeat(0);
+        setTarget(0);
+        engageLock();
+        anchorTo(0);
+        return;
+      }
 
       // Outside the pinned region: sync beat straight from position (clean
       // entry/exit, no stale-state yanks on re-entry).
@@ -887,24 +934,30 @@ export function HowItWorks() {
 
           {/* Rail — desktop */}
           <div className="hidden lg:flex absolute left-8 xl:left-14 top-1/2 -translate-y-1/2 z-20 items-stretch gap-5" style={{ opacity: frame >= 1 && frame <= 4 ? 1 : 0.2, transition: "opacity 400ms ease" }}>
-            <div className="relative w-px rounded-full" style={{ backgroundColor: "rgba(255,255,255,0.18)" }}>
-              <div ref={railFillRef} className="absolute top-0 left-0 w-px rounded-full" style={{ height: "0%", backgroundColor: ORANGE }} />
+            <div className="relative w-[3px] rounded-full" style={{ backgroundColor: "rgba(255,255,255,0.16)" }}>
+              <div ref={railFillRef} className="absolute top-0 left-0 w-full rounded-full" style={{ height: "0%", backgroundColor: ORANGE, boxShadow: "0 0 10px rgba(255,97,48,0.45)" }} />
             </div>
-            <div className="flex flex-col justify-between gap-8 py-0.5">
+            <div className="flex flex-col justify-between gap-10 py-1">
               {RAIL.map((s) => (
                 <button
                   key={s.label}
                   type="button"
                   onClick={() => jumpToBeat(s.firstBeat)}
-                  className="flex items-center gap-3 text-left transition-opacity duration-300"
-                  style={{ opacity: frame === s.frame ? 1 : 0.4 }}
+                  className="flex items-center gap-4 text-left transition-opacity duration-300"
+                  style={{ opacity: frame === s.frame ? 1 : 0.38 }}
                 >
-                  <span className="shrink-0 w-2 h-2 rounded-full transition-colors" style={{ backgroundColor: frame === s.frame ? ORANGE : "rgba(255,255,255,0.3)" }} />
+                  <span
+                    className="shrink-0 w-3 h-3 rounded-full transition-all duration-300"
+                    style={{
+                      backgroundColor: frame === s.frame ? ORANGE : "rgba(255,255,255,0.3)",
+                      boxShadow: frame === s.frame ? "0 0 14px rgba(255,97,48,0.55)" : undefined,
+                    }}
+                  />
                   <span className="min-w-0">
-                    <span className="block text-[9.5px] uppercase tracking-widest font-headline" style={{ color: frame === s.frame ? ORANGE : "rgba(244,241,232,0.5)", fontWeight: 800 }}>
+                    <span className="block text-[11px] uppercase tracking-[0.2em] font-headline" style={{ color: frame === s.frame ? ORANGE : "rgba(244,241,232,0.5)", fontWeight: 800 }}>
                       0{s.frame}
                     </span>
-                    <span className="block text-[13px] font-headline leading-tight whitespace-nowrap" style={{ color: LIGHT, fontWeight: 700 }}>
+                    <span className="block text-[17px] font-headline leading-tight whitespace-nowrap" style={{ color: LIGHT, fontWeight: 700 }}>
                       {s.label}
                     </span>
                   </span>
@@ -930,7 +983,7 @@ export function HowItWorks() {
                   frameRefs.current[f] = el;
                 }}
                 aria-hidden={!active}
-                className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center px-5 sm:px-8 lg:pl-60 lg:pr-16 pt-24 pb-14"
+                className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center px-5 sm:px-8 lg:pl-64 lg:pr-16 pt-24 pb-14"
                 style={{
                   opacity: active ? 1 : 0,
                   transform: active ? "none" : "translateY(12px)",
