@@ -67,14 +67,15 @@ export default function LandingV2Page() {
                 INFITRA
               </span>
             </Link>
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2 sm:gap-2.5">
               <JoinWaitlistLink />
               <Link
                 href="/apply"
-                className="px-5 py-2 rounded-full text-xs font-headline font-bold text-white uppercase tracking-widest whitespace-nowrap"
+                className="px-3.5 sm:px-5 py-2 rounded-full text-xs font-headline font-bold text-white uppercase tracking-widest whitespace-nowrap"
                 style={{ backgroundColor: "#FF6130", boxShadow: "0 2px 8px rgba(255,97,48,0.3)" }}
               >
-                Apply as creator
+                <span className="sm:hidden">Apply</span>
+                <span className="hidden sm:inline">Apply as creator</span>
               </Link>
             </div>
           </div>

@@ -3,7 +3,7 @@
 import { useRef } from "react";
 import { EX, CONTRACT, ALEX, MIRA } from "./content";
 import { INK, ORANGE, CYAN, MUTED, FAINT } from "./ui";
-import { type BeatDef, useBeatChapter, computeBounds, clamp01, Pop, CUT_MS, POP_MS, CASCADE_MS, EASE, FIT } from "./chapterEngine";
+import { type BeatDef, useBeatChapter, computeBounds, clamp01, Phase, Pop, CUT_MS, POP_MS, CASCADE_MS, EASE, FIT } from "./chapterEngine";
 
 /**
  * M3 · HOW TO COLLABORATE ON INFITRA — the beat engine, in the dark room.
@@ -487,17 +487,14 @@ const HANDLED = [
   { t: "Revenue split", d: "Armed for every sale — exactly as agreed.", icon: ICON_SPLIT, color: ORANGE },
 ];
 
-function PublishFrame({ phase, onPublish }: { phase: number; onPublish: () => void }) {
+function PublishFrame({ phase, onPublish, staticLayout = false }: { phase: number; onPublish: () => void; staticLayout?: boolean }) {
   const published = phase >= 1;
   return (
-    <div className={`w-full max-w-2xl mx-auto ${FIT}`}>
+    <div className={`w-full max-w-2xl mx-auto ${staticLayout ? "" : FIT}`}>
       {/* two full states, each its own centered column — crisp swap */}
-      <div className="relative" style={{ minHeight: 620 }}>
+      <div className={staticLayout ? undefined : "relative"} style={staticLayout ? undefined : { minHeight: 620 }}>
         {/* state 1 — head and CTA travel together, one tight group */}
-        <div
-          className="absolute inset-0 flex flex-col items-center justify-center"
-          style={{ opacity: published ? 0 : 1, transform: published ? "translateY(-14px)" : "none", transition: `opacity ${CUT_MS}ms ${EASE}, transform ${CUT_MS}ms ${EASE}`, pointerEvents: published ? "none" : "auto" }}
-        >
+        <Phase on={!published} isStatic={staticLayout} className="flex flex-col items-center justify-center" enterFrom="translateY(-14px)" interactive>
           <StepHead kicker="Step 04 · The publish" accent={ORANGE} title="All agreed. One move left." />
           <button
             type="button"
@@ -508,13 +505,10 @@ function PublishFrame({ phase, onPublish }: { phase: number; onPublish: () => vo
             Publish now!
           </button>
           <p className="text-[13px] mt-5" style={{ color: LIGHT_MUTED }}>Your move — or keep scrolling.</p>
-        </div>
+        </Phase>
 
         {/* state 2 — everything in between, one by one, with weight */}
-        <div
-          className="absolute inset-0 flex flex-col justify-center gap-3 text-left"
-          style={{ opacity: published ? 1 : 0, transition: `opacity ${CUT_MS}ms ${EASE} 100ms`, pointerEvents: published ? "auto" : "none" }}
-        >
+        <Phase on={published} isStatic={staticLayout} className="flex flex-col justify-center gap-3 text-left" enterFrom="none" interactive>
           <div className="text-center">
             <StepHead kicker="Step 04 · The publish" accent={ORANGE} title="One click from agreement to promotion and sales." copy="INFITRA takes care of everything in between." />
           </div>
@@ -532,7 +526,7 @@ function PublishFrame({ phase, onPublish }: { phase: number; onPublish: () => vo
               </div>
             </Pop>
           ))}
-        </div>
+        </Phase>
       </div>
     </div>
   );
@@ -657,7 +651,7 @@ export function HowItWorks() {
             <div className="py-12"><InvitationFrame phase={1} /></div>
             <div className="py-12"><WorkspaceFrame phase={3} /></div>
             <div className="py-12"><AgreementFrame phase={1} /></div>
-            <div className="py-12"><PublishFrame phase={1} onPublish={() => {}} /></div>
+            <div className="py-12"><PublishFrame phase={1} onPublish={() => {}} staticLayout /></div>
           </div>
         </section>
         <section className="px-4 sm:px-6 py-20">

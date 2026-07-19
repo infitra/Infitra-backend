@@ -13,16 +13,17 @@ import { HeroWaitlist } from "./HeroWaitlist";
 export function Hero() {
   return (
     <section className="relative min-h-[92vh] flex flex-col items-center justify-center px-6 pt-28 pb-16 text-center">
-      <div className="max-w-4xl mx-auto w-full flex flex-col items-center">
+      <div className="max-w-5xl mx-auto w-full flex flex-col items-center">
         {/* The movement — the page opens on the manifesto, nothing above it.
-           Two matched stanzas, full ink, only the destinations colored. */}
+           Two matched stanzas, one line each on desktop (nowrap + fluid size),
+           softened ink so the scale carries the weight, not the blackness. */}
         <h1
-          className="text-4xl md:text-[3.9rem] md:leading-[1.12] font-headline tracking-tight leading-tight mb-14"
-          style={{ color: INK, fontWeight: 700, letterSpacing: "-0.025em" }}
+          className="font-headline tracking-tight leading-[1.16] mb-14"
+          style={{ color: "rgba(15,34,41,0.84)", fontWeight: 600, letterSpacing: "-0.025em", fontSize: "clamp(2rem, 4.4vw, 3.4rem)" }}
         >
-          From isolation to <span style={{ color: ORANGE }}>collaboration.</span>
-          <br />
-          From content to <span style={{ color: CYAN }}>experience.</span>
+          <span className="md:whitespace-nowrap">From isolation to <span style={{ color: ORANGE, fontWeight: 700 }}>collaboration.</span></span>{" "}
+          <br className="hidden md:block" />
+          <span className="md:whitespace-nowrap">From content to <span style={{ color: CYAN, fontWeight: 700 }}>experience.</span></span>
         </h1>
 
         {/* The creator act — the claim that owns the CTA */}

@@ -77,9 +77,26 @@ export function useBeatChapter({
   });
 
   useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches || window.innerHeight < 600) {
-      const raf0 = requestAnimationFrame(() => setPinned(false));
-      return () => cancelAnimationFrame(raf0);
+    // Static story below lg: touch scrolling and the pace-car don't mix, the
+    // rail is hidden there anyway, and the frames' stacked layouts are built
+    // for desktop heights. Mobile gets the sequential fallback narrative.
+    // matchMedia (not innerWidth/innerHeight) — it reads the real CSS
+    // viewport even in embedded/virtualized contexts.
+    if (
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
+      window.matchMedia("(max-height: 599px)").matches ||
+      window.matchMedia("(max-width: 1023px)").matches
+    ) {
+      // Microtask, not rAF — browsers throttle rAF in background and
+      // virtualized contexts, and the swap to the static story must never
+      // be missed on a phone that loaded in a background tab.
+      let cancelled = false;
+      queueMicrotask(() => {
+        if (!cancelled) setPinned(false);
+      });
+      return () => {
+        cancelled = true;
+      };
     }
     let raf = 0;
     let prevY = window.scrollY;
@@ -236,6 +253,43 @@ export function useBeatChapter({
   }
 
   return { beat, pinned, wrapperRef, jumpToBeat, bounds, totalW, runwayVh: totalW * BEAT_VH };
+}
+
+/* ── One phase of a pinned frame ─────────────────────────────
+ * Pinned: absolutely stacked inside the frame's minHeight box, hard-cut
+ * transitions. Static (mobile / fallback story): only the active phase
+ * renders, in normal flow — no absolute stack, no reserved height. */
+export function Phase({
+  on,
+  isStatic = false,
+  className = "",
+  enterFrom = "translateY(14px)",
+  interactive = false,
+  children,
+}: {
+  on: boolean;
+  isStatic?: boolean;
+  className?: string;
+  enterFrom?: string;
+  interactive?: boolean;
+  children: React.ReactNode;
+}) {
+  if (isStatic) {
+    return on ? <div className={className}>{children}</div> : null;
+  }
+  return (
+    <div
+      className={`absolute inset-0 ${className}`}
+      style={{
+        opacity: on ? 1 : 0,
+        transform: on ? "none" : enterFrom,
+        transition: `opacity ${CUT_MS}ms ${EASE} ${on ? 80 : 0}ms, transform ${CUT_MS}ms ${EASE} ${on ? 80 : 0}ms`,
+        pointerEvents: interactive && on ? "auto" : "none",
+      }}
+    >
+      {children}
+    </div>
+  );
 }
 
 /* ── Phase reveal — space reserved, pops decisively ────────── */

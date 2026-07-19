@@ -2,7 +2,7 @@
 
 import { EX, ALEX, MIRA, ROOM } from "./content";
 import { INK, ORANGE, CYAN, MUTED, FAINT, PRODUCT_SHADOW } from "./ui";
-import { type BeatDef, useBeatChapter, computeBounds, Pop, CUT_MS, CASCADE_MS, EASE, FIT } from "./chapterEngine";
+import { type BeatDef, useBeatChapter, computeBounds, Phase, Pop, CUT_MS, CASCADE_MS, EASE, FIT } from "./chapterEngine";
 
 /**
  * ACT 2 · ALIVE BY DESIGN — the engagement story.
@@ -351,18 +351,15 @@ function SpaceFrame({ phase }: { phase: number }) {
 }
 
 /* ══ Frame 2 · In everyone's hands ══════════════════════════ */
-function HandsFrame({ phase }: { phase: number }) {
+function HandsFrame({ phase, staticLayout = false }: { phase: number; staticLayout?: boolean }) {
   return (
-    <div className={`w-full max-w-3xl mx-auto ${FIT}`}>
+    <div className={`w-full max-w-3xl mx-auto ${staticLayout ? "" : FIT}`}>
       {/* Each phase is a self-contained, centered [head + content] block — the
          same treatment as the dark chapter's frames, so short phases stay
          centered instead of leaving a gap under a top-pinned title. */}
-      <div className="relative" style={{ minHeight: 580 }}>
+      <div className={staticLayout ? undefined : "relative"} style={staticLayout ? undefined : { minHeight: 580 }}>
         {/* p0 — the introduction post: the cold start, solved */}
-        <div
-          className="absolute inset-0 flex flex-col justify-center"
-          style={{ opacity: phase === 0 ? 1 : 0, transform: phase === 0 ? "none" : "translateY(-14px)", transition: `opacity ${CUT_MS}ms ${EASE}, transform ${CUT_MS}ms ${EASE}`, pointerEvents: "none" }}
-        >
+        <Phase on={phase === 0} isStatic={staticLayout} className="flex flex-col justify-center" enterFrom="translateY(-14px)">
           <MechHead kicker="02 · In everyone's hands — when someone joins" accent={CYAN} title="No cold start." copy="The moment someone joins, the space asks them to introduce themselves." />
           <div className="mx-auto w-full max-w-2xl">
             <FeedPost
@@ -378,13 +375,10 @@ function HandsFrame({ phase }: { phase: number }) {
               comments={3}
             />
           </div>
-        </div>
+        </Phase>
 
         {/* p1 — the four tools, four distinct pieces */}
-        <div
-          className="absolute inset-0 flex flex-col justify-center"
-          style={{ opacity: phase === 1 ? 1 : 0, transform: phase === 1 ? "none" : "translateY(14px)", transition: `opacity ${CUT_MS}ms ${EASE} ${phase === 1 ? 80 : 0}ms, transform ${CUT_MS}ms ${EASE} ${phase === 1 ? 80 : 0}ms`, pointerEvents: "none" }}
-        >
+        <Phase on={phase === 1} isStatic={staticLayout} className="flex flex-col justify-center">
           <MechHead kicker="02 · In everyone's hands" accent={CYAN} title="Anyone can engage at any time." copy="Four tools, for members and creators — no permission needed, no cold silence." />
           <div className="grid sm:grid-cols-2 gap-6 text-left" aria-hidden>
             {/* share — members */}
@@ -459,13 +453,10 @@ function HandsFrame({ phase }: { phase: number }) {
               </div>
             </Pop>
           </div>
-        </div>
+        </Phase>
 
         {/* p2 — TWO pieces: the notification, and the console that collects it */}
-        <div
-          className="absolute inset-0 flex flex-col justify-center"
-          style={{ opacity: phase === 2 ? 1 : 0, transform: phase === 2 ? "none" : "translateY(14px)", transition: `opacity ${CUT_MS}ms ${EASE} ${phase === 2 ? 80 : 0}ms, transform ${CUT_MS}ms ${EASE} ${phase === 2 ? 80 : 0}ms`, pointerEvents: "none" }}
-        >
+        <Phase on={phase === 2} isStatic={staticLayout} className="flex flex-col justify-center">
           <MechHead kicker="02 · In everyone's hands — creator view" accent={ORANGE} title="A question finds you." copy="A notification the moment it lands — and your console collects it until it's answered." />
           <div className="grid sm:grid-cols-2 gap-6 items-start" aria-hidden>
             {/* piece 1 — the notification */}
@@ -512,13 +503,10 @@ function HandsFrame({ phase }: { phase: number }) {
               </div>
             </div>
           </div>
-        </div>
+        </Phase>
 
         {/* p3 — the answered post */}
-        <div
-          className="absolute inset-0 flex flex-col justify-center"
-          style={{ opacity: phase >= 3 ? 1 : 0, transform: phase >= 3 ? "none" : "translateY(14px)", transition: `opacity ${CUT_MS}ms ${EASE} ${phase >= 3 ? 80 : 0}ms, transform ${CUT_MS}ms ${EASE} ${phase >= 3 ? 80 : 0}ms`, pointerEvents: "none" }}
-        >
+        <Phase on={phase >= 3} isStatic={staticLayout} className="flex flex-col justify-center">
           <MechHead kicker="02 · In everyone's hands" accent={CYAN} title="Answered once. Everyone learns." copy="Answers are pinned inside posts — visible to the whole tribe. Everybody can react with likes or comments." />
           <div className="mx-auto w-full max-w-2xl rounded-3xl p-6 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }} aria-hidden>
             <div className="flex items-center gap-3">
@@ -557,25 +545,22 @@ function HandsFrame({ phase }: { phase: number }) {
               <span className="ml-auto text-[11px]" style={{ color: FAINT }}>Pinned — visible to the whole tribe.</span>
             </div>
           </div>
-        </div>
+        </Phase>
       </div>
     </div>
   );
 }
 
 /* ══ Frame 3 · The engagement loop ══════════════════════════ */
-function LoopFrame({ phase, onJoin }: { phase: number; onJoin: () => void }) {
+function LoopFrame({ phase, onJoin, staticLayout = false }: { phase: number; onJoin: () => void; staticLayout?: boolean }) {
   const isPeak = phase === 2;
   return (
-    <div className={`w-full max-w-4xl mx-auto ${FIT}`}>
+    <div className={`w-full max-w-4xl mx-auto ${staticLayout ? "" : FIT}`}>
       {/* Each phase carries its own head and centers as one block (dark-frame
          treatment) — no gap under a pinned title on the lighter phases. */}
-      <div className="relative" style={{ minHeight: 680 }}>
+      <div className={staticLayout ? undefined : "relative"} style={staticLayout ? undefined : { minHeight: 680 }}>
         {/* p0 — the pulse: momentum building */}
-        <div
-          className="absolute inset-0 flex flex-col justify-center"
-          style={{ opacity: phase === 0 ? 1 : 0, transform: phase === 0 ? "none" : "translateY(-14px)", transition: `opacity ${CUT_MS}ms ${EASE}, transform ${CUT_MS}ms ${EASE}`, pointerEvents: "none" }}
-        >
+        <Phase on={phase === 0} isStatic={staticLayout} className="flex flex-col justify-center" enterFrom="translateY(-14px)">
           <MechHead kicker="03 · The loop — before every live moment" accent={ORANGE} title="Momentum is building." copy="The tribe shares its readiness — and everyone feels it." />
           <div className="mx-auto w-full max-w-2xl rounded-2xl p-6 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.06), inset 4px 0 0 " + ORANGE }} aria-hidden>
             <p className="text-[11px] uppercase tracking-[0.16em] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>
@@ -614,13 +599,10 @@ function LoopFrame({ phase, onJoin }: { phase: number; onJoin: () => void }) {
               </div>
             </div>
           </Pop>
-        </div>
+        </Phase>
 
         {/* p1 — THE MOMENT ARRIVES: the real live session card + Join CTA */}
-        <div
-          className="absolute inset-0 flex flex-col items-center justify-center"
-          style={{ opacity: phase === 1 ? 1 : 0, transform: phase === 1 ? "none" : "translateY(14px)", transition: `opacity ${CUT_MS}ms ${EASE} ${phase === 1 ? 80 : 0}ms, transform ${CUT_MS}ms ${EASE} ${phase === 1 ? 80 : 0}ms`, pointerEvents: phase === 1 ? "auto" : "none" }}
-        >
+        <Phase on={phase === 1} isStatic={staticLayout} className="flex flex-col items-center justify-center" interactive>
           <MechHead kicker="03 · The loop" accent={ORANGE} title="The moment arrives." copy="The reset's first live moment is open — your tribe is walking in." />
           {/* The real live/join card — a faithful copy of the Experience
              Space's HeroSessionCard in its "live" state (WeekJourney.tsx):
@@ -633,7 +615,7 @@ function LoopFrame({ phase, onJoin }: { phase: number; onJoin: () => void }) {
             className="w-full rounded-3xl overflow-hidden flex flex-col sm:flex-row items-stretch cursor-pointer transition-transform hover:-translate-y-0.5"
             style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 2px #ef4444, 0 28px 72px rgba(239,68,68,0.20)" }}
           >
-            <div className="relative shrink-0 w-full h-56 sm:h-auto sm:w-80 lg:w-96" style={{ backgroundColor: "#ECE7DD", minHeight: 520 }}>
+            <div className="relative shrink-0 w-full h-56 sm:h-auto sm:w-80 lg:w-96 sm:min-h-[520px]" style={{ backgroundColor: "#ECE7DD" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={MEET.img} alt="" className="absolute inset-0 w-full h-full object-cover" />
             </div>
@@ -666,14 +648,10 @@ function LoopFrame({ phase, onJoin }: { phase: number; onJoin: () => void }) {
             </div>
           </div>
           <p className="text-[15px] mt-8" style={{ color: MUTED }}>Your move — or keep scrolling.</p>
-        </div>
+        </Phase>
 
         {/* p2 — THE PEAK: the room, as energy */}
-        <div
-          className="absolute inset-0 flex flex-col items-center justify-center"
-          style={{ opacity: isPeak ? 1 : 0, transition: `opacity ${CUT_MS + 100}ms ${EASE} ${isPeak ? 120 : 0}ms`, pointerEvents: "none" }}
-          aria-hidden
-        >
+        <Phase on={isPeak} isStatic={staticLayout} className="flex flex-col items-center justify-center" enterFrom="none">
           <MechHead kicker="And then" accent="#ef4444" title="You're live." copy="No new login, no external link — training together, right here, right now." light />
           <div className="relative flex items-center justify-center" style={{ width: 330, height: 330 }}>
             {/* pulsing rings — training, together, right now */}
@@ -729,13 +707,10 @@ function LoopFrame({ phase, onJoin }: { phase: number; onJoin: () => void }) {
             </defs>
             <path d="M0,24 H164 L177,24 L189,6 L203,42 L216,24 H380" stroke="url(#lw-peak-grad)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-        </div>
+        </Phase>
 
         {/* p3 — the reflection post closes the loop */}
-        <div
-          className="absolute inset-0 flex flex-col justify-center"
-          style={{ opacity: phase >= 3 ? 1 : 0, transform: phase >= 3 ? "none" : "translateY(14px)", transition: `opacity ${CUT_MS}ms ${EASE} ${phase >= 3 ? 80 : 0}ms, transform ${CUT_MS}ms ${EASE} ${phase >= 3 ? 80 : 0}ms`, pointerEvents: "none" }}
-        >
+        <Phase on={phase >= 3} isStatic={staticLayout} className="flex flex-col justify-center">
           <MechHead kicker="After the live moment" accent={CYAN} title="The reflection closes the loop." copy="Every prompt becomes a post — the feed keeps its own rhythm." />
           <div className="mx-auto w-full max-w-2xl">
             <FeedPost
@@ -751,38 +726,54 @@ function LoopFrame({ phase, onJoin }: { phase: number; onJoin: () => void }) {
               comments={5}
             />
           </div>
-        </div>
+        </Phase>
       </div>
     </div>
   );
 }
 
 /* ══ Frame 4 · It compounds ═════════════════════════════════ */
-function CompoundFrame({ phase, active }: { phase: number; active: boolean }) {
+function CompoundFrame({ phase, active, staticLayout = false }: { phase: number; active: boolean; staticLayout?: boolean }) {
   const wrapped = phase >= 1;
   const fill = !active ? "8%" : wrapped ? "100%" : "85%";
   const litWeeks = !active ? 1 : wrapped ? 6 : 5;
   return (
-    <div className={`w-full max-w-3xl mx-auto ${FIT}`}>
-      {/* two-state head — extra reserve; the wrapped title runs two lines */}
-      <div className="relative mb-9" style={{ minHeight: 210 }}>
-        <div className="absolute inset-x-0 top-0" style={{ opacity: wrapped ? 0 : 1, transition: `opacity ${CUT_MS}ms ${EASE}` }}>
+    <div className={`w-full max-w-3xl mx-auto ${staticLayout ? "" : FIT}`}>
+      {/* two-state head — extra reserve; the wrapped title runs two lines.
+         Static: only the active head, in flow. */}
+      {staticLayout ? (
+        <div className="mb-9">
           <MechHead
             kicker="04 · It compounds"
             accent={ORANGE}
-            title="Every live moment builds the run."
-            copy="Attendance and progression — tracked in the space, for you and every member."
+            title={wrapped ? "The run wraps — the retention loop opens." : "Every live moment builds the run."}
+            copy={
+              wrapped
+                ? "Same space, next run: you shape it, your tribe re-enrolls in one tap, new members join them."
+                : "Attendance and progression — tracked in the space, for you and every member."
+            }
           />
         </div>
-        <div className="absolute inset-x-0 top-0" style={{ opacity: wrapped ? 1 : 0, transition: `opacity ${CUT_MS}ms ${EASE} 80ms` }}>
-          <MechHead
-            kicker="04 · It compounds"
-            accent={ORANGE}
-            title="The run wraps — the retention loop opens."
-            copy="Same space, next run: you shape it, your tribe re-enrolls in one tap, new members join them."
-          />
+      ) : (
+        <div className="relative mb-9" style={{ minHeight: 210 }}>
+          <div className="absolute inset-x-0 top-0" style={{ opacity: wrapped ? 0 : 1, transition: `opacity ${CUT_MS}ms ${EASE}` }}>
+            <MechHead
+              kicker="04 · It compounds"
+              accent={ORANGE}
+              title="Every live moment builds the run."
+              copy="Attendance and progression — tracked in the space, for you and every member."
+            />
+          </div>
+          <div className="absolute inset-x-0 top-0" style={{ opacity: wrapped ? 1 : 0, transition: `opacity ${CUT_MS}ms ${EASE} 80ms` }}>
+            <MechHead
+              kicker="04 · It compounds"
+              accent={ORANGE}
+              title="The run wraps — the retention loop opens."
+              copy="Same space, next run: you shape it, your tribe re-enrolls in one tap, new members join them."
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* the progress — one persistent composition, the bar carries through */}
       <div className="rounded-3xl p-6 sm:p-7" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }} aria-hidden>
@@ -923,10 +914,23 @@ export function LiveWeek() {
         <div className="max-w-5xl mx-auto text-center">
           <div className="py-8"><IntroFrame /></div>
           <div className="py-12"><SpaceFrame phase={1} /></div>
-          <div className="py-12"><HandsFrame phase={1} /></div>
-          <div className="py-12"><HandsFrame phase={3} /></div>
-          <div className="py-12"><LoopFrame phase={3} onJoin={() => {}} /></div>
-          <div className="py-12"><CompoundFrame phase={1} active /></div>
+          <div className="py-12"><HandsFrame phase={0} staticLayout /></div>
+          <div className="py-12"><HandsFrame phase={1} staticLayout /></div>
+          <div className="py-12"><HandsFrame phase={3} staticLayout /></div>
+          {/* The join moment — on the static story the room really is open:
+             the CTA carries straight to the finale. */}
+          <div className="py-12">
+            <LoopFrame
+              phase={1}
+              staticLayout
+              onJoin={() => {
+                const el = document.getElementById("join");
+                if (el) window.scrollTo({ top: window.scrollY + el.getBoundingClientRect().top, behavior: "instant" });
+              }}
+            />
+          </div>
+          <div className="py-12"><LoopFrame phase={3} onJoin={() => {}} staticLayout /></div>
+          <div className="py-12"><CompoundFrame phase={1} active staticLayout /></div>
         </div>
       </section>
     );

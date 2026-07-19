@@ -20,10 +20,11 @@ export function JoinWaitlistLink() {
         window.scrollTo({ top: window.scrollY + el.getBoundingClientRect().top, behavior: "instant" });
         history.replaceState(null, "", "#join");
       }}
-      className="px-4 py-2 rounded-full text-xs font-headline font-bold uppercase tracking-widest whitespace-nowrap"
+      className="px-3.5 sm:px-4 py-2 rounded-full text-xs font-headline font-bold uppercase tracking-widest whitespace-nowrap"
       style={{ color: "#0891b2", boxShadow: "inset 0 0 0 1.5px rgba(8,145,178,0.45)" }}
     >
-      Join waitlist
+      <span className="sm:hidden">Waitlist</span>
+      <span className="hidden sm:inline">Join waitlist</span>
     </a>
   );
 }
