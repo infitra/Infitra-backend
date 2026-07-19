@@ -14,25 +14,15 @@ export function Hero() {
   return (
     <section className="relative min-h-[92vh] flex flex-col items-center justify-center px-6 pt-28 pb-16 text-center">
       <div className="max-w-4xl mx-auto w-full flex flex-col items-center">
-        <div className="flex items-center gap-3 mb-7 max-w-2xl w-full">
-          <div className="flex-1 h-px" style={{ backgroundColor: "rgba(8,145,178,0.30)" }} />
-          <p className="text-[10px] uppercase tracking-[0.25em] font-headline text-center shrink-0" style={{ color: CYAN, fontWeight: 700 }}>
-            The platform for live, co-created fitness experiences
-          </p>
-          <div className="flex-1 h-px" style={{ backgroundColor: "rgba(8,145,178,0.30)" }} />
-        </div>
-
-        {/* The movement — everyone's headline. The "from" halves stay light
-           so only the destinations carry weight: the line reads as motion. */}
+        {/* The movement — the page opens on the manifesto, nothing above it.
+           Two matched stanzas, full ink, only the destinations colored. */}
         <h1
-          className="text-3xl md:text-[3.25rem] md:leading-[1.18] font-headline tracking-tight leading-snug mb-12"
-          style={{ letterSpacing: "-0.025em" }}
+          className="text-4xl md:text-[3.9rem] md:leading-[1.12] font-headline tracking-tight leading-tight mb-14"
+          style={{ color: INK, fontWeight: 700, letterSpacing: "-0.025em" }}
         >
-          <span style={{ color: "rgba(15,34,41,0.48)", fontWeight: 600 }}>From isolation to</span>{" "}
-          <span style={{ color: ORANGE, fontWeight: 700 }}>collaboration.</span>
+          From isolation to <span style={{ color: ORANGE }}>collaboration.</span>
           <br />
-          <span style={{ color: "rgba(15,34,41,0.48)", fontWeight: 600 }}>From consuming content to</span>{" "}
-          <span style={{ color: CYAN, fontWeight: 700 }}>participating in experiences.</span>
+          From content to <span style={{ color: CYAN }}>experience.</span>
         </h1>
 
         {/* The creator act — the claim that owns the CTA */}
