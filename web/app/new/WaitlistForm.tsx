@@ -55,7 +55,7 @@ export function WaitlistForm() {
         <p className="text-[13px] mt-2.5 text-left" style={{ color: "#dc2626" }}>{state.error}</p>
       )}
       <p className="text-xs mt-3 text-left" style={{ color: FAINT }}>
-        One email when the first experiences open. <span style={{ color: MUTED }}>Nothing else.</span>
+        One email when the doors open. <span style={{ color: MUTED }}>Nothing else.</span>
       </p>
     </form>
   );

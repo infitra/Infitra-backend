@@ -155,13 +155,6 @@ export function WhatYouCanBuild() {
               <br />
               <span style={{ color: ORANGE }}>{EX.positioning[1]}</span>
             </p>
-            <span
-              className="inline-block mt-5 px-12 py-3.5 rounded-full text-white text-sm font-black font-headline"
-              style={{ backgroundColor: ORANGE, boxShadow: "0 4px 14px rgba(255,97,48,0.32)" }}
-              aria-hidden
-            >
-              I&apos;m in →
-            </span>
           </div>
         </Drift>
       </div>

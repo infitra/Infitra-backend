@@ -22,15 +22,17 @@ export function Hero() {
           <div className="flex-1 h-px" style={{ backgroundColor: "rgba(8,145,178,0.30)" }} />
         </div>
 
-        {/* The movement — everyone's headline */}
+        {/* The movement — everyone's headline. The "from" halves stay light
+           so only the destinations carry weight: the line reads as motion. */}
         <h1
-          className="text-3xl md:text-[3.4rem] md:leading-[1.12] font-headline tracking-tight leading-tight mb-12"
-          style={{ color: INK, fontWeight: 700, letterSpacing: "-0.025em" }}
+          className="text-3xl md:text-[3.25rem] md:leading-[1.18] font-headline tracking-tight leading-snug mb-12"
+          style={{ letterSpacing: "-0.025em" }}
         >
-          From isolation to <span style={{ color: ORANGE }}>collaboration.</span>
+          <span style={{ color: "rgba(15,34,41,0.48)", fontWeight: 600 }}>From isolation to</span>{" "}
+          <span style={{ color: ORANGE, fontWeight: 700 }}>collaboration.</span>
           <br />
-          From content you consume to{" "}
-          <span style={{ color: CYAN }}>experiences you join.</span>
+          <span style={{ color: "rgba(15,34,41,0.48)", fontWeight: 600 }}>From consuming content to</span>{" "}
+          <span style={{ color: CYAN, fontWeight: 700 }}>participating in experiences.</span>
         </h1>
 
         {/* The creator act — the claim that owns the CTA */}
@@ -45,7 +47,7 @@ export function Hero() {
         </div>
 
         <h2
-          className="text-2xl md:text-4xl font-headline tracking-tight leading-tight max-w-2xl mb-5"
+          className="text-xl md:text-3xl font-headline tracking-tight leading-tight max-w-2xl mb-5"
           style={{ color: INK, fontWeight: 700, letterSpacing: "-0.02em" }}
         >
           Build an experience beyond what you can offer alone.

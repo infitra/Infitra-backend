@@ -57,9 +57,11 @@ export function SectionHead({
 
 export function ApplyCTA({
   small = false,
+  xl = false,
   micro,
 }: {
   small?: boolean;
+  xl?: boolean;
   micro?: string;
 }) {
   return (
@@ -67,7 +69,7 @@ export function ApplyCTA({
       <Link
         href="/apply"
         className={`inline-block whitespace-nowrap rounded-full text-white font-headline tracking-wide transition-transform hover:scale-[1.03] ${
-          small ? "px-8 py-3 text-base" : "px-12 py-4 text-lg"
+          xl ? "px-14 py-5 text-xl" : small ? "px-8 py-3 text-base" : "px-12 py-4 text-lg"
         }`}
         style={{
           backgroundColor: ORANGE,
