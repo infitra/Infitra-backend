@@ -571,7 +571,7 @@ function LoopFrame({ phase, onJoin }: { phase: number; onJoin: () => void }) {
     <div className={`w-full max-w-4xl mx-auto ${FIT}`}>
       {/* Each phase carries its own head and centers as one block (dark-frame
          treatment) — no gap under a pinned title on the lighter phases. */}
-      <div className="relative" style={{ minHeight: 600 }}>
+      <div className="relative" style={{ minHeight: 680 }}>
         {/* p0 — the pulse: momentum building */}
         <div
           className="absolute inset-0 flex flex-col justify-center"
@@ -634,35 +634,35 @@ function LoopFrame({ phase, onJoin }: { phase: number; onJoin: () => void }) {
             className="w-full rounded-3xl overflow-hidden flex flex-col sm:flex-row items-stretch cursor-pointer transition-transform hover:-translate-y-0.5"
             style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 2px #ef4444, 0 28px 72px rgba(239,68,68,0.20)" }}
           >
-            <div className="relative shrink-0 w-full h-48 sm:h-auto sm:w-72 lg:w-80" style={{ backgroundColor: "#ECE7DD", minHeight: 280 }}>
+            <div className="relative shrink-0 w-full h-56 sm:h-auto sm:w-80 lg:w-96" style={{ backgroundColor: "#ECE7DD", minHeight: 520 }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={MEET.img} alt="" className="absolute inset-0 w-full h-full object-cover" />
             </div>
-            <div className="flex-1 min-w-0 p-7 sm:p-9 flex flex-col text-left">
-              <p className="text-[13px] uppercase tracking-[0.2em] font-headline flex items-center gap-2" style={{ color: "#ef4444", fontWeight: 800 }}>
-                <span className="inline-block w-2.5 h-2.5 rounded-full animate-pulse" style={{ backgroundColor: "#ef4444" }} />
+            <div className="flex-1 min-w-0 p-9 sm:p-12 flex flex-col text-left">
+              <p className="text-[14px] uppercase tracking-[0.2em] font-headline flex items-center gap-2.5" style={{ color: "#ef4444", fontWeight: 800 }}>
+                <span className="inline-block w-3 h-3 rounded-full animate-pulse" style={{ backgroundColor: "#ef4444" }} />
                 Live now
               </p>
-              <h3 className="font-black font-headline tracking-tight mt-3 leading-[1.08]" style={{ color: INK, fontSize: "clamp(1.7rem, 4vw, 2.3rem)", letterSpacing: "-0.02em" }}>
+              <h3 className="font-black font-headline tracking-tight mt-4 leading-[1.06]" style={{ color: INK, fontSize: "clamp(1.9rem, 4.4vw, 2.8rem)", letterSpacing: "-0.02em" }}>
                 {MEET.title}
               </h3>
-              <p className="text-[15px] sm:text-base mt-3" style={{ color: "#64748b" }}>
+              <p className="text-base sm:text-[17px] mt-4" style={{ color: "#64748b" }}>
                 {MEET.day} · {MEET.time} · {MEET.dur} · {MEET.host}
               </p>
-              <span className="inline-flex items-center gap-2 mt-4 self-start px-3.5 py-1.5 rounded-full text-[13px] font-bold font-headline" style={{ backgroundColor: "rgba(8,145,178,0.10)", color: CYAN }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={CYAN} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M22 12h-4l-3 9L9 3l-3 9H2" /></svg>
+              <span className="inline-flex items-center gap-2 mt-5 self-start px-4 py-2 rounded-full text-[14px] font-bold font-headline" style={{ backgroundColor: "rgba(8,145,178,0.10)", color: CYAN }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={CYAN} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M22 12h-4l-3 9L9 3l-3 9H2" /></svg>
                 Cohort energy 8/10
               </span>
-              <div className="flex items-center justify-between gap-4 mt-auto pt-7">
+              <div className="flex items-center justify-between gap-4 mt-auto pt-10">
                 <button
                   type="button"
                   onClick={(e) => { e.stopPropagation(); onJoin(); }}
-                  className="px-9 py-4 rounded-full text-white text-base font-black font-headline transition-transform hover:scale-[1.03]"
-                  style={{ backgroundColor: "#ef4444", boxShadow: "0 6px 20px rgba(239,68,68,0.38)" }}
+                  className="px-12 py-5 rounded-full text-white text-lg font-black font-headline transition-transform hover:scale-[1.03]"
+                  style={{ backgroundColor: "#ef4444", boxShadow: "0 10px 30px rgba(239,68,68,0.42)" }}
                 >
                   Join the room →
                 </button>
-                <span className="text-sm font-bold" style={{ color: "#94a3b8" }}>8 in the room</span>
+                <span className="text-[15px] font-bold" style={{ color: "#94a3b8" }}>8 in the room</span>
               </div>
             </div>
           </div>
