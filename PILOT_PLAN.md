@@ -2274,6 +2274,10 @@ Discovered mid-Phase-2 during a notifications pass; cleanup + a review-model cor
 - **H1 · Vercel Pro + spend cap** — compliance gate; flip immediately before real money.
 - **H5 polish (as needed)** — creator dashboard / `/me` / earnings; already advanced
   through the continuation work.
+- **Post-purchase calendar export (founder idea, 2026-07-19)** — offer the
+  calendar export (all sessions, one click) **prominently on the purchase
+  success page**, not just inside the space. Cheap, directly serves turnout
+  (the pilot's #1 metric). Slot alongside Bundle 10 emails.
 
 ### Order
 ```
