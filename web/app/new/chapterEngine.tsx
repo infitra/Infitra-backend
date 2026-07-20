@@ -377,7 +377,11 @@ export function Phase({
         opacity: on ? 1 : 0,
         transform: on ? "none" : enterFrom,
         transition: `opacity ${CUT_MS}ms ${EASE} ${on ? 80 : 0}ms, transform ${CUT_MS}ms ${EASE} ${on ? 80 : 0}ms`,
-        pointerEvents: interactive && on ? "auto" : "none",
+        // inherit (undefined), never explicit "auto": pointer-events is
+        // inherited, and an explicit auto would re-enable hit-testing even
+        // under an INACTIVE frame container's pointer-events:none — the
+        // invisible Phase would swallow clicks meant for the visible frame.
+        pointerEvents: interactive && on ? undefined : "none",
       }}
     >
       {children}

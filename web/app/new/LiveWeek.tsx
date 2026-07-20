@@ -1348,9 +1348,14 @@ export function LiveWeek() {
                 style={{
                   opacity: active ? 1 : 0,
                   transform: active ? "none" : "translateY(12px)",
+                  // hidden, not just opacity 0 — opacity keeps the subtree's
+                  // buttons tabbable (an invisible CTA could take focus);
+                  // visibility drops the whole subtree from hit-testing and
+                  // tab order. The 160ms delay lets the fade-out finish.
+                  visibility: active ? "visible" : "hidden",
                   transition: active
-                    ? `opacity ${CUT_MS}ms ${EASE} 70ms, transform ${CUT_MS}ms ${EASE} 70ms`
-                    : `opacity 160ms ${EASE}, transform 160ms ${EASE}`,
+                    ? `opacity ${CUT_MS}ms ${EASE} 70ms, transform ${CUT_MS}ms ${EASE} 70ms, visibility 0s`
+                    : `opacity 160ms ${EASE}, transform 160ms ${EASE}, visibility 0s 160ms`,
                   pointerEvents: active ? "auto" : "none",
                 }}
               >
