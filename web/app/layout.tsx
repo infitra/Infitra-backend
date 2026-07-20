@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 
@@ -7,6 +7,13 @@ const inter = Inter({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600"],
 });
+
+export const viewport: Viewport = {
+  // Tints the browser chrome (iOS Safari bars, Android status bar) to the
+  // wave base color instead of leaving it to sample whatever sits at the
+  // page edge.
+  themeColor: "#F2EFE8",
+};
 
 export const metadata: Metadata = {
   title: "INFITRA — Build Real Fitness Communities",
@@ -38,7 +45,9 @@ export default function RootLayout({
           href="https://api.fontshare.com/v2/css?f[]=general-sans@200,300,400,500,600,700&display=swap"
         />
       </head>
-      <body className="min-h-full flex flex-col antialiased bg-surface text-on-surface">
+      {/* no bg-surface here — the utility would override the #F2EFE8 canvas
+          rule in globals.css with the grey surface token */}
+      <body className="min-h-full flex flex-col antialiased text-on-surface">
         {children}
       </body>
     </html>

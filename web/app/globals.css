@@ -45,10 +45,14 @@
 
 html {
   scroll-behavior: smooth;
+  /* The page CANVAS — what iOS shows on rubber-band overscroll and samples
+     for its translucent bars. Every user-facing page paints #F2EFE8 (the
+     wave base) on top; the canvas must match or the edges read grey/dead. */
+  background: #f2efe8;
 }
 
 body {
-  background: var(--surface);
+  background: #f2efe8;
   color: var(--on-surface);
   font-family: var(--font-inter), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;

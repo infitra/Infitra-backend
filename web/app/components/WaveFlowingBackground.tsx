@@ -121,6 +121,24 @@ export function WaveFlowingBackground() {
           />
         </svg>
       </div>
+
+      {/* The shore — mobile only. The wave bands are drawn for a landscape
+          box; stretched onto a portrait phone they exit the frame early and
+          leave the bottom of the screen a flat, colorless strip — which is
+          also what iOS Safari samples to tint its translucent URL bar. This
+          continues the same diagonal palette (cyan → white → orange, left to
+          right) to the true bottom edge, fading in vertically so it reads as
+          the waves reaching the shore, not a new element. Desktop keeps the
+          approved look untouched. */}
+      <div
+        className="absolute inset-x-0 bottom-0 h-[30%] lg:hidden"
+        style={{
+          background:
+            "linear-gradient(90deg, rgba(156,240,255,0.34) 0%, rgba(255,255,255,0.10) 48%, rgba(255,97,48,0.24) 100%)",
+          WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,0) 0%, #000 78%)",
+          maskImage: "linear-gradient(to bottom, rgba(0,0,0,0) 0%, #000 78%)",
+        }}
+      />
     </div>
   );
 }
