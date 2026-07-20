@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { EX, ALEX, MIRA, ROOM } from "./content";
 import { INK, ORANGE, CYAN, MUTED, FAINT, PRODUCT_SHADOW } from "./ui";
-import { type BeatDef, useBeatChapter, computeBounds, Phase, Pop, Enter, CUT_MS, CASCADE_MS, EASE, FIT, AutoFit } from "./chapterEngine";
+import { type BeatDef, useBeatChapter, computeBounds, Phase, Pop, Enter, MobileRail, CUT_MS, CASCADE_MS, EASE, FIT, AutoFit } from "./chapterEngine";
 
 /**
  * ACT 2 · ALIVE BY DESIGN — the engagement story.
@@ -646,49 +646,48 @@ const TOOL_ROWS = [
   { t: "Calendar export", aud: "Members", d: "The structure follows you out of the app.", c: CYAN },
 ];
 
+const HANDS_HEADS = [
+  { kicker: "02 · In everyone's hands — when someone joins", accent: CYAN, title: "No cold start.", copy: "The moment someone joins, the space asks them to introduce themselves." },
+  { kicker: "02 · In everyone's hands", accent: CYAN, title: "Anyone can engage at any time.", copy: "Four tools, for members and creators — no permission needed, no cold silence." },
+  { kicker: "02 · In everyone's hands — creator view", accent: ORANGE, title: "A question finds you.", copy: "A notification the moment it lands — your console collects it until it's answered." },
+  { kicker: "02 · In everyone's hands", accent: CYAN, title: "Answered once. Everyone learns.", copy: "Answers are pinned inside posts — visible to the whole tribe." },
+];
+
 function HandsFrameMobile({ phase }: { phase: number }) {
+  const p = Math.min(phase, 3);
   return (
     <div className="w-full max-w-md mx-auto">
-      <Enter key={Math.min(phase, 3)}>
-        {phase === 0 && (
-          <>
-            <MechHead kicker="02 · In everyone's hands — when someone joins" accent={CYAN} title="No cold start." copy="The moment someone joins, the space asks them to introduce themselves." />
-            <HandsIntroPost />
-          </>
-        )}
-        {phase === 1 && (
-          <>
-            <MechHead kicker="02 · In everyone's hands" accent={CYAN} title="Anyone can engage at any time." copy="Four tools, for members and creators — no permission needed, no cold silence." />
-            <div className="space-y-2.5 text-left" aria-hidden>
-              {TOOL_ROWS.map(({ t, aud, d, c }, i) => (
-                <Enter key={t} d={i * CASCADE_MS}>
-                  <div className="rounded-2xl px-4 py-3.5" style={{ backgroundColor: "#FFFFFF", boxShadow: `0 0 0 1px rgba(15,34,41,0.06), 0 12px 30px rgba(15,34,41,0.07), inset 4px 0 0 ${c}` }}>
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="text-[13px] font-headline" style={{ color: INK, fontWeight: 800 }}>{t}</p>
-                      <span className="shrink-0 px-2.5 py-1 rounded-full text-[9px] uppercase tracking-widest font-headline" style={{ color: c, backgroundColor: `${c}14`, fontWeight: 800 }}>{aud}</span>
-                    </div>
-                    <p className="text-[12px] font-bold mt-1" style={{ color: MUTED }}>{d}</p>
+      {/* anchored head — the text crossfades IN PLACE; the block never moves,
+         so a swipe changes the words and the hero, nothing else. */}
+      <div className="relative" style={{ minHeight: 200 }}>
+        <Enter key={p} from="none" className="absolute inset-x-0 top-0">
+          <MechHead {...HANDS_HEADS[p]} />
+        </Enter>
+      </div>
+      <Enter key={p}>
+        {p === 0 && <HandsIntroPost />}
+        {p === 1 && (
+          <div className="space-y-2.5 text-left" aria-hidden>
+            {TOOL_ROWS.map(({ t, aud, d, c }, i) => (
+              <Enter key={t} d={i * CASCADE_MS}>
+                <div className="rounded-2xl px-4 py-3.5" style={{ backgroundColor: "#FFFFFF", boxShadow: `0 0 0 1px rgba(15,34,41,0.06), 0 12px 30px rgba(15,34,41,0.07), inset 4px 0 0 ${c}` }}>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-[13px] font-headline" style={{ color: INK, fontWeight: 800 }}>{t}</p>
+                    <span className="shrink-0 px-2.5 py-1 rounded-full text-[9px] uppercase tracking-widest font-headline" style={{ color: c, backgroundColor: `${c}14`, fontWeight: 800 }}>{aud}</span>
                   </div>
-                </Enter>
-              ))}
-            </div>
-          </>
+                  <p className="text-[12px] font-bold mt-1" style={{ color: MUTED }}>{d}</p>
+                </div>
+              </Enter>
+            ))}
+          </div>
         )}
-        {phase === 2 && (
-          <>
-            <MechHead kicker="02 · In everyone's hands — creator view" accent={ORANGE} title="A question finds you." copy="A notification the moment it lands — your console collects it until it's answered." />
-            <div className="space-y-4 text-left" aria-hidden>
-              <HandsNotifCard />
-              <HandsConsoleCard />
-            </div>
-          </>
+        {p === 2 && (
+          <div className="space-y-4 text-left" aria-hidden>
+            <HandsNotifCard />
+            <HandsConsoleCard />
+          </div>
         )}
-        {phase >= 3 && (
-          <>
-            <MechHead kicker="02 · In everyone's hands" accent={CYAN} title="Answered once. Everyone learns." copy="Answers are pinned inside posts — visible to the whole tribe." />
-            <HandsAnsweredPost answerOn />
-          </>
-        )}
+        {p === 3 && <HandsAnsweredPost answerOn />}
       </Enter>
     </div>
   );
@@ -904,21 +903,33 @@ function LoopReflectionPost() {
 }
 
 /* Mobile staging — the live moment as an app-style vertical card; pulse,
- * peak and reflection at natural size. */
+ * peak and reflection at natural size. The head is anchored and crossfades
+ * in place; only the hero moves on a swipe. */
+const LOOP_HEADS = [
+  { kicker: "03 · The loop — before every live moment", accent: ORANGE, title: "Momentum is building.", copy: "The tribe shares its readiness — and everyone feels it.", light: false },
+  { kicker: "03 · The loop", accent: ORANGE, title: "The moment arrives.", copy: "The reset's first live moment is open — your tribe is walking in.", light: false },
+  { kicker: "And then", accent: "#ef4444", title: "You're live.", copy: "No new login, no external link — training together, right now.", light: true },
+  { kicker: "After the live moment", accent: CYAN, title: "The reflection closes the loop.", copy: "Every prompt becomes a post — the feed keeps its own rhythm.", light: false },
+];
+
 function LoopFrameMobile({ phase, onJoin }: { phase: number; onJoin: () => void }) {
+  const p = Math.min(phase, 3);
   return (
     <div className="w-full max-w-md mx-auto">
-      <Enter key={Math.min(phase, 3)}>
-        {phase === 0 && (
+      <div className="relative" style={{ minHeight: 200 }}>
+        <Enter key={p} from="none" className="absolute inset-x-0 top-0">
+          <MechHead {...LOOP_HEADS[p]} />
+        </Enter>
+      </div>
+      <Enter key={p}>
+        {p === 0 && (
           <>
-            <MechHead kicker="03 · The loop — before every live moment" accent={ORANGE} title="Momentum is building." copy="The tribe shares its readiness — and everyone feels it." />
             <LoopPulseCard />
             <Enter d={260} className="mt-4"><LoopLeaPost /></Enter>
           </>
         )}
-        {phase === 1 && (
+        {p === 1 && (
           <>
-            <MechHead kicker="03 · The loop" accent={ORANGE} title="The moment arrives." copy="The reset's first live moment is open — your tribe is walking in." />
             <div
               onClick={onJoin}
               role="button"
@@ -959,18 +970,12 @@ function LoopFrameMobile({ phase, onJoin }: { phase: number; onJoin: () => void 
             <p className="text-[13.5px] mt-5 text-center" style={{ color: MUTED }}>Your move — or keep scrolling.</p>
           </>
         )}
-        {phase === 2 && (
+        {p === 2 && (
           <div className="flex flex-col items-center">
-            <MechHead kicker="And then" accent="#ef4444" title="You're live." copy="No new login, no external link — training together, right now." light />
             <PeakScene />
           </div>
         )}
-        {phase >= 3 && (
-          <>
-            <MechHead kicker="After the live moment" accent={CYAN} title="The reflection closes the loop." copy="Every prompt becomes a post — the feed keeps its own rhythm." />
-            <LoopReflectionPost />
-          </>
-        )}
+        {p === 3 && <LoopReflectionPost />}
       </Enter>
     </div>
   );
@@ -1165,16 +1170,20 @@ function CompoundFrameMobile({ phase }: { phase: number }) {
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <MechHead
-        kicker="04 · It compounds"
-        accent={ORANGE}
-        title={wrapped ? "The run wraps — the retention loop opens." : "Every live moment builds the run."}
-        copy={
-          wrapped
-            ? "Same space, next run: you shape it, your tribe re-enrolls in one tap."
-            : "Attendance and progression — tracked in the space, for you and every member."
-        }
-      />
+      <div className="relative" style={{ minHeight: 200 }}>
+        <Enter key={wrapped ? 1 : 0} from="none" className="absolute inset-x-0 top-0">
+          <MechHead
+            kicker="04 · It compounds"
+            accent={ORANGE}
+            title={wrapped ? "The run wraps — the retention loop opens." : "Every live moment builds the run."}
+            copy={
+              wrapped
+                ? "Same space, next run: you shape it, your tribe re-enrolls in one tap."
+                : "Attendance and progression — tracked in the space, for you and every member."
+            }
+          />
+        </Enter>
+      </div>
       <Enter key={Math.min(phase, 2)}>
         {phase === 0 && (
           <div className="rounded-3xl p-6 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }} aria-hidden>
@@ -1250,6 +1259,12 @@ export function LiveWeek() {
   const railMid = bounds[Math.min(beat, beats.length - 1)][0] + cur.w / 2;
   const railSp = Math.min(1, Math.max(0, (railMid - stepSpan[0]) / (stepSpan[1] - stepSpan[0])));
 
+  // mobile rail: fill of the CURRENT step's segment = beat position within
+  // the frame's own beats (count-based — calm, one notch per swipe)
+  const frameFirst = firstBeatOf(frame);
+  const frameCount = beats.filter((b) => b.f === frame).length;
+  const frameProgress = frameCount > 0 ? (beat - frameFirst + 1) / frameCount : 0;
+
   if (!pinned) {
     return (
       <section className="px-4 sm:px-6 py-20">
@@ -1322,14 +1337,14 @@ export function LiveWeek() {
             </div>
           </div>
 
-          {/* Progress dots — mobile (tappable, same affordance as the rail) */}
-          <div className="lg:hidden absolute top-5 inset-x-0 z-20 flex justify-center" style={{ opacity: frame >= 1 && frame <= 4 ? 1 : 0, pointerEvents: frame >= 1 && frame <= 4 ? "auto" : "none", transition: "opacity 400ms ease" }}>
-            {RAIL.map((s) => (
-              <button key={s.frame} type="button" aria-label={s.label} onClick={() => jumpToBeat(firstBeatOf(s.frame))} className="p-1.5 flex items-center">
-                <span className="block h-1.5 rounded-full transition-all duration-300" style={{ width: frame === s.frame ? 18 : 6, backgroundColor: frame === s.frame ? ORANGE : peak ? "rgba(246,243,236,0.38)" : "rgba(15,34,41,0.20)" }} />
-              </button>
-            ))}
-          </div>
+          {/* Story rail — mobile (persistent scaffolding below the fixed nav) */}
+          <MobileRail
+            steps={RAIL.map((s) => ({ n: s.n, label: s.label, frame: s.frame }))}
+            frame={frame}
+            progress={frameProgress}
+            light={peak}
+            onStep={(f) => jumpToBeat(firstBeatOf(f))}
+          />
 
           {/* Frames — hard cuts, one visible at a time, all centered. The peak
              stays in the same rail-gutter position as every other beat — it's
@@ -1344,7 +1359,11 @@ export function LiveWeek() {
               <div
                 key={f}
                 aria-hidden={!active}
-                className={`absolute inset-0 z-10 flex flex-col items-center justify-center text-center pt-24 pb-14 ${railed ? "px-5 sm:px-8 lg:pl-64 lg:pr-16" : "px-5 sm:px-8"}`}
+                // Below lg the content box is 100svh — STABLE while the URL
+                // bar collapses (dvh dances, svh doesn't), so AutoFit's box
+                // never changes mid-scroll and nothing rescales. The dvh
+                // stage behind still fills the screen. pt-28 clears the rail.
+                className={`absolute inset-x-0 top-0 h-svh lg:inset-0 lg:h-auto z-10 flex flex-col items-center justify-center text-center pt-28 pb-10 lg:pt-24 lg:pb-14 ${railed ? "px-5 sm:px-8 lg:pl-64 lg:pr-16" : "px-5 sm:px-8"}`}
                 style={{
                   opacity: active ? 1 : 0,
                   transform: active ? "none" : "translateY(12px)",

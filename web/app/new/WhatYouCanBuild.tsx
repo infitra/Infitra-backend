@@ -56,7 +56,7 @@ export function WhatYouCanBuild() {
         </Drift>
 
         {/* ── the title block, overlapping the cover ── */}
-        <Drift depth={16} className="relative z-10 -mt-14 sm:-mt-20">
+        <Drift depth={10} className="relative z-10 -mt-14 sm:-mt-20">
           <div className="mx-auto w-[94%] sm:w-[86%] rounded-3xl px-6 py-7 sm:px-10 sm:py-8 text-center" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.05), 0 26px 64px rgba(15,34,41,0.16)" }}>
             <p className="text-[13px] sm:text-[15px] uppercase tracking-[0.18em] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>
               {EX.title}
@@ -70,14 +70,15 @@ export function WhatYouCanBuild() {
           </div>
         </Drift>
 
-        {/* ── the experts, floating ── */}
-        <div className="grid sm:grid-cols-2 gap-3 mt-6 sm:px-6">
-          {[
-            { p: ALEX, color: ORANGE, depth: 22, r: -0.8 },
-            { p: MIRA, color: CYAN, depth: 28, r: 0.8 },
-          ].map(({ p, color, depth, r }) => (
-            <Drift key={p.name} depth={depth}>
-              <div className="flex items-center gap-3 p-3.5 rounded-2xl" style={{ backgroundColor: "#FFFFFF", boxShadow: `0 0 0 1px ${color}26, 0 16px 40px rgba(15,34,41,0.10)`, transform: `rotate(${r}deg)` }}>
+        {/* ── the experts — one Drift for the PAIR so the two cards always
+             stay level with each other; no rotation, dead straight ── */}
+        <Drift depth={14}>
+          <div className="grid sm:grid-cols-2 gap-3 mt-6 sm:px-6">
+            {[
+              { p: ALEX, color: ORANGE },
+              { p: MIRA, color: CYAN },
+            ].map(({ p, color }) => (
+              <div key={p.name} className="flex items-center gap-3 p-3.5 rounded-2xl" style={{ backgroundColor: "#FFFFFF", boxShadow: `0 0 0 1px ${color}26, 0 16px 40px rgba(15,34,41,0.10)` }}>
                 <span className="shrink-0 w-12 h-12 rounded-full overflow-hidden" style={{ border: `1.5px solid ${color}59` }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={p.avatar} alt="" className="w-full h-full object-cover" />
@@ -87,12 +88,12 @@ export function WhatYouCanBuild() {
                   <span className="block text-[11.5px] font-semibold leading-snug" style={{ color }}>{p.tagline}</span>
                 </span>
               </div>
-            </Drift>
-          ))}
-        </div>
+            ))}
+          </div>
+        </Drift>
 
         {/* ── stats chip ── */}
-        <Drift depth={12}>
+        <Drift depth={10}>
           <p className="text-[13px] font-bold font-headline mt-6 text-center" style={{ color: "#5b7886" }}>
             {EX.weeks} weeks · {EX.sessions} live sessions
             <span style={{ color: FAINT, fontWeight: 600 }}> · Always on: Tribe Space + Expert access</span>
@@ -100,7 +101,7 @@ export function WhatYouCanBuild() {
         </Drift>
 
         {/* ── the weekly journey — the browsable strip ── */}
-        <Drift depth={10} className="mt-7">
+        <Drift depth={8} className="mt-7">
           <div className="rounded-3xl p-5 sm:p-6" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.05), 0 26px 64px rgba(15,34,41,0.13)" }}>
             <div className="flex flex-wrap items-center justify-center gap-1.5 mb-4">
               {EX.arc.map((_, i) => (
@@ -148,7 +149,7 @@ export function WhatYouCanBuild() {
         </Drift>
 
         {/* ── the close ── */}
-        <Drift depth={14}>
+        <Drift depth={10}>
           <div className="mt-9 text-center">
             <p className="text-[17px] md:text-lg font-headline leading-snug" style={{ color: INK, fontWeight: 700 }}>
               {EX.positioning[0]}

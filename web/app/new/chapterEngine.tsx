@@ -109,12 +109,25 @@ export function useBeatChapter({
 
     if (window.matchMedia("(max-width: 1023px)").matches) {
       // SCRUB — position-quantized beats on a passive scroll listener.
+      // The viewport height is captured ONCE and only refreshed on real
+      // viewport changes (rotation / width change) — never for the mobile
+      // URL-bar collapse, which changes innerHeight by ~60-100px mid-scroll
+      // and would shift every beat boundary under the reader's thumb.
+      let vw = window.innerWidth;
+      let vh = window.innerHeight;
+      const onResize = () => {
+        if (window.innerWidth !== vw || Math.abs(window.innerHeight - vh) > 150) {
+          vw = window.innerWidth;
+          vh = window.innerHeight;
+        }
+        onScroll();
+      };
       const onScroll = () => {
         const el = wrapperRef.current;
         if (!el) return;
         const { bounds: BOUNDS, totalW: TOTAL_W } = cfgRef.current;
         const r = el.getBoundingClientRect();
-        const total = r.height - window.innerHeight;
+        const total = r.height - vh;
         if (total <= 0) return;
         const pos = clamp01(-r.top / total) * TOTAL_W;
         // A jump (rail tap / join) owns the beat while its smooth scroll is
@@ -138,10 +151,10 @@ export function useBeatChapter({
       };
       onScroll();
       window.addEventListener("scroll", onScroll, { passive: true });
-      window.addEventListener("resize", onScroll, { passive: true });
+      window.addEventListener("resize", onResize, { passive: true });
       return () => {
         window.removeEventListener("scroll", onScroll);
-        window.removeEventListener("resize", onScroll);
+        window.removeEventListener("resize", onResize);
       };
     }
     let raf = 0;
@@ -325,7 +338,10 @@ export function AutoFit({ children }: { children: React.ReactNode }) {
         // edge (and the tallest clipped at the old 0.68 floor). The 6% keeps a
         // little breathing room top and bottom; the lower floor lets the very
         // tallest frames shrink to fit rather than clip on short phones.
-        setScale(Math.max(0.5, Math.min(1, (avail * 0.94) / need)));
+        // Quantized to 0.01 and dead-banded: sub-2% deltas (measurement noise,
+        // tiny box shifts) must never re-scale the stage mid-read.
+        const next = Math.round(Math.max(0.5, Math.min(1, (avail * 0.94) / need)) * 100) / 100;
+        setScale((prev) => (Math.abs(next - prev) < 0.02 ? prev : next));
       }
     };
     measure();
@@ -340,9 +356,87 @@ export function AutoFit({ children }: { children: React.ReactNode }) {
       <div
         ref={innerRef}
         className="w-full"
-        style={scale < 1 ? { transform: `scale(${scale})`, transformOrigin: "center" } : undefined}
+        style={
+          scale < 1
+            ? { transform: `scale(${scale})`, transformOrigin: "center", transition: `transform 200ms ${EASE}` }
+            : { transition: `transform 200ms ${EASE}` }
+        }
       >
         {children}
+      </div>
+    </div>
+  );
+}
+
+/* ── MobileRail — the story scaffolding below lg ─────────────
+ * The phone's answer to the desktop rail: a persistent strip under the
+ * fixed nav showing WHERE in the story the reader is — current step
+ * number + label, and one segment per step (past filled, current filling
+ * with beat progress, future faint). Segments are tappable jumps. Hidden
+ * on intro/outro frames, same as the desktop rail. */
+export function MobileRail({
+  steps,
+  frame,
+  progress,
+  light,
+  onStep,
+}: {
+  steps: { n: string; label: string; frame: number }[];
+  frame: number;
+  /** 0..1 — fill of the CURRENT step's segment (beat position inside the step). */
+  progress: number;
+  /** true on dark stages (light text/segments). */
+  light: boolean;
+  onStep: (frame: number) => void;
+}) {
+  const active = steps.find((s) => s.frame === frame);
+  const on = !!active;
+  const ink = light ? "#F6F3EC" : "#0F2229";
+  const faint = light ? "rgba(246,243,236,0.45)" : "rgba(15,34,41,0.40)";
+  const track = light ? "rgba(246,243,236,0.22)" : "rgba(15,34,41,0.14)";
+  const ORANGE = "#FF6130";
+  return (
+    <div
+      className="lg:hidden absolute top-16 inset-x-6 z-20"
+      style={{ opacity: on ? 1 : 0, pointerEvents: on ? "auto" : "none", transition: `opacity 400ms ease, color 400ms ease` }}
+    >
+      <div className="flex items-baseline justify-center gap-2 mb-2">
+        <span className="text-[10px] uppercase tracking-[0.22em] font-headline tabular-nums" style={{ color: ORANGE, fontWeight: 800 }}>
+          {active?.n ?? ""}
+        </span>
+        <span className="text-[12px] uppercase tracking-[0.18em] font-headline" style={{ color: ink, fontWeight: 800, transition: "color 400ms ease" }}>
+          {active?.label ?? ""}
+        </span>
+        <span className="text-[10px] uppercase tracking-[0.18em] font-headline" style={{ color: faint, fontWeight: 700, transition: "color 400ms ease" }}>
+          / {String(steps.length).padStart(2, "0")}
+        </span>
+      </div>
+      <div className="flex gap-1.5">
+        {steps.map((s) => {
+          const past = s.frame < frame;
+          const cur = s.frame === frame;
+          return (
+            <button
+              key={s.frame}
+              type="button"
+              aria-label={s.label}
+              onClick={() => onStep(s.frame)}
+              className="flex-1 py-1.5 -my-1.5"
+            >
+              <span className="block h-[3px] rounded-full overflow-hidden" style={{ backgroundColor: track, transition: "background-color 400ms ease" }}>
+                <span
+                  className="block h-full rounded-full"
+                  style={{
+                    width: past ? "100%" : cur ? `${Math.round(clamp01(progress) * 100)}%` : "0%",
+                    backgroundColor: ORANGE,
+                    boxShadow: cur ? "0 0 8px rgba(255,97,48,0.5)" : undefined,
+                    transition: `width 350ms ${EASE}`,
+                  }}
+                />
+              </span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -395,7 +489,9 @@ export function Phase({
  * entry needs no external trigger. Same timing language as Pop. */
 export function Enter({
   d = 0,
-  from = "translateY(14px) scale(0.98)",
+  // translate + fade only — NO scale: a per-swipe zoom (however subtle)
+  // compounds with any AutoFit scaling into a visible "breathing" wobble.
+  from = "translateY(12px)",
   className,
   children,
 }: {

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { EX, CONTRACT, ALEX, MIRA } from "./content";
 import { INK, ORANGE, CYAN, MUTED, FAINT } from "./ui";
-import { type BeatDef, useBeatChapter, computeBounds, clamp01, Phase, Pop, Enter, CUT_MS, POP_MS, CASCADE_MS, EASE, FIT, AutoFit } from "./chapterEngine";
+import { type BeatDef, useBeatChapter, computeBounds, clamp01, Phase, Pop, Enter, MobileRail, CUT_MS, POP_MS, CASCADE_MS, EASE, FIT, AutoFit } from "./chapterEngine";
 
 /**
  * M3 · HOW TO COLLABORATE ON INFITRA — the beat engine, in the dark room.
@@ -807,6 +807,12 @@ export function HowItWorks() {
   const railMid = BOUNDS[beat][0] + BEATS[beat].w / 2;
   const railSp = clamp01((railMid - STEP_SPAN[0]) / (STEP_SPAN[1] - STEP_SPAN[0]));
 
+  // mobile rail: fill of the CURRENT step's segment = beat position within
+  // the frame's own beats (count-based — calm, one notch per swipe)
+  const frameFirst = BEATS.findIndex((b) => b.f === frame);
+  const frameCount = BEATS.filter((b) => b.f === frame).length;
+  const frameProgress = frameCount > 0 ? (beat - frameFirst + 1) / frameCount : 0;
+
   if (!pinned) {
     return (
       <>
@@ -875,14 +881,14 @@ export function HowItWorks() {
             </div>
           </div>
 
-          {/* Progress dots — mobile (tappable, same affordance as the rail) */}
-          <div className="lg:hidden absolute top-5 inset-x-0 z-20 flex justify-center" style={{ opacity: frame >= 1 && frame <= 4 ? 1 : 0, pointerEvents: frame >= 1 && frame <= 4 ? "auto" : "none", transition: "opacity 400ms ease" }}>
-            {RAIL.map((s) => (
-              <button key={s.frame} type="button" aria-label={s.label} onClick={() => jumpToBeat(s.firstBeat)} className="p-1.5 flex items-center">
-                <span className="block h-1.5 rounded-full transition-all duration-300" style={{ width: frame === s.frame ? 18 : 6, backgroundColor: frame === s.frame ? ORANGE : "rgba(255,255,255,0.3)" }} />
-              </button>
-            ))}
-          </div>
+          {/* Story rail — mobile (persistent scaffolding below the fixed nav) */}
+          <MobileRail
+            steps={RAIL.map((s) => ({ n: `0${s.frame}`, label: s.label, frame: s.frame }))}
+            frame={frame}
+            progress={frameProgress}
+            light={!isOutro}
+            onStep={(f) => jumpToBeat(BEATS.findIndex((b) => b.f === f))}
+          />
 
           {/* Frames — hard cuts, one visible at a time, all centered */}
           {[0, 1, 2, 3, 4, 5].map((f) => {
@@ -897,7 +903,11 @@ export function HowItWorks() {
                   frameRefs.current[f] = el;
                 }}
                 aria-hidden={!active}
-                className={`absolute inset-0 z-10 flex flex-col items-center justify-center text-center pt-24 pb-14 ${railed ? "px-5 sm:px-8 lg:pl-64 lg:pr-16" : "px-5 sm:px-8"}`}
+                // Below lg the content box is 100svh — STABLE while the URL
+                // bar collapses (dvh dances, svh doesn't), so AutoFit's box
+                // never changes mid-scroll and nothing rescales. The dvh
+                // stage behind still fills the screen. pt-28 clears the rail.
+                className={`absolute inset-x-0 top-0 h-svh lg:inset-0 lg:h-auto z-10 flex flex-col items-center justify-center text-center pt-28 pb-10 lg:pt-24 lg:pb-14 ${railed ? "px-5 sm:px-8 lg:pl-64 lg:pr-16" : "px-5 sm:px-8"}`}
                 style={{
                   opacity: active ? 1 : 0,
                   transform: active ? "none" : "translateY(12px)",
