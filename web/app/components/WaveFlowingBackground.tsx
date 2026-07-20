@@ -128,15 +128,20 @@ export function WaveFlowingBackground() {
           also what iOS Safari samples to tint its translucent URL bar. This
           continues the same diagonal palette (cyan → white → orange, left to
           right) to the true bottom edge, fading in vertically so it reads as
-          the waves reaching the shore, not a new element. Desktop keeps the
-          approved look untouched. */}
+          the waves reaching the shore, not a new element.
+          SIZING IS DEVICE-DRIVEN: Safari's expanded URL bar hides roughly
+          the bottom 120-130px of the layer, so the wash must be at FULL
+          strength well above that — it holds full color from ~55% of its own
+          height down, keeping the strip the reader actually sees (above the
+          bar) as colored as what the bar samples (below it). Desktop keeps
+          the approved look untouched. */}
       <div
-        className="absolute inset-x-0 bottom-0 h-[30%] lg:hidden"
+        className="absolute inset-x-0 bottom-0 h-[44%] lg:hidden"
         style={{
           background:
-            "linear-gradient(90deg, rgba(156,240,255,0.34) 0%, rgba(255,255,255,0.10) 48%, rgba(255,97,48,0.24) 100%)",
-          WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,0) 0%, #000 78%)",
-          maskImage: "linear-gradient(to bottom, rgba(0,0,0,0) 0%, #000 78%)",
+            "linear-gradient(90deg, rgba(156,240,255,0.50) 0%, rgba(255,255,255,0.16) 46%, rgba(255,97,48,0.36) 100%)",
+          WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,0) 0%, #000 55%)",
+          maskImage: "linear-gradient(to bottom, rgba(0,0,0,0) 0%, #000 55%)",
         }}
       />
     </div>
