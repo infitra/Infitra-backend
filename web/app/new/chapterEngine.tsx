@@ -385,6 +385,40 @@ export function Phase({
   );
 }
 
+/* ── Mount reveal — for keyed swaps (mobile stagings) ────────
+ * Pop animates on a `show` flip; Enter animates on MOUNT. The mobile
+ * stagings render one hero per beat and remount it (key={phase}), so the
+ * entry needs no external trigger. Same timing language as Pop. */
+export function Enter({
+  d = 0,
+  from = "translateY(14px) scale(0.98)",
+  className,
+  children,
+}: {
+  d?: number;
+  from?: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const [on, setOn] = useState(false);
+  useEffect(() => {
+    const t = window.setTimeout(() => setOn(true), 30);
+    return () => window.clearTimeout(t);
+  }, []);
+  return (
+    <div
+      className={className}
+      style={{
+        opacity: on ? 1 : 0,
+        transform: on ? "none" : from,
+        transition: `opacity ${POP_MS}ms ${EASE} ${d}ms, transform ${POP_MS}ms ${EASE} ${d}ms`,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
 /* ── Phase reveal — space reserved, pops decisively ────────── */
 export function Pop({
   show,

@@ -1,9 +1,9 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { EX, CONTRACT, ALEX, MIRA } from "./content";
 import { INK, ORANGE, CYAN, MUTED, FAINT } from "./ui";
-import { type BeatDef, useBeatChapter, computeBounds, clamp01, Phase, Pop, CUT_MS, POP_MS, CASCADE_MS, EASE, FIT, AutoFit } from "./chapterEngine";
+import { type BeatDef, useBeatChapter, computeBounds, clamp01, Phase, Pop, Enter, CUT_MS, POP_MS, CASCADE_MS, EASE, FIT, AutoFit } from "./chapterEngine";
 
 /**
  * M3 · HOW TO COLLABORATE ON INFITRA — the beat engine, in the dark room.
@@ -241,7 +241,177 @@ function InvitationFrame({ phase }: { phase: number }) {
   );
 }
 
-/* ══ Frame 2 · The workspace — actions revealed beat by beat ═ */
+/* ══ Frame 2 · The workspace — actions revealed beat by beat ═
+ * The pieces are atoms shared by the desktop composition (whole workspace +
+ * chat, the beat highlighted inside it) and the mobile staging (one hero
+ * per beat at natural size). */
+
+function WsHeader({ divider = true }: { divider?: boolean }) {
+  return (
+    <div className="flex items-center justify-between gap-3 px-6 py-4" style={divider ? { borderBottom: "1px solid rgba(15,34,41,0.06)" } : undefined}>
+      <div className="flex items-center gap-3 min-w-0">
+        <p className="text-[15px] font-headline truncate" style={{ color: INK, fontWeight: 800 }}>{EX.title}</p>
+        <span className="shrink-0 px-2.5 py-0.5 rounded-full text-[9px] uppercase tracking-widest font-headline" style={{ color: FAINT, backgroundColor: "rgba(15,34,41,0.05)", fontWeight: 800 }}>
+          Draft
+        </span>
+      </div>
+      <div className="flex -space-x-1.5 shrink-0">
+        {[ALEX.avatar, MIRA.avatar].map((a) => (
+          <span key={a} className="relative w-7 h-7 rounded-full overflow-hidden" style={{ border: "2px solid #FFFFFF" }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={a} alt="" className="w-full h-full object-cover" />
+            <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full" style={{ backgroundColor: "#22c55e", border: "1px solid #FFF" }} />
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function WsPromise() {
+  return (
+    <div>
+      <p className="text-[10px] uppercase tracking-[0.18em] font-headline mb-2" style={{ color: CYAN, fontWeight: 800 }}>The promise</p>
+      <div className="rounded-2xl px-4 py-3.5 text-[15px] font-headline leading-snug" style={{ backgroundColor: "#F8F6F0", color: INK, fontWeight: 700 }}>
+        {EX.promise}
+      </div>
+    </div>
+  );
+}
+
+function WsSessionsLabel() {
+  return (
+    <div className="flex items-center justify-between mb-2">
+      <p className="text-[10px] uppercase tracking-[0.18em] font-headline" style={{ color: CYAN, fontWeight: 800 }}>The sessions</p>
+      <span className="inline-flex items-center gap-1 rounded-full px-3 py-1" style={{ border: "1.5px dashed rgba(8,145,178,0.40)" }}>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={CYAN} strokeWidth="2.6" strokeLinecap="round" aria-hidden>
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+        <span className="text-[10px] font-headline" style={{ color: CYAN, fontWeight: 800 }}>Add session</span>
+      </span>
+    </div>
+  );
+}
+
+function WsMeetRow() {
+  return (
+    <div className="flex items-center gap-3 rounded-xl p-3" style={{ backgroundColor: "#FAFAF7", border: "1px solid rgba(15,34,41,0.06)" }}>
+      <span className="relative shrink-0 w-16 h-11 rounded-lg overflow-hidden" style={{ backgroundColor: INK }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/landing/session-meet.jpg" alt="" className="absolute inset-0 w-full h-full object-cover" />
+      </span>
+      <span className="min-w-0">
+        <span className="block text-[13.5px] font-headline leading-snug truncate" style={{ color: INK, fontWeight: 800 }}>Meet your Experts</span>
+        <span className="block text-[10px] font-bold mt-0.5" style={{ color: FAINT }}>Week 1 · Sun 13:00 · Alex &amp; Mira</span>
+      </span>
+    </div>
+  );
+}
+
+function WsAddedRow({ ring }: { ring: boolean }) {
+  return (
+    <div
+      className="flex items-center gap-3 rounded-xl p-3"
+      style={{ backgroundColor: "rgba(8,145,178,0.05)", border: "1px solid rgba(8,145,178,0.25)", boxShadow: `${ring ? `0 0 0 2.5px ${ORANGE}80, ` : ""}0 0 0 0 transparent`, transition: `box-shadow 400ms ${EASE}` }}
+    >
+      <span className="relative shrink-0 w-16 h-11 rounded-lg overflow-hidden" style={{ backgroundColor: INK }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/landing/session-nutrition.jpg" alt="" className="absolute inset-0 w-full h-full object-cover" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-[13.5px] font-headline leading-snug truncate" style={{ color: INK, fontWeight: 800 }}>Nutrition Foundations &amp; Weekly Setup</span>
+        <span className="block text-[10px] font-bold mt-0.5" style={{ color: FAINT }}>Week 1 · Mon 13:00 · Mira</span>
+      </span>
+      <span className="shrink-0 text-[9px] uppercase tracking-widest font-headline" style={{ color: CYAN, fontWeight: 800 }}>Added ✓</span>
+    </div>
+  );
+}
+
+function WsSplit({ on, ring }: { on: boolean; ring: boolean }) {
+  return (
+    <div>
+      <p className="text-[10px] uppercase tracking-[0.18em] font-headline mb-2" style={{ color: CYAN, fontWeight: 800 }}>The team · revenue share</p>
+      <div
+        className="flex items-center gap-4 rounded-2xl px-4 py-4"
+        style={{
+          backgroundColor: "#FAFAF7",
+          border: "1px solid rgba(15,34,41,0.06)",
+          boxShadow: `${ring ? `0 0 0 2.5px ${ORANGE}80, ` : ""}0 0 0 0 transparent`,
+          transform: ring ? "scale(1.02)" : "scale(1)",
+          transition: `box-shadow 400ms ${EASE}, transform 400ms ${EASE}`,
+        }}
+      >
+        <span className="flex -space-x-2 shrink-0">
+          {[{ a: ALEX.avatar, c: ORANGE }, { a: MIRA.avatar, c: CYAN }].map(({ a, c }) => (
+            <span key={a} className="w-8 h-8 rounded-full overflow-hidden" style={{ border: `2px solid ${c}59`, backgroundColor: "#fff" }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={a} alt="" className="w-full h-full object-cover" />
+            </span>
+          ))}
+        </span>
+        <span className="relative flex-1 h-3.5 rounded-full overflow-visible">
+          <span className="absolute inset-0 rounded-full overflow-hidden flex">
+            <span style={{ width: on ? `${EX.split.owner}%` : "50%", backgroundColor: ORANGE, transition: `width 700ms ${EASE}` }} />
+            <span style={{ flex: 1, backgroundColor: CYAN }} />
+          </span>
+          <span
+            className="absolute top-1/2 w-6 h-6 rounded-full"
+            style={{
+              left: on ? `${EX.split.owner}%` : "50%",
+              transform: "translate(-50%,-50%)",
+              backgroundColor: "#FFFFFF",
+              boxShadow: "0 0 0 2px rgba(15,34,41,0.18), 0 4px 12px rgba(15,34,41,0.30)",
+              transition: `left 700ms ${EASE}`,
+            }}
+          />
+        </span>
+        <span className="relative w-14 text-right">
+          <span className="absolute right-0 top-1/2 -translate-y-1/2 text-[15px] font-black font-headline tabular-nums" style={{ color: INK, opacity: on ? 0 : 1, transition: "opacity 200ms ease" }}>50/50</span>
+          <span className="absolute right-0 top-1/2 -translate-y-1/2 text-[15px] font-black font-headline tabular-nums" style={{ color: ORANGE, opacity: on ? 1 : 0, transition: "opacity 200ms ease 350ms" }}>60/40</span>
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function WsMiraMsg() {
+  return (
+    <div className="flex items-start gap-2">
+      <span className="shrink-0 w-7 h-7 rounded-full overflow-hidden mt-0.5">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={MIRA.avatar} alt="" className="w-full h-full object-cover" />
+      </span>
+      <div className="rounded-2xl rounded-tl-md px-3.5 py-2.5 text-[12.5px] font-medium leading-snug" style={{ backgroundColor: "rgba(8,145,178,0.08)", color: INK }}>
+        Added my nutrition sessions for weeks 1–3 ✓
+      </div>
+    </div>
+  );
+}
+
+function WsAlexMsg() {
+  return (
+    <div className="flex items-start gap-2 justify-end">
+      <div
+        className="rounded-2xl rounded-tr-md px-4 py-3 text-[13.5px] font-headline leading-snug"
+        style={{ backgroundColor: "rgba(255,97,48,0.12)", color: INK, fontWeight: 700, boxShadow: `0 0 0 1.5px ${ORANGE}59` }}
+      >
+        I think we are all set — I&apos;ll lock this for review!
+      </div>
+      <span className="shrink-0 w-7 h-7 rounded-full overflow-hidden mt-0.5">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={ALEX.avatar} alt="" className="w-full h-full object-cover" />
+      </span>
+    </div>
+  );
+}
+
+function WsChatInput() {
+  return (
+    <div className="rounded-full px-4 py-2.5 text-[11.5px]" style={{ backgroundColor: "#FFFFFF", color: FAINT, boxShadow: "0 0 0 1px rgba(15,34,41,0.07)" }}>
+      Message your team…
+    </div>
+  );
+}
 
 function WorkspaceFrame({ phase }: { phase: number }) {
   const ringOn = (target: number) => (phase === target ? `0 0 0 2.5px ${ORANGE}80, ` : "");
@@ -252,116 +422,21 @@ function WorkspaceFrame({ phase }: { phase: number }) {
       <div className="grid md:grid-cols-[1.55fr_1fr] gap-5 items-start text-left">
         {/* the workspace */}
         <div className="rounded-3xl overflow-hidden" style={{ backgroundColor: "#FFFFFF", boxShadow: CARD_POP }}>
-          <div className="flex items-center justify-between gap-3 px-6 py-4" style={{ borderBottom: "1px solid rgba(15,34,41,0.06)" }}>
-            <div className="flex items-center gap-3 min-w-0">
-              <p className="text-[15px] font-headline truncate" style={{ color: INK, fontWeight: 800 }}>{EX.title}</p>
-              <span className="shrink-0 px-2.5 py-0.5 rounded-full text-[9px] uppercase tracking-widest font-headline" style={{ color: FAINT, backgroundColor: "rgba(15,34,41,0.05)", fontWeight: 800 }}>
-                Draft
-              </span>
-            </div>
-            <div className="flex -space-x-1.5 shrink-0">
-              {[ALEX.avatar, MIRA.avatar].map((a) => (
-                <span key={a} className="relative w-7 h-7 rounded-full overflow-hidden" style={{ border: "2px solid #FFFFFF" }}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={a} alt="" className="w-full h-full object-cover" />
-                  <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full" style={{ backgroundColor: "#22c55e", border: "1px solid #FFF" }} />
-                </span>
-              ))}
-            </div>
-          </div>
-
+          <WsHeader />
           <div className="p-6 space-y-5">
+            <WsPromise />
             <div>
-              <p className="text-[10px] uppercase tracking-[0.18em] font-headline mb-2" style={{ color: CYAN, fontWeight: 800 }}>The promise</p>
-              <div className="rounded-2xl px-4 py-3.5 text-[15px] font-headline leading-snug" style={{ backgroundColor: "#F8F6F0", color: INK, fontWeight: 700 }}>
-                {EX.promise}
-              </div>
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-[10px] uppercase tracking-[0.18em] font-headline" style={{ color: CYAN, fontWeight: 800 }}>The sessions</p>
-                <span className="inline-flex items-center gap-1 rounded-full px-3 py-1" style={{ border: "1.5px dashed rgba(8,145,178,0.40)" }}>
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={CYAN} strokeWidth="2.6" strokeLinecap="round" aria-hidden>
-                    <path d="M12 5v14M5 12h14" />
-                  </svg>
-                  <span className="text-[10px] font-headline" style={{ color: CYAN, fontWeight: 800 }}>Add session</span>
-                </span>
-              </div>
+              <WsSessionsLabel />
               <div className="space-y-2">
-                <div className="flex items-center gap-3 rounded-xl p-3" style={{ backgroundColor: "#FAFAF7", border: "1px solid rgba(15,34,41,0.06)" }}>
-                  <span className="relative shrink-0 w-16 h-11 rounded-lg overflow-hidden" style={{ backgroundColor: INK }}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/landing/session-meet.jpg" alt="" className="absolute inset-0 w-full h-full object-cover" />
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block text-[13.5px] font-headline leading-snug truncate" style={{ color: INK, fontWeight: 800 }}>Meet your Experts</span>
-                    <span className="block text-[10px] font-bold mt-0.5" style={{ color: FAINT }}>Week 1 · Sun 13:00 · Alex &amp; Mira</span>
-                  </span>
-                </div>
+                <WsMeetRow />
                 {/* beat: the session Mira adds — arrives WITH her message */}
                 <Pop show={phase >= 1} from="translateX(-22px)">
-                  <div
-                    className="flex items-center gap-3 rounded-xl p-3"
-                    style={{ backgroundColor: "rgba(8,145,178,0.05)", border: "1px solid rgba(8,145,178,0.25)", boxShadow: `${ringOn(1)}0 0 0 0 transparent`, transition: `box-shadow 400ms ${EASE}` }}
-                  >
-                    <span className="relative shrink-0 w-16 h-11 rounded-lg overflow-hidden" style={{ backgroundColor: INK }}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src="/landing/session-nutrition.jpg" alt="" className="absolute inset-0 w-full h-full object-cover" />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-[13.5px] font-headline leading-snug truncate" style={{ color: INK, fontWeight: 800 }}>Nutrition Foundations &amp; Weekly Setup</span>
-                      <span className="block text-[10px] font-bold mt-0.5" style={{ color: FAINT }}>Week 1 · Mon 13:00 · Mira</span>
-                    </span>
-                    <span className="shrink-0 text-[9px] uppercase tracking-widest font-headline" style={{ color: CYAN, fontWeight: 800 }}>Added ✓</span>
-                  </div>
+                  <WsAddedRow ring={phase === 1} />
                 </Pop>
               </div>
             </div>
-
             {/* beat: the split — heavier, with a knob, demands attention */}
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.18em] font-headline mb-2" style={{ color: CYAN, fontWeight: 800 }}>The team · revenue share</p>
-              <div
-                className="flex items-center gap-4 rounded-2xl px-4 py-4"
-                style={{
-                  backgroundColor: "#FAFAF7",
-                  border: "1px solid rgba(15,34,41,0.06)",
-                  boxShadow: `${ringOn(2)}0 0 0 0 transparent`,
-                  transform: phase === 2 ? "scale(1.02)" : "scale(1)",
-                  transition: `box-shadow 400ms ${EASE}, transform 400ms ${EASE}`,
-                }}
-              >
-                <span className="flex -space-x-2 shrink-0">
-                  {[{ a: ALEX.avatar, c: ORANGE }, { a: MIRA.avatar, c: CYAN }].map(({ a, c }) => (
-                    <span key={a} className="w-8 h-8 rounded-full overflow-hidden" style={{ border: `2px solid ${c}59`, backgroundColor: "#fff" }}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={a} alt="" className="w-full h-full object-cover" />
-                    </span>
-                  ))}
-                </span>
-                <span className="relative flex-1 h-3.5 rounded-full overflow-visible">
-                  <span className="absolute inset-0 rounded-full overflow-hidden flex">
-                    <span style={{ width: phase >= 2 ? `${EX.split.owner}%` : "50%", backgroundColor: ORANGE, transition: `width 700ms ${EASE}` }} />
-                    <span style={{ flex: 1, backgroundColor: CYAN }} />
-                  </span>
-                  <span
-                    className="absolute top-1/2 w-6 h-6 rounded-full"
-                    style={{
-                      left: phase >= 2 ? `${EX.split.owner}%` : "50%",
-                      transform: "translate(-50%,-50%)",
-                      backgroundColor: "#FFFFFF",
-                      boxShadow: "0 0 0 2px rgba(15,34,41,0.18), 0 4px 12px rgba(15,34,41,0.30)",
-                      transition: `left 700ms ${EASE}`,
-                    }}
-                  />
-                </span>
-                <span className="relative w-14 text-right">
-                  <span className="absolute right-0 top-1/2 -translate-y-1/2 text-[15px] font-black font-headline tabular-nums" style={{ color: INK, opacity: phase >= 2 ? 0 : 1, transition: "opacity 200ms ease" }}>50/50</span>
-                  <span className="absolute right-0 top-1/2 -translate-y-1/2 text-[15px] font-black font-headline tabular-nums" style={{ color: ORANGE, opacity: phase >= 2 ? 1 : 0, transition: "opacity 200ms ease 350ms" }}>60/40</span>
-                </span>
-              </div>
-            </div>
+            <WsSplit on={phase >= 2} ring={phase === 2} />
           </div>
         </div>
 
@@ -384,34 +459,13 @@ function WorkspaceFrame({ phase }: { phase: number }) {
           <div className="space-y-3">
             {/* arrives together with the session she added */}
             <Pop show={phase >= 1} from="translateY(10px)">
-              <div className="flex items-start gap-2">
-                <span className="shrink-0 w-7 h-7 rounded-full overflow-hidden mt-0.5">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={MIRA.avatar} alt="" className="w-full h-full object-cover" />
-                </span>
-                <div className="rounded-2xl rounded-tl-md px-3.5 py-2.5 text-[12.5px] font-medium leading-snug" style={{ backgroundColor: "rgba(8,145,178,0.08)", color: INK }}>
-                  Added my nutrition sessions for weeks 1–3 ✓
-                </div>
-              </div>
+              <WsMiraMsg />
             </Pop>
             {/* beat: Alex closes the design — the loudest message */}
             <Pop show={phase >= 3} from="translateY(12px) scale(0.94)">
-              <div className="flex items-start gap-2 justify-end">
-                <div
-                  className="rounded-2xl rounded-tr-md px-4 py-3 text-[13.5px] font-headline leading-snug"
-                  style={{ backgroundColor: "rgba(255,97,48,0.12)", color: INK, fontWeight: 700, boxShadow: `0 0 0 1.5px ${ORANGE}59` }}
-                >
-                  I think we are all set — I&apos;ll lock this for review!
-                </div>
-                <span className="shrink-0 w-7 h-7 rounded-full overflow-hidden mt-0.5">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={ALEX.avatar} alt="" className="w-full h-full object-cover" />
-                </span>
-              </div>
+              <WsAlexMsg />
             </Pop>
-            <div className="rounded-full px-4 py-2.5 text-[11.5px]" style={{ backgroundColor: "#FFFFFF", color: FAINT, boxShadow: "0 0 0 1px rgba(15,34,41,0.07)" }}>
-              Message your team…
-            </div>
+            <WsChatInput />
           </div>
         </div>
       </div>
@@ -419,7 +473,123 @@ function WorkspaceFrame({ phase }: { phase: number }) {
   );
 }
 
+/* Mobile staging — one hero per beat, at natural size. The header strip
+ * stays as the continuity anchor; the beat's subject swaps in below it. */
+function WorkspaceFrameMobile({ phase }: { phase: number }) {
+  // the split's 50/50 → 60/40 move must be SEEN: arm it after mount
+  const [splitOn, setSplitOn] = useState(false);
+  useEffect(() => {
+    if (phase !== 2) {
+      setSplitOn(false);
+      return;
+    }
+    const t = window.setTimeout(() => setSplitOn(true), 550);
+    return () => window.clearTimeout(t);
+  }, [phase]);
+
+  return (
+    <div className="w-full max-w-md mx-auto">
+      <StepHead kicker="Step 02 · The workspace" accent={ORANGE} title="Design it together." copy="A pre-structured experience to create inside — add a session, set the split, talk it through." />
+      <div className="text-left">
+        <div className="rounded-2xl overflow-hidden mb-4" style={{ backgroundColor: "#FFFFFF", boxShadow: CARD_POP }}>
+          <WsHeader divider={false} />
+        </div>
+        <Enter key={phase >= 3 ? 3 : phase}>
+          {phase === 0 && (
+            <div className="rounded-2xl p-5 space-y-5" style={{ backgroundColor: "#FFFFFF", boxShadow: CARD_POP }}>
+              <WsPromise />
+              <div>
+                <WsSessionsLabel />
+                <WsMeetRow />
+              </div>
+            </div>
+          )}
+          {phase === 1 && (
+            <div className="space-y-4">
+              <div className="rounded-2xl p-5" style={{ backgroundColor: "#FFFFFF", boxShadow: CARD_POP }}>
+                <WsSessionsLabel />
+                <div className="space-y-2">
+                  <WsMeetRow />
+                  <WsAddedRow ring />
+                </div>
+              </div>
+              <div className="rounded-2xl p-4" style={{ backgroundColor: "#FAF8F3", boxShadow: CARD_POP }}>
+                <WsMiraMsg />
+              </div>
+            </div>
+          )}
+          {phase === 2 && (
+            <div className="rounded-2xl p-5" style={{ backgroundColor: "#FFFFFF", boxShadow: CARD_POP }}>
+              <WsSplit on={splitOn} ring />
+            </div>
+          )}
+          {phase >= 3 && (
+            <div className="rounded-2xl p-4 space-y-3" style={{ backgroundColor: "#FAF8F3", boxShadow: `0 0 0 2.5px ${ORANGE}80, ${CARD_POP}` }}>
+              <WsMiraMsg />
+              <WsAlexMsg />
+              <WsChatInput />
+            </div>
+          )}
+        </Enter>
+      </div>
+    </div>
+  );
+}
+
 /* ══ Frame 3 · The agreement — the record carries the weight ═ */
+
+function AgLockBadge() {
+  return (
+    <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[10.5px] uppercase tracking-widest font-headline" style={{ color: "#4ade80", backgroundColor: "rgba(74,222,128,0.12)", fontWeight: 800 }}>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <rect x="3.5" y="11" width="17" height="10" rx="2" />
+        <path d="M7.5 11V7.5a4.5 4.5 0 0 1 9 0V11" />
+      </svg>
+      Locked for review
+    </span>
+  );
+}
+
+function AgChecklist() {
+  return (
+    <div className="w-full max-w-lg space-y-2.5">
+      {[`All ${EX.sessions} sessions — as designed`, "Ownership — as assigned", `Split — ${EX.split.owner} / ${EX.split.cohost}`].map((t) => (
+        <div key={t} className="flex items-center gap-3 rounded-xl px-4 py-3.5 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: CARD_POP }}>
+          <span className="shrink-0" style={{ color: CYAN }}>{CHECK(CYAN, 14)}</span>
+          <span className="text-[14px] font-bold font-headline" style={{ color: INK }}>{t}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function AgRecordCard() {
+  return (
+    <div className="rounded-3xl px-7 py-7 text-center" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 2.5px rgba(255,97,48,0.45), 0 34px 80px rgba(0,0,0,0.5)" }}>
+      <p className="inline-flex items-center gap-2.5 text-[22px] md:text-[26px] font-headline tracking-tight" style={{ color: INK, fontWeight: 800, letterSpacing: "-0.02em" }}>
+        <span style={{ color: "#16a34a" }}>{CHECK("#16a34a", 24)}</span> Agreed by all collaborators
+      </p>
+      <div className="grid grid-cols-2 gap-4 mt-5">
+        {[
+          { p: ALEX, color: ORANGE, action: "Locked by", stamp: CONTRACT.lockedStamp },
+          { p: MIRA, color: CYAN, action: "Agreed by", stamp: CONTRACT.agreedStamp },
+        ].map(({ p, color, action, stamp }) => (
+          <div key={p.name} className="rounded-2xl px-5 py-4 text-left" style={{ backgroundColor: "#FAFAF7", border: "1px solid rgba(15,34,41,0.08)" }}>
+            <p className="text-[9px] uppercase tracking-[0.18em] font-headline" style={{ color: FAINT, fontWeight: 800 }}>{action}</p>
+            <p className="text-[19px] leading-none mt-2" style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontStyle: "italic", color: INK }}>{p.name}</p>
+            <p className="flex items-center gap-1.5 mt-3 text-[11px] font-black font-headline tabular-nums" style={{ color }}>
+              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />
+              Recorded · {stamp}
+            </p>
+          </div>
+        ))}
+      </div>
+      <p className="text-[10.5px] font-bold font-headline mt-4" style={{ color: FAINT }}>
+        Every agreement recorded — exactly as accepted, exactly when.
+      </p>
+    </div>
+  );
+}
 
 function AgreementFrame({ phase }: { phase: number }) {
   return (
@@ -427,52 +597,43 @@ function AgreementFrame({ phase }: { phase: number }) {
       <StepHead kicker="Step 03 · The agreement" accent={CYAN_BRIGHT} title="Lock it. Review. Agree." copy="The whole design locks as one. Your partner reviews and agrees to exactly that." />
 
       <div className="flex flex-col items-center">
-        <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[10.5px] uppercase tracking-widest font-headline" style={{ color: "#4ade80", backgroundColor: "rgba(74,222,128,0.12)", fontWeight: 800 }}>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#4ade80" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-            <rect x="3.5" y="11" width="17" height="10" rx="2" />
-            <path d="M7.5 11V7.5a4.5 4.5 0 0 1 9 0V11" />
-          </svg>
-          Locked for review
-        </span>
+        <AgLockBadge />
         <p className="text-[17px] font-headline tracking-tight mt-3" style={{ color: LIGHT, fontWeight: 800 }}>{EX.title}</p>
         <p className="text-[9.5px] uppercase tracking-[0.18em] font-headline mt-1 mb-6" style={{ color: "rgba(244,241,232,0.5)", fontWeight: 800 }}>The whole design</p>
 
-        <div className="w-full max-w-lg space-y-2.5">
-          {[`All ${EX.sessions} sessions — as designed`, "Ownership — as assigned", `Split — ${EX.split.owner} / ${EX.split.cohost}`].map((t) => (
-            <div key={t} className="flex items-center gap-3 rounded-xl px-4 py-3.5 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: CARD_POP }}>
-              <span className="shrink-0" style={{ color: CYAN }}>{CHECK(CYAN, 14)}</span>
-              <span className="text-[14px] font-bold font-headline" style={{ color: INK }}>{t}</span>
-            </div>
-          ))}
-        </div>
+        <AgChecklist />
 
         {/* beat: THE RECORD — diligent, timestamped, heavy */}
         <Pop show={phase >= 1} from="translateY(20px) scale(0.93)" className="w-full mt-7">
-          <div className="rounded-3xl px-7 py-7 text-center" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 2.5px rgba(255,97,48,0.45), 0 34px 80px rgba(0,0,0,0.5)" }}>
-            <p className="inline-flex items-center gap-2.5 text-[22px] md:text-[26px] font-headline tracking-tight" style={{ color: INK, fontWeight: 800, letterSpacing: "-0.02em" }}>
-              <span style={{ color: "#16a34a" }}>{CHECK("#16a34a", 24)}</span> Agreed by all collaborators
-            </p>
-            <div className="grid grid-cols-2 gap-4 mt-5">
-              {[
-                { p: ALEX, color: ORANGE, action: "Locked by", stamp: CONTRACT.lockedStamp },
-                { p: MIRA, color: CYAN, action: "Agreed by", stamp: CONTRACT.agreedStamp },
-              ].map(({ p, color, action, stamp }) => (
-                <div key={p.name} className="rounded-2xl px-5 py-4 text-left" style={{ backgroundColor: "#FAFAF7", border: "1px solid rgba(15,34,41,0.08)" }}>
-                  <p className="text-[9px] uppercase tracking-[0.18em] font-headline" style={{ color: FAINT, fontWeight: 800 }}>{action}</p>
-                  <p className="text-[19px] leading-none mt-2" style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontStyle: "italic", color: INK }}>{p.name}</p>
-                  <p className="flex items-center gap-1.5 mt-3 text-[11px] font-black font-headline tabular-nums" style={{ color }}>
-                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />
-                    Recorded · {stamp}
-                  </p>
-                </div>
-              ))}
-            </div>
-            <p className="text-[10.5px] font-bold font-headline mt-4" style={{ color: FAINT }}>
-              Every agreement recorded — exactly as accepted, exactly when.
-            </p>
-          </div>
+          <AgRecordCard />
         </Pop>
       </div>
+    </div>
+  );
+}
+
+/* Mobile staging — p0 the locked design + checklist; p1 THE RECORD alone. */
+function AgreementFrameMobile({ phase }: { phase: number }) {
+  return (
+    <div className="w-full max-w-md mx-auto">
+      <StepHead kicker="Step 03 · The agreement" accent={CYAN_BRIGHT} title="Lock it. Review. Agree." copy="The whole design locks as one. Your partner reviews and agrees to exactly that." />
+      <Enter key={phase >= 1 ? 1 : 0}>
+        {phase === 0 ? (
+          <div className="flex flex-col items-center">
+            <AgLockBadge />
+            <p className="text-[17px] font-headline tracking-tight mt-3" style={{ color: LIGHT, fontWeight: 800 }}>{EX.title}</p>
+            <p className="text-[9.5px] uppercase tracking-[0.18em] font-headline mt-1 mb-6" style={{ color: "rgba(244,241,232,0.5)", fontWeight: 800 }}>The whole design</p>
+            <AgChecklist />
+          </div>
+        ) : (
+          <div className="flex flex-col items-center">
+            <p className="inline-flex items-center gap-2 mb-5 text-[12px] uppercase tracking-widest font-headline" style={{ color: CYAN_BRIGHT, fontWeight: 800 }}>
+              {CHECK(CYAN_BRIGHT, 12)} The whole design — reviewed
+            </p>
+            <div className="w-full"><AgRecordCard /></div>
+          </div>
+        )}
+      </Enter>
     </div>
   );
 }
@@ -616,6 +777,13 @@ const RAIL = [
 export function HowItWorks() {
   const frameRefs = useRef<(HTMLDivElement | null)[]>([]);
   const ecgShownRef = useRef(0);
+  // Mobile staging flag — same breakpoint the engine's scrub mode uses.
+  // false on the server and first client render (desktop staging), flipped
+  // post-hydration; the swap is below the fold and invisible.
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    if (window.matchMedia("(max-width: 1023px)").matches) setIsMobile(true);
+  }, []);
 
   const { beat, pinned, wrapperRef, jumpToBeat, runwayVh } = useBeatChapter({
     beats: BEATS,
@@ -707,10 +875,12 @@ export function HowItWorks() {
             </div>
           </div>
 
-          {/* Progress dots — mobile */}
-          <div className="lg:hidden absolute top-5 inset-x-0 z-20 flex justify-center gap-1.5" aria-hidden style={{ opacity: frame >= 1 && frame <= 4 ? 1 : 0, transition: "opacity 400ms ease" }}>
+          {/* Progress dots — mobile (tappable, same affordance as the rail) */}
+          <div className="lg:hidden absolute top-5 inset-x-0 z-20 flex justify-center" style={{ opacity: frame >= 1 && frame <= 4 ? 1 : 0, pointerEvents: frame >= 1 && frame <= 4 ? "auto" : "none", transition: "opacity 400ms ease" }}>
             {RAIL.map((s) => (
-              <span key={s.frame} className="h-1.5 rounded-full transition-all duration-300" style={{ width: frame === s.frame ? 18 : 6, backgroundColor: frame === s.frame ? ORANGE : "rgba(255,255,255,0.3)" }} />
+              <button key={s.frame} type="button" aria-label={s.label} onClick={() => jumpToBeat(s.firstBeat)} className="p-1.5 flex items-center">
+                <span className="block h-1.5 rounded-full transition-all duration-300" style={{ width: frame === s.frame ? 18 : 6, backgroundColor: frame === s.frame ? ORANGE : "rgba(255,255,255,0.3)" }} />
+              </button>
             ))}
           </div>
 
@@ -741,8 +911,8 @@ export function HowItWorks() {
                   <AutoFit>
                     {f === 0 && <IntroFrame />}
                     {f === 1 && <InvitationFrame phase={active ? phase : 0} />}
-                    {f === 2 && <WorkspaceFrame phase={active ? phase : 0} />}
-                    {f === 3 && <AgreementFrame phase={active ? phase : 0} />}
+                    {f === 2 && (isMobile ? <WorkspaceFrameMobile phase={active ? phase : 0} /> : <WorkspaceFrame phase={active ? phase : 0} />)}
+                    {f === 3 && (isMobile ? <AgreementFrameMobile phase={active ? phase : 0} /> : <AgreementFrame phase={active ? phase : 0} />)}
                     {f === 4 && <PublishFrame phase={active ? phase : 0} onPublish={() => jumpToBeat(10)} />}
                     {f === 5 && <OutroFrame />}
                   </AutoFit>

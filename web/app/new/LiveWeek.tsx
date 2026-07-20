@@ -1,8 +1,9 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { EX, ALEX, MIRA, ROOM } from "./content";
 import { INK, ORANGE, CYAN, MUTED, FAINT, PRODUCT_SHADOW } from "./ui";
-import { type BeatDef, useBeatChapter, computeBounds, Phase, Pop, CUT_MS, CASCADE_MS, EASE, FIT, AutoFit } from "./chapterEngine";
+import { type BeatDef, useBeatChapter, computeBounds, Phase, Pop, Enter, CUT_MS, CASCADE_MS, EASE, FIT, AutoFit } from "./chapterEngine";
 
 /**
  * ACT 2 · ALIVE BY DESIGN — the engagement story.
@@ -41,9 +42,28 @@ const BEATS: BeatDef[] = [
   { f: 4, p: 0, w: 1.1 }, // it compounds — the run builds
   { f: 4, p: 1, w: 1.2 }, // — the retention loop opens; releases into the finale
 ];
-const BOUNDS = computeBounds(BEATS);
-const STEP_SPAN: [number, number] = [BOUNDS[1][0], BOUNDS[12][1]];
-const PEAK_BEAT = 9;
+
+/* Mobile beat map — one swipe, one hero. Where a desktop beat fans out
+ * several cards at once (the space's components, the retention loop), the
+ * phone gives each card its own beat instead of shrinking them. */
+const BEATS_M: BeatDef[] = [
+  { f: 0, p: 0, w: 1 }, // intro
+  { f: 1, p: 0, w: 1 }, // the space — the header lands
+  { f: 1, p: 1, w: 0.9 }, // — the journey
+  { f: 1, p: 2, w: 0.9 }, // — the live moments
+  { f: 1, p: 3, w: 0.9 }, // — the tribe feed
+  { f: 2, p: 0, w: 1 }, // in everyone's hands — no cold start
+  { f: 2, p: 1, w: 1.1 }, // — the four tools
+  { f: 2, p: 2, w: 1 }, // — a question finds you
+  { f: 2, p: 3, w: 1 }, // — answered once
+  { f: 3, p: 0, w: 1 }, // the loop — momentum is building
+  { f: 3, p: 1, w: 1.2 }, // — LIVE NOW: the join moment
+  { f: 3, p: 2, w: 1.3 }, // — THE PEAK: you're live
+  { f: 3, p: 3, w: 1 }, // — the reflection closes it
+  { f: 4, p: 0, w: 1 }, // it compounds — the run builds
+  { f: 4, p: 1, w: 1 }, // — the run wraps: the handoff
+  { f: 4, p: 2, w: 1.2 }, // — you shape the next run; releases into the finale
+];
 
 const RAIL = [
   { n: "01", label: "The space", frame: 1, firstBeat: 1 },
@@ -278,7 +298,60 @@ function TribePost({ initial, color, name, when, text, chip }: { initial: string
   );
 }
 
-/* ══ Frame 1 · The space, decomposed ════════════════════════ */
+/* ══ Frame 1 · The space, decomposed ════════════════════════
+ * The three components are atoms — the desktop fan-out and the mobile
+ * one-hero-per-beat staging render the same cards. */
+
+function SpaceJourneyCard() {
+  return (
+    <div className="h-full rounded-2xl p-5 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.06), 0 16px 40px rgba(15,34,41,0.10)" }}>
+      <p className="text-[12px] uppercase tracking-[0.18em] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>The journey</p>
+      <p className="font-headline leading-none mt-2.5" style={{ fontWeight: 800, letterSpacing: "-0.02em" }}>
+        <span className="text-[26px]" style={{ color: INK }}>WEEK {ROOM.week} </span>
+        <span className="text-[26px]" style={{ color: "rgba(15,34,41,0.18)" }}>OF {EX.weeks}</span>
+      </p>
+      <p className="text-[10px] uppercase tracking-[0.14em] font-headline mt-1.5" style={{ color: ORANGE, fontWeight: 800 }}>{ROOM.theme}</p>
+      <div className="flex items-center gap-1 mt-3.5">
+        {EX.arc.map((_, i) => (
+          <span key={i} className="flex items-center flex-1 last:flex-none">
+            <span
+              className="shrink-0 rounded-full"
+              style={
+                i === ROOM.week - 1
+                  ? { width: 11, height: 11, backgroundColor: ORANGE, boxShadow: "0 0 0 3px rgba(255,97,48,0.20)" }
+                  : { width: 6, height: 6, backgroundColor: i < ROOM.week - 1 ? "rgba(255,97,48,0.5)" : "rgba(15,34,41,0.14)" }
+              }
+            />
+            {i < EX.arc.length - 1 && <span className="flex-1 h-px" style={{ backgroundColor: "rgba(15,34,41,0.10)" }} />}
+          </span>
+        ))}
+      </div>
+      {/* the progress tracker — the whole experience, attendance */}
+      <div className="mt-7 pt-5" style={{ borderTop: "1px solid rgba(15,34,41,0.07)" }}>
+        <div className="flex items-baseline justify-between mb-2">
+          <p className="text-[9px] uppercase tracking-[0.18em] font-headline" style={{ color: FAINT, fontWeight: 800 }}>Progress of the whole experience</p>
+          <p className="text-[11px] font-black font-headline" style={{ color: CYAN }}>25%</p>
+        </div>
+        <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: "rgba(15,34,41,0.08)" }}>
+          <div className="h-full rounded-full" style={{ width: "25%", backgroundColor: CYAN }} />
+        </div>
+        <p className="text-[10.5px] font-bold mt-2" style={{ color: MUTED }}>5 of {EX.sessions} live moments attended</p>
+      </div>
+    </div>
+  );
+}
+
+function SpaceMomentsCard() {
+  return (
+    <div className="h-full rounded-2xl p-4 space-y-2" style={{ backgroundColor: "#FAF8F3", boxShadow: "0 0 0 1px rgba(15,34,41,0.05), 0 16px 40px rgba(15,34,41,0.08)" }}>
+      <p className="text-[12px] uppercase tracking-[0.18em] font-headline text-left px-1 pt-0.5" style={{ color: ORANGE, fontWeight: 800 }}>The live moments</p>
+      <MomentRow img={ROOM.done.img} title={ROOM.done.title} host={ROOM.done.host} state="done" />
+      <MomentRow img={ROOM.next.img} title={ROOM.next.title} host={ROOM.next.host} state="next" />
+      <MomentRow img={ROOM.upcoming.img} title={ROOM.upcoming.title} host={ROOM.upcoming.host} state="upcoming" />
+    </div>
+  );
+}
+
 function SpaceFrame({ phase }: { phase: number }) {
   const out = phase >= 1;
   return (
@@ -295,62 +368,161 @@ function SpaceFrame({ phase }: { phase: number }) {
       </div>
       <div className="grid sm:grid-cols-3 gap-4 mt-5 items-stretch" aria-hidden>
         <Pop show={out} d={140}>
-          <div className="h-full rounded-2xl p-5 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.06), 0 16px 40px rgba(15,34,41,0.10)" }}>
-            <p className="text-[12px] uppercase tracking-[0.18em] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>The journey</p>
-            <p className="font-headline leading-none mt-2.5" style={{ fontWeight: 800, letterSpacing: "-0.02em" }}>
-              <span className="text-[26px]" style={{ color: INK }}>WEEK {ROOM.week} </span>
-              <span className="text-[26px]" style={{ color: "rgba(15,34,41,0.18)" }}>OF {EX.weeks}</span>
-            </p>
-            <p className="text-[10px] uppercase tracking-[0.14em] font-headline mt-1.5" style={{ color: ORANGE, fontWeight: 800 }}>{ROOM.theme}</p>
-            <div className="flex items-center gap-1 mt-3.5">
-              {EX.arc.map((_, i) => (
-                <span key={i} className="flex items-center flex-1 last:flex-none">
-                  <span
-                    className="shrink-0 rounded-full"
-                    style={
-                      i === ROOM.week - 1
-                        ? { width: 11, height: 11, backgroundColor: ORANGE, boxShadow: "0 0 0 3px rgba(255,97,48,0.20)" }
-                        : { width: 6, height: 6, backgroundColor: i < ROOM.week - 1 ? "rgba(255,97,48,0.5)" : "rgba(15,34,41,0.14)" }
-                    }
-                  />
-                  {i < EX.arc.length - 1 && <span className="flex-1 h-px" style={{ backgroundColor: "rgba(15,34,41,0.10)" }} />}
-                </span>
-              ))}
-            </div>
-            {/* the progress tracker — the whole experience, attendance */}
-            <div className="mt-7 pt-5" style={{ borderTop: "1px solid rgba(15,34,41,0.07)" }}>
-              <div className="flex items-baseline justify-between mb-2">
-                <p className="text-[9px] uppercase tracking-[0.18em] font-headline" style={{ color: FAINT, fontWeight: 800 }}>Progress of the whole experience</p>
-                <p className="text-[11px] font-black font-headline" style={{ color: CYAN }}>25%</p>
-              </div>
-              <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: "rgba(15,34,41,0.08)" }}>
-                <div className="h-full rounded-full" style={{ width: "25%", backgroundColor: CYAN }} />
-              </div>
-              <p className="text-[10.5px] font-bold mt-2" style={{ color: MUTED }}>5 of {EX.sessions} live moments attended</p>
-            </div>
-          </div>
+          <SpaceJourneyCard />
         </Pop>
         <Pop show={out} d={140 + CASCADE_MS}>
-          <div className="h-full rounded-2xl p-4 space-y-2" style={{ backgroundColor: "#FAF8F3", boxShadow: "0 0 0 1px rgba(15,34,41,0.05), 0 16px 40px rgba(15,34,41,0.08)" }}>
-            <p className="text-[12px] uppercase tracking-[0.18em] font-headline text-left px-1 pt-0.5" style={{ color: ORANGE, fontWeight: 800 }}>The live moments</p>
-            <MomentRow img={ROOM.done.img} title={ROOM.done.title} host={ROOM.done.host} state="done" />
-            <MomentRow img={ROOM.next.img} title={ROOM.next.title} host={ROOM.next.host} state="next" />
-            <MomentRow img={ROOM.upcoming.img} title={ROOM.upcoming.title} host={ROOM.upcoming.host} state="upcoming" />
-          </div>
+          <SpaceMomentsCard />
         </Pop>
         <Pop show={out} d={140 + CASCADE_MS * 2}>
-          <div className="h-full rounded-2xl p-4 space-y-2" style={{ backgroundColor: "#FAF8F3", boxShadow: "0 0 0 1px rgba(15,34,41,0.05), 0 16px 40px rgba(15,34,41,0.08)" }}>
-            <p className="text-[12px] uppercase tracking-[0.18em] font-headline text-left px-1 pt-0.5" style={{ color: ORANGE, fontWeight: 800 }}>The tribe feed</p>
-            <TribePost initial="A" color={CYAN} name="Anna" when="2h" text="Week 1 done — first plan I've actually kept up with 🔥" />
-            <TribePost initial="S" color={ORANGE} name="Sam" when="just now" text="Moment 5 ✓ — see everyone Tuesday!" />
-          </div>
+          <SpaceTribeCard />
         </Pop>
       </div>
     </div>
   );
 }
 
-/* ══ Frame 2 · In everyone's hands ══════════════════════════ */
+function SpaceTribeCard() {
+  return (
+    <div className="h-full rounded-2xl p-4 space-y-2" style={{ backgroundColor: "#FAF8F3", boxShadow: "0 0 0 1px rgba(15,34,41,0.05), 0 16px 40px rgba(15,34,41,0.08)" }}>
+      <p className="text-[12px] uppercase tracking-[0.18em] font-headline text-left px-1 pt-0.5" style={{ color: ORANGE, fontWeight: 800 }}>The tribe feed</p>
+      <TribePost initial="A" color={CYAN} name="Anna" when="2h" text="Week 1 done — first plan I've actually kept up with 🔥" />
+      <TribePost initial="S" color={ORANGE} name="Sam" when="just now" text="Moment 5 ✓ — see everyone Tuesday!" />
+    </div>
+  );
+}
+
+/* Mobile staging — the header lands, then each component gets its own
+ * swipe at natural size: journey, live moments, tribe feed. */
+function SpaceFrameMobile({ phase }: { phase: number }) {
+  return (
+    <div className="w-full max-w-md mx-auto">
+      <MechHead
+        kicker="01 · The space"
+        accent={CYAN}
+        title="The room your tribe lives in."
+        copy="Not a video library — a space with structure, presence and a feed of its own."
+      />
+      <div aria-hidden>
+        <Enter key={Math.min(phase, 3)}>
+          {phase === 0 && <SpaceHeader />}
+          {phase === 1 && <SpaceJourneyCard />}
+          {phase === 2 && <SpaceMomentsCard />}
+          {phase >= 3 && <SpaceTribeCard />}
+        </Enter>
+      </div>
+    </div>
+  );
+}
+
+/* ══ Frame 2 · In everyone's hands ══════════════════════════
+ * The pieces are atoms shared by the desktop grids and the mobile staging. */
+
+function HandsIntroPost() {
+  return (
+    <FeedPost
+      initial="N"
+      color={ORANGE}
+      name="Nina"
+      when="just now"
+      promptLabel="New in the tribe · Your experts asked"
+      promptColor={CYAN}
+      prompt={EX.introPrompt}
+      body="Desk job, two kids, and every plan I've started before fizzled by week two. I'm here to finally build energy that lasts — and to stick with it because this time there's a group. Can't wait to meet you all! 💪"
+      chip="Introduction"
+      comments={3}
+    />
+  );
+}
+
+function HandsNotifCard() {
+  return (
+    <div className="rounded-2xl p-6" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }}>
+      <div className="flex items-center gap-2.5 pb-3 mb-3" style={{ borderBottom: "1px solid rgba(15,34,41,0.07)" }}>
+        <span className="relative">
+          {ICON_BELL(INK, 20)}
+          <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full animate-pulse" style={{ backgroundColor: ORANGE, border: "1.5px solid #FFFFFF" }} />
+        </span>
+        <span className="text-[11px] uppercase tracking-[0.16em] font-headline" style={{ color: INK, fontWeight: 800 }}>Notifications</span>
+        <span className="ml-auto text-[9.5px] uppercase tracking-widest font-headline" style={{ color: FAINT, fontWeight: 800 }}>Mark all read</span>
+      </div>
+      <div className="rounded-xl px-3.5 py-3 flex items-center gap-3" style={{ backgroundColor: "rgba(255,97,48,0.06)", boxShadow: `inset 3.5px 0 0 ${ORANGE}` }}>
+        <span className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(8,145,178,0.14)" }}>
+          <span className="text-[11px] font-headline" style={{ color: CYAN, fontWeight: 800 }}>T</span>
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[13px] font-headline leading-tight" style={{ color: INK, fontWeight: 800 }}>{ROOM.qa.asker} asked you a question</span>
+          <span className="block text-[11.5px] mt-1" style={{ color: MUTED }}>Open your Tribe to answer</span>
+        </span>
+        <span className="shrink-0 text-[10px] font-bold" style={{ color: FAINT }}>just now</span>
+      </div>
+    </div>
+  );
+}
+
+function HandsConsoleCard() {
+  return (
+    <div className="rounded-2xl p-6" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }}>
+      <div className="flex items-center gap-2.5 pb-3 mb-3" style={{ borderBottom: "1px solid rgba(15,34,41,0.07)" }}>
+        <span className="w-7 h-7 rounded-full overflow-hidden shrink-0" style={{ border: `1.5px solid ${ORANGE}59` }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={ALEX.avatar} alt="" className="w-full h-full object-cover" />
+        </span>
+        <span className="text-[11px] uppercase tracking-[0.16em] font-headline" style={{ color: INK, fontWeight: 800 }}>Needs you</span>
+      </div>
+      <div className="rounded-xl px-4 py-3.5 flex items-center justify-between" style={{ backgroundColor: "rgba(255,97,48,0.06)", boxShadow: "0 0 0 1.5px rgba(255,97,48,0.30)" }}>
+        <span>
+          <span className="block text-[10px] uppercase tracking-[0.16em] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>Waiting on you</span>
+          <span className="block text-[15px] font-black font-headline mt-1" style={{ color: INK }}>1 question</span>
+        </span>
+        <span className="text-[12.5px] font-black font-headline" style={{ color: ORANGE }}>Answer →</span>
+      </div>
+      <p className="text-[11.5px] font-bold mt-3" style={{ color: MUTED }}>It stays on your console until it&apos;s done — nothing slips through.</p>
+    </div>
+  );
+}
+
+function HandsAnsweredPost({ answerOn }: { answerOn: boolean }) {
+  return (
+    <div className="mx-auto w-full max-w-2xl rounded-3xl p-6 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }} aria-hidden>
+      <div className="flex items-center gap-3">
+        <span className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(8,145,178,0.14)" }}>
+          <span className="text-[12px] font-headline" style={{ color: CYAN, fontWeight: 800 }}>T</span>
+        </span>
+        <span className="text-[14px] font-headline" style={{ color: INK, fontWeight: 800 }}>{ROOM.qa.asker}</span>
+        <span className="ml-auto text-[10.5px] font-bold" style={{ color: FAINT }}>just now</span>
+      </div>
+      <div className="mt-3.5 rounded-xl px-4 py-2.5 inline-flex items-center gap-2" style={{ backgroundColor: "rgba(8,145,178,0.07)", boxShadow: `inset 3.5px 0 0 ${CYAN}` }}>
+        <span className="text-[10px] uppercase tracking-[0.16em] font-headline" style={{ color: CYAN, fontWeight: 800 }}>Question for</span>
+        <span className="text-[13px] font-headline" style={{ color: CYAN, fontWeight: 800 }}>{ALEX.name}</span>
+      </div>
+      <p className="text-[15px] leading-snug mt-3" style={{ color: INK, fontWeight: 600 }}>
+        {ROOM.qa.question}
+      </p>
+      <Pop show={answerOn} d={250}>
+        <div className="mt-4 rounded-2xl p-5" style={{ backgroundColor: "rgba(255,97,48,0.06)", boxShadow: `inset 4px 0 0 ${ORANGE}` }}>
+          <div className="flex items-center gap-2.5">
+            <span className="shrink-0 w-8 h-8 rounded-full overflow-hidden" style={{ border: `1.5px solid ${ORANGE}59` }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={ALEX.avatar} alt="" className="w-full h-full object-cover" />
+            </span>
+            <span className="text-[11px] uppercase tracking-[0.14em] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>
+              Answered by {ALEX.name}
+            </span>
+          </div>
+          <p className="text-[13.5px] leading-relaxed mt-2.5" style={{ color: MUTED }}>
+            {ROOM.qa.answer}
+          </p>
+        </div>
+      </Pop>
+      <div className="flex items-center gap-5 mt-4 pt-3.5" style={{ borderTop: "1px solid rgba(15,34,41,0.06)" }}>
+        <span className="inline-flex items-center gap-1.5 text-[12px] font-bold" style={{ color: MUTED }}>{ICON_HEART(MUTED)} Like</span>
+        <span className="inline-flex items-center gap-1.5 text-[12px] font-bold" style={{ color: MUTED }}>{ICON_COMMENT(MUTED)} 1</span>
+        <span className="ml-auto text-[11px]" style={{ color: FAINT }}>Pinned — visible to the whole tribe.</span>
+      </div>
+    </div>
+  );
+}
+
 function HandsFrame({ phase, staticLayout = false }: { phase: number; staticLayout?: boolean }) {
   return (
     <div className={`w-full max-w-3xl mx-auto ${staticLayout ? "" : FIT}`}>
@@ -362,18 +534,7 @@ function HandsFrame({ phase, staticLayout = false }: { phase: number; staticLayo
         <Phase on={phase === 0} isStatic={staticLayout} className="flex flex-col justify-center" enterFrom="translateY(-14px)">
           <MechHead kicker="02 · In everyone's hands — when someone joins" accent={CYAN} title="No cold start." copy="The moment someone joins, the space asks them to introduce themselves." />
           <div className="mx-auto w-full max-w-2xl">
-            <FeedPost
-              initial="N"
-              color={ORANGE}
-              name="Nina"
-              when="just now"
-              promptLabel="New in the tribe · Your experts asked"
-              promptColor={CYAN}
-              prompt={EX.introPrompt}
-              body="Desk job, two kids, and every plan I've started before fizzled by week two. I'm here to finally build energy that lasts — and to stick with it because this time there's a group. Can't wait to meet you all! 💪"
-              chip="Introduction"
-              comments={3}
-            />
+            <HandsIntroPost />
           </div>
         </Phase>
 
@@ -460,98 +621,127 @@ function HandsFrame({ phase, staticLayout = false }: { phase: number; staticLayo
           <MechHead kicker="02 · In everyone's hands — creator view" accent={ORANGE} title="A question finds you." copy="A notification the moment it lands — and your console collects it until it's answered." />
           <div className="grid sm:grid-cols-2 gap-6 items-start" aria-hidden>
             {/* piece 1 — the notification */}
-            <div className="text-left">
-              <div className="rounded-2xl p-6" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }}>
-                <div className="flex items-center gap-2.5 pb-3 mb-3" style={{ borderBottom: "1px solid rgba(15,34,41,0.07)" }}>
-                  <span className="relative">
-                    {ICON_BELL(INK, 20)}
-                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full animate-pulse" style={{ backgroundColor: ORANGE, border: "1.5px solid #FFFFFF" }} />
-                  </span>
-                  <span className="text-[11px] uppercase tracking-[0.16em] font-headline" style={{ color: INK, fontWeight: 800 }}>Notifications</span>
-                  <span className="ml-auto text-[9.5px] uppercase tracking-widest font-headline" style={{ color: FAINT, fontWeight: 800 }}>Mark all read</span>
-                </div>
-                <div className="rounded-xl px-3.5 py-3 flex items-center gap-3" style={{ backgroundColor: "rgba(255,97,48,0.06)", boxShadow: `inset 3.5px 0 0 ${ORANGE}` }}>
-                  <span className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(8,145,178,0.14)" }}>
-                    <span className="text-[11px] font-headline" style={{ color: CYAN, fontWeight: 800 }}>T</span>
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-[13px] font-headline leading-tight" style={{ color: INK, fontWeight: 800 }}>{ROOM.qa.asker} asked you a question</span>
-                    <span className="block text-[11.5px] mt-1" style={{ color: MUTED }}>Open your Tribe to answer</span>
-                  </span>
-                  <span className="shrink-0 text-[10px] font-bold" style={{ color: FAINT }}>just now</span>
-                </div>
-              </div>
-            </div>
+            <div className="text-left"><HandsNotifCard /></div>
             {/* piece 2 — the console */}
-            <div className="text-left">
-              <div className="rounded-2xl p-6" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }}>
-                <div className="flex items-center gap-2.5 pb-3 mb-3" style={{ borderBottom: "1px solid rgba(15,34,41,0.07)" }}>
-                  <span className="w-7 h-7 rounded-full overflow-hidden shrink-0" style={{ border: `1.5px solid ${ORANGE}59` }}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={ALEX.avatar} alt="" className="w-full h-full object-cover" />
-                  </span>
-                  <span className="text-[11px] uppercase tracking-[0.16em] font-headline" style={{ color: INK, fontWeight: 800 }}>Needs you</span>
-                </div>
-                <div className="rounded-xl px-4 py-3.5 flex items-center justify-between" style={{ backgroundColor: "rgba(255,97,48,0.06)", boxShadow: "0 0 0 1.5px rgba(255,97,48,0.30)" }}>
-                  <span>
-                    <span className="block text-[10px] uppercase tracking-[0.16em] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>Waiting on you</span>
-                    <span className="block text-[15px] font-black font-headline mt-1" style={{ color: INK }}>1 question</span>
-                  </span>
-                  <span className="text-[12.5px] font-black font-headline" style={{ color: ORANGE }}>Answer →</span>
-                </div>
-                <p className="text-[11.5px] font-bold mt-3" style={{ color: MUTED }}>It stays on your console until it&apos;s done — nothing slips through.</p>
-              </div>
-            </div>
+            <div className="text-left"><HandsConsoleCard /></div>
           </div>
         </Phase>
 
         {/* p3 — the answered post */}
         <Phase on={phase >= 3} isStatic={staticLayout} className="flex flex-col justify-center">
           <MechHead kicker="02 · In everyone's hands" accent={CYAN} title="Answered once. Everyone learns." copy="Answers are pinned inside posts — visible to the whole tribe. Everybody can react with likes or comments." />
-          <div className="mx-auto w-full max-w-2xl rounded-3xl p-6 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }} aria-hidden>
-            <div className="flex items-center gap-3">
-              <span className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(8,145,178,0.14)" }}>
-                <span className="text-[12px] font-headline" style={{ color: CYAN, fontWeight: 800 }}>T</span>
-              </span>
-              <span className="text-[14px] font-headline" style={{ color: INK, fontWeight: 800 }}>{ROOM.qa.asker}</span>
-              <span className="ml-auto text-[10.5px] font-bold" style={{ color: FAINT }}>just now</span>
-            </div>
-            <div className="mt-3.5 rounded-xl px-4 py-2.5 inline-flex items-center gap-2" style={{ backgroundColor: "rgba(8,145,178,0.07)", boxShadow: `inset 3.5px 0 0 ${CYAN}` }}>
-              <span className="text-[10px] uppercase tracking-[0.16em] font-headline" style={{ color: CYAN, fontWeight: 800 }}>Question for</span>
-              <span className="text-[13px] font-headline" style={{ color: CYAN, fontWeight: 800 }}>{ALEX.name}</span>
-            </div>
-            <p className="text-[15px] leading-snug mt-3" style={{ color: INK, fontWeight: 600 }}>
-              {ROOM.qa.question}
-            </p>
-            <Pop show={phase >= 3} d={250}>
-              <div className="mt-4 rounded-2xl p-5" style={{ backgroundColor: "rgba(255,97,48,0.06)", boxShadow: `inset 4px 0 0 ${ORANGE}` }}>
-                <div className="flex items-center gap-2.5">
-                  <span className="shrink-0 w-8 h-8 rounded-full overflow-hidden" style={{ border: `1.5px solid ${ORANGE}59` }}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={ALEX.avatar} alt="" className="w-full h-full object-cover" />
-                  </span>
-                  <span className="text-[11px] uppercase tracking-[0.14em] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>
-                    Answered by {ALEX.name}
-                  </span>
-                </div>
-                <p className="text-[13.5px] leading-relaxed mt-2.5" style={{ color: MUTED }}>
-                  {ROOM.qa.answer}
-                </p>
-              </div>
-            </Pop>
-            <div className="flex items-center gap-5 mt-4 pt-3.5" style={{ borderTop: "1px solid rgba(15,34,41,0.06)" }}>
-              <span className="inline-flex items-center gap-1.5 text-[12px] font-bold" style={{ color: MUTED }}>{ICON_HEART(MUTED)} Like</span>
-              <span className="inline-flex items-center gap-1.5 text-[12px] font-bold" style={{ color: MUTED }}>{ICON_COMMENT(MUTED)} 1</span>
-              <span className="ml-auto text-[11px]" style={{ color: FAINT }}>Pinned — visible to the whole tribe.</span>
-            </div>
-          </div>
+          <HandsAnsweredPost answerOn={phase >= 3} />
         </Phase>
       </div>
     </div>
   );
 }
 
-/* ══ Frame 3 · The engagement loop ══════════════════════════ */
+/* Mobile staging — the phases at natural size; the four tools become
+ * compact rows a phone can read instead of four shrunken cards. */
+const TOOL_ROWS = [
+  { t: "Share", aud: "Members", d: "Anyone, anytime — wins, struggles, photos.", c: CYAN },
+  { t: "Ask inside a post", aud: "Members", d: "Questions routed to the right expert.", c: CYAN },
+  { t: "Post with context", aud: "Creators", d: "Attach the live moment it's about.", c: ORANGE },
+  { t: "Calendar export", aud: "Members", d: "The structure follows you out of the app.", c: CYAN },
+];
+
+function HandsFrameMobile({ phase }: { phase: number }) {
+  return (
+    <div className="w-full max-w-md mx-auto">
+      <Enter key={Math.min(phase, 3)}>
+        {phase === 0 && (
+          <>
+            <MechHead kicker="02 · In everyone's hands — when someone joins" accent={CYAN} title="No cold start." copy="The moment someone joins, the space asks them to introduce themselves." />
+            <HandsIntroPost />
+          </>
+        )}
+        {phase === 1 && (
+          <>
+            <MechHead kicker="02 · In everyone's hands" accent={CYAN} title="Anyone can engage at any time." copy="Four tools, for members and creators — no permission needed, no cold silence." />
+            <div className="space-y-2.5 text-left" aria-hidden>
+              {TOOL_ROWS.map(({ t, aud, d, c }, i) => (
+                <Enter key={t} d={i * CASCADE_MS}>
+                  <div className="rounded-2xl px-4 py-3.5" style={{ backgroundColor: "#FFFFFF", boxShadow: `0 0 0 1px rgba(15,34,41,0.06), 0 12px 30px rgba(15,34,41,0.07), inset 4px 0 0 ${c}` }}>
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-[13px] font-headline" style={{ color: INK, fontWeight: 800 }}>{t}</p>
+                      <span className="shrink-0 px-2.5 py-1 rounded-full text-[9px] uppercase tracking-widest font-headline" style={{ color: c, backgroundColor: `${c}14`, fontWeight: 800 }}>{aud}</span>
+                    </div>
+                    <p className="text-[12px] font-bold mt-1" style={{ color: MUTED }}>{d}</p>
+                  </div>
+                </Enter>
+              ))}
+            </div>
+          </>
+        )}
+        {phase === 2 && (
+          <>
+            <MechHead kicker="02 · In everyone's hands — creator view" accent={ORANGE} title="A question finds you." copy="A notification the moment it lands — your console collects it until it's answered." />
+            <div className="space-y-4 text-left" aria-hidden>
+              <HandsNotifCard />
+              <HandsConsoleCard />
+            </div>
+          </>
+        )}
+        {phase >= 3 && (
+          <>
+            <MechHead kicker="02 · In everyone's hands" accent={CYAN} title="Answered once. Everyone learns." copy="Answers are pinned inside posts — visible to the whole tribe." />
+            <HandsAnsweredPost answerOn />
+          </>
+        )}
+      </Enter>
+    </div>
+  );
+}
+
+/* ══ Frame 3 · The engagement loop ══════════════════════════
+ * Pulse, peak and reflection are atoms shared with the mobile staging. */
+
+function LoopPulseCard() {
+  return (
+    <div className="mx-auto w-full max-w-2xl rounded-2xl p-6 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.06), inset 4px 0 0 " + ORANGE }} aria-hidden>
+      <p className="text-[11px] uppercase tracking-[0.16em] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>
+        Pulse · before the live moment
+      </p>
+      <p className="text-[16.5px] font-bold font-headline leading-snug mt-2" style={{ color: INK }}>
+        {MEET.title} — how ready are you?
+      </p>
+      <div className="mt-4 relative h-2.5 rounded-full" style={{ backgroundColor: "rgba(15,34,41,0.08)" }}>
+        <div className="absolute inset-y-0 left-0 rounded-full" style={{ width: "80%", backgroundColor: CYAN }} />
+        <span className="absolute -top-[5px] w-4 h-4 rounded-full" style={{ left: "77%", backgroundColor: "#FFFFFF", boxShadow: `0 0 0 2px ${CYAN}` }} />
+      </div>
+      <div className="flex items-center justify-between mt-2">
+        <span className="text-[10px]" style={{ color: FAINT }}>0</span>
+        <span className="text-[12.5px] font-black font-headline" style={{ color: CYAN }}>8 / 10</span>
+        <span className="text-[10px]" style={{ color: FAINT }}>10</span>
+      </div>
+    </div>
+  );
+}
+
+function LoopLeaPost() {
+  return (
+    <div className="rounded-2xl px-5 py-4 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.05), 0 12px 30px rgba(15,34,41,0.06)" }} aria-hidden>
+      <div className="flex gap-3.5">
+        <span className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(255,97,48,0.14)" }}>
+          <span className="text-[13px] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>L</span>
+        </span>
+        <div className="min-w-0">
+          <p className="text-[13px] font-headline" style={{ color: INK, fontWeight: 800 }}>
+            Lea <span style={{ color: FAINT, fontWeight: 600 }}>· just now</span>
+          </p>
+          <p className="text-[14.5px] leading-relaxed mt-1" style={{ color: INK, fontWeight: 500 }}>
+            Ready! First live moment of the reset — nervous and excited. Can&apos;t wait to meet everyone 😅
+          </p>
+          <span className="inline-flex mt-2 px-3 py-1 rounded-full text-[10.5px] font-headline" style={{ color: CYAN, backgroundColor: "rgba(8,145,178,0.10)", fontWeight: 800 }}>
+            Pulse · 8/10
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function LoopFrame({ phase, onJoin, staticLayout = false }: { phase: number; onJoin: () => void; staticLayout?: boolean }) {
   const isPeak = phase === 2;
   return (
@@ -562,42 +752,9 @@ function LoopFrame({ phase, onJoin, staticLayout = false }: { phase: number; onJ
         {/* p0 — the pulse: momentum building */}
         <Phase on={phase === 0} isStatic={staticLayout} className="flex flex-col justify-center" enterFrom="translateY(-14px)">
           <MechHead kicker="03 · The loop — before every live moment" accent={ORANGE} title="Momentum is building." copy="The tribe shares its readiness — and everyone feels it." />
-          <div className="mx-auto w-full max-w-2xl rounded-2xl p-6 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.06), inset 4px 0 0 " + ORANGE }} aria-hidden>
-            <p className="text-[11px] uppercase tracking-[0.16em] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>
-              Pulse · before the live moment
-            </p>
-            <p className="text-[16.5px] font-bold font-headline leading-snug mt-2" style={{ color: INK }}>
-              {MEET.title} — how ready are you?
-            </p>
-            <div className="mt-4 relative h-2.5 rounded-full" style={{ backgroundColor: "rgba(15,34,41,0.08)" }}>
-              <div className="absolute inset-y-0 left-0 rounded-full" style={{ width: "80%", backgroundColor: CYAN }} />
-              <span className="absolute -top-[5px] w-4 h-4 rounded-full" style={{ left: "77%", backgroundColor: "#FFFFFF", boxShadow: `0 0 0 2px ${CYAN}` }} />
-            </div>
-            <div className="flex items-center justify-between mt-2">
-              <span className="text-[10px]" style={{ color: FAINT }}>0</span>
-              <span className="text-[12.5px] font-black font-headline" style={{ color: CYAN }}>8 / 10</span>
-              <span className="text-[10px]" style={{ color: FAINT }}>10</span>
-            </div>
-          </div>
+          <LoopPulseCard />
           <Pop show={phase === 0} d={300} className="mx-auto w-full max-w-2xl mt-4">
-            <div className="rounded-2xl px-5 py-4 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.05), 0 12px 30px rgba(15,34,41,0.06)" }} aria-hidden>
-              <div className="flex gap-3.5">
-                <span className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(255,97,48,0.14)" }}>
-                  <span className="text-[13px] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>L</span>
-                </span>
-                <div className="min-w-0">
-                  <p className="text-[13px] font-headline" style={{ color: INK, fontWeight: 800 }}>
-                    Lea <span style={{ color: FAINT, fontWeight: 600 }}>· just now</span>
-                  </p>
-                  <p className="text-[14.5px] leading-relaxed mt-1" style={{ color: INK, fontWeight: 500 }}>
-                    Ready! First live moment of the reset — nervous and excited. Can&apos;t wait to meet everyone 😅
-                  </p>
-                  <span className="inline-flex mt-2 px-3 py-1 rounded-full text-[10.5px] font-headline" style={{ color: CYAN, backgroundColor: "rgba(8,145,178,0.10)", fontWeight: 800 }}>
-                    Pulse · 8/10
-                  </span>
-                </div>
-              </div>
-            </div>
+            <LoopLeaPost />
           </Pop>
         </Phase>
 
@@ -653,81 +810,168 @@ function LoopFrame({ phase, onJoin, staticLayout = false }: { phase: number; onJ
         {/* p2 — THE PEAK: the room, as energy */}
         <Phase on={isPeak} isStatic={staticLayout} className="flex flex-col items-center justify-center" enterFrom="none">
           <MechHead kicker="And then" accent="#ef4444" title="You're live." copy="No new login, no external link — training together, right here, right now." light />
-          <div className="relative flex items-center justify-center" style={{ width: 330, height: 330 }}>
-            {/* pulsing rings — training, together, right now */}
-            {[215, 275, 330].map((s, i) => (
-              <span
-                key={s}
-                className="absolute rounded-full animate-ping"
-                style={{
-                  width: s,
-                  height: s,
-                  border: `1.5px solid ${i === 1 ? "rgba(255,97,48,0.5)" : "rgba(156,240,255,0.4)"}`,
-                  animationDuration: "2.6s",
-                  animationDelay: `${i * 0.45}s`,
-                }}
-              />
-            ))}
-            <span className="absolute rounded-full" style={{ width: 190, height: 190, backgroundColor: "rgba(156,240,255,0.06)", border: "1px solid rgba(156,240,255,0.25)" }} />
-            {/* the hosts, present */}
-            <div className="relative flex flex-col items-center gap-3">
-              <span className="inline-flex items-center gap-2 text-[12px] uppercase tracking-[0.22em] font-headline" style={{ color: "#ef4444", fontWeight: 800 }}>
-                <span className="w-2.5 h-2.5 rounded-full bg-[#ef4444] animate-pulse" />
-                Live
-              </span>
-              <span className="flex -space-x-3">
-                {[ALEX.avatar, MIRA.avatar].map((a) => (
-                  <span key={a} className="w-14 h-14 rounded-full overflow-hidden" style={{ border: "2px solid rgba(246,243,236,0.9)" }}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={a} alt="" className="w-full h-full object-cover" />
-                  </span>
-                ))}
-              </span>
-              <span className="flex -space-x-1">
-                {["A", "S", "L", "J", "N", "E"].map((m) => (
-                  <span key={m} className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-headline" style={{ backgroundColor: "rgba(156,240,255,0.14)", color: "#9CF0FF", fontWeight: 800, border: "1px solid rgba(12,38,46,0.8)" }}>
-                    {m}
-                  </span>
-                ))}
-              </span>
-            </div>
-          </div>
-          <p className="text-[15px] font-bold font-headline mt-3" style={{ color: LIGHT_MUTED }}>
-            8 in the room — training together.
-          </p>
-          {/* the heartbeat, centered under the pulse above */}
-          <svg width="380" height="48" viewBox="0 0 380 48" fill="none" className="mt-5" aria-hidden>
-            <defs>
-              <linearGradient id="lw-peak-grad" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stopColor="#9CF0FF" />
-                <stop offset="42%" stopColor="#9CF0FF" />
-                <stop offset="62%" stopColor="#FF6130" />
-                <stop offset="100%" stopColor="#FF6130" />
-              </linearGradient>
-            </defs>
-            <path d="M0,24 H164 L177,24 L189,6 L203,42 L216,24 H380" stroke="url(#lw-peak-grad)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          <PeakScene />
         </Phase>
 
         {/* p3 — the reflection post closes the loop */}
         <Phase on={phase >= 3} isStatic={staticLayout} className="flex flex-col justify-center">
           <MechHead kicker="After the live moment" accent={CYAN} title="The reflection closes the loop." copy="Every prompt becomes a post — the feed keeps its own rhythm." />
           <div className="mx-auto w-full max-w-2xl">
-            <FeedPost
-              initial="A"
-              color={CYAN}
-              name="Anna"
-              when="just now"
-              promptLabel="Reflection · after the live moment"
-              promptColor={CYAN}
-              prompt={`How was “${MEET.title}”?`}
-              body="Didn't expect to laugh that much on day one — Alex and Mira had us moving in minutes and it felt like a team, not a class. Already counting down to Tuesday. This group 🔥"
-              chip="Energy after · 9/10"
-              comments={5}
-            />
+            <LoopReflectionPost />
           </div>
         </Phase>
       </div>
+    </div>
+  );
+}
+
+function PeakScene() {
+  return (
+    <>
+      <div className="relative flex items-center justify-center" style={{ width: 330, height: 330 }}>
+        {/* pulsing rings — training, together, right now */}
+        {[215, 275, 330].map((s, i) => (
+          <span
+            key={s}
+            className="absolute rounded-full animate-ping"
+            style={{
+              width: s,
+              height: s,
+              border: `1.5px solid ${i === 1 ? "rgba(255,97,48,0.5)" : "rgba(156,240,255,0.4)"}`,
+              animationDuration: "2.6s",
+              animationDelay: `${i * 0.45}s`,
+            }}
+          />
+        ))}
+        <span className="absolute rounded-full" style={{ width: 190, height: 190, backgroundColor: "rgba(156,240,255,0.06)", border: "1px solid rgba(156,240,255,0.25)" }} />
+        {/* the hosts, present */}
+        <div className="relative flex flex-col items-center gap-3">
+          <span className="inline-flex items-center gap-2 text-[12px] uppercase tracking-[0.22em] font-headline" style={{ color: "#ef4444", fontWeight: 800 }}>
+            <span className="w-2.5 h-2.5 rounded-full bg-[#ef4444] animate-pulse" />
+            Live
+          </span>
+          <span className="flex -space-x-3">
+            {[ALEX.avatar, MIRA.avatar].map((a) => (
+              <span key={a} className="w-14 h-14 rounded-full overflow-hidden" style={{ border: "2px solid rgba(246,243,236,0.9)" }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={a} alt="" className="w-full h-full object-cover" />
+              </span>
+            ))}
+          </span>
+          <span className="flex -space-x-1">
+            {["A", "S", "L", "J", "N", "E"].map((m) => (
+              <span key={m} className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-headline" style={{ backgroundColor: "rgba(156,240,255,0.14)", color: "#9CF0FF", fontWeight: 800, border: "1px solid rgba(12,38,46,0.8)" }}>
+                {m}
+              </span>
+            ))}
+          </span>
+        </div>
+      </div>
+      <p className="text-[15px] font-bold font-headline mt-3" style={{ color: LIGHT_MUTED }}>
+        8 in the room — training together.
+      </p>
+      {/* the heartbeat, centered under the pulse above */}
+      <svg width="380" height="48" viewBox="0 0 380 48" fill="none" className="mt-5 max-w-full" aria-hidden>
+        <defs>
+          <linearGradient id="lw-peak-grad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#9CF0FF" />
+            <stop offset="42%" stopColor="#9CF0FF" />
+            <stop offset="62%" stopColor="#FF6130" />
+            <stop offset="100%" stopColor="#FF6130" />
+          </linearGradient>
+        </defs>
+        <path d="M0,24 H164 L177,24 L189,6 L203,42 L216,24 H380" stroke="url(#lw-peak-grad)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </>
+  );
+}
+
+function LoopReflectionPost() {
+  return (
+    <FeedPost
+      initial="A"
+      color={CYAN}
+      name="Anna"
+      when="just now"
+      promptLabel="Reflection · after the live moment"
+      promptColor={CYAN}
+      prompt={`How was “${MEET.title}”?`}
+      body="Didn't expect to laugh that much on day one — Alex and Mira had us moving in minutes and it felt like a team, not a class. Already counting down to Tuesday. This group 🔥"
+      chip="Energy after · 9/10"
+      comments={5}
+    />
+  );
+}
+
+/* Mobile staging — the live moment as an app-style vertical card; pulse,
+ * peak and reflection at natural size. */
+function LoopFrameMobile({ phase, onJoin }: { phase: number; onJoin: () => void }) {
+  return (
+    <div className="w-full max-w-md mx-auto">
+      <Enter key={Math.min(phase, 3)}>
+        {phase === 0 && (
+          <>
+            <MechHead kicker="03 · The loop — before every live moment" accent={ORANGE} title="Momentum is building." copy="The tribe shares its readiness — and everyone feels it." />
+            <LoopPulseCard />
+            <Enter d={260} className="mt-4"><LoopLeaPost /></Enter>
+          </>
+        )}
+        {phase === 1 && (
+          <>
+            <MechHead kicker="03 · The loop" accent={ORANGE} title="The moment arrives." copy="The reset's first live moment is open — your tribe is walking in." />
+            <div
+              onClick={onJoin}
+              role="button"
+              tabIndex={0}
+              className="w-full rounded-3xl overflow-hidden text-left cursor-pointer"
+              style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 2px #ef4444, 0 28px 72px rgba(239,68,68,0.20)" }}
+            >
+              <div className="relative w-full h-40" style={{ backgroundColor: "#ECE7DD" }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={MEET.img} alt="" className="absolute inset-0 w-full h-full object-cover" />
+              </div>
+              <div className="p-6">
+                <p className="text-[12px] uppercase tracking-[0.2em] font-headline flex items-center gap-2" style={{ color: "#ef4444", fontWeight: 800 }}>
+                  <span className="inline-block w-2.5 h-2.5 rounded-full animate-pulse" style={{ backgroundColor: "#ef4444" }} />
+                  Live now
+                </p>
+                <h3 className="text-[26px] font-black font-headline tracking-tight mt-2.5 leading-[1.1]" style={{ color: INK, letterSpacing: "-0.02em" }}>
+                  {MEET.title}
+                </h3>
+                <p className="text-[13.5px] mt-2.5" style={{ color: "#64748b" }}>
+                  {MEET.day} · {MEET.time} · {MEET.dur} · {MEET.host}
+                </p>
+                <span className="inline-flex items-center gap-2 mt-3.5 px-3.5 py-1.5 rounded-full text-[12.5px] font-bold font-headline" style={{ backgroundColor: "rgba(8,145,178,0.10)", color: CYAN }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={CYAN} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M22 12h-4l-3 9L9 3l-3 9H2" /></svg>
+                  Cohort energy 8/10
+                </span>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onJoin(); }}
+                  className="w-full mt-5 px-8 py-4 rounded-full text-white text-[17px] font-black font-headline"
+                  style={{ backgroundColor: "#ef4444", boxShadow: "0 10px 30px rgba(239,68,68,0.42)" }}
+                >
+                  Join the room →
+                </button>
+                <p className="text-center text-[12.5px] font-bold mt-3" style={{ color: "#94a3b8" }}>8 in the room</p>
+              </div>
+            </div>
+            <p className="text-[13.5px] mt-5 text-center" style={{ color: MUTED }}>Your move — or keep scrolling.</p>
+          </>
+        )}
+        {phase === 2 && (
+          <div className="flex flex-col items-center">
+            <MechHead kicker="And then" accent="#ef4444" title="You're live." copy="No new login, no external link — training together, right now." light />
+            <PeakScene />
+          </div>
+        )}
+        {phase >= 3 && (
+          <>
+            <MechHead kicker="After the live moment" accent={CYAN} title="The reflection closes the loop." copy="Every prompt becomes a post — the feed keeps its own rhythm." />
+            <LoopReflectionPost />
+          </>
+        )}
+      </Enter>
     </div>
   );
 }
@@ -777,24 +1021,47 @@ function CompoundFrame({ phase, active, staticLayout = false }: { phase: number;
 
       {/* the progress — one persistent composition, the bar carries through */}
       <div className="rounded-3xl p-6 sm:p-7" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }} aria-hidden>
-        <div className="flex items-center justify-between mb-3.5">
-          <p className="text-[11px] uppercase tracking-[0.2em] font-headline" style={{ color: FAINT, fontWeight: 800 }}>
-            {EX.title}
-          </p>
-          <span className="text-[12px] font-black font-headline inline-flex items-center gap-1.5" style={{ color: wrapped ? "#16a34a" : ORANGE, transition: `color ${CUT_MS}ms ${EASE}` }}>
-            {wrapped ? <>Run complete {CHECK("#16a34a", 12)}</> : "Live moment by live moment"}
-          </span>
-        </div>
-        <div className="h-3.5 rounded-full overflow-hidden" style={{ backgroundColor: "rgba(15,34,41,0.08)" }}>
-          <div
-            className="h-full rounded-full"
-            style={{
-              width: fill,
-              background: `linear-gradient(90deg, ${CYAN}, ${ORANGE})`,
-              transition: `width 1500ms ${EASE}`,
-            }}
-          />
-        </div>
+        <CmpProgress wrapped={wrapped} fill={fill} litWeeks={litWeeks} />
+
+        {/* THE RETENTION LOOP — pops when the run wraps */}
+        <Pop show={wrapped} d={450} from="translateY(16px)">
+          <div className="mt-8 text-left">
+            <CmpHandoff />
+            {/* you shape the next run */}
+            <CmpShape />
+            {/* the tribe carries over + new members */}
+            <CmpEnroll />
+          </div>
+        </Pop>
+      </div>
+    </div>
+  );
+}
+
+/* ── Compound atoms — shared by desktop and the mobile staging ── */
+
+function CmpProgress({ wrapped, fill, litWeeks, dots = true }: { wrapped: boolean; fill: string; litWeeks: number; dots?: boolean }) {
+  return (
+    <>
+      <div className="flex items-center justify-between mb-3.5">
+        <p className="text-[11px] uppercase tracking-[0.2em] font-headline" style={{ color: FAINT, fontWeight: 800 }}>
+          {EX.title}
+        </p>
+        <span className="text-[12px] font-black font-headline inline-flex items-center gap-1.5" style={{ color: wrapped ? "#16a34a" : ORANGE, transition: `color ${CUT_MS}ms ${EASE}` }}>
+          {wrapped ? <>Run complete {CHECK("#16a34a", 12)}</> : "Live moment by live moment"}
+        </span>
+      </div>
+      <div className="h-3.5 rounded-full overflow-hidden" style={{ backgroundColor: "rgba(15,34,41,0.08)" }}>
+        <div
+          className="h-full rounded-full"
+          style={{
+            width: fill,
+            background: `linear-gradient(90deg, ${CYAN}, ${ORANGE})`,
+            transition: `width 1500ms ${EASE}`,
+          }}
+        />
+      </div>
+      {dots && (
         <div className="flex items-center justify-between mt-3.5">
           {EX.arc.map((theme, i) => (
             <span key={theme} className="flex flex-col items-center gap-1.5" style={{ width: `${100 / 6}%` }}>
@@ -814,62 +1081,121 @@ function CompoundFrame({ phase, active, staticLayout = false }: { phase: number;
             </span>
           ))}
         </div>
+      )}
+    </>
+  );
+}
 
-        {/* THE RETENTION LOOP — pops when the run wraps */}
-        <Pop show={wrapped} d={450} from="translateY(16px)">
-          <div className="mt-8 text-left">
-            <div className="flex items-center gap-4">
-              <div className="flex-1 rounded-2xl p-5 opacity-70" style={{ backgroundColor: "rgba(250,248,243,1)", boxShadow: "0 0 0 1px rgba(15,34,41,0.08)" }}>
-                <p className="text-[10px] uppercase tracking-widest font-headline" style={{ color: FAINT, fontWeight: 800 }}>Run 1</p>
-                <p className="text-[16px] font-black font-headline mt-1.5" style={{ color: MUTED }}>✓ Completed</p>
-              </div>
-              <svg width="32" height="16" viewBox="0 0 26 14" fill="none" className="shrink-0" aria-hidden>
-                <line x1="1" y1="7" x2="20" y2="7" stroke={CYAN} strokeWidth={1.6} strokeLinecap="round" />
-                <path d="M16 2 L23 7 L16 12" stroke={CYAN} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              <div className="flex-1 rounded-2xl p-5" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1.5px rgba(255,97,48,0.30), 0 12px 32px rgba(15,34,41,0.10)" }}>
-                <p className="text-[10px] uppercase tracking-widest font-headline flex items-center gap-1.5" style={{ color: "#ef4444", fontWeight: 800 }}>
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#ef4444] animate-pulse" /> Run 2 · Enrolling
-                </p>
-                <p className="text-[16px] font-black font-headline mt-1.5" style={{ color: INK }}>Same space, next chapter</p>
-              </div>
-            </div>
-
-            {/* you shape the next run */}
-            <p className="text-[11px] uppercase tracking-[0.2em] font-headline mt-6 mb-3" style={{ color: ORANGE, fontWeight: 800 }}>You shape the next run</p>
-            <div className="grid grid-cols-3 gap-3">
-              {[
-                { t: "Repeat it", d: "Same design, next cohort" },
-                { t: "Reshape it", d: "New terms — the agreement re-locks" },
-                { t: "New collaborator", d: "Invite another expert in" },
-              ].map(({ t, d }) => (
-                <div key={t} className="rounded-xl px-4 py-3.5" style={{ backgroundColor: "#FAF8F3", boxShadow: "0 0 0 1px rgba(15,34,41,0.06)" }}>
-                  <p className="text-[13.5px] font-black font-headline" style={{ color: INK }}>{t}</p>
-                  <p className="text-[11px] font-bold mt-1 leading-snug" style={{ color: MUTED }}>{d}</p>
-                </div>
-              ))}
-            </div>
-
-            {/* the tribe carries over + new members */}
-            <div
-              className="mt-4 rounded-2xl px-5 py-4 flex items-center justify-between gap-4"
-              style={{ background: "linear-gradient(135deg, rgba(255,97,48,0.14), rgba(255,97,48,0.05))", boxShadow: "0 0 0 1px rgba(255,97,48,0.26)" }}
-            >
-              <div className="min-w-0">
-                <p className="text-[10.5px] uppercase tracking-[0.16em] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>
-                  Retention, built in
-                </p>
-                <p className="text-[15px] font-black font-headline mt-1 leading-snug" style={{ color: INK }}>
-                  Your tribe re-enrolls in one tap — new members join the same run.
-                </p>
-              </div>
-              <span className="shrink-0 px-5 py-2.5 rounded-full text-white text-[12.5px] font-black font-headline" style={{ backgroundColor: ORANGE, boxShadow: "0 4px 12px rgba(255,97,48,0.30)" }}>
-                Enroll in Run 2 →
-              </span>
-            </div>
-          </div>
-        </Pop>
+function CmpHandoff({ stacked = false }: { stacked?: boolean }) {
+  return (
+    <div className={stacked ? "flex flex-col items-stretch gap-2.5" : "flex items-center gap-4"}>
+      <div className="flex-1 rounded-2xl p-5 opacity-70" style={{ backgroundColor: "rgba(250,248,243,1)", boxShadow: "0 0 0 1px rgba(15,34,41,0.08)" }}>
+        <p className="text-[10px] uppercase tracking-widest font-headline" style={{ color: FAINT, fontWeight: 800 }}>Run 1</p>
+        <p className="text-[16px] font-black font-headline mt-1.5" style={{ color: MUTED }}>✓ Completed</p>
       </div>
+      <svg width="32" height="16" viewBox="0 0 26 14" fill="none" className={stacked ? "shrink-0 self-center rotate-90" : "shrink-0"} aria-hidden>
+        <line x1="1" y1="7" x2="20" y2="7" stroke={CYAN} strokeWidth={1.6} strokeLinecap="round" />
+        <path d="M16 2 L23 7 L16 12" stroke={CYAN} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      <div className="flex-1 rounded-2xl p-5" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1.5px rgba(255,97,48,0.30), 0 12px 32px rgba(15,34,41,0.10)" }}>
+        <p className="text-[10px] uppercase tracking-widest font-headline flex items-center gap-1.5" style={{ color: "#ef4444", fontWeight: 800 }}>
+          <span className="w-1.5 h-1.5 rounded-full bg-[#ef4444] animate-pulse" /> Run 2 · Enrolling
+        </p>
+        <p className="text-[16px] font-black font-headline mt-1.5" style={{ color: INK }}>Same space, next chapter</p>
+      </div>
+    </div>
+  );
+}
+
+const CMP_OPTIONS = [
+  { t: "Repeat it", d: "Same design, next cohort" },
+  { t: "Reshape it", d: "New terms — the agreement re-locks" },
+  { t: "New collaborator", d: "Invite another expert in" },
+];
+
+function CmpShape({ stacked = false }: { stacked?: boolean }) {
+  return (
+    <>
+      <p className={`text-[11px] uppercase tracking-[0.2em] font-headline ${stacked ? "mb-3" : "mt-6 mb-3"}`} style={{ color: ORANGE, fontWeight: 800 }}>You shape the next run</p>
+      <div className={stacked ? "space-y-2.5" : "grid grid-cols-3 gap-3"}>
+        {CMP_OPTIONS.map(({ t, d }) => (
+          <div key={t} className={stacked ? "rounded-xl px-4 py-3.5 flex items-baseline justify-between gap-3" : "rounded-xl px-4 py-3.5"} style={{ backgroundColor: "#FAF8F3", boxShadow: "0 0 0 1px rgba(15,34,41,0.06)" }}>
+            <p className="text-[13.5px] font-black font-headline shrink-0" style={{ color: INK }}>{t}</p>
+            <p className={`text-[11px] font-bold leading-snug ${stacked ? "text-right" : "mt-1"}`} style={{ color: MUTED }}>{d}</p>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+function CmpEnroll({ stacked = false }: { stacked?: boolean }) {
+  return (
+    <div
+      className={stacked ? "mt-4 rounded-2xl px-5 py-5 flex flex-col items-stretch gap-3.5 text-center" : "mt-4 rounded-2xl px-5 py-4 flex items-center justify-between gap-4"}
+      style={{ background: "linear-gradient(135deg, rgba(255,97,48,0.14), rgba(255,97,48,0.05))", boxShadow: "0 0 0 1px rgba(255,97,48,0.26)" }}
+    >
+      <div className="min-w-0">
+        <p className="text-[10.5px] uppercase tracking-[0.16em] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>
+          Retention, built in
+        </p>
+        <p className="text-[15px] font-black font-headline mt-1 leading-snug" style={{ color: INK }}>
+          Your tribe re-enrolls in one tap — new members join the same run.
+        </p>
+      </div>
+      <span className={`shrink-0 rounded-full text-white font-black font-headline ${stacked ? "px-5 py-3 text-[14px]" : "px-5 py-2.5 text-[12.5px]"}`} style={{ backgroundColor: ORANGE, boxShadow: "0 4px 12px rgba(255,97,48,0.30)" }}>
+        Enroll in Run 2 →
+      </span>
+    </div>
+  );
+}
+
+/* Mobile staging — p0 the run builds, p1 the run wraps into the handoff,
+ * p2 you shape the next run + the tribe carries over. */
+function CompoundFrameMobile({ phase }: { phase: number }) {
+  const wrapped = phase >= 1;
+  // the bar's growth must be SEEN — arm the p0 fill after mount
+  const [grow, setGrow] = useState(false);
+  useEffect(() => {
+    if (phase !== 0) return;
+    setGrow(false);
+    const t = window.setTimeout(() => setGrow(true), 500);
+    return () => window.clearTimeout(t);
+  }, [phase]);
+
+  return (
+    <div className="w-full max-w-md mx-auto">
+      <MechHead
+        kicker="04 · It compounds"
+        accent={ORANGE}
+        title={wrapped ? "The run wraps — the retention loop opens." : "Every live moment builds the run."}
+        copy={
+          wrapped
+            ? "Same space, next run: you shape it, your tribe re-enrolls in one tap."
+            : "Attendance and progression — tracked in the space, for you and every member."
+        }
+      />
+      <Enter key={Math.min(phase, 2)}>
+        {phase === 0 && (
+          <div className="rounded-3xl p-6 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }} aria-hidden>
+            <CmpProgress wrapped={false} fill={grow ? "85%" : "8%"} litWeeks={grow ? 5 : 1} />
+          </div>
+        )}
+        {phase === 1 && (
+          <div className="space-y-4 text-left" aria-hidden>
+            <div className="rounded-3xl p-6" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }}>
+              <CmpProgress wrapped fill="100%" litWeeks={6} dots={false} />
+            </div>
+            <CmpHandoff stacked />
+          </div>
+        )}
+        {phase >= 2 && (
+          <div className="text-left" aria-hidden>
+            <CmpShape stacked />
+            <CmpEnroll stacked />
+          </div>
+        )}
+      </Enter>
     </div>
   );
 }
@@ -899,14 +1225,30 @@ function IntroFrame() {
 
 /* ══ The chapter ════════════════════════════════════════════ */
 export function LiveWeek() {
-  const { beat, pinned, wrapperRef, jumpToBeat, runwayVh } = useBeatChapter({ beats: BEATS });
+  // Mobile staging flag — same breakpoint the engine's scrub mode uses.
+  // false on the server and first client render; the swap to the mobile
+  // beat map + stagings happens post-hydration, below the fold, invisible.
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    if (window.matchMedia("(max-width: 1023px)").matches) setIsMobile(true);
+  }, []);
 
-  const frame = BEATS[beat].f;
-  const phase = BEATS[beat].p;
+  const beats = isMobile ? BEATS_M : BEATS;
+  const bounds = computeBounds(beats);
+  const stepSpan: [number, number] = [bounds[1][0], bounds[bounds.length - 1][1]];
+  const peakBeat = beats.findIndex((b) => b.f === 3 && b.p === 2);
+  const firstBeatOf = (f: number) => beats.findIndex((b) => b.f === f);
+
+  const { beat, pinned, wrapperRef, jumpToBeat, runwayVh } = useBeatChapter({ beats });
+
+  // the beat index can momentarily exceed the map during the swap
+  const cur = beats[Math.min(beat, beats.length - 1)];
+  const frame = cur.f;
+  const phase = cur.p;
   const peak = frame === 3 && phase === 2;
 
-  const railMid = BOUNDS[beat][0] + BEATS[beat].w / 2;
-  const railSp = Math.min(1, Math.max(0, (railMid - STEP_SPAN[0]) / (STEP_SPAN[1] - STEP_SPAN[0])));
+  const railMid = bounds[Math.min(beat, beats.length - 1)][0] + cur.w / 2;
+  const railSp = Math.min(1, Math.max(0, (railMid - stepSpan[0]) / (stepSpan[1] - stepSpan[0])));
 
   if (!pinned) {
     return (
@@ -956,7 +1298,7 @@ export function LiveWeek() {
                 <button
                   key={s.label}
                   type="button"
-                  onClick={() => jumpToBeat(s.firstBeat)}
+                  onClick={() => jumpToBeat(firstBeatOf(s.frame))}
                   className="flex items-center gap-4 text-left transition-opacity duration-300"
                   style={{ opacity: frame === s.frame ? 1 : 0.42 }}
                 >
@@ -980,10 +1322,12 @@ export function LiveWeek() {
             </div>
           </div>
 
-          {/* Progress dots — mobile */}
-          <div className="lg:hidden absolute top-5 inset-x-0 z-20 flex justify-center gap-1.5" aria-hidden style={{ opacity: frame >= 1 && frame <= 4 ? 1 : 0, transition: "opacity 400ms ease" }}>
+          {/* Progress dots — mobile (tappable, same affordance as the rail) */}
+          <div className="lg:hidden absolute top-5 inset-x-0 z-20 flex justify-center" style={{ opacity: frame >= 1 && frame <= 4 ? 1 : 0, pointerEvents: frame >= 1 && frame <= 4 ? "auto" : "none", transition: "opacity 400ms ease" }}>
             {RAIL.map((s) => (
-              <span key={s.frame} className="h-1.5 rounded-full transition-all duration-300" style={{ width: frame === s.frame ? 18 : 6, backgroundColor: frame === s.frame ? ORANGE : peak ? "rgba(246,243,236,0.38)" : "rgba(15,34,41,0.20)" }} />
+              <button key={s.frame} type="button" aria-label={s.label} onClick={() => jumpToBeat(firstBeatOf(s.frame))} className="p-1.5 flex items-center">
+                <span className="block h-1.5 rounded-full transition-all duration-300" style={{ width: frame === s.frame ? 18 : 6, backgroundColor: frame === s.frame ? ORANGE : peak ? "rgba(246,243,236,0.38)" : "rgba(15,34,41,0.20)" }} />
+              </button>
             ))}
           </div>
 
@@ -1013,10 +1357,10 @@ export function LiveWeek() {
                 <div className="w-full max-w-5xl mx-auto flex-1 min-h-0 flex flex-col">
                   <AutoFit>
                     {f === 0 && <IntroFrame />}
-                    {f === 1 && <SpaceFrame phase={active ? phase : 0} />}
-                    {f === 2 && <HandsFrame phase={active ? phase : 0} />}
-                    {f === 3 && <LoopFrame phase={active ? phase : 0} onJoin={() => jumpToBeat(PEAK_BEAT)} />}
-                    {f === 4 && <CompoundFrame phase={active ? phase : 0} active={active} />}
+                    {f === 1 && (isMobile ? <SpaceFrameMobile phase={active ? phase : 0} /> : <SpaceFrame phase={active ? phase : 0} />)}
+                    {f === 2 && (isMobile ? <HandsFrameMobile phase={active ? phase : 0} /> : <HandsFrame phase={active ? phase : 0} />)}
+                    {f === 3 && (isMobile ? <LoopFrameMobile phase={active ? phase : 0} onJoin={() => jumpToBeat(peakBeat)} /> : <LoopFrame phase={active ? phase : 0} onJoin={() => jumpToBeat(peakBeat)} />)}
+                    {f === 4 && (isMobile ? <CompoundFrameMobile phase={active ? phase : 0} /> : <CompoundFrame phase={active ? phase : 0} active={active} />)}
                   </AutoFit>
                 </div>
               </div>
