@@ -16,9 +16,9 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "INFITRA — Build Real Fitness Communities",
+  title: "INFITRA · Live, co-created fitness experiences",
   description:
-    "The platform where creators, studios, and gyms build real communities together through live sessions, challenges, and collaboration.",
+    "Complementary experts, one live fitness experience. INFITRA provides the live rooms, the tribe space, the marketing page with checkout, the collaboration contract and the revenue splitting.",
   openGraph: {
     title: "INFITRA",
     description: "Live fitness experiences. Built around participation.",

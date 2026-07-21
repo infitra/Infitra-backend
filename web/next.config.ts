@@ -1,6 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  async redirects() {
+    return [
+      // The landing was polished at /new, then promoted to /. Links from the
+      // polishing phase (and anyone's open tabs) land home permanently.
+      { source: "/new", destination: "/", permanent: true },
+    ];
+  },
   images: {
     // Allow next/image to optimize Supabase Storage public object URLs.
     // The Vercel optimizer fetches the (large) source PNG server-side once,
