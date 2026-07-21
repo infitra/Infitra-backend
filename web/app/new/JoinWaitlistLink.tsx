@@ -1,24 +1,19 @@
 "use client";
 
 /**
- * Nav "Join waitlist" — jumps to the finale with behavior:"instant".
- *
- * A plain #join anchor animates (the page sets scroll-behavior: smooth) and
- * the animation passes THROUGH the pinned chapters — their pace-car wall
- * intercepts the motion mid-flight and cancels the jump. One instant jump
- * lands past both runways in a single frame; the engines idle on far-away
- * wrappers and never see it.
+ * Nav "Join waitlist" — opens the hero's collapsed waitlist form and brings
+ * the visitor there. It used to jump past BOTH story chapters straight to
+ * the finale; anyone tapping it skipped the whole narrative. The hero form
+ * sits right below the fold, so the story stays ahead of them.
  */
 export function JoinWaitlistLink() {
   return (
     <a
-      href="#join"
+      href="#waitlist"
       onClick={(e) => {
-        const el = document.getElementById("join");
-        if (!el) return; // fall back to the anchor
         e.preventDefault();
-        window.scrollTo({ top: window.scrollY + el.getBoundingClientRect().top, behavior: "instant" });
-        history.replaceState(null, "", "#join");
+        // HeroWaitlist listens for this: opens the form, then scrolls to it.
+        window.dispatchEvent(new CustomEvent("infitra:open-waitlist"));
       }}
       className="px-3.5 sm:px-4 py-2 rounded-full text-xs font-headline font-bold uppercase tracking-widest whitespace-nowrap"
       style={{ color: "#0891b2", boxShadow: "inset 0 0 0 1.5px rgba(8,145,178,0.45)" }}

@@ -184,131 +184,133 @@ function FeedPost({
   reply?: { avatar?: string; initial?: string; color: string; name: string; text: string };
 }) {
   return (
-    <div className="rounded-3xl p-6 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }} aria-hidden>
-      <div className="flex items-center gap-3">
-        <span className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: `${color}24` }}>
-          <span className="text-[13px] font-headline" style={{ color, fontWeight: 800 }}>{initial}</span>
-        </span>
-        <span className="text-[15px] font-headline" style={{ color: INK, fontWeight: 800 }}>{name}</span>
-        <span className="ml-auto text-[11px] font-bold" style={{ color: FAINT }}>{when}</span>
-      </div>
-      {/* the prompt this post answers */}
-      <div className="mt-4 rounded-xl px-4 py-3" style={{ backgroundColor: `${promptColor}12`, boxShadow: `inset 3.5px 0 0 ${promptColor}` }}>
-        <p className="text-[10.5px] uppercase tracking-[0.16em] font-headline" style={{ color: promptColor, fontWeight: 800 }}>{promptLabel}</p>
-        <p className="text-[14px] font-bold font-headline leading-snug mt-1.5" style={{ color: INK }}>{prompt}</p>
-      </div>
-      {/* the member's own words */}
-      <p className="text-[15.5px] leading-relaxed mt-4" style={{ color: INK, fontWeight: 500 }}>{body}</p>
-      {chip && (
-        <span className="inline-flex mt-3.5 px-3 py-1 rounded-full text-[10.5px] font-headline" style={{ color: promptColor, backgroundColor: `${promptColor}14`, fontWeight: 800 }}>{chip}</span>
-      )}
-      {reply && (
-        <div className="flex gap-2.5 mt-4 pl-3" style={{ borderLeft: "2px solid rgba(15,34,41,0.08)" }}>
-          {reply.avatar ? (
-            <span className="shrink-0 w-7 h-7 rounded-full overflow-hidden" style={{ border: `1.5px solid ${reply.color}59` }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={reply.avatar} alt="" className="w-full h-full object-cover" />
-            </span>
+    <div aria-hidden>
+      <div className="rounded-3xl p-6 md:p-8 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }}>
+        <div className="flex items-center gap-3">
+          <span className="shrink-0 w-10 h-10 md:w-11 md:h-11 rounded-full flex items-center justify-center" style={{ backgroundColor: `${color}24` }}>
+            <span className="text-[13px] md:text-[14px] font-headline" style={{ color, fontWeight: 800 }}>{initial}</span>
+          </span>
+          <span className="text-[15px] md:text-[17px] font-headline" style={{ color: INK, fontWeight: 800 }}>{name}</span>
+          <span className="ml-auto text-[11px] md:text-[12px] font-bold" style={{ color: FAINT }}>{when}</span>
+        </div>
+        {/* the prompt this post answers */}
+        <div className="mt-4 rounded-xl px-4 py-3 md:px-5 md:py-3.5" style={{ backgroundColor: `${promptColor}12`, boxShadow: `inset 3.5px 0 0 ${promptColor}` }}>
+          <p className="text-[10.5px] md:text-[11px] uppercase tracking-[0.16em] font-headline" style={{ color: promptColor, fontWeight: 800 }}>{promptLabel}</p>
+          <p className="text-[14px] md:text-[15.5px] font-bold font-headline leading-snug mt-1.5" style={{ color: INK }}>{prompt}</p>
+        </div>
+        {/* the member's own words */}
+        <p className="text-[15.5px] md:text-[17px] leading-relaxed mt-4" style={{ color: INK, fontWeight: 500 }}>{body}</p>
+        {chip && (
+          <span className="inline-flex mt-3.5 px-3 py-1 rounded-full text-[10.5px] md:text-[11.5px] font-headline" style={{ color: promptColor, backgroundColor: `${promptColor}14`, fontWeight: 800 }}>{chip}</span>
+        )}
+        <div className="flex items-center gap-5 mt-4 pt-3.5" style={{ borderTop: "1px solid rgba(15,34,41,0.06)" }}>
+          {likes !== undefined ? (
+            <span className="inline-flex items-center gap-1.5 text-[12.5px] md:text-[13.5px] font-bold" style={{ color: MUTED }}>{ICON_HEART(ORANGE)} {likes}</span>
           ) : (
-            <span className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center" style={{ backgroundColor: `${reply.color}1F` }}>
-              <span className="text-[10px] font-headline" style={{ color: reply.color, fontWeight: 800 }}>{reply.initial}</span>
-            </span>
+            <span className="inline-flex items-center gap-1.5 text-[12.5px] md:text-[13.5px] font-bold" style={{ color: MUTED }}>{ICON_HEART(MUTED)} Like</span>
           )}
-          <p className="text-[12.5px] leading-snug min-w-0" style={{ color: MUTED }}>
-            <span className="font-headline" style={{ color: INK, fontWeight: 800 }}>{reply.name}</span>{" "}
-            {reply.text}
+          <span className="inline-flex items-center gap-1.5 text-[12.5px] md:text-[13.5px] font-bold" style={{ color: MUTED }}>{ICON_COMMENT(MUTED)} {comments}</span>
+          <span className="ml-auto text-[11px]" style={{ color: FAINT }}>In the tribe feed</span>
+        </div>
+      </div>
+
+      {/* the comment lives in the thread UNDER the post — like the real UI */}
+      {reply && (
+        <div className="mt-3 rounded-2xl px-5 py-4 text-left" style={{ backgroundColor: "rgba(250,248,243,0.92)", boxShadow: "0 0 0 1px rgba(15,34,41,0.06)" }}>
+          <p className="text-[10px] uppercase tracking-[0.18em] font-headline mb-3" style={{ color: FAINT, fontWeight: 800 }}>
+            Comments · {comments}
           </p>
+          <div className="flex gap-2.5">
+            {reply.avatar ? (
+              <span className="shrink-0 w-8 h-8 rounded-full overflow-hidden" style={{ border: `1.5px solid ${reply.color}59` }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={reply.avatar} alt="" className="w-full h-full object-cover" />
+              </span>
+            ) : (
+              <span className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: `${reply.color}1F` }}>
+                <span className="text-[10.5px] font-headline" style={{ color: reply.color, fontWeight: 800 }}>{reply.initial}</span>
+              </span>
+            )}
+            <div className="min-w-0">
+              <p className="text-[12px] md:text-[13px] font-headline" style={{ color: INK, fontWeight: 800 }}>{reply.name}</p>
+              <p className="text-[13px] md:text-[14px] leading-snug mt-0.5" style={{ color: MUTED }}>{reply.text}</p>
+            </div>
+          </div>
         </div>
       )}
-      <div className="flex items-center gap-5 mt-4 pt-3.5" style={{ borderTop: "1px solid rgba(15,34,41,0.06)" }}>
-        {likes !== undefined ? (
-          <span className="inline-flex items-center gap-1.5 text-[12.5px] font-bold" style={{ color: MUTED }}>{ICON_HEART(ORANGE)} {likes}</span>
-        ) : (
-          <span className="inline-flex items-center gap-1.5 text-[12.5px] font-bold" style={{ color: MUTED }}>{ICON_HEART(MUTED)} Like</span>
-        )}
-        <span className="inline-flex items-center gap-1.5 text-[12.5px] font-bold" style={{ color: MUTED }}>{ICON_COMMENT(MUTED)} {comments}</span>
-        <span className="ml-auto text-[11px]" style={{ color: FAINT }}>In the tribe feed</span>
-      </div>
     </div>
   );
 }
 
 /* ── The space's REAL header ───────────────────────────────── */
+/* Ported from the REAL experience-space header, in its live state:
+ * desktop — the cover as a full-height image block on the LEFT, the title +
+ * hosts + chips beside it, the status column on the right;
+ * mobile — the cover leads full-width, then title → hosts → status → chips,
+ * exactly the app's card. */
 function SpaceHeader() {
+  const statusBlock = (align: "left" | "right") => (
+    <>
+      <span className={`inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] uppercase tracking-widest font-headline ${align === "right" ? "justify-end" : ""}`} style={{ color: "#ef4444", fontWeight: 800 }}>
+        <span className="w-1.5 h-1.5 rounded-full bg-[#ef4444] animate-pulse" />
+        Live · Week {ROOM.week} of {EX.weeks}
+      </span>
+      <span className={`inline-flex items-center gap-1.5 ${align === "right" ? "justify-end" : ""}`}>
+        <span className="relative w-[18px] h-[18px] sm:w-5 sm:h-5 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(8,145,178,0.14)" }}>
+          <span className="text-[8px] font-headline" style={{ color: CYAN, fontWeight: 800 }}>A</span>
+          <span className="absolute -bottom-0 -right-0 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "#22c55e", border: "1px solid #FFF" }} />
+        </span>
+        <span className="text-[9px] sm:text-[10px] uppercase tracking-widest font-headline" style={{ color: MUTED, fontWeight: 800 }}>
+          Active now <span style={{ color: INK }}>{ROOM.activeNow}</span>
+        </span>
+      </span>
+    </>
+  );
   return (
-    <div className="rounded-3xl overflow-hidden" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }}>
-      {/* Mobile: the cover leads, card-style — the same presence the real
-         experience space has on a phone. sm+ keeps the compact row with the
-         cover as a side thumb. */}
-      {/* aspect-video instead of a fixed short height — the cover shows whole
-         (heads were cropped at h-40) */}
+    <div className="rounded-3xl overflow-hidden text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }}>
+      {/* mobile: the cover leads full-width */}
       <div className="relative aspect-[16/9] sm:hidden" style={{ backgroundColor: INK }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={EX.cover} alt="" className="absolute inset-0 w-full h-full object-cover" />
-        <div className="absolute inset-x-0 bottom-0 h-1/2 pointer-events-none" style={{ background: "linear-gradient(to top, rgba(15,34,41,0.35), rgba(15,34,41,0))" }} />
       </div>
-      <div className="flex items-stretch gap-4 px-5 sm:px-6 py-5">
-        <span className="relative shrink-0 w-24 sm:w-32 rounded-xl overflow-hidden hidden sm:block" style={{ backgroundColor: INK }}>
+      <div className="flex items-stretch">
+        {/* desktop: the cover as a full-height left block */}
+        <span className="relative hidden sm:block shrink-0 w-52 lg:w-64" style={{ backgroundColor: INK }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={EX.cover} alt="" className="absolute inset-0 w-full h-full object-cover" />
         </span>
-        <div className="min-w-0 flex-1 text-left">
-          {/* Mobile order: status line → title → hosts → chips. The status
-             pair used to squeeze into a right-hand column and the card read
-             messy; on phones it now leads as one clean row. */}
-          <span className="flex sm:hidden items-center gap-3 mb-2">
-            <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-widest font-headline" style={{ color: "#ef4444", fontWeight: 800 }}>
-              <span className="w-1.5 h-1.5 rounded-full bg-[#ef4444] animate-pulse" />
-              Live · Week {ROOM.week} of {EX.weeks}
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <span className="relative w-[18px] h-[18px] rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(8,145,178,0.14)" }}>
-                <span className="text-[8px] font-headline" style={{ color: CYAN, fontWeight: 800 }}>A</span>
-                <span className="absolute -bottom-0 -right-0 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "#22c55e", border: "1px solid #FFF" }} />
-              </span>
-              <span className="text-[9px] uppercase tracking-widest font-headline" style={{ color: MUTED, fontWeight: 800 }}>
-                Active now <span style={{ color: INK }}>{ROOM.activeNow}</span>
-              </span>
-            </span>
-          </span>
-          <p className="text-[18px] sm:text-[21px] font-headline tracking-tight leading-snug" style={{ color: INK, fontWeight: 800, letterSpacing: "-0.015em" }}>
+        <div className="min-w-0 flex-1 px-5 py-5 sm:px-7 sm:py-6">
+          <p className="text-[20px] sm:text-[24px] font-headline tracking-tight leading-snug" style={{ color: INK, fontWeight: 800, letterSpacing: "-0.02em" }}>
             {EX.title}
           </p>
-          <span className="flex items-center gap-1.5 mt-1.5">
+          <span className="flex items-center gap-1.5 mt-2">
             <span className="flex -space-x-1.5">
               {[ALEX.avatar, MIRA.avatar].map((a) => (
-                <span key={a} className="w-6 h-6 rounded-full overflow-hidden" style={{ border: "1.5px solid #FFFFFF" }}>
+                <span key={a} className="w-6 h-6 sm:w-7 sm:h-7 rounded-full overflow-hidden" style={{ border: "1.5px solid #FFFFFF" }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={a} alt="" className="w-full h-full object-cover" />
                 </span>
               ))}
             </span>
-            <span className="text-[12px] font-bold" style={{ color: MUTED }}>
+            <span className="text-[12px] sm:text-[13px] font-bold" style={{ color: MUTED }}>
               with <span style={{ color: INK }}>{ALEX.name} &amp; {MIRA.name}</span>
             </span>
           </span>
-          <span className="flex flex-wrap gap-1.5 mt-3">
+          {/* mobile status row — sits between hosts and chips, like the app */}
+          <span className="flex sm:hidden items-center justify-between gap-3 mt-3">
+            {statusBlock("left")}
+          </span>
+          <span className="flex flex-wrap gap-1.5 mt-3.5">
             {["Meet your Experts", "Structure"].map((c) => (
-              <span key={c} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-headline" style={{ color: INK, backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.10)", fontWeight: 800 }}>
+              <span key={c} className="inline-flex items-center gap-1 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full text-[10px] sm:text-[11px] font-headline" style={{ color: INK, backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.10)", fontWeight: 800 }}>
                 {c} <span style={{ color: FAINT }}>{CHEVRON_DOWN}</span>
               </span>
             ))}
           </span>
         </div>
-        <div className="shrink-0 text-right hidden sm:flex flex-col items-end justify-center gap-2">
-          <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-widest font-headline" style={{ color: "#ef4444", fontWeight: 800 }}>
-            <span className="w-1.5 h-1.5 rounded-full bg-[#ef4444] animate-pulse" />
-            Live · Week {ROOM.week} of {EX.weeks}
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <span className="relative w-5 h-5 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(8,145,178,0.14)" }}>
-              <span className="text-[8px] font-headline" style={{ color: CYAN, fontWeight: 800 }}>A</span>
-              <span className="absolute -bottom-0 -right-0 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "#22c55e", border: "1px solid #FFF" }} />
-            </span>
-            <span className="text-[9px] uppercase tracking-widest font-headline" style={{ color: MUTED, fontWeight: 800 }}>
-              Active now <span style={{ color: INK }}>{ROOM.activeNow}</span>
-            </span>
-          </span>
+        {/* desktop status column */}
+        <div className="shrink-0 text-right hidden sm:flex flex-col items-end justify-center gap-2.5 pr-7">
+          {statusBlock("right")}
         </div>
       </div>
     </div>
@@ -428,10 +430,10 @@ function TribePost({
               <span className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center" style={{ backgroundColor: `${reply.color}1F` }}>
                 <span className="text-[8px] font-headline" style={{ color: reply.color, fontWeight: 800 }}>{reply.initial}</span>
               </span>
-              <p className="text-[11.5px] leading-snug min-w-0" style={{ color: MUTED }}>
-                <span className="font-headline" style={{ color: INK, fontWeight: 800 }}>{reply.name}</span>{" "}
-                {reply.text}
-              </p>
+              <span className="min-w-0">
+                <span className="block text-[10.5px] font-headline" style={{ color: INK, fontWeight: 800 }}>{reply.name}</span>
+                <span className="block text-[11.5px] leading-snug mt-0.5" style={{ color: MUTED }}>{reply.text}</span>
+              </span>
             </div>
           )}
         </div>
@@ -580,6 +582,7 @@ function HandsIntroPost() {
       prompt={EX.introPrompt}
       body="Desk job, two kids, and every plan I've started before fizzled by week two. I'm here to finally build energy that lasts — and to stick with it because this time there's a group. Can't wait to meet you all! 💪"
       chip="Introduction"
+      likes={9}
       comments={3}
     />
   );
@@ -587,7 +590,7 @@ function HandsIntroPost() {
 
 function HandsNotifCard() {
   return (
-    <div className="rounded-2xl p-6" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }}>
+    <div className="rounded-2xl p-6 lg:p-7" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }}>
       <div className="flex items-center gap-2.5 pb-3 mb-3" style={{ borderBottom: "1px solid rgba(15,34,41,0.07)" }}>
         <span className="relative">
           {ICON_BELL(INK, 20)}
@@ -612,7 +615,7 @@ function HandsNotifCard() {
 
 function HandsConsoleCard() {
   return (
-    <div className="rounded-2xl p-6" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }}>
+    <div className="rounded-2xl p-6 lg:p-7" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }}>
       <div className="flex items-center gap-2.5 pb-3 mb-3" style={{ borderBottom: "1px solid rgba(15,34,41,0.07)" }}>
         <span className="w-7 h-7 rounded-full overflow-hidden shrink-0" style={{ border: `1.5px solid ${ORANGE}59` }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -634,66 +637,76 @@ function HandsConsoleCard() {
 
 function HandsAnsweredPost({ answerOn }: { answerOn: boolean }) {
   return (
-    <div className="mx-auto w-full max-w-2xl rounded-3xl p-6 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }} aria-hidden>
-      <div className="flex items-center gap-3">
-        <span className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(8,145,178,0.14)" }}>
-          <span className="text-[12px] font-headline" style={{ color: CYAN, fontWeight: 800 }}>T</span>
-        </span>
-        <span className="text-[14px] font-headline" style={{ color: INK, fontWeight: 800 }}>{ROOM.qa.asker}</span>
-        <span className="ml-auto text-[10.5px] font-bold" style={{ color: FAINT }}>just now</span>
-      </div>
-      <div className="mt-3.5 rounded-xl px-4 py-2.5 inline-flex items-center gap-2" style={{ backgroundColor: "rgba(8,145,178,0.07)", boxShadow: `inset 3.5px 0 0 ${CYAN}` }}>
-        <span className="text-[10px] uppercase tracking-[0.16em] font-headline" style={{ color: CYAN, fontWeight: 800 }}>Question for</span>
-        <span className="text-[13px] font-headline" style={{ color: CYAN, fontWeight: 800 }}>{ALEX.name}</span>
-      </div>
-      <p className="text-[15px] leading-snug mt-3" style={{ color: INK, fontWeight: 600 }}>
-        {ROOM.qa.question}
-      </p>
-      <Pop show={answerOn} d={250}>
-        <div className="mt-4 rounded-2xl p-5" style={{ backgroundColor: "rgba(255,97,48,0.06)", boxShadow: `inset 4px 0 0 ${ORANGE}` }}>
-          <div className="flex items-center gap-2.5">
-            <span className="shrink-0 w-8 h-8 rounded-full overflow-hidden" style={{ border: `1.5px solid ${ORANGE}59` }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={ALEX.avatar} alt="" className="w-full h-full object-cover" />
-            </span>
-            <span className="text-[11px] uppercase tracking-[0.14em] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>
-              Answered by {ALEX.name}
-            </span>
-          </div>
-          <p className="text-[13.5px] leading-relaxed mt-2.5" style={{ color: MUTED }}>
-            {ROOM.qa.answer}
-          </p>
-        </div>
-        {/* the whole tribe learns — a member chimes in under the answer */}
-        <div className="flex gap-2.5 mt-3.5 pl-3" style={{ borderLeft: "2px solid rgba(15,34,41,0.08)" }}>
-          <span className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(8,145,178,0.14)" }}>
-            <span className="text-[10px] font-headline" style={{ color: CYAN, fontWeight: 800 }}>L</span>
+    <div className="mx-auto w-full max-w-2xl lg:max-w-3xl" aria-hidden>
+      <div className="rounded-3xl p-6 md:p-8 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }}>
+        <div className="flex items-center gap-3">
+          <span className="shrink-0 w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(8,145,178,0.14)" }}>
+            <span className="text-[12px] md:text-[13px] font-headline" style={{ color: CYAN, fontWeight: 800 }}>T</span>
           </span>
-          <p className="text-[12.5px] leading-snug min-w-0" style={{ color: MUTED }}>
-            <span className="font-headline" style={{ color: INK, fontWeight: 800 }}>Lea</span>{" "}
-            I was wondering that myself — good to know! 🙏
+          <span className="text-[14px] md:text-[16px] font-headline" style={{ color: INK, fontWeight: 800 }}>{ROOM.qa.asker}</span>
+          <span className="ml-auto text-[10.5px] md:text-[11.5px] font-bold" style={{ color: FAINT }}>just now</span>
+        </div>
+        <div className="mt-3.5 rounded-xl px-4 py-2.5 inline-flex items-center gap-2" style={{ backgroundColor: "rgba(8,145,178,0.07)", boxShadow: `inset 3.5px 0 0 ${CYAN}` }}>
+          <span className="text-[10px] md:text-[11px] uppercase tracking-[0.16em] font-headline" style={{ color: CYAN, fontWeight: 800 }}>Question for</span>
+          <span className="text-[13px] md:text-[14px] font-headline" style={{ color: CYAN, fontWeight: 800 }}>{ALEX.name}</span>
+        </div>
+        <p className="text-[15.5px] md:text-[17px] leading-snug mt-3" style={{ color: INK, fontWeight: 600 }}>
+          {ROOM.qa.question}
+        </p>
+        <Pop show={answerOn} d={250}>
+          <div className="mt-4 rounded-2xl p-5 md:p-6" style={{ backgroundColor: "rgba(255,97,48,0.06)", boxShadow: `inset 4px 0 0 ${ORANGE}` }}>
+            <div className="flex items-center gap-2.5">
+              <span className="shrink-0 w-8 h-8 md:w-9 md:h-9 rounded-full overflow-hidden" style={{ border: `1.5px solid ${ORANGE}59` }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={ALEX.avatar} alt="" className="w-full h-full object-cover" />
+              </span>
+              <span className="text-[11px] md:text-[12px] uppercase tracking-[0.14em] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>
+                Answered by {ALEX.name}
+              </span>
+            </div>
+            <p className="text-[14px] md:text-[15px] leading-relaxed mt-2.5" style={{ color: MUTED }}>
+              {ROOM.qa.answer}
+            </p>
+          </div>
+        </Pop>
+        <div className="flex items-center gap-5 mt-4 pt-3.5" style={{ borderTop: "1px solid rgba(15,34,41,0.06)" }}>
+          <span className="inline-flex items-center gap-1.5 text-[12px] md:text-[13px] font-bold" style={{ color: MUTED }}>{ICON_HEART(ORANGE)} 6</span>
+          <span className="inline-flex items-center gap-1.5 text-[12px] md:text-[13px] font-bold" style={{ color: MUTED }}>{ICON_COMMENT(MUTED)} 2</span>
+          <span className="ml-auto text-[11px]" style={{ color: FAINT }}>Pinned — visible to the whole tribe.</span>
+        </div>
+      </div>
+
+      {/* the whole tribe learns — the comment lives in the THREAD, not the post */}
+      <Pop show={answerOn} d={420}>
+        <div className="mt-3 rounded-2xl px-5 py-4 text-left" style={{ backgroundColor: "rgba(250,248,243,0.92)", boxShadow: "0 0 0 1px rgba(15,34,41,0.06)" }}>
+          <p className="text-[10px] uppercase tracking-[0.18em] font-headline mb-3" style={{ color: FAINT, fontWeight: 800 }}>
+            Comments · 2
           </p>
+          <div className="flex gap-2.5">
+            <span className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(8,145,178,0.14)" }}>
+              <span className="text-[10.5px] font-headline" style={{ color: CYAN, fontWeight: 800 }}>L</span>
+            </span>
+            <div className="min-w-0">
+              <p className="text-[12px] md:text-[13px] font-headline" style={{ color: INK, fontWeight: 800 }}>Lea</p>
+              <p className="text-[13px] md:text-[14px] leading-snug mt-0.5" style={{ color: MUTED }}>I was wondering that myself — good to know! 🙏</p>
+            </div>
+          </div>
         </div>
       </Pop>
-      <div className="flex items-center gap-5 mt-4 pt-3.5" style={{ borderTop: "1px solid rgba(15,34,41,0.06)" }}>
-        <span className="inline-flex items-center gap-1.5 text-[12px] font-bold" style={{ color: MUTED }}>{ICON_HEART(ORANGE)} 6</span>
-        <span className="inline-flex items-center gap-1.5 text-[12px] font-bold" style={{ color: MUTED }}>{ICON_COMMENT(MUTED)} 2</span>
-        <span className="ml-auto text-[11px]" style={{ color: FAINT }}>Pinned — visible to the whole tribe.</span>
-      </div>
     </div>
   );
 }
 
 function HandsFrame({ phase, staticLayout = false }: { phase: number; staticLayout?: boolean }) {
   return (
-    <div className={`w-full max-w-3xl mx-auto ${staticLayout ? "" : FIT}`}>
+    <div className={`w-full max-w-3xl lg:max-w-4xl mx-auto ${staticLayout ? "" : FIT}`}>
       {/* Each phase is a self-contained, centered [head + content] block — the
          same treatment as the dark chapter's frames, so short phases stay
          centered instead of leaving a gap under a top-pinned title. */}
       <div className={staticLayout ? undefined : "relative"} style={staticLayout ? undefined : { minHeight: 580 }}>
         {/* p0 — the introduction post: the cold start, solved */}
         <Phase on={phase === 0} isStatic={staticLayout} className="flex flex-col justify-center" enterFrom="translateY(-14px)">
-          <div className="mx-auto w-full max-w-2xl">
+          <div className="mx-auto w-full max-w-2xl lg:max-w-3xl">
             <HandsIntroPost />
           </div>
         </Phase>
@@ -703,7 +716,7 @@ function HandsFrame({ phase, staticLayout = false }: { phase: number; staticLayo
           <div className="grid sm:grid-cols-2 gap-6 text-left" aria-hidden>
             {/* share — members */}
             <Pop show={phase === 1} d={120}>
-              <div className="h-full rounded-2xl p-6" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.06), 0 16px 40px rgba(15,34,41,0.08), inset 4px 0 0 " + CYAN }}>
+              <div className="h-full rounded-2xl p-6 lg:p-7" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.06), 0 16px 40px rgba(15,34,41,0.08), inset 4px 0 0 " + CYAN }}>
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-[11px] uppercase tracking-[0.18em] font-headline" style={{ color: CYAN, fontWeight: 800 }}>Share</p>
                   <span className="px-2.5 py-1 rounded-full text-[9px] uppercase tracking-widest font-headline" style={{ color: CYAN, backgroundColor: "rgba(8,145,178,0.08)", fontWeight: 800 }}>Members</span>
@@ -716,7 +729,7 @@ function HandsFrame({ phase, staticLayout = false }: { phase: number; staticLayo
             </Pop>
             {/* question post — members */}
             <Pop show={phase === 1} d={120 + CASCADE_MS}>
-              <div className="h-full rounded-2xl p-6" style={{ backgroundColor: "#FFFFFF", boxShadow: `0 0 0 1px rgba(15,34,41,0.06), 0 16px 40px rgba(15,34,41,0.08), inset 4px 0 0 ${CYAN}` }}>
+              <div className="h-full rounded-2xl p-6 lg:p-7" style={{ backgroundColor: "#FFFFFF", boxShadow: `0 0 0 1px rgba(15,34,41,0.06), 0 16px 40px rgba(15,34,41,0.08), inset 4px 0 0 ${CYAN}` }}>
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-[11px] uppercase tracking-[0.18em] font-headline" style={{ color: CYAN, fontWeight: 800 }}>Ask inside a post</p>
                   <span className="px-2.5 py-1 rounded-full text-[9px] uppercase tracking-widest font-headline" style={{ color: CYAN, backgroundColor: "rgba(8,145,178,0.08)", fontWeight: 800 }}>Members</span>
@@ -735,7 +748,7 @@ function HandsFrame({ phase, staticLayout = false }: { phase: number; staticLayo
             </Pop>
             {/* context post — creators */}
             <Pop show={phase === 1} d={120 + CASCADE_MS * 2}>
-              <div className="h-full rounded-2xl p-6" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.06), 0 16px 40px rgba(15,34,41,0.08), inset 4px 0 0 " + ORANGE }}>
+              <div className="h-full rounded-2xl p-6 lg:p-7" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.06), 0 16px 40px rgba(15,34,41,0.08), inset 4px 0 0 " + ORANGE }}>
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-[11px] uppercase tracking-[0.18em] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>Post with context</p>
                   <span className="px-2.5 py-1 rounded-full text-[9px] uppercase tracking-widest font-headline" style={{ color: ORANGE, backgroundColor: "rgba(255,97,48,0.08)", fontWeight: 800 }}>Experts</span>
@@ -755,7 +768,7 @@ function HandsFrame({ phase, staticLayout = false }: { phase: number; staticLayo
             </Pop>
             {/* calendar export — equal citizen */}
             <Pop show={phase === 1} d={120 + CASCADE_MS * 3}>
-              <div className="h-full rounded-2xl p-6" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.06), 0 16px 40px rgba(15,34,41,0.08), inset 4px 0 0 " + CYAN }}>
+              <div className="h-full rounded-2xl p-6 lg:p-7" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.06), 0 16px 40px rgba(15,34,41,0.08), inset 4px 0 0 " + CYAN }}>
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-[11px] uppercase tracking-[0.18em] font-headline" style={{ color: CYAN, fontWeight: 800 }}>Calendar export</p>
                   <span className="px-2.5 py-1 rounded-full text-[9px] uppercase tracking-widest font-headline" style={{ color: CYAN, backgroundColor: "rgba(8,145,178,0.08)", fontWeight: 800 }}>Members</span>
@@ -846,11 +859,11 @@ function HandsFrameMobile({ phase }: { phase: number }) {
 
 function LoopPulseCard() {
   return (
-    <div className="mx-auto w-full max-w-2xl rounded-2xl p-6 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.06), inset 4px 0 0 " + ORANGE }} aria-hidden>
+    <div className="mx-auto w-full max-w-2xl lg:max-w-3xl rounded-2xl p-6 lg:p-7 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.06), inset 4px 0 0 " + ORANGE }} aria-hidden>
       <p className="text-[11px] uppercase tracking-[0.16em] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>
         Pulse · before the live moment
       </p>
-      <p className="text-[16.5px] font-bold font-headline leading-snug mt-2" style={{ color: INK }}>
+      <p className="text-[16.5px] lg:text-[19px] font-bold font-headline leading-snug mt-2" style={{ color: INK }}>
         {MEET.title} — how ready are you?
       </p>
       <div className="mt-4 relative h-2.5 rounded-full" style={{ backgroundColor: "rgba(15,34,41,0.08)" }}>
@@ -901,7 +914,7 @@ function LoopFrame({ phase, onJoin, staticLayout = false }: { phase: number; onJ
         {/* p0 — the pulse: momentum building */}
         <Phase on={phase === 0} isStatic={staticLayout} className="flex flex-col justify-center" enterFrom="translateY(-14px)">
           <LoopPulseCard />
-          <Pop show={phase === 0} d={300} className="mx-auto w-full max-w-2xl mt-4">
+          <Pop show={phase === 0} d={300} className="mx-auto w-full max-w-2xl lg:max-w-3xl mt-4">
             <LoopLeaPost />
           </Pop>
         </Phase>
@@ -1233,15 +1246,15 @@ function CmpShape({ stacked = false }: { stacked?: boolean }) {
         {CMP_OPTIONS.map(({ t, d, icon, c }) => (
           <div
             key={t}
-            className={stacked ? "rounded-2xl px-4 py-3.5 flex items-center gap-3.5" : "rounded-2xl px-4 py-4"}
+            className={stacked ? "rounded-2xl px-4 py-3.5 flex items-center gap-3.5" : "rounded-2xl px-4 py-4 lg:px-6 lg:py-6"}
             style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.06), 0 10px 26px rgba(15,34,41,0.07)" }}
           >
-            <span className={`shrink-0 w-10 h-10 rounded-xl flex items-center justify-center ${stacked ? "" : "mb-2.5"}`} style={{ backgroundColor: `${c}12` }}>
-              {icon(c, 18)}
+            <span className={`shrink-0 w-10 h-10 ${stacked ? "" : "lg:w-12 lg:h-12"} rounded-xl flex items-center justify-center ${stacked ? "" : "mb-2.5 lg:mb-3.5"}`} style={{ backgroundColor: `${c}12` }}>
+              {icon(c, stacked ? 18 : 20)}
             </span>
             <span className="min-w-0">
-              <span className="block text-[13.5px] font-black font-headline leading-snug" style={{ color: INK }}>{t}</span>
-              <span className="block text-[11px] font-bold leading-snug mt-0.5" style={{ color: MUTED }}>{d}</span>
+              <span className={`block ${stacked ? "text-[13.5px]" : "text-[13.5px] lg:text-[15.5px]"} font-black font-headline leading-snug`} style={{ color: INK }}>{t}</span>
+              <span className={`block ${stacked ? "text-[11px]" : "text-[11px] lg:text-[12.5px]"} font-bold leading-snug mt-0.5`} style={{ color: MUTED }}>{d}</span>
             </span>
           </div>
         ))}
@@ -1483,7 +1496,7 @@ export function LiveWeek() {
         >
           {/* Mechanics rail — desktop (stays through the peak; colors adapt to
              the dark background so the swipe progress keeps reading) */}
-          <div className="hidden lg:flex absolute left-8 xl:left-14 top-1/2 -translate-y-1/2 z-20 items-stretch gap-4" style={{ opacity: frame >= 1 && frame <= 4 ? 1 : 0, transition: "opacity 400ms ease" }}>
+          <div className="hidden lg:flex absolute left-8 xl:left-14 top-[56%] -translate-y-1/2 z-20 items-stretch gap-4" style={{ opacity: frame >= 1 && frame <= 4 ? 1 : 0, transition: "opacity 400ms ease" }}>
             <div className="relative w-[3px] rounded-full" style={{ backgroundColor: peak ? "rgba(246,243,236,0.20)" : "rgba(15,34,41,0.12)", transition: `background-color 400ms ${EASE}` }}>
               <div className="absolute top-0 left-0 w-full rounded-full" style={{ height: `${(railSp * 100).toFixed(1)}%`, backgroundColor: ORANGE, boxShadow: "0 0 10px rgba(255,97,48,0.35)", transition: `height 600ms ${EASE}` }} />
             </div>

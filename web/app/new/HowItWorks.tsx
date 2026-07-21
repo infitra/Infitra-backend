@@ -137,13 +137,13 @@ function DarkWaves({ hidden }: { hidden: boolean }) {
 
 function PortraitCard({ p, color }: { p: { name: string; tag: string; avatar: string }; color: string }) {
   return (
-    <div className="rounded-3xl px-5 py-8 text-center w-52" style={{ backgroundColor: "#FFFFFF", boxShadow: CARD_POP }}>
-      <span className="inline-block w-24 h-24 rounded-full overflow-hidden" style={{ border: `3px solid ${color}66` }}>
+    <div className="rounded-3xl px-5 py-8 lg:px-7 lg:py-10 text-center w-52 lg:w-64" style={{ backgroundColor: "#FFFFFF", boxShadow: CARD_POP }}>
+      <span className="inline-block w-24 h-24 lg:w-32 lg:h-32 rounded-full overflow-hidden" style={{ border: `3px solid ${color}66` }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={p.avatar} alt="" className="w-full h-full object-cover" />
       </span>
-      <p className="text-[16px] font-headline mt-3.5" style={{ color: INK, fontWeight: 800 }}>{p.name}</p>
-      <p className="text-[10px] uppercase tracking-widest font-headline mt-1" style={{ color, fontWeight: 800 }}>{p.tag}</p>
+      <p className="text-[16px] lg:text-[19px] font-headline mt-3.5" style={{ color: INK, fontWeight: 800 }}>{p.name}</p>
+      <p className="text-[10px] lg:text-[11px] uppercase tracking-widest font-headline mt-1" style={{ color, fontWeight: 800 }}>{p.tag}</p>
     </div>
   );
 }
@@ -151,16 +151,16 @@ function PortraitCard({ p, color }: { p: { name: string; tag: string; avatar: st
 function InvitationFrame({ phase }: { phase: number }) {
   const accepted = phase >= 1;
   return (
-    <div className={`w-full max-w-2xl mx-auto ${FIT}`}>
+    <div className={`w-full max-w-2xl lg:max-w-3xl mx-auto ${FIT}`}>
       {/* the invitation — the only place the accepted state lives */}
-      <div className="flex justify-center mb-7">
-        <div className="flex items-center gap-3.5 rounded-2xl px-5 py-3.5" style={{ backgroundColor: "#FFFFFF", boxShadow: CARD_POP }}>
-          <span className="shrink-0 w-10 h-10 rounded-full overflow-hidden">
+      <div className="flex justify-center mb-7 lg:mb-9">
+        <div className="flex items-center gap-3.5 lg:gap-4 rounded-2xl px-5 py-3.5 lg:px-7 lg:py-4.5" style={{ backgroundColor: "#FFFFFF", boxShadow: CARD_POP }}>
+          <span className="shrink-0 w-10 h-10 lg:w-12 lg:h-12 rounded-full overflow-hidden">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={ALEX.avatar} alt="" className="w-full h-full object-cover" />
           </span>
           <span className="text-left">
-            <span className="block text-[14px] font-headline leading-tight" style={{ color: INK, fontWeight: 800 }}>
+            <span className="block text-[14px] lg:text-[16.5px] font-headline leading-tight" style={{ color: INK, fontWeight: 800 }}>
               Alex invited you to co-create an experience!
             </span>
             <span className="relative block h-[22px] mt-1.5">
@@ -182,7 +182,7 @@ function InvitationFrame({ phase }: { phase: number }) {
       </div>
 
       {/* the pair — clean, aligned; the JOIN itself signals acceptance */}
-      <div className="flex items-center justify-center gap-5 sm:gap-7">
+      <div className="flex items-center justify-center gap-5 sm:gap-7 lg:gap-10">
         <PortraitCard p={ALEX} color={ORANGE} />
         <span
           className="relative shrink-0 w-12 h-12 rounded-full flex items-center justify-center"
@@ -555,7 +555,7 @@ function AgRecordCard() {
         <span style={{ color: "#16a34a" }}>{CHECK("#16a34a", 24)}</span> Agreed by all collaborators
       </p>
       {/* the signatures — the weight of the moment lives HERE */}
-      <div className="grid sm:grid-cols-2 gap-4 sm:gap-5 mt-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 mt-6">
         {[
           { p: ALEX, color: ORANGE, action: "Locked by", stamp: CONTRACT.lockedStamp },
           { p: MIRA, color: CYAN, action: "Agreed by", stamp: CONTRACT.agreedStamp },
@@ -568,8 +568,8 @@ function AgRecordCard() {
               </span>
               <p className="text-[10px] uppercase tracking-[0.2em] font-headline" style={{ color: FAINT, fontWeight: 800 }}>{action}</p>
             </div>
-            <p className="text-[26px] leading-none mt-4" style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontStyle: "italic", color: INK }}>{p.name}</p>
-            <p className="flex items-center gap-1.5 mt-4 text-[12px] font-black font-headline tabular-nums" style={{ color }}>
+            <p className="text-[24px] font-headline tracking-tight leading-none mt-4" style={{ color: INK, fontWeight: 800, letterSpacing: "-0.02em" }}>{p.name}</p>
+            <p className="flex items-center gap-1.5 mt-4 text-[13.5px] font-black font-headline tabular-nums" style={{ color }}>
               <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />
               Recorded · {stamp}
             </p>
@@ -590,20 +590,32 @@ function AgRecordCaption() {
 }
 
 function AgreementFrame({ phase }: { phase: number }) {
+  const sealed = phase >= 1;
   return (
-    <div className={`w-full max-w-xl mx-auto ${FIT}`}>
+    <div className={`w-full max-w-xl lg:max-w-2xl mx-auto ${FIT}`}>
       <div className="flex flex-col items-center">
         <AgLockBadge />
-        <p className="text-[17px] font-headline tracking-tight mt-3" style={{ color: LIGHT, fontWeight: 800 }}>{EX.title}</p>
+        <p className="text-[17px] lg:text-[19px] font-headline tracking-tight mt-3" style={{ color: LIGHT, fontWeight: 800 }}>{EX.title}</p>
         <p className="text-[9.5px] uppercase tracking-[0.18em] font-headline mt-1 mb-6" style={{ color: "rgba(244,241,232,0.5)", fontWeight: 800 }}>The whole design</p>
 
-        <AgChecklist />
-
-        {/* beat: THE RECORD — diligent, timestamped, heavy */}
-        <Pop show={phase >= 1} from="translateY(20px) scale(0.93)" className="w-full mt-7">
-          <AgRecordCard />
-          <AgRecordCaption />
-        </Pop>
+        {/* the beat SWAPS: the checklist steps aside, THE RECORD takes the
+           stage whole — checklist + record stacked used to clip the seal
+           line off the bottom on desktop. */}
+        <Enter key={sealed ? 1 : 0} className="w-full">
+          {sealed ? (
+            <div className="flex flex-col items-center w-full">
+              <p className="inline-flex items-center gap-2 mb-5 text-[12px] uppercase tracking-widest font-headline" style={{ color: CYAN_BRIGHT, fontWeight: 800 }}>
+                {CHECK(CYAN_BRIGHT, 12)} The whole design — reviewed
+              </p>
+              <div className="w-full">
+                <AgRecordCard />
+                <AgRecordCaption />
+              </div>
+            </div>
+          ) : (
+            <div className="flex justify-center"><AgChecklist /></div>
+          )}
+        </Enter>
       </div>
     </div>
   );
@@ -866,8 +878,9 @@ export function HowItWorks() {
           {/* the brand waves, dark theme */}
           <DarkWaves hidden={isOutro} />
 
-          {/* Rail — desktop */}
-          <div className="hidden lg:flex absolute left-8 xl:left-14 top-1/2 -translate-y-1/2 z-20 items-stretch gap-5" style={{ opacity: frame >= 1 && frame <= 4 ? 1 : 0, transition: "opacity 400ms ease" }}>
+          {/* Rail — desktop. top-[56%]: the content zone's centre sits below
+             the viewport centre (title zone above it) — align with content. */}
+          <div className="hidden lg:flex absolute left-8 xl:left-14 top-[56%] -translate-y-1/2 z-20 items-stretch gap-5" style={{ opacity: frame >= 1 && frame <= 4 ? 1 : 0, transition: "opacity 400ms ease" }}>
             <div className="relative w-[3px] rounded-full" style={{ backgroundColor: "rgba(255,255,255,0.16)" }}>
               <div className="absolute top-0 left-0 w-full rounded-full" style={{ height: `${(railSp * 100).toFixed(1)}%`, backgroundColor: ORANGE, boxShadow: "0 0 10px rgba(255,97,48,0.45)", transition: `height 600ms ${EASE}` }} />
             </div>

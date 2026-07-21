@@ -352,7 +352,11 @@ export function AutoFit({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <div ref={outerRef} className="w-full flex-1 min-h-0 flex items-center justify-center">
+    // The bottom padding BIASES the vertical centering upward: pure centering
+    // left short content sitting too deep below the anchored title (a dead
+    // band between title and content, all leftover at eye level). Content now
+    // gravitates toward the title; spare room pools at the bottom.
+    <div ref={outerRef} className="w-full flex-1 min-h-0 flex items-center justify-center pb-[5vh] lg:pb-[11vh]">
       <div
         ref={innerRef}
         className="w-full"
