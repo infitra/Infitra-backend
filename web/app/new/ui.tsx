@@ -69,7 +69,11 @@ export function ApplyCTA({
       <Link
         href="/apply"
         className={`inline-block whitespace-nowrap rounded-full text-white font-headline tracking-wide transition-transform hover:scale-[1.03] ${
-          xl ? "px-14 py-5 text-xl" : small ? "px-8 py-3 text-base" : "px-12 py-4 text-lg"
+          xl
+            ? "px-8 py-4 text-lg sm:px-14 sm:py-5 sm:text-xl" // xl overflowed 390px cards
+            : small
+              ? "px-8 py-3 text-base"
+              : "px-9 py-4 text-base sm:px-12 sm:text-lg"
         }`}
         style={{
           backgroundColor: ORANGE,

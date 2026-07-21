@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { EX, CONTRACT, ALEX, MIRA } from "./content";
 import { INK, ORANGE, CYAN, MUTED, FAINT } from "./ui";
-import { type BeatDef, useBeatChapter, computeBounds, clamp01, Phase, Pop, Enter, MobileRail, TitleZone, CUT_MS, POP_MS, CASCADE_MS, EASE, FIT, AutoFit } from "./chapterEngine";
+import { type BeatDef, useBeatChapter, computeBounds, clamp01, Phase, Pop, Enter, MobileRail, TitleZone, useTap, CUT_MS, POP_MS, CASCADE_MS, EASE, FIT, AutoFit } from "./chapterEngine";
 
 /**
  * M3 · HOW TO COLLABORATE ON INFITRA — the beat engine, in the dark room.
@@ -538,7 +538,7 @@ function AgLockBadge() {
 function AgChecklist() {
   return (
     <div className="w-full max-w-lg space-y-2.5">
-      {[`All ${EX.sessions} sessions — as designed`, "Ownership — as assigned", `Split — ${EX.split.owner} / ${EX.split.cohost}`].map((t) => (
+      {["All sessions — as designed", "Ownership — as assigned", "Revenue Split — as defined"].map((t) => (
         <div key={t} className="flex items-center gap-3 rounded-xl px-4 py-3.5 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: CARD_POP }}>
           <span className="shrink-0" style={{ color: CYAN }}>{CHECK(CYAN, 14)}</span>
           <span className="text-[14px] font-bold font-headline" style={{ color: INK }}>{t}</span>
@@ -550,29 +550,42 @@ function AgChecklist() {
 
 function AgRecordCard() {
   return (
-    <div className="rounded-3xl px-7 py-7 text-center" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 2.5px rgba(255,97,48,0.45), 0 34px 80px rgba(0,0,0,0.5)" }}>
+    <div className="rounded-3xl px-6 py-8 sm:px-8 text-center" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 2.5px rgba(255,97,48,0.45), 0 34px 80px rgba(0,0,0,0.5)" }}>
       <p className="inline-flex items-center gap-2.5 text-[22px] md:text-[26px] font-headline tracking-tight" style={{ color: INK, fontWeight: 800, letterSpacing: "-0.02em" }}>
         <span style={{ color: "#16a34a" }}>{CHECK("#16a34a", 24)}</span> Agreed by all collaborators
       </p>
-      <div className="grid grid-cols-2 gap-4 mt-5">
+      {/* the signatures — the weight of the moment lives HERE */}
+      <div className="grid sm:grid-cols-2 gap-4 sm:gap-5 mt-6">
         {[
           { p: ALEX, color: ORANGE, action: "Locked by", stamp: CONTRACT.lockedStamp },
           { p: MIRA, color: CYAN, action: "Agreed by", stamp: CONTRACT.agreedStamp },
         ].map(({ p, color, action, stamp }) => (
-          <div key={p.name} className="rounded-2xl px-5 py-4 text-left" style={{ backgroundColor: "#FAFAF7", border: "1px solid rgba(15,34,41,0.08)" }}>
-            <p className="text-[9px] uppercase tracking-[0.18em] font-headline" style={{ color: FAINT, fontWeight: 800 }}>{action}</p>
-            <p className="text-[19px] leading-none mt-2" style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontStyle: "italic", color: INK }}>{p.name}</p>
-            <p className="flex items-center gap-1.5 mt-3 text-[11px] font-black font-headline tabular-nums" style={{ color }}>
+          <div key={p.name} className="rounded-2xl px-6 py-6 text-left" style={{ backgroundColor: "#FAFAF7", border: "1px solid rgba(15,34,41,0.08)", boxShadow: `inset 4px 0 0 ${color}` }}>
+            <div className="flex items-center gap-3">
+              <span className="shrink-0 w-9 h-9 rounded-full overflow-hidden" style={{ border: `2px solid ${color}59` }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={p.avatar} alt="" className="w-full h-full object-cover" />
+              </span>
+              <p className="text-[10px] uppercase tracking-[0.2em] font-headline" style={{ color: FAINT, fontWeight: 800 }}>{action}</p>
+            </div>
+            <p className="text-[26px] leading-none mt-4" style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontStyle: "italic", color: INK }}>{p.name}</p>
+            <p className="flex items-center gap-1.5 mt-4 text-[12px] font-black font-headline tabular-nums" style={{ color }}>
               <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: color }} />
               Recorded · {stamp}
             </p>
           </div>
         ))}
       </div>
-      <p className="text-[10.5px] font-bold font-headline mt-4" style={{ color: FAINT }}>
-        Every agreement recorded — exactly as accepted, exactly when.
-      </p>
     </div>
+  );
+}
+
+/* The seal line — promoted OUT of the card, under it, prominent. */
+function AgRecordCaption() {
+  return (
+    <p className="text-[13px] md:text-[14.5px] font-headline mt-6 text-center" style={{ color: LIGHT_MUTED, fontWeight: 700 }}>
+      Every agreement recorded — <span style={{ color: LIGHT }}>exactly as accepted, exactly when.</span>
+    </p>
   );
 }
 
@@ -589,6 +602,7 @@ function AgreementFrame({ phase }: { phase: number }) {
         {/* beat: THE RECORD — diligent, timestamped, heavy */}
         <Pop show={phase >= 1} from="translateY(20px) scale(0.93)" className="w-full mt-7">
           <AgRecordCard />
+          <AgRecordCaption />
         </Pop>
       </div>
     </div>
@@ -612,7 +626,10 @@ function AgreementFrameMobile({ phase }: { phase: number }) {
             <p className="inline-flex items-center gap-2 mb-5 text-[12px] uppercase tracking-widest font-headline" style={{ color: CYAN_BRIGHT, fontWeight: 800 }}>
               {CHECK(CYAN_BRIGHT, 12)} The whole design — reviewed
             </p>
-            <div className="w-full"><AgRecordCard /></div>
+            <div className="w-full">
+              <AgRecordCard />
+              <AgRecordCaption />
+            </div>
           </div>
         )}
       </Enter>
@@ -632,6 +649,9 @@ const HANDLED = [
 
 function PublishFrame({ phase, onPublish, staticLayout = false }: { phase: number; onPublish: () => void; staticLayout?: boolean }) {
   const published = phase >= 1;
+  // pointerup-based tap: survives iOS's scroll-stop tap (the "needs two
+  // clicks" report) — see useTap in chapterEngine.
+  const tap = useTap(onPublish);
   return (
     <div className={`w-full max-w-2xl mx-auto ${staticLayout ? "" : FIT}`}>
       {/* two full states, each its own centered column — crisp swap */}
@@ -640,7 +660,7 @@ function PublishFrame({ phase, onPublish, staticLayout = false }: { phase: numbe
         <Phase on={!published} isStatic={staticLayout} className="flex flex-col items-center justify-center" enterFrom="translateY(-14px)" interactive>
           <button
             type="button"
-            onClick={onPublish}
+            {...tap}
             className="px-16 py-6 rounded-full text-white text-xl font-black font-headline transition-transform hover:scale-[1.05]"
             style={{ backgroundColor: ORANGE, boxShadow: "0 18px 54px rgba(255,97,48,0.55), 0 5px 18px rgba(255,97,48,0.35)" }}
           >

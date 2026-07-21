@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { EX, ALEX, MIRA, ROOM } from "./content";
 import { INK, ORANGE, CYAN, MUTED, FAINT, PRODUCT_SHADOW } from "./ui";
-import { type BeatDef, useBeatChapter, computeBounds, Phase, Pop, Enter, MobileRail, TitleZone, CUT_MS, CASCADE_MS, EASE, FIT, AutoFit } from "./chapterEngine";
+import { type BeatDef, useBeatChapter, computeBounds, Phase, Pop, Enter, MobileRail, TitleZone, useTap, CUT_MS, CASCADE_MS, EASE, FIT, AutoFit } from "./chapterEngine";
 
 /**
  * ACT 2 · ALIVE BY DESIGN — the engagement story.
@@ -85,9 +85,9 @@ const LW_HEADS: Record<number, { title: React.ReactNode; copy?: string; light?: 
   ],
   3: [
     { title: "Momentum is building.", copy: "The tribe shares its readiness — and everyone feels it." },
-    { title: "The moment arrives.", copy: "The reset's first live moment is open — your tribe is walking in." },
+    { title: "The moment arrives.", copy: "The experience's first live moment is open — your tribe is ready." },
     { title: "You're live.", copy: "No new login, no external link — training together, right now.", light: true },
-    { title: "The reflection closes the loop.", copy: "Every prompt becomes a post — the feed keeps its own rhythm." },
+    { title: "The reflection closes the loop.", copy: "Every prompt becomes a post — enabling your tribe to connect over shared moments." },
   ],
   4: [
     { title: "The run wraps — the momentum never stops.", copy: "The space you built stays persistent, the tribe grows." },
@@ -166,6 +166,8 @@ function FeedPost({
   body,
   chip,
   comments = 0,
+  likes,
+  reply,
 }: {
   initial: string;
   color: string;
@@ -177,6 +179,9 @@ function FeedPost({
   body: string;
   chip?: string;
   comments?: number;
+  likes?: number;
+  /** a visible comment under the post — the engagement, shown */
+  reply?: { avatar?: string; initial?: string; color: string; name: string; text: string };
 }) {
   return (
     <div className="rounded-3xl p-6 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }} aria-hidden>
@@ -197,8 +202,30 @@ function FeedPost({
       {chip && (
         <span className="inline-flex mt-3.5 px-3 py-1 rounded-full text-[10.5px] font-headline" style={{ color: promptColor, backgroundColor: `${promptColor}14`, fontWeight: 800 }}>{chip}</span>
       )}
+      {reply && (
+        <div className="flex gap-2.5 mt-4 pl-3" style={{ borderLeft: "2px solid rgba(15,34,41,0.08)" }}>
+          {reply.avatar ? (
+            <span className="shrink-0 w-7 h-7 rounded-full overflow-hidden" style={{ border: `1.5px solid ${reply.color}59` }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={reply.avatar} alt="" className="w-full h-full object-cover" />
+            </span>
+          ) : (
+            <span className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center" style={{ backgroundColor: `${reply.color}1F` }}>
+              <span className="text-[10px] font-headline" style={{ color: reply.color, fontWeight: 800 }}>{reply.initial}</span>
+            </span>
+          )}
+          <p className="text-[12.5px] leading-snug min-w-0" style={{ color: MUTED }}>
+            <span className="font-headline" style={{ color: INK, fontWeight: 800 }}>{reply.name}</span>{" "}
+            {reply.text}
+          </p>
+        </div>
+      )}
       <div className="flex items-center gap-5 mt-4 pt-3.5" style={{ borderTop: "1px solid rgba(15,34,41,0.06)" }}>
-        <span className="inline-flex items-center gap-1.5 text-[12.5px] font-bold" style={{ color: MUTED }}>{ICON_HEART(MUTED)} Like</span>
+        {likes !== undefined ? (
+          <span className="inline-flex items-center gap-1.5 text-[12.5px] font-bold" style={{ color: MUTED }}>{ICON_HEART(ORANGE)} {likes}</span>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 text-[12.5px] font-bold" style={{ color: MUTED }}>{ICON_HEART(MUTED)} Like</span>
+        )}
         <span className="inline-flex items-center gap-1.5 text-[12.5px] font-bold" style={{ color: MUTED }}>{ICON_COMMENT(MUTED)} {comments}</span>
         <span className="ml-auto text-[11px]" style={{ color: FAINT }}>In the tribe feed</span>
       </div>
@@ -226,6 +253,24 @@ function SpaceHeader() {
           <img src={EX.cover} alt="" className="absolute inset-0 w-full h-full object-cover" />
         </span>
         <div className="min-w-0 flex-1 text-left">
+          {/* Mobile order: status line → title → hosts → chips. The status
+             pair used to squeeze into a right-hand column and the card read
+             messy; on phones it now leads as one clean row. */}
+          <span className="flex sm:hidden items-center gap-3 mb-2">
+            <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-widest font-headline" style={{ color: "#ef4444", fontWeight: 800 }}>
+              <span className="w-1.5 h-1.5 rounded-full bg-[#ef4444] animate-pulse" />
+              Live · Week {ROOM.week} of {EX.weeks}
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="relative w-[18px] h-[18px] rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(8,145,178,0.14)" }}>
+                <span className="text-[8px] font-headline" style={{ color: CYAN, fontWeight: 800 }}>A</span>
+                <span className="absolute -bottom-0 -right-0 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "#22c55e", border: "1px solid #FFF" }} />
+              </span>
+              <span className="text-[9px] uppercase tracking-widest font-headline" style={{ color: MUTED, fontWeight: 800 }}>
+                Active now <span style={{ color: INK }}>{ROOM.activeNow}</span>
+              </span>
+            </span>
+          </span>
           <p className="text-[18px] sm:text-[21px] font-headline tracking-tight leading-snug" style={{ color: INK, fontWeight: 800, letterSpacing: "-0.015em" }}>
             {EX.title}
           </p>
@@ -250,7 +295,7 @@ function SpaceHeader() {
             ))}
           </span>
         </div>
-        <div className="shrink-0 text-right flex flex-col items-end justify-center gap-2">
+        <div className="shrink-0 text-right hidden sm:flex flex-col items-end justify-center gap-2">
           <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-widest font-headline" style={{ color: "#ef4444", fontWeight: 800 }}>
             <span className="w-1.5 h-1.5 rounded-full bg-[#ef4444] animate-pulse" />
             Live · Week {ROOM.week} of {EX.weeks}
@@ -270,25 +315,44 @@ function SpaceHeader() {
   );
 }
 
-/* ── Live-moment row ───────────────────────────────────────── */
+/* ── Live-moment row — real-UI weight: big still, expert accreditation ── */
 function MomentRow({ img, title, host, state, right }: { img: string; title: string; host: string; state: "done" | "next" | "upcoming"; right?: string }) {
   const isNext = state === "next";
+  const hostAvatar = host.includes("&") ? null : host === "Mira" ? MIRA.avatar : ALEX.avatar;
+  const hostColor = host.includes("&") ? MUTED : host === "Mira" ? CYAN : ORANGE;
   return (
     <div
-      className="flex items-center gap-3 rounded-xl p-3"
+      className="flex items-center gap-3.5 rounded-2xl p-3"
       style={
         isNext
           ? { backgroundColor: "rgba(255,97,48,0.05)", boxShadow: "0 0 0 1.5px rgba(255,97,48,0.30)" }
           : { backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.05)" }
       }
     >
-      <span className="relative shrink-0 w-16 h-11 rounded-lg overflow-hidden" style={{ backgroundColor: INK }}>
+      <span className="relative shrink-0 w-[86px] h-[58px] rounded-xl overflow-hidden" style={{ backgroundColor: INK }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={img} alt="" className="absolute inset-0 w-full h-full object-cover" style={state === "done" ? { opacity: 0.55 } : undefined} />
       </span>
       <span className="min-w-0 flex-1 text-left">
-        <span className="block text-[13px] font-headline leading-snug" style={{ color: INK, fontWeight: 800 }}>{title}</span>
-        <span className="block text-[10px] font-bold" style={{ color: FAINT }}>{host}</span>
+        <span className="block text-[14px] font-headline leading-snug" style={{ color: INK, fontWeight: 800 }}>{title}</span>
+        <span className="flex items-center gap-1.5 mt-1.5">
+          {hostAvatar ? (
+            <span className="w-5 h-5 rounded-full overflow-hidden shrink-0" style={{ border: `1.5px solid ${hostColor}59` }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={hostAvatar} alt="" className="w-full h-full object-cover" />
+            </span>
+          ) : (
+            <span className="flex -space-x-1 shrink-0">
+              {[ALEX.avatar, MIRA.avatar].map((a) => (
+                <span key={a} className="w-5 h-5 rounded-full overflow-hidden" style={{ border: "1.5px solid #FFFFFF" }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={a} alt="" className="w-full h-full object-cover" />
+                </span>
+              ))}
+            </span>
+          )}
+          <span className="text-[11px] font-bold" style={{ color: hostColor }}>{host}</span>
+        </span>
       </span>
       <span className="shrink-0">
         {state === "done" && (
@@ -307,15 +371,35 @@ function MomentRow({ img, title, host, state, right }: { img: string; title: str
   );
 }
 
-/* ── Tribe post ────────────────────────────────────────────── */
-function TribePost({ initial, color, name, when, text, chip }: { initial: string; color: string; name: string; when: string; text: string; chip?: string }) {
+/* ── Tribe post — with the engagement that makes a feed a feed ── */
+function TribePost({
+  initial,
+  color,
+  name,
+  when,
+  text,
+  chip,
+  likes,
+  comments,
+  reply,
+}: {
+  initial: string;
+  color: string;
+  name: string;
+  when: string;
+  text: string;
+  chip?: string;
+  likes?: number;
+  comments?: number;
+  reply?: { initial: string; color: string; name: string; text: string };
+}) {
   return (
-    <div className="rounded-2xl px-4 py-3 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.05)" }}>
+    <div className="rounded-2xl px-4 py-3.5 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.05)" }}>
       <div className="flex gap-2.5">
         <span className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center" style={{ backgroundColor: `${color}1F` }}>
           <span className="text-[10px] font-headline" style={{ color, fontWeight: 800 }}>{initial}</span>
         </span>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="text-[11px] font-headline" style={{ color: INK, fontWeight: 800 }}>
             {name} <span style={{ color: FAINT, fontWeight: 600 }}>· {when}</span>
           </p>
@@ -324,6 +408,31 @@ function TribePost({ initial, color, name, when, text, chip }: { initial: string
             <span className="inline-flex mt-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-headline" style={{ color: CYAN, backgroundColor: "rgba(8,145,178,0.08)", fontWeight: 800 }}>
               {chip}
             </span>
+          )}
+          {(likes !== undefined || comments !== undefined) && (
+            <span className="flex items-center gap-4 mt-2">
+              {likes !== undefined && (
+                <span className="inline-flex items-center gap-1 text-[10.5px] font-bold" style={{ color: MUTED }}>
+                  {ICON_HEART(ORANGE)} {likes}
+                </span>
+              )}
+              {comments !== undefined && (
+                <span className="inline-flex items-center gap-1 text-[10.5px] font-bold" style={{ color: MUTED }}>
+                  {ICON_COMMENT(MUTED)} {comments}
+                </span>
+              )}
+            </span>
+          )}
+          {reply && (
+            <div className="flex gap-2 mt-2.5 pl-2.5" style={{ borderLeft: "2px solid rgba(15,34,41,0.08)" }}>
+              <span className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center" style={{ backgroundColor: `${reply.color}1F` }}>
+                <span className="text-[8px] font-headline" style={{ color: reply.color, fontWeight: 800 }}>{reply.initial}</span>
+              </span>
+              <p className="text-[11.5px] leading-snug min-w-0" style={{ color: MUTED }}>
+                <span className="font-headline" style={{ color: INK, fontWeight: 800 }}>{reply.name}</span>{" "}
+                {reply.text}
+              </p>
+            </div>
           )}
         </div>
       </div>
@@ -359,16 +468,28 @@ function SpaceJourneyCard() {
           </span>
         ))}
       </div>
-      {/* the progress tracker — the whole experience, attendance */}
-      <div className="mt-7 pt-5" style={{ borderTop: "1px solid rgba(15,34,41,0.07)" }}>
-        <div className="flex items-baseline justify-between mb-2">
-          <p className="text-[9px] uppercase tracking-[0.18em] font-headline" style={{ color: FAINT, fontWeight: 800 }}>Progress of the whole experience</p>
-          <p className="text-[11px] font-black font-headline" style={{ color: CYAN }}>25%</p>
+      {/* the progress tracker — the whole experience + YOUR attendance */}
+      <div className="mt-6 pt-5 space-y-4" style={{ borderTop: "1px solid rgba(15,34,41,0.07)" }}>
+        <div>
+          <div className="flex items-baseline justify-between mb-2">
+            <p className="text-[9px] uppercase tracking-[0.18em] font-headline" style={{ color: FAINT, fontWeight: 800 }}>Progress of the whole experience</p>
+            <p className="text-[11px] font-black font-headline" style={{ color: CYAN }}>25%</p>
+          </div>
+          <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: "rgba(15,34,41,0.08)" }}>
+            <div className="h-full rounded-full" style={{ width: "25%", backgroundColor: CYAN }} />
+          </div>
+          <p className="text-[10.5px] font-bold mt-1.5" style={{ color: MUTED }}>5 of {EX.sessions} live moments held</p>
         </div>
-        <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: "rgba(15,34,41,0.08)" }}>
-          <div className="h-full rounded-full" style={{ width: "25%", backgroundColor: CYAN }} />
+        <div>
+          <div className="flex items-baseline justify-between mb-2">
+            <p className="text-[9px] uppercase tracking-[0.18em] font-headline" style={{ color: FAINT, fontWeight: 800 }}>Your attendance</p>
+            <p className="text-[11px] font-black font-headline" style={{ color: ORANGE }}>100%</p>
+          </div>
+          <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: "rgba(15,34,41,0.08)" }}>
+            <div className="h-full rounded-full" style={{ width: "100%", backgroundColor: ORANGE }} />
+          </div>
+          <p className="text-[10.5px] font-bold mt-1.5" style={{ color: MUTED }}>5 of 5 attended — perfect streak 🔥</p>
         </div>
-        <p className="text-[10.5px] font-bold mt-2" style={{ color: MUTED }}>5 of {EX.sessions} live moments attended</p>
       </div>
     </div>
   );
@@ -410,10 +531,19 @@ function SpaceFrame({ phase }: { phase: number }) {
 
 function SpaceTribeCard() {
   return (
-    <div className="h-full rounded-2xl p-4 space-y-2" style={{ backgroundColor: "#FAF8F3", boxShadow: "0 0 0 1px rgba(15,34,41,0.05), 0 16px 40px rgba(15,34,41,0.08)" }}>
+    <div className="h-full rounded-2xl p-4 space-y-2.5" style={{ backgroundColor: "#FAF8F3", boxShadow: "0 0 0 1px rgba(15,34,41,0.05), 0 16px 40px rgba(15,34,41,0.08)" }}>
       <p className="text-[12px] uppercase tracking-[0.18em] font-headline text-left px-1 pt-0.5" style={{ color: ORANGE, fontWeight: 800 }}>The tribe feed</p>
-      <TribePost initial="A" color={CYAN} name="Anna" when="2h" text="Week 1 done — first plan I've actually kept up with 🔥" />
-      <TribePost initial="S" color={ORANGE} name="Sam" when="just now" text="Moment 5 ✓ — see everyone Tuesday!" />
+      <TribePost
+        initial="A"
+        color={CYAN}
+        name="Anna"
+        when="2h"
+        text="Week 1 done — first plan I've actually kept up with 🔥"
+        likes={8}
+        comments={3}
+        reply={{ initial: "L", color: ORANGE, name: "Lea", text: "Same here — Tuesday can't come soon enough 🙌" }}
+      />
+      <TribePost initial="S" color={ORANGE} name="Sam" when="just now" text="Moment 5 ✓ — see everyone Tuesday!" likes={4} comments={1} />
     </div>
   );
 }
@@ -534,10 +664,20 @@ function HandsAnsweredPost({ answerOn }: { answerOn: boolean }) {
             {ROOM.qa.answer}
           </p>
         </div>
+        {/* the whole tribe learns — a member chimes in under the answer */}
+        <div className="flex gap-2.5 mt-3.5 pl-3" style={{ borderLeft: "2px solid rgba(15,34,41,0.08)" }}>
+          <span className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(8,145,178,0.14)" }}>
+            <span className="text-[10px] font-headline" style={{ color: CYAN, fontWeight: 800 }}>L</span>
+          </span>
+          <p className="text-[12.5px] leading-snug min-w-0" style={{ color: MUTED }}>
+            <span className="font-headline" style={{ color: INK, fontWeight: 800 }}>Lea</span>{" "}
+            I was wondering that myself — good to know! 🙏
+          </p>
+        </div>
       </Pop>
       <div className="flex items-center gap-5 mt-4 pt-3.5" style={{ borderTop: "1px solid rgba(15,34,41,0.06)" }}>
-        <span className="inline-flex items-center gap-1.5 text-[12px] font-bold" style={{ color: MUTED }}>{ICON_HEART(MUTED)} Like</span>
-        <span className="inline-flex items-center gap-1.5 text-[12px] font-bold" style={{ color: MUTED }}>{ICON_COMMENT(MUTED)} 1</span>
+        <span className="inline-flex items-center gap-1.5 text-[12px] font-bold" style={{ color: MUTED }}>{ICON_HEART(ORANGE)} 6</span>
+        <span className="inline-flex items-center gap-1.5 text-[12px] font-bold" style={{ color: MUTED }}>{ICON_COMMENT(MUTED)} 2</span>
         <span className="ml-auto text-[11px]" style={{ color: FAINT }}>Pinned — visible to the whole tribe.</span>
       </div>
     </div>
@@ -751,6 +891,8 @@ function LoopLeaPost() {
 
 function LoopFrame({ phase, onJoin, staticLayout = false }: { phase: number; onJoin: () => void; staticLayout?: boolean }) {
   const isPeak = phase === 2;
+  // pointerup-based tap — survives iOS's scroll-stop tap (no more double tap)
+  const tap = useTap(onJoin);
   return (
     <div className={`w-full max-w-4xl mx-auto ${staticLayout ? "" : FIT}`}>
       {/* Each phase carries its own head and centers as one block (dark-frame
@@ -771,7 +913,7 @@ function LoopFrame({ phase, onJoin, staticLayout = false }: { phase: number; onJ
              image left, red pulsing "Live now", meta line, cohort-energy chip,
              and the red "Join the room →" that carries you into the room. */}
           <div
-            onClick={onJoin}
+            {...tap}
             role="button"
             tabIndex={0}
             className="w-full rounded-3xl overflow-hidden flex flex-col sm:flex-row items-stretch cursor-pointer transition-transform hover:-translate-y-0.5"
@@ -799,7 +941,6 @@ function LoopFrame({ phase, onJoin, staticLayout = false }: { phase: number; onJ
               <div className="flex items-center justify-between gap-4 mt-auto pt-10">
                 <button
                   type="button"
-                  onClick={(e) => { e.stopPropagation(); onJoin(); }}
                   className="px-12 py-5 rounded-full text-white text-lg font-black font-headline transition-transform hover:scale-[1.03]"
                   style={{ backgroundColor: "#ef4444", boxShadow: "0 10px 30px rgba(239,68,68,0.42)" }}
                 >
@@ -901,7 +1042,9 @@ function LoopReflectionPost() {
       prompt={`How was “${MEET.title}”?`}
       body="Didn't expect to laugh that much on day one — Alex and Mira had us moving in minutes and it felt like a team, not a class. Already counting down to Tuesday. This group 🔥"
       chip="Energy after · 9/10"
+      likes={12}
       comments={5}
+      reply={{ avatar: MIRA.avatar, color: CYAN, name: MIRA.name, text: "Day one energy was unreal, Anna — Tuesday we build on it! 🔥" }}
     />
   );
 }
@@ -911,6 +1054,8 @@ function LoopReflectionPost() {
  * words; only the hero moves on a swipe. */
 function LoopFrameMobile({ phase, onJoin }: { phase: number; onJoin: () => void }) {
   const p = Math.min(phase, 3);
+  // pointerup-based tap — survives iOS's scroll-stop tap (no more double tap)
+  const tap = useTap(onJoin);
   return (
     <div className="w-full max-w-md mx-auto">
       <Enter key={p}>
@@ -923,7 +1068,7 @@ function LoopFrameMobile({ phase, onJoin }: { phase: number; onJoin: () => void 
         {p === 1 && (
           <>
             <div
-              onClick={onJoin}
+              {...tap}
               role="button"
               tabIndex={0}
               className="w-full rounded-3xl overflow-hidden text-left cursor-pointer"
@@ -950,7 +1095,6 @@ function LoopFrameMobile({ phase, onJoin }: { phase: number; onJoin: () => void 
                 </span>
                 <button
                   type="button"
-                  onClick={(e) => { e.stopPropagation(); onJoin(); }}
                   className="w-full mt-5 px-8 py-4 rounded-full text-white text-[17px] font-black font-headline"
                   style={{ backgroundColor: "#ef4444", boxShadow: "0 10px 30px rgba(239,68,68,0.42)" }}
                 >
@@ -1110,20 +1254,26 @@ function CmpShape({ stacked = false }: { stacked?: boolean }) {
  * micro-visual (not a text list): the tribe re-enrolling, new people
  * arriving, the next experience opening. */
 function GrowthCards({ stacked = false }: { stacked?: boolean }) {
-  const shell = "h-full rounded-3xl p-6 flex flex-col text-left";
+  // stacked (mobile): tighter metrics so three cards fit the stage at
+  // natural scale — AutoFit shrinking them read as "zoomed out".
+  const shell = `h-full rounded-3xl ${stacked ? "p-5" : "p-6"} flex flex-col text-left`;
+  const iconBox = stacked ? "w-10 h-10 rounded-xl" : "w-12 h-12 rounded-2xl";
+  const iconPx = stacked ? 18 : 21;
+  const titleCls = stacked ? "text-[15.5px] mt-3" : "text-[16.5px] mt-4";
+  const visMt = stacked ? "mt-3.5" : "mt-5";
   const initials = ["A", "S", "L", "J"];
   return (
     <div className={stacked ? "space-y-4" : "grid sm:grid-cols-3 gap-5 items-stretch"} aria-hidden>
       {/* 1 — Retention, built in */}
       <div className={shell} style={{ backgroundColor: "#FFFFFF", boxShadow: `0 0 0 1.5px rgba(255,97,48,0.30), 0 20px 50px rgba(15,34,41,0.12)` }}>
-        <span className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ backgroundColor: "rgba(255,97,48,0.10)" }}>
-          {ICON_REPEAT(ORANGE, 21)}
+        <span className={`${iconBox} flex items-center justify-center`} style={{ backgroundColor: "rgba(255,97,48,0.10)" }}>
+          {ICON_REPEAT(ORANGE, iconPx)}
         </span>
-        <p className="text-[16.5px] font-headline leading-snug mt-4" style={{ color: INK, fontWeight: 800 }}>Retention, built in</p>
+        <p className={`${titleCls} font-headline leading-snug`} style={{ color: INK, fontWeight: 800 }}>Retention, built in</p>
         <p className="text-[13px] font-semibold mt-1.5 leading-snug" style={{ color: MUTED }}>
           Your tribe re-enrolls in one tap — the space and the momentum carry over.
         </p>
-        <div className="flex items-center gap-2.5 mt-5">
+        <div className={`flex items-center gap-2.5 ${visMt}`}>
           <span className="flex -space-x-1.5">
             {initials.map((m, i) => (
               <span key={m} className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-headline" style={{ backgroundColor: i % 2 ? "rgba(8,145,178,0.14)" : "rgba(255,97,48,0.14)", color: i % 2 ? CYAN : ORANGE, fontWeight: 800, border: "2px solid #FFFFFF" }}>
@@ -1135,21 +1285,21 @@ function GrowthCards({ stacked = false }: { stacked?: boolean }) {
             {CHECK("#16a34a", 11)} Re-enrolled
           </span>
         </div>
-        <span className="self-start mt-4 px-4 py-2 rounded-full text-white text-[12px] font-black font-headline" style={{ backgroundColor: ORANGE, boxShadow: "0 4px 12px rgba(255,97,48,0.30)" }}>
+        <span className={`self-start ${stacked ? "mt-3" : "mt-4"} px-4 py-2 rounded-full text-white text-[12px] font-black font-headline`} style={{ backgroundColor: ORANGE, boxShadow: "0 4px 12px rgba(255,97,48,0.30)" }}>
           Enroll in Run 2 →
         </span>
       </div>
 
       {/* 2 — New people join */}
       <div className={shell} style={{ backgroundColor: "#FFFFFF", boxShadow: `0 0 0 1px rgba(15,34,41,0.06), 0 20px 50px rgba(15,34,41,0.10), inset 4px 0 0 ${CYAN}` }}>
-        <span className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ backgroundColor: "rgba(8,145,178,0.10)" }}>
-          {ICON_ADD_EXPERT(CYAN, 21)}
+        <span className={`${iconBox} flex items-center justify-center`} style={{ backgroundColor: "rgba(8,145,178,0.10)" }}>
+          {ICON_ADD_EXPERT(CYAN, iconPx)}
         </span>
-        <p className="text-[16.5px] font-headline leading-snug mt-4" style={{ color: INK, fontWeight: 800 }}>New people join</p>
+        <p className={`${titleCls} font-headline leading-snug`} style={{ color: INK, fontWeight: 800 }}>New people join</p>
         <p className="text-[13px] font-semibold mt-1.5 leading-snug" style={{ color: MUTED }}>
           Promote the next run — new faces land in the same space. Ongoing momentum.
         </p>
-        <div className="flex items-center gap-2.5 mt-5">
+        <div className={`flex items-center gap-2.5 ${visMt}`}>
           <span className="flex -space-x-1.5">
             {["N", "E"].map((m) => (
               <span key={m} className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-headline" style={{ backgroundColor: "rgba(8,145,178,0.14)", color: CYAN, fontWeight: 800, border: "2px solid #FFFFFF" }}>
@@ -1168,14 +1318,14 @@ function GrowthCards({ stacked = false }: { stacked?: boolean }) {
 
       {/* 3 — Open a progression experience */}
       <div className={shell} style={{ backgroundColor: "#FFFFFF", boxShadow: `0 0 0 1px rgba(15,34,41,0.06), 0 20px 50px rgba(15,34,41,0.10), inset 4px 0 0 ${ORANGE}` }}>
-        <span className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ backgroundColor: "rgba(255,97,48,0.10)" }}>
-          {ICON_GROW(ORANGE, 21)}
+        <span className={`${iconBox} flex items-center justify-center`} style={{ backgroundColor: "rgba(255,97,48,0.10)" }}>
+          {ICON_GROW(ORANGE, iconPx)}
         </span>
-        <p className="text-[16.5px] font-headline leading-snug mt-4" style={{ color: INK, fontWeight: 800 }}>Open a progression experience</p>
+        <p className={`${titleCls} font-headline leading-snug`} style={{ color: INK, fontWeight: 800 }}>Open a progression experience</p>
         <p className="text-[13px] font-semibold mt-1.5 leading-snug" style={{ color: MUTED }}>
           The natural next step — keep this run going, grow your portfolio, take your tribe further.
         </p>
-        <div className="flex items-center gap-2 mt-5">
+        <div className={`flex items-center gap-2 ${visMt}`}>
           <span className="px-3 py-1.5 rounded-full text-[10.5px] font-headline" style={{ backgroundColor: "rgba(15,34,41,0.05)", color: MUTED, fontWeight: 800 }}>
             Reset ✓
           </span>

@@ -40,7 +40,7 @@ export function Finale() {
           <div className="grid lg:grid-cols-5 gap-6 items-stretch">
             {/* Door 1 — creators (primary) */}
             <div
-              className="lg:col-span-3 rounded-3xl p-7 md:p-8 flex flex-col text-left"
+              className="lg:col-span-3 rounded-3xl p-6 md:p-8 flex flex-col text-left"
               style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1.5px rgba(255,97,48,0.35), 0 24px 60px rgba(255,97,48,0.12)" }}
             >
               <p className="text-[11px] uppercase tracking-[0.2em] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>
@@ -62,7 +62,7 @@ export function Finale() {
 
             {/* Door 2 — participants (quiet) */}
             <div
-              className="lg:col-span-2 rounded-3xl p-7 md:p-8 flex flex-col text-left"
+              className="lg:col-span-2 rounded-3xl p-6 md:p-8 flex flex-col text-left"
               style={{ backgroundColor: "rgba(8,145,178,0.06)", boxShadow: "0 0 0 1px rgba(8,145,178,0.22)" }}
             >
               <p className="text-[11px] uppercase tracking-[0.2em] font-headline" style={{ color: CYAN, fontWeight: 800 }}>

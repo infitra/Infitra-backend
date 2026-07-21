@@ -368,6 +368,35 @@ export function AutoFit({ children }: { children: React.ReactNode }) {
   );
 }
 
+/* ── useTap — reliable taps on in-story CTAs ─────────────────
+ * On iOS, tapping while the page still has swipe momentum consumes the
+ * first tap to STOP the scroll and suppresses the click — the story CTAs
+ * (Publish, Join) felt like they needed two taps. Fire on pointerup
+ * instead: it survives the scroll-stop tap. A movement guard ignores
+ * swipes that merely end on the button, and a debounce swallows the
+ * duplicate click event when both do fire. */
+export function useTap(fn: () => void) {
+  const downY = useRef<number | null>(null);
+  const lastFire = useRef(0);
+  const fire = () => {
+    const now = Date.now();
+    if (now - lastFire.current < 600) return;
+    lastFire.current = now;
+    fn();
+  };
+  return {
+    onPointerDown: (e: React.PointerEvent) => {
+      downY.current = e.clientY;
+    },
+    onPointerUp: (e: React.PointerEvent) => {
+      if (e.pointerType !== "touch") return; // mouse/pen use plain click
+      if (downY.current !== null && Math.abs(e.clientY - downY.current) > 12) return;
+      fire();
+    },
+    onClick: fire,
+  };
+}
+
 /* ── MobileRail — the story scaffolding below lg ─────────────
  * The phone's answer to the desktop rail: a persistent strip under the
  * fixed nav showing WHERE in the story the reader is — current step
