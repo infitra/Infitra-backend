@@ -124,9 +124,11 @@ export function WhatYouCanBuild() {
               Week {week + 1}: {EX.arc[week]}
             </p>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
+            {/* Mobile: one horizontal swipe lane (snap) so the week never
+               stacks into a long tower. sm+: the original two-column grid. */}
+            <div className="flex sm:grid sm:grid-cols-2 gap-3 text-left overflow-x-auto sm:overflow-visible snap-x snap-mandatory sm:snap-none -mx-5 px-5 sm:mx-0 sm:px-0 pb-2 sm:pb-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {sessions.map((s) => (
-                <div key={s.title} className="rounded-2xl overflow-hidden" style={{ backgroundColor: "#F8F6F0", border: "1px solid rgba(15,34,41,0.06)" }}>
+                <div key={s.title} className="rounded-2xl overflow-hidden shrink-0 w-[76%] xs:w-[70%] sm:w-auto sm:shrink snap-start" style={{ backgroundColor: "#F8F6F0", border: "1px solid rgba(15,34,41,0.06)" }}>
                   <div className="relative aspect-[16/8]" style={{ backgroundColor: INK }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={s.img} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
@@ -145,6 +147,10 @@ export function WhatYouCanBuild() {
                 </div>
               ))}
             </div>
+            {/* swipe hint — mobile only */}
+            <p className="sm:hidden text-center text-[10.5px] uppercase tracking-widest font-headline mt-2.5" style={{ color: FAINT, fontWeight: 800 }}>
+              Swipe for all sessions →
+            </p>
           </div>
         </Drift>
 

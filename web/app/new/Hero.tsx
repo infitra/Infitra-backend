@@ -1,4 +1,4 @@
-import { INK, ORANGE, MUTED, ApplyCTA } from "./ui";
+import { INK, ORANGE, CYAN, MUTED, ApplyCTA } from "./ui";
 import { HeroWaitlist } from "./HeroWaitlist";
 
 /**
@@ -28,19 +28,23 @@ export function Hero() {
         </div>
 
         {/* The definition — uncapped ("complementary experts", not "two"),
-           concrete (live, fitness, one experience). Mobile breaks after the
-           comma into two balanced lines. */}
+           concrete (live, fitness, one experience). Both brand colours carry
+           the title: experts = orange (the collaboration side), experience =
+           cyan (the participant side) — same pairing as the CTAs. Mobile
+           breaks after the comma into two balanced lines. */}
         <h1
           className="font-headline tracking-tight leading-[1.12] mb-8 max-w-4xl"
           style={{ color: INK, fontWeight: 600, letterSpacing: "-0.025em", fontSize: "clamp(2rem, 4.6vw, 3.5rem)" }}
         >
-          Complementary experts,<br className="sm:hidden" /> one <span style={{ color: ORANGE, fontWeight: 700 }}>live fitness experience.</span>
+          <span style={{ color: ORANGE, fontWeight: 700 }}>Complementary experts,</span>
+          <br className="sm:hidden" /> one <span style={{ color: CYAN, fontWeight: 700 }}>live fitness experience.</span>
         </h1>
 
         <p className="text-base md:text-xl max-w-2xl mx-auto leading-relaxed mb-9" style={{ color: MUTED }}>
-          Team up with the experts who complement you and deliver one seamless live experience.
-          INFITRA runs the rest — the live rooms, the tribe space, the marketing page with checkout,
-          and the automatic revenue split. <span style={{ color: INK, fontWeight: 600 }}>You just coach.</span>
+          Team up with experts who complement you and deliver one seamless live experience for
+          your audience. INFITRA runs the rest — the live rooms, the tribe space, the marketing
+          page with checkout, the collaboration contract and the revenue split.{" "}
+          <span style={{ color: INK, fontWeight: 600 }}>You focus on the experience.</span>
         </p>
 
         <ApplyCTA micro="5 founding pairs · reviewed individually · starting now" />

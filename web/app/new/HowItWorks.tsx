@@ -623,10 +623,10 @@ function AgreementFrameMobile({ phase }: { phase: number }) {
 /* ══ Frame 4 · The publish — your click, then everything ════ */
 
 const HANDLED = [
-  { t: "Sessions", d: "All 20 scheduled — live rooms ready to open.", icon: ICON_SESSIONS, color: CYAN },
+  { t: "Sessions", d: "All scheduled — live rooms ready to open.", icon: ICON_SESSIONS, color: CYAN },
   { t: "Experience space", d: "The tribe's room, open and waiting for members.", icon: ICON_SPACE, color: CYAN },
-  { t: "Marketing page", d: "Live on your link, checkout included — ready to promote.", icon: ICON_MEGAPHONE, color: ORANGE },
   { t: "Contract", d: "Recorded & sealed automatically — tamper-evident.", icon: FINGERPRINT, color: CYAN },
+  { t: "Marketing page", d: "Live on your link, checkout included — ready to promote.", icon: ICON_MEGAPHONE, color: ORANGE },
   { t: "Revenue split", d: "Armed for every sale — exactly as agreed.", icon: ICON_SPLIT, color: ORANGE },
 ];
 
@@ -910,7 +910,7 @@ export function HowItWorks() {
                 // bar collapses (dvh dances, svh doesn't), so AutoFit's box
                 // never changes mid-scroll and nothing rescales. The dvh
                 // stage behind still fills the screen. pt clears the rail.
-                className={`absolute inset-x-0 top-0 h-svh lg:inset-0 lg:h-auto z-10 flex flex-col items-center text-center ${railed ? "pt-[8.5rem] pb-8 lg:pt-24 lg:pb-14 px-5 sm:px-8 lg:pl-64 lg:pr-16" : "justify-center pt-28 pb-10 lg:pt-24 lg:pb-14 px-5 sm:px-8"}`}
+                className={`absolute inset-x-0 top-0 h-svh lg:inset-0 lg:h-auto z-10 flex flex-col items-center text-center ${railed ? "pt-[9.75rem] pb-6 lg:pt-24 lg:pb-14 px-5 sm:px-8 lg:pl-64 lg:pr-16" : "justify-center pt-28 pb-10 lg:pt-24 lg:pb-14 px-5 sm:px-8"}`}
                 style={{
                   opacity: active ? 1 : 0,
                   transform: active ? "none" : "translateY(12px)",

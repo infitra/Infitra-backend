@@ -13,7 +13,7 @@ export function HeroWaitlist() {
 
   if (open) {
     return (
-      <div className="mt-7 w-full max-w-md text-left">
+      <div className="mt-12 w-full max-w-md text-left">
         <WaitlistForm />
       </div>
     );
@@ -23,7 +23,7 @@ export function HeroWaitlist() {
     <button
       type="button"
       onClick={() => setOpen(true)}
-      className="mt-7 text-[12.5px] sm:text-[13px] transition-opacity hover:opacity-70"
+      className="mt-12 text-[13.5px] sm:text-[14px] transition-opacity hover:opacity-70"
       style={{ color: MUTED }}
     >
       {/* each half is nowrap so the link never breaks mid-phrase (the arrow

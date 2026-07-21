@@ -122,6 +122,25 @@ const ICON_CAL = (color: string, size = 16) => (
   </svg>
 );
 
+const ICON_SHARE = (color: string, size = 18) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+    <path d="M12 7.5v5M9.5 10h5" />
+  </svg>
+);
+const ICON_ASK = (color: string, size = 18) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+    <path d="M9.7 8.6a2.4 2.4 0 0 1 4.7.8c0 1.5-2.3 1.8-2.3 3" />
+    <path d="M12 14.8h.01" />
+  </svg>
+);
+const ICON_CONTEXT = (color: string, size = 18) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <path d="M21.44 11.05 12.25 20.24a6 6 0 0 1-8.49-8.49l8.57-8.57a4 4 0 1 1 5.66 5.66l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+  </svg>
+);
+
 const ICON_HEART = (color: string) => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
     <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z" />
@@ -194,7 +213,9 @@ function SpaceHeader() {
       {/* Mobile: the cover leads, card-style — the same presence the real
          experience space has on a phone. sm+ keeps the compact row with the
          cover as a side thumb. */}
-      <div className="relative h-40 sm:hidden" style={{ backgroundColor: INK }}>
+      {/* aspect-video instead of a fixed short height — the cover shows whole
+         (heads were cropped at h-40) */}
+      <div className="relative aspect-[16/9] sm:hidden" style={{ backgroundColor: INK }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={EX.cover} alt="" className="absolute inset-0 w-full h-full object-cover" />
         <div className="absolute inset-x-0 bottom-0 h-1/2 pointer-events-none" style={{ background: "linear-gradient(to top, rgba(15,34,41,0.35), rgba(15,34,41,0))" }} />
@@ -636,10 +657,10 @@ function HandsFrame({ phase, staticLayout = false }: { phase: number; staticLayo
 /* Mobile staging — the phases at natural size; the four tools become
  * compact rows a phone can read instead of four shrunken cards. */
 const TOOL_ROWS = [
-  { t: "Share", aud: "Members", d: "Anyone, anytime — wins, struggles, photos.", c: CYAN },
-  { t: "Ask inside a post", aud: "Members", d: "Questions routed to the right expert.", c: CYAN },
-  { t: "Post with context", aud: "Experts", d: "Attach the live moment it's about.", c: ORANGE },
-  { t: "Calendar export", aud: "Members", d: "The structure follows you out of the app.", c: CYAN },
+  { t: "Share", aud: "Members", d: "Anyone, anytime — wins, struggles, photos.", c: CYAN, icon: ICON_SHARE },
+  { t: "Ask inside a post", aud: "Members", d: "Questions routed to the right expert.", c: CYAN, icon: ICON_ASK },
+  { t: "Post with context", aud: "Experts", d: "Attach the live moment it's about.", c: ORANGE, icon: ICON_CONTEXT },
+  { t: "Calendar export", aud: "Members", d: "The structure follows you out of the app.", c: CYAN, icon: ICON_CAL },
 ];
 
 function HandsFrameMobile({ phase }: { phase: number }) {
@@ -650,14 +671,19 @@ function HandsFrameMobile({ phase }: { phase: number }) {
         {p === 0 && <HandsIntroPost />}
         {p === 1 && (
           <div className="space-y-2.5 text-left" aria-hidden>
-            {TOOL_ROWS.map(({ t, aud, d, c }, i) => (
+            {TOOL_ROWS.map(({ t, aud, d, c, icon }, i) => (
               <Enter key={t} d={i * CASCADE_MS}>
-                <div className="rounded-2xl px-4 py-3.5" style={{ backgroundColor: "#FFFFFF", boxShadow: `0 0 0 1px rgba(15,34,41,0.06), 0 12px 30px rgba(15,34,41,0.07), inset 4px 0 0 ${c}` }}>
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-[13px] font-headline" style={{ color: INK, fontWeight: 800 }}>{t}</p>
-                    <span className="shrink-0 px-2.5 py-1 rounded-full text-[9px] uppercase tracking-widest font-headline" style={{ color: c, backgroundColor: `${c}14`, fontWeight: 800 }}>{aud}</span>
-                  </div>
-                  <p className="text-[12px] font-bold mt-1" style={{ color: MUTED }}>{d}</p>
+                <div className="flex items-center gap-3.5 rounded-2xl px-4 py-3.5" style={{ backgroundColor: "#FFFFFF", boxShadow: `0 0 0 1px rgba(15,34,41,0.06), 0 12px 30px rgba(15,34,41,0.07), inset 4px 0 0 ${c}` }}>
+                  <span className="shrink-0 w-11 h-11 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${c}12` }}>
+                    {icon(c, 19)}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-center justify-between gap-3">
+                      <span className="text-[13.5px] font-headline" style={{ color: INK, fontWeight: 800 }}>{t}</span>
+                      <span className="shrink-0 px-2.5 py-1 rounded-full text-[9px] uppercase tracking-widest font-headline" style={{ color: c, backgroundColor: `${c}14`, fontWeight: 800 }}>{aud}</span>
+                    </span>
+                    <span className="block text-[12px] font-bold mt-1" style={{ color: MUTED }}>{d}</span>
+                  </span>
                 </div>
               </Enter>
             ))}
@@ -954,7 +980,7 @@ function LoopFrameMobile({ phase, onJoin }: { phase: number; onJoin: () => void 
 function CompoundFrame({ phase, active, staticLayout = false }: { phase: number; active: boolean; staticLayout?: boolean }) {
   const grown = phase >= 1;
   return (
-    <div className={`w-full max-w-3xl mx-auto ${staticLayout ? "" : FIT}`}>
+    <div className={`w-full max-w-4xl mx-auto ${staticLayout ? "" : FIT}`}>
       <div className={staticLayout ? undefined : "relative"} style={staticLayout ? undefined : { minHeight: 440 }}>
         {/* p0 — the run wraps: complete, and the next one takes shape */}
         <Phase on={!grown} isStatic={staticLayout} className="flex flex-col justify-center" enterFrom="translateY(-14px)">
@@ -1023,10 +1049,36 @@ function CmpProgress({ fill, litWeeks, dots = true }: { fill: string; litWeeks: 
   );
 }
 
+const ICON_REPEAT = (color: string, size = 18) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+    <path d="M21 3v6h-6" />
+  </svg>
+);
+const ICON_RESHAPE = (color: string, size = 18) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3" />
+    <path d="M2 14h4M10 8h4M18 16h4" />
+  </svg>
+);
+const ICON_ADD_EXPERT = (color: string, size = 18) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+    <circle cx="9" cy="7" r="4" />
+    <path d="M19 8v6M22 11h-6" />
+  </svg>
+);
+const ICON_GROW = (color: string, size = 18) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <path d="M22 7l-8.5 8.5-5-5L2 17" />
+    <path d="M16 7h6v6" />
+  </svg>
+);
+
 const CMP_OPTIONS = [
-  { t: "Repeat it", d: "Same design, next run" },
-  { t: "Reshape it", d: "New terms — the agreement re-locks" },
-  { t: "New collaborator", d: "Invite another expert in" },
+  { t: "Repeat it", d: "Same design, next run", icon: ICON_REPEAT, c: CYAN },
+  { t: "Reshape it", d: "New terms — the agreement re-locks", icon: ICON_RESHAPE, c: ORANGE },
+  { t: "New collaborator", d: "Invite another expert in", icon: ICON_ADD_EXPERT, c: CYAN },
 ];
 
 function CmpShape({ stacked = false }: { stacked?: boolean }) {
@@ -1034,10 +1086,19 @@ function CmpShape({ stacked = false }: { stacked?: boolean }) {
     <>
       <p className="text-[11px] uppercase tracking-[0.2em] font-headline mb-3" style={{ color: ORANGE, fontWeight: 800 }}>You shape the next run</p>
       <div className={stacked ? "space-y-2.5" : "grid grid-cols-3 gap-3"}>
-        {CMP_OPTIONS.map(({ t, d }) => (
-          <div key={t} className={stacked ? "rounded-xl px-4 py-3.5 flex items-baseline justify-between gap-3" : "rounded-xl px-4 py-3.5"} style={{ backgroundColor: "#FAF8F3", boxShadow: "0 0 0 1px rgba(15,34,41,0.06)" }}>
-            <p className="text-[13.5px] font-black font-headline shrink-0" style={{ color: INK }}>{t}</p>
-            <p className={`text-[11px] font-bold leading-snug ${stacked ? "text-right" : "mt-1"}`} style={{ color: MUTED }}>{d}</p>
+        {CMP_OPTIONS.map(({ t, d, icon, c }) => (
+          <div
+            key={t}
+            className={stacked ? "rounded-2xl px-4 py-3.5 flex items-center gap-3.5" : "rounded-2xl px-4 py-4"}
+            style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.06), 0 10px 26px rgba(15,34,41,0.07)" }}
+          >
+            <span className={`shrink-0 w-10 h-10 rounded-xl flex items-center justify-center ${stacked ? "" : "mb-2.5"}`} style={{ backgroundColor: `${c}12` }}>
+              {icon(c, 18)}
+            </span>
+            <span className="min-w-0">
+              <span className="block text-[13.5px] font-black font-headline leading-snug" style={{ color: INK }}>{t}</span>
+              <span className="block text-[11px] font-bold leading-snug mt-0.5" style={{ color: MUTED }}>{d}</span>
+            </span>
           </div>
         ))}
       </div>
@@ -1045,30 +1106,87 @@ function CmpShape({ stacked = false }: { stacked?: boolean }) {
   );
 }
 
-const GROWTH_CARDS: { t: string; d: string; cta?: string; c: string }[] = [
-  { t: "Retention, built in", d: "Your tribe re-enrolls in one tap — new members join the same run.", cta: "Enroll in Run 2 →", c: ORANGE },
-  { t: "New people join", d: "Promote the next run — new faces land in the same space. Ongoing momentum.", c: CYAN },
-  { t: "Open a progression experience", d: "The natural next step — keep this run going, grow your portfolio, take your tribe further.", c: ORANGE },
-];
-
+/* The growth engine — three real opportunities, each with its own living
+ * micro-visual (not a text list): the tribe re-enrolling, new people
+ * arriving, the next experience opening. */
 function GrowthCards({ stacked = false }: { stacked?: boolean }) {
+  const shell = "h-full rounded-3xl p-6 flex flex-col text-left";
+  const initials = ["A", "S", "L", "J"];
   return (
-    <div className={stacked ? "space-y-3.5 text-left" : "grid sm:grid-cols-3 gap-4 items-stretch text-left"} aria-hidden>
-      {GROWTH_CARDS.map(({ t, d, cta, c }) => (
-        <div
-          key={t}
-          className="h-full rounded-2xl p-5 flex flex-col"
-          style={{ backgroundColor: "#FFFFFF", boxShadow: `0 0 0 1px rgba(15,34,41,0.06), 0 16px 40px rgba(15,34,41,0.10), inset 4px 0 0 ${c}` }}
-        >
-          <p className="text-[15px] font-headline leading-snug" style={{ color: INK, fontWeight: 800 }}>{t}</p>
-          <p className="text-[12.5px] font-semibold mt-1.5 leading-snug" style={{ color: MUTED }}>{d}</p>
-          {cta && (
-            <span className="self-start mt-4 px-4 py-2 rounded-full text-white text-[11.5px] font-black font-headline" style={{ backgroundColor: ORANGE, boxShadow: "0 4px 12px rgba(255,97,48,0.30)" }}>
-              {cta}
-            </span>
-          )}
+    <div className={stacked ? "space-y-4" : "grid sm:grid-cols-3 gap-5 items-stretch"} aria-hidden>
+      {/* 1 — Retention, built in */}
+      <div className={shell} style={{ backgroundColor: "#FFFFFF", boxShadow: `0 0 0 1.5px rgba(255,97,48,0.30), 0 20px 50px rgba(15,34,41,0.12)` }}>
+        <span className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ backgroundColor: "rgba(255,97,48,0.10)" }}>
+          {ICON_REPEAT(ORANGE, 21)}
+        </span>
+        <p className="text-[16.5px] font-headline leading-snug mt-4" style={{ color: INK, fontWeight: 800 }}>Retention, built in</p>
+        <p className="text-[13px] font-semibold mt-1.5 leading-snug" style={{ color: MUTED }}>
+          Your tribe re-enrolls in one tap — the space and the momentum carry over.
+        </p>
+        <div className="flex items-center gap-2.5 mt-5">
+          <span className="flex -space-x-1.5">
+            {initials.map((m, i) => (
+              <span key={m} className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-headline" style={{ backgroundColor: i % 2 ? "rgba(8,145,178,0.14)" : "rgba(255,97,48,0.14)", color: i % 2 ? CYAN : ORANGE, fontWeight: 800, border: "2px solid #FFFFFF" }}>
+                {m}
+              </span>
+            ))}
+          </span>
+          <span className="inline-flex items-center gap-1 text-[10.5px] uppercase tracking-widest font-headline" style={{ color: "#16a34a", fontWeight: 800 }}>
+            {CHECK("#16a34a", 11)} Re-enrolled
+          </span>
         </div>
-      ))}
+        <span className="self-start mt-4 px-4 py-2 rounded-full text-white text-[12px] font-black font-headline" style={{ backgroundColor: ORANGE, boxShadow: "0 4px 12px rgba(255,97,48,0.30)" }}>
+          Enroll in Run 2 →
+        </span>
+      </div>
+
+      {/* 2 — New people join */}
+      <div className={shell} style={{ backgroundColor: "#FFFFFF", boxShadow: `0 0 0 1px rgba(15,34,41,0.06), 0 20px 50px rgba(15,34,41,0.10), inset 4px 0 0 ${CYAN}` }}>
+        <span className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ backgroundColor: "rgba(8,145,178,0.10)" }}>
+          {ICON_ADD_EXPERT(CYAN, 21)}
+        </span>
+        <p className="text-[16.5px] font-headline leading-snug mt-4" style={{ color: INK, fontWeight: 800 }}>New people join</p>
+        <p className="text-[13px] font-semibold mt-1.5 leading-snug" style={{ color: MUTED }}>
+          Promote the next run — new faces land in the same space. Ongoing momentum.
+        </p>
+        <div className="flex items-center gap-2.5 mt-5">
+          <span className="flex -space-x-1.5">
+            {["N", "E"].map((m) => (
+              <span key={m} className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-headline" style={{ backgroundColor: "rgba(8,145,178,0.14)", color: CYAN, fontWeight: 800, border: "2px solid #FFFFFF" }}>
+                {m}
+              </span>
+            ))}
+            <span className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-headline" style={{ backgroundColor: "#FFFFFF", color: CYAN, fontWeight: 800, border: `1.5px dashed ${CYAN}66` }}>
+              +5
+            </span>
+          </span>
+          <span className="text-[10.5px] uppercase tracking-widest font-headline" style={{ color: CYAN, fontWeight: 800 }}>
+            Joining Run 2
+          </span>
+        </div>
+      </div>
+
+      {/* 3 — Open a progression experience */}
+      <div className={shell} style={{ backgroundColor: "#FFFFFF", boxShadow: `0 0 0 1px rgba(15,34,41,0.06), 0 20px 50px rgba(15,34,41,0.10), inset 4px 0 0 ${ORANGE}` }}>
+        <span className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ backgroundColor: "rgba(255,97,48,0.10)" }}>
+          {ICON_GROW(ORANGE, 21)}
+        </span>
+        <p className="text-[16.5px] font-headline leading-snug mt-4" style={{ color: INK, fontWeight: 800 }}>Open a progression experience</p>
+        <p className="text-[13px] font-semibold mt-1.5 leading-snug" style={{ color: MUTED }}>
+          The natural next step — keep this run going, grow your portfolio, take your tribe further.
+        </p>
+        <div className="flex items-center gap-2 mt-5">
+          <span className="px-3 py-1.5 rounded-full text-[10.5px] font-headline" style={{ backgroundColor: "rgba(15,34,41,0.05)", color: MUTED, fontWeight: 800 }}>
+            Reset ✓
+          </span>
+          <svg width="18" height="10" viewBox="0 0 18 10" fill="none" className="shrink-0" aria-hidden>
+            <path d="M1 5h13M11 1l4 4-4 4" stroke={ORANGE} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          <span className="px-3 py-1.5 rounded-full text-[10.5px] font-headline" style={{ backgroundColor: "rgba(255,97,48,0.10)", color: ORANGE, fontWeight: 800 }}>
+            Next: Performance
+          </span>
+        </div>
+      </div>
     </div>
   );
 }
@@ -1277,7 +1395,7 @@ export function LiveWeek() {
                 // bar collapses (dvh dances, svh doesn't), so AutoFit's box
                 // never changes mid-scroll and nothing rescales. The dvh
                 // stage behind still fills the screen. pt clears the rail.
-                className={`absolute inset-x-0 top-0 h-svh lg:inset-0 lg:h-auto z-10 flex flex-col items-center text-center ${railed ? "pt-[8.5rem] pb-8 lg:pt-24 lg:pb-14 px-5 sm:px-8 lg:pl-64 lg:pr-16" : "justify-center pt-28 pb-10 lg:pt-24 lg:pb-14 px-5 sm:px-8"}`}
+                className={`absolute inset-x-0 top-0 h-svh lg:inset-0 lg:h-auto z-10 flex flex-col items-center text-center ${railed ? "pt-[9.75rem] pb-6 lg:pt-24 lg:pb-14 px-5 sm:px-8 lg:pl-64 lg:pr-16" : "justify-center pt-28 pb-10 lg:pt-24 lg:pb-14 px-5 sm:px-8"}`}
                 style={{
                   opacity: active ? 1 : 0,
                   transform: active ? "none" : "translateY(12px)",

@@ -15,16 +15,16 @@ export function Finale() {
       <div className="max-w-5xl mx-auto">
         {/* Question → answer → doors, one viewport. Act 2 releases into this. */}
         <div className="text-center max-w-3xl mx-auto mb-10">
-          {/* the couplet, reunited whole at the climax — each half was proven
-             by the chapter it led (collaboration story / experience story) */}
+          {/* the couplet reunion lives in the Summary right above — here only
+             the invitation. Looser mobile leading: 1.02 clipped descenders. */}
           <p
-            className="text-lg md:text-2xl font-headline tracking-tight mb-3"
+            className="text-xl md:text-2xl font-headline tracking-tight mb-3"
             style={{ color: INK, fontWeight: 700, letterSpacing: "-0.02em" }}
           >
-            From isolation to <span style={{ color: ORANGE }}>collaboration.</span> From content to <span style={{ color: CYAN }}>experience.</span>
+            Ready to join <span style={{ color: ORANGE }}>the movement?</span>
           </p>
           <h2
-            className="text-4xl md:text-6xl font-headline tracking-tight leading-[1.02] mb-5"
+            className="text-4xl md:text-6xl font-headline tracking-tight leading-[1.12] md:leading-[1.02] mb-5"
             style={{ color: INK, fontWeight: 700, letterSpacing: "-0.025em" }}
           >
             The room <span style={{ color: ORANGE }}>is open.</span>

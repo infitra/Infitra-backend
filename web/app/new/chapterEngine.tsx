@@ -340,7 +340,7 @@ export function AutoFit({ children }: { children: React.ReactNode }) {
         // tallest frames shrink to fit rather than clip on short phones.
         // Quantized to 0.01 and dead-banded: sub-2% deltas (measurement noise,
         // tiny box shifts) must never re-scale the stage mid-read.
-        const next = Math.round(Math.max(0.5, Math.min(1, (avail * 0.94) / need)) * 100) / 100;
+        const next = Math.round(Math.max(0.5, Math.min(1, (avail * 0.96) / need)) * 100) / 100;
         setScale((prev) => (Math.abs(next - prev) < 0.02 ? prev : next));
       }
     };
@@ -397,7 +397,7 @@ export function MobileRail({
   const ORANGE = "#FF6130";
   return (
     <div
-      className="lg:hidden absolute top-[5.25rem] inset-x-6 z-20"
+      className="lg:hidden absolute top-20 inset-x-6 z-20"
       style={{ opacity: on ? 1 : 0, pointerEvents: on ? "auto" : "none", transition: `opacity 400ms ease, color 400ms ease` }}
     >
       <div className="flex items-baseline justify-center gap-2.5 mb-3">
@@ -462,10 +462,10 @@ export function TitleZone({
   light: boolean;
 }) {
   return (
-    <div className="relative w-full shrink-0 text-center min-h-[9.5rem] md:min-h-[11rem]">
+    <div className="relative w-full shrink-0 text-center min-h-[9.5rem] md:min-h-[12rem]">
       <Enter key={k} from="none" className="absolute inset-x-0 top-0">
         <h3
-          className="text-[1.85rem] leading-[1.15] md:text-[2.6rem] md:leading-[1.12] font-headline tracking-tight mb-3.5 max-w-3xl mx-auto"
+          className="text-[1.85rem] leading-[1.15] md:text-[2.8rem] md:leading-[1.1] font-headline tracking-tight mb-3.5 max-w-3xl mx-auto"
           style={{ color: light ? "#F6F3EC" : "#0F2229", fontWeight: 700, letterSpacing: "-0.02em" }}
         >
           {title}

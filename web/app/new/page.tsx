@@ -4,6 +4,7 @@ import { Hero } from "./Hero";
 import { WhatYouCanBuild } from "./WhatYouCanBuild";
 import { HowItWorks } from "./HowItWorks";
 import { LiveWeek } from "./LiveWeek";
+import { Summary } from "./Summary";
 import { Finale } from "./Finale";
 import { Footer } from "./Footer";
 import { JoinWaitlistLink } from "./JoinWaitlistLink";
@@ -86,6 +87,7 @@ export default function LandingV2Page() {
           <WhatYouCanBuild />
           <HowItWorks />
           <LiveWeek />
+          <Summary />
           <Finale />
         </main>
 
