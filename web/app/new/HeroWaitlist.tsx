@@ -23,10 +23,13 @@ export function HeroWaitlist() {
     <button
       type="button"
       onClick={() => setOpen(true)}
-      className="mt-7 text-[13px] transition-opacity hover:opacity-70"
+      className="mt-7 text-[12.5px] sm:text-[13px] transition-opacity hover:opacity-70"
       style={{ color: MUTED }}
     >
-      Here to train, not to build? <span style={{ color: CYAN, fontWeight: 700 }}>Join the participant waitlist →</span>
+      {/* each half is nowrap so the link never breaks mid-phrase (the arrow
+         used to wrap onto its own line on phones) */}
+      <span className="whitespace-nowrap">Here to train, not to build?</span>{" "}
+      <span className="whitespace-nowrap" style={{ color: CYAN, fontWeight: 700 }}>Join the participant waitlist →</span>
     </button>
   );
 }

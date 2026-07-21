@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { EX, CONTRACT, ALEX, MIRA } from "./content";
 import { INK, ORANGE, CYAN, MUTED, FAINT } from "./ui";
-import { type BeatDef, useBeatChapter, computeBounds, clamp01, Phase, Pop, Enter, MobileRail, CUT_MS, POP_MS, CASCADE_MS, EASE, FIT, AutoFit } from "./chapterEngine";
+import { type BeatDef, useBeatChapter, computeBounds, clamp01, Phase, Pop, Enter, MobileRail, TitleZone, CUT_MS, POP_MS, CASCADE_MS, EASE, FIT, AutoFit } from "./chapterEngine";
 
 /**
  * M3 · HOW TO COLLABORATE ON INFITRA — the beat engine, in the dark room.
@@ -41,8 +41,22 @@ const BEATS: BeatDef[] = [
   { f: 4, p: 1, w: 1.3 }, // publish — everything in between
   { f: 5, p: 0, w: 3.4 }, // outro — the heartbeat (long free scrub)
 ];
-const BOUNDS = computeBounds(BEATS);
-const STEP_SPAN: [number, number] = [BOUNDS[1][0], BOUNDS[10][1]];
+
+/* Mobile map — identical story, shorter outro: 3.4 beats of runway made the
+ * heartbeat need several momentum-killing swipes on a phone. */
+const BEATS_M: BeatDef[] = BEATS.map((b) => (b.f === 5 ? { ...b, w: 2 } : b));
+
+/* The anchored heads — one per railed frame (publish swaps per phase).
+ * Kickers are gone: the rail carries the step identity. */
+const HEADS: Record<number, { title: React.ReactNode; copy?: string }[]> = {
+  1: [{ title: "Pick your complement.", copy: "One invitation starts a shared draft with the expert who complements you. INFITRA supports multiple creators inside one experience." }],
+  2: [{ title: "Design it together.", copy: "A pre-structured experience to create inside — add a session, set the split, talk it through." }],
+  3: [{ title: "Lock it. Review. Agree.", copy: "The whole design locks as one. Your partner reviews and agrees to exactly that." }],
+  4: [
+    { title: "All agreed. One move left." },
+    { title: "One click from agreement to promotion and sales.", copy: "INFITRA takes care of everything in between." },
+  ],
+};
 
 /* ── Icons ─────────────────────────────────────────────────── */
 const CHECK = (color: string, size = 12) => (
@@ -119,25 +133,6 @@ function DarkWaves({ hidden }: { hidden: boolean }) {
   );
 }
 
-/* ── Step head (dark room) ─────────────────────────────────── */
-function StepHead({ kicker, accent, title, copy }: { kicker: string; accent: string; title: string; copy?: string }) {
-  return (
-    <div className="mb-8">
-      <p className="text-[10.5px] uppercase tracking-[0.25em] font-headline mb-3.5" style={{ color: accent, fontWeight: 800 }}>
-        {kicker}
-      </p>
-      <h3 className="text-3xl md:text-[2.6rem] md:leading-[1.12] font-headline tracking-tight mb-4 max-w-3xl mx-auto" style={{ color: LIGHT, fontWeight: 700, letterSpacing: "-0.02em" }}>
-        {title}
-      </h3>
-      {copy && (
-        <p className="text-[15.5px] md:text-lg leading-relaxed max-w-2xl mx-auto" style={{ color: LIGHT_MUTED }}>
-          {copy}
-        </p>
-      )}
-    </div>
-  );
-}
-
 /* ══ Frame 1 · The invitation ═══════════════════════════════ */
 
 function PortraitCard({ p, color }: { p: { name: string; tag: string; avatar: string }; color: string }) {
@@ -157,13 +152,6 @@ function InvitationFrame({ phase }: { phase: number }) {
   const accepted = phase >= 1;
   return (
     <div className={`w-full max-w-2xl mx-auto ${FIT}`}>
-      <StepHead
-        kicker="Step 01 · The invitation"
-        accent={CYAN_BRIGHT}
-        title="Pick your complement."
-        copy="One invitation starts a shared draft with the expert who complements you. INFITRA supports multiple creators inside one experience."
-      />
-
       {/* the invitation — the only place the accepted state lives */}
       <div className="flex justify-center mb-7">
         <div className="flex items-center gap-3.5 rounded-2xl px-5 py-3.5" style={{ backgroundColor: "#FFFFFF", boxShadow: CARD_POP }}>
@@ -417,8 +405,6 @@ function WorkspaceFrame({ phase }: { phase: number }) {
   const ringOn = (target: number) => (phase === target ? `0 0 0 2.5px ${ORANGE}80, ` : "");
   return (
     <div className={`w-full max-w-4xl mx-auto ${FIT}`}>
-      <StepHead kicker="Step 02 · The workspace" accent={ORANGE} title="Design it together." copy="A pre-structured experience to create inside — add a session, set the split, talk it through, right there." />
-
       <div className="grid md:grid-cols-[1.55fr_1fr] gap-5 items-start text-left">
         {/* the workspace */}
         <div className="rounded-3xl overflow-hidden" style={{ backgroundColor: "#FFFFFF", boxShadow: CARD_POP }}>
@@ -489,7 +475,6 @@ function WorkspaceFrameMobile({ phase }: { phase: number }) {
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <StepHead kicker="Step 02 · The workspace" accent={ORANGE} title="Design it together." copy="A pre-structured experience to create inside — add a session, set the split, talk it through." />
       <div className="text-left">
         <div className="rounded-2xl overflow-hidden mb-4" style={{ backgroundColor: "#FFFFFF", boxShadow: CARD_POP }}>
           <WsHeader divider={false} />
@@ -594,8 +579,6 @@ function AgRecordCard() {
 function AgreementFrame({ phase }: { phase: number }) {
   return (
     <div className={`w-full max-w-xl mx-auto ${FIT}`}>
-      <StepHead kicker="Step 03 · The agreement" accent={CYAN_BRIGHT} title="Lock it. Review. Agree." copy="The whole design locks as one. Your partner reviews and agrees to exactly that." />
-
       <div className="flex flex-col items-center">
         <AgLockBadge />
         <p className="text-[17px] font-headline tracking-tight mt-3" style={{ color: LIGHT, fontWeight: 800 }}>{EX.title}</p>
@@ -616,7 +599,6 @@ function AgreementFrame({ phase }: { phase: number }) {
 function AgreementFrameMobile({ phase }: { phase: number }) {
   return (
     <div className="w-full max-w-md mx-auto">
-      <StepHead kicker="Step 03 · The agreement" accent={CYAN_BRIGHT} title="Lock it. Review. Agree." copy="The whole design locks as one. Your partner reviews and agrees to exactly that." />
       <Enter key={phase >= 1 ? 1 : 0}>
         {phase === 0 ? (
           <div className="flex flex-col items-center">
@@ -653,10 +635,9 @@ function PublishFrame({ phase, onPublish, staticLayout = false }: { phase: numbe
   return (
     <div className={`w-full max-w-2xl mx-auto ${staticLayout ? "" : FIT}`}>
       {/* two full states, each its own centered column — crisp swap */}
-      <div className={staticLayout ? undefined : "relative"} style={staticLayout ? undefined : { minHeight: 620 }}>
-        {/* state 1 — head and CTA travel together, one tight group */}
+      <div className={staticLayout ? undefined : "relative"} style={staticLayout ? undefined : { minHeight: 460 }}>
+        {/* state 1 — the CTA alone; the anchored title carries the words */}
         <Phase on={!published} isStatic={staticLayout} className="flex flex-col items-center justify-center" enterFrom="translateY(-14px)" interactive>
-          <StepHead kicker="Step 04 · The publish" accent={ORANGE} title="All agreed. One move left." />
           <button
             type="button"
             onClick={onPublish}
@@ -670,9 +651,6 @@ function PublishFrame({ phase, onPublish, staticLayout = false }: { phase: numbe
 
         {/* state 2 — everything in between, one by one, with weight */}
         <Phase on={published} isStatic={staticLayout} className="flex flex-col justify-center gap-3 text-left" enterFrom="none" interactive>
-          <div className="text-center">
-            <StepHead kicker="Step 04 · The publish" accent={ORANGE} title="One click from agreement to promotion and sales." copy="INFITRA takes care of everything in between." />
-          </div>
           {HANDLED.map(({ t, d, icon, color }, i) => (
             <Pop key={t} show={published} d={250 + i * CASCADE_MS} from="translateY(16px) scale(0.97)">
               <div className="flex items-center gap-4 rounded-2xl px-5 py-4" style={{ backgroundColor: "#FFFFFF", boxShadow: CARD_POP }}>
@@ -785,12 +763,18 @@ export function HowItWorks() {
     if (window.matchMedia("(max-width: 1023px)").matches) setIsMobile(true);
   }, []);
 
+  const beats = isMobile ? BEATS_M : BEATS;
+  const bounds = computeBounds(beats);
+  const stepSpan: [number, number] = [bounds[1][0], bounds[10][1]];
+
   const { beat, pinned, wrapperRef, jumpToBeat, runwayVh } = useBeatChapter({
-    beats: BEATS,
+    beats,
     onTick: (pos) => {
-      // the heartbeat draws from live position, eased — smooth but energetic
-      const [oa, ob] = BOUNDS[BOUNDS.length - 1];
-      const draw = clamp01((pos - oa) / ((ob - oa) * 0.75));
+      // the heartbeat draws from live position, eased — smooth but energetic.
+      // Mobile completes the draw at 55% of the (shorter) outro so one good
+      // swipe finishes the line instead of demanding several.
+      const [oa, ob] = bounds[bounds.length - 1];
+      const draw = clamp01((pos - oa) / ((ob - oa) * (isMobile ? 0.55 : 0.75)));
       ecgShownRef.current += (draw - ecgShownRef.current) * 0.11;
       if (Math.abs(draw - ecgShownRef.current) < 0.001) ecgShownRef.current = draw;
       frameRefs.current[5]?.querySelectorAll<SVGPathElement>("[data-ecg]").forEach((path) => {
@@ -799,21 +783,34 @@ export function HowItWorks() {
     },
   });
 
-  const frame = BEATS[beat].f;
-  const phase = BEATS[beat].p;
+  const cur = beats[Math.min(beat, beats.length - 1)];
+  const frame = cur.f;
+  const phase = cur.p;
   const isOutro = frame === 5;
 
   // rail fill — driven by the story beat, smoothed by CSS
-  const railMid = BOUNDS[beat][0] + BEATS[beat].w / 2;
-  const railSp = clamp01((railMid - STEP_SPAN[0]) / (STEP_SPAN[1] - STEP_SPAN[0]));
+  const railMid = bounds[Math.min(beat, beats.length - 1)][0] + cur.w / 2;
+  const railSp = clamp01((railMid - stepSpan[0]) / (stepSpan[1] - stepSpan[0]));
 
   // mobile rail: fill of the CURRENT step's segment = beat position within
   // the frame's own beats (count-based — calm, one notch per swipe)
-  const frameFirst = BEATS.findIndex((b) => b.f === frame);
-  const frameCount = BEATS.filter((b) => b.f === frame).length;
+  const frameFirst = beats.findIndex((b) => b.f === frame);
+  const frameCount = beats.filter((b) => b.f === frame).length;
   const frameProgress = frameCount > 0 ? (beat - frameFirst + 1) / frameCount : 0;
 
   if (!pinned) {
+    const staticHead = (f: number, p: number) => {
+      const h = HEADS[f]?.[Math.min(p, (HEADS[f]?.length ?? 1) - 1)];
+      if (!h) return null;
+      return (
+        <div className="mb-8 text-center">
+          <h3 className="text-[1.85rem] leading-[1.15] md:text-[2.6rem] md:leading-[1.12] font-headline tracking-tight mb-3.5 max-w-3xl mx-auto" style={{ color: LIGHT, fontWeight: 700, letterSpacing: "-0.02em" }}>
+            {h.title}
+          </h3>
+          {h.copy && <p className="text-[15px] md:text-lg leading-relaxed max-w-2xl mx-auto" style={{ color: LIGHT_MUTED }}>{h.copy}</p>}
+        </div>
+      );
+    };
     return (
       <>
         <section className="px-4 sm:px-6 py-20 relative overflow-hidden" style={{ backgroundColor: TEAL }}>
@@ -822,10 +819,10 @@ export function HowItWorks() {
             <div className="py-8">
               <IntroFrame />
             </div>
-            <div className="py-12"><InvitationFrame phase={1} /></div>
-            <div className="py-12"><WorkspaceFrame phase={3} /></div>
-            <div className="py-12"><AgreementFrame phase={1} /></div>
-            <div className="py-12"><PublishFrame phase={1} onPublish={() => {}} staticLayout /></div>
+            <div className="py-12">{staticHead(1, 1)}<InvitationFrame phase={1} /></div>
+            <div className="py-12">{staticHead(2, 3)}<WorkspaceFrame phase={3} /></div>
+            <div className="py-12">{staticHead(3, 1)}<AgreementFrame phase={1} /></div>
+            <div className="py-12">{staticHead(4, 1)}<PublishFrame phase={1} onPublish={() => {}} staticLayout /></div>
           </div>
         </section>
         <section className="px-4 sm:px-6 py-20">
@@ -890,12 +887,16 @@ export function HowItWorks() {
             onStep={(f) => jumpToBeat(BEATS.findIndex((b) => b.f === f))}
           />
 
-          {/* Frames — hard cuts, one visible at a time, all centered */}
+          {/* Frames — hard cuts, one visible at a time. Railed frames anchor
+             their title in the shared TitleZone (fixed height, right under
+             the rail) and center only the CONTENT in the remaining space —
+             the words change, the layout never jumps. */}
           {[0, 1, 2, 3, 4, 5].map((f) => {
             const active = frame === f;
             // The rail gutter applies only to railed frames — the intro and
             // outro center on the full page, like the rail isn't there.
             const railed = f >= 1 && f <= 4;
+            const head = HEADS[f]?.[Math.min(active ? phase : 0, (HEADS[f]?.length ?? 1) - 1)];
             return (
               <div
                 key={f}
@@ -906,8 +907,8 @@ export function HowItWorks() {
                 // Below lg the content box is 100svh — STABLE while the URL
                 // bar collapses (dvh dances, svh doesn't), so AutoFit's box
                 // never changes mid-scroll and nothing rescales. The dvh
-                // stage behind still fills the screen. pt-28 clears the rail.
-                className={`absolute inset-x-0 top-0 h-svh lg:inset-0 lg:h-auto z-10 flex flex-col items-center justify-center text-center pt-28 pb-10 lg:pt-24 lg:pb-14 ${railed ? "px-5 sm:px-8 lg:pl-64 lg:pr-16" : "px-5 sm:px-8"}`}
+                // stage behind still fills the screen. pt clears the rail.
+                className={`absolute inset-x-0 top-0 h-svh lg:inset-0 lg:h-auto z-10 flex flex-col items-center text-center ${railed ? "pt-[8.5rem] pb-8 lg:pt-24 lg:pb-14 px-5 sm:px-8 lg:pl-64 lg:pr-16" : "justify-center pt-28 pb-10 lg:pt-24 lg:pb-14 px-5 sm:px-8"}`}
                 style={{
                   opacity: active ? 1 : 0,
                   transform: active ? "none" : "translateY(12px)",
@@ -922,6 +923,9 @@ export function HowItWorks() {
                   pointerEvents: active ? "auto" : "none",
                 }}
               >
+                {railed && head && (
+                  <TitleZone k={`${f}-${Math.min(active ? phase : 0, HEADS[f]!.length - 1)}`} title={head.title} copy={head.copy} light />
+                )}
                 <div className="w-full max-w-5xl mx-auto flex-1 min-h-0 flex flex-col">
                   <AutoFit>
                     {f === 0 && <IntroFrame />}

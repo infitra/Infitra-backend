@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { EX, ALEX, MIRA, ROOM } from "./content";
 import { INK, ORANGE, CYAN, MUTED, FAINT, PRODUCT_SHADOW } from "./ui";
-import { type BeatDef, useBeatChapter, computeBounds, Phase, Pop, Enter, MobileRail, CUT_MS, CASCADE_MS, EASE, FIT, AutoFit } from "./chapterEngine";
+import { type BeatDef, useBeatChapter, computeBounds, Phase, Pop, Enter, MobileRail, TitleZone, CUT_MS, CASCADE_MS, EASE, FIT, AutoFit } from "./chapterEngine";
 
 /**
  * ACT 2 · ALIVE BY DESIGN — the engagement story.
@@ -44,33 +44,56 @@ const BEATS: BeatDef[] = [
 ];
 
 /* Mobile beat map — one swipe, one hero. Where a desktop beat fans out
- * several cards at once (the space's components, the retention loop), the
- * phone gives each card its own beat instead of shrinking them. */
+ * several cards at once (the space's components), the phone gives each card
+ * its own beat instead of shrinking them. Every beat is ≥ 1 unit wide so a
+ * swipe here travels the same distance as in the dark chapter — the two
+ * chapters must FEEL identical. */
 const BEATS_M: BeatDef[] = [
   { f: 0, p: 0, w: 1 }, // intro
   { f: 1, p: 0, w: 1 }, // the space — the header lands
-  { f: 1, p: 1, w: 0.9 }, // — the journey
-  { f: 1, p: 2, w: 0.9 }, // — the live moments
-  { f: 1, p: 3, w: 0.9 }, // — the tribe feed
-  { f: 2, p: 0, w: 1 }, // in everyone's hands — no cold start
+  { f: 1, p: 1, w: 1 }, // — the journey
+  { f: 1, p: 2, w: 1 }, // — the live moments
+  { f: 1, p: 3, w: 1 }, // — the tribe feed
+  { f: 2, p: 0, w: 1 }, // the tribe engagement — no cold start
   { f: 2, p: 1, w: 1.1 }, // — the four tools
   { f: 2, p: 2, w: 1 }, // — a question finds you
   { f: 2, p: 3, w: 1 }, // — answered once
-  { f: 3, p: 0, w: 1 }, // the loop — momentum is building
+  { f: 3, p: 0, w: 1 }, // the live loop — momentum is building
   { f: 3, p: 1, w: 1.2 }, // — LIVE NOW: the join moment
   { f: 3, p: 2, w: 1.3 }, // — THE PEAK: you're live
   { f: 3, p: 3, w: 1 }, // — the reflection closes it
-  { f: 4, p: 0, w: 1 }, // it compounds — the run builds
-  { f: 4, p: 1, w: 1 }, // — the run wraps: the handoff
-  { f: 4, p: 2, w: 1.2 }, // — you shape the next run; releases into the finale
+  { f: 4, p: 0, w: 1.1 }, // the growth — the run wraps, you shape the next
+  { f: 4, p: 1, w: 1.2 }, // — the growth engine; releases into the finale
 ];
 
 const RAIL = [
   { n: "01", label: "The space", frame: 1, firstBeat: 1 },
-  { n: "02", label: "In your hands", frame: 2, firstBeat: 3 },
-  { n: "03", label: "The loop", frame: 3, firstBeat: 7 },
-  { n: "04", label: "It compounds", frame: 4, firstBeat: 11 },
+  { n: "02", label: "The Tribe Engagement", frame: 2, firstBeat: 3 },
+  { n: "03", label: "The live loop", frame: 3, firstBeat: 7 },
+  { n: "04", label: "The growth", frame: 4, firstBeat: 11 },
 ];
+
+/* The anchored heads — the rail carries the step identity; these carry only
+ * title + copy, crossfading in the shared fixed-height TitleZone. */
+const LW_HEADS: Record<number, { title: React.ReactNode; copy?: string; light?: boolean }[]> = {
+  1: [{ title: "The room your tribe lives in.", copy: "Not a video library — a space with structure, presence and a feed of its own." }],
+  2: [
+    { title: "No cold start.", copy: "The moment someone joins, the space asks them to introduce themselves." },
+    { title: "Anyone can engage at any time.", copy: "Four tools, for members and creators — no permission needed, no cold silence." },
+    { title: "A question finds you.", copy: "A notification the moment it lands — your console collects it until it's answered." },
+    { title: "Answered once. Everyone learns.", copy: "Answers are pinned inside posts — visible to the whole tribe." },
+  ],
+  3: [
+    { title: "Momentum is building.", copy: "The tribe shares its readiness — and everyone feels it." },
+    { title: "The moment arrives.", copy: "The reset's first live moment is open — your tribe is walking in." },
+    { title: "You're live.", copy: "No new login, no external link — training together, right now.", light: true },
+    { title: "The reflection closes the loop.", copy: "Every prompt becomes a post — the feed keeps its own rhythm." },
+  ],
+  4: [
+    { title: "The run wraps — the momentum never stops.", copy: "The space you built stays persistent, the tribe grows." },
+    { title: "The growth engine.", copy: "Retention by design, progression at your hands." },
+  ],
+};
 
 /* ── Icons ─────────────────────────────────────────────────── */
 const CHECK = (color: string, size = 12) => (
@@ -110,25 +133,6 @@ const ICON_COMMENT = (color: string) => (
     <path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5c-1.6 0-3.1-.4-4.4-1.2L3 20l1.2-5.1A8.5 8.5 0 1 1 21 11.5z" />
   </svg>
 );
-
-/** Light-world (or dark-peak) step head. */
-function MechHead({ kicker, accent, title, copy, light = false }: { kicker: string; accent: string; title: string; copy?: string; light?: boolean }) {
-  return (
-    <div className="mb-9 text-center">
-      <p className="text-[11px] uppercase tracking-[0.25em] font-headline mb-3.5" style={{ color: accent, fontWeight: 800 }}>
-        {kicker}
-      </p>
-      <h3 className="text-3xl md:text-[2.7rem] md:leading-[1.12] font-headline tracking-tight mb-4 max-w-3xl mx-auto" style={{ color: light ? LIGHT : INK, fontWeight: 700, letterSpacing: "-0.02em" }}>
-        {title}
-      </h3>
-      {copy && (
-        <p className="text-[16px] md:text-lg leading-relaxed max-w-2xl mx-auto" style={{ color: light ? LIGHT_MUTED : MUTED }}>
-          {copy}
-        </p>
-      )}
-    </div>
-  );
-}
 
 /** A full feed post — header, the prompt it answers, the member's own words,
  *  reactions. The same grammar as the answered-question post. */
@@ -187,6 +191,14 @@ function FeedPost({
 function SpaceHeader() {
   return (
     <div className="rounded-3xl overflow-hidden" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }}>
+      {/* Mobile: the cover leads, card-style — the same presence the real
+         experience space has on a phone. sm+ keeps the compact row with the
+         cover as a side thumb. */}
+      <div className="relative h-40 sm:hidden" style={{ backgroundColor: INK }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={EX.cover} alt="" className="absolute inset-0 w-full h-full object-cover" />
+        <div className="absolute inset-x-0 bottom-0 h-1/2 pointer-events-none" style={{ background: "linear-gradient(to top, rgba(15,34,41,0.35), rgba(15,34,41,0))" }} />
+      </div>
       <div className="flex items-stretch gap-4 px-5 sm:px-6 py-5">
         <span className="relative shrink-0 w-24 sm:w-32 rounded-xl overflow-hidden hidden sm:block" style={{ backgroundColor: INK }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -356,12 +368,6 @@ function SpaceFrame({ phase }: { phase: number }) {
   const out = phase >= 1;
   return (
     <div className={`w-full max-w-4xl mx-auto ${FIT}`}>
-      <MechHead
-        kicker="01 · The space"
-        accent={CYAN}
-        title="The room your tribe lives in."
-        copy="Not a video library — a space with structure, presence and a feed of its own."
-      />
       {/* the header lands center, then docks up as the components fan out */}
       <div style={{ transform: out ? "none" : "translateY(130px)", transition: `transform ${CUT_MS + 120}ms ${EASE}` }} aria-hidden>
         <SpaceHeader />
@@ -396,12 +402,6 @@ function SpaceTribeCard() {
 function SpaceFrameMobile({ phase }: { phase: number }) {
   return (
     <div className="w-full max-w-md mx-auto">
-      <MechHead
-        kicker="01 · The space"
-        accent={CYAN}
-        title="The room your tribe lives in."
-        copy="Not a video library — a space with structure, presence and a feed of its own."
-      />
       <div aria-hidden>
         <Enter key={Math.min(phase, 3)}>
           {phase === 0 && <SpaceHeader />}
@@ -532,7 +532,6 @@ function HandsFrame({ phase, staticLayout = false }: { phase: number; staticLayo
       <div className={staticLayout ? undefined : "relative"} style={staticLayout ? undefined : { minHeight: 580 }}>
         {/* p0 — the introduction post: the cold start, solved */}
         <Phase on={phase === 0} isStatic={staticLayout} className="flex flex-col justify-center" enterFrom="translateY(-14px)">
-          <MechHead kicker="02 · In everyone's hands — when someone joins" accent={CYAN} title="No cold start." copy="The moment someone joins, the space asks them to introduce themselves." />
           <div className="mx-auto w-full max-w-2xl">
             <HandsIntroPost />
           </div>
@@ -540,7 +539,6 @@ function HandsFrame({ phase, staticLayout = false }: { phase: number; staticLayo
 
         {/* p1 — the four tools, four distinct pieces */}
         <Phase on={phase === 1} isStatic={staticLayout} className="flex flex-col justify-center">
-          <MechHead kicker="02 · In everyone's hands" accent={CYAN} title="Anyone can engage at any time." copy="Four tools, for members and creators — no permission needed, no cold silence." />
           <div className="grid sm:grid-cols-2 gap-6 text-left" aria-hidden>
             {/* share — members */}
             <Pop show={phase === 1} d={120}>
@@ -618,7 +616,6 @@ function HandsFrame({ phase, staticLayout = false }: { phase: number; staticLayo
 
         {/* p2 — TWO pieces: the notification, and the console that collects it */}
         <Phase on={phase === 2} isStatic={staticLayout} className="flex flex-col justify-center">
-          <MechHead kicker="02 · In everyone's hands — creator view" accent={ORANGE} title="A question finds you." copy="A notification the moment it lands — and your console collects it until it's answered." />
           <div className="grid sm:grid-cols-2 gap-6 items-start" aria-hidden>
             {/* piece 1 — the notification */}
             <div className="text-left"><HandsNotifCard /></div>
@@ -629,7 +626,6 @@ function HandsFrame({ phase, staticLayout = false }: { phase: number; staticLayo
 
         {/* p3 — the answered post */}
         <Phase on={phase >= 3} isStatic={staticLayout} className="flex flex-col justify-center">
-          <MechHead kicker="02 · In everyone's hands" accent={CYAN} title="Answered once. Everyone learns." copy="Answers are pinned inside posts — visible to the whole tribe. Everybody can react with likes or comments." />
           <HandsAnsweredPost answerOn={phase >= 3} />
         </Phase>
       </div>
@@ -646,24 +642,10 @@ const TOOL_ROWS = [
   { t: "Calendar export", aud: "Members", d: "The structure follows you out of the app.", c: CYAN },
 ];
 
-const HANDS_HEADS = [
-  { kicker: "02 · In everyone's hands — when someone joins", accent: CYAN, title: "No cold start.", copy: "The moment someone joins, the space asks them to introduce themselves." },
-  { kicker: "02 · In everyone's hands", accent: CYAN, title: "Anyone can engage at any time.", copy: "Four tools, for members and creators — no permission needed, no cold silence." },
-  { kicker: "02 · In everyone's hands — creator view", accent: ORANGE, title: "A question finds you.", copy: "A notification the moment it lands — your console collects it until it's answered." },
-  { kicker: "02 · In everyone's hands", accent: CYAN, title: "Answered once. Everyone learns.", copy: "Answers are pinned inside posts — visible to the whole tribe." },
-];
-
 function HandsFrameMobile({ phase }: { phase: number }) {
   const p = Math.min(phase, 3);
   return (
     <div className="w-full max-w-md mx-auto">
-      {/* anchored head — the text crossfades IN PLACE; the block never moves,
-         so a swipe changes the words and the hero, nothing else. */}
-      <div className="relative" style={{ minHeight: 200 }}>
-        <Enter key={p} from="none" className="absolute inset-x-0 top-0">
-          <MechHead {...HANDS_HEADS[p]} />
-        </Enter>
-      </div>
       <Enter key={p}>
         {p === 0 && <HandsIntroPost />}
         {p === 1 && (
@@ -750,7 +732,6 @@ function LoopFrame({ phase, onJoin, staticLayout = false }: { phase: number; onJ
       <div className={staticLayout ? undefined : "relative"} style={staticLayout ? undefined : { minHeight: 680 }}>
         {/* p0 — the pulse: momentum building */}
         <Phase on={phase === 0} isStatic={staticLayout} className="flex flex-col justify-center" enterFrom="translateY(-14px)">
-          <MechHead kicker="03 · The loop — before every live moment" accent={ORANGE} title="Momentum is building." copy="The tribe shares its readiness — and everyone feels it." />
           <LoopPulseCard />
           <Pop show={phase === 0} d={300} className="mx-auto w-full max-w-2xl mt-4">
             <LoopLeaPost />
@@ -759,7 +740,6 @@ function LoopFrame({ phase, onJoin, staticLayout = false }: { phase: number; onJ
 
         {/* p1 — THE MOMENT ARRIVES: the real live session card + Join CTA */}
         <Phase on={phase === 1} isStatic={staticLayout} className="flex flex-col items-center justify-center" interactive>
-          <MechHead kicker="03 · The loop" accent={ORANGE} title="The moment arrives." copy="The reset's first live moment is open — your tribe is walking in." />
           {/* The real live/join card — a faithful copy of the Experience
              Space's HeroSessionCard in its "live" state (WeekJourney.tsx):
              image left, red pulsing "Live now", meta line, cohort-energy chip,
@@ -808,13 +788,11 @@ function LoopFrame({ phase, onJoin, staticLayout = false }: { phase: number; onJ
 
         {/* p2 — THE PEAK: the room, as energy */}
         <Phase on={isPeak} isStatic={staticLayout} className="flex flex-col items-center justify-center" enterFrom="none">
-          <MechHead kicker="And then" accent="#ef4444" title="You're live." copy="No new login, no external link — training together, right here, right now." light />
           <PeakScene />
         </Phase>
 
         {/* p3 — the reflection post closes the loop */}
         <Phase on={phase >= 3} isStatic={staticLayout} className="flex flex-col justify-center">
-          <MechHead kicker="After the live moment" accent={CYAN} title="The reflection closes the loop." copy="Every prompt becomes a post — the feed keeps its own rhythm." />
           <div className="mx-auto w-full max-w-2xl">
             <LoopReflectionPost />
           </div>
@@ -903,24 +881,12 @@ function LoopReflectionPost() {
 }
 
 /* Mobile staging — the live moment as an app-style vertical card; pulse,
- * peak and reflection at natural size. The head is anchored and crossfades
- * in place; only the hero moves on a swipe. */
-const LOOP_HEADS = [
-  { kicker: "03 · The loop — before every live moment", accent: ORANGE, title: "Momentum is building.", copy: "The tribe shares its readiness — and everyone feels it.", light: false },
-  { kicker: "03 · The loop", accent: ORANGE, title: "The moment arrives.", copy: "The reset's first live moment is open — your tribe is walking in.", light: false },
-  { kicker: "And then", accent: "#ef4444", title: "You're live.", copy: "No new login, no external link — training together, right now.", light: true },
-  { kicker: "After the live moment", accent: CYAN, title: "The reflection closes the loop.", copy: "Every prompt becomes a post — the feed keeps its own rhythm.", light: false },
-];
-
+ * peak and reflection at natural size. The anchored TitleZone carries the
+ * words; only the hero moves on a swipe. */
 function LoopFrameMobile({ phase, onJoin }: { phase: number; onJoin: () => void }) {
   const p = Math.min(phase, 3);
   return (
     <div className="w-full max-w-md mx-auto">
-      <div className="relative" style={{ minHeight: 200 }}>
-        <Enter key={p} from="none" className="absolute inset-x-0 top-0">
-          <MechHead {...LOOP_HEADS[p]} />
-        </Enter>
-      </div>
       <Enter key={p}>
         {p === 0 && (
           <>
@@ -981,79 +947,45 @@ function LoopFrameMobile({ phase, onJoin }: { phase: number; onJoin: () => void 
   );
 }
 
-/* ══ Frame 4 · It compounds ═════════════════════════════════ */
+/* ══ Frame 4 · The growth ═══════════════════════════════════
+ * p0 — the run wraps: the completed W1→W6 progression + you already shape
+ *      the next run.
+ * p1 — the growth engine: retention, new people, progression. */
 function CompoundFrame({ phase, active, staticLayout = false }: { phase: number; active: boolean; staticLayout?: boolean }) {
-  const wrapped = phase >= 1;
-  const fill = !active ? "8%" : wrapped ? "100%" : "85%";
-  const litWeeks = !active ? 1 : wrapped ? 6 : 5;
+  const grown = phase >= 1;
   return (
     <div className={`w-full max-w-3xl mx-auto ${staticLayout ? "" : FIT}`}>
-      {/* two-state head — extra reserve; the wrapped title runs two lines.
-         Static: only the active head, in flow. */}
-      {staticLayout ? (
-        <div className="mb-9">
-          <MechHead
-            kicker="04 · It compounds"
-            accent={ORANGE}
-            title={wrapped ? "The run wraps — the retention loop opens." : "Every live moment builds the run."}
-            copy={
-              wrapped
-                ? "Same space, next run: you shape it, your tribe re-enrolls in one tap, new members join them."
-                : "Attendance and progression — tracked in the space, for you and every member."
-            }
-          />
-        </div>
-      ) : (
-        <div className="relative mb-9" style={{ minHeight: 210 }}>
-          <div className="absolute inset-x-0 top-0" style={{ opacity: wrapped ? 0 : 1, transition: `opacity ${CUT_MS}ms ${EASE}` }}>
-            <MechHead
-              kicker="04 · It compounds"
-              accent={ORANGE}
-              title="Every live moment builds the run."
-              copy="Attendance and progression — tracked in the space, for you and every member."
-            />
+      <div className={staticLayout ? undefined : "relative"} style={staticLayout ? undefined : { minHeight: 440 }}>
+        {/* p0 — the run wraps: complete, and the next one takes shape */}
+        <Phase on={!grown} isStatic={staticLayout} className="flex flex-col justify-center" enterFrom="translateY(-14px)">
+          <div className="rounded-3xl p-6 sm:p-7 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }} aria-hidden>
+            <CmpProgress fill={active || staticLayout ? "100%" : "8%"} litWeeks={active || staticLayout ? 6 : 1} />
           </div>
-          <div className="absolute inset-x-0 top-0" style={{ opacity: wrapped ? 1 : 0, transition: `opacity ${CUT_MS}ms ${EASE} 80ms` }}>
-            <MechHead
-              kicker="04 · It compounds"
-              accent={ORANGE}
-              title="The run wraps — the retention loop opens."
-              copy="Same space, next run: you shape it, your tribe re-enrolls in one tap, new members join them."
-            />
-          </div>
-        </div>
-      )}
-
-      {/* the progress — one persistent composition, the bar carries through */}
-      <div className="rounded-3xl p-6 sm:p-7" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }} aria-hidden>
-        <CmpProgress wrapped={wrapped} fill={fill} litWeeks={litWeeks} />
-
-        {/* THE RETENTION LOOP — pops when the run wraps */}
-        <Pop show={wrapped} d={450} from="translateY(16px)">
-          <div className="mt-8 text-left">
-            <CmpHandoff />
-            {/* you shape the next run */}
+          <div className="mt-6 text-left" aria-hidden>
             <CmpShape />
-            {/* the tribe carries over + new members */}
-            <CmpEnroll />
           </div>
-        </Pop>
+        </Phase>
+
+        {/* p1 — the growth engine */}
+        <Phase on={grown} isStatic={staticLayout} className="flex flex-col justify-center">
+          <GrowthCards />
+        </Phase>
       </div>
     </div>
   );
 }
 
-/* ── Compound atoms — shared by desktop and the mobile staging ── */
+/* ── Growth atoms — shared by desktop and the mobile staging ── */
 
-function CmpProgress({ wrapped, fill, litWeeks, dots = true }: { wrapped: boolean; fill: string; litWeeks: number; dots?: boolean }) {
+function CmpProgress({ fill, litWeeks, dots = true }: { fill: string; litWeeks: number; dots?: boolean }) {
   return (
     <>
       <div className="flex items-center justify-between mb-3.5">
         <p className="text-[11px] uppercase tracking-[0.2em] font-headline" style={{ color: FAINT, fontWeight: 800 }}>
           {EX.title}
         </p>
-        <span className="text-[12px] font-black font-headline inline-flex items-center gap-1.5" style={{ color: wrapped ? "#16a34a" : ORANGE, transition: `color ${CUT_MS}ms ${EASE}` }}>
-          {wrapped ? <>Run complete {CHECK("#16a34a", 12)}</> : "Live moment by live moment"}
+        <span className="text-[12px] font-black font-headline inline-flex items-center gap-1.5" style={{ color: "#16a34a" }}>
+          Completed {CHECK("#16a34a", 12)}
         </span>
       </div>
       <div className="h-3.5 rounded-full overflow-hidden" style={{ backgroundColor: "rgba(15,34,41,0.08)" }}>
@@ -1091,29 +1023,8 @@ function CmpProgress({ wrapped, fill, litWeeks, dots = true }: { wrapped: boolea
   );
 }
 
-function CmpHandoff({ stacked = false }: { stacked?: boolean }) {
-  return (
-    <div className={stacked ? "flex flex-col items-stretch gap-2.5" : "flex items-center gap-4"}>
-      <div className="flex-1 rounded-2xl p-5 opacity-70" style={{ backgroundColor: "rgba(250,248,243,1)", boxShadow: "0 0 0 1px rgba(15,34,41,0.08)" }}>
-        <p className="text-[10px] uppercase tracking-widest font-headline" style={{ color: FAINT, fontWeight: 800 }}>Run 1</p>
-        <p className="text-[16px] font-black font-headline mt-1.5" style={{ color: MUTED }}>✓ Completed</p>
-      </div>
-      <svg width="32" height="16" viewBox="0 0 26 14" fill="none" className={stacked ? "shrink-0 self-center rotate-90" : "shrink-0"} aria-hidden>
-        <line x1="1" y1="7" x2="20" y2="7" stroke={CYAN} strokeWidth={1.6} strokeLinecap="round" />
-        <path d="M16 2 L23 7 L16 12" stroke={CYAN} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-      <div className="flex-1 rounded-2xl p-5" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1.5px rgba(255,97,48,0.30), 0 12px 32px rgba(15,34,41,0.10)" }}>
-        <p className="text-[10px] uppercase tracking-widest font-headline flex items-center gap-1.5" style={{ color: "#ef4444", fontWeight: 800 }}>
-          <span className="w-1.5 h-1.5 rounded-full bg-[#ef4444] animate-pulse" /> Run 2 · Enrolling
-        </p>
-        <p className="text-[16px] font-black font-headline mt-1.5" style={{ color: INK }}>Same space, next chapter</p>
-      </div>
-    </div>
-  );
-}
-
 const CMP_OPTIONS = [
-  { t: "Repeat it", d: "Same design, next cohort" },
+  { t: "Repeat it", d: "Same design, next run" },
   { t: "Reshape it", d: "New terms — the agreement re-locks" },
   { t: "New collaborator", d: "Invite another expert in" },
 ];
@@ -1121,7 +1032,7 @@ const CMP_OPTIONS = [
 function CmpShape({ stacked = false }: { stacked?: boolean }) {
   return (
     <>
-      <p className={`text-[11px] uppercase tracking-[0.2em] font-headline ${stacked ? "mb-3" : "mt-6 mb-3"}`} style={{ color: ORANGE, fontWeight: 800 }}>You shape the next run</p>
+      <p className="text-[11px] uppercase tracking-[0.2em] font-headline mb-3" style={{ color: ORANGE, fontWeight: 800 }}>You shape the next run</p>
       <div className={stacked ? "space-y-2.5" : "grid grid-cols-3 gap-3"}>
         {CMP_OPTIONS.map(({ t, d }) => (
           <div key={t} className={stacked ? "rounded-xl px-4 py-3.5 flex items-baseline justify-between gap-3" : "rounded-xl px-4 py-3.5"} style={{ backgroundColor: "#FAF8F3", boxShadow: "0 0 0 1px rgba(15,34,41,0.06)" }}>
@@ -1134,76 +1045,61 @@ function CmpShape({ stacked = false }: { stacked?: boolean }) {
   );
 }
 
-function CmpEnroll({ stacked = false }: { stacked?: boolean }) {
+const GROWTH_CARDS: { t: string; d: string; cta?: string; c: string }[] = [
+  { t: "Retention, built in", d: "Your tribe re-enrolls in one tap — new members join the same run.", cta: "Enroll in Run 2 →", c: ORANGE },
+  { t: "New people join", d: "Promote the next run — new faces land in the same space. Ongoing momentum.", c: CYAN },
+  { t: "Open a progression experience", d: "The natural next step — keep this run going, grow your portfolio, take your tribe further.", c: ORANGE },
+];
+
+function GrowthCards({ stacked = false }: { stacked?: boolean }) {
   return (
-    <div
-      className={stacked ? "mt-4 rounded-2xl px-5 py-5 flex flex-col items-stretch gap-3.5 text-center" : "mt-4 rounded-2xl px-5 py-4 flex items-center justify-between gap-4"}
-      style={{ background: "linear-gradient(135deg, rgba(255,97,48,0.14), rgba(255,97,48,0.05))", boxShadow: "0 0 0 1px rgba(255,97,48,0.26)" }}
-    >
-      <div className="min-w-0">
-        <p className="text-[10.5px] uppercase tracking-[0.16em] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>
-          Retention, built in
-        </p>
-        <p className="text-[15px] font-black font-headline mt-1 leading-snug" style={{ color: INK }}>
-          Your tribe re-enrolls in one tap — new members join the same run.
-        </p>
-      </div>
-      <span className={`shrink-0 rounded-full text-white font-black font-headline ${stacked ? "px-5 py-3 text-[14px]" : "px-5 py-2.5 text-[12.5px]"}`} style={{ backgroundColor: ORANGE, boxShadow: "0 4px 12px rgba(255,97,48,0.30)" }}>
-        Enroll in Run 2 →
-      </span>
+    <div className={stacked ? "space-y-3.5 text-left" : "grid sm:grid-cols-3 gap-4 items-stretch text-left"} aria-hidden>
+      {GROWTH_CARDS.map(({ t, d, cta, c }) => (
+        <div
+          key={t}
+          className="h-full rounded-2xl p-5 flex flex-col"
+          style={{ backgroundColor: "#FFFFFF", boxShadow: `0 0 0 1px rgba(15,34,41,0.06), 0 16px 40px rgba(15,34,41,0.10), inset 4px 0 0 ${c}` }}
+        >
+          <p className="text-[15px] font-headline leading-snug" style={{ color: INK, fontWeight: 800 }}>{t}</p>
+          <p className="text-[12.5px] font-semibold mt-1.5 leading-snug" style={{ color: MUTED }}>{d}</p>
+          {cta && (
+            <span className="self-start mt-4 px-4 py-2 rounded-full text-white text-[11.5px] font-black font-headline" style={{ backgroundColor: ORANGE, boxShadow: "0 4px 12px rgba(255,97,48,0.30)" }}>
+              {cta}
+            </span>
+          )}
+        </div>
+      ))}
     </div>
   );
 }
 
-/* Mobile staging — p0 the run builds, p1 the run wraps into the handoff,
- * p2 you shape the next run + the tribe carries over. */
+/* Mobile staging — p0 the run wraps (completed W1→W6 + shape the next),
+ * p1 the growth engine. */
 function CompoundFrameMobile({ phase }: { phase: number }) {
-  const wrapped = phase >= 1;
-  // the bar's growth must be SEEN — arm the p0 fill after mount
+  const p = Math.min(phase, 1);
+  // the bar's sweep to full must be SEEN — arm it after mount
   const [grow, setGrow] = useState(false);
   useEffect(() => {
-    if (phase !== 0) return;
-    setGrow(false);
-    const t = window.setTimeout(() => setGrow(true), 500);
+    if (p !== 0) {
+      setGrow(false);
+      return;
+    }
+    const t = window.setTimeout(() => setGrow(true), 450);
     return () => window.clearTimeout(t);
-  }, [phase]);
+  }, [p]);
 
   return (
     <div className="w-full max-w-md mx-auto">
-      <div className="relative" style={{ minHeight: 200 }}>
-        <Enter key={wrapped ? 1 : 0} from="none" className="absolute inset-x-0 top-0">
-          <MechHead
-            kicker="04 · It compounds"
-            accent={ORANGE}
-            title={wrapped ? "The run wraps — the retention loop opens." : "Every live moment builds the run."}
-            copy={
-              wrapped
-                ? "Same space, next run: you shape it, your tribe re-enrolls in one tap."
-                : "Attendance and progression — tracked in the space, for you and every member."
-            }
-          />
-        </Enter>
-      </div>
-      <Enter key={Math.min(phase, 2)}>
-        {phase === 0 && (
-          <div className="rounded-3xl p-6 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }} aria-hidden>
-            <CmpProgress wrapped={false} fill={grow ? "85%" : "8%"} litWeeks={grow ? 5 : 1} />
-          </div>
-        )}
-        {phase === 1 && (
+      <Enter key={p}>
+        {p === 0 && (
           <div className="space-y-4 text-left" aria-hidden>
             <div className="rounded-3xl p-6" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }}>
-              <CmpProgress wrapped fill="100%" litWeeks={6} dots={false} />
+              <CmpProgress fill={grow ? "100%" : "8%"} litWeeks={grow ? 6 : 1} />
             </div>
-            <CmpHandoff stacked />
+            <div><CmpShape stacked /></div>
           </div>
         )}
-        {phase >= 2 && (
-          <div className="text-left" aria-hidden>
-            <CmpShape stacked />
-            <CmpEnroll stacked />
-          </div>
-        )}
+        {p === 1 && <GrowthCards stacked />}
       </Enter>
     </div>
   );
@@ -1266,17 +1162,30 @@ export function LiveWeek() {
   const frameProgress = frameCount > 0 ? (beat - frameFirst + 1) / frameCount : 0;
 
   if (!pinned) {
+    const staticHead = (f: number, p: number) => {
+      const h = LW_HEADS[f]?.[Math.min(p, (LW_HEADS[f]?.length ?? 1) - 1)];
+      if (!h) return null;
+      return (
+        <div className="mb-8 text-center">
+          <h3 className="text-[1.85rem] leading-[1.15] md:text-[2.6rem] md:leading-[1.12] font-headline tracking-tight mb-3.5 max-w-3xl mx-auto" style={{ color: INK, fontWeight: 700, letterSpacing: "-0.02em" }}>
+            {h.title}
+          </h3>
+          {h.copy && <p className="text-[15px] md:text-lg leading-relaxed max-w-2xl mx-auto" style={{ color: MUTED }}>{h.copy}</p>}
+        </div>
+      );
+    };
     return (
       <section className="px-4 sm:px-6 py-20">
         <div className="max-w-5xl mx-auto text-center">
           <div className="py-8"><IntroFrame /></div>
-          <div className="py-12"><SpaceFrame phase={1} /></div>
-          <div className="py-12"><HandsFrame phase={0} staticLayout /></div>
-          <div className="py-12"><HandsFrame phase={1} staticLayout /></div>
-          <div className="py-12"><HandsFrame phase={3} staticLayout /></div>
+          <div className="py-12">{staticHead(1, 0)}<SpaceFrame phase={1} /></div>
+          <div className="py-12">{staticHead(2, 0)}<HandsFrame phase={0} staticLayout /></div>
+          <div className="py-12">{staticHead(2, 1)}<HandsFrame phase={1} staticLayout /></div>
+          <div className="py-12">{staticHead(2, 3)}<HandsFrame phase={3} staticLayout /></div>
           {/* The join moment — on the static story the room really is open:
              the CTA carries straight to the finale. */}
           <div className="py-12">
+            {staticHead(3, 1)}
             <LoopFrame
               phase={1}
               staticLayout
@@ -1286,8 +1195,8 @@ export function LiveWeek() {
               }}
             />
           </div>
-          <div className="py-12"><LoopFrame phase={3} onJoin={() => {}} staticLayout /></div>
-          <div className="py-12"><CompoundFrame phase={1} active staticLayout /></div>
+          <div className="py-12">{staticHead(3, 3)}<LoopFrame phase={3} onJoin={() => {}} staticLayout /></div>
+          <div className="py-12">{staticHead(4, 1)}<CompoundFrame phase={1} active staticLayout /></div>
         </div>
       </section>
     );
@@ -1346,15 +1255,18 @@ export function LiveWeek() {
             onStep={(f) => jumpToBeat(firstBeatOf(f))}
           />
 
-          {/* Frames — hard cuts, one visible at a time, all centered. The peak
-             stays in the same rail-gutter position as every other beat — it's
-             part of the same swipe sequence, dramatized only by the background
-             shift, not by a full-bleed takeover. */}
+          {/* Frames — hard cuts, one visible at a time. Railed frames anchor
+             their title in the shared TitleZone (fixed height, right under
+             the rail) and center only the CONTENT in the remaining space —
+             the words change, the layout never jumps. The peak stays in the
+             same position, dramatized only by the background shift. */}
           {[0, 1, 2, 3, 4].map((f) => {
             const active = frame === f;
             // The rail gutter applies only to railed frames — the intro
             // centers on the full page, like the rail isn't there (it isn't).
             const railed = f >= 1 && f <= 4;
+            const headIdx = Math.min(active ? phase : 0, (LW_HEADS[f]?.length ?? 1) - 1);
+            const head = LW_HEADS[f]?.[headIdx];
             return (
               <div
                 key={f}
@@ -1362,8 +1274,8 @@ export function LiveWeek() {
                 // Below lg the content box is 100svh — STABLE while the URL
                 // bar collapses (dvh dances, svh doesn't), so AutoFit's box
                 // never changes mid-scroll and nothing rescales. The dvh
-                // stage behind still fills the screen. pt-28 clears the rail.
-                className={`absolute inset-x-0 top-0 h-svh lg:inset-0 lg:h-auto z-10 flex flex-col items-center justify-center text-center pt-28 pb-10 lg:pt-24 lg:pb-14 ${railed ? "px-5 sm:px-8 lg:pl-64 lg:pr-16" : "px-5 sm:px-8"}`}
+                // stage behind still fills the screen. pt clears the rail.
+                className={`absolute inset-x-0 top-0 h-svh lg:inset-0 lg:h-auto z-10 flex flex-col items-center text-center ${railed ? "pt-[8.5rem] pb-8 lg:pt-24 lg:pb-14 px-5 sm:px-8 lg:pl-64 lg:pr-16" : "justify-center pt-28 pb-10 lg:pt-24 lg:pb-14 px-5 sm:px-8"}`}
                 style={{
                   opacity: active ? 1 : 0,
                   transform: active ? "none" : "translateY(12px)",
@@ -1378,6 +1290,9 @@ export function LiveWeek() {
                   pointerEvents: active ? "auto" : "none",
                 }}
               >
+                {railed && head && (
+                  <TitleZone k={`${f}-${headIdx}`} title={head.title} copy={head.copy} light={!!head.light && active} />
+                )}
                 <div className="w-full max-w-5xl mx-auto flex-1 min-h-0 flex flex-col">
                   <AutoFit>
                     {f === 0 && <IntroFrame />}

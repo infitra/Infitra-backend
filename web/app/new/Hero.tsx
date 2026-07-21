@@ -17,13 +17,21 @@ export function Hero() {
         {/* The movement — the page opens on the manifesto, nothing above it.
            Two matched stanzas, one line each on desktop (nowrap + fluid size),
            softened ink so the scale carries the weight, not the blackness. */}
+        {/* Mobile: two symmetric two-line stanzas ("From isolation to" /
+           "collaboration.") with a breath between them. Desktop: unchanged —
+           one line per stanza. */}
         <h1
           className="font-headline tracking-tight leading-[1.16] mb-14"
           style={{ color: "rgba(15,34,41,0.84)", fontWeight: 600, letterSpacing: "-0.025em", fontSize: "clamp(2rem, 4.4vw, 3.4rem)" }}
         >
-          <span className="md:whitespace-nowrap">From isolation to <span style={{ color: ORANGE, fontWeight: 700 }}>collaboration.</span></span>{" "}
-          <br className="hidden md:block" />
-          <span className="md:whitespace-nowrap">From content to <span style={{ color: CYAN, fontWeight: 700 }}>experience.</span></span>
+          <span className="block md:whitespace-nowrap mb-3 md:mb-0">
+            From isolation to <br className="md:hidden" />
+            <span style={{ color: ORANGE, fontWeight: 700 }}>collaboration.</span>
+          </span>
+          <span className="block md:whitespace-nowrap">
+            From content to <br className="md:hidden" />
+            <span style={{ color: CYAN, fontWeight: 700 }}>experience.</span>
+          </span>
         </h1>
 
         {/* The creator act — the claim that owns the CTA */}

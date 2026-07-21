@@ -397,17 +397,17 @@ export function MobileRail({
   const ORANGE = "#FF6130";
   return (
     <div
-      className="lg:hidden absolute top-16 inset-x-6 z-20"
+      className="lg:hidden absolute top-[5.25rem] inset-x-6 z-20"
       style={{ opacity: on ? 1 : 0, pointerEvents: on ? "auto" : "none", transition: `opacity 400ms ease, color 400ms ease` }}
     >
-      <div className="flex items-baseline justify-center gap-2 mb-2">
-        <span className="text-[10px] uppercase tracking-[0.22em] font-headline tabular-nums" style={{ color: ORANGE, fontWeight: 800 }}>
+      <div className="flex items-baseline justify-center gap-2.5 mb-3">
+        <span className="text-[12px] uppercase tracking-[0.22em] font-headline tabular-nums" style={{ color: ORANGE, fontWeight: 800 }}>
           {active?.n ?? ""}
         </span>
-        <span className="text-[12px] uppercase tracking-[0.18em] font-headline" style={{ color: ink, fontWeight: 800, transition: "color 400ms ease" }}>
+        <span className="text-[13.5px] uppercase tracking-[0.18em] font-headline" style={{ color: ink, fontWeight: 800, transition: "color 400ms ease" }}>
           {active?.label ?? ""}
         </span>
-        <span className="text-[10px] uppercase tracking-[0.18em] font-headline" style={{ color: faint, fontWeight: 700, transition: "color 400ms ease" }}>
+        <span className="text-[11px] uppercase tracking-[0.18em] font-headline" style={{ color: faint, fontWeight: 700, transition: "color 400ms ease" }}>
           / {String(steps.length).padStart(2, "0")}
         </span>
       </div>
@@ -423,7 +423,7 @@ export function MobileRail({
               onClick={() => onStep(s.frame)}
               className="flex-1 py-1.5 -my-1.5"
             >
-              <span className="block h-[3px] rounded-full overflow-hidden" style={{ backgroundColor: track, transition: "background-color 400ms ease" }}>
+              <span className="block h-1 rounded-full overflow-hidden" style={{ backgroundColor: track, transition: "background-color 400ms ease" }}>
                 <span
                   className="block h-full rounded-full"
                   style={{
@@ -438,6 +438,47 @@ export function MobileRail({
           );
         })}
       </div>
+    </div>
+  );
+}
+
+/* ── TitleZone — the anchored head of every railed frame ─────
+ * The kickers used to repeat what the rail says; now the rail carries the
+ * step identity and this zone carries ONLY the title + copy — at a FIXED
+ * height on every frame (desktop and mobile), directly under the rail.
+ * A swipe crossfades the words in place; the reader never re-orients.
+ * Content below distributes in the remaining space. */
+export function TitleZone({
+  k,
+  title,
+  copy,
+  light,
+}: {
+  /** crossfade key — change it to swap the words */
+  k: string | number;
+  title: React.ReactNode;
+  copy?: React.ReactNode;
+  /** light text on dark stages */
+  light: boolean;
+}) {
+  return (
+    <div className="relative w-full shrink-0 text-center min-h-[9.5rem] md:min-h-[11rem]">
+      <Enter key={k} from="none" className="absolute inset-x-0 top-0">
+        <h3
+          className="text-[1.85rem] leading-[1.15] md:text-[2.6rem] md:leading-[1.12] font-headline tracking-tight mb-3.5 max-w-3xl mx-auto"
+          style={{ color: light ? "#F6F3EC" : "#0F2229", fontWeight: 700, letterSpacing: "-0.02em" }}
+        >
+          {title}
+        </h3>
+        {copy && (
+          <p
+            className="text-[15px] md:text-lg leading-relaxed max-w-2xl mx-auto"
+            style={{ color: light ? "rgba(244,241,232,0.72)" : "#475569" }}
+          >
+            {copy}
+          </p>
+        )}
+      </Enter>
     </div>
   );
 }

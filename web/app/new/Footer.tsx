@@ -3,7 +3,8 @@ import Link from "next/link";
 /** M9 · Footer — the only thing after the finale. */
 export function Footer() {
   return (
-    <footer style={{ borderTop: "1px solid rgba(15,34,41,0.08)", backgroundColor: "rgba(242,239,232,0.6)" }}>
+    // fully transparent — the wave background flows through
+    <footer style={{ borderTop: "1px solid rgba(15,34,41,0.08)" }}>
       <div className="max-w-6xl mx-auto px-6 py-8 flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
