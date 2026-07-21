@@ -12,7 +12,7 @@ import { PilotApplicationForm } from "./PilotApplicationForm";
 export const metadata = {
   title: "Apply for the pilot — INFITRA",
   description:
-    "Apply to be one of the first five creator pairs running a joint live program on INFITRA.",
+    "Apply to be one of the first five expert pairs running a joint live experience on INFITRA.",
 };
 
 export default function ApplyPage() {
@@ -76,9 +76,9 @@ export default function ApplyPage() {
                 className="mt-5 text-base md:text-lg leading-relaxed"
                 style={{ color: "#475569" }}
               >
-                We&apos;re looking for five creator pairs to run joint live programs in the
-                pilot. If your expertise complements another creator&apos;s — and a 4–6
-                week program would land for your audience — we want to hear from you.
+                We&apos;re looking for five expert pairs to run joint live experiences in the
+                pilot. If your expertise complements another expert&apos;s — and a 4–6
+                week experience would land for your audience — we want to hear from you.
               </p>
             </div>
 

@@ -146,7 +146,7 @@ export function PilotApplicationForm() {
               className="text-xs uppercase tracking-[0.18em] font-headline mb-2"
               style={{ color: "#475569", fontWeight: 700 }}
             >
-              Do you already have a creator partner in mind?
+              Do you already have an expert partner in mind?
             </legend>
             <div className="flex gap-3">
               <RadioPill
@@ -178,7 +178,7 @@ export function PilotApplicationForm() {
                 maxLength={1000}
                 rows={3}
                 className={textareaCls} style={FIELD_STYLE}
-                placeholder="e.g. Mia Aebi — registered nutritionist, focused on cycle-aware eating. We've talked about a joint program for a while."
+                placeholder="e.g. Mia Aebi — registered nutritionist, focused on cycle-aware eating. We've talked about a joint experience for a while."
               />
             </Field>
           ) : (
@@ -212,7 +212,7 @@ export function PilotApplicationForm() {
               maxLength={2000}
               rows={4}
               className={textareaCls} style={FIELD_STYLE}
-              placeholder="e.g. 30 of my followers go through a four-week program with a nutritionist, finish stronger and more confident, and want a second cohort."
+              placeholder="e.g. 30 of my followers go through a four-week experience with a nutritionist, finish stronger and more confident, and want a second run."
             />
           </Field>
         </Section>
@@ -387,7 +387,7 @@ function SuccessCard() {
       >
         We read every application personally and reply within a week. If your work
         fits the pilot, we&apos;ll arrange a short call to talk through the partner fit
-        and the program shape.
+        and the experience shape.
       </p>
       <Link
         href="/"
