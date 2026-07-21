@@ -23,7 +23,7 @@ export function WaitlistForm() {
           </svg>
         </span>
         <p className="text-[15px] font-headline text-left" style={{ color: "#0F2229", fontWeight: 700 }}>
-          You&apos;re on the list — see you in the room.
+          You&apos;re on the list. See you in the room.
         </p>
       </div>
     );

@@ -77,21 +77,21 @@ const RAIL = [
 /* The anchored heads — the rail carries the step identity; these carry only
  * title + copy, crossfading in the shared fixed-height TitleZone. */
 const LW_HEADS: Record<number, { title: React.ReactNode; copy?: string; light?: boolean }[]> = {
-  1: [{ title: "The room your tribe lives in.", copy: "Not a video library — a space with structure, presence and a feed of its own." }],
+  1: [{ title: "The room your tribe lives in.", copy: "Not a video library: a space with structure, presence and a feed of its own." }],
   2: [
     { title: "No cold start.", copy: "The moment someone joins, the space asks them to introduce themselves." },
-    { title: "Anyone can engage at any time.", copy: "Four tools, for members and experts — no permission needed, no cold silence." },
-    { title: "A question finds you.", copy: "A notification the moment it lands — your console collects it until it's answered." },
-    { title: "Answered once. Everyone learns.", copy: "Answers are pinned inside posts — visible to the whole tribe." },
+    { title: "Anyone can engage at any time.", copy: "Four tools, for members and experts. No permission needed, no cold silence." },
+    { title: "A question finds you.", copy: "A notification the moment it lands, and your console collects it until it's answered." },
+    { title: "Answered once. Everyone learns.", copy: "Answers are pinned inside posts, visible to the whole tribe." },
   ],
   3: [
-    { title: "Momentum is building.", copy: "The tribe shares its readiness — and everyone feels it." },
-    { title: "The moment arrives.", copy: "The experience's first live moment is open — your tribe is ready." },
-    { title: "You're live.", copy: "No new login, no external link — training together, right now.", light: true },
-    { title: "The reflection closes the loop.", copy: "Every prompt becomes a post — enabling your tribe to connect over shared moments." },
+    { title: "Momentum is building.", copy: "The tribe shares its readiness, and everyone feels it." },
+    { title: "The moment arrives.", copy: "The experience's first live moment is open and your tribe is ready." },
+    { title: "You're live.", copy: "No new login, no external link. Training together, right now.", light: true },
+    { title: "The reflection closes the loop.", copy: "Every prompt becomes a post, enabling your tribe to connect over shared moments." },
   ],
   4: [
-    { title: "The run wraps — the momentum never stops.", copy: "The space you built stays persistent, the tribe grows." },
+    { title: "The run wraps. The momentum never stops.", copy: "The space you built stays persistent, the tribe grows." },
     { title: "The growth engine.", copy: "Retention by design, progression at your hands." },
   ],
 };
@@ -492,7 +492,7 @@ function SpaceJourneyCard() {
           <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: "rgba(15,34,41,0.08)" }}>
             <div className="h-full rounded-full" style={{ width: "100%", backgroundColor: ORANGE }} />
           </div>
-          <p className="text-[10.5px] font-bold mt-1.5" style={{ color: MUTED }}>5 of 5 attended — perfect streak 🔥</p>
+          <p className="text-[10.5px] font-bold mt-1.5" style={{ color: MUTED }}>5 of 5 attended. Perfect streak 🔥</p>
         </div>
       </div>
     </div>
@@ -542,12 +542,12 @@ function SpaceTribeCard() {
         color={ANNA.color}
         name={ANNA.name}
         when="2h"
-        text="Week 1 done — first plan I've actually kept up with 🔥"
+        text="Week 1 done, first plan I've actually kept up with 🔥"
         likes={8}
         comments={3}
-        reply={{ avatar: PRIYA.avatar, color: PRIYA.color, name: PRIYA.name, text: "Same here — Tuesday can't come soon enough 🙌" }}
+        reply={{ avatar: PRIYA.avatar, color: PRIYA.color, name: PRIYA.name, text: "Same here, Tuesday can't come soon enough 🙌" }}
       />
-      <TribePost avatar={SAM.avatar} color={SAM.color} name={SAM.name} when="just now" text="Moment 5 ✓ — see everyone Tuesday!" likes={4} comments={1} />
+      <TribePost avatar={SAM.avatar} color={SAM.color} name={SAM.name} when="just now" text="Moment 5 ✓ see everyone Tuesday!" likes={4} comments={1} />
     </div>
   );
 }
@@ -582,7 +582,7 @@ function HandsIntroPost() {
       promptLabel="New in the tribe · Your experts asked"
       promptColor={CYAN}
       prompt={EX.introPrompt}
-      body="Desk job, two kids, and every plan I've started before fizzled by week two. I'm here to finally build energy that lasts — and to stick with it because this time there's a group. Can't wait to meet you all! 💪"
+      body="Desk job, two kids, and every plan I've started before fizzled by week two. I'm here to finally build energy that lasts, and to stick with it because this time there's a group. Can't wait to meet you all! 💪"
       chip="Introduction"
       likes={9}
       comments={3}
@@ -620,7 +620,7 @@ function HandsNotifCard() {
         </span>
         <span className="min-w-0 flex-1">
           <span className="block text-[14px] font-headline leading-tight" style={{ color: INK, fontWeight: 800 }}>{PRIYA.name} commented on Anna&apos;s post</span>
-          <span className="block text-[12px] mt-1" style={{ color: MUTED }}>&ldquo;Same here — Tuesday can&apos;t come soon enough&rdquo;</span>
+          <span className="block text-[12px] mt-1" style={{ color: MUTED }}>&ldquo;Same here, Tuesday can&apos;t come soon enough&rdquo;</span>
         </span>
         <span className="shrink-0 text-[11px] font-bold" style={{ color: FAINT }}>2h</span>
       </div>
@@ -653,7 +653,7 @@ function HandsConsoleCard() {
         </span>
         <span className="min-w-0 truncate text-[13.5px] font-semibold" style={{ color: MUTED }}>&ldquo;{ROOM.qa.question}&rdquo;</span>
       </div>
-      <p className="text-[11.5px] lg:text-[13px] font-bold mt-3 lg:mt-4" style={{ color: MUTED }}>It stays on your console until it&apos;s done — nothing slips through.</p>
+      <p className="text-[11.5px] lg:text-[13px] font-bold mt-3 lg:mt-4" style={{ color: MUTED }}>It stays on your console until it&apos;s done. Nothing slips through.</p>
     </div>
   );
 }
@@ -692,7 +692,7 @@ function HandsAnsweredPost({ answerOn }: { answerOn: boolean }) {
               {/* phones get the short form — the full answer pushed the beat
                  past the stage and AutoFit zoomed the whole post out */}
               <span className="md:hidden">
-                Hi Tim! Recovery is a very important part of training — give your body time to reset between sessions. Lighter activity like a walk, easy jogging or a Padel session with a friend is great. Just don&apos;t tire yourself out fully!
+                Hi Tim! Recovery is a very important part of training, so give your body time to reset between sessions. Lighter activity like a walk, easy jogging or a Padel session with a friend is great. Just don&apos;t tire yourself out fully!
               </span>
               <span className="hidden md:inline">{ROOM.qa.answer}</span>
             </p>
@@ -701,12 +701,14 @@ function HandsAnsweredPost({ answerOn }: { answerOn: boolean }) {
         <div className="flex items-center gap-5 mt-4 pt-3.5" style={{ borderTop: "1px solid rgba(15,34,41,0.06)" }}>
           <span className="inline-flex items-center gap-1.5 text-[12px] md:text-[13px] font-bold" style={{ color: MUTED }}>{ICON_HEART(ORANGE)} 6</span>
           <span className="inline-flex items-center gap-1.5 text-[12px] md:text-[13px] font-bold" style={{ color: MUTED }}>{ICON_COMMENT(MUTED)} 2</span>
-          <span className="ml-auto text-[11px]" style={{ color: FAINT }}>Pinned — visible to the whole tribe.</span>
+          <span className="ml-auto text-[11px]" style={{ color: FAINT }}>Pinned. Visible to the whole tribe.</span>
         </div>
       </div>
 
-      {/* the whole tribe learns — the comment lives in the THREAD, not the post */}
-      <Pop show={answerOn} d={420}>
+      {/* the whole tribe learns — the comment lives in the THREAD, not the post.
+         md+ only: on phones (real Safari, URL bar eating the stage) even the
+         short answer + thread overflows the beat and AutoFit zooms out. */}
+      <Pop show={answerOn} d={420} className="hidden md:block">
         <div className="mt-3 rounded-2xl px-5 py-4 text-left" style={{ backgroundColor: "rgba(250,248,243,0.92)", boxShadow: "0 0 0 1px rgba(15,34,41,0.06)" }}>
           <p className="text-[10px] uppercase tracking-[0.18em] font-headline mb-3" style={{ color: FAINT, fontWeight: 800 }}>
             Comments · 2
@@ -718,7 +720,7 @@ function HandsAnsweredPost({ answerOn }: { answerOn: boolean }) {
             </span>
             <div className="min-w-0">
               <p className="text-[12px] md:text-[13px] font-headline" style={{ color: INK, fontWeight: 800 }}>{PRIYA.name}</p>
-              <p className="text-[13px] md:text-[14px] leading-snug mt-0.5" style={{ color: MUTED }}>I was wondering that myself — good to know! 🙏</p>
+              <p className="text-[13px] md:text-[14px] leading-snug mt-0.5" style={{ color: MUTED }}>I was wondering that myself, good to know! 🙏</p>
             </div>
           </div>
         </div>
@@ -754,7 +756,7 @@ function HandsFrame({ phase, staticLayout = false }: { phase: number; staticLayo
                 <div className="rounded-full px-4 py-2.5 lg:px-5 lg:py-3.5 text-[12px] lg:text-[14px]" style={{ backgroundColor: "#F8F6F0", color: FAINT }}>
                   Share with your Tribe…
                 </div>
-                <p className="text-[11.5px] lg:text-[13.5px] font-bold mt-2.5 lg:mt-3.5" style={{ color: MUTED }}>Anyone, anytime — wins, struggles, photos.</p>
+                <p className="text-[11.5px] lg:text-[13.5px] font-bold mt-2.5 lg:mt-3.5" style={{ color: MUTED }}>Anyone, anytime: wins, struggles, photos.</p>
               </div>
             </Pop>
             {/* question post — members */}
@@ -784,7 +786,7 @@ function HandsFrame({ phase, staticLayout = false }: { phase: number; staticLayo
                   <span className="px-2.5 py-1 rounded-full text-[9px] lg:text-[10px] uppercase tracking-widest font-headline" style={{ color: ORANGE, backgroundColor: "rgba(255,97,48,0.08)", fontWeight: 800 }}>Experts</span>
                 </div>
                 <p className="text-[13px] lg:text-[15.5px] leading-snug" style={{ color: INK, fontWeight: 600 }}>
-                  Tuesday we build on Monday&apos;s flow — bring water and a mat!
+                  Tuesday we build on Monday&apos;s flow. Bring water and a mat!
                 </p>
                 <div className="mt-3 lg:mt-4 flex items-center gap-2.5 lg:gap-3 rounded-lg p-2 lg:p-2.5" style={{ backgroundColor: "#F8F6F0", boxShadow: "0 0 0 1px rgba(15,34,41,0.06)" }}>
                   <span className="relative shrink-0 w-11 h-8 lg:w-14 lg:h-10 rounded-md overflow-hidden" style={{ backgroundColor: INK }}>
@@ -840,7 +842,7 @@ function HandsFrame({ phase, staticLayout = false }: { phase: number; staticLayo
 /* Mobile staging — the phases at natural size; the four tools become
  * compact rows a phone can read instead of four shrunken cards. */
 const TOOL_ROWS = [
-  { t: "Share", aud: "Members", d: "Anyone, anytime — wins, struggles, photos.", c: CYAN, icon: ICON_SHARE },
+  { t: "Share", aud: "Members", d: "Anyone, anytime: wins, struggles, photos.", c: CYAN, icon: ICON_SHARE },
   { t: "Ask inside a post", aud: "Members", d: "Questions routed to the right expert.", c: CYAN, icon: ICON_ASK },
   { t: "Post with context", aud: "Experts", d: "Attach the live moment it's about.", c: ORANGE, icon: ICON_CONTEXT },
   { t: "Calendar export", aud: "Members", d: "The structure follows you out of the app.", c: CYAN, icon: ICON_CAL },
@@ -894,7 +896,7 @@ function LoopPulseCard() {
         Pulse · before the live moment
       </p>
       <p className="text-[16.5px] lg:text-[19px] font-bold font-headline leading-snug mt-2" style={{ color: INK }}>
-        {MEET.title} — how ready are you?
+        {MEET.title}: how ready are you?
       </p>
       <div className="mt-4 relative h-2.5 rounded-full" style={{ backgroundColor: "rgba(15,34,41,0.08)" }}>
         <div className="absolute inset-y-0 left-0 rounded-full" style={{ width: "80%", backgroundColor: CYAN }} />
@@ -922,7 +924,7 @@ function LoopPriyaPost() {
             {PRIYA.name} <span style={{ color: FAINT, fontWeight: 600 }}>· just now</span>
           </p>
           <p className="text-[14.5px] leading-relaxed mt-1" style={{ color: INK, fontWeight: 500 }}>
-            Ready! First live moment of the reset — nervous and excited. Can&apos;t wait to meet everyone 😅
+            Ready! First live moment of the reset, nervous and excited. Can&apos;t wait to meet everyone 😅
           </p>
           <span className="inline-flex mt-2 px-3 py-1 rounded-full text-[10.5px] font-headline" style={{ color: CYAN, backgroundColor: "rgba(8,145,178,0.10)", fontWeight: 800 }}>
             Pulse · 8/10
@@ -994,7 +996,7 @@ function LoopFrame({ phase, onJoin, staticLayout = false }: { phase: number; onJ
               </div>
             </div>
           </div>
-          <p className="text-[15px] mt-8" style={{ color: MUTED }}>Your move — or keep scrolling.</p>
+          <p className="text-[15px] mt-8" style={{ color: MUTED }}>Your move, or keep scrolling.</p>
         </Phase>
 
         {/* p2 — THE PEAK: the room, as energy */}
@@ -1065,7 +1067,7 @@ function PeakScene({ big = false }: { big?: boolean }) {
         </div>
       </div>
       <p className={`${big ? "text-[17px] mt-4" : "text-[15px] mt-3"} font-bold font-headline`} style={{ color: LIGHT_MUTED }}>
-        8 in the room — training together.
+        8 in the room, training together.
       </p>
       {/* the heartbeat, centered under the pulse above */}
       <svg width={380 * k} height="48" viewBox="0 0 380 48" fill="none" className={`${big ? "mt-6" : "mt-5"} max-w-full`} aria-hidden>
@@ -1093,11 +1095,11 @@ function LoopReflectionPost() {
       promptLabel="Reflection · after the live moment"
       promptColor={CYAN}
       prompt={`How was “${MEET.title}”?`}
-      body="Didn't expect to laugh that much on day one — Alex and Mira had us moving in minutes and it felt like a team, not a class. Already counting down to Tuesday. This group 🔥"
+      body="Didn't expect to laugh that much on day one. Alex and Mira had us moving in minutes and it felt like a team, not a class. Already counting down to Tuesday. This group 🔥"
       chip="Energy after · 9/10"
       likes={12}
       comments={5}
-      reply={{ avatar: MIRA.avatar, color: CYAN, name: MIRA.name, text: "Day one energy was unreal, Anna — Tuesday we build on it! 🔥" }}
+      reply={{ avatar: MIRA.avatar, color: CYAN, name: MIRA.name, text: "Day one energy was unreal, Anna. Tuesday we build on it! 🔥" }}
     />
   );
 }
@@ -1156,7 +1158,7 @@ function LoopFrameMobile({ phase, onJoin }: { phase: number; onJoin: () => void 
                 <p className="text-center text-[12.5px] font-bold mt-3" style={{ color: "#94a3b8" }}>8 in the room</p>
               </div>
             </div>
-            <p className="text-[13.5px] mt-5 text-center" style={{ color: MUTED }}>Your move — or keep scrolling.</p>
+            <p className="text-[13.5px] mt-5 text-center" style={{ color: MUTED }}>Your move, or keep scrolling.</p>
           </>
         )}
         {p === 2 && (
@@ -1274,7 +1276,7 @@ const ICON_GROW = (color: string, size = 18) => (
 
 const CMP_OPTIONS = [
   { t: "Repeat it", d: "Same design, next run", icon: ICON_REPEAT, c: CYAN },
-  { t: "Reshape it", d: "New terms — the agreement re-locks", icon: ICON_RESHAPE, c: ORANGE },
+  { t: "Reshape it", d: "New terms, the agreement re-locks", icon: ICON_RESHAPE, c: ORANGE },
   { t: "New collaborator", d: "Invite another expert in", icon: ICON_ADD_EXPERT, c: CYAN },
 ];
 
@@ -1329,7 +1331,7 @@ function GrowthCards({ stacked = false, only }: { stacked?: boolean; only?: "lea
         </span>
         <p className={`${titleCls} font-headline leading-snug`} style={{ color: INK, fontWeight: 800 }}>Retention, built in</p>
         <p className="text-[13px] font-semibold mt-1.5 leading-snug" style={{ color: MUTED }}>
-          Your tribe re-enrolls in one tap — the space and the momentum carry over.
+          Your tribe re-enrolls in one tap. The space and the momentum carry over.
         </p>
         <div className={`flex items-center gap-2.5 ${visMt}`}>
           <span className="flex -space-x-2">
@@ -1358,7 +1360,7 @@ function GrowthCards({ stacked = false, only }: { stacked?: boolean; only?: "lea
         </span>
         <p className={`${titleCls} font-headline leading-snug`} style={{ color: INK, fontWeight: 800 }}>New people join</p>
         <p className="text-[13px] font-semibold mt-1.5 leading-snug" style={{ color: MUTED }}>
-          Promote the next run — new faces land in the same space. Ongoing momentum.
+          Promote the next run and new faces land in the same space. Ongoing momentum.
         </p>
         <div className={`flex items-center gap-2.5 ${visMt}`}>
           <span className="flex -space-x-2">
@@ -1386,7 +1388,7 @@ function GrowthCards({ stacked = false, only }: { stacked?: boolean; only?: "lea
         </span>
         <p className={`${titleCls} font-headline leading-snug`} style={{ color: INK, fontWeight: 800 }}>Open a progression experience</p>
         <p className="text-[13px] font-semibold mt-1.5 leading-snug" style={{ color: MUTED }}>
-          The natural next step — keep this run going, grow your portfolio, take your tribe further.
+          The natural next step: keep this run going, grow your portfolio, take your tribe further.
         </p>
         <div className={`flex items-center gap-2 ${visMt}`}>
           <span className="px-3 py-1.5 rounded-full text-[10.5px] font-headline" style={{ backgroundColor: "rgba(15,34,41,0.05)", color: MUTED, fontWeight: 800 }}>
@@ -1457,9 +1459,9 @@ function IntroFrame() {
         From content to <span style={{ color: CYAN }}>experience.</span>
       </h2>
       <p className="text-base md:text-xl leading-relaxed max-w-2xl mx-auto" style={{ color: MUTED }}>
-        What you published isn&apos;t a static product or a video library —
-        it&apos;s a room where you build your tribe and show up together.
-        The rhythm is built in — your tribe brings it to life.
+        What you published isn&apos;t a static product or a video library.
+        It&apos;s a room where you build your tribe and show up together.
+        The rhythm is built in, and your tribe brings it to life.
       </p>
     </div>
   );

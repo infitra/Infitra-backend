@@ -30,7 +30,7 @@ export function Finale() {
             The room <span style={{ color: ORANGE }}>is open.</span>
           </h2>
           <p className="text-base md:text-lg leading-relaxed max-w-2xl mx-auto" style={{ color: MUTED }}>
-            Digital fitness is shifting — from paying for access to content, to
+            Digital fitness is shifting: from paying for access to content, to
             participating in live experiences built together. Shape what INFITRA
             becomes and position yourself early. Two ways in.
           </p>
@@ -51,7 +51,7 @@ export function Finale() {
               </h3>
               <p className="text-[15px] md:text-base mt-3 leading-relaxed" style={{ color: MUTED }}>
                 Pair with a complementary expert and found a real experience with
-                direct, hands-on support — everything you just scrolled through,
+                direct, hands-on support. Everything you just scrolled through,
                 running for your audience.
               </p>
 

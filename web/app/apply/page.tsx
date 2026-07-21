@@ -10,7 +10,7 @@ import { PilotApplicationForm } from "./PilotApplicationForm";
  */
 
 export const metadata = {
-  title: "Apply for the pilot — INFITRA",
+  title: "Apply for the pilot · INFITRA",
   description:
     "Apply to be one of the first five expert pairs running a joint live experience on INFITRA.",
 };
@@ -61,7 +61,7 @@ export default function ApplyPage() {
                   className="text-[#0891b2] text-[10px] tracking-widest uppercase font-headline"
                   style={{ fontWeight: 700 }}
                 >
-                  Pilot — first 5 pairs
+                  Pilot · first 5 pairs
                 </span>
               </div>
               <h1
@@ -77,8 +77,8 @@ export default function ApplyPage() {
                 style={{ color: "#475569" }}
               >
                 We&apos;re looking for five expert pairs to run joint live experiences in the
-                pilot. If your expertise complements another expert&apos;s — and a 4–6
-                week experience would land for your audience — we want to hear from you.
+                pilot. If your expertise complements another expert&apos;s, and a 4 to 6
+                week experience would land for your audience, we want to hear from you.
               </p>
             </div>
 

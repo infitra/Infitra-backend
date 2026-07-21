@@ -33,9 +33,9 @@ import { JoinWaitlistLink } from "./JoinWaitlistLink";
  */
 
 export const metadata = {
-  title: "INFITRA — Live, co-created fitness experiences",
+  title: "INFITRA · Live, co-created fitness experiences",
   description:
-    "Build an experience beyond what you can offer alone. Two experts, one live experience — page, checkout, contract, revenue split, live rooms and tribe, handled.",
+    "Build an experience beyond what you can offer alone. Two experts, one live experience: page, checkout, contract, revenue split, live rooms and tribe, handled.",
   robots: { index: false, follow: false }, // polishing workspace — noindex until promoted to /
 };
 

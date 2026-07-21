@@ -137,7 +137,7 @@ export function WhatYouCanBuild() {
                   </div>
                   <div className="p-3.5">
                     <p className="text-[10px] uppercase tracking-widest font-headline" style={{ color: FAINT, fontWeight: 800 }}>
-                      {s.day} · {s.time} — {s.dur}
+                      {s.day} · {s.time} · {s.dur}
                     </p>
                     <p className="text-[13.5px] font-headline leading-snug mt-1" style={{ color: INK, fontWeight: 800 }}>
                       {s.title}

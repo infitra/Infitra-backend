@@ -17,9 +17,9 @@ import { submitPilotApplication } from "@/app/actions/pilot-application";
 
 const AUDIENCE_OPTIONS: { value: string; label: string }[] = [
   { value: "under_500", label: "Under 500" },
-  { value: "500_to_2k", label: "500 – 2,000" },
-  { value: "2k_to_10k", label: "2,000 – 10,000" },
-  { value: "10k_to_50k", label: "10,000 – 50,000" },
+  { value: "500_to_2k", label: "500 to 2,000" },
+  { value: "2k_to_10k", label: "2,000 to 10,000" },
+  { value: "10k_to_50k", label: "10,000 to 50,000" },
   { value: "over_50k", label: "Over 50,000" },
 ];
 
@@ -111,7 +111,7 @@ export function PilotApplicationForm() {
           <Field
             label="Where people find you"
             name="channel_url"
-            hint="Instagram, YouTube, TikTok, or your site — pick one."
+            hint="Instagram, YouTube, TikTok, or your site. Pick one."
           >
             <input
               id="channel_url"
@@ -178,7 +178,7 @@ export function PilotApplicationForm() {
                 maxLength={1000}
                 rows={3}
                 className={textareaCls} style={FIELD_STYLE}
-                placeholder="e.g. Mia Aebi — registered nutritionist, focused on cycle-aware eating. We've talked about a joint experience for a while."
+                placeholder="e.g. Mia Aebi, a registered nutritionist focused on cycle-aware eating. We've talked about a joint experience for a while."
               />
             </Field>
           ) : (
@@ -193,7 +193,7 @@ export function PilotApplicationForm() {
                 maxLength={1000}
                 rows={3}
                 className={textareaCls} style={FIELD_STYLE}
-                placeholder="e.g. a nutritionist or recovery specialist — I cover the training side but want someone to handle the food + sleep half."
+                placeholder="e.g. a nutritionist or recovery specialist. I cover the training side but want someone to handle the food + sleep half."
               />
             </Field>
           )}
@@ -204,7 +204,7 @@ export function PilotApplicationForm() {
           <Field
             label="What would a successful pilot look like to you?"
             name="success_description"
-            hint="One paragraph is plenty — we read every word."
+            hint="One paragraph is plenty. We read every word."
           >
             <textarea
               id="success_description"

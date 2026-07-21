@@ -50,7 +50,7 @@ const BEATS_M: BeatDef[] = BEATS.map((b) => (b.f === 5 ? { ...b, w: 2 } : b));
  * Kickers are gone: the rail carries the step identity. */
 const HEADS: Record<number, { title: React.ReactNode; copy?: string }[]> = {
   1: [{ title: "Pick your complement.", copy: "One invitation starts a shared draft with the expert who complements you. INFITRA supports multiple experts inside one experience." }],
-  2: [{ title: "Design it together.", copy: "A pre-structured experience to create inside — add a session, set the split, talk it through." }],
+  2: [{ title: "Design it together.", copy: "A pre-structured experience to create inside: add a session, set the split, talk it through." }],
   3: [{ title: "Lock it. Review. Agree.", copy: "The whole design locks as one. Your partner reviews and agrees to exactly that." }],
   4: [
     { title: "All agreed. One move left." },
@@ -370,7 +370,7 @@ function WsMiraMsg() {
         <img src={MIRA.avatar} alt="" className="w-full h-full object-cover" />
       </span>
       <div className="rounded-2xl rounded-tl-md px-3.5 py-2.5 text-[12.5px] font-medium leading-snug" style={{ backgroundColor: "rgba(8,145,178,0.08)", color: INK }}>
-        Added my nutrition sessions for weeks 1–3 ✓
+        Added my nutrition sessions for weeks 1 to 3 ✓
       </div>
     </div>
   );
@@ -383,7 +383,7 @@ function WsAlexMsg() {
         className="rounded-2xl rounded-tr-md px-4 py-3 text-[13.5px] font-headline leading-snug"
         style={{ backgroundColor: "rgba(255,97,48,0.12)", color: INK, fontWeight: 700, boxShadow: `0 0 0 1.5px ${ORANGE}59` }}
       >
-        I think we are all set — I&apos;ll lock this for review!
+        I think we are all set. I&apos;ll lock this for review!
       </div>
       <span className="shrink-0 w-9 h-9 rounded-full overflow-hidden mt-0.5" style={{ border: `1.5px solid ${ORANGE}59` }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -538,7 +538,7 @@ function AgLockBadge() {
 function AgChecklist() {
   return (
     <div className="w-full max-w-lg space-y-2.5">
-      {["All sessions — as designed", "Ownership — as assigned", "Revenue Split — as defined"].map((t) => (
+      {["All sessions · as designed", "Ownership · as assigned", "Revenue Split · as defined"].map((t) => (
         <div key={t} className="flex items-center gap-3 rounded-xl px-4 py-3.5 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: CARD_POP }}>
           <span className="shrink-0" style={{ color: CYAN }}>{CHECK(CYAN, 14)}</span>
           <span className="text-[14px] font-bold font-headline" style={{ color: INK }}>{t}</span>
@@ -584,7 +584,7 @@ function AgRecordCard() {
 function AgRecordCaption() {
   return (
     <p className="text-[13px] md:text-[14.5px] font-headline mt-6 text-center" style={{ color: LIGHT_MUTED, fontWeight: 700 }}>
-      Every agreement recorded — <span style={{ color: LIGHT }}>exactly as accepted, exactly when.</span>
+      Every agreement recorded: <span style={{ color: LIGHT }}>exactly as accepted, exactly when.</span>
     </p>
   );
 }
@@ -605,7 +605,7 @@ function AgreementFrame({ phase }: { phase: number }) {
           {sealed ? (
             <div className="flex flex-col items-center w-full">
               <p className="inline-flex items-center gap-2 mb-5 text-[12px] uppercase tracking-widest font-headline" style={{ color: CYAN_BRIGHT, fontWeight: 800 }}>
-                {CHECK(CYAN_BRIGHT, 12)} The whole design — reviewed
+                {CHECK(CYAN_BRIGHT, 12)} The whole design, reviewed
               </p>
               <div className="w-full">
                 <AgRecordCard />
@@ -636,7 +636,7 @@ function AgreementFrameMobile({ phase }: { phase: number }) {
         ) : (
           <div className="flex flex-col items-center">
             <p className="inline-flex items-center gap-2 mb-5 text-[12px] uppercase tracking-widest font-headline" style={{ color: CYAN_BRIGHT, fontWeight: 800 }}>
-              {CHECK(CYAN_BRIGHT, 12)} The whole design — reviewed
+              {CHECK(CYAN_BRIGHT, 12)} The whole design, reviewed
             </p>
             <div className="w-full">
               <AgRecordCard />
@@ -652,11 +652,11 @@ function AgreementFrameMobile({ phase }: { phase: number }) {
 /* ══ Frame 4 · The publish — your click, then everything ════ */
 
 const HANDLED = [
-  { t: "Sessions", d: "All scheduled — live rooms ready to open.", icon: ICON_SESSIONS, color: CYAN },
+  { t: "Sessions", d: "All scheduled, live rooms ready to open.", icon: ICON_SESSIONS, color: CYAN },
   { t: "Experience space", d: "The tribe's room, open and waiting for members.", icon: ICON_SPACE, color: CYAN },
-  { t: "Contract", d: "Recorded & sealed automatically — tamper-evident.", icon: FINGERPRINT, color: CYAN },
-  { t: "Marketing page", d: "Live on your link, checkout included — ready to promote.", icon: ICON_MEGAPHONE, color: ORANGE },
-  { t: "Revenue split", d: "Armed for every sale — exactly as agreed.", icon: ICON_SPLIT, color: ORANGE },
+  { t: "Contract", d: "Recorded & sealed automatically. Tamper-evident.", icon: FINGERPRINT, color: CYAN },
+  { t: "Marketing page", d: "Live on your link, checkout included. Ready to promote.", icon: ICON_MEGAPHONE, color: ORANGE },
+  { t: "Revenue split", d: "Armed for every sale, exactly as agreed.", icon: ICON_SPLIT, color: ORANGE },
 ];
 
 function PublishFrame({ phase, onPublish, staticLayout = false }: { phase: number; onPublish: () => void; staticLayout?: boolean }) {
@@ -678,7 +678,7 @@ function PublishFrame({ phase, onPublish, staticLayout = false }: { phase: numbe
           >
             Publish now!
           </button>
-          <p className="text-[13px] mt-5" style={{ color: LIGHT_MUTED }}>Your move — or keep scrolling.</p>
+          <p className="text-[13px] mt-5" style={{ color: LIGHT_MUTED }}>Your move, or keep scrolling.</p>
         </Phase>
 
         {/* state 2 — everything in between, one by one, with weight */}

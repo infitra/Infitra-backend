@@ -42,9 +42,9 @@ export function Hero() {
 
         <p className="text-base md:text-xl max-w-2xl mx-auto leading-relaxed mb-9" style={{ color: MUTED }}>
           Team up with experts who complement you and deliver one seamless live experience for
-          your audience. INFITRA provides everything around that — the live rooms, the tribe
+          your audience. INFITRA provides everything around that: the live rooms, the tribe
           space, the marketing page with checkout, the collaboration contract and the revenue
-          splitting — <span style={{ color: INK, fontWeight: 600 }}>so you can focus on the experience.</span>
+          splitting, <span style={{ color: INK, fontWeight: 600 }}>so you can focus on the experience.</span>
         </p>
 
         <ApplyCTA micro="5 founding pairs · reviewed individually · starting now" />

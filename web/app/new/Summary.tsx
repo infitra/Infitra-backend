@@ -39,7 +39,7 @@ const P_GROW = (color: string, size = 20) => (
 
 const PILLARS = [
   { icon: P_CONTRACT, c: ORANGE, t: "Design & agree", d: "One shared workspace, one sealed agreement, a fair split." },
-  { icon: P_PUBLISH, c: CYAN, t: "Publish once", d: "Page, checkout, rooms, space — live in one click." },
+  { icon: P_PUBLISH, c: CYAN, t: "Publish once", d: "Page, checkout, rooms, space, live in one click." },
   { icon: P_LIVE, c: ORANGE, t: "Show up live", d: "Your tribe trains together, week after week." },
   { icon: P_GROW, c: CYAN, t: "Grow every run", d: "Re-enrollment, new people, natural progression." },
 ];
@@ -61,7 +61,7 @@ export function Summary() {
             <span className="block">From content to <span style={{ color: CYAN }}>experience.</span></span>
           </h2>
           <p className="text-base md:text-xl leading-relaxed max-w-2xl mx-auto mt-7" style={{ color: MUTED }}>
-            That&apos;s INFITRA — complementary experts building one living fitness
+            That&apos;s INFITRA: complementary experts building one living fitness
             experience: designed together, published in one click, alive every week,
             growing run after run.
           </p>

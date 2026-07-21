@@ -80,7 +80,7 @@ export const EX = {
   positioning: ["Stop buying static fitness content.", "Start participating in a real fitness experience."],
   /** Real intro prompt (adapted to experiences vocabulary). */
   introPrompt:
-    "What made you join — and what routine or habit are you most hoping to improve over the next 6 weeks?",
+    "What made you join, and what routine or habit are you most hoping to improve over the next 6 weeks?",
 } as const;
 
 export const ALEX = {
