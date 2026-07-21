@@ -355,8 +355,11 @@ export function AutoFit({ children }: { children: React.ReactNode }) {
     // The bottom padding BIASES the vertical centering upward: pure centering
     // left short content sitting too deep below the anchored title (a dead
     // band between title and content, all leftover at eye level). Content now
-    // gravitates toward the title; spare room pools at the bottom.
-    <div ref={outerRef} className="w-full flex-1 min-h-0 flex items-center justify-center pb-[5vh] lg:pb-[11vh]">
+    // gravitates toward the title; spare room pools at the bottom. Desktop
+    // bias is moderate — 11vh starved the TALLEST frames' budget and pushed
+    // them up over the anchored copy (AutoFit is inert on lg, so an oversize
+    // frame centers and bleeds BOTH ways).
+    <div ref={outerRef} className="w-full flex-1 min-h-0 flex items-center justify-center pb-[5vh] lg:pb-[6vh]">
       <div
         ref={innerRef}
         className="w-full"

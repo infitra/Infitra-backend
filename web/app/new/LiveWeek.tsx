@@ -63,7 +63,8 @@ const BEATS_M: BeatDef[] = [
   { f: 3, p: 2, w: 1.3 }, // — THE PEAK: you're live
   { f: 3, p: 3, w: 1 }, // — the reflection closes it
   { f: 4, p: 0, w: 1.1 }, // the growth — the run wraps, you shape the next
-  { f: 4, p: 1, w: 1.2 }, // — the growth engine; releases into the finale
+  { f: 4, p: 1, w: 1.1 }, // — the growth engine: retention (one hero, natural size)
+  { f: 4, p: 2, w: 1.2 }, // — new people + progression; releases into the finale
 ];
 
 const RAIL = [
@@ -269,22 +270,23 @@ function SpaceHeader() {
       {/* mobile: the cover leads full-width */}
       <div className="relative aspect-[16/9] sm:hidden" style={{ backgroundColor: INK }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={EX.cover} alt="" className="absolute inset-0 w-full h-full object-cover" />
+        <img src={EX.cover} alt="" className="absolute inset-0 w-full h-full object-cover" style={{ objectPosition: "50% 28%" }} />
       </div>
       <div className="flex items-stretch">
-        {/* desktop: the cover as a full-height left block */}
+        {/* desktop: the cover as a full-height left block — the crop biases
+           toward the hosts' faces so a thinner header never beheads them */}
         <span className="relative hidden sm:block shrink-0 w-52 lg:w-64" style={{ backgroundColor: INK }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={EX.cover} alt="" className="absolute inset-0 w-full h-full object-cover" />
+          <img src={EX.cover} alt="" className="absolute inset-0 w-full h-full object-cover" style={{ objectPosition: "50% 28%" }} />
         </span>
-        <div className="min-w-0 flex-1 px-5 py-5 sm:px-7 sm:py-6">
-          <p className="text-[20px] sm:text-[24px] font-headline tracking-tight leading-snug" style={{ color: INK, fontWeight: 800, letterSpacing: "-0.02em" }}>
+        <div className="min-w-0 flex-1 px-5 py-5 sm:px-6 sm:py-4">
+          <p className="text-[20px] sm:text-[21px] font-headline tracking-tight leading-snug" style={{ color: INK, fontWeight: 800, letterSpacing: "-0.02em" }}>
             {EX.title}
           </p>
-          <span className="flex items-center gap-2 mt-2.5">
+          <span className="flex items-center gap-2 mt-2.5 sm:mt-2">
             <span className="flex -space-x-2">
               {[ALEX.avatar, MIRA.avatar].map((a) => (
-                <span key={a} className="w-8 h-8 sm:w-9 sm:h-9 rounded-full overflow-hidden" style={{ border: "2px solid #FFFFFF" }}>
+                <span key={a} className="w-8 h-8 rounded-full overflow-hidden" style={{ border: "2px solid #FFFFFF" }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={a} alt="" className="w-full h-full object-cover" />
                 </span>
@@ -298,9 +300,9 @@ function SpaceHeader() {
           <span className="flex sm:hidden items-center justify-between gap-3 mt-3">
             {statusBlock("left")}
           </span>
-          <span className="flex flex-wrap gap-1.5 mt-3.5">
+          <span className="flex flex-wrap gap-1.5 mt-3.5 sm:mt-3">
             {["Meet your Experts", "Structure"].map((c) => (
-              <span key={c} className="inline-flex items-center gap-1 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full text-[10px] sm:text-[11px] font-headline" style={{ color: INK, backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.10)", fontWeight: 800 }}>
+              <span key={c} className="inline-flex items-center gap-1 px-3 py-1.5 sm:px-3.5 rounded-full text-[10px] sm:text-[11px] font-headline" style={{ color: INK, backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.10)", fontWeight: 800 }}>
                 {c} <span style={{ color: FAINT }}>{CHEVRON_DOWN}</span>
               </span>
             ))}
@@ -471,7 +473,7 @@ function SpaceJourneyCard() {
         ))}
       </div>
       {/* the progress tracker — the whole experience + YOUR attendance */}
-      <div className="mt-6 pt-5 space-y-4" style={{ borderTop: "1px solid rgba(15,34,41,0.07)" }}>
+      <div className="mt-6 pt-5 lg:mt-4 lg:pt-4 space-y-4 lg:space-y-3" style={{ borderTop: "1px solid rgba(15,34,41,0.07)" }}>
         <div>
           <div className="flex items-baseline justify-between mb-2">
             <p className="text-[9px] uppercase tracking-[0.18em] font-headline" style={{ color: FAINT, fontWeight: 800 }}>Progress of the whole experience</p>
@@ -516,7 +518,7 @@ function SpaceFrame({ phase }: { phase: number }) {
       <div style={{ transform: out ? "none" : "translateY(130px)", transition: `transform ${CUT_MS + 120}ms ${EASE}` }} aria-hidden>
         <SpaceHeader />
       </div>
-      <div className="grid sm:grid-cols-3 gap-4 mt-5 items-stretch" aria-hidden>
+      <div className="grid sm:grid-cols-3 gap-4 mt-5 lg:mt-4 items-stretch" aria-hidden>
         <Pop show={out} d={140}>
           <SpaceJourneyCard />
         </Pop>
@@ -590,25 +592,37 @@ function HandsIntroPost() {
 
 function HandsNotifCard() {
   return (
-    <div className="rounded-2xl p-6 lg:p-7" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }}>
-      <div className="flex items-center gap-2.5 pb-3 mb-3" style={{ borderBottom: "1px solid rgba(15,34,41,0.07)" }}>
+    <div className="rounded-2xl p-6 lg:p-8" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }}>
+      <div className="flex items-center gap-2.5 pb-3 mb-3 lg:pb-4 lg:mb-4" style={{ borderBottom: "1px solid rgba(15,34,41,0.07)" }}>
         <span className="relative">
           {ICON_BELL(INK, 20)}
           <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full animate-pulse" style={{ backgroundColor: ORANGE, border: "1.5px solid #FFFFFF" }} />
         </span>
-        <span className="text-[11px] uppercase tracking-[0.16em] font-headline" style={{ color: INK, fontWeight: 800 }}>Notifications</span>
-        <span className="ml-auto text-[9.5px] uppercase tracking-widest font-headline" style={{ color: FAINT, fontWeight: 800 }}>Mark all read</span>
+        <span className="text-[11px] lg:text-[12.5px] uppercase tracking-[0.16em] font-headline" style={{ color: INK, fontWeight: 800 }}>Notifications</span>
+        <span className="ml-auto text-[9.5px] lg:text-[10.5px] uppercase tracking-widest font-headline" style={{ color: FAINT, fontWeight: 800 }}>Mark all read</span>
       </div>
-      <div className="rounded-xl px-3.5 py-3 flex items-center gap-3" style={{ backgroundColor: "rgba(255,97,48,0.06)", boxShadow: `inset 3.5px 0 0 ${ORANGE}` }}>
-        <span className="shrink-0 w-11 h-11 rounded-full overflow-hidden" style={{ border: `1.5px solid ${TIM.color}59` }}>
+      <div className="rounded-xl px-3.5 py-3 lg:px-5 lg:py-4.5 flex items-center gap-3 lg:gap-4" style={{ backgroundColor: "rgba(255,97,48,0.06)", boxShadow: `inset 3.5px 0 0 ${ORANGE}` }}>
+        <span className="shrink-0 w-11 h-11 lg:w-14 lg:h-14 rounded-full overflow-hidden" style={{ border: `1.5px solid ${TIM.color}59` }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={TIM.avatar} alt="" className="w-full h-full object-cover" />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-[13px] font-headline leading-tight" style={{ color: INK, fontWeight: 800 }}>{ROOM.qa.asker} asked you a question</span>
-          <span className="block text-[11.5px] mt-1" style={{ color: MUTED }}>Open your Tribe to answer</span>
+          <span className="block text-[13px] lg:text-[16px] font-headline leading-tight" style={{ color: INK, fontWeight: 800 }}>{ROOM.qa.asker} asked you a question</span>
+          <span className="block text-[11.5px] lg:text-[13px] mt-1" style={{ color: MUTED }}>Open your Tribe to answer</span>
         </span>
-        <span className="shrink-0 text-[10px] font-bold" style={{ color: FAINT }}>just now</span>
+        <span className="shrink-0 text-[10px] lg:text-[11.5px] font-bold" style={{ color: FAINT }}>just now</span>
+      </div>
+      {/* an already-read one beneath — the console is a real inbox, not a prop */}
+      <div className="hidden lg:flex rounded-xl px-5 py-4 items-center gap-4 mt-3" style={{ backgroundColor: "#F8F6F0", opacity: 0.6 }}>
+        <span className="shrink-0 w-11 h-11 rounded-full overflow-hidden">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={PRIYA.avatar} alt="" className="w-full h-full object-cover" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[14px] font-headline leading-tight" style={{ color: INK, fontWeight: 800 }}>{PRIYA.name} commented on Anna&apos;s post</span>
+          <span className="block text-[12px] mt-1" style={{ color: MUTED }}>&ldquo;Same here — Tuesday can&apos;t come soon enough&rdquo;</span>
+        </span>
+        <span className="shrink-0 text-[11px] font-bold" style={{ color: FAINT }}>2h</span>
       </div>
     </div>
   );
@@ -616,22 +630,30 @@ function HandsNotifCard() {
 
 function HandsConsoleCard() {
   return (
-    <div className="rounded-2xl p-6 lg:p-7" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }}>
-      <div className="flex items-center gap-2.5 pb-3 mb-3" style={{ borderBottom: "1px solid rgba(15,34,41,0.07)" }}>
-        <span className="w-9 h-9 rounded-full overflow-hidden shrink-0" style={{ border: `1.5px solid ${ORANGE}59` }}>
+    <div className="rounded-2xl p-6 lg:p-8" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }}>
+      <div className="flex items-center gap-2.5 lg:gap-3 pb-3 mb-3 lg:pb-4 lg:mb-4" style={{ borderBottom: "1px solid rgba(15,34,41,0.07)" }}>
+        <span className="w-9 h-9 lg:w-12 lg:h-12 rounded-full overflow-hidden shrink-0" style={{ border: `1.5px solid ${ORANGE}59` }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={ALEX.avatar} alt="" className="w-full h-full object-cover" />
         </span>
-        <span className="text-[11px] uppercase tracking-[0.16em] font-headline" style={{ color: INK, fontWeight: 800 }}>Needs you</span>
+        <span className="text-[11px] lg:text-[12.5px] uppercase tracking-[0.16em] font-headline" style={{ color: INK, fontWeight: 800 }}>Needs you</span>
       </div>
-      <div className="rounded-xl px-4 py-3.5 flex items-center justify-between" style={{ backgroundColor: "rgba(255,97,48,0.06)", boxShadow: "0 0 0 1.5px rgba(255,97,48,0.30)" }}>
+      <div className="rounded-xl px-4 py-3.5 lg:px-5 lg:py-4.5 flex items-center justify-between" style={{ backgroundColor: "rgba(255,97,48,0.06)", boxShadow: "0 0 0 1.5px rgba(255,97,48,0.30)" }}>
         <span>
-          <span className="block text-[10px] uppercase tracking-[0.16em] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>Waiting on you</span>
-          <span className="block text-[15px] font-black font-headline mt-1" style={{ color: INK }}>1 question</span>
+          <span className="block text-[10px] lg:text-[11px] uppercase tracking-[0.16em] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>Waiting on you</span>
+          <span className="block text-[15px] lg:text-[20px] font-black font-headline mt-1" style={{ color: INK }}>1 question</span>
         </span>
-        <span className="text-[12.5px] font-black font-headline" style={{ color: ORANGE }}>Answer →</span>
+        <span className="text-[12.5px] lg:text-[15px] font-black font-headline" style={{ color: ORANGE }}>Answer →</span>
       </div>
-      <p className="text-[11.5px] font-bold mt-3" style={{ color: MUTED }}>It stays on your console until it&apos;s done — nothing slips through.</p>
+      {/* the question itself, queued — the console holds the real thing */}
+      <div className="hidden lg:flex items-center gap-3 rounded-xl px-4 py-3.5 mt-3" style={{ backgroundColor: "#F8F6F0" }}>
+        <span className="shrink-0 w-9 h-9 rounded-full overflow-hidden">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={TIM.avatar} alt="" className="w-full h-full object-cover" />
+        </span>
+        <span className="min-w-0 truncate text-[13.5px] font-semibold" style={{ color: MUTED }}>&ldquo;{ROOM.qa.question}&rdquo;</span>
+      </div>
+      <p className="text-[11.5px] lg:text-[13px] font-bold mt-3 lg:mt-4" style={{ color: MUTED }}>It stays on your console until it&apos;s done — nothing slips through.</p>
     </div>
   );
 }
@@ -667,7 +689,12 @@ function HandsAnsweredPost({ answerOn }: { answerOn: boolean }) {
               </span>
             </div>
             <p className="text-[14px] md:text-[15px] leading-relaxed mt-2.5" style={{ color: MUTED }}>
-              {ROOM.qa.answer}
+              {/* phones get the short form — the full answer pushed the beat
+                 past the stage and AutoFit zoomed the whole post out */}
+              <span className="md:hidden">
+                Hi Tim! Recovery is a very important part of training — give your body time to reset between sessions. Lighter activity like a walk, easy jogging or a Padel session with a friend is great. Just don&apos;t tire yourself out fully!
+              </span>
+              <span className="hidden md:inline">{ROOM.qa.answer}</span>
             </p>
           </div>
         </Pop>
@@ -702,7 +729,7 @@ function HandsAnsweredPost({ answerOn }: { answerOn: boolean }) {
 
 function HandsFrame({ phase, staticLayout = false }: { phase: number; staticLayout?: boolean }) {
   return (
-    <div className={`w-full max-w-3xl lg:max-w-4xl mx-auto ${staticLayout ? "" : FIT}`}>
+    <div className={`w-full max-w-3xl lg:max-w-5xl mx-auto ${staticLayout ? "" : FIT}`}>
       {/* Each phase is a self-contained, centered [head + content] block — the
          same treatment as the dark chapter's frames, so short phases stay
          centered instead of leaving a gap under a top-pinned title. */}
@@ -719,73 +746,73 @@ function HandsFrame({ phase, staticLayout = false }: { phase: number; staticLayo
           <div className="grid sm:grid-cols-2 gap-6 text-left" aria-hidden>
             {/* share — members */}
             <Pop show={phase === 1} d={120}>
-              <div className="h-full rounded-2xl p-6 lg:p-7" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.06), 0 16px 40px rgba(15,34,41,0.08), inset 4px 0 0 " + CYAN }}>
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-[11px] uppercase tracking-[0.18em] font-headline" style={{ color: CYAN, fontWeight: 800 }}>Share</p>
-                  <span className="px-2.5 py-1 rounded-full text-[9px] uppercase tracking-widest font-headline" style={{ color: CYAN, backgroundColor: "rgba(8,145,178,0.08)", fontWeight: 800 }}>Members</span>
+              <div className="h-full rounded-2xl p-6 lg:p-8" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.06), 0 16px 40px rgba(15,34,41,0.08), inset 4px 0 0 " + CYAN }}>
+                <div className="flex items-center justify-between mb-3 lg:mb-4">
+                  <p className="text-[11px] lg:text-[13px] uppercase tracking-[0.18em] font-headline" style={{ color: CYAN, fontWeight: 800 }}>Share</p>
+                  <span className="px-2.5 py-1 rounded-full text-[9px] lg:text-[10px] uppercase tracking-widest font-headline" style={{ color: CYAN, backgroundColor: "rgba(8,145,178,0.08)", fontWeight: 800 }}>Members</span>
                 </div>
-                <div className="rounded-full px-4 py-2.5 text-[12px]" style={{ backgroundColor: "#F8F6F0", color: FAINT }}>
+                <div className="rounded-full px-4 py-2.5 lg:px-5 lg:py-3.5 text-[12px] lg:text-[14px]" style={{ backgroundColor: "#F8F6F0", color: FAINT }}>
                   Share with your Tribe…
                 </div>
-                <p className="text-[11.5px] font-bold mt-2.5" style={{ color: MUTED }}>Anyone, anytime — wins, struggles, photos.</p>
+                <p className="text-[11.5px] lg:text-[13.5px] font-bold mt-2.5 lg:mt-3.5" style={{ color: MUTED }}>Anyone, anytime — wins, struggles, photos.</p>
               </div>
             </Pop>
             {/* question post — members */}
             <Pop show={phase === 1} d={120 + CASCADE_MS}>
-              <div className="h-full rounded-2xl p-6 lg:p-7" style={{ backgroundColor: "#FFFFFF", boxShadow: `0 0 0 1px rgba(15,34,41,0.06), 0 16px 40px rgba(15,34,41,0.08), inset 4px 0 0 ${CYAN}` }}>
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-[11px] uppercase tracking-[0.18em] font-headline" style={{ color: CYAN, fontWeight: 800 }}>Ask inside a post</p>
-                  <span className="px-2.5 py-1 rounded-full text-[9px] uppercase tracking-widest font-headline" style={{ color: CYAN, backgroundColor: "rgba(8,145,178,0.08)", fontWeight: 800 }}>Members</span>
+              <div className="h-full rounded-2xl p-6 lg:p-8" style={{ backgroundColor: "#FFFFFF", boxShadow: `0 0 0 1px rgba(15,34,41,0.06), 0 16px 40px rgba(15,34,41,0.08), inset 4px 0 0 ${CYAN}` }}>
+                <div className="flex items-center justify-between mb-3 lg:mb-4">
+                  <p className="text-[11px] lg:text-[13px] uppercase tracking-[0.18em] font-headline" style={{ color: CYAN, fontWeight: 800 }}>Ask inside a post</p>
+                  <span className="px-2.5 py-1 rounded-full text-[9px] lg:text-[10px] uppercase tracking-widest font-headline" style={{ color: CYAN, backgroundColor: "rgba(8,145,178,0.08)", fontWeight: 800 }}>Members</span>
                 </div>
-                <p className="text-[13px] leading-snug" style={{ color: INK, fontWeight: 600 }}>{ROOM.qa.question}</p>
-                <div className="mt-3 rounded-lg px-3 py-2 inline-flex items-center gap-2" style={{ backgroundColor: "rgba(8,145,178,0.07)", boxShadow: `inset 3px 0 0 ${CYAN}` }}>
-                  <span className="text-[9px] uppercase tracking-[0.14em] font-headline" style={{ color: CYAN, fontWeight: 800 }}>Question for</span>
-                  <span className="w-6 h-6 rounded-full overflow-hidden shrink-0">
+                <p className="text-[13px] lg:text-[15.5px] leading-snug" style={{ color: INK, fontWeight: 600 }}>{ROOM.qa.question}</p>
+                <div className="mt-3 lg:mt-4 rounded-lg px-3 py-2 lg:px-4 lg:py-2.5 inline-flex items-center gap-2 lg:gap-2.5" style={{ backgroundColor: "rgba(8,145,178,0.07)", boxShadow: `inset 3px 0 0 ${CYAN}` }}>
+                  <span className="text-[9px] lg:text-[10.5px] uppercase tracking-[0.14em] font-headline" style={{ color: CYAN, fontWeight: 800 }}>Question for</span>
+                  <span className="w-6 h-6 lg:w-7 lg:h-7 rounded-full overflow-hidden shrink-0">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={ALEX.avatar} alt="" className="w-full h-full object-cover" />
                   </span>
-                  <span className="text-[11.5px] font-headline" style={{ color: INK, fontWeight: 800 }}>{ALEX.name}</span>
-                  <span className="text-[9px] font-bold" style={{ color: FAINT }}>routed ✓</span>
+                  <span className="text-[11.5px] lg:text-[13.5px] font-headline" style={{ color: INK, fontWeight: 800 }}>{ALEX.name}</span>
+                  <span className="text-[9px] lg:text-[10.5px] font-bold" style={{ color: FAINT }}>routed ✓</span>
                 </div>
               </div>
             </Pop>
             {/* context post — creators */}
             <Pop show={phase === 1} d={120 + CASCADE_MS * 2}>
-              <div className="h-full rounded-2xl p-6 lg:p-7" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.06), 0 16px 40px rgba(15,34,41,0.08), inset 4px 0 0 " + ORANGE }}>
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-[11px] uppercase tracking-[0.18em] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>Post with context</p>
-                  <span className="px-2.5 py-1 rounded-full text-[9px] uppercase tracking-widest font-headline" style={{ color: ORANGE, backgroundColor: "rgba(255,97,48,0.08)", fontWeight: 800 }}>Experts</span>
+              <div className="h-full rounded-2xl p-6 lg:p-8" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.06), 0 16px 40px rgba(15,34,41,0.08), inset 4px 0 0 " + ORANGE }}>
+                <div className="flex items-center justify-between mb-3 lg:mb-4">
+                  <p className="text-[11px] lg:text-[13px] uppercase tracking-[0.18em] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>Post with context</p>
+                  <span className="px-2.5 py-1 rounded-full text-[9px] lg:text-[10px] uppercase tracking-widest font-headline" style={{ color: ORANGE, backgroundColor: "rgba(255,97,48,0.08)", fontWeight: 800 }}>Experts</span>
                 </div>
-                <p className="text-[13px] leading-snug" style={{ color: INK, fontWeight: 600 }}>
+                <p className="text-[13px] lg:text-[15.5px] leading-snug" style={{ color: INK, fontWeight: 600 }}>
                   Tuesday we build on Monday&apos;s flow — bring water and a mat!
                 </p>
-                <div className="mt-3 flex items-center gap-2.5 rounded-lg p-2" style={{ backgroundColor: "#F8F6F0", boxShadow: "0 0 0 1px rgba(15,34,41,0.06)" }}>
-                  <span className="relative shrink-0 w-11 h-8 rounded-md overflow-hidden" style={{ backgroundColor: INK }}>
+                <div className="mt-3 lg:mt-4 flex items-center gap-2.5 lg:gap-3 rounded-lg p-2 lg:p-2.5" style={{ backgroundColor: "#F8F6F0", boxShadow: "0 0 0 1px rgba(15,34,41,0.06)" }}>
+                  <span className="relative shrink-0 w-11 h-8 lg:w-14 lg:h-10 rounded-md overflow-hidden" style={{ backgroundColor: INK }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={ROOM.next.img} alt="" className="absolute inset-0 w-full h-full object-cover" />
                   </span>
-                  <span className="min-w-0 text-[11px] font-bold truncate" style={{ color: INK }}>{ROOM.next.title}</span>
-                  <span className="ml-auto text-[8.5px] uppercase tracking-widest font-headline shrink-0" style={{ color: FAINT, fontWeight: 800 }}>Moment</span>
+                  <span className="min-w-0 text-[11px] lg:text-[13px] font-bold truncate" style={{ color: INK }}>{ROOM.next.title}</span>
+                  <span className="ml-auto text-[8.5px] lg:text-[9.5px] uppercase tracking-widest font-headline shrink-0" style={{ color: FAINT, fontWeight: 800 }}>Moment</span>
                 </div>
               </div>
             </Pop>
             {/* calendar export — equal citizen */}
             <Pop show={phase === 1} d={120 + CASCADE_MS * 3}>
-              <div className="h-full rounded-2xl p-6 lg:p-7" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.06), 0 16px 40px rgba(15,34,41,0.08), inset 4px 0 0 " + CYAN }}>
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-[11px] uppercase tracking-[0.18em] font-headline" style={{ color: CYAN, fontWeight: 800 }}>Calendar export</p>
-                  <span className="px-2.5 py-1 rounded-full text-[9px] uppercase tracking-widest font-headline" style={{ color: CYAN, backgroundColor: "rgba(8,145,178,0.08)", fontWeight: 800 }}>Members</span>
+              <div className="h-full rounded-2xl p-6 lg:p-8" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.06), 0 16px 40px rgba(15,34,41,0.08), inset 4px 0 0 " + CYAN }}>
+                <div className="flex items-center justify-between mb-3 lg:mb-4">
+                  <p className="text-[11px] lg:text-[13px] uppercase tracking-[0.18em] font-headline" style={{ color: CYAN, fontWeight: 800 }}>Calendar export</p>
+                  <span className="px-2.5 py-1 rounded-full text-[9px] lg:text-[10px] uppercase tracking-widest font-headline" style={{ color: CYAN, backgroundColor: "rgba(8,145,178,0.08)", fontWeight: 800 }}>Members</span>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className="shrink-0 w-11 h-11 rounded-xl flex items-center justify-center" style={{ backgroundColor: "rgba(8,145,178,0.10)" }}>
+                <div className="flex items-center gap-3 lg:gap-3.5">
+                  <span className="shrink-0 w-11 h-11 lg:w-13 lg:h-13 rounded-xl flex items-center justify-center" style={{ backgroundColor: "rgba(8,145,178,0.10)" }}>
                     {ICON_CAL(CYAN, 19)}
                   </span>
                   <span className="min-w-0">
-                    <span className="block text-[13px] font-headline leading-tight" style={{ color: INK, fontWeight: 800 }}>Export your calendar</span>
-                    <span className="block text-[11px] font-bold mt-1" style={{ color: MUTED }}>Every live moment · one click</span>
+                    <span className="block text-[13px] lg:text-[15.5px] font-headline leading-tight" style={{ color: INK, fontWeight: 800 }}>Export your calendar</span>
+                    <span className="block text-[11px] lg:text-[12.5px] font-bold mt-1" style={{ color: MUTED }}>Every live moment · one click</span>
                   </span>
                 </div>
-                <p className="text-[11.5px] font-bold mt-2.5" style={{ color: MUTED }}>The structure follows you out of the app.</p>
+                <p className="text-[11.5px] lg:text-[13.5px] font-bold mt-2.5 lg:mt-3.5" style={{ color: MUTED }}>The structure follows you out of the app.</p>
               </div>
             </Pop>
           </div>
@@ -918,7 +945,7 @@ function LoopFrame({ phase, onJoin, staticLayout = false }: { phase: number; onJ
         {/* p0 — the pulse: momentum building */}
         <Phase on={phase === 0} isStatic={staticLayout} className="flex flex-col justify-center" enterFrom="translateY(-14px)">
           <LoopPulseCard />
-          <Pop show={phase === 0} d={300} className="mx-auto w-full max-w-2xl lg:max-w-3xl mt-4">
+          <Pop show={phase === 0} d={300} className="mx-auto w-full max-w-2xl lg:max-w-3xl mt-4 lg:mt-8">
             <LoopPriyaPost />
           </Pop>
         </Phase>
@@ -972,7 +999,7 @@ function LoopFrame({ phase, onJoin, staticLayout = false }: { phase: number; onJ
 
         {/* p2 — THE PEAK: the room, as energy */}
         <Phase on={isPeak} isStatic={staticLayout} className="flex flex-col items-center justify-center" enterFrom="none">
-          <PeakScene />
+          <PeakScene big />
         </Phase>
 
         {/* p3 — the reflection post closes the loop */}
@@ -986,59 +1013,62 @@ function LoopFrame({ phase, onJoin, staticLayout = false }: { phase: number; onJ
   );
 }
 
-function PeakScene() {
+function PeakScene({ big = false }: { big?: boolean }) {
+  // desktop renders the room a step LARGER — the dark stage swallowed the
+  // small scene; mobile keeps the compact one.
+  const k = big ? 1.25 : 1;
   return (
     <>
-      <div className="relative flex items-center justify-center" style={{ width: 330, height: 330 }}>
+      <div className="relative flex items-center justify-center" style={{ width: 330 * k, height: 330 * k }}>
         {/* pulsing rings — training, together, right now */}
         {[215, 275, 330].map((s, i) => (
           <span
             key={s}
             className="absolute rounded-full animate-ping"
             style={{
-              width: s,
-              height: s,
+              width: s * k,
+              height: s * k,
               border: `1.5px solid ${i === 1 ? "rgba(255,97,48,0.5)" : "rgba(156,240,255,0.4)"}`,
               animationDuration: "2.6s",
               animationDelay: `${i * 0.45}s`,
             }}
           />
         ))}
-        <span className="absolute rounded-full" style={{ width: 190, height: 190, backgroundColor: "rgba(156,240,255,0.06)", border: "1px solid rgba(156,240,255,0.25)" }} />
+        <span className="absolute rounded-full" style={{ width: 190 * k, height: 190 * k, backgroundColor: "rgba(156,240,255,0.06)", border: "1px solid rgba(156,240,255,0.25)" }} />
         {/* the hosts, present */}
-        <div className="relative flex flex-col items-center gap-3">
-          <span className="inline-flex items-center gap-2 text-[12px] uppercase tracking-[0.22em] font-headline" style={{ color: "#ef4444", fontWeight: 800 }}>
+        <div className={`relative flex flex-col items-center ${big ? "gap-4" : "gap-3"}`}>
+          <span className={`inline-flex items-center gap-2 ${big ? "text-[13.5px]" : "text-[12px]"} uppercase tracking-[0.22em] font-headline`} style={{ color: "#ef4444", fontWeight: 800 }}>
             <span className="w-2.5 h-2.5 rounded-full bg-[#ef4444] animate-pulse" />
             Live
           </span>
-          <span className="flex -space-x-3">
+          <span className={big ? "flex -space-x-4" : "flex -space-x-3"}>
             {[ALEX.avatar, MIRA.avatar].map((a) => (
-              <span key={a} className="w-16 h-16 rounded-full overflow-hidden" style={{ border: "2px solid rgba(246,243,236,0.9)" }}>
+              <span key={a} className={`${big ? "w-20 h-20" : "w-16 h-16"} rounded-full overflow-hidden`} style={{ border: "2px solid rgba(246,243,236,0.9)" }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={a} alt="" className="w-full h-full object-cover" />
               </span>
             ))}
           </span>
           {/* the tribe in the room — real faces, present */}
-          <span className="flex -space-x-1.5">
+          <span className={big ? "flex -space-x-2" : "flex -space-x-1.5"}>
             {[ANNA, SAM, PRIYA, TIM, NINA].map((m) => (
-              <span key={m.name} className="w-9 h-9 rounded-full overflow-hidden" style={{ border: "2px solid rgba(12,38,46,0.85)" }}>
+              <span key={m.name} className={`${big ? "w-11 h-11" : "w-9 h-9"} rounded-full overflow-hidden`} style={{ border: "2px solid rgba(12,38,46,0.85)" }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={m.avatar} alt="" className="w-full h-full object-cover" />
               </span>
             ))}
             {/* 2 hosts + 5 faces + 1 = the "8 in the room" */}
-            <span className="w-9 h-9 rounded-full flex items-center justify-center text-[10px] font-headline" style={{ backgroundColor: "rgba(156,240,255,0.14)", color: "#9CF0FF", fontWeight: 800, border: "2px solid rgba(12,38,46,0.85)" }}>
+            <span className={`${big ? "w-11 h-11 text-[11px]" : "w-9 h-9 text-[10px]"} rounded-full flex items-center justify-center font-headline`} style={{ backgroundColor: "rgba(156,240,255,0.14)", color: "#9CF0FF", fontWeight: 800, border: "2px solid rgba(12,38,46,0.85)" }}>
               +1
             </span>
           </span>
         </div>
       </div>
-      <p className="text-[15px] font-bold font-headline mt-3" style={{ color: LIGHT_MUTED }}>
+      <p className={`${big ? "text-[17px] mt-4" : "text-[15px] mt-3"} font-bold font-headline`} style={{ color: LIGHT_MUTED }}>
         8 in the room — training together.
       </p>
       {/* the heartbeat, centered under the pulse above */}
-      <svg width="380" height="48" viewBox="0 0 380 48" fill="none" className="mt-5 max-w-full" aria-hidden>
+      <svg width={380 * k} height="48" viewBox="0 0 380 48" fill="none" className={`${big ? "mt-6" : "mt-5"} max-w-full`} aria-hidden>
         <defs>
           <linearGradient id="lw-peak-grad" x1="0" y1="0" x2="1" y2="0">
             <stop offset="0%" stopColor="#9CF0FF" />
@@ -1275,19 +1305,24 @@ function CmpShape({ stacked = false }: { stacked?: boolean }) {
 
 /* The growth engine — three real opportunities, each with its own living
  * micro-visual (not a text list): the tribe re-enrolling, new people
- * arriving, the next experience opening. */
-function GrowthCards({ stacked = false }: { stacked?: boolean }) {
-  // stacked (mobile): tighter metrics so three cards fit the stage at
-  // natural scale — AutoFit shrinking them read as "zoomed out".
-  const shell = `h-full rounded-3xl ${stacked ? "p-5" : "p-6"} flex flex-col text-left`;
-  const iconBox = stacked ? "w-10 h-10 rounded-xl" : "w-12 h-12 rounded-2xl";
-  const iconPx = stacked ? 18 : 21;
-  const titleCls = stacked ? "text-[15.5px] mt-3" : "text-[16.5px] mt-4";
-  const visMt = stacked ? "mt-3.5" : "mt-5";
+ * arriving, the next experience opening.
+ * Mobile splits it over TWO beats (`only`): three stacked cards never fit a
+ * phone stage at natural scale, and AutoFit shrinking them read as "zoomed
+ * out" — fewer cards per swipe beats smaller cards. */
+function GrowthCards({ stacked = false, only }: { stacked?: boolean; only?: "lead" | "rest" }) {
+  // with a beat to themselves the stacked cards keep FULL desktop metrics
+  const roomy = stacked && !!only;
+  const shell = `h-full rounded-3xl ${stacked && !roomy ? "p-5" : "p-6"} flex flex-col text-left`;
+  const iconBox = stacked && !roomy ? "w-10 h-10 rounded-xl" : "w-12 h-12 rounded-2xl";
+  const iconPx = stacked && !roomy ? 18 : 21;
+  const titleCls = stacked && !roomy ? "text-[15.5px] mt-3" : "text-[16.5px] mt-4";
+  const visMt = stacked && !roomy ? "mt-3.5" : "mt-5";
   const reEnrolled = [ANNA, SAM, PRIYA, TIM];
+  const show = (which: "lead" | "rest") => !only || only === which;
   return (
     <div className={stacked ? "space-y-4" : "grid sm:grid-cols-3 gap-5 items-stretch"} aria-hidden>
       {/* 1 — Retention, built in */}
+      {show("lead") && (
       <div className={shell} style={{ backgroundColor: "#FFFFFF", boxShadow: `0 0 0 1.5px rgba(255,97,48,0.30), 0 20px 50px rgba(15,34,41,0.12)` }}>
         <span className={`${iconBox} flex items-center justify-center`} style={{ backgroundColor: "rgba(255,97,48,0.10)" }}>
           {ICON_REPEAT(ORANGE, iconPx)}
@@ -1309,12 +1344,14 @@ function GrowthCards({ stacked = false }: { stacked?: boolean }) {
             {CHECK("#16a34a", 11)} Re-enrolled
           </span>
         </div>
-        <span className={`self-start ${stacked ? "mt-3" : "mt-4"} px-4 py-2 rounded-full text-white text-[12px] font-black font-headline`} style={{ backgroundColor: ORANGE, boxShadow: "0 4px 12px rgba(255,97,48,0.30)" }}>
+        <span className={`self-start ${stacked && !roomy ? "mt-3" : "mt-4"} px-4 py-2 rounded-full text-white text-[12px] font-black font-headline`} style={{ backgroundColor: ORANGE, boxShadow: "0 4px 12px rgba(255,97,48,0.30)" }}>
           Enroll in Run 2 →
         </span>
       </div>
+      )}
 
       {/* 2 — New people join */}
+      {show("rest") && (
       <div className={shell} style={{ backgroundColor: "#FFFFFF", boxShadow: `0 0 0 1px rgba(15,34,41,0.06), 0 20px 50px rgba(15,34,41,0.10), inset 4px 0 0 ${CYAN}` }}>
         <span className={`${iconBox} flex items-center justify-center`} style={{ backgroundColor: "rgba(8,145,178,0.10)" }}>
           {ICON_ADD_EXPERT(CYAN, iconPx)}
@@ -1339,8 +1376,10 @@ function GrowthCards({ stacked = false }: { stacked?: boolean }) {
           </span>
         </div>
       </div>
+      )}
 
       {/* 3 — Open a progression experience */}
+      {show("rest") && (
       <div className={shell} style={{ backgroundColor: "#FFFFFF", boxShadow: `0 0 0 1px rgba(15,34,41,0.06), 0 20px 50px rgba(15,34,41,0.10), inset 4px 0 0 ${ORANGE}` }}>
         <span className={`${iconBox} flex items-center justify-center`} style={{ backgroundColor: "rgba(255,97,48,0.10)" }}>
           {ICON_GROW(ORANGE, iconPx)}
@@ -1361,14 +1400,17 @@ function GrowthCards({ stacked = false }: { stacked?: boolean }) {
           </span>
         </div>
       </div>
+      )}
     </div>
   );
 }
 
 /* Mobile staging — p0 the run wraps (completed W1→W6 + shape the next),
- * p1 the growth engine. */
+ * p1 the growth engine's retention hero, p2 new people + progression.
+ * Two beats for the engine so every card renders at FULL size — three
+ * stacked cards forced AutoFit below 1 ("zoomed out") on every phone. */
 function CompoundFrameMobile({ phase }: { phase: number }) {
-  const p = Math.min(phase, 1);
+  const p = Math.min(phase, 2);
   // the bar's sweep to full must be SEEN — arm it after mount
   const [grow, setGrow] = useState(false);
   useEffect(() => {
@@ -1391,7 +1433,8 @@ function CompoundFrameMobile({ phase }: { phase: number }) {
             <div><CmpShape stacked /></div>
           </div>
         )}
-        {p === 1 && <GrowthCards stacked />}
+        {p === 1 && <GrowthCards stacked only="lead" />}
+        {p === 2 && <GrowthCards stacked only="rest" />}
       </Enter>
     </div>
   );
