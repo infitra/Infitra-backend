@@ -78,8 +78,8 @@ export function WhatYouCanBuild() {
               { p: ALEX, color: ORANGE },
               { p: MIRA, color: CYAN },
             ].map(({ p, color }) => (
-              <div key={p.name} className="flex items-center gap-3 p-3.5 rounded-2xl" style={{ backgroundColor: "#FFFFFF", boxShadow: `0 0 0 1px ${color}26, 0 16px 40px rgba(15,34,41,0.10)` }}>
-                <span className="shrink-0 w-12 h-12 rounded-full overflow-hidden" style={{ border: `1.5px solid ${color}59` }}>
+              <div key={p.name} className="flex items-center gap-3.5 p-3.5 rounded-2xl" style={{ backgroundColor: "#FFFFFF", boxShadow: `0 0 0 1px ${color}26, 0 16px 40px rgba(15,34,41,0.10)` }}>
+                <span className="shrink-0 w-16 h-16 rounded-full overflow-hidden" style={{ border: `2px solid ${color}59` }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={p.avatar} alt="" className="w-full h-full object-cover" />
                 </span>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { EX, ALEX, MIRA, ROOM } from "./content";
+import { EX, ALEX, MIRA, ROOM, ANNA, NINA, TIM, SAM, PRIYA } from "./content";
 import { INK, ORANGE, CYAN, MUTED, FAINT, PRODUCT_SHADOW } from "./ui";
 import { type BeatDef, useBeatChapter, computeBounds, Phase, Pop, Enter, MobileRail, TitleZone, useTap, CUT_MS, CASCADE_MS, EASE, FIT, AutoFit } from "./chapterEngine";
 
@@ -156,7 +156,7 @@ const ICON_COMMENT = (color: string) => (
 /** A full feed post — header, the prompt it answers, the member's own words,
  *  reactions. The same grammar as the answered-question post. */
 function FeedPost({
-  initial,
+  avatar,
   color,
   name,
   when,
@@ -169,7 +169,7 @@ function FeedPost({
   likes,
   reply,
 }: {
-  initial: string;
+  avatar: string;
   color: string;
   name: string;
   when: string;
@@ -181,16 +181,17 @@ function FeedPost({
   comments?: number;
   likes?: number;
   /** a visible comment under the post — the engagement, shown */
-  reply?: { avatar?: string; initial?: string; color: string; name: string; text: string };
+  reply?: { avatar: string; color: string; name: string; text: string };
 }) {
   return (
     <div aria-hidden>
       <div className="rounded-3xl p-6 md:p-8 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }}>
-        <div className="flex items-center gap-3">
-          <span className="shrink-0 w-10 h-10 md:w-11 md:h-11 rounded-full flex items-center justify-center" style={{ backgroundColor: `${color}24` }}>
-            <span className="text-[13px] md:text-[14px] font-headline" style={{ color, fontWeight: 800 }}>{initial}</span>
+        <div className="flex items-center gap-3.5">
+          <span className="shrink-0 w-14 h-14 md:w-16 md:h-16 rounded-full overflow-hidden" style={{ border: `2px solid ${color}59` }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={avatar} alt="" className="w-full h-full object-cover" />
           </span>
-          <span className="text-[15px] md:text-[17px] font-headline" style={{ color: INK, fontWeight: 800 }}>{name}</span>
+          <span className="text-[16px] md:text-[18px] font-headline" style={{ color: INK, fontWeight: 800 }}>{name}</span>
           <span className="ml-auto text-[11px] md:text-[12px] font-bold" style={{ color: FAINT }}>{when}</span>
         </div>
         {/* the prompt this post answers */}
@@ -220,17 +221,11 @@ function FeedPost({
           <p className="text-[10px] uppercase tracking-[0.18em] font-headline mb-3" style={{ color: FAINT, fontWeight: 800 }}>
             Comments · {comments}
           </p>
-          <div className="flex gap-2.5">
-            {reply.avatar ? (
-              <span className="shrink-0 w-8 h-8 rounded-full overflow-hidden" style={{ border: `1.5px solid ${reply.color}59` }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={reply.avatar} alt="" className="w-full h-full object-cover" />
-              </span>
-            ) : (
-              <span className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: `${reply.color}1F` }}>
-                <span className="text-[10.5px] font-headline" style={{ color: reply.color, fontWeight: 800 }}>{reply.initial}</span>
-              </span>
-            )}
+          <div className="flex gap-3">
+            <span className="shrink-0 w-10 h-10 md:w-11 md:h-11 rounded-full overflow-hidden" style={{ border: `1.5px solid ${reply.color}59` }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={reply.avatar} alt="" className="w-full h-full object-cover" />
+            </span>
             <div className="min-w-0">
               <p className="text-[12px] md:text-[13px] font-headline" style={{ color: INK, fontWeight: 800 }}>{reply.name}</p>
               <p className="text-[13px] md:text-[14px] leading-snug mt-0.5" style={{ color: MUTED }}>{reply.text}</p>
@@ -256,9 +251,12 @@ function SpaceHeader() {
         Live · Week {ROOM.week} of {EX.weeks}
       </span>
       <span className={`inline-flex items-center gap-1.5 ${align === "right" ? "justify-end" : ""}`}>
-        <span className="relative w-[18px] h-[18px] sm:w-5 sm:h-5 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(8,145,178,0.14)" }}>
-          <span className="text-[8px] font-headline" style={{ color: CYAN, fontWeight: 800 }}>A</span>
-          <span className="absolute -bottom-0 -right-0 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: "#22c55e", border: "1px solid #FFF" }} />
+        <span className="relative w-6 h-6 sm:w-7 sm:h-7 rounded-full">
+          <span className="absolute inset-0 rounded-full overflow-hidden" style={{ border: `1.5px solid ${CYAN}59` }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={ANNA.avatar} alt="" className="w-full h-full object-cover" />
+          </span>
+          <span className="absolute -bottom-0 -right-0 w-2 h-2 rounded-full" style={{ backgroundColor: "#22c55e", border: "1px solid #FFF" }} />
         </span>
         <span className="text-[9px] sm:text-[10px] uppercase tracking-widest font-headline" style={{ color: MUTED, fontWeight: 800 }}>
           Active now <span style={{ color: INK }}>{ROOM.activeNow}</span>
@@ -283,10 +281,10 @@ function SpaceHeader() {
           <p className="text-[20px] sm:text-[24px] font-headline tracking-tight leading-snug" style={{ color: INK, fontWeight: 800, letterSpacing: "-0.02em" }}>
             {EX.title}
           </p>
-          <span className="flex items-center gap-1.5 mt-2">
-            <span className="flex -space-x-1.5">
+          <span className="flex items-center gap-2 mt-2.5">
+            <span className="flex -space-x-2">
               {[ALEX.avatar, MIRA.avatar].map((a) => (
-                <span key={a} className="w-6 h-6 sm:w-7 sm:h-7 rounded-full overflow-hidden" style={{ border: "1.5px solid #FFFFFF" }}>
+                <span key={a} className="w-8 h-8 sm:w-9 sm:h-9 rounded-full overflow-hidden" style={{ border: "2px solid #FFFFFF" }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={a} alt="" className="w-full h-full object-cover" />
                 </span>
@@ -339,21 +337,21 @@ function MomentRow({ img, title, host, state, right }: { img: string; title: str
         <span className="block text-[14px] font-headline leading-snug" style={{ color: INK, fontWeight: 800 }}>{title}</span>
         <span className="flex items-center gap-1.5 mt-1.5">
           {hostAvatar ? (
-            <span className="w-5 h-5 rounded-full overflow-hidden shrink-0" style={{ border: `1.5px solid ${hostColor}59` }}>
+            <span className="w-7 h-7 rounded-full overflow-hidden shrink-0" style={{ border: `1.5px solid ${hostColor}59` }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={hostAvatar} alt="" className="w-full h-full object-cover" />
             </span>
           ) : (
-            <span className="flex -space-x-1 shrink-0">
+            <span className="flex -space-x-1.5 shrink-0">
               {[ALEX.avatar, MIRA.avatar].map((a) => (
-                <span key={a} className="w-5 h-5 rounded-full overflow-hidden" style={{ border: "1.5px solid #FFFFFF" }}>
+                <span key={a} className="w-7 h-7 rounded-full overflow-hidden" style={{ border: "1.5px solid #FFFFFF" }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={a} alt="" className="w-full h-full object-cover" />
                 </span>
               ))}
             </span>
           )}
-          <span className="text-[11px] font-bold" style={{ color: hostColor }}>{host}</span>
+          <span className="text-[11.5px] font-bold" style={{ color: hostColor }}>{host}</span>
         </span>
       </span>
       <span className="shrink-0">
@@ -375,7 +373,7 @@ function MomentRow({ img, title, host, state, right }: { img: string; title: str
 
 /* ── Tribe post — with the engagement that makes a feed a feed ── */
 function TribePost({
-  initial,
+  avatar,
   color,
   name,
   when,
@@ -385,7 +383,7 @@ function TribePost({
   comments,
   reply,
 }: {
-  initial: string;
+  avatar: string;
   color: string;
   name: string;
   when: string;
@@ -393,13 +391,14 @@ function TribePost({
   chip?: string;
   likes?: number;
   comments?: number;
-  reply?: { initial: string; color: string; name: string; text: string };
+  reply?: { avatar: string; color: string; name: string; text: string };
 }) {
   return (
     <div className="rounded-2xl px-4 py-3.5 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.05)" }}>
       <div className="flex gap-2.5">
-        <span className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center" style={{ backgroundColor: `${color}1F` }}>
-          <span className="text-[10px] font-headline" style={{ color, fontWeight: 800 }}>{initial}</span>
+        <span className="shrink-0 w-10 h-10 rounded-full overflow-hidden" style={{ border: `1.5px solid ${color}59` }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={avatar} alt="" className="w-full h-full object-cover" />
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-[11px] font-headline" style={{ color: INK, fontWeight: 800 }}>
@@ -427,8 +426,9 @@ function TribePost({
           )}
           {reply && (
             <div className="flex gap-2 mt-2.5 pl-2.5" style={{ borderLeft: "2px solid rgba(15,34,41,0.08)" }}>
-              <span className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center" style={{ backgroundColor: `${reply.color}1F` }}>
-                <span className="text-[8px] font-headline" style={{ color: reply.color, fontWeight: 800 }}>{reply.initial}</span>
+              <span className="shrink-0 w-8 h-8 rounded-full overflow-hidden" style={{ border: `1.5px solid ${reply.color}59` }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={reply.avatar} alt="" className="w-full h-full object-cover" />
               </span>
               <span className="min-w-0">
                 <span className="block text-[10.5px] font-headline" style={{ color: INK, fontWeight: 800 }}>{reply.name}</span>
@@ -536,16 +536,16 @@ function SpaceTribeCard() {
     <div className="h-full rounded-2xl p-4 space-y-2.5" style={{ backgroundColor: "#FAF8F3", boxShadow: "0 0 0 1px rgba(15,34,41,0.05), 0 16px 40px rgba(15,34,41,0.08)" }}>
       <p className="text-[12px] uppercase tracking-[0.18em] font-headline text-left px-1 pt-0.5" style={{ color: ORANGE, fontWeight: 800 }}>The tribe feed</p>
       <TribePost
-        initial="A"
-        color={CYAN}
-        name="Anna"
+        avatar={ANNA.avatar}
+        color={ANNA.color}
+        name={ANNA.name}
         when="2h"
         text="Week 1 done — first plan I've actually kept up with 🔥"
         likes={8}
         comments={3}
-        reply={{ initial: "L", color: ORANGE, name: "Lea", text: "Same here — Tuesday can't come soon enough 🙌" }}
+        reply={{ avatar: PRIYA.avatar, color: PRIYA.color, name: PRIYA.name, text: "Same here — Tuesday can't come soon enough 🙌" }}
       />
-      <TribePost initial="S" color={ORANGE} name="Sam" when="just now" text="Moment 5 ✓ — see everyone Tuesday!" likes={4} comments={1} />
+      <TribePost avatar={SAM.avatar} color={SAM.color} name={SAM.name} when="just now" text="Moment 5 ✓ — see everyone Tuesday!" likes={4} comments={1} />
     </div>
   );
 }
@@ -573,9 +573,9 @@ function SpaceFrameMobile({ phase }: { phase: number }) {
 function HandsIntroPost() {
   return (
     <FeedPost
-      initial="N"
-      color={ORANGE}
-      name="Nina"
+      avatar={NINA.avatar}
+      color={NINA.color}
+      name={NINA.name}
       when="just now"
       promptLabel="New in the tribe · Your experts asked"
       promptColor={CYAN}
@@ -600,8 +600,9 @@ function HandsNotifCard() {
         <span className="ml-auto text-[9.5px] uppercase tracking-widest font-headline" style={{ color: FAINT, fontWeight: 800 }}>Mark all read</span>
       </div>
       <div className="rounded-xl px-3.5 py-3 flex items-center gap-3" style={{ backgroundColor: "rgba(255,97,48,0.06)", boxShadow: `inset 3.5px 0 0 ${ORANGE}` }}>
-        <span className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(8,145,178,0.14)" }}>
-          <span className="text-[11px] font-headline" style={{ color: CYAN, fontWeight: 800 }}>T</span>
+        <span className="shrink-0 w-11 h-11 rounded-full overflow-hidden" style={{ border: `1.5px solid ${TIM.color}59` }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={TIM.avatar} alt="" className="w-full h-full object-cover" />
         </span>
         <span className="min-w-0 flex-1">
           <span className="block text-[13px] font-headline leading-tight" style={{ color: INK, fontWeight: 800 }}>{ROOM.qa.asker} asked you a question</span>
@@ -617,7 +618,7 @@ function HandsConsoleCard() {
   return (
     <div className="rounded-2xl p-6 lg:p-7" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }}>
       <div className="flex items-center gap-2.5 pb-3 mb-3" style={{ borderBottom: "1px solid rgba(15,34,41,0.07)" }}>
-        <span className="w-7 h-7 rounded-full overflow-hidden shrink-0" style={{ border: `1.5px solid ${ORANGE}59` }}>
+        <span className="w-9 h-9 rounded-full overflow-hidden shrink-0" style={{ border: `1.5px solid ${ORANGE}59` }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={ALEX.avatar} alt="" className="w-full h-full object-cover" />
         </span>
@@ -639,11 +640,12 @@ function HandsAnsweredPost({ answerOn }: { answerOn: boolean }) {
   return (
     <div className="mx-auto w-full max-w-2xl lg:max-w-3xl" aria-hidden>
       <div className="rounded-3xl p-6 md:p-8 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: PRODUCT_SHADOW }}>
-        <div className="flex items-center gap-3">
-          <span className="shrink-0 w-9 h-9 md:w-10 md:h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(8,145,178,0.14)" }}>
-            <span className="text-[12px] md:text-[13px] font-headline" style={{ color: CYAN, fontWeight: 800 }}>T</span>
+        <div className="flex items-center gap-3.5">
+          <span className="shrink-0 w-14 h-14 md:w-16 md:h-16 rounded-full overflow-hidden" style={{ border: `2px solid ${TIM.color}59` }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={TIM.avatar} alt="" className="w-full h-full object-cover" />
           </span>
-          <span className="text-[14px] md:text-[16px] font-headline" style={{ color: INK, fontWeight: 800 }}>{ROOM.qa.asker}</span>
+          <span className="text-[16px] md:text-[18px] font-headline" style={{ color: INK, fontWeight: 800 }}>{ROOM.qa.asker}</span>
           <span className="ml-auto text-[10.5px] md:text-[11.5px] font-bold" style={{ color: FAINT }}>just now</span>
         </div>
         <div className="mt-3.5 rounded-xl px-4 py-2.5 inline-flex items-center gap-2" style={{ backgroundColor: "rgba(8,145,178,0.07)", boxShadow: `inset 3.5px 0 0 ${CYAN}` }}>
@@ -655,8 +657,8 @@ function HandsAnsweredPost({ answerOn }: { answerOn: boolean }) {
         </p>
         <Pop show={answerOn} d={250}>
           <div className="mt-4 rounded-2xl p-5 md:p-6" style={{ backgroundColor: "rgba(255,97,48,0.06)", boxShadow: `inset 4px 0 0 ${ORANGE}` }}>
-            <div className="flex items-center gap-2.5">
-              <span className="shrink-0 w-8 h-8 md:w-9 md:h-9 rounded-full overflow-hidden" style={{ border: `1.5px solid ${ORANGE}59` }}>
+            <div className="flex items-center gap-3">
+              <span className="shrink-0 w-11 h-11 md:w-12 md:h-12 rounded-full overflow-hidden" style={{ border: `2px solid ${ORANGE}59` }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={ALEX.avatar} alt="" className="w-full h-full object-cover" />
               </span>
@@ -682,12 +684,13 @@ function HandsAnsweredPost({ answerOn }: { answerOn: boolean }) {
           <p className="text-[10px] uppercase tracking-[0.18em] font-headline mb-3" style={{ color: FAINT, fontWeight: 800 }}>
             Comments · 2
           </p>
-          <div className="flex gap-2.5">
-            <span className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(8,145,178,0.14)" }}>
-              <span className="text-[10.5px] font-headline" style={{ color: CYAN, fontWeight: 800 }}>L</span>
+          <div className="flex gap-3">
+            <span className="shrink-0 w-10 h-10 md:w-11 md:h-11 rounded-full overflow-hidden" style={{ border: `1.5px solid ${PRIYA.color}59` }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={PRIYA.avatar} alt="" className="w-full h-full object-cover" />
             </span>
             <div className="min-w-0">
-              <p className="text-[12px] md:text-[13px] font-headline" style={{ color: INK, fontWeight: 800 }}>Lea</p>
+              <p className="text-[12px] md:text-[13px] font-headline" style={{ color: INK, fontWeight: 800 }}>{PRIYA.name}</p>
               <p className="text-[13px] md:text-[14px] leading-snug mt-0.5" style={{ color: MUTED }}>I was wondering that myself — good to know! 🙏</p>
             </div>
           </div>
@@ -737,7 +740,7 @@ function HandsFrame({ phase, staticLayout = false }: { phase: number; staticLayo
                 <p className="text-[13px] leading-snug" style={{ color: INK, fontWeight: 600 }}>{ROOM.qa.question}</p>
                 <div className="mt-3 rounded-lg px-3 py-2 inline-flex items-center gap-2" style={{ backgroundColor: "rgba(8,145,178,0.07)", boxShadow: `inset 3px 0 0 ${CYAN}` }}>
                   <span className="text-[9px] uppercase tracking-[0.14em] font-headline" style={{ color: CYAN, fontWeight: 800 }}>Question for</span>
-                  <span className="w-[18px] h-[18px] rounded-full overflow-hidden shrink-0">
+                  <span className="w-6 h-6 rounded-full overflow-hidden shrink-0">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={ALEX.avatar} alt="" className="w-full h-full object-cover" />
                   </span>
@@ -879,16 +882,17 @@ function LoopPulseCard() {
   );
 }
 
-function LoopLeaPost() {
+function LoopPriyaPost() {
   return (
     <div className="rounded-2xl px-5 py-4 text-left" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.05), 0 12px 30px rgba(15,34,41,0.06)" }} aria-hidden>
       <div className="flex gap-3.5">
-        <span className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(255,97,48,0.14)" }}>
-          <span className="text-[13px] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>L</span>
+        <span className="shrink-0 w-12 h-12 rounded-full overflow-hidden" style={{ border: `1.5px solid ${PRIYA.color}59` }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={PRIYA.avatar} alt="" className="w-full h-full object-cover" />
         </span>
         <div className="min-w-0">
-          <p className="text-[13px] font-headline" style={{ color: INK, fontWeight: 800 }}>
-            Lea <span style={{ color: FAINT, fontWeight: 600 }}>· just now</span>
+          <p className="text-[13.5px] font-headline" style={{ color: INK, fontWeight: 800 }}>
+            {PRIYA.name} <span style={{ color: FAINT, fontWeight: 600 }}>· just now</span>
           </p>
           <p className="text-[14.5px] leading-relaxed mt-1" style={{ color: INK, fontWeight: 500 }}>
             Ready! First live moment of the reset — nervous and excited. Can&apos;t wait to meet everyone 😅
@@ -915,7 +919,7 @@ function LoopFrame({ phase, onJoin, staticLayout = false }: { phase: number; onJ
         <Phase on={phase === 0} isStatic={staticLayout} className="flex flex-col justify-center" enterFrom="translateY(-14px)">
           <LoopPulseCard />
           <Pop show={phase === 0} d={300} className="mx-auto w-full max-w-2xl lg:max-w-3xl mt-4">
-            <LoopLeaPost />
+            <LoopPriyaPost />
           </Pop>
         </Phase>
 
@@ -1009,18 +1013,24 @@ function PeakScene() {
           </span>
           <span className="flex -space-x-3">
             {[ALEX.avatar, MIRA.avatar].map((a) => (
-              <span key={a} className="w-14 h-14 rounded-full overflow-hidden" style={{ border: "2px solid rgba(246,243,236,0.9)" }}>
+              <span key={a} className="w-16 h-16 rounded-full overflow-hidden" style={{ border: "2px solid rgba(246,243,236,0.9)" }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={a} alt="" className="w-full h-full object-cover" />
               </span>
             ))}
           </span>
-          <span className="flex -space-x-1">
-            {["A", "S", "L", "J", "N", "E"].map((m) => (
-              <span key={m} className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-headline" style={{ backgroundColor: "rgba(156,240,255,0.14)", color: "#9CF0FF", fontWeight: 800, border: "1px solid rgba(12,38,46,0.8)" }}>
-                {m}
+          {/* the tribe in the room — real faces, present */}
+          <span className="flex -space-x-1.5">
+            {[ANNA, SAM, PRIYA, TIM, NINA].map((m) => (
+              <span key={m.name} className="w-9 h-9 rounded-full overflow-hidden" style={{ border: "2px solid rgba(12,38,46,0.85)" }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={m.avatar} alt="" className="w-full h-full object-cover" />
               </span>
             ))}
+            {/* 2 hosts + 5 faces + 1 = the "8 in the room" */}
+            <span className="w-9 h-9 rounded-full flex items-center justify-center text-[10px] font-headline" style={{ backgroundColor: "rgba(156,240,255,0.14)", color: "#9CF0FF", fontWeight: 800, border: "2px solid rgba(12,38,46,0.85)" }}>
+              +1
+            </span>
           </span>
         </div>
       </div>
@@ -1046,9 +1056,9 @@ function PeakScene() {
 function LoopReflectionPost() {
   return (
     <FeedPost
-      initial="A"
-      color={CYAN}
-      name="Anna"
+      avatar={ANNA.avatar}
+      color={ANNA.color}
+      name={ANNA.name}
       when="just now"
       promptLabel="Reflection · after the live moment"
       promptColor={CYAN}
@@ -1075,7 +1085,7 @@ function LoopFrameMobile({ phase, onJoin }: { phase: number; onJoin: () => void 
         {p === 0 && (
           <>
             <LoopPulseCard />
-            <Enter d={260} className="mt-4"><LoopLeaPost /></Enter>
+            <Enter d={260} className="mt-4"><LoopPriyaPost /></Enter>
           </>
         )}
         {p === 1 && (
@@ -1274,7 +1284,7 @@ function GrowthCards({ stacked = false }: { stacked?: boolean }) {
   const iconPx = stacked ? 18 : 21;
   const titleCls = stacked ? "text-[15.5px] mt-3" : "text-[16.5px] mt-4";
   const visMt = stacked ? "mt-3.5" : "mt-5";
-  const initials = ["A", "S", "L", "J"];
+  const reEnrolled = [ANNA, SAM, PRIYA, TIM];
   return (
     <div className={stacked ? "space-y-4" : "grid sm:grid-cols-3 gap-5 items-stretch"} aria-hidden>
       {/* 1 — Retention, built in */}
@@ -1287,10 +1297,11 @@ function GrowthCards({ stacked = false }: { stacked?: boolean }) {
           Your tribe re-enrolls in one tap — the space and the momentum carry over.
         </p>
         <div className={`flex items-center gap-2.5 ${visMt}`}>
-          <span className="flex -space-x-1.5">
-            {initials.map((m, i) => (
-              <span key={m} className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-headline" style={{ backgroundColor: i % 2 ? "rgba(8,145,178,0.14)" : "rgba(255,97,48,0.14)", color: i % 2 ? CYAN : ORANGE, fontWeight: 800, border: "2px solid #FFFFFF" }}>
-                {m}
+          <span className="flex -space-x-2">
+            {reEnrolled.map((m) => (
+              <span key={m.name} className="w-9 h-9 rounded-full overflow-hidden" style={{ border: "2px solid #FFFFFF" }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={m.avatar} alt="" className="w-full h-full object-cover" />
               </span>
             ))}
           </span>
@@ -1313,13 +1324,13 @@ function GrowthCards({ stacked = false }: { stacked?: boolean }) {
           Promote the next run — new faces land in the same space. Ongoing momentum.
         </p>
         <div className={`flex items-center gap-2.5 ${visMt}`}>
-          <span className="flex -space-x-1.5">
+          <span className="flex -space-x-2">
             {["N", "E"].map((m) => (
-              <span key={m} className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-headline" style={{ backgroundColor: "rgba(8,145,178,0.14)", color: CYAN, fontWeight: 800, border: "2px solid #FFFFFF" }}>
+              <span key={m} className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-headline" style={{ backgroundColor: "rgba(8,145,178,0.14)", color: CYAN, fontWeight: 800, border: "2px solid #FFFFFF" }}>
                 {m}
               </span>
             ))}
-            <span className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-headline" style={{ backgroundColor: "#FFFFFF", color: CYAN, fontWeight: 800, border: `1.5px dashed ${CYAN}66` }}>
+            <span className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-headline" style={{ backgroundColor: "#FFFFFF", color: CYAN, fontWeight: 800, border: `1.5px dashed ${CYAN}66` }}>
               +5
             </span>
           </span>

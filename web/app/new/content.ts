@@ -13,6 +13,11 @@
  * only (the 60/40 split; recorded timestamps shown, not explained). The
  * public page is the MARKETING PAGE; the Experience Space is where the tribe
  * lives. Vocabulary: experiences — never "program".
+ *
+ * COVERS: every session carries its EXACT cover from the real records
+ * (`/landing/covers/…`, exported from the flagship's session rows) — no
+ * doubles, no rotation. Wherever a session is referenced (agenda, room,
+ * workspace, live card, moments), it must use ITS OWN cover.
  */
 
 export type AgendaSession = { day: string; time: string; dur: string; title: string; host: string; img: string };
@@ -35,40 +40,40 @@ export const EX = {
     "Building Long-Term Habits",
     "Transition & Sustainability",
   ],
-  /** Real sessions per week (weekday · time · duration · title · host).
-   *  W1 images are the sessions' REAL images; later weeks rotate the real
-   *  asset pool by session type (nutrition / strength / recovery). */
+  /** All 20 real sessions (weekday · time · duration · title · host),
+   *  each with its own real cover image. */
   agenda: [
     [
-      { day: "Sun", time: "13:00", dur: "45 min", title: "Meet your Experts", host: "Alex & Mira", img: "/landing/session-meet.jpg" },
-      { day: "Mon", time: "13:00", dur: "45 min", title: "Nutrition Foundations & Weekly Setup", host: "Mira", img: "/landing/session-nutrition.jpg" },
-      { day: "Tue", time: "13:00", dur: "1 h", title: "Full Body Strength Foundations", host: "Alex", img: "/landing/session-strength.jpg" },
-      { day: "Thu", time: "13:00", dur: "45 min", title: "Movement, Mobility & Routine Reset", host: "Alex", img: "/landing/session-mobility.jpg" },
+      { day: "Sun", time: "13:00", dur: "45 min", title: "Meet your Experts", host: "Alex & Mira", img: "/landing/covers/w1-meet-your-experts.jpg" },
+      { day: "Mon", time: "13:00", dur: "45 min", title: "Nutrition Foundations & Weekly Setup", host: "Mira", img: "/landing/covers/w1-nutrition-foundations.jpg" },
+      { day: "Tue", time: "13:00", dur: "1 h", title: "Full Body Strength Foundations", host: "Alex", img: "/landing/covers/w1-strength-foundations.jpg" },
+      { day: "Thu", time: "13:00", dur: "45 min", title: "Movement, Mobility & Routine Reset", host: "Alex", img: "/landing/covers/w1-mobility-routine-reset.jpg" },
     ],
     [
-      { day: "Mon", time: "13:00", dur: "45 min", title: "Sustainable Eating in Real Life", host: "Mira", img: "/landing/session-nutritionist.jpg" },
-      { day: "Tue", time: "13:00", dur: "1 h", title: "Full Body Strength & Stability", host: "Alex", img: "/landing/session-trainer.jpg" },
-      { day: "Thu", time: "13:00", dur: "45 min", title: "Conditioning, Core & Recovery Flow", host: "Alex", img: "/landing/session-mobility.jpg" },
+      { day: "Mon", time: "13:00", dur: "45 min", title: "Sustainable Eating in Real Life", host: "Mira", img: "/landing/covers/w2-sustainable-eating.jpg" },
+      { day: "Tue", time: "13:00", dur: "1 h", title: "Full Body Strength & Stability", host: "Alex", img: "/landing/covers/w2-strength-stability.jpg" },
+      { day: "Thu", time: "13:00", dur: "45 min", title: "Conditioning, Core & Recovery Flow", host: "Alex", img: "/landing/covers/w2-conditioning-core-recovery.jpg" },
     ],
     [
-      { day: "Mon", time: "13:00", dur: "45 min", title: "Fueling Energy Without Overshooting", host: "Mira", img: "/landing/session-nutrition.jpg" },
-      { day: "Tue", time: "13:00", dur: "1 h", title: "Full Body Strength & Energy", host: "Alex", img: "/landing/session-strength.jpg" },
-      { day: "Thu", time: "13:00", dur: "45 min", title: "Mobility, Core & Recovery Reset", host: "Alex", img: "/landing/session-mobility.jpg" },
+      { day: "Mon", time: "13:00", dur: "45 min", title: "Fueling Energy Without Overshooting", host: "Mira", img: "/landing/covers/w3-fueling-energy.jpg" },
+      { day: "Tue", time: "13:00", dur: "1 h", title: "Full Body Strength & Energy", host: "Alex", img: "/landing/covers/w3-strength-energy.jpg" },
+      { day: "Thu", time: "13:00", dur: "45 min", title: "Mobility, Core & Recovery Reset", host: "Alex", img: "/landing/covers/w3-mobility-core-reset.jpg" },
     ],
     [
-      { day: "Mon", time: "13:00", dur: "45 min", title: "Cravings, Cheat Meals & Staying Consistent", host: "Mira", img: "/landing/session-nutritionist.jpg" },
-      { day: "Tue", time: "13:00", dur: "1 h", title: "Strength Under Pressure", host: "Alex", img: "/landing/session-trainer.jpg" },
-      { day: "Thu", time: "13:00", dur: "45 min", title: "Recovery, Mobility & Reset Flow", host: "Alex", img: "/landing/session-mobility.jpg" },
+      { day: "Mon", time: "13:00", dur: "45 min", title: "Cravings, Cheat Meals & Staying Consistent", host: "Mira", img: "/landing/covers/w4-cravings-consistency.jpg" },
+      { day: "Tue", time: "13:00", dur: "1 h", title: "Strength Under Pressure", host: "Alex", img: "/landing/covers/w4-strength-under-pressure.jpg" },
+      { day: "Thu", time: "13:00", dur: "45 min", title: "Recovery, Mobility & Reset Flow", host: "Alex", img: "/landing/covers/w4-recovery-reset-flow.jpg" },
     ],
     [
-      { day: "Mon", time: "13:00", dur: "45 min", title: "Building Sustainable Eating Habits", host: "Mira", img: "/landing/session-nutrition.jpg" },
-      { day: "Tue", time: "13:00", dur: "1 h", title: "Strength, Control & Confidence", host: "Alex", img: "/landing/session-strength.jpg" },
-      { day: "Thu", time: "13:00", dur: "45 min", title: "Mobility, Recovery & Sustainable Training", host: "Alex", img: "/landing/session-mobility.jpg" },
+      { day: "Mon", time: "13:00", dur: "45 min", title: "Building Sustainable Eating Habits", host: "Mira", img: "/landing/covers/w5-sustainable-eating-habits.jpg" },
+      { day: "Tue", time: "13:00", dur: "1 h", title: "Strength, Control & Confidence", host: "Alex", img: "/landing/covers/w5-strength-control-confidence.jpg" },
+      { day: "Thu", time: "13:00", dur: "45 min", title: "Mobility, Recovery & Sustainable Training", host: "Alex", img: "/landing/covers/w5-mobility-sustainable-training.jpg" },
     ],
     [
-      { day: "Mon", time: "13:00", dur: "45 min", title: "Making Healthy Eating Enjoyable Long-Term", host: "Mira", img: "/landing/session-nutritionist.jpg" },
-      { day: "Tue", time: "13:00", dur: "1 h", title: "Full Body Strength & Momentum", host: "Alex", img: "/landing/session-trainer.jpg" },
-      { day: "Sat", time: "12:00", dur: "45 min", title: "Continue Your Journey", host: "Alex & Mira", img: "/landing/session-meet.jpg" },
+      { day: "Mon", time: "13:00", dur: "45 min", title: "Making Healthy Eating Enjoyable Long-Term", host: "Mira", img: "/landing/covers/w6-healthy-eating-longterm.jpg" },
+      { day: "Tue", time: "13:00", dur: "1 h", title: "Full Body Strength & Momentum", host: "Alex", img: "/landing/covers/w6-strength-momentum.jpg" },
+      { day: "Thu", time: "13:00", dur: "45 min", title: "Recovery, Mobility & Long-Term Reset", host: "Alex", img: "/landing/covers/w6-recovery-longterm-reset.jpg" },
+      { day: "Sat", time: "12:00", dur: "45 min", title: "Continue Your Journey", host: "Alex & Mira", img: "/landing/covers/w6-continue-your-journey.jpg" },
     ],
   ] as AgendaSession[][],
   /** The real marketing page's positioning lines. */
@@ -97,20 +102,30 @@ export const MIRA = {
   topics: ["Nutrition", "Meal Structure", "Accountability"],
 } as const;
 
+/** The tribe — real faces, so the human side of the space is FELT.
+ *  `color` is each member's accent (rings, chips) across every surface. */
+export type Member = { name: string; avatar: string; color: string };
+
+export const ANNA: Member = { name: "Anna", avatar: "/landing/avatar-anna.jpg", color: "#0891b2" };
+export const NINA: Member = { name: "Nina", avatar: "/landing/avatar-nina.jpg", color: "#FF6130" };
+export const TIM: Member = { name: "Tim", avatar: "/landing/avatar-tim.jpg", color: "#0891b2" };
+export const SAM: Member = { name: "Sam", avatar: "/landing/avatar-sam.jpg", color: "#FF6130" };
+export const PRIYA: Member = { name: "Priya", avatar: "/landing/avatar-priya.jpg", color: "#FF6130" };
+
 /** Signature record stamps — shown visually on the agreement (real lock date). */
 export const CONTRACT = {
   lockedStamp: "27 May 2026 · 12:20",
   agreedStamp: "27 May 2026 · 14:03",
 } as const;
 
-/** The space, live in week 2 — real session titles + thumbs. */
+/** The space, live in week 2 — the week's own sessions, with THEIR covers. */
 export const ROOM = {
   week: 2,
   theme: "Building Consistency",
   activeNow: 3,
-  done: { title: "Sustainable Eating in Real Life", host: "Mira", img: "/landing/session-nutritionist.jpg" },
-  next: { title: "Full Body Strength & Stability", host: "Alex", inLabel: "in 1d 22h", img: "/landing/session-trainer.jpg" },
-  upcoming: { title: "Conditioning, Core & Recovery Flow", host: "Alex", img: "/landing/session-intro.jpg" },
+  done: { title: EX.agenda[1][0].title, host: EX.agenda[1][0].host, img: EX.agenda[1][0].img },
+  next: { title: EX.agenda[1][1].title, host: EX.agenda[1][1].host, inLabel: "in 1d 22h", img: EX.agenda[1][1].img },
+  upcoming: { title: EX.agenda[1][2].title, host: EX.agenda[1][2].host, img: EX.agenda[1][2].img },
   /** The directed-question thread — REAL copy from the live product
    *  (Tim's question + Alex's actual answer). Ask one expert, everyone learns. */
   qa: {

@@ -138,7 +138,7 @@ function DarkWaves({ hidden }: { hidden: boolean }) {
 function PortraitCard({ p, color }: { p: { name: string; tag: string; avatar: string }; color: string }) {
   return (
     <div className="rounded-3xl px-5 py-8 lg:px-7 lg:py-10 text-center w-52 lg:w-64" style={{ backgroundColor: "#FFFFFF", boxShadow: CARD_POP }}>
-      <span className="inline-block w-24 h-24 lg:w-32 lg:h-32 rounded-full overflow-hidden" style={{ border: `3px solid ${color}66` }}>
+      <span className="inline-block w-28 h-28 lg:w-36 lg:h-36 rounded-full overflow-hidden" style={{ border: `3px solid ${color}66` }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={p.avatar} alt="" className="w-full h-full object-cover" />
       </span>
@@ -155,7 +155,7 @@ function InvitationFrame({ phase }: { phase: number }) {
       {/* the invitation — the only place the accepted state lives */}
       <div className="flex justify-center mb-7 lg:mb-9">
         <div className="flex items-center gap-3.5 lg:gap-4 rounded-2xl px-5 py-3.5 lg:px-7 lg:py-4.5" style={{ backgroundColor: "#FFFFFF", boxShadow: CARD_POP }}>
-          <span className="shrink-0 w-10 h-10 lg:w-12 lg:h-12 rounded-full overflow-hidden">
+          <span className="shrink-0 w-12 h-12 lg:w-14 lg:h-14 rounded-full overflow-hidden" style={{ border: `2px solid ${ORANGE}59` }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={ALEX.avatar} alt="" className="w-full h-full object-cover" />
           </span>
@@ -243,9 +243,9 @@ function WsHeader({ divider = true }: { divider?: boolean }) {
           Draft
         </span>
       </div>
-      <div className="flex -space-x-1.5 shrink-0">
+      <div className="flex -space-x-2 shrink-0">
         {[ALEX.avatar, MIRA.avatar].map((a) => (
-          <span key={a} className="relative w-7 h-7 rounded-full overflow-hidden" style={{ border: "2px solid #FFFFFF" }}>
+          <span key={a} className="relative w-9 h-9 rounded-full overflow-hidden" style={{ border: "2px solid #FFFFFF" }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={a} alt="" className="w-full h-full object-cover" />
             <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full" style={{ backgroundColor: "#22c55e", border: "1px solid #FFF" }} />
@@ -286,7 +286,7 @@ function WsMeetRow() {
     <div className="flex items-center gap-3 rounded-xl p-3" style={{ backgroundColor: "#FAFAF7", border: "1px solid rgba(15,34,41,0.06)" }}>
       <span className="relative shrink-0 w-16 h-11 rounded-lg overflow-hidden" style={{ backgroundColor: INK }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/landing/session-meet.jpg" alt="" className="absolute inset-0 w-full h-full object-cover" />
+        <img src={EX.agenda[0][0].img} alt="" className="absolute inset-0 w-full h-full object-cover" />
       </span>
       <span className="min-w-0">
         <span className="block text-[13.5px] font-headline leading-snug truncate" style={{ color: INK, fontWeight: 800 }}>Meet your Experts</span>
@@ -304,7 +304,7 @@ function WsAddedRow({ ring }: { ring: boolean }) {
     >
       <span className="relative shrink-0 w-16 h-11 rounded-lg overflow-hidden" style={{ backgroundColor: INK }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/landing/session-nutrition.jpg" alt="" className="absolute inset-0 w-full h-full object-cover" />
+        <img src={EX.agenda[0][1].img} alt="" className="absolute inset-0 w-full h-full object-cover" />
       </span>
       <span className="min-w-0 flex-1">
         <span className="block text-[13.5px] font-headline leading-snug truncate" style={{ color: INK, fontWeight: 800 }}>Nutrition Foundations &amp; Weekly Setup</span>
@@ -331,7 +331,7 @@ function WsSplit({ on, ring }: { on: boolean; ring: boolean }) {
       >
         <span className="flex -space-x-2 shrink-0">
           {[{ a: ALEX.avatar, c: ORANGE }, { a: MIRA.avatar, c: CYAN }].map(({ a, c }) => (
-            <span key={a} className="w-8 h-8 rounded-full overflow-hidden" style={{ border: `2px solid ${c}59`, backgroundColor: "#fff" }}>
+            <span key={a} className="w-10 h-10 rounded-full overflow-hidden" style={{ border: `2px solid ${c}59`, backgroundColor: "#fff" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={a} alt="" className="w-full h-full object-cover" />
             </span>
@@ -365,7 +365,7 @@ function WsSplit({ on, ring }: { on: boolean; ring: boolean }) {
 function WsMiraMsg() {
   return (
     <div className="flex items-start gap-2">
-      <span className="shrink-0 w-7 h-7 rounded-full overflow-hidden mt-0.5">
+      <span className="shrink-0 w-9 h-9 rounded-full overflow-hidden mt-0.5" style={{ border: `1.5px solid ${CYAN}59` }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={MIRA.avatar} alt="" className="w-full h-full object-cover" />
       </span>
@@ -385,7 +385,7 @@ function WsAlexMsg() {
       >
         I think we are all set — I&apos;ll lock this for review!
       </div>
-      <span className="shrink-0 w-7 h-7 rounded-full overflow-hidden mt-0.5">
+      <span className="shrink-0 w-9 h-9 rounded-full overflow-hidden mt-0.5" style={{ border: `1.5px solid ${ORANGE}59` }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={ALEX.avatar} alt="" className="w-full h-full object-cover" />
       </span>
@@ -433,9 +433,9 @@ function WorkspaceFrame({ phase }: { phase: number }) {
         >
           <div className="flex items-center justify-between mb-3">
             <p className="text-[10px] uppercase tracking-[0.18em] font-headline" style={{ color: FAINT, fontWeight: 800 }}>Team chat</p>
-            <span className="flex -space-x-1">
+            <span className="flex -space-x-1.5">
               {[ALEX.avatar, MIRA.avatar].map((a) => (
-                <span key={a} className="w-[18px] h-[18px] rounded-full overflow-hidden" style={{ border: "1.5px solid #FAF8F3" }}>
+                <span key={a} className="w-6 h-6 rounded-full overflow-hidden" style={{ border: "1.5px solid #FAF8F3" }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={a} alt="" className="w-full h-full object-cover" />
                 </span>
@@ -562,7 +562,7 @@ function AgRecordCard() {
         ].map(({ p, color, action, stamp }) => (
           <div key={p.name} className="rounded-2xl px-6 py-6 text-left" style={{ backgroundColor: "#FAFAF7", border: "1px solid rgba(15,34,41,0.08)", boxShadow: `inset 4px 0 0 ${color}` }}>
             <div className="flex items-center gap-3">
-              <span className="shrink-0 w-9 h-9 rounded-full overflow-hidden" style={{ border: `2px solid ${color}59` }}>
+              <span className="shrink-0 w-12 h-12 rounded-full overflow-hidden" style={{ border: `2px solid ${color}59` }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={p.avatar} alt="" className="w-full h-full object-cover" />
               </span>
