@@ -79,7 +79,7 @@ const LW_HEADS: Record<number, { title: React.ReactNode; copy?: string; light?: 
   1: [{ title: "The room your tribe lives in.", copy: "Not a video library — a space with structure, presence and a feed of its own." }],
   2: [
     { title: "No cold start.", copy: "The moment someone joins, the space asks them to introduce themselves." },
-    { title: "Anyone can engage at any time.", copy: "Four tools, for members and creators — no permission needed, no cold silence." },
+    { title: "Anyone can engage at any time.", copy: "Four tools, for members and experts — no permission needed, no cold silence." },
     { title: "A question finds you.", copy: "A notification the moment it lands — your console collects it until it's answered." },
     { title: "Answered once. Everyone learns.", copy: "Answers are pinned inside posts — visible to the whole tribe." },
   ],
@@ -577,7 +577,7 @@ function HandsFrame({ phase, staticLayout = false }: { phase: number; staticLayo
               <div className="h-full rounded-2xl p-6" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.06), 0 16px 40px rgba(15,34,41,0.08), inset 4px 0 0 " + ORANGE }}>
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-[11px] uppercase tracking-[0.18em] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>Post with context</p>
-                  <span className="px-2.5 py-1 rounded-full text-[9px] uppercase tracking-widest font-headline" style={{ color: ORANGE, backgroundColor: "rgba(255,97,48,0.08)", fontWeight: 800 }}>Creators</span>
+                  <span className="px-2.5 py-1 rounded-full text-[9px] uppercase tracking-widest font-headline" style={{ color: ORANGE, backgroundColor: "rgba(255,97,48,0.08)", fontWeight: 800 }}>Experts</span>
                 </div>
                 <p className="text-[13px] leading-snug" style={{ color: INK, fontWeight: 600 }}>
                   Tuesday we build on Monday&apos;s flow — bring water and a mat!
@@ -638,7 +638,7 @@ function HandsFrame({ phase, staticLayout = false }: { phase: number; staticLayo
 const TOOL_ROWS = [
   { t: "Share", aud: "Members", d: "Anyone, anytime — wins, struggles, photos.", c: CYAN },
   { t: "Ask inside a post", aud: "Members", d: "Questions routed to the right expert.", c: CYAN },
-  { t: "Post with context", aud: "Creators", d: "Attach the live moment it's about.", c: ORANGE },
+  { t: "Post with context", aud: "Experts", d: "Attach the live moment it's about.", c: ORANGE },
   { t: "Calendar export", aud: "Members", d: "The structure follows you out of the app.", c: CYAN },
 ];
 
@@ -1116,8 +1116,10 @@ function IntroFrame() {
       <p className="text-[10.5px] uppercase tracking-[0.25em] font-headline mb-3.5" style={{ color: CYAN, fontWeight: 700 }}>
         Inside the experience
       </p>
+      {/* second half of the couplet — the participant's transformation,
+         cliffhung before the living-experience story that proves it */}
       <h2 className="text-4xl md:text-6xl font-headline tracking-tight leading-[1.08] mb-6" style={{ color: INK, fontWeight: 700, letterSpacing: "-0.025em" }}>
-        Alive <span style={{ color: ORANGE }}>by design.</span>
+        From content to <span style={{ color: CYAN }}>experience.</span>
       </h2>
       <p className="text-base md:text-xl leading-relaxed max-w-2xl mx-auto" style={{ color: MUTED }}>
         What you published isn&apos;t a static product or a video library —

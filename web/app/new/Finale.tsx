@@ -5,7 +5,7 @@ import { WaitlistForm } from "./WaitlistForm";
 /**
  * M8 · THE FINALE — "The room is open." The page's single climax. Act 2 ends
  * on "Ready to join the movement?" — this section answers it: this is how
- * you can be part. Two doors, nothing else: creators found the pilot,
+ * you can be part. Two doors, nothing else: experts found the pilot,
  * participants join the waitlist. Straightforward and converting.
  */
 
@@ -15,11 +15,13 @@ export function Finale() {
       <div className="max-w-5xl mx-auto">
         {/* Question → answer → doors, one viewport. Act 2 releases into this. */}
         <div className="text-center max-w-3xl mx-auto mb-10">
+          {/* the couplet, reunited whole at the climax — each half was proven
+             by the chapter it led (collaboration story / experience story) */}
           <p
-            className="text-xl md:text-2xl font-headline tracking-tight mb-3"
+            className="text-lg md:text-2xl font-headline tracking-tight mb-3"
             style={{ color: INK, fontWeight: 700, letterSpacing: "-0.02em" }}
           >
-            Ready to join <span style={{ color: ORANGE }}>the movement?</span>
+            From isolation to <span style={{ color: ORANGE }}>collaboration.</span> From content to <span style={{ color: CYAN }}>experience.</span>
           </p>
           <h2
             className="text-4xl md:text-6xl font-headline tracking-tight leading-[1.02] mb-5"
@@ -42,7 +44,7 @@ export function Finale() {
               style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1.5px rgba(255,97,48,0.35), 0 24px 60px rgba(255,97,48,0.12)" }}
             >
               <p className="text-[11px] uppercase tracking-[0.2em] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>
-                For creators · The founding pilot
+                For experts · The founding pilot
               </p>
               <h3 className="text-2xl md:text-[2rem] font-headline tracking-tight mt-3 leading-tight" style={{ color: INK, fontWeight: 800, letterSpacing: "-0.02em" }}>
                 Build one of the first five.

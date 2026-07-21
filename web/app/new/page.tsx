@@ -75,7 +75,7 @@ export default function LandingV2Page() {
                 style={{ backgroundColor: "#FF6130", boxShadow: "0 2px 8px rgba(255,97,48,0.3)" }}
               >
                 <span className="sm:hidden">Apply</span>
-                <span className="hidden sm:inline">Apply as creator</span>
+                <span className="hidden sm:inline">Apply as expert</span>
               </Link>
             </div>
           </div>

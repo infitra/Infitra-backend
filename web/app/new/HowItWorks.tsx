@@ -49,7 +49,7 @@ const BEATS_M: BeatDef[] = BEATS.map((b) => (b.f === 5 ? { ...b, w: 2 } : b));
 /* The anchored heads — one per railed frame (publish swaps per phase).
  * Kickers are gone: the rail carries the step identity. */
 const HEADS: Record<number, { title: React.ReactNode; copy?: string }[]> = {
-  1: [{ title: "Pick your complement.", copy: "One invitation starts a shared draft with the expert who complements you. INFITRA supports multiple creators inside one experience." }],
+  1: [{ title: "Pick your complement.", copy: "One invitation starts a shared draft with the expert who complements you. INFITRA supports multiple experts inside one experience." }],
   2: [{ title: "Design it together.", copy: "A pre-structured experience to create inside — add a session, set the split, talk it through." }],
   3: [{ title: "Lock it. Review. Agree.", copy: "The whole design locks as one. Your partner reviews and agrees to exactly that." }],
   4: [
@@ -727,11 +727,13 @@ function IntroFrame() {
         <p className="text-[10.5px] uppercase tracking-[0.25em] font-headline mb-3.5" style={{ color: CYAN_BRIGHT, fontWeight: 700 }}>
           How it works
         </p>
-        <h2 className="text-3xl md:text-5xl font-headline tracking-tight" style={{ color: LIGHT, fontWeight: 700, letterSpacing: "-0.02em" }}>
-          How to collaborate on INFITRA.
+        {/* first half of the couplet — the expert's transformation, cliffhung
+           before the collaboration story that proves it */}
+        <h2 className="text-4xl md:text-6xl font-headline tracking-tight leading-[1.08]" style={{ color: LIGHT, fontWeight: 700, letterSpacing: "-0.025em" }}>
+          From isolation to <span style={{ color: ORANGE }}>collaboration.</span>
         </h2>
         <p className="text-base md:text-lg mt-5 leading-relaxed max-w-2xl mx-auto" style={{ color: LIGHT_MUTED }}>
-          Four moves. Everything else is handled.
+          Build an experience beyond what you can offer alone.
         </p>
       </div>
       <div className="flex justify-center mt-8" aria-hidden>
