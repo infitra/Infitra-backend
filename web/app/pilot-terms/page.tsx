@@ -65,9 +65,9 @@ export default function PilotTermsPage() {
                 className="mt-5 text-base md:text-lg leading-relaxed"
                 style={{ color: "#475569" }}
               >
-                No boilerplate. This is the whole deal for founding pilot experts. The
-                formal split contract is the document you and your partner sign inside
-                your workspace before publishing; this page sets the expectations.
+                This is the whole deal for founding pilot experts. The formal split
+                contract is the document you and your partner sign inside your workspace
+                before publishing; this page sets the expectations.
               </p>
             </div>
 
@@ -76,18 +76,16 @@ export default function PilotTermsPage() {
               <Section title="What it is">
                 <p>
                   Five founding pairs, each running one live experience: typically four
-                  to six weeks, two live sessions a week, co-hosted. It&apos;s a closed
-                  pilot, so your participants come from your own audience, not from
-                  INFITRA.
+                  to six weeks, co-hosted. It&apos;s a closed pilot, so your participants
+                  come from your own audience, not from INFITRA.
                 </p>
               </Section>
 
               <Section title="What you do">
                 <p>
                   Design and publish one experience, host every live session, show up in
-                  the tribe space, and answer questions. Promote it to your audience.
-                  And tell us what&apos;s working and what isn&apos;t after each session:
-                  that feedback is the whole point of the pilot.
+                  the tribe space, and answer questions. Promote it to your audience. And
+                  tell us what&apos;s working and what isn&apos;t after each session.
                 </p>
               </Section>
 
@@ -98,30 +96,33 @@ export default function PilotTermsPage() {
                   pre and post-session pulses. Direct, founder-level support the whole
                   way. And a real hand in shaping what INFITRA becomes.
                 </p>
+                <p>
+                  And when INFITRA goes public, you&apos;re in pole position: you get a
+                  founding expert badge, you keep your reviews, and your experiences are
+                  ready and tested.
+                </p>
               </Section>
 
               <Section title="The money">
                 <p>
                   Participants pay on your sales page through Stripe, and the buyer
                   covers Stripe&apos;s processing fee (3% + CHF 0.30). INFITRA keeps a{" "}
-                  <strong style={{ color: "#0F2229" }}>founding 10% platform fee</strong>:
-                  half our standard rate, locked in for pilot experts (it rises to 15%
-                  after the pilot).
+                  <strong style={{ color: "#0F2229" }}>founding 10% platform fee</strong>,
+                  locked in for pilot experts.
                 </p>
                 <p>
                   You and your partner split the remaining 90% by the percentages in
-                  your signed contract. Every sale shows in your earnings dashboard in
+                  your signed agreement. Every sale shows in your earnings dashboard in
                   real time, and we pay out manually within 14 days of your experience
-                  ending. All pricing is in Swiss francs.
+                  ending. All pricing is in Swiss francs for the pilot.
                 </p>
               </Section>
 
               <Section title="After the pilot">
                 <p>
-                  No lock-in. You get first access to whatever comes next, including any
-                  pricing changes, and you can keep your experiences running, archive
-                  them, or take your audience elsewhere. We never hold expert audiences
-                  hostage.
+                  No lock-in. You get first access to whatever comes next, and you can
+                  keep your experiences running, archive them, or take your audience
+                  elsewhere. We never hold expert audiences hostage.
                 </p>
               </Section>
             </div>
@@ -130,8 +131,8 @@ export default function PilotTermsPage() {
             <p className="mt-10 text-sm leading-relaxed" style={{ color: "#64748b" }}>
               Your drafts, earnings, and private conversations stay between you and your
               partner; we only ever share anonymous, aggregate learnings about the
-              pilot. Questions? Yves (founder) is on the other end of your workspace
-              chat, or just reply to the email you applied with.
+              pilot. Questions? You&apos;ll have our direct number and easy founder access
+              and support.
             </p>
 
             {/* Footer */}

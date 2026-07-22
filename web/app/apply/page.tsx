@@ -76,12 +76,20 @@ export default function ApplyPage() {
                 className="mt-5 text-base md:text-lg leading-relaxed"
                 style={{ color: "#475569" }}
               >
-                We&apos;re looking for five expert pairs for the pilot. Apply solo or with
-                a partner: if your expertise complements another expert&apos;s and a 4 to 6
-                week live experience would land for your audience, we want to hear from
-                you. No partner yet? We&apos;ll help you find your match.
+                We&apos;re looking for five expert pairs to run a pilot. Apply solo or with
+                a partner: if your expertise could complement another expert&apos;s and you
+                are open to collaborate, we want to hear from you. No partner yet? We&apos;ll
+                help you find your match!
               </p>
             </div>
+
+            {/* The punchy reassurance that leads into the deal. */}
+            <p
+              className="text-[17px] md:text-lg font-headline mb-7"
+              style={{ color: "#0F2229", fontWeight: 700 }}
+            >
+              No upfront costs, no subscriptions.
+            </p>
 
             {/* ── The deal, in short ─────────────────────────── */}
             {/* The pilot terms, visible without leaving: the money and the
@@ -115,10 +123,11 @@ export default function ApplyPage() {
  * full terms one tap away.
  */
 const DEAL: string[] = [
-  "Founding 10% platform fee, half our standard rate. You and your partner split the rest.",
-  "No lock-in. Keep your experiences, archive them, or leave anytime.",
+  "A 10% platform fee on pilot revenue. You and your partner split the remaining 90%.",
   "Five founding pairs, one 4 to 6 week live experience, co-hosted.",
   "You host live and bring your audience. We run the platform, priced in CHF.",
+  "No lock-in. Keep your experiences, archive them, or leave anytime after the pilot.",
+  "Early positioning: you keep your pilot reviews and early access. Once we go live, you’re in pole position.",
   "No partner yet? We’ll help you pair up.",
 ];
 
