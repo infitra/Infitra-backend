@@ -13,8 +13,11 @@ import { HeroWaitlist } from "./HeroWaitlist";
  * pilot's pair-specifics live in the CTA microcopy, not the masthead.
  */
 export function Hero() {
+  // svh on mobile so the centered content fits the VISIBLE viewport (the area
+  // above the URL bar), not the taller vh box — otherwise the hero's lower
+  // content, incl. the opened waitlist form, hides under the bar.
   return (
-    <section className="relative min-h-[92vh] flex flex-col items-center justify-center px-6 pt-28 pb-16 text-center">
+    <section className="relative min-h-svh lg:min-h-[92vh] flex flex-col items-center justify-center px-6 pt-28 pb-16 text-center">
       <div className="max-w-5xl mx-auto w-full flex flex-col items-center">
         {/* The pilot context — small eyebrow above the definition */}
         <div
@@ -40,11 +43,17 @@ export function Hero() {
           <span className="block" style={{ color: CYAN, fontWeight: 700 }}>one live fitness experience.</span>
         </h1>
 
-        <p className="text-base md:text-xl max-w-2xl mx-auto leading-relaxed mb-9" style={{ color: MUTED }}>
+        <p className="text-base md:text-xl max-w-2xl mx-auto leading-relaxed mb-6" style={{ color: MUTED }}>
           Team up with experts who complement you and deliver one seamless live experience for
           your audience. INFITRA provides everything around that: the live rooms, the tribe
           space, the marketing page with checkout, the collaboration contract and the revenue
           splitting, <span style={{ color: INK, fontWeight: 600 }}>so you can focus on the experience.</span>
+        </p>
+
+        {/* Who it's for + the objection killed up front: you don't need a
+           partner to apply — the pilot pairs you. */}
+        <p className="text-[13.5px] sm:text-sm mb-7 max-w-xl mx-auto font-headline" style={{ color: MUTED, fontWeight: 600 }}>
+          For fitness and wellness experts. No partner yet? We&apos;ll help you pair up.
         </p>
 
         <ApplyCTA micro="5 founding pairs · reviewed individually · starting now" />

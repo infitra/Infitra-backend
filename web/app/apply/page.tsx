@@ -76,11 +76,17 @@ export default function ApplyPage() {
                 className="mt-5 text-base md:text-lg leading-relaxed"
                 style={{ color: "#475569" }}
               >
-                We&apos;re looking for five expert pairs to run joint live experiences in the
-                pilot. If your expertise complements another expert&apos;s, and a 4 to 6
-                week experience would land for your audience, we want to hear from you.
+                We&apos;re looking for five expert pairs for the pilot. Apply solo or with
+                a partner: if your expertise complements another expert&apos;s and a 4 to 6
+                week live experience would land for your audience, we want to hear from
+                you. No partner yet? We&apos;ll help you find your match.
               </p>
             </div>
+
+            {/* ── The deal, in short ─────────────────────────── */}
+            {/* The pilot terms, visible without leaving: the money and the
+               no-lock-in up top (the transparency win), full terms one tap away. */}
+            <PilotSummary />
 
             {/* ── Form (client) ──────────────────────────────── */}
             <PilotApplicationForm />
@@ -99,6 +105,65 @@ export default function ApplyPage() {
           </div>
         </main>
       </div>
+    </div>
+  );
+}
+
+/**
+ * The pilot deal in five lines, led by the money and the no-lock-in — the
+ * transparency the founder wanted, right where an applicant decides, with the
+ * full terms one tap away.
+ */
+const DEAL: string[] = [
+  "Founding 10% platform fee, half our standard rate. You and your partner split the rest.",
+  "No lock-in. Keep your experiences, archive them, or leave anytime.",
+  "Five founding pairs, one 4 to 6 week live experience, co-hosted.",
+  "You host live and bring your audience. We run the platform, priced in CHF.",
+  "No partner yet? We’ll help you pair up.",
+];
+
+function PilotSummary() {
+  return (
+    <div
+      className="rounded-3xl p-6 md:p-7 mb-8"
+      style={{ backgroundColor: "rgba(8,145,178,0.06)", border: "1px solid rgba(8,145,178,0.22)" }}
+    >
+      <p
+        className="text-[11px] uppercase tracking-[0.22em] font-headline mb-4"
+        style={{ color: "#0891b2", fontWeight: 800 }}
+      >
+        The pilot, in short
+      </p>
+      <ul className="space-y-2.5">
+        {DEAL.map((line) => (
+          <li key={line} className="flex gap-3">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#0891b2"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="shrink-0 mt-0.5"
+              aria-hidden
+            >
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            <span className="text-[14.5px] leading-snug" style={{ color: "#334155" }}>
+              {line}
+            </span>
+          </li>
+        ))}
+      </ul>
+      <Link
+        href="/pilot-terms"
+        className="inline-block mt-5 text-sm font-headline hover:opacity-70"
+        style={{ color: "#0891b2", fontWeight: 700 }}
+      >
+        Read the full pilot terms →
+      </Link>
     </div>
   );
 }

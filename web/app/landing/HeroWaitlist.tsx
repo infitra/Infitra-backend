@@ -16,16 +16,21 @@ export function HeroWaitlist() {
   const [open, setOpen] = useState(false);
   const boxRef = useRef<HTMLDivElement>(null);
 
+  // Open AND bring the form into view. The hero is a centered near-full-height
+  // section, so on a phone a freshly-opened form lands under the browser's
+  // bottom bar — every open path (the inline whisper here, the nav's
+  // `infitra:open-waitlist`) must scroll it into view, or the input is cut off.
+  const reveal = () => {
+    setOpen(true);
+    // let the form mount before scrolling to it
+    window.setTimeout(() => {
+      boxRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 60);
+  };
+
   useEffect(() => {
-    const onOpen = () => {
-      setOpen(true);
-      // let the form mount before scrolling to it
-      window.setTimeout(() => {
-        boxRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-      }, 60);
-    };
-    window.addEventListener("infitra:open-waitlist", onOpen);
-    return () => window.removeEventListener("infitra:open-waitlist", onOpen);
+    window.addEventListener("infitra:open-waitlist", reveal);
+    return () => window.removeEventListener("infitra:open-waitlist", reveal);
   }, []);
 
   if (open) {
@@ -40,7 +45,7 @@ export function HeroWaitlist() {
     <div ref={boxRef} id="waitlist">
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={reveal}
         className="mt-12 text-[13.5px] sm:text-[14px] transition-opacity hover:opacity-70"
         style={{ color: MUTED }}
       >

@@ -44,15 +44,15 @@ export function Finale() {
               style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1.5px rgba(255,97,48,0.35), 0 24px 60px rgba(255,97,48,0.12)" }}
             >
               <p className="text-[11px] uppercase tracking-[0.2em] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>
-                For experts · The founding pilot
+                For fitness and wellness experts
               </p>
               <h3 className="text-2xl md:text-[2rem] font-headline tracking-tight mt-3 leading-tight" style={{ color: INK, fontWeight: 800, letterSpacing: "-0.02em" }}>
                 Build one of the first five.
               </h3>
               <p className="text-[15px] md:text-base mt-3 leading-relaxed" style={{ color: MUTED }}>
-                Pair with a complementary expert and found a real experience with
-                direct, hands-on support. Everything you just scrolled through,
-                running for your audience.
+                Pair with a complementary expert, or let us help you find one, and
+                found a real experience with direct, hands-on support. Everything you
+                just scrolled through, running for your audience.
               </p>
 
               <div className="mt-auto pt-8 flex justify-center">

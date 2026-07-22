@@ -10,9 +10,9 @@ import { WaveFlowingBackground } from "@/app/components/WaveFlowingBackground";
  */
 
 export const metadata = {
-  title: "Pilot terms — INFITRA",
+  title: "Pilot terms · INFITRA",
   description:
-    "What we ask of pilot creators, what we offer, and how the money flows during the INFITRA pilot.",
+    "The INFITRA pilot for founding experts, in plain language: what it is, what you do, what you get, and how the money works.",
 };
 
 export default function PilotTermsPage() {
@@ -59,134 +59,80 @@ export default function PilotTermsPage() {
                 className="text-3xl md:text-4xl font-headline tracking-tight leading-[1.1]"
                 style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.025em" }}
               >
-                What we ask, what we offer, and how the money flows.
+                The pilot, in plain language.
               </h1>
               <p
                 className="mt-5 text-base md:text-lg leading-relaxed"
                 style={{ color: "#475569" }}
               >
-                Plain language, no boilerplate. The formal collaboration agreement
-                is the contract document you and your partner sign inside the
-                workspace before publishing — this page sets expectations.
+                No boilerplate. This is the whole deal for founding pilot experts. The
+                formal split contract is the document you and your partner sign inside
+                your workspace before publishing; this page sets the expectations.
               </p>
             </div>
 
-            {/* Body */}
+            {/* Body — five tight blocks. Everything an applicant needs, nothing more. */}
             <div className="space-y-10">
-              <Section title="What the pilot is">
+              <Section title="What it is">
                 <p>
-                  We&apos;re running INFITRA with five creator pairs to learn how joint
-                  live programs actually work in practice. You and your partner design
-                  one challenge — typically four to six weeks, with two live sessions
-                  a week — co-host it, and we manage the platform and the money.
-                </p>
-                <p>
-                  This is a closed pilot. We&apos;re not opening to the public, and we&apos;re
-                  not advertising your program through INFITRA — your participants
-                  come from your audiences.
+                  Five founding pairs, each running one live experience: typically four
+                  to six weeks, two live sessions a week, co-hosted. It&apos;s a closed
+                  pilot, so your participants come from your own audience, not from
+                  INFITRA.
                 </p>
               </Section>
 
-              <Section title="What we ask of you">
-                <ul className="space-y-2 list-disc pl-5">
-                  <li>
-                    Run one full program end to end with us — design, publish, host
-                    every live session, post in the cohort space, answer questions.
-                  </li>
-                  <li>
-                    Talk to us regularly. Honest feedback after each session is the
-                    point of the pilot — what worked, what was clunky, what you wish
-                    existed.
-                  </li>
-                  <li>
-                    Show up live. The whole pitch is that the live moment is the
-                    program — recorded replays are not part of the pilot.
-                  </li>
-                  <li>
-                    Promote the program to your own audience. We don&apos;t do paid
-                    acquisition for you during the pilot.
-                  </li>
-                </ul>
-              </Section>
-
-              <Section title="What we offer">
-                <ul className="space-y-2 list-disc pl-5">
-                  <li>
-                    A working platform: workspace co-design, signed split contracts,
-                    a public sales page, payment processing, live video, the cohort
-                    space, and pre/post-session pulses.
-                  </li>
-                  <li>
-                    Direct, founder-level support throughout. If something breaks,
-                    you have our number.
-                  </li>
-                  <li>
-                    A meaningful share of any platform improvements that come out of
-                    your feedback — early creators shape the product.
-                  </li>
-                </ul>
-              </Section>
-
-              <Section title="Money flow">
+              <Section title="What you do">
                 <p>
-                  Participants pay through the public sales page via Stripe. The
-                  buyer absorbs Stripe processing fees (3% + CHF 0.30 per
-                  transaction).
-                </p>
-                <p>
-                  After the Stripe processing fee, INFITRA takes a fixed{" "}
-                  <strong>20% platform fee</strong>. You and your partner split the
-                  remaining 80% according to the percentages you agree in your signed
-                  collaboration contract.
-                </p>
-                <p>
-                  During the pilot, payouts are processed manually by us at the end
-                  of each program (not automatically per transaction). You&apos;ll see
-                  every transaction in your earnings dashboard in real time, and
-                  receive your share within fourteen days of the program ending.
+                  Design and publish one experience, host every live session, show up in
+                  the tribe space, and answer questions. Promote it to your audience.
+                  And tell us what&apos;s working and what isn&apos;t after each session:
+                  that feedback is the whole point of the pilot.
                 </p>
               </Section>
 
-              <Section title="Currency">
+              <Section title="What you get">
                 <p>
-                  All pricing during the pilot is in Swiss francs (CHF). Multi-currency
-                  support comes after the pilot.
+                  The whole platform: the co-design workspace, a signed split contract,
+                  a public sales page with checkout, live rooms, the tribe space, and
+                  pre and post-session pulses. Direct, founder-level support the whole
+                  way. And a real hand in shaping what INFITRA becomes.
                 </p>
               </Section>
 
-              <Section title="Confidentiality">
+              <Section title="The money">
                 <p>
-                  Anything you see in the workspace, the dashboard, or the
-                  collaboration chat is yours and your partner&apos;s. We don&apos;t share
-                  unpublished program drafts, financial details, or private
-                  conversations with anyone outside the pilot.
+                  Participants pay on your sales page through Stripe, and the buyer
+                  covers Stripe&apos;s processing fee (3% + CHF 0.30). INFITRA keeps a{" "}
+                  <strong style={{ color: "#0F2229" }}>founding 10% platform fee</strong>:
+                  half our standard rate, locked in for pilot experts (it rises to 15%
+                  after the pilot).
                 </p>
                 <p>
-                  We may discuss anonymous, aggregate learnings (e.g. &quot;creators
-                  found the workspace easy to use&quot;) when talking publicly about
-                  the pilot. We&apos;ll never share specifics that identify you, your
-                  partner, or your participants without explicit permission.
-                </p>
-              </Section>
-
-              <Section title="What happens after the pilot">
-                <p>
-                  When the pilot wraps, you&apos;ll have first access to whatever
-                  INFITRA becomes next — including any pricing or platform-share
-                  changes. You can keep your existing programs running on the
-                  platform, archive them, or take your audience elsewhere. We don&apos;t
-                  hold creator audiences hostage.
+                  You and your partner split the remaining 90% by the percentages in
+                  your signed contract. Every sale shows in your earnings dashboard in
+                  real time, and we pay out manually within 14 days of your experience
+                  ending. All pricing is in Swiss francs.
                 </p>
               </Section>
 
-              <Section title="Founder contact">
+              <Section title="After the pilot">
                 <p>
-                  Yves Imhasly — founder. You&apos;ll have direct contact via the
-                  workspace chat for your program; for anything else, the email you
-                  applied with is how we&apos;ll reach you.
+                  No lock-in. You get first access to whatever comes next, including any
+                  pricing changes, and you can keep your experiences running, archive
+                  them, or take your audience elsewhere. We never hold expert audiences
+                  hostage.
                 </p>
               </Section>
             </div>
+
+            {/* The fine print — confidentiality + contact, one compact note. */}
+            <p className="mt-10 text-sm leading-relaxed" style={{ color: "#64748b" }}>
+              Your drafts, earnings, and private conversations stay between you and your
+              partner; we only ever share anonymous, aggregate learnings about the
+              pilot. Questions? Yves (founder) is on the other end of your workspace
+              chat, or just reply to the email you applied with.
+            </p>
 
             {/* Footer */}
             <div
