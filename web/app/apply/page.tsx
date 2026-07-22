@@ -24,9 +24,11 @@ export default function ApplyPage() {
       <WaveFlowingBackground />
 
       <div className="relative z-10">
-        {/* Slim brand bar — no full nav, this is a focused conversion page */}
+        {/* Slim brand bar — no full nav, this is a focused conversion page.
+           The logo links home; an explicit "back" gives a clear escape hatch
+           without scrolling past the whole form (mirrors /pilot-terms). */}
         <div className="px-6 pt-6 pb-2">
-          <div className="max-w-2xl mx-auto">
+          <div className="max-w-2xl mx-auto flex items-center justify-between gap-4">
             <Link href="/" className="inline-flex items-center gap-2.5">
               <img
                 src="/logo-mark.png"
@@ -41,6 +43,14 @@ export default function ApplyPage() {
               >
                 INFITRA
               </span>
+            </Link>
+            <Link
+              href="/"
+              className="text-sm font-headline transition-opacity hover:opacity-70 whitespace-nowrap"
+              style={{ color: "#475569", fontWeight: 600 }}
+            >
+              <span className="sm:hidden">← Back</span>
+              <span className="hidden sm:inline">← Back to landing</span>
             </Link>
           </div>
         </div>
