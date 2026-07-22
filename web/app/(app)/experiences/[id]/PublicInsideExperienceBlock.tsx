@@ -173,11 +173,17 @@ export function PublicInsideExperienceBlock({ experts, introPrompt }: Props) {
               className="mt-3 relative h-2 rounded-full"
               style={{ backgroundColor: "rgba(15,34,41,0.08)" }}
             >
+              {/* Centered on the bar with explicit negative margins (half the
+                 16px knob), not a percentage transform — top:50% + a %
+                 transform on a 2px-tall bar was landing the knob above the
+                 line. */}
               <span
-                className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full"
+                className="absolute w-4 h-4 rounded-full"
                 style={{
+                  top: "50%",
                   left: "50%",
-                  transform: "translate(-50%, -50%)",
+                  marginTop: -8,
+                  marginLeft: -8,
                   backgroundColor: "#FFFFFF",
                   boxShadow: `0 0 0 2px ${CYAN}`,
                 }}
@@ -207,26 +213,29 @@ export function PublicInsideExperienceBlock({ experts, introPrompt }: Props) {
             </div>
           </MechCard>
 
-          {/* 4 · The live room — the mechanic, not a fake live state */}
+          {/* 4 · The live room — the mechanic, not a fake live state. The
+             experts are real (they host), the button is the real tap; no
+             invented "N in the room". */}
           <MechCard
             accent={ORANGE}
             kicker="When it's time · One tap"
             caption="No new login, no external link. The room opens right here, inside the space."
           >
-            <div className="flex items-center gap-3">
-              <span
-                className="inline-flex items-center px-5 py-2.5 rounded-full text-white text-[13px] font-black font-headline"
-                style={{
-                  backgroundColor: "#ef4444",
-                  boxShadow: "0 4px 14px rgba(239,68,68,0.30)",
-                }}
-              >
-                Join the room →
-              </span>
-              <span className="text-[11px] font-bold" style={{ color: "#94a3b8" }}>
-                together with your tribe
+            <div className="flex items-center gap-2.5">
+              <Facepile experts={experts} />
+              <span className="text-[11.5px] font-bold font-headline" style={{ color: INK }}>
+                {expertNames.length > 1 ? "Your experts host it, live" : "Your expert hosts it, live"}
               </span>
             </div>
+            <span
+              className="mt-4 w-full inline-flex items-center justify-center px-5 py-3.5 rounded-full text-white text-[14px] font-black font-headline"
+              style={{
+                backgroundColor: "#ef4444",
+                boxShadow: "0 6px 18px rgba(239,68,68,0.30)",
+              }}
+            >
+              Join the room →
+            </span>
           </MechCard>
         </div>
 
