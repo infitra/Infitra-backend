@@ -398,12 +398,33 @@ export function LoginForm() {
             </button>
           </form>
 
-          <p className="text-[11px] text-center mt-5" style={{ color: "#94a3b8" }}>
-            Want to create experiences on INFITRA?{" "}
-            <a href="/apply" className="hover:opacity-80" style={{ color: "#0891b2", fontWeight: 700 }}>
-              Apply for the founding pilot →
-            </a>
-          </p>
+          {/* The expert door, clearly separated: this form is for
+             participants; expert accounts are invite-only via /apply. */}
+          <div
+            className="mt-6 p-4 rounded-2xl text-center"
+            style={{
+              backgroundColor: "rgba(255,97,48,0.07)",
+              border: "1px solid rgba(255,97,48,0.22)",
+            }}
+          >
+            <p
+              className="text-[10px] font-bold font-headline uppercase tracking-[0.18em] mb-1"
+              style={{ color: "#c2410c" }}
+            >
+              For fitness and wellness experts
+            </p>
+            <p className="text-[13px] leading-relaxed" style={{ color: "#475569" }}>
+              This signup is for participants. Expert accounts are invite-only
+              during the pilot.{" "}
+              <a
+                href="/apply"
+                className="hover:opacity-80 whitespace-nowrap"
+                style={{ color: "#0891b2", fontWeight: 700 }}
+              >
+                Apply for the founding pilot →
+              </a>
+            </p>
+          </div>
         </>
       )}
 
