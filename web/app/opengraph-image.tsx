@@ -21,7 +21,6 @@ export const contentType = "image/png";
 const INK = "#0F2229";
 const ORANGE = "#FF6130";
 const CYAN = "#0891b2";
-const MUTED = "#475569";
 const CREAM = "#F2EFE8";
 
 export default async function Image() {
@@ -69,25 +68,24 @@ export default async function Image() {
           }}
         />
 
-        {/* lockup */}
-        <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
+        {/* lockup — sized up so the mark + name carry real presence, with
+           room to breathe above the title (space-between does the spacing) */}
+        <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={markSrc} width={64} height={64} style={{ borderRadius: 14 }} alt="" />
-          <span style={{ fontSize: 34, fontWeight: 700, color: ORANGE, letterSpacing: "-0.03em" }}>
+          <img src={markSrc} width={92} height={92} style={{ borderRadius: 21 }} alt="" />
+          <span style={{ fontSize: 50, fontWeight: 700, color: ORANGE, letterSpacing: "-0.03em" }}>
             INFITRA
           </span>
         </div>
 
-        {/* the hero couplet, verbatim */}
-        <div style={{ display: "flex", flexDirection: "column", marginTop: -8 }}>
-          <span style={{ fontSize: 82, fontWeight: 700, color: ORANGE, letterSpacing: "-0.025em", lineHeight: 1.05 }}>
+        {/* the hero couplet, verbatim. The deck line is intentionally gone: it
+           repeats in the link's own description text right below the image. */}
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <span style={{ fontSize: 82, fontWeight: 700, color: ORANGE, letterSpacing: "-0.025em", lineHeight: 1.06 }}>
             Complementary experts,
           </span>
-          <span style={{ fontSize: 82, fontWeight: 700, color: CYAN, letterSpacing: "-0.025em", lineHeight: 1.05 }}>
+          <span style={{ fontSize: 82, fontWeight: 700, color: CYAN, letterSpacing: "-0.025em", lineHeight: 1.06 }}>
             one live fitness experience.
-          </span>
-          <span style={{ display: "flex", fontSize: 27, fontWeight: 500, color: MUTED, marginTop: 26, maxWidth: 940, lineHeight: 1.4 }}>
-            Team up with a complementary expert for one seamless live experience. The rooms, the tribe, the checkout, the contract and the split: handled.
           </span>
         </div>
 
