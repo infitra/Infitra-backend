@@ -63,8 +63,6 @@ interface Creator {
   avatar_url: string | null;
   tagline: string | null;
   role: "owner" | "cohost";
-  /** Lineage-cumulative expert rating (vw_expert_review_stats); null/0 total = hidden. */
-  rating?: { avg: number; total: number } | null;
 }
 
 /** One public review row (vw_experience_reviews_public) — safe fields only. */
@@ -74,6 +72,7 @@ export interface PublicReview {
   comment: string | null;
   created_at: string;
   reviewer_name: string;
+  reviewer_avatar_url: string | null;
 }
 
 interface Props {
@@ -228,19 +227,25 @@ export function PublicChallengeHero({
           >
             {headline}
           </h1>
-          {/* Social proof, first beat under the H1 — lineage-cumulative, so a
-             run 2 page carries run 1's reviews. Hidden below 1 review. */}
+          {/* Social proof, first beat under the H1 — THE experience's own
+             rating (lineage-cumulative, so a run 2 page carries run 1's
+             reviews). Deliberately the only aggregate on the page: per-
+             expert ratings live on the future expert profile, not here.
+             Hidden below 1 review. */}
           {reviewStats && reviewStats.totalReviews > 0 && (
-            <div className="mt-4 flex items-center justify-center gap-2">
-              <StarIcon size={16} />
+            <div className="mt-5 flex items-center justify-center gap-2.5 lg:gap-3">
+              <StarIcon size={22} />
               <span
-                className="text-[15px] lg:text-base font-black font-headline tabular-nums"
-                style={{ color: "#0F2229" }}
+                className="font-black font-headline tabular-nums"
+                style={{ color: "#0F2229", fontSize: "clamp(1.25rem, 3.4vw, 1.5rem)", letterSpacing: "-0.01em" }}
               >
                 {reviewStats.avgRating.toFixed(1)}
               </span>
-              <span className="text-sm font-medium" style={{ color: "#64748b" }}>
-                · {reviewStats.totalReviews} {reviewStats.totalReviews === 1 ? "review" : "reviews"}
+              <span
+                className="text-base lg:text-lg font-semibold"
+                style={{ color: "#64748b" }}
+              >
+                from {reviewStats.totalReviews} {reviewStats.totalReviews === 1 ? "member review" : "member reviews"}
               </span>
             </div>
           )}
@@ -445,13 +450,32 @@ export function PublicChallengeHero({
                         {r.comment}
                       </p>
                     )}
-                    <p
-                      className="text-[12px] font-bold font-headline mt-2.5"
-                      style={{ color: "#0F2229" }}
-                    >
-                      {r.reviewer_name}
-                      <span style={{ color: "#94a3b8", fontWeight: 600 }}> · in the tribe</span>
-                    </p>
+                    <div className="flex items-center gap-2 mt-3">
+                      {r.reviewer_avatar_url ? (
+                        <Image
+                          src={r.reviewer_avatar_url}
+                          alt=""
+                          width={28}
+                          height={28}
+                          decoding="async"
+                          className="w-7 h-7 rounded-full object-cover shrink-0"
+                          style={{ border: "1.5px solid rgba(15,34,41,0.08)", backgroundColor: "#ECE7DD" }}
+                        />
+                      ) : (
+                        <span
+                          className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
+                          style={{ backgroundColor: "rgba(8,145,178,0.10)" }}
+                        >
+                          <span className="text-[11px] font-black font-headline" style={{ color: "#0891b2" }}>
+                            {r.reviewer_name[0]?.toUpperCase()}
+                          </span>
+                        </span>
+                      )}
+                      <p className="text-[12px] font-bold font-headline" style={{ color: "#0F2229" }}>
+                        {r.reviewer_name}
+                        <span style={{ color: "#94a3b8", fontWeight: 600 }}> · in the tribe</span>
+                      </p>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -525,14 +549,12 @@ function StarRow({ rating }: { rating: number }) {
   );
 }
 
-/** "Jul 19" within the current year, "Jul 19, 2025" otherwise. */
+/** Full date with year, always — "Jul 19, 2026". */
 function formatReviewDate(iso: string): string {
-  const d = new Date(iso);
-  const sameYear = d.getFullYear() === new Date().getFullYear();
-  return d.toLocaleDateString("en-US", {
+  return new Date(iso).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
-    ...(sameYear ? {} : { year: "numeric" }),
+    year: "numeric",
   });
 }
 
@@ -601,22 +623,9 @@ function ExpertPortrait({ creator }: { creator: Creator }) {
           {creator.tagline}
         </p>
       )}
-      {/* Expert social proof — cumulative across every experience they
-         host or co-host. Hidden until the first review exists. */}
-      {creator.rating && creator.rating.total > 0 && (
-        <span className="mt-1.5 inline-flex items-center gap-1">
-          <StarIcon size={11} />
-          <span
-            className="text-[11px] font-black font-headline tabular-nums"
-            style={{ color: "#0F2229" }}
-          >
-            {creator.rating.avg.toFixed(1)}
-          </span>
-          <span className="text-[10.5px] font-semibold" style={{ color: "#94a3b8" }}>
-            ({creator.rating.total})
-          </span>
-        </span>
-      )}
+      {/* No per-expert rating here by design: the page carries exactly ONE
+         aggregate (the experience's own, under the H1). Cross-experience
+         expert ratings belong on the future expert profile / discovery. */}
     </div>
   );
 }

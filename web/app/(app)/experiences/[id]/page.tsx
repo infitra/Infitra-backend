@@ -90,7 +90,7 @@ export default async function ChallengePage({
       .maybeSingle(),
     supabase
       .from("vw_experience_reviews_public")
-      .select("review_id, rating, comment, created_at, reviewer_name")
+      .select("review_id, rating, comment, created_at, reviewer_name, reviewer_avatar_url")
       .eq("challenge_id", id)
       .order("created_at", { ascending: false })
       .limit(6),
@@ -132,7 +132,7 @@ export default async function ChallengePage({
   // All three are independent of one another → parallel. The viewer
   // queries no-op (resolve null) for anonymous visitors.
   const allCreatorIds = [buyerView.owner_id, ...cohostIds];
-  const [{ data: creatorProfiles }, membershipRes, viewerProfileRes, { data: expertStatRows }] =
+  const [{ data: creatorProfiles }, membershipRes, viewerProfileRes] =
     await Promise.all([
       supabase
         .from("app_profile")
@@ -153,21 +153,7 @@ export default async function ChallengePage({
             .eq("id", user.id)
             .maybeSingle()
         : Promise.resolve({ data: null }),
-      // Per-expert cumulative ratings (host + cohost across all their work).
-      supabase
-        .from("vw_expert_review_stats")
-        .select("expert_id, avg_rating, total_reviews")
-        .in("expert_id", allCreatorIds),
     ]);
-
-  const expertStatsById = new Map<string, { avg: number; total: number }>();
-  for (const s of (expertStatRows ?? []) as Array<{
-    expert_id: string;
-    avg_rating: number;
-    total_reviews: number;
-  }>) {
-    expertStatsById.set(s.expert_id, { avg: Number(s.avg_rating), total: s.total_reviews });
-  }
 
   const profileById = new Map<string, {
     id: string;
@@ -190,7 +176,7 @@ export default async function ChallengePage({
   const creators = [
     ...(owner ? [{ ...owner, role: "owner" as const }] : []),
     ...cohostProfiles.map((p) => ({ ...p, role: "cohost" as const })),
-  ].map((c) => ({ ...c, rating: expertStatsById.get(c.id) ?? null }));
+  ];
   const creatorsById = new Map(creators.map((c) => [c.id, c]));
 
   // Viewer state (page is public; these are only meaningful when signed in).
