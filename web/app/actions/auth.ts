@@ -54,10 +54,33 @@ export async function signUp(prevState: unknown, formData: FormData) {
   // metadata when present.
   const fullName = (formData.get("full_name") as string)?.trim() || null;
 
+  // The public participant signup collects only the full name; derive the
+  // shown-to-others default from its first word (changeable later).
+  if (!displayName && role === "participant" && fullName) {
+    displayName = fullName.split(/\s+/)[0]?.slice(0, 50) ?? "";
+  }
+
+  // Supply-side gate (pilot): creator accounts exist ONLY via a single-use
+  // invite (see app_handle_new_user — the DB trigger is the enforcement;
+  // this pre-check exists for friendly errors before the account attempt).
+  const inviteCode = (formData.get("creator_invite_code") as string | null)?.trim() || null;
+
   if (!email || !password) return { error: "Email and password are required." };
   if (password.length < 8) return { error: "Password must be at least 8 characters." };
   if (!["participant", "creator"].includes(role)) return { error: "Please select a role." };
   if (!displayName || displayName.length < 2) return { error: "Display name must be at least 2 characters." };
+
+  if (role === "creator") {
+    if (!inviteCode) {
+      return { error: "Expert accounts are invite-only during the pilot. Use your personal invite link." };
+    }
+    const { data: inviteValid } = await supabase.rpc("app_validate_creator_invite", {
+      p_code: inviteCode,
+    });
+    if (inviteValid !== true) {
+      return { error: "This invite is invalid, already used, or expired. Reply to your acceptance email and we will send a fresh one." };
+    }
+  }
 
   const origin = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.infitra.fit";
 
@@ -72,11 +95,33 @@ export async function signUp(prevState: unknown, formData: FormData) {
       // Role and display_name are passed as metadata so the DB trigger
       // can set them correctly on INSERT — role is immutable after creation.
       // full_name is null except on the official participant signup.
-      data: { role, display_name: displayName, full_name: fullName },
+      // creator_invite_code is redeemed atomically inside the trigger.
+      data: {
+        role,
+        display_name: displayName,
+        full_name: fullName,
+        ...(role === "creator" && inviteCode ? { creator_invite_code: inviteCode } : {}),
+      },
     },
   });
 
-  if (error) return { error: error.message };
+  if (error) {
+    // The trigger ABORTS creator signups without a valid invite (better a
+    // retry than a permanently wrong role). Supabase surfaces that as a
+    // generic database error — translate it for the rare race where the
+    // code was redeemed between our pre-check and the insert.
+    if (role === "creator" && /database error/i.test(error.message)) {
+      return { error: "This invite was just used or expired. Reply to your acceptance email and we will send a fresh one." };
+    }
+    return { error: error.message };
+  }
+
+  // Approved experts must never face the beta wall: their invite grants the
+  // same cookie the /beta-access form sets. Participants stay walled until
+  // the public go-live lifts the gate.
+  if (role === "creator") {
+    await grantBetaAccess();
+  }
 
   // If Supabase auto-confirm is OFF, data.session will be null. In that
   // case fall back to role-default — we can't push the user to Stripe
@@ -126,6 +171,13 @@ export async function signIn(prevState: unknown, formData: FormData) {
     .eq("id", data.user.id)
     .maybeSingle();
 
+  // Creators and admins never face the beta wall (new device, expired
+  // cookie): a successful sign-in re-plants the cookie for them. The wall
+  // keeps gating participants until the public go-live.
+  if (profile?.role === "creator" || profile?.role === "admin") {
+    await grantBetaAccess();
+  }
+
   const dest = await resolvePostAuth({
     supabase,
     user: data.user,
@@ -146,6 +198,24 @@ export async function signOut() {
   cookieStore.delete("x-onboarded");
 
   redirect("/login");
+}
+
+/**
+ * Plant the beta-wall cookie (same attributes as the /beta-access form).
+ * Used for creator/admin flows only while the wall is up; retires with it.
+ */
+async function grantBetaAccess() {
+  const code = process.env.BETA_ACCESS_CODE;
+  if (!code) return; // wall already lifted — nothing to grant
+  const { cookies } = await import("next/headers");
+  const cookieStore = await cookies();
+  cookieStore.set("x-beta-access", code, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 60 * 60 * 24 * 30, // 30 days
+    path: "/",
+  });
 }
 
 /**

@@ -20,6 +20,10 @@ const PUBLIC_ROUTES = [
   "/sitemap.xml",
   "/robots.txt",
   "/opengraph-image",
+  // Founding expert invite door — self-gated by its single-use code (the
+  // signup trigger enforces it); invitees arrive while the wall is up, and
+  // successful redemption plants the wall cookie for them.
+  "/join-as-expert",
 ];
 
 // Public prefixes — any path starting with one of these is treated

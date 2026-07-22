@@ -5,7 +5,6 @@ import { useSearchParams } from "next/navigation";
 import { signIn, signUp } from "@/app/actions/auth";
 
 type Mode = "signin" | "signup";
-type SignupStep = 1 | 2;
 
 /**
  * Sign-in / sign-up surface. Cream + wave theme — matches the landing
@@ -19,12 +18,13 @@ type SignupStep = 1 | 2;
  *   Role + display name are derived server-side (role=participant,
  *   name=email-prefix) — both are correct defaults at the moment of
  *   purchase and the user can change the name later from inside the
- *   cohort space. This removes every field that doesn't matter when
- *   someone has hit "Buy" and is one step from paying.
+ *   cohort space.
  *
- *   The full 2-step signup (role picker + display name) is preserved
- *   for users who arrive at /login directly (e.g. to sign up as a
- *   creator) — those flows aren't on the buy path.
+ * Supply-side gate (pilot): the public signup is PARTICIPANT-ONLY —
+ * the role picker is gone. Expert accounts exist only through personal
+ * invite links (/join-as-expert, enforced by the signup trigger), so
+ * this form cannot even attempt a creator signup. A quiet footnote
+ * points would-be experts to /apply.
  */
 export function LoginForm() {
   const searchParams = useSearchParams();
@@ -36,22 +36,12 @@ export function LoginForm() {
   // from a DM share don't have an INFITRA account yet, and the form
   // is now short enough that signing up doesn't feel like a chore.
   const [mode, setMode] = useState<Mode>(isBuyFlow ? "signup" : "signin");
-  const [signupStep, setSignupStep] = useState<SignupStep>(1);
-  const [selectedRole, setSelectedRole] = useState<"creator" | "participant" | null>(null);
-  const [displayName, setDisplayName] = useState("");
 
   const [signInState, signInAction, signInPending] = useActionState(signIn, null);
   const [signUpState, signUpAction, signUpPending] = useActionState(signUp, null);
 
-  function resetSignup() {
-    setSignupStep(1);
-    setSelectedRole(null);
-    setDisplayName("");
-  }
-
   function switchMode(m: Mode) {
     setMode(m);
-    resetSignup();
   }
 
   // Shared input styles for the cream theme — keep one source of truth.
@@ -307,8 +297,8 @@ export function LoginForm() {
         </>
       )}
 
-      {/* ── SIGN UP — STANDARD Step 1: Role + Name (not buy flow) ── */}
-      {mode === "signup" && !isBuyFlow && signupStep === 1 && (
+      {/* ── SIGN UP — STANDARD (not buy flow): participant, one step ── */}
+      {mode === "signup" && !isBuyFlow && (
         <>
           <h1
             className="text-2xl font-headline tracking-tight mb-2"
@@ -317,145 +307,8 @@ export function LoginForm() {
             Join INFITRA.
           </h1>
           <p className="text-sm mb-8" style={{ color: "#64748b" }}>
-            Choose your role — this is permanent.
+            Create your account to join live experiences.
           </p>
-
-          {/* Role cards */}
-          <div className="grid grid-cols-2 gap-3 mb-6">
-            {[
-              {
-                value: "creator" as const,
-                label: "Creator",
-                desc: "Build & collaborate",
-                accent: "#FF6130",
-                icon: (
-                  <svg width="18" height="18" fill="none" stroke="#FF6130" strokeWidth={1.5} viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 2L2 7l10 5 10-5-10-5z" /><path d="M2 17l10 5 10-5" /><path d="M2 12l10 5 10-5" />
-                  </svg>
-                ),
-              },
-              {
-                value: "participant" as const,
-                label: "Participant",
-                desc: "Join & engage",
-                accent: "#0891b2",
-                icon: (
-                  <svg width="18" height="18" fill="none" stroke="#0891b2" strokeWidth={1.5} viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                  </svg>
-                ),
-              },
-            ].map(({ value, label, desc, accent, icon }) => {
-              const selected = selectedRole === value;
-              return (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setSelectedRole(value)}
-                  className="p-4 rounded-2xl text-left transition-all duration-200 hover:scale-[1.02]"
-                  style={
-                    selected
-                      ? {
-                          backgroundColor: `${accent}12`,
-                          border: `1.5px solid ${accent}`,
-                          boxShadow: `0 4px 14px ${accent}25`,
-                        }
-                      : {
-                          backgroundColor: "rgba(255,255,255,0.65)",
-                          border: "1px solid rgba(15,34,41,0.10)",
-                        }
-                  }
-                >
-                  <div className="mb-2">{icon}</div>
-                  <p
-                    className="text-sm font-headline"
-                    style={{ color: "#0F2229", fontWeight: 700 }}
-                  >
-                    {label}
-                  </p>
-                  <p className="text-xs mt-0.5" style={{ color: "#64748b" }}>
-                    {desc}
-                  </p>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Name — "Full Name" for participants (→ full_name; their displayed
-              Username is set later, post-purchase or in profile), brand
-              "Display Name" for creators (→ display_name, shown publicly). */}
-          <div className="mb-6">
-            <label htmlFor="signup_display_name" className={labelClass} style={labelStyle}>
-              {selectedRole === "participant" ? "Full Name" : "Display Name"}
-            </label>
-            <input
-              id="signup_display_name"
-              type="text"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              minLength={2}
-              maxLength={50}
-              placeholder={
-                selectedRole === "participant"
-                  ? "Your full name"
-                  : "Your name or studio name"
-              }
-              className={inputClass}
-              style={inputStyle}
-            />
-          </div>
-
-          <button
-            type="button"
-            disabled={!selectedRole || displayName.trim().length < 2}
-            onClick={() => setSignupStep(2)}
-            className="w-full py-3.5 rounded-full text-white text-sm font-headline transition-transform hover:scale-[1.02] disabled:opacity-30 disabled:hover:scale-100"
-            style={{
-              backgroundColor: "#FF6130",
-              fontWeight: 700,
-              boxShadow:
-                "0 4px 14px rgba(255,97,48,0.35), 0 2px 6px rgba(255,97,48,0.20)",
-            }}
-          >
-            Continue
-          </button>
-        </>
-      )}
-
-      {/* ── SIGN UP — STANDARD Step 2: Email + Password (not buy flow) ── */}
-      {mode === "signup" && !isBuyFlow && signupStep === 2 && (
-        <>
-          <button
-            type="button"
-            onClick={() => setSignupStep(1)}
-            className="text-xs transition-colors mb-6 flex items-center gap-1.5 font-headline"
-            style={{ color: "#64748b" }}
-          >
-            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-              <path d="M19 12H5M12 19l-7-7 7-7" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            Back
-          </button>
-
-          <h1
-            className="text-2xl font-headline tracking-tight mb-1"
-            style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.02em" }}
-          >
-            Create your account.
-          </h1>
-          <div className="flex items-center gap-2 mb-8">
-            <div
-              className="w-1.5 h-1.5 rounded-full"
-              style={{ backgroundColor: selectedRole === "creator" ? "#FF6130" : "#0891b2" }}
-            />
-            <span
-              className="text-xs font-headline uppercase tracking-widest"
-              style={{ color: "#94a3b8", fontWeight: 700 }}
-            >
-              {selectedRole === "creator" ? "Creator" : "Participant"} · {displayName}
-            </span>
-          </div>
 
           {signUpState?.error && (
             <div
@@ -472,28 +325,32 @@ export function LoginForm() {
           )}
 
           <form action={signUpAction} className="space-y-4">
-            {/* Hidden fields set from step 1. Participants: the entered name is
-                their real full_name, and display_name (the Username shown to
-                others) defaults to their first name until they set it later.
-                Creators: the entered name is their public Display Name. */}
-            <input type="hidden" name="role" value={selectedRole ?? ""} />
-            {selectedRole === "participant" ? (
-              <>
-                <input type="hidden" name="full_name" value={displayName} />
-                <input
-                  type="hidden"
-                  name="display_name"
-                  value={displayName.trim().split(/\s+/)[0]}
-                />
-              </>
-            ) : (
-              <input type="hidden" name="display_name" value={displayName} />
-            )}
+            {/* Public signup is participant-only; the action derives the
+                shown-to-others display name from the first name. Expert
+                accounts exist only via /join-as-expert invite links. */}
+            <input type="hidden" name="role" value="participant" />
             {/* No intent in the non-buy-flow path, but pass returnTo
                 if it happens to be present (e.g. signing up to view a
                 draft someone shared). */}
             {returnTo && <input type="hidden" name="returnTo" value={returnTo} />}
 
+            <div>
+              <label htmlFor="signup_full_name" className={labelClass} style={labelStyle}>
+                Full Name
+              </label>
+              <input
+                id="signup_full_name"
+                name="full_name"
+                type="text"
+                required
+                minLength={2}
+                maxLength={50}
+                autoComplete="name"
+                placeholder="Your full name"
+                className={inputClass}
+                style={inputStyle}
+              />
+            </div>
             <div>
               <label htmlFor="signup_email" className={labelClass} style={labelStyle}>
                 Email
@@ -540,6 +397,13 @@ export function LoginForm() {
               {signUpPending ? "..." : "Create Account"}
             </button>
           </form>
+
+          <p className="text-[11px] text-center mt-5" style={{ color: "#94a3b8" }}>
+            Want to create experiences on INFITRA?{" "}
+            <a href="/apply" className="hover:opacity-80" style={{ color: "#0891b2", fontWeight: 700 }}>
+              Apply for the founding pilot →
+            </a>
+          </p>
         </>
       )}
 
