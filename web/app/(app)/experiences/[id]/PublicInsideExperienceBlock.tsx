@@ -150,14 +150,21 @@ export function PublicInsideExperienceBlock({ experts, introPrompt }: Props) {
             </div>
           </MechCard>
 
-          {/* 3 · Pulse + reflection — the scale stays empty: no staged numbers */}
+          {/* 3 · Pulse + reflection — the scale stays empty and the answer
+             field stays blank: no staged numbers, no staged words. */}
           <MechCard
             accent={CYAN}
             kicker="Around every live moment"
             caption="A pulse before, a reflection after. Your tribe shares the journey, not just the workouts."
           >
             <p
-              className="text-[13.5px] font-bold font-headline"
+              className="text-[9.5px] font-black font-headline uppercase tracking-[0.16em]"
+              style={{ color: "#94a3b8" }}
+            >
+              Before
+            </p>
+            <p
+              className="text-[13.5px] font-bold font-headline mt-1"
               style={{ color: INK }}
             >
               How ready are you?
@@ -179,6 +186,24 @@ export function PublicInsideExperienceBlock({ experts, introPrompt }: Props) {
             <div className="flex items-center justify-between mt-1.5">
               <span className="text-[10px] font-bold" style={{ color: "#94a3b8" }}>0</span>
               <span className="text-[10px] font-bold" style={{ color: "#94a3b8" }}>10</span>
+            </div>
+            <p
+              className="text-[9.5px] font-black font-headline uppercase tracking-[0.16em] mt-4"
+              style={{ color: "#94a3b8" }}
+            >
+              After
+            </p>
+            <p
+              className="text-[13.5px] font-bold font-headline mt-1"
+              style={{ color: INK }}
+            >
+              How was the session?
+            </p>
+            <div
+              className="mt-2.5 rounded-full px-4 py-2.5 text-[12px]"
+              style={{ backgroundColor: "#F8F6F0", color: "#94a3b8" }}
+            >
+              Tell your tribe how it went…
             </div>
           </MechCard>
 
