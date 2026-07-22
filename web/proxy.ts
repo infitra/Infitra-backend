@@ -4,7 +4,11 @@ import { updateSession } from "@/lib/supabase/proxy";
 // Routes that are always public — no beta gate, no auth required.
 // /apply + /pilot-terms are the outreach funnel — a creator clicking
 // "Apply for the pilot" from the landing must NEVER hit the beta gate.
-// /new is the landing-V2 polishing workspace (noindex; promoted to / later).
+// /new now 308-redirects to / (next.config); kept public so the redirect
+// is reachable rather than swallowed by the gate.
+// The metadata routes must be reachable by social scrapers and search
+// crawlers — the matcher below only excludes image extensions, so
+// /sitemap.xml, /robots.txt and /opengraph-image all reach the gate.
 const PUBLIC_ROUTES = [
   "/",
   "/new",
@@ -13,6 +17,9 @@ const PUBLIC_ROUTES = [
   "/beta-access",
   "/auth/callback",
   "/test-wave-light",
+  "/sitemap.xml",
+  "/robots.txt",
+  "/opengraph-image",
 ];
 
 // Public prefixes — any path starting with one of these is treated
