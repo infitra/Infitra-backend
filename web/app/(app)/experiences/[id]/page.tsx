@@ -5,7 +5,7 @@ import Image from "next/image";
 import { ParticipantNav } from "@/app/components/ParticipantNav";
 import { PublicChallengeHero } from "./PublicChallengeHero";
 import { PublicCreatorsBlock } from "./PublicCreatorsBlock";
-import { PublicBeyondLiveBlock } from "./PublicBeyondLiveBlock";
+import { PublicInsideExperienceBlock } from "./PublicInsideExperienceBlock";
 import { PublicCommitBlock } from "./PublicCommitBlock";
 import { StickyJoinCTA } from "./StickyJoinCTA";
 import { buildWeeks } from "@/lib/challenges/buildWeeks";
@@ -68,7 +68,7 @@ export default async function ChallengePage({
       .maybeSingle(),
     supabase
       .from("app_challenge")
-      .select("promise_text, description")
+      .select("promise_text, description, intro_prompt")
       .eq("id", id)
       .maybeSingle(),
     supabase
@@ -381,7 +381,10 @@ export default async function ChallengePage({
           topicsByCreator={topicsByCreator}
         />
 
-        <PublicBeyondLiveBlock />
+        <PublicInsideExperienceBlock
+          experts={creators}
+          introPrompt={(challengeDetails as any)?.intro_prompt ?? null}
+        />
 
         <PublicCommitBlock
           challengeId={id}

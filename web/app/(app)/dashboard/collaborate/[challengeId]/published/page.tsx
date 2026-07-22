@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { PublicChallengeHero } from "@/app/(app)/experiences/[id]/PublicChallengeHero";
 import { PublicCreatorsBlock } from "@/app/(app)/experiences/[id]/PublicCreatorsBlock";
-import { PublicBeyondLiveBlock } from "@/app/(app)/experiences/[id]/PublicBeyondLiveBlock";
+import { PublicInsideExperienceBlock } from "@/app/(app)/experiences/[id]/PublicInsideExperienceBlock";
 import { PublishedShareBar } from "./PublishedShareBar";
 import { loadBuyerRenderData } from "@/lib/challenges/buyerRenderData";
 import { resolveViewerTimeZone } from "@/lib/time/viewerTimeZone";
@@ -68,7 +68,7 @@ export default async function PublishedCelebrationPage({
   // (Bundle 4.2.8). Same logic as /experiences/[id]/page.tsx.
   const { data: challengeDetails } = await supabase
     .from("app_challenge")
-    .select("promise_text, description")
+    .select("promise_text, description, intro_prompt")
     .eq("id", challengeId)
     .maybeSingle();
   // Shared with the pre-publish preview (H4) so the two renders never drift.
@@ -182,7 +182,7 @@ export default async function PublishedCelebrationPage({
           topicsByCreator={topicsByCreator}
         />
 
-        <PublicBeyondLiveBlock />
+        <PublicInsideExperienceBlock experts={creators} introPrompt={(challengeDetails as any)?.intro_prompt ?? null} />
       </main>
 
       {/* Creator-only commit-replacement footer: "Share this" block

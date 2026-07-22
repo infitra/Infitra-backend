@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { PublicChallengeHero } from "@/app/(app)/experiences/[id]/PublicChallengeHero";
 import { PublicCreatorsBlock } from "@/app/(app)/experiences/[id]/PublicCreatorsBlock";
-import { PublicBeyondLiveBlock } from "@/app/(app)/experiences/[id]/PublicBeyondLiveBlock";
+import { PublicInsideExperienceBlock } from "@/app/(app)/experiences/[id]/PublicInsideExperienceBlock";
 import { loadBuyerRenderData } from "@/lib/challenges/buyerRenderData";
 import { resolveViewerTimeZone } from "@/lib/time/viewerTimeZone";
 
@@ -34,7 +34,7 @@ export default async function PreviewPage({
   const { data: c } = await supabase
     .from("app_challenge")
     .select(
-      "id, title, image_url, start_date, end_date, price_cents, currency, status, owner_id, promise_text, description, weekly_arc, topic_ownership"
+      "id, title, image_url, start_date, end_date, price_cents, currency, status, owner_id, promise_text, description, intro_prompt, weekly_arc, topic_ownership"
     )
     .eq("id", challengeId)
     .maybeSingle();
@@ -125,7 +125,7 @@ export default async function PreviewPage({
 
         <PublicCreatorsBlock creators={creators} topicsByCreator={topicsByCreator} />
 
-        <PublicBeyondLiveBlock />
+        <PublicInsideExperienceBlock experts={creators} introPrompt={(c as any).intro_prompt ?? null} />
       </main>
     </>
   );
