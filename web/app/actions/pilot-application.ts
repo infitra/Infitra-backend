@@ -39,6 +39,21 @@ function normalizeOptional(value: string | undefined | null): string | null {
   return trimmed.length === 0 ? null : trimmed;
 }
 
+/**
+ * Applicants shouldn't have to type a scheme. Accept whatever they give and,
+ * only when it clearly reads as a bare web domain (has a dot, no scheme, no
+ * whitespace, not an @handle), prepend https:// so the stored value is a
+ * usable link. Handles like "@peter" and freeform text pass through as typed.
+ */
+function normalizeChannelUrl(value: string | null): string | null {
+  if (!value) return null;
+  if (/^[a-z][a-z0-9+.-]*:\/\//i.test(value)) return value; // already has a scheme
+  if (value.startsWith("@")) return value; // a social handle
+  if (/\s/.test(value)) return value; // freeform text, not a link
+  if (!value.includes(".")) return value; // not domain-like
+  return `https://${value}`;
+}
+
 export async function submitPilotApplication(
   _prevState: unknown,
   formData: FormData
@@ -46,7 +61,7 @@ export async function submitPilotApplication(
   const name = (formData.get("name") as string | null)?.trim() ?? "";
   const email = (formData.get("email") as string | null)?.trim().toLowerCase() ?? "";
   const expertise = (formData.get("expertise") as string | null)?.trim() ?? "";
-  const channel_url = normalizeOptional(formData.get("channel_url") as string | null);
+  const channel_url = normalizeChannelUrl(normalizeOptional(formData.get("channel_url") as string | null));
   const audience_size_range = normalizeOptional(formData.get("audience_size_range") as string | null);
   const location = normalizeOptional(formData.get("location") as string | null);
   const has_partner = formData.get("has_partner") === "yes";

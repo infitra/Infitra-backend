@@ -111,15 +111,23 @@ export function PilotApplicationForm() {
           <Field
             label="Where people find you"
             name="channel_url"
-            hint="Instagram, YouTube, TikTok, or your site. Pick one."
+            hint="Instagram, YouTube, TikTok, or your site. A link or handle is fine."
           >
+            {/* type="text" (not "url") so a bare domain like petersmith.com
+               doesn't trip the browser's scheme requirement and block the
+               whole form. inputMode keeps the URL keyboard on mobile; the
+               server fills in https:// for bare domains. */}
             <input
               id="channel_url"
               name="channel_url"
-              type="url"
+              type="text"
+              inputMode="url"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               maxLength={500}
               className={inputCls} style={FIELD_STYLE}
-              placeholder="https://instagram.com/yourhandle"
+              placeholder="instagram.com/yourhandle"
             />
           </Field>
           <Field label="Audience size" name="audience_size_range">
