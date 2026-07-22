@@ -173,6 +173,8 @@ export default async function PublishedCelebrationPage({
           isAuthenticated={true}
           hasPurchased={false}
           isCreator={true}
+          reviewStats={null}
+          reviews={[]}
         />
 
         <PublicCreatorsBlock

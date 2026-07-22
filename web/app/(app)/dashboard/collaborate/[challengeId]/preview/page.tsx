@@ -119,6 +119,8 @@ export default async function PreviewPage({
           isAuthenticated={true}
           hasPurchased={false}
           isCreator={true}
+          reviewStats={null}
+          reviews={[]}
         />
 
         <PublicCreatorsBlock creators={creators} topicsByCreator={topicsByCreator} />

@@ -63,6 +63,17 @@ interface Creator {
   avatar_url: string | null;
   tagline: string | null;
   role: "owner" | "cohost";
+  /** Lineage-cumulative expert rating (vw_expert_review_stats); null/0 total = hidden. */
+  rating?: { avg: number; total: number } | null;
+}
+
+/** One public review row (vw_experience_reviews_public) — safe fields only. */
+export interface PublicReview {
+  review_id: string;
+  rating: number;
+  comment: string | null;
+  created_at: string;
+  reviewer_name: string;
 }
 
 interface Props {
@@ -95,6 +106,11 @@ interface Props {
   isAuthenticated: boolean;
   hasPurchased: boolean;
   isCreator: boolean;
+  /** Lineage-cumulative experience rating (vw_experience_review_stats).
+   *  Hidden entirely below 1 review — never a fake 0.0. */
+  reviewStats: { avgRating: number; totalReviews: number } | null;
+  /** Latest public reviews across the lineage (vw_experience_reviews_public). */
+  reviews: PublicReview[];
 }
 
 function weeksBetween(start: string, end: string): number {
@@ -164,6 +180,8 @@ export function PublicChallengeHero({
   isAuthenticated,
   hasPurchased,
   isCreator,
+  reviewStats,
+  reviews,
 }: Props) {
   const totalWeeks = weeksBetween(startDate, endDate);
   const headline = resolveHeadline(promise, totalWeeks, creators);
@@ -210,6 +228,22 @@ export function PublicChallengeHero({
           >
             {headline}
           </h1>
+          {/* Social proof, first beat under the H1 — lineage-cumulative, so a
+             run 2 page carries run 1's reviews. Hidden below 1 review. */}
+          {reviewStats && reviewStats.totalReviews > 0 && (
+            <div className="mt-4 flex items-center justify-center gap-2">
+              <StarIcon size={16} />
+              <span
+                className="text-[15px] lg:text-base font-black font-headline tabular-nums"
+                style={{ color: "#0F2229" }}
+              >
+                {reviewStats.avgRating.toFixed(1)}
+              </span>
+              <span className="text-sm font-medium" style={{ color: "#64748b" }}>
+                · {reviewStats.totalReviews} {reviewStats.totalReviews === 1 ? "review" : "reviews"}
+              </span>
+            </div>
+          )}
         </div>
 
         <div
@@ -375,6 +409,60 @@ export function PublicChallengeHero({
             <WeeklyJourneyCarousel weeks={weeks} timeZone={timeZone} />
           </div>
 
+          {/* REVIEWS region — the tribe's own words, right before the commit
+             beat. Cream-tinted edge-to-edge block (the color change is the
+             section break, same grammar as the sessions region). Renders
+             only when at least one review exists. */}
+          {reviews.length > 0 && (
+            <div
+              className="-mx-6 lg:-mx-10 px-6 lg:px-10 py-9 lg:py-11"
+              style={{ backgroundColor: "#FAF8F3" }}
+            >
+              <p
+                className="text-[12px] lg:text-[13px] font-black font-headline uppercase tracking-[0.18em] text-center mb-6 lg:mb-7"
+                style={{ color: "#FF6130" }}
+              >
+                What the tribe says
+              </p>
+              <div className="space-y-3 max-w-xl mx-auto">
+                {reviews.map((r) => (
+                  <div
+                    key={r.review_id}
+                    className="rounded-2xl px-5 py-4 text-left"
+                    style={{
+                      backgroundColor: "#FFFFFF",
+                      boxShadow: "0 0 0 1px rgba(15,34,41,0.06), 0 6px 18px rgba(15,34,41,0.05)",
+                    }}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <StarRow rating={r.rating} />
+                      <span className="text-[11px] font-bold shrink-0" style={{ color: "#94a3b8" }}>
+                        {formatReviewDate(r.created_at)}
+                      </span>
+                    </div>
+                    {r.comment && (
+                      <p className="text-sm leading-relaxed mt-2.5" style={{ color: "#334155" }}>
+                        {r.comment}
+                      </p>
+                    )}
+                    <p
+                      className="text-[12px] font-bold font-headline mt-2.5"
+                      style={{ color: "#0F2229" }}
+                    >
+                      {r.reviewer_name}
+                      <span style={{ color: "#94a3b8", fontWeight: 600 }}> · in the tribe</span>
+                    </p>
+                  </div>
+                ))}
+              </div>
+              {reviewStats && reviewStats.totalReviews > reviews.length && (
+                <p className="text-center text-[12px] font-medium mt-4" style={{ color: "#94a3b8" }}>
+                  {reviewStats.totalReviews - reviews.length} more from earlier runs
+                </p>
+              )}
+            </div>
+          )}
+
           {/* CTA section — Bundle 4.2.27.
               Was: edge-to-edge orange block bleeding to the card's
               edges. Read as a shouting hero button next to the
@@ -409,6 +497,43 @@ function Divider({ className }: { className?: string }) {
       aria-hidden
     />
   );
+}
+
+/** Brand-orange filled star (the rating mark everywhere on this page). */
+function StarIcon({ size = 14, muted = false }: { size?: number; muted?: boolean }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill={muted ? "rgba(15,34,41,0.15)" : "#FF6130"}
+      aria-hidden
+    >
+      <path d="M12 2l2.94 6.26 6.87.88-5.05 4.73 1.3 6.79L12 17.35l-6.06 3.31 1.3-6.79L2.19 9.14l6.87-.88L12 2z" />
+    </svg>
+  );
+}
+
+/** Five-star row for an integer rating. */
+function StarRow({ rating }: { rating: number }) {
+  return (
+    <span className="inline-flex items-center gap-0.5" aria-label={`${rating} of 5 stars`}>
+      {[1, 2, 3, 4, 5].map((i) => (
+        <StarIcon key={i} size={13} muted={i > rating} />
+      ))}
+    </span>
+  );
+}
+
+/** "Jul 19" within the current year, "Jul 19, 2025" otherwise. */
+function formatReviewDate(iso: string): string {
+  const d = new Date(iso);
+  const sameYear = d.getFullYear() === new Date().getFullYear();
+  return d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    ...(sameYear ? {} : { year: "numeric" }),
+  });
 }
 
 /**
@@ -475,6 +600,22 @@ function ExpertPortrait({ creator }: { creator: Creator }) {
               real taglines without unbounded growth. */}
           {creator.tagline}
         </p>
+      )}
+      {/* Expert social proof — cumulative across every experience they
+         host or co-host. Hidden until the first review exists. */}
+      {creator.rating && creator.rating.total > 0 && (
+        <span className="mt-1.5 inline-flex items-center gap-1">
+          <StarIcon size={11} />
+          <span
+            className="text-[11px] font-black font-headline tabular-nums"
+            style={{ color: "#0F2229" }}
+          >
+            {creator.rating.avg.toFixed(1)}
+          </span>
+          <span className="text-[10.5px] font-semibold" style={{ color: "#94a3b8" }}>
+            ({creator.rating.total})
+          </span>
+        </span>
       )}
     </div>
   );
