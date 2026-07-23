@@ -121,7 +121,7 @@ export function ExperienceHeader() {
                     <span key={c.id}>
                       {i > 0 && <span style={{ color: "#94a3b8" }}> &amp; </span>}
                       {c.name}
-                      {c.isFoundingExpert && <FoundingExpertStar size={12} className="ml-0.5" />}
+                      {c.isFoundingExpert && <FoundingExpertStar size={16} className="ml-1" />}
                     </span>
                   ))}
                 </span>

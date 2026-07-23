@@ -67,34 +67,41 @@ interface Creator {
   is_founding_expert?: boolean | null;
 }
 
-// Metallic gold for the founding marker — reads as a small medal.
-const FOUNDING_GOLD = "linear-gradient(145deg, #F7D97C 0%, #E2B441 46%, #A5730C 100%)";
-
 /**
- * The INFITRA mark as a gold medal glyph. The mark ships as an alpha PNG
- * (/founding-mark.png, the logo glyph only); CSS masks a gold gradient
- * through it, so the same asset scales to any size and any tint.
+ * The founding marker as a small gold MEDAL: a gold coin with the INFITRA
+ * mark embossed in dark bronze. A bare gold glyph washed out to near-white
+ * at small sizes on light backgrounds — the coin gives it a solid, legible
+ * disc, and the darker emblem reads as an emboss. The mark ships as an alpha
+ * PNG (/founding-mark.png, the logo glyph only), masked over the emblem fill.
  */
-function FoundingExpertMark({ size = 15, className = "" }: { size?: number; className?: string }) {
+function FoundingExpertMark({ size = 18, className = "" }: { size?: number; className?: string }) {
   return (
     <span
       aria-hidden
-      className={`inline-block shrink-0 ${className}`}
+      className={`relative inline-block shrink-0 rounded-full align-middle ${className}`}
       style={{
         width: size,
         height: size,
-        background: FOUNDING_GOLD,
-        WebkitMaskImage: "url(/founding-mark.png)",
-        maskImage: "url(/founding-mark.png)",
-        WebkitMaskSize: "contain",
-        maskSize: "contain",
-        WebkitMaskRepeat: "no-repeat",
-        maskRepeat: "no-repeat",
-        WebkitMaskPosition: "center",
-        maskPosition: "center",
-        filter: "drop-shadow(0 1px 1px rgba(120,90,10,0.25))",
+        background: "linear-gradient(145deg, #F4CE5A 0%, #DFAE2E 46%, #B4830F 100%)",
+        boxShadow:
+          "inset 0 1px 1.5px rgba(255,255,255,0.6), inset 0 -1.5px 2px rgba(120,80,0,0.5), 0 1px 2px rgba(60,42,4,0.28)",
       }}
-    />
+    >
+      <span
+        className="absolute inset-0"
+        style={{
+          background: "#6E4E08",
+          WebkitMaskImage: "url(/founding-mark.png)",
+          maskImage: "url(/founding-mark.png)",
+          WebkitMaskSize: "66%",
+          maskSize: "66%",
+          WebkitMaskRepeat: "no-repeat",
+          maskRepeat: "no-repeat",
+          WebkitMaskPosition: "center",
+          maskPosition: "center",
+        }}
+      />
+    </span>
   );
 }
 
@@ -106,7 +113,7 @@ function FoundingExpertMark({ size = 15, className = "" }: { size?: number; clas
  * (FoundingExpertBadge) is reserved for the detailed "Meet your Experts".
  */
 export function FoundingExpertStar({
-  size = 15,
+  size = 18,
   className = "",
 }: {
   size?: number;
@@ -144,7 +151,7 @@ export function FoundingExpertBadge({ className = "" }: { className?: string }) 
         boxShadow: "inset 0 0 0 1px rgba(184,134,11,0.32)",
       }}
     >
-      <FoundingExpertMark size={12} />
+      <FoundingExpertMark size={15} />
       <span
         className="text-[10px] font-black font-headline uppercase tracking-[0.1em]"
         style={{ color: "#9a7414" }}
@@ -702,7 +709,7 @@ function ExpertPortrait({ creator }: { creator: Creator }) {
         {creator.display_name ?? "Expert"}
         {/* Hero identity is not the profile detail block — compact star, not
            the labelled pill (that stays in "Meet your Experts"). */}
-        {creator.is_founding_expert && <FoundingExpertStar size={14} className="ml-1" />}
+        {creator.is_founding_expert && <FoundingExpertStar size={18} className="ml-1.5" />}
       </h2>
       {creator.tagline && creator.tagline.trim() && (
         <p
