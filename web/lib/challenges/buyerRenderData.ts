@@ -49,7 +49,7 @@ export async function loadBuyerRenderData(
   const allCreatorIds = [owner_id, ...cohostIds];
   const { data: creatorProfiles } = await supabase
     .from("app_profile")
-    .select("id, display_name, avatar_url, bio, tagline, username")
+    .select("id, display_name, avatar_url, bio, tagline, username, is_founding_expert")
     .in("id", allCreatorIds);
 
   const profileById = new Map<
@@ -61,6 +61,7 @@ export async function loadBuyerRenderData(
       bio: string | null;
       tagline: string | null;
       username: string | null;
+      is_founding_expert: boolean | null;
     }
   >();
   for (const p of creatorProfiles ?? []) {

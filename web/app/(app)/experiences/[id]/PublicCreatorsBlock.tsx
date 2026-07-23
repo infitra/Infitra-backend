@@ -16,6 +16,7 @@
  */
 
 import Image from "next/image";
+import { FoundingExpertBadge } from "./PublicChallengeHero";
 
 interface Creator {
   id: string;
@@ -24,6 +25,7 @@ interface Creator {
   bio: string | null;
   tagline: string | null;
   role: "owner" | "cohost";
+  is_founding_expert?: boolean | null;
 }
 
 interface Props {
@@ -135,6 +137,7 @@ export function PublicCreatorsBlock({ creators, topicsByCreator }: Props) {
                         {c.tagline}
                       </p>
                     )}
+                    {c.is_founding_expert && <FoundingExpertBadge className="mt-2" />}
                   </div>
                 </div>
 

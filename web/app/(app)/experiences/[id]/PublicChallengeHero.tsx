@@ -63,6 +63,33 @@ interface Creator {
   avatar_url: string | null;
   tagline: string | null;
   role: "owner" | "cohost";
+  /** Founding pilot expert (app_profile.is_founding_expert). Renders a chip. */
+  is_founding_expert?: boolean | null;
+}
+
+/**
+ * Founding Expert chip — a fixed credential mark shown wherever a founding
+ * pilot expert renders publicly. Fulfills the pilot-terms promise. Small,
+ * premium: filled star + label on a hairline pill.
+ */
+export function FoundingExpertBadge({ className = "" }: { className?: string }) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full ${className}`}
+      style={{
+        backgroundColor: "rgba(255,97,48,0.08)",
+        boxShadow: "inset 0 0 0 1px rgba(255,97,48,0.30)",
+      }}
+    >
+      <StarIcon size={11} />
+      <span
+        className="text-[10px] font-black font-headline uppercase tracking-[0.1em]"
+        style={{ color: "#c2410c" }}
+      >
+        Founding Expert
+      </span>
+    </span>
+  );
 }
 
 /** One public review row (vw_experience_reviews_public) — safe fields only. */
@@ -611,6 +638,7 @@ function ExpertPortrait({ creator }: { creator: Creator }) {
       >
         {creator.display_name ?? "Expert"}
       </h2>
+      {creator.is_founding_expert && <FoundingExpertBadge className="mt-2" />}
       {creator.tagline && creator.tagline.trim() && (
         <p
           className="mt-1 text-[11px] lg:text-xs font-bold font-headline text-center leading-snug line-clamp-3"

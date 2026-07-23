@@ -136,7 +136,7 @@ export default async function ChallengePage({
     await Promise.all([
       supabase
         .from("app_profile")
-        .select("id, display_name, avatar_url, bio, tagline, username")
+        .select("id, display_name, avatar_url, bio, tagline, username, is_founding_expert")
         .in("id", allCreatorIds),
       user
         ? supabase
@@ -162,6 +162,7 @@ export default async function ChallengePage({
     bio: string | null;
     tagline: string | null;
     username: string | null;
+    is_founding_expert: boolean | null;
   }>();
   for (const p of creatorProfiles ?? []) {
     profileById.set((p as any).id, p as any);
