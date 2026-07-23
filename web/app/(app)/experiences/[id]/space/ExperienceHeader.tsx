@@ -19,6 +19,7 @@ import { useExperienceSpaceStore } from "@/lib/experienceSpace/StoreProvider";
 import { programStatus } from "@/lib/experienceSpace/weekJourney";
 import { usePresence } from "./usePresence";
 import { Avatar } from "./Avatar";
+import { FoundingExpertStar, FoundingExpertBadge } from "../PublicChallengeHero";
 
 const ORANGE = "#FF6130";
 const CYAN = "#0891b2";
@@ -113,7 +114,16 @@ export function ExperienceHeader() {
                 </div>
                 <span className="text-sm font-bold font-headline" style={{ color: "#475569" }}>
                   <span style={{ color: "#94a3b8" }}>with </span>
-                  {creators.map((c) => c.name).join(" & ")}
+                  {/* Identity line = quick mention, not the profile detail:
+                     compact hover-star per founding expert. The labelled pill
+                     lives in the expanded "Meet your Experts" panel below. */}
+                  {creators.map((c, i) => (
+                    <span key={c.id}>
+                      {i > 0 && <span style={{ color: "#94a3b8" }}> &amp; </span>}
+                      {c.name}
+                      {c.isFoundingExpert && <FoundingExpertStar size={12} className="ml-0.5" />}
+                    </span>
+                  ))}
                 </span>
               </div>
             </div>
@@ -174,6 +184,8 @@ export function ExperienceHeader() {
                 <p className="text-sm font-black font-headline" style={{ color: INK }}>
                   {c.name}
                   <span className="ml-2 text-[10px] uppercase tracking-wider" style={{ color: "#94a3b8" }}>{c.role === "owner" ? "Lead" : "Co-host"}</span>
+                  {/* Detail block ("Meet your Experts") → labelled pill. */}
+                  {c.isFoundingExpert && <FoundingExpertBadge className="ml-2 align-middle" />}
                 </p>
                 {c.tagline && <p className="text-[12px] font-bold font-headline mt-0.5" style={{ color: CYAN }}>{c.tagline}</p>}
                 {c.bio && <p className="text-[13px] leading-relaxed mt-1.5" style={{ color: "#475569" }}>{c.bio}</p>}

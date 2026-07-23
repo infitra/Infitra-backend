@@ -49,6 +49,8 @@ export interface SpaceCreator {
   role: "owner" | "cohost";
   tagline: string | null;
   bio: string | null;
+  /** Founding pilot expert — from load_experience_space (app_profile flag). */
+  isFoundingExpert?: boolean | null;
 }
 
 export interface SpaceSession {

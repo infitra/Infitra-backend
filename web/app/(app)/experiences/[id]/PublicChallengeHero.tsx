@@ -68,9 +68,35 @@ interface Creator {
 }
 
 /**
- * Founding Expert chip — a fixed credential mark shown wherever a founding
- * pilot expert renders publicly. Fulfills the pilot-terms promise. Small,
- * premium: filled star + label on a hairline pill.
+ * Founding Expert STAR — the compact marker for anywhere the expert appears
+ * outside their own profile/detail block (hero identity, the live space,
+ * session attributions). Just a star by the name; the label surfaces only on
+ * hover via the native title tooltip. The full labelled pill
+ * (FoundingExpertBadge) is reserved for the detailed "Meet your Experts" cards.
+ */
+export function FoundingExpertStar({
+  size = 13,
+  className = "",
+}: {
+  size?: number;
+  className?: string;
+}) {
+  return (
+    <span
+      title="Founding expert"
+      aria-label="Founding expert"
+      className={`inline-flex items-center align-middle ${className}`}
+      style={{ cursor: "default" }}
+    >
+      <StarIcon size={size} />
+    </span>
+  );
+}
+
+/**
+ * Founding Expert chip — the labelled credential mark for the detailed expert
+ * cards ("Meet your Experts"). Small, premium: filled star + label on a
+ * hairline pill. Everywhere else uses the compact FoundingExpertStar.
  */
 export function FoundingExpertBadge({ className = "" }: { className?: string }) {
   return (
@@ -637,8 +663,10 @@ function ExpertPortrait({ creator }: { creator: Creator }) {
         style={{ color: "#0F2229", letterSpacing: "-0.01em" }}
       >
         {creator.display_name ?? "Expert"}
+        {/* Hero identity is not the profile detail block — compact star, not
+           the labelled pill (that stays in "Meet your Experts"). */}
+        {creator.is_founding_expert && <FoundingExpertStar size={14} className="ml-1" />}
       </h2>
-      {creator.is_founding_expert && <FoundingExpertBadge className="mt-2" />}
       {creator.tagline && creator.tagline.trim() && (
         <p
           className="mt-1 text-[11px] lg:text-xs font-bold font-headline text-center leading-snug line-clamp-3"
