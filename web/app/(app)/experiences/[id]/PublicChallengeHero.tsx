@@ -67,15 +67,46 @@ interface Creator {
   is_founding_expert?: boolean | null;
 }
 
+// Metallic gold for the founding marker — reads as a small medal.
+const FOUNDING_GOLD = "linear-gradient(145deg, #F7D97C 0%, #E2B441 46%, #A5730C 100%)";
+
 /**
- * Founding Expert STAR — the compact marker for anywhere the expert appears
- * outside their own profile/detail block (hero identity, the live space,
- * session attributions). Just a star by the name; the label surfaces only on
- * hover via the native title tooltip. The full labelled pill
- * (FoundingExpertBadge) is reserved for the detailed "Meet your Experts" cards.
+ * The INFITRA mark as a gold medal glyph. The mark ships as an alpha PNG
+ * (/founding-mark.png, the logo glyph only); CSS masks a gold gradient
+ * through it, so the same asset scales to any size and any tint.
+ */
+function FoundingExpertMark({ size = 15, className = "" }: { size?: number; className?: string }) {
+  return (
+    <span
+      aria-hidden
+      className={`inline-block shrink-0 ${className}`}
+      style={{
+        width: size,
+        height: size,
+        background: FOUNDING_GOLD,
+        WebkitMaskImage: "url(/founding-mark.png)",
+        maskImage: "url(/founding-mark.png)",
+        WebkitMaskSize: "contain",
+        maskSize: "contain",
+        WebkitMaskRepeat: "no-repeat",
+        maskRepeat: "no-repeat",
+        WebkitMaskPosition: "center",
+        maskPosition: "center",
+        filter: "drop-shadow(0 1px 1px rgba(120,90,10,0.25))",
+      }}
+    />
+  );
+}
+
+/**
+ * Compact founding marker for anywhere the expert appears OUTSIDE their
+ * profile/detail block (hero identity, the live space). The gold INFITRA
+ * mark by the name; hovering reveals "Founding expert" via a real tooltip
+ * element (the native title attribute was unreliable). The labelled pill
+ * (FoundingExpertBadge) is reserved for the detailed "Meet your Experts".
  */
 export function FoundingExpertStar({
-  size = 13,
+  size = 15,
   className = "",
 }: {
   size?: number;
@@ -83,34 +114,40 @@ export function FoundingExpertStar({
 }) {
   return (
     <span
-      title="Founding expert"
+      className={`relative inline-flex items-center align-middle group ${className}`}
       aria-label="Founding expert"
-      className={`inline-flex items-center align-middle ${className}`}
       style={{ cursor: "default" }}
     >
-      <StarIcon size={size} />
+      <FoundingExpertMark size={size} />
+      <span
+        role="tooltip"
+        className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-full mb-1.5 whitespace-nowrap rounded-md px-2 py-1 text-[10px] font-bold font-headline opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+        style={{ backgroundColor: "#0F2229", color: "#FFFFFF", zIndex: 30, letterSpacing: "0.01em" }}
+      >
+        Founding expert
+      </span>
     </span>
   );
 }
 
 /**
- * Founding Expert chip — the labelled credential mark for the detailed expert
- * cards ("Meet your Experts"). Small, premium: filled star + label on a
- * hairline pill. Everywhere else uses the compact FoundingExpertStar.
+ * Founding Expert chip — the labelled credential for the detailed expert
+ * cards ("Meet your Experts"): the gold INFITRA mark + label on a warm gold
+ * pill. Everywhere else uses the compact FoundingExpertStar.
  */
 export function FoundingExpertBadge({ className = "" }: { className?: string }) {
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full ${className}`}
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full align-middle ${className}`}
       style={{
-        backgroundColor: "rgba(255,97,48,0.08)",
-        boxShadow: "inset 0 0 0 1px rgba(255,97,48,0.30)",
+        backgroundColor: "rgba(184,134,11,0.10)",
+        boxShadow: "inset 0 0 0 1px rgba(184,134,11,0.32)",
       }}
     >
-      <StarIcon size={11} />
+      <FoundingExpertMark size={12} />
       <span
         className="text-[10px] font-black font-headline uppercase tracking-[0.1em]"
-        style={{ color: "#c2410c" }}
+        style={{ color: "#9a7414" }}
       >
         Founding Expert
       </span>
