@@ -68,40 +68,31 @@ interface Creator {
 }
 
 /**
- * The founding marker as a small gold MEDAL: a gold coin with the INFITRA
- * mark embossed in dark bronze. A bare gold glyph washed out to near-white
- * at small sizes on light backgrounds — the coin gives it a solid, legible
- * disc, and the darker emblem reads as an emboss. The mark ships as an alpha
- * PNG (/founding-mark.png, the logo glyph only), masked over the emblem fill.
+ * The founding marker: the INFITRA mark in gold. The brand glyph ships as an
+ * alpha PNG (/founding-mark.png — the bold cyan mark, its alpha the shape);
+ * CSS masks a warm gold gradient through it, so it's the logo, just gold, at
+ * any size. Kept in the mark's own 561:395 aspect, not squished to a square.
  */
 function FoundingExpertMark({ size = 18, className = "" }: { size?: number; className?: string }) {
   return (
     <span
       aria-hidden
-      className={`relative inline-block shrink-0 rounded-full align-middle ${className}`}
+      className={`inline-block shrink-0 align-middle ${className}`}
       style={{
         width: size,
-        height: size,
-        background: "linear-gradient(145deg, #F4CE5A 0%, #DFAE2E 46%, #B4830F 100%)",
-        boxShadow:
-          "inset 0 1px 1.5px rgba(255,255,255,0.6), inset 0 -1.5px 2px rgba(120,80,0,0.5), 0 1px 2px rgba(60,42,4,0.28)",
+        height: Math.round((size * 395) / 561),
+        background: "linear-gradient(145deg, #F0C43A 0%, #D2A015 52%, #9C7207 100%)",
+        WebkitMaskImage: "url(/founding-mark.png)",
+        maskImage: "url(/founding-mark.png)",
+        WebkitMaskSize: "contain",
+        maskSize: "contain",
+        WebkitMaskRepeat: "no-repeat",
+        maskRepeat: "no-repeat",
+        WebkitMaskPosition: "center",
+        maskPosition: "center",
+        filter: "drop-shadow(0 1px 1px rgba(120,85,5,0.30))",
       }}
-    >
-      <span
-        className="absolute inset-0"
-        style={{
-          background: "#6E4E08",
-          WebkitMaskImage: "url(/founding-mark.png)",
-          maskImage: "url(/founding-mark.png)",
-          WebkitMaskSize: "66%",
-          maskSize: "66%",
-          WebkitMaskRepeat: "no-repeat",
-          maskRepeat: "no-repeat",
-          WebkitMaskPosition: "center",
-          maskPosition: "center",
-        }}
-      />
-    </span>
+    />
   );
 }
 
