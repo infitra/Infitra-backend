@@ -40,7 +40,7 @@ const SETTLE_SPEED = 0.05; // px/ms — below this the reader has stopped
 const SETTLE_MS = 140; // rest this long before the silent re-anchor
 const STEP_GAP_MS = 320; // minimum time between beat cuts
 const SCRUB_SETTLE_MS = 160; // scroll silence before the mobile settle acts
-const SCRUB_COMMIT = 0.3; // rest inside this edge fraction of a band (in the direction of travel) commits the step
+const DRAG_STEP_PX = 130; // finger travel that advances one beat while dragging
 const WALL_OVERHANG = 0.35; // beats of free travel beyond the current band before the wall
 const OUTRO_FREE_ZONE = 0.12; // inside the last beat past this depth, position scrubs freely
 
@@ -91,11 +91,11 @@ export function useBeatChapter({
     // Three modes, decided once on mount (matchMedia — not innerWidth — so
     // the real CSS viewport is read even in embedded/virtualized contexts):
     //  - static: reduced motion or very short viewports → sequential story.
-    //  - scrub:  below lg → the chapter still PINS and steps beat by beat,
-    //            but the beat follows scroll POSITION (quantized into the
-    //            same bands) instead of policing gestures. Native touch
-    //            momentum is never fought — no wall, no re-anchor, no
-    //            arming. A slow swipe advances one beat; a fling may skip.
+    //  - scrub:  below lg → the chapter still PINS and steps beat by beat.
+    //            The beat advances on the GESTURE (one step per swipe, by
+    //            finger travel), never on scroll position or momentum;
+    //            position free-runs natively and silently re-anchors to the
+    //            story once motion stops. No swipe can skip a beat.
     //  - paced:  desktop → the full velocity pace-car below.
     if (
       window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
@@ -114,31 +114,49 @@ export function useBeatChapter({
     }
 
     if (window.matchMedia("(max-width: 1023px)").matches) {
-      // SCRUB — position-quantized beats on a passive scroll listener.
+      // SCRUB — the mobile chapter mode, passive listeners only.
       // The viewport height is captured ONCE and only refreshed on real
       // viewport changes (rotation / width change) — never for the mobile
       // URL-bar collapse, which changes innerHeight by ~60-100px mid-scroll
       // and would shift every beat boundary under the reader's thumb.
       //
-      // SETTLING, the quiet way — NO CSS scroll-snap. A snap-type on the root
-      // scroller proved a mistake in prod: iOS re-tunes the fling physics of
-      // the ENTIRE page once the root is a snap container (everything felt
-      // heavy), and every stray scroll-snap-align on the page (the horizontal
-      // card carousels) became a vertical trap. Instead we borrow the desktop
-      // engine's trick: under the pinned stage, position corrections are
-      // INVISIBLE. So — never touching scroll while a finger is down or
-      // momentum runs — once scrolling has been silent for SCRUB_SETTLE_MS,
-      // the position silently re-anchors to the current band's centre. And if
-      // the rest point sits deep in the band's edge in the direction of
-      // travel, the step COMMITS first: a deliberate-but-weak swipe lands the
-      // next beat instead of dying mid-band ("I swiped and nothing happened").
-      // The anchor's scrollTo fires a scroll event, and the quantizer below
-      // flips the beat from it — scroll position stays the single source of
-      // truth.
+      // GESTURE-STEPPED (v4). Position-quantized beats felt broken on real
+      // phones: the cut fired only after half a band of dead travel (read
+      // as "0.5-1s of lag"), and the same swipe's momentum tail then
+      // crossed the NEXT boundary too (skipped beats). Root CSS snap before
+      // that was worse (page-wide heavy physics; every stray snap-align
+      // became a vertical trap). So while pinned, the story no longer
+      // follows the scroll position at all: the BEAT advances on the
+      // gesture itself — one step per swipe, firing the moment the finger
+      // has moved DRAG_STEP_PX — while the scroll position free-runs
+      // natively, never fought. Momentum can carry the position anywhere;
+      // it can never advance the story. Once motion fully stops
+      // (SCRUB_SETTLE_MS of silence, finger up), the position silently
+      // re-anchors to the current beat's band under the pinned stage —
+      // invisible, the mobile analogue of the desktop wall, applied only
+      // at rest.
       let touchActive = false;
+      let sawTouch = false;
       let settleT = 0;
       let lastY = window.scrollY;
       let lastDir = 0;
+      let accum = 0; // finger-down travel toward the next step
+      let armed = false; // trackpad path: one step per distinct gesture
+      let velPrevY = window.scrollY;
+      let velPrevT = performance.now();
+      let lastStepT = 0;
+      let prevCovering = false;
+      const stepBeat = (dir: 1 | -1, now: number) => {
+        const { bounds: BOUNDS } = cfgRef.current;
+        const last = BOUNDS.length - 1;
+        const b = beatRef.current;
+        if (dir > 0 && b >= last) return; // the outro exits downward freely
+        if (dir < 0 && b <= 0) return; // the intro exits upward freely
+        if (now - lastStepT < STEP_GAP_MS) return; // one cut per gap
+        lastStepT = now;
+        beatRef.current = b + dir;
+        setBeat(b + dir);
+      };
       const trySettle = () => {
         if (touchActive || jumpGuardRef.current) return;
         const el = wrapperRef.current;
@@ -148,22 +166,20 @@ export function useBeatChapter({
         const total = r.height - vh;
         if (total <= 0) return;
         if (!(r.top <= 2 && r.bottom >= vh - 2)) return; // only under the pin
-        const pos = clamp01(-r.top / total) * TOTAL_W;
         const b = beatRef.current;
         const last = BOUNDS.length - 1;
         if (b >= last) return; // the outro is a free scrub zone
-        const [lo, hi] = BOUNDS[b];
-        const frac = (pos - lo) / (hi - lo);
-        let target = b;
-        if (lastDir > 0 && frac > 1 - SCRUB_COMMIT) target = b + 1;
-        else if (lastDir < 0 && frac < SCRUB_COMMIT) target = Math.max(0, b - 1);
-        const anchor =
-          target === last ? BOUNDS[last][0] + 0.05 : (BOUNDS[target][0] + BOUNDS[target][1]) / 2;
+        if (b === 0 && lastDir < 0) return; // leaving upward — don't pull back
+        const anchor = (BOUNDS[b][0] + BOUNDS[b][1]) / 2;
         const targetY = window.scrollY + r.top + (anchor / TOTAL_W) * total;
         // "instant", not smooth: invisible under the sticky stage, and a
         // smooth correction would read as new motion.
         if (Math.abs(targetY - window.scrollY) > 8) {
           window.scrollTo({ top: targetY, behavior: "instant" });
+          // the correction is not motion — reset every motion tracker
+          lastY = window.scrollY;
+          velPrevY = window.scrollY;
+          armed = false;
         }
       };
       const armSettle = () => {
@@ -172,6 +188,8 @@ export function useBeatChapter({
       };
       const onTouchStart = () => {
         touchActive = true;
+        sawTouch = true;
+        accum = 0;
         window.clearTimeout(settleT);
       };
       const onTouchEnd = () => {
@@ -188,9 +206,11 @@ export function useBeatChapter({
         onScroll();
       };
       const onScroll = () => {
+        const now = performance.now();
         const yNow = window.scrollY;
-        if (yNow !== lastY) {
-          lastDir = yNow > lastY ? 1 : -1;
+        const dy = yNow - lastY;
+        if (dy !== 0) {
+          lastDir = dy > 0 ? 1 : -1;
           lastY = yNow;
         }
         armSettle(); // every scroll event defers the settle — it acts only at rest
@@ -201,24 +221,74 @@ export function useBeatChapter({
         const total = r.height - vh;
         if (total <= 0) return;
         const pos = clamp01(-r.top / total) * TOTAL_W;
+        const covering = r.top <= 2 && r.bottom >= vh - 2;
+        const entered = covering && !prevCovering;
+        prevCovering = covering;
         // A jump (rail tap / join) owns the beat while its smooth scroll is
         // in flight — don't flicker through the bands it passes.
         if (jumpGuardRef.current) {
           onTickRef.current?.(pos, beatRef.current);
           return;
         }
-        let fi = BOUNDS.length - 1;
-        for (let i = 0; i < BOUNDS.length; i++) {
-          if (pos >= BOUNDS[i][0] && pos < BOUNDS[i][1]) {
-            fi = i;
-            break;
+        if (!covering) {
+          // outside the pin the beat follows position directly — the frames
+          // entering/leaving the viewport stay in sync with the page
+          let fi = BOUNDS.length - 1;
+          for (let i = 0; i < BOUNDS.length; i++) {
+            if (pos >= BOUNDS[i][0] && pos < BOUNDS[i][1]) {
+              fi = i;
+              break;
+            }
+          }
+          if (beatRef.current !== fi) {
+            beatRef.current = fi;
+            setBeat(fi);
+          }
+          accum = 0;
+          onTickRef.current?.(pos, fi);
+          return;
+        }
+        if (entered) {
+          // the entering motion grants no step: the chapter opens on its
+          // door (intro from above, outro from below), same as the desktop
+          // hard cut — the fling that carried the reader in is spent
+          const door = pos < TOTAL_W / 2 ? 0 : BOUNDS.length - 1;
+          if (beatRef.current !== door) {
+            beatRef.current = door;
+            setBeat(door);
+          }
+          accum = 0;
+          armed = false;
+          velPrevY = yNow;
+          velPrevT = now;
+          onTickRef.current?.(pos, beatRef.current);
+          return;
+        }
+        if (touchActive) {
+          // FINGER ON GLASS — deliberate motion. Steps by travel: every
+          // DRAG_STEP_PX of drag advances one beat, so a flick cuts within
+          // its first frames (reads as instant) and a slow drag scrubs at
+          // the STEP_GAP cadence. Momentum after finger-up adds NOTHING.
+          if (dy !== 0 && accum !== 0 && Math.sign(dy) !== Math.sign(accum)) accum = 0;
+          accum += dy;
+          if (Math.abs(accum) >= DRAG_STEP_PX) {
+            stepBeat(accum > 0 ? 1 : -1, now);
+            accum = 0;
+          }
+        } else if (!sawTouch) {
+          // no touch on this device (trackpad/wheel below lg): the desktop
+          // arm/push idea, event-driven — one step per distinct gesture
+          const dt = Math.max(1, now - velPrevT);
+          const speed = Math.abs(yNow - velPrevY) / dt;
+          if (speed < REARM_SPEED) armed = true;
+          else if (armed && speed >= PUSH_SPEED) {
+            stepBeat(yNow > velPrevY ? 1 : -1, now);
+            armed = false;
           }
         }
-        if (beatRef.current !== fi) {
-          beatRef.current = fi;
-          setBeat(fi);
-        }
-        onTickRef.current?.(pos, fi);
+        velPrevY = yNow;
+        velPrevT = now;
+        onTickRef.current?.(pos, beatRef.current);
       };
       onScroll();
       window.addEventListener("scroll", onScroll, { passive: true });
