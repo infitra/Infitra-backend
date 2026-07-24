@@ -8,6 +8,7 @@ import { Summary } from "./landing/Summary";
 import { Finale } from "./landing/Finale";
 import { Footer } from "./landing/Footer";
 import { JoinWaitlistLink } from "./landing/JoinWaitlistLink";
+import { MobileSnapScope } from "./landing/MobileSnapScope";
 
 /**
  * THE LANDING — the product-showcase story (formerly polished at /new,
@@ -37,6 +38,9 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen relative overflow-x-clip" style={{ backgroundColor: "#F2EFE8" }}>
       <WaveFlowingBackground />
+
+      {/* Page-level snap for the two mobile story chapters (scoped, mobile-only) */}
+      <MobileSnapScope />
 
       <div className="relative z-10">
         {/* ── NAV ── */}

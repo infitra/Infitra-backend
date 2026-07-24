@@ -128,9 +128,13 @@ export function WhatYouCanBuild() {
                stacks into a long tower. sm+: the original two-column grid. */}
             {/* the lane leads with a breath of inset (and snaps to it) so the
                first card sits INSIDE the container, not on its edge */}
+            {/* Cards use inline-only snap-align (x:start, y:none): keeps the
+               horizontal carousel snap, but stays invisible to the landing's
+               page-level VERTICAL snap (else these became vertical snap traps
+               — the v1 regression). */}
             <div className="flex sm:grid sm:grid-cols-2 gap-3 text-left overflow-x-auto sm:overflow-visible snap-x snap-mandatory sm:snap-none -mx-5 pl-8 pr-5 scroll-pl-8 sm:mx-0 sm:px-0 sm:scroll-pl-0 pb-2 sm:pb-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {sessions.map((s) => (
-                <div key={s.title} className="rounded-2xl overflow-hidden shrink-0 w-[76%] xs:w-[70%] sm:w-auto sm:shrink snap-start" style={{ backgroundColor: "#F8F6F0", border: "1px solid rgba(15,34,41,0.06)" }}>
+                <div key={s.title} className="rounded-2xl overflow-hidden shrink-0 w-[76%] xs:w-[70%] sm:w-auto sm:shrink [scroll-snap-align:none_start]" style={{ backgroundColor: "#F8F6F0", border: "1px solid rgba(15,34,41,0.06)" }}>
                   <div className="relative aspect-[16/8]" style={{ backgroundColor: INK }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={s.img} alt="" loading="lazy" className="absolute inset-0 w-full h-full object-cover" />

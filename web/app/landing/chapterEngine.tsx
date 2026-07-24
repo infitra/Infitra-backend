@@ -404,26 +404,31 @@ export function useSnapChapter({
 /* The snap-mode shell: dock wrapper → sticky viewport → snapping inner
  * scroller → sticky stage over invisible snap cells. The chapter passes its
  * existing stage content as children — identical markup to the desktop
- * shell's sticky stage. */
+ * shell's sticky stage.
+ *
+ * The dock wrapper is a PAGE-level snap target (snap-start + snap-stop:
+ * always, against the root's mobile scroll-snap set by MobileSnapScope):
+ * a fling toward the chapter is forced to STOP on it — reliable entry, no
+ * "flies past". It's exactly one viewport tall (no momentum ledge), so once
+ * the inner scroller is exhausted the page releases immediately — no "few
+ * scrolls to be let go" dead zone. The per-beat snapping lives entirely in
+ * the INNER scroller, so the page carries only 2 sparse snap points and
+ * stays native between them. */
 export function SnapShell({
   snap,
   cells,
   outroCells = 0,
-  ledgeVh = 70,
   stageStyle,
   children,
 }: {
   snap: ReturnType<typeof useSnapChapter>;
   cells: number;
   outroCells?: number;
-  /** extra svh of page runway around the dock — absorbs the entering swipe's
-   *  momentum so a normal scroll settles ON the story instead of past it */
-  ledgeVh?: number;
   stageStyle?: React.CSSProperties;
   children: React.ReactNode;
 }) {
   return (
-    <div ref={snap.dockRef} className="relative" style={{ height: `${100 + ledgeVh}svh` }}>
+    <div ref={snap.dockRef} className="relative snap-start snap-always" style={{ height: "100dvh" }}>
       <div className="sticky top-0 overflow-hidden h-screen" style={{ height: "100dvh" }}>
         <div
           ref={snap.innerRef}
