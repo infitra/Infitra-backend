@@ -801,10 +801,13 @@ export function HowItWorks() {
   const bounds = computeBounds(beats);
   const totalW = beats.reduce((a, b) => a + b.w, 0);
   const stepSpan: [number, number] = [bounds[1][0], bounds[10][1]];
-  // Beats 0..10 are discrete snap points on mobile; beat 11 (the outro
-  // heartbeat) scrubs free so it can draw/undraw smoothly and hand back to
-  // the page. Kept in sync with SnapMarkers count below.
-  const SNAP_BEATS = 11;
+  // Mobile snap points: beats 0..10 (the story) PLUS beat 11's START (the
+  // outro — "Now it comes alive"). Catching the outro start means a swipe
+  // LANDS on the heartbeat instead of a strong swipe flying over it or a
+  // gentle one needing a second swipe; from there the heartbeat body scrubs
+  // FREE (the engine frees the snap just past the last marker) so it draws
+  // and undraws smoothly. Kept in sync with SnapMarkers count below.
+  const SNAP_BEATS = 12;
 
   const { beat, pinned, wrapperRef, jumpToBeat, runwayVh } = useBeatChapter({
     beats,

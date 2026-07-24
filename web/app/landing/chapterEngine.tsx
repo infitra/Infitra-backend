@@ -101,10 +101,11 @@ export function useBeatChapter({
   const bounds = computeBounds(beats);
   const totalW = beats.reduce((a, b) => a + b.w, 0);
   const nSnap = snapBeats ?? beats.length;
-  // Mandatory holds until just PAST the last snap marker, then frees the
-  // outro/exit tail — mandatory with no marker ahead would trap the reader
-  // on the last marker (can't glide out). 0-width guard for safety.
-  const snapUntil = nSnap > 0 && bounds.length > 0 ? bounds[Math.min(nSnap, bounds.length) - 1][0] + 0.05 : 0;
+  // Mandatory holds until just PAST the last snap marker (the +0.15 keeps that
+  // final marker SOLIDLY caught — a thinner margin let jitter flip it off — yet
+  // still frees the tail so a real swipe glides out to the free-scrub outro /
+  // exit; mandatory with no marker ahead would otherwise trap the reader).
+  const snapUntil = nSnap > 0 && bounds.length > 0 ? bounds[Math.min(nSnap, bounds.length) - 1][0] + 0.15 : 0;
 
   const cfgRef = useRef({ beats, bounds, totalW, snapUntil });
   const onTickRef = useRef(onTick);
