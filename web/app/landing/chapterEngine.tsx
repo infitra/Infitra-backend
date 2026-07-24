@@ -59,10 +59,14 @@ export const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
 export function useBeatChapter({
   beats,
   onTick,
+  beatVh = BEAT_VH,
 }: {
   beats: BeatDef[];
   /** Per-frame extras (e.g. scrub-drawn artwork). Runs after the control logic. */
   onTick?: (pos: number, beat: number) => void;
+  /** Runway height per beat unit, in vh. Mobile passes a shorter value so the
+   *  pinned stage carries less dead scroll between cuts. Defaults to BEAT_VH. */
+  beatVh?: number;
 }) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [beat, setBeat] = useState(0);
@@ -113,6 +117,18 @@ export function useBeatChapter({
       // viewport changes (rotation / width change) — never for the mobile
       // URL-bar collapse, which changes innerHeight by ~60-100px mid-scroll
       // and would shift every beat boundary under the reader's thumb.
+      //
+      // SETTLING is delegated to the browser: CSS scroll-snap (proximity,
+      // NEVER mandatory) lets the compositor land a swipe ON a beat instead of
+      // mid-band, cooperating with native iOS/Android momentum rather than
+      // fighting it with a JS scrollTo. Proximity can't trap the reader or
+      // hard-catch a fling — worst case it behaves like no-snap, so it degrades
+      // gracefully across the fragmented mobile-browser field. The snap TARGETS
+      // live only inside this chapter (rendered by the section, one per beat),
+      // so the rest of the page is untouched. Restored on cleanup.
+      const rootStyle = document.documentElement.style;
+      const prevSnapType = rootStyle.scrollSnapType;
+      rootStyle.scrollSnapType = "y proximity";
       let vw = window.innerWidth;
       let vh = window.innerHeight;
       const onResize = () => {
@@ -155,6 +171,7 @@ export function useBeatChapter({
       return () => {
         window.removeEventListener("scroll", onScroll);
         window.removeEventListener("resize", onResize);
+        rootStyle.scrollSnapType = prevSnapType;
       };
     }
     let raf = 0;
@@ -311,7 +328,7 @@ export function useBeatChapter({
     window.scrollTo({ top: window.scrollY + r.top + (mid / totalW) * total, behavior: "smooth" });
   }
 
-  return { beat, pinned, wrapperRef, jumpToBeat, bounds, totalW, runwayVh: totalW * BEAT_VH };
+  return { beat, pinned, wrapperRef, jumpToBeat, bounds, totalW, runwayVh: totalW * beatVh };
 }
 
 /* ── AutoFit — mobile frame scaler ───────────────────────────
@@ -466,7 +483,11 @@ export function MobileRail({
                     width: past ? "100%" : cur ? `${Math.round(clamp01(progress) * 100)}%` : "0%",
                     backgroundColor: ORANGE,
                     boxShadow: cur ? "0 0 8px rgba(255,97,48,0.5)" : undefined,
-                    transition: `width 350ms ${EASE}`,
+                    // Short + linear: the current segment is driven from LIVE
+                    // scroll position (continuous, ~every frame), so a long ease
+                    // would lag behind the thumb. Tight tracking = the pinned
+                    // dead zone reads as motion.
+                    transition: `width 140ms linear`,
                   }}
                 />
               </span>

@@ -797,13 +797,23 @@ export function HowItWorks() {
     if (window.matchMedia("(max-width: 1023px)").matches) setIsMobile(true);
   }, []);
 
+  // Mobile rail fill, driven from LIVE scroll position so the pinned dead zone
+  // reads as motion. State (not a ref) so the rail re-renders; the ref mirror
+  // lets onTick threshold-gate updates to keep re-renders cheap.
+  const [railProgress, setRailProgress] = useState(0);
+  const railProgressRef = useRef(0);
+
   const beats = isMobile ? BEATS_M : BEATS;
   const bounds = computeBounds(beats);
+  const totalW = beats.reduce((a, b) => a + b.w, 0);
   const stepSpan: [number, number] = [bounds[1][0], bounds[10][1]];
 
   const { beat, pinned, wrapperRef, jumpToBeat, runwayVh } = useBeatChapter({
     beats,
-    onTick: (pos) => {
+    // Shorter runway per beat on mobile → less dead scroll before each cut.
+    // With scroll-snap catching the rest, the tighter spacing stays crisp.
+    beatVh: isMobile ? 55 : 70,
+    onTick: (pos, b) => {
       // the heartbeat draws from live position, eased — smooth but energetic.
       // Mobile completes the draw at 55% of the (shorter) outro so one good
       // swipe finishes the line instead of demanding several.
@@ -814,6 +824,24 @@ export function HowItWorks() {
       frameRefs.current[5]?.querySelectorAll<SVGPathElement>("[data-ecg]").forEach((path) => {
         path.style.strokeDashoffset = String(1 - ecgShownRef.current);
       });
+      // Mobile rail: fill the CURRENT step's segment from live position —
+      // continuous feedback that a swipe is advancing toward the next beat,
+      // even while the pinned stage itself holds still.
+      if (isMobile) {
+        const bi = Math.min(b, beats.length - 1);
+        const f = beats[bi].f;
+        let first = bi;
+        let last = bi;
+        while (first > 0 && beats[first - 1].f === f) first--;
+        while (last < beats.length - 1 && beats[last + 1].f === f) last++;
+        const s = bounds[first][0];
+        const e = bounds[last][1];
+        const frac = e > s ? clamp01((pos - s) / (e - s)) : 0;
+        if (Math.abs(frac - railProgressRef.current) > 0.02) {
+          railProgressRef.current = frac;
+          setRailProgress(frac);
+        }
+      }
     },
   });
 
@@ -825,12 +853,6 @@ export function HowItWorks() {
   // rail fill — driven by the story beat, smoothed by CSS
   const railMid = bounds[Math.min(beat, beats.length - 1)][0] + cur.w / 2;
   const railSp = clamp01((railMid - stepSpan[0]) / (stepSpan[1] - stepSpan[0]));
-
-  // mobile rail: fill of the CURRENT step's segment = beat position within
-  // the frame's own beats (count-based — calm, one notch per swipe)
-  const frameFirst = beats.findIndex((b) => b.f === frame);
-  const frameCount = beats.filter((b) => b.f === frame).length;
-  const frameProgress = frameCount > 0 ? (beat - frameFirst + 1) / frameCount : 0;
 
   if (!pinned) {
     const staticHead = (f: number, p: number) => {
@@ -871,6 +893,25 @@ export function HowItWorks() {
   return (
     <section>
       <div ref={wrapperRef} className="relative" style={{ height: `${runwayVh}vh` }}>
+        {/* Mobile scroll-snap targets — one per beat, at the band CENTRE (a
+            generous margin from the cut boundary, so a rest here never flickers
+            between neighbouring beats). Zero-size and non-interactive; they
+            just give the compositor a place to settle a swipe so it lands ON a
+            beat instead of mid-band. lg:hidden — desktop uses the paced engine,
+            which drives scroll itself and must not snap. */}
+        {isMobile &&
+          beats.map((b, i) => {
+            const centre = (bounds[i][0] + bounds[i][1]) / 2;
+            const topVh = (centre / totalW) * (runwayVh - 100);
+            return (
+              <div
+                key={i}
+                aria-hidden
+                className="lg:hidden"
+                style={{ position: "absolute", top: `${topVh}vh`, left: 0, width: 1, height: 1, pointerEvents: "none", scrollSnapAlign: "start" }}
+              />
+            );
+          })}
         <div
           className="sticky top-0 w-full overflow-hidden h-screen"
           style={{ height: "100dvh", backgroundColor: isOutro ? "rgba(12,38,46,0)" : TEAL, transition: `background-color 450ms ${EASE}` }}
@@ -917,7 +958,7 @@ export function HowItWorks() {
           <MobileRail
             steps={RAIL.map((s) => ({ n: `0${s.frame}`, label: s.label, frame: s.frame }))}
             frame={frame}
-            progress={frameProgress}
+            progress={railProgress}
             light={!isOutro}
             onStep={(f) => jumpToBeat(BEATS.findIndex((b) => b.f === f))}
           />
