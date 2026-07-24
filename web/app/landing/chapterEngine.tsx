@@ -39,6 +39,8 @@ const ACCEL_GRACE_MS = 250; // ignore acceleration re-arms this soon after a cut
 const SETTLE_SPEED = 0.05; // px/ms — below this the reader has stopped
 const SETTLE_MS = 140; // rest this long before the silent re-anchor
 const STEP_GAP_MS = 320; // minimum time between beat cuts
+const SCRUB_SETTLE_MS = 160; // scroll silence before the mobile settle acts
+const SCRUB_COMMIT = 0.3; // rest inside this edge fraction of a band (in the direction of travel) commits the step
 const WALL_OVERHANG = 0.35; // beats of free travel beyond the current band before the wall
 const OUTRO_FREE_ZONE = 0.12; // inside the last beat past this depth, position scrubs freely
 
@@ -118,17 +120,64 @@ export function useBeatChapter({
       // URL-bar collapse, which changes innerHeight by ~60-100px mid-scroll
       // and would shift every beat boundary under the reader's thumb.
       //
-      // SETTLING is delegated to the browser: CSS scroll-snap (proximity,
-      // NEVER mandatory) lets the compositor land a swipe ON a beat instead of
-      // mid-band, cooperating with native iOS/Android momentum rather than
-      // fighting it with a JS scrollTo. Proximity can't trap the reader or
-      // hard-catch a fling — worst case it behaves like no-snap, so it degrades
-      // gracefully across the fragmented mobile-browser field. The snap TARGETS
-      // live only inside this chapter (rendered by the section, one per beat),
-      // so the rest of the page is untouched. Restored on cleanup.
-      const rootStyle = document.documentElement.style;
-      const prevSnapType = rootStyle.scrollSnapType;
-      rootStyle.scrollSnapType = "y proximity";
+      // SETTLING, the quiet way — NO CSS scroll-snap. A snap-type on the root
+      // scroller proved a mistake in prod: iOS re-tunes the fling physics of
+      // the ENTIRE page once the root is a snap container (everything felt
+      // heavy), and every stray scroll-snap-align on the page (the horizontal
+      // card carousels) became a vertical trap. Instead we borrow the desktop
+      // engine's trick: under the pinned stage, position corrections are
+      // INVISIBLE. So — never touching scroll while a finger is down or
+      // momentum runs — once scrolling has been silent for SCRUB_SETTLE_MS,
+      // the position silently re-anchors to the current band's centre. And if
+      // the rest point sits deep in the band's edge in the direction of
+      // travel, the step COMMITS first: a deliberate-but-weak swipe lands the
+      // next beat instead of dying mid-band ("I swiped and nothing happened").
+      // The anchor's scrollTo fires a scroll event, and the quantizer below
+      // flips the beat from it — scroll position stays the single source of
+      // truth.
+      let touchActive = false;
+      let settleT = 0;
+      let lastY = window.scrollY;
+      let lastDir = 0;
+      const trySettle = () => {
+        if (touchActive || jumpGuardRef.current) return;
+        const el = wrapperRef.current;
+        if (!el) return;
+        const { bounds: BOUNDS, totalW: TOTAL_W } = cfgRef.current;
+        const r = el.getBoundingClientRect();
+        const total = r.height - vh;
+        if (total <= 0) return;
+        if (!(r.top <= 2 && r.bottom >= vh - 2)) return; // only under the pin
+        const pos = clamp01(-r.top / total) * TOTAL_W;
+        const b = beatRef.current;
+        const last = BOUNDS.length - 1;
+        if (b >= last) return; // the outro is a free scrub zone
+        const [lo, hi] = BOUNDS[b];
+        const frac = (pos - lo) / (hi - lo);
+        let target = b;
+        if (lastDir > 0 && frac > 1 - SCRUB_COMMIT) target = b + 1;
+        else if (lastDir < 0 && frac < SCRUB_COMMIT) target = Math.max(0, b - 1);
+        const anchor =
+          target === last ? BOUNDS[last][0] + 0.05 : (BOUNDS[target][0] + BOUNDS[target][1]) / 2;
+        const targetY = window.scrollY + r.top + (anchor / TOTAL_W) * total;
+        // "instant", not smooth: invisible under the sticky stage, and a
+        // smooth correction would read as new motion.
+        if (Math.abs(targetY - window.scrollY) > 8) {
+          window.scrollTo({ top: targetY, behavior: "instant" });
+        }
+      };
+      const armSettle = () => {
+        window.clearTimeout(settleT);
+        settleT = window.setTimeout(trySettle, SCRUB_SETTLE_MS);
+      };
+      const onTouchStart = () => {
+        touchActive = true;
+        window.clearTimeout(settleT);
+      };
+      const onTouchEnd = () => {
+        touchActive = false;
+        armSettle();
+      };
       let vw = window.innerWidth;
       let vh = window.innerHeight;
       const onResize = () => {
@@ -139,6 +188,12 @@ export function useBeatChapter({
         onScroll();
       };
       const onScroll = () => {
+        const yNow = window.scrollY;
+        if (yNow !== lastY) {
+          lastDir = yNow > lastY ? 1 : -1;
+          lastY = yNow;
+        }
+        armSettle(); // every scroll event defers the settle — it acts only at rest
         const el = wrapperRef.current;
         if (!el) return;
         const { bounds: BOUNDS, totalW: TOTAL_W } = cfgRef.current;
@@ -168,10 +223,16 @@ export function useBeatChapter({
       onScroll();
       window.addEventListener("scroll", onScroll, { passive: true });
       window.addEventListener("resize", onResize, { passive: true });
+      window.addEventListener("touchstart", onTouchStart, { passive: true });
+      window.addEventListener("touchend", onTouchEnd, { passive: true });
+      window.addEventListener("touchcancel", onTouchEnd, { passive: true });
       return () => {
         window.removeEventListener("scroll", onScroll);
         window.removeEventListener("resize", onResize);
-        rootStyle.scrollSnapType = prevSnapType;
+        window.removeEventListener("touchstart", onTouchStart);
+        window.removeEventListener("touchend", onTouchEnd);
+        window.removeEventListener("touchcancel", onTouchEnd);
+        window.clearTimeout(settleT);
       };
     }
     let raf = 0;

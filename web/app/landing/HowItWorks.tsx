@@ -805,13 +805,12 @@ export function HowItWorks() {
 
   const beats = isMobile ? BEATS_M : BEATS;
   const bounds = computeBounds(beats);
-  const totalW = beats.reduce((a, b) => a + b.w, 0);
   const stepSpan: [number, number] = [bounds[1][0], bounds[10][1]];
 
   const { beat, pinned, wrapperRef, jumpToBeat, runwayVh } = useBeatChapter({
     beats,
     // Shorter runway per beat on mobile → less dead scroll before each cut.
-    // With scroll-snap catching the rest, the tighter spacing stays crisp.
+    // The engine's at-rest settle (commit or re-anchor) keeps it crisp.
     beatVh: isMobile ? 55 : 70,
     onTick: (pos, b) => {
       // the heartbeat draws from live position, eased — smooth but energetic.
@@ -893,25 +892,6 @@ export function HowItWorks() {
   return (
     <section>
       <div ref={wrapperRef} className="relative" style={{ height: `${runwayVh}vh` }}>
-        {/* Mobile scroll-snap targets — one per beat, at the band CENTRE (a
-            generous margin from the cut boundary, so a rest here never flickers
-            between neighbouring beats). Zero-size and non-interactive; they
-            just give the compositor a place to settle a swipe so it lands ON a
-            beat instead of mid-band. lg:hidden — desktop uses the paced engine,
-            which drives scroll itself and must not snap. */}
-        {isMobile &&
-          beats.map((b, i) => {
-            const centre = (bounds[i][0] + bounds[i][1]) / 2;
-            const topVh = (centre / totalW) * (runwayVh - 100);
-            return (
-              <div
-                key={i}
-                aria-hidden
-                className="lg:hidden"
-                style={{ position: "absolute", top: `${topVh}vh`, left: 0, width: 1, height: 1, pointerEvents: "none", scrollSnapAlign: "start" }}
-              />
-            );
-          })}
         <div
           className="sticky top-0 w-full overflow-hidden h-screen"
           style={{ height: "100dvh", backgroundColor: isOutro ? "rgba(12,38,46,0)" : TEAL, transition: `background-color 450ms ${EASE}` }}
