@@ -1,16 +1,15 @@
-import { INK, ORANGE, CYAN, MUTED, ApplyCTA } from "./ui";
+import { INK, ORANGE, CYAN, MUTED, FAINT, ApplyCTA } from "./ui";
 import { HeroWaitlist } from "./HeroWaitlist";
 
 /**
- * M1 · HERO — clarity first, then your door.
+ * M1 · HERO — the whole proposition, graspable without scrolling.
  *
- * The H1 is now the plain, uncapped definition of what INFITRA is —
- * complementary experts combining into one live experience (2+, never a hard
- * "two"). The deck itemizes what INFITRA truthfully runs (rooms, tribe space,
- * marketing page + checkout, automatic split — NOT sales/traffic). The couplet
- * ("From isolation to collaboration. From content to experience.") moved out
- * to the two chapter intros as cliffhangers, reunited at the finale. The
- * pilot's pair-specifics live in the CTA microcopy, not the masthead.
+ * Outreach feedback: the demo is great but demands a scroll, and some people
+ * bounce before the payoff. So the hero now stands on its own — headline,
+ * a SHORT deck (the five-item feature list moved out; the demo below proves
+ * it, in full), the deal led by what experts KEEP (90%, not the 10% cut),
+ * the CTA, and a scroll cue that names the reward. A no-scroll visitor still
+ * gets: who it's for, the offer, and a way to say yes.
  */
 export function Hero() {
   // svh on mobile so the centered content fits the VISIBLE viewport (the area
@@ -43,23 +42,45 @@ export function Hero() {
           <span className="block" style={{ color: CYAN, fontWeight: 700 }}>one live fitness experience.</span>
         </h1>
 
-        <p className="text-base md:text-xl max-w-2xl mx-auto leading-relaxed mb-6" style={{ color: MUTED }}>
-          Team up with experts who complement you and deliver one seamless live experience for
-          your audience. INFITRA provides everything around that: the live rooms, the tribe
-          space, the marketing page with checkout, the collaboration contract and the revenue
-          splitting, <span style={{ color: INK, fontWeight: 600 }}>so you can focus on the experience.</span>
+        {/* Short deck — the five-item feature list moved to the demo, which
+           proves it in full. Here, only the promise. */}
+        <p className="text-base md:text-xl max-w-2xl mx-auto leading-relaxed mb-7" style={{ color: MUTED }}>
+          Team up with a complementary expert and run one seamless live experience for your
+          audience. INFITRA handles everything around it,
+          <span style={{ color: INK, fontWeight: 600 }}> so you can focus on showing up.</span>
         </p>
 
-        {/* Who it's for + the objection killed up front: you don't need a
-           partner to apply — the pilot pairs you. */}
+        {/* The deal, led by what experts KEEP — 90% reads far better than a
+           10% cut. The fee is still disclosed, just second. */}
+        <div className="mb-7">
+          <p className="text-xl md:text-2xl font-headline" style={{ color: INK, fontWeight: 700, letterSpacing: "-0.01em" }}>
+            You and your partner keep <span style={{ color: ORANGE }}>90%</span> of revenue.
+          </p>
+          <p className="text-[13px] sm:text-sm mt-2" style={{ color: MUTED }}>
+            No upfront cost, no subscription. Founding 10% platform fee.
+          </p>
+        </div>
+
+        {/* Who it's for + the partner objection killed up front. */}
         <p className="text-[13.5px] sm:text-sm mb-7 max-w-xl mx-auto font-headline" style={{ color: MUTED, fontWeight: 600 }}>
-          For fitness and wellness experts. No partner yet? We&apos;ll help you pair up.
+          For fitness and wellness experts. No partner needed to apply.
         </p>
 
-        <ApplyCTA micro="5 founding pairs · reviewed individually · starting now" />
+        <ApplyCTA micro="5 founding pairs · reviewed personally · starting now" />
 
         {/* The quiet second door — extends into the form right here */}
         <HeroWaitlist />
+
+        {/* Scroll cue — names the reward so the demo reads as an invited
+           deep-dive, not a mandatory slog. */}
+        <div className="mt-12 flex flex-col items-center gap-1.5" style={{ color: FAINT }} aria-hidden>
+          <span className="text-[11px] uppercase tracking-[0.22em] font-headline" style={{ fontWeight: 700 }}>
+            See how it works
+          </span>
+          <svg className="animate-bounce" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </div>
       </div>
     </section>
   );

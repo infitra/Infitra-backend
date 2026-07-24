@@ -106,15 +106,15 @@ export default function PilotTermsPage() {
               <Section title="The money">
                 <p>
                   Participants pay on your sales page through Stripe, and the buyer
-                  covers Stripe&apos;s processing fee (3% + CHF 0.30). INFITRA keeps a{" "}
-                  <strong style={{ color: "#0F2229" }}>founding 10% platform fee</strong>,
-                  locked in for pilot experts.
+                  covers Stripe&apos;s processing fee (3% + CHF 0.30).{" "}
+                  <strong style={{ color: "#0F2229" }}>You and your partner keep 90% of
+                  every sale</strong>, split by the percentages in your signed agreement.
                 </p>
                 <p>
-                  You and your partner split the remaining 90% by the percentages in
-                  your signed agreement. Every sale shows in your earnings dashboard in
-                  real time, and we pay out manually within 14 days of your experience
-                  ending. All pricing is in Swiss francs for the pilot.
+                  INFITRA&apos;s founding platform fee is the remaining 10%, locked in for
+                  pilot experts. Every sale shows in your earnings dashboard in real time,
+                  and we pay out manually within 14 days of your experience ending. All
+                  pricing is in Swiss francs for the pilot.
                 </p>
               </Section>
 

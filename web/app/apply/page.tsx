@@ -133,7 +133,7 @@ export default function ApplyPage() {
  * full terms one tap away.
  */
 const DEAL: string[] = [
-  "A 10% platform fee on pilot revenue. You and your partner split the remaining 90%.",
+  "You and your partner keep 90% of revenue, split as you agree. INFITRA’s founding platform fee is 10%.",
   "Five founding pairs, one 4 to 6 week live experience, co-hosted.",
   "You host live and bring your audience. We run the platform, priced in CHF.",
   "No lock-in. Keep your experiences, archive them, or leave anytime after the pilot.",
