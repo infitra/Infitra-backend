@@ -45,9 +45,9 @@ export function Hero() {
         {/* Short deck — one breath. The five-item feature list moved to the
            demo, which proves it in full. */}
         <p className="text-base md:text-xl max-w-2xl mx-auto leading-relaxed mb-8" style={{ color: MUTED }}>
-          Team up with a complementary expert to run one live experience for your audience.
+          Team up with a complementary expert to run one live experience together.
           INFITRA handles everything around it,
-          <span style={{ color: INK, fontWeight: 600 }}> so you just show up.</span>
+          <span style={{ color: INK, fontWeight: 600 }}> so you can focus on your audience.</span>
         </p>
 
         {/* The deal, led by what experts KEEP — 90% reads far better than a
