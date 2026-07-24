@@ -544,10 +544,10 @@ export function MobileRail({
                     width: past ? "100%" : cur ? `${Math.round(clamp01(progress) * 100)}%` : "0%",
                     backgroundColor: ORANGE,
                     boxShadow: cur ? "0 0 8px rgba(255,97,48,0.5)" : undefined,
-                    // Short + linear: the current segment is driven from LIVE
-                    // scroll position (continuous, ~every frame), so a long ease
-                    // would lag behind the thumb. Tight tracking = the pinned
-                    // dead zone reads as motion.
+                    // Both chapters feed count-based STEPPED progress (one
+                    // notch per beat cut) — a quick linear fill per notch.
+                    // Live position-driven fill was tried and jittered against
+                    // the settle's invisible re-anchors.
                     transition: `width 140ms linear`,
                   }}
                 />
