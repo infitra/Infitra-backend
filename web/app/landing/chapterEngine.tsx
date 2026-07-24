@@ -127,10 +127,12 @@ export function useBeatChapter({
       // that was worse (page-wide heavy physics; every stray snap-align
       // became a vertical trap). So while pinned, the story no longer
       // follows the scroll position at all: the BEAT advances on the
-      // gesture itself — one step per swipe, firing the moment the finger
-      // has moved DRAG_STEP_PX — while the scroll position free-runs
-      // natively, never fought. Momentum can carry the position anywhere;
-      // it can never advance the story. Once motion fully stops
+      // gesture itself — one step per swipe, firing once the swipe's
+      // travel (finger contact plus its early momentum) passes
+      // DRAG_STEP_PX — while the scroll position free-runs natively,
+      // never fought. Beyond that single step, momentum can carry the
+      // position anywhere; it can never advance the story. Once motion
+      // fully stops
       // (SCRUB_SETTLE_MS of silence, finger up), the position silently
       // re-anchors to the current beat's band under the pinned stage —
       // invisible, the mobile analogue of the desktop wall, applied only
@@ -140,22 +142,24 @@ export function useBeatChapter({
       let settleT = 0;
       let lastY = window.scrollY;
       let lastDir = 0;
-      let accum = 0; // finger-down travel toward the next step
+      let accum = 0; // swipe travel (contact + early momentum) toward the next step
+      let steppedSinceTouch = false; // latch: momentum may fire at most ONE step per gesture
       let armed = false; // trackpad path: one step per distinct gesture
       let velPrevY = window.scrollY;
       let velPrevT = performance.now();
       let lastStepT = 0;
       let prevCovering = false;
-      const stepBeat = (dir: 1 | -1, now: number) => {
+      const stepBeat = (dir: 1 | -1, now: number): boolean => {
         const { bounds: BOUNDS } = cfgRef.current;
         const last = BOUNDS.length - 1;
         const b = beatRef.current;
-        if (dir > 0 && b >= last) return; // the outro exits downward freely
-        if (dir < 0 && b <= 0) return; // the intro exits upward freely
-        if (now - lastStepT < STEP_GAP_MS) return; // one cut per gap
+        if (dir > 0 && b >= last) return false; // the outro exits downward freely
+        if (dir < 0 && b <= 0) return false; // the intro exits upward freely
+        if (now - lastStepT < STEP_GAP_MS) return false; // one cut per gap
         lastStepT = now;
         beatRef.current = b + dir;
         setBeat(b + dir);
+        return true;
       };
       const trySettle = () => {
         if (touchActive || jumpGuardRef.current) return;
@@ -190,6 +194,7 @@ export function useBeatChapter({
         touchActive = true;
         sawTouch = true;
         accum = 0;
+        steppedSinceTouch = false; // a new physical gesture may step again
         window.clearTimeout(settleT);
       };
       const onTouchEnd = () => {
@@ -259,23 +264,31 @@ export function useBeatChapter({
           }
           accum = 0;
           armed = false;
+          steppedSinceTouch = true; // the entering gesture is spent
           velPrevY = yNow;
           velPrevT = now;
           onTickRef.current?.(pos, beatRef.current);
           return;
         }
-        if (touchActive) {
-          // FINGER ON GLASS — deliberate motion. Steps by travel: every
-          // DRAG_STEP_PX of drag advances one beat, so a flick cuts within
-          // its first frames (reads as instant) and a slow drag scrubs at
-          // the STEP_GAP cadence. Momentum after finger-up adds NOTHING.
+        if (sawTouch) {
+          // TOUCH DEVICES — the step signal is the SWIPE's travel, counted
+          // from touchstart THROUGH its early momentum. A real flick keeps
+          // the finger on glass for only ~40-100px; the distance arrives
+          // after finger-up, so counting contact travel alone starved the
+          // step entirely (the "can't get past the intro" regression).
+          // One flick = one cut: with the finger up, the momentum may fire
+          // a step only if this gesture hasn't stepped yet — the rest of
+          // the tail moves nothing. A long finger-down drag may still step
+          // repeatedly (deliberate scrubbing, STEP_GAP-paced).
           if (dy !== 0 && accum !== 0 && Math.sign(dy) !== Math.sign(accum)) accum = 0;
           accum += dy;
-          if (Math.abs(accum) >= DRAG_STEP_PX) {
-            stepBeat(accum > 0 ? 1 : -1, now);
-            accum = 0;
+          if (Math.abs(accum) >= DRAG_STEP_PX && (touchActive || !steppedSinceTouch)) {
+            if (stepBeat(accum > 0 ? 1 : -1, now)) {
+              steppedSinceTouch = true;
+              accum = 0;
+            }
           }
-        } else if (!sawTouch) {
+        } else {
           // no touch on this device (trackpad/wheel below lg): the desktop
           // arm/push idea, event-driven — one step per distinct gesture
           const dt = Math.max(1, now - velPrevT);
