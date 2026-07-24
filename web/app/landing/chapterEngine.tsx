@@ -149,6 +149,31 @@ export function useBeatChapter({
       let velPrevT = performance.now();
       let lastStepT = 0;
       let prevCovering = false;
+      // ── ?debugscroll HUD — a tiny live readout of the gesture engine's
+      // internals, for diagnosing real-device behavior the pane can't
+      // simulate. Renders ONLY with the flag in the URL; ships inert. ──
+      const dbg = /debugscroll/.test(location.search + location.hash)
+        ? (() => {
+            let host = document.getElementById("scrub-debug");
+            if (!host) {
+              host = document.createElement("div");
+              host.id = "scrub-debug";
+              host.style.cssText =
+                "position:fixed;left:4px;bottom:4px;z-index:99999;background:rgba(0,0,0,0.82);color:#7CFC9A;font:10px/1.5 monospace;padding:6px 8px;border-radius:6px;pointer-events:none;white-space:pre;max-width:96vw";
+              document.body.appendChild(host);
+            }
+            const line = document.createElement("div");
+            host.appendChild(line);
+            const c = { ent: 0, ts: 0, te: 0, stp: 0, blk: 0, set: 0, rst: 0, accPk: 0, maxDy: 0 };
+            return {
+              c,
+              line,
+              paint(extra: string) {
+                line.textContent = `[${cfgRef.current.totalW}] ${extra} | ent${c.ent} ts${c.ts} te${c.te} stp${c.stp} blk${c.blk} set${c.set} rst${c.rst} pk${Math.round(c.accPk)} mx${Math.round(c.maxDy)}`;
+              },
+            };
+          })()
+        : null;
       const stepBeat = (dir: 1 | -1, now: number): boolean => {
         const { bounds: BOUNDS } = cfgRef.current;
         const last = BOUNDS.length - 1;
@@ -184,6 +209,7 @@ export function useBeatChapter({
           lastY = window.scrollY;
           velPrevY = window.scrollY;
           armed = false;
+          if (dbg) dbg.c.set++;
         }
       };
       const armSettle = () => {
@@ -196,10 +222,12 @@ export function useBeatChapter({
         accum = 0;
         steppedSinceTouch = false; // a new physical gesture may step again
         window.clearTimeout(settleT);
+        if (dbg) dbg.c.ts++;
       };
       const onTouchEnd = () => {
         touchActive = false;
         armSettle();
+        if (dbg) dbg.c.te++;
       };
       let vw = window.innerWidth;
       let vh = window.innerHeight;
@@ -227,8 +255,21 @@ export function useBeatChapter({
         if (total <= 0) return;
         const pos = clamp01(-r.top / total) * TOTAL_W;
         const covering = r.top <= 2 && r.bottom >= vh - 2;
+        // HYSTERESIS on the entry edge: `entered` must never re-fire from a
+        // one-event covering flicker (iOS URL-bar collapse and sub-pixel
+        // rect jitter can wobble r.top around the threshold mid-swipe, and
+        // a spurious `entered` re-cuts to the door AND spends the gesture —
+        // the reader gets pinned to the intro). prevCovering only drops
+        // once the wrapper is CLEARLY outside the pin.
         const entered = covering && !prevCovering;
-        prevCovering = covering;
+        if (covering) prevCovering = true;
+        else if (r.top > 40 || r.bottom < vh - 40) prevCovering = false;
+        if (dbg) {
+          dbg.c.maxDy = Math.max(dbg.c.maxDy, Math.abs(dy));
+          dbg.paint(
+            `cov${covering ? 1 : 0} b${beatRef.current} pos${pos.toFixed(1)} acc${Math.round(accum)} dy${Math.round(dy)} vh${vh}/${window.innerHeight} ${touchActive ? "T" : "."}${sawTouch ? "S" : "."}${steppedSinceTouch ? "L" : "."}`
+          );
+        }
         // A jump (rail tap / join) owns the beat while its smooth scroll is
         // in flight — don't flicker through the bands it passes.
         if (jumpGuardRef.current) {
@@ -267,6 +308,7 @@ export function useBeatChapter({
           steppedSinceTouch = true; // the entering gesture is spent
           velPrevY = yNow;
           velPrevT = now;
+          if (dbg) dbg.c.ent++;
           onTickRef.current?.(pos, beatRef.current);
           return;
         }
@@ -280,13 +322,24 @@ export function useBeatChapter({
           // a step only if this gesture hasn't stepped yet — the rest of
           // the tail moves nothing. A long finger-down drag may still step
           // repeatedly (deliberate scrubbing, STEP_GAP-paced).
-          if (dy !== 0 && accum !== 0 && Math.sign(dy) !== Math.sign(accum)) accum = 0;
+          // direction flip resets the count — but only a REAL flip (>4px):
+          // iOS scroll positions jitter by fractions mid-swipe (URL-bar
+          // animation, sub-pixel adjustments) and a 1px counter-blip must
+          // not zero a nearly-complete swipe.
+          if (Math.abs(dy) > 4 && accum !== 0 && Math.sign(dy) !== Math.sign(accum)) {
+            accum = 0;
+            if (dbg) dbg.c.rst++;
+          }
           accum += dy;
-          if (Math.abs(accum) >= DRAG_STEP_PX && (touchActive || !steppedSinceTouch)) {
-            if (stepBeat(accum > 0 ? 1 : -1, now)) {
-              steppedSinceTouch = true;
-              accum = 0;
-            }
+          if (dbg) dbg.c.accPk = Math.max(dbg.c.accPk, Math.abs(accum));
+          if (Math.abs(accum) >= DRAG_STEP_PX) {
+            if (touchActive || !steppedSinceTouch) {
+              if (stepBeat(accum > 0 ? 1 : -1, now)) {
+                steppedSinceTouch = true;
+                accum = 0;
+                if (dbg) dbg.c.stp++;
+              } else if (dbg) dbg.c.blk++;
+            } else if (dbg) dbg.c.blk++;
           }
         } else {
           // no touch on this device (trackpad/wheel below lg): the desktop
@@ -316,6 +369,7 @@ export function useBeatChapter({
         window.removeEventListener("touchend", onTouchEnd);
         window.removeEventListener("touchcancel", onTouchEnd);
         window.clearTimeout(settleT);
+        dbg?.line.remove();
       };
     }
     let raf = 0;
