@@ -314,6 +314,144 @@ export function useBeatChapter({
   return { beat, pinned, wrapperRef, jumpToBeat, bounds, totalW, runwayVh: totalW * BEAT_VH };
 }
 
+/* ── Mobile SNAP mode — the platform's own paging primitive ──
+ * The chapter becomes its own scroll container: an inner scroller with one
+ * full-height snap cell per beat, `snap-mandatory` + `snap-stop: always`.
+ * The COMPOSITOR guarantees what JS control never could (see the saga in
+ * git history): every swipe, at any strength, lands exactly ONE beat and
+ * its momentum dies at the boundary — natively smooth. No timers, no
+ * counter-scrolling, no gesture heuristics. The stage renders sticky
+ * inside the scroller; the beat is simply the cell under the top edge.
+ * The section docks fullscreen inside a slightly taller wrapper (the
+ * ledge absorbs the entering swipe's momentum); at either end, native
+ * scroll chaining hands the gesture back to the page — the two exits. */
+export function useSnapChapter({
+  cells,
+  outroCells = 0,
+  onTick,
+}: {
+  /** number of beats — one snap cell each */
+  cells: number;
+  /** extra viewport-heights of free scrub inside the LAST cell (outro art) */
+  outroCells?: number;
+  /** posCells is in cell units: the outro scrub spans [cells-1, cells-1+outroCells] */
+  onTick?: (posCells: number, beat: number) => void;
+}) {
+  // Callback refs into STATE, not useRef: the shell mounts only after the
+  // isMobile flip (post-hydration), long after this hook's mount effect —
+  // a ref-based effect would bail on null elements and never re-run. State
+  // deps re-run the wiring the moment the shell's elements exist.
+  const [innerEl, setInnerEl] = useState<HTMLDivElement | null>(null);
+  const [dockEl, setDockEl] = useState<HTMLDivElement | null>(null);
+  const [beat, setBeat] = useState(0);
+  const [docked, setDocked] = useState(false);
+  const beatRef = useRef(0);
+  const onTickRef = useRef(onTick);
+  useEffect(() => {
+    onTickRef.current = onTick;
+  });
+
+  useEffect(() => {
+    const inner = innerEl;
+    const dock = dockEl;
+    if (!inner || !dock) return; // shell not mounted (desktop / static story)
+    const last = cells - 1;
+    const onInner = () => {
+      const h = inner.clientHeight;
+      if (h <= 0) return;
+      const pos = inner.scrollTop / h;
+      // the cut fires as the snap animation crosses the midpoint — with the
+      // swipe, not after it
+      const b = Math.min(last, Math.max(0, Math.round(pos)));
+      if (beatRef.current !== b) {
+        beatRef.current = b;
+        setBeat(b);
+      }
+      onTickRef.current?.(pos, b);
+    };
+    // DOCKED = the wrapper fully covers the viewport. Only then is the inner
+    // scrollable — touches on a half-visible section must scroll the PAGE.
+    let d = false;
+    const onPage = () => {
+      const r = dock.getBoundingClientRect();
+      const vh = window.innerHeight;
+      const now = r.top <= 2 && r.bottom >= vh - 2;
+      if (now !== d) {
+        d = now;
+        setDocked(now);
+      }
+    };
+    onInner();
+    onPage();
+    inner.addEventListener("scroll", onInner, { passive: true });
+    window.addEventListener("scroll", onPage, { passive: true });
+    window.addEventListener("resize", onPage, { passive: true });
+    return () => {
+      inner.removeEventListener("scroll", onInner);
+      window.removeEventListener("scroll", onPage);
+      window.removeEventListener("resize", onPage);
+    };
+  }, [innerEl, dockEl, cells]);
+
+  function jumpToBeat(i: number) {
+    if (!innerEl) return;
+    innerEl.scrollTo({ top: i * innerEl.clientHeight, behavior: "smooth" });
+  }
+
+  return { beat, docked, innerRef: setInnerEl, dockRef: setDockEl, jumpToBeat };
+}
+
+/* The snap-mode shell: dock wrapper → sticky viewport → snapping inner
+ * scroller → sticky stage over invisible snap cells. The chapter passes its
+ * existing stage content as children — identical markup to the desktop
+ * shell's sticky stage. */
+export function SnapShell({
+  snap,
+  cells,
+  outroCells = 0,
+  ledgeVh = 70,
+  stageStyle,
+  children,
+}: {
+  snap: ReturnType<typeof useSnapChapter>;
+  cells: number;
+  outroCells?: number;
+  /** extra svh of page runway around the dock — absorbs the entering swipe's
+   *  momentum so a normal scroll settles ON the story instead of past it */
+  ledgeVh?: number;
+  stageStyle?: React.CSSProperties;
+  children: React.ReactNode;
+}) {
+  return (
+    <div ref={snap.dockRef} className="relative" style={{ height: `${100 + ledgeVh}svh` }}>
+      <div className="sticky top-0 overflow-hidden h-screen" style={{ height: "100dvh" }}>
+        <div
+          ref={snap.innerRef}
+          className={`h-full snap-y snap-mandatory ${snap.docked ? "overflow-y-auto" : "overflow-hidden"} [scrollbar-width:none] [&::-webkit-scrollbar]:hidden`}
+          style={{ overscrollBehaviorY: "auto" }}
+        >
+          {/* the stage — first child (cell 0's flow slot), sticks over the
+             cells for the whole internal scroll */}
+          <div className="sticky top-0 h-full snap-start snap-always overflow-hidden" style={stageStyle}>
+            {children}
+          </div>
+          {/* invisible snap cells — one per remaining beat; the last carries
+             the outro's free-scrub room (a snap area taller than the
+             viewport scrolls freely inside itself, by spec) */}
+          {Array.from({ length: cells - 1 }).map((_, i) => (
+            <div
+              key={i}
+              aria-hidden
+              className="snap-start snap-always"
+              style={{ height: i === cells - 2 ? `${(1 + outroCells) * 100}%` : "100%" }}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── AutoFit — mobile frame scaler ───────────────────────────
  * Below lg the pinned frames keep their desktop compositions but must fit
  * a phone-height stage: measure the content against the available box and

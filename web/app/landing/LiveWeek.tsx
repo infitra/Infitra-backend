@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { EX, ALEX, MIRA, ROOM, ANNA, NINA, TIM, SAM, PRIYA } from "./content";
 import { INK, ORANGE, CYAN, MUTED, FAINT, PRODUCT_SHADOW } from "./ui";
-import { type BeatDef, useBeatChapter, computeBounds, Phase, Pop, Enter, MobileRail, TitleZone, useTap, CUT_MS, CASCADE_MS, EASE, FIT, AutoFit } from "./chapterEngine";
+import { type BeatDef, useBeatChapter, useSnapChapter, SnapShell, computeBounds, Phase, Pop, Enter, MobileRail, TitleZone, useTap, CUT_MS, CASCADE_MS, EASE, FIT, AutoFit } from "./chapterEngine";
 
 /**
  * ACT 2 · ALIVE BY DESIGN — the engagement story.
@@ -1483,7 +1483,13 @@ export function LiveWeek() {
   const peakBeat = beats.findIndex((b) => b.f === 3 && b.p === 2);
   const firstBeatOf = (f: number) => beats.findIndex((b) => b.f === f);
 
-  const { beat, pinned, wrapperRef, jumpToBeat, runwayVh } = useBeatChapter({ beats });
+  // Desktop: the paced engine on the page runway (also owns the static
+  // fallback decision). Mobile: native snap paging on the chapter's own
+  // scroller. Each is inert in the other mode — its shell never mounts.
+  const { beat: paceBeat, pinned, wrapperRef, jumpToBeat: paceJump, runwayVh } = useBeatChapter({ beats });
+  const snap = useSnapChapter({ cells: beats.length });
+  const beat = isMobile ? snap.beat : paceBeat;
+  const jump = isMobile ? snap.jumpToBeat : paceJump;
 
   // the beat index can momentarily exceed the map during the swap
   const cur = beats[Math.min(beat, beats.length - 1)];
@@ -1541,15 +1547,14 @@ export function LiveWeek() {
     );
   }
 
-  return (
-    <section>
-      {/* breathing gap between the two chapters — the waves, alone */}
-      <div className="h-[26vh]" aria-hidden />
-      <div ref={wrapperRef} className="relative" style={{ height: `${runwayVh}vh` }}>
-        <div
-          className="sticky top-0 w-full overflow-hidden h-screen"
-          style={{ height: "100dvh", backgroundColor: peak ? TEAL : "rgba(12,38,46,0)", transition: `background-color 500ms ${EASE}` }}
-        >
+  // The stage — identical content in both shells; only the scroller that
+  // drives `beat` differs (page runway on desktop, snap scroller on mobile).
+  const stageStyle: React.CSSProperties = {
+    backgroundColor: peak ? TEAL : "rgba(12,38,46,0)",
+    transition: `background-color 500ms ${EASE}`,
+  };
+  const stage = (
+    <>
           {/* Mechanics rail — desktop (stays through the peak; colors adapt to
              the dark background so the swipe progress keeps reading) */}
           <div className="hidden lg:flex absolute left-8 xl:left-14 top-[56%] -translate-y-1/2 z-20 items-stretch gap-4" style={{ opacity: frame >= 1 && frame <= 4 ? 1 : 0, transition: "opacity 400ms ease" }}>
@@ -1561,7 +1566,7 @@ export function LiveWeek() {
                 <button
                   key={s.label}
                   type="button"
-                  onClick={() => jumpToBeat(firstBeatOf(s.frame))}
+                  onClick={() => jump(firstBeatOf(s.frame))}
                   className="flex items-center gap-4 text-left transition-opacity duration-300"
                   style={{ opacity: frame === s.frame ? 1 : 0.42 }}
                 >
@@ -1591,7 +1596,7 @@ export function LiveWeek() {
             frame={frame}
             progress={frameProgress}
             light={peak}
-            onStep={(f) => jumpToBeat(firstBeatOf(f))}
+            onStep={(f) => jump(firstBeatOf(f))}
           />
 
           {/* Frames — hard cuts, one visible at a time. Railed frames anchor
@@ -1637,13 +1642,36 @@ export function LiveWeek() {
                     {f === 0 && <IntroFrame />}
                     {f === 1 && (isMobile ? <SpaceFrameMobile phase={active ? phase : 0} /> : <SpaceFrame phase={active ? phase : 0} />)}
                     {f === 2 && (isMobile ? <HandsFrameMobile phase={active ? phase : 0} /> : <HandsFrame phase={active ? phase : 0} />)}
-                    {f === 3 && (isMobile ? <LoopFrameMobile phase={active ? phase : 0} onJoin={() => jumpToBeat(peakBeat)} /> : <LoopFrame phase={active ? phase : 0} onJoin={() => jumpToBeat(peakBeat)} />)}
+                    {f === 3 && (isMobile ? <LoopFrameMobile phase={active ? phase : 0} onJoin={() => jump(peakBeat)} /> : <LoopFrame phase={active ? phase : 0} onJoin={() => jump(peakBeat)} />)}
                     {f === 4 && (isMobile ? <CompoundFrameMobile phase={active ? phase : 0} /> : <CompoundFrame phase={active ? phase : 0} active={active} />)}
                   </AutoFit>
                 </div>
               </div>
             );
           })}
+    </>
+  );
+
+  // Mobile: the chapter is its own snap scroller — one swipe, one beat,
+  // enforced by the compositor. Desktop: the paced page runway, unchanged.
+  if (isMobile) {
+    return (
+      <section>
+        {/* breathing gap between the two chapters — the waves, alone */}
+        <div className="h-[26vh]" aria-hidden />
+        <SnapShell snap={snap} cells={beats.length} stageStyle={stageStyle}>
+          {stage}
+        </SnapShell>
+      </section>
+    );
+  }
+  return (
+    <section>
+      {/* breathing gap between the two chapters — the waves, alone */}
+      <div className="h-[26vh]" aria-hidden />
+      <div ref={wrapperRef} className="relative" style={{ height: `${runwayVh}vh` }}>
+        <div className="sticky top-0 w-full overflow-hidden h-screen" style={{ height: "100dvh", ...stageStyle }}>
+          {stage}
         </div>
       </div>
     </section>
