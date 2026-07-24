@@ -42,6 +42,25 @@ const STEP_GAP_MS = 320; // minimum time between beat cuts
 const WALL_OVERHANG = 0.35; // beats of free travel beyond the current band before the wall
 const OUTRO_FREE_ZONE = 0.12; // inside the last beat past this depth, position scrubs freely
 
+/* Mobile scoped-snap coordinator. Global `scroll-snap-type: mandatory` yanks
+ * the whole page to the nearest section from any rest point (measured), so the
+ * strong catch must be SCOPED: each chapter turns root snap to mandatory ONLY
+ * while it fills the screen, and back to none otherwise (native gaps, native
+ * heartbeat scrub). Two chapters share the root, so one owns the toggle at a
+ * time — a chapter only releases the snap it set, never the other's. */
+const ROOT_SNAP = "y mandatory";
+let snapOwner: object | null = null;
+function setRootSnap(on: boolean, token: object) {
+  const root = document.documentElement.style;
+  if (on) {
+    snapOwner = token;
+    if (root.scrollSnapType !== ROOT_SNAP) root.scrollSnapType = ROOT_SNAP;
+  } else if (snapOwner === token) {
+    snapOwner = null;
+    root.scrollSnapType = "";
+  }
+}
+
 export type BeatDef = { f: number; p: number; w: number };
 
 export function computeBounds(beats: BeatDef[]): [number, number][] {
@@ -59,10 +78,17 @@ export const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
 export function useBeatChapter({
   beats,
   onTick,
+  snapBeats,
 }: {
   beats: BeatDef[];
   /** Per-frame extras (e.g. scrub-drawn artwork). Runs after the control logic. */
   onTick?: (pos: number, beat: number) => void;
+  /** Below lg: the first `snapBeats` beats become per-beat CSS snap points
+   *  (mandatory + snap-stop, one-swipe-one-beat) — but ONLY while the chapter
+   *  fills the screen; the page is native everywhere else. Beats past this
+   *  (the outro / exit tail) scrub free. Render <SnapMarkers> to match.
+   *  Default: all beats snap. */
+  snapBeats?: number;
 }) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [beat, setBeat] = useState(0);
@@ -70,14 +96,20 @@ export function useBeatChapter({
   const beatRef = useRef(0);
   const jumpGuardRef = useRef(false);
   const jumpTimerRef = useRef(0);
+  const snapToken = useRef<object>({}).current; // identity for the shared owner
 
   const bounds = computeBounds(beats);
   const totalW = beats.reduce((a, b) => a + b.w, 0);
+  const nSnap = snapBeats ?? beats.length;
+  // Mandatory holds until just PAST the last snap marker, then frees the
+  // outro/exit tail — mandatory with no marker ahead would trap the reader
+  // on the last marker (can't glide out). 0-width guard for safety.
+  const snapUntil = nSnap > 0 && bounds.length > 0 ? bounds[Math.min(nSnap, bounds.length) - 1][0] + 0.05 : 0;
 
-  const cfgRef = useRef({ beats, bounds, totalW });
+  const cfgRef = useRef({ beats, bounds, totalW, snapUntil });
   const onTickRef = useRef(onTick);
   useEffect(() => {
-    cfgRef.current = { beats, bounds, totalW };
+    cfgRef.current = { beats, bounds, totalW, snapUntil };
     onTickRef.current = onTick;
   });
 
@@ -122,14 +154,28 @@ export function useBeatChapter({
         }
         onScroll();
       };
+      let snapOn = false; // hysteresis latch for the root-snap toggle
       const onScroll = () => {
         const el = wrapperRef.current;
         if (!el) return;
-        const { bounds: BOUNDS, totalW: TOTAL_W } = cfgRef.current;
+        const { bounds: BOUNDS, totalW: TOTAL_W, snapUntil: SNAP_UNTIL } = cfgRef.current;
         const r = el.getBoundingClientRect();
         const total = r.height - vh;
         if (total <= 0) return;
         const pos = clamp01(-r.top / total) * TOTAL_W;
+
+        // SCOPED SNAP: mandatory per-beat snap ONLY while the chapter fills the
+        // screen AND we're in its snap range (before the free-scrub tail). A
+        // fast fling entering can't overjump — snap-stop halts it on a beat;
+        // resting is always on a beat. Off elsewhere = native page + native
+        // heartbeat scrub. Small hysteresis at the tail edge stops flicker.
+        const covering = r.top <= 2 && r.bottom >= vh - 2;
+        const want = covering && pos < SNAP_UNTIL - (snapOn ? 0 : 0.08);
+        if (want !== snapOn) {
+          snapOn = want;
+          setRootSnap(want, snapToken);
+        }
+
         // A jump (rail tap / join) owns the beat while its smooth scroll is
         // in flight — don't flicker through the bands it passes.
         if (jumpGuardRef.current) {
@@ -155,6 +201,7 @@ export function useBeatChapter({
       return () => {
         window.removeEventListener("scroll", onScroll);
         window.removeEventListener("resize", onResize);
+        setRootSnap(false, snapToken); // release the root if we held it
       };
     }
     let raf = 0;
@@ -314,146 +361,41 @@ export function useBeatChapter({
   return { beat, pinned, wrapperRef, jumpToBeat, bounds, totalW, runwayVh: totalW * BEAT_VH };
 }
 
-/* ── Mobile SNAP mode — the platform's own paging primitive ──
- * The chapter becomes its own scroll container: an inner scroller with one
- * full-height snap cell per beat, `snap-mandatory` + `snap-stop: always`.
- * The COMPOSITOR guarantees what JS control never could (see the saga in
- * git history): every swipe, at any strength, lands exactly ONE beat and
- * its momentum dies at the boundary — natively smooth. No timers, no
- * counter-scrolling, no gesture heuristics. The stage renders sticky
- * inside the scroller; the beat is simply the cell under the top edge.
- * The section docks fullscreen inside a slightly taller wrapper (the
- * ledge absorbs the entering swipe's momentum); at either end, native
- * scroll chaining hands the gesture back to the page — the two exits. */
-export function useSnapChapter({
-  cells,
-  outroCells = 0,
-  onTick,
+/* ── SnapMarkers — the per-beat snap points (mobile) ─────────
+ * Invisible, layout-neutral markers placed down the chapter's runway, one
+ * at each of the first `count` beats. With the root scroller toggled to
+ * `y mandatory` while the chapter fills the screen (useBeatChapter), each is
+ * a snap-stop, so every swipe lands exactly one beat and a fast fling can't
+ * overjump. lg:hidden — desktop uses the paced engine and never snaps. Render
+ * these as a direct child of the chapter's runway wrapper. */
+export function SnapMarkers({
+  bounds,
+  totalW,
+  runwayVh,
+  count,
 }: {
-  /** number of beats — one snap cell each */
-  cells: number;
-  /** extra viewport-heights of free scrub inside the LAST cell (outro art) */
-  outroCells?: number;
-  /** posCells is in cell units: the outro scrub spans [cells-1, cells-1+outroCells] */
-  onTick?: (posCells: number, beat: number) => void;
+  bounds: [number, number][];
+  totalW: number;
+  runwayVh: number;
+  count: number;
 }) {
-  // Callback refs into STATE, not useRef: the shell mounts only after the
-  // isMobile flip (post-hydration), long after this hook's mount effect —
-  // a ref-based effect would bail on null elements and never re-run. State
-  // deps re-run the wiring the moment the shell's elements exist.
-  const [innerEl, setInnerEl] = useState<HTMLDivElement | null>(null);
-  const [dockEl, setDockEl] = useState<HTMLDivElement | null>(null);
-  const [beat, setBeat] = useState(0);
-  const [docked, setDocked] = useState(false);
-  const beatRef = useRef(0);
-  const onTickRef = useRef(onTick);
-  useEffect(() => {
-    onTickRef.current = onTick;
-  });
-
-  useEffect(() => {
-    const inner = innerEl;
-    const dock = dockEl;
-    if (!inner || !dock) return; // shell not mounted (desktop / static story)
-    const last = cells - 1;
-    const onInner = () => {
-      const h = inner.clientHeight;
-      if (h <= 0) return;
-      const pos = inner.scrollTop / h;
-      // the cut fires as the snap animation crosses the midpoint — with the
-      // swipe, not after it
-      const b = Math.min(last, Math.max(0, Math.round(pos)));
-      if (beatRef.current !== b) {
-        beatRef.current = b;
-        setBeat(b);
-      }
-      onTickRef.current?.(pos, b);
-    };
-    // DOCKED = the wrapper fully covers the viewport. Only then is the inner
-    // scrollable — touches on a half-visible section must scroll the PAGE.
-    let d = false;
-    const onPage = () => {
-      const r = dock.getBoundingClientRect();
-      const vh = window.innerHeight;
-      const now = r.top <= 2 && r.bottom >= vh - 2;
-      if (now !== d) {
-        d = now;
-        setDocked(now);
-      }
-    };
-    onInner();
-    onPage();
-    inner.addEventListener("scroll", onInner, { passive: true });
-    window.addEventListener("scroll", onPage, { passive: true });
-    window.addEventListener("resize", onPage, { passive: true });
-    return () => {
-      inner.removeEventListener("scroll", onInner);
-      window.removeEventListener("scroll", onPage);
-      window.removeEventListener("resize", onPage);
-    };
-  }, [innerEl, dockEl, cells]);
-
-  function jumpToBeat(i: number) {
-    if (!innerEl) return;
-    innerEl.scrollTo({ top: i * innerEl.clientHeight, behavior: "smooth" });
-  }
-
-  return { beat, docked, innerRef: setInnerEl, dockRef: setDockEl, jumpToBeat };
-}
-
-/* The snap-mode shell: dock wrapper → sticky viewport → snapping inner
- * scroller → sticky stage over invisible snap cells. The chapter passes its
- * existing stage content as children — identical markup to the desktop
- * shell's sticky stage.
- *
- * The dock wrapper is a PAGE-level snap target (snap-start + snap-stop:
- * always, against the root's mobile scroll-snap set by MobileSnapScope):
- * a fling toward the chapter is forced to STOP on it — reliable entry, no
- * "flies past". It's exactly one viewport tall (no momentum ledge), so once
- * the inner scroller is exhausted the page releases immediately — no "few
- * scrolls to be let go" dead zone. The per-beat snapping lives entirely in
- * the INNER scroller, so the page carries only 2 sparse snap points and
- * stays native between them. */
-export function SnapShell({
-  snap,
-  cells,
-  outroCells = 0,
-  stageStyle,
-  children,
-}: {
-  snap: ReturnType<typeof useSnapChapter>;
-  cells: number;
-  outroCells?: number;
-  stageStyle?: React.CSSProperties;
-  children: React.ReactNode;
-}) {
+  const travel = runwayVh - 100; // vh of scroll under the pin (viewport ≈ 100vh)
   return (
-    <div ref={snap.dockRef} className="relative snap-start snap-always" style={{ height: "100dvh" }}>
-      <div className="sticky top-0 overflow-hidden h-screen" style={{ height: "100dvh" }}>
-        <div
-          ref={snap.innerRef}
-          className={`h-full snap-y snap-mandatory ${snap.docked ? "overflow-y-auto" : "overflow-hidden"} [scrollbar-width:none] [&::-webkit-scrollbar]:hidden`}
-          style={{ overscrollBehaviorY: "auto" }}
-        >
-          {/* the stage — first child (cell 0's flow slot), sticks over the
-             cells for the whole internal scroll */}
-          <div className="sticky top-0 h-full snap-start snap-always overflow-hidden" style={stageStyle}>
-            {children}
-          </div>
-          {/* invisible snap cells — one per remaining beat; the last carries
-             the outro's free-scrub room (a snap area taller than the
-             viewport scrolls freely inside itself, by spec) */}
-          {Array.from({ length: cells - 1 }).map((_, i) => (
-            <div
-              key={i}
-              aria-hidden
-              className="snap-start snap-always"
-              style={{ height: i === cells - 2 ? `${(1 + outroCells) * 100}%` : "100%" }}
-            />
-          ))}
-        </div>
-      </div>
-    </div>
+    <>
+      {Array.from({ length: Math.min(count, bounds.length) }).map((_, i) => {
+        // a hair INTO the beat (+0.03) so a resting snap sits solidly inside
+        // the band, never on the boundary where jitter could flip the beat
+        const topVh = ((bounds[i][0] + 0.03) / totalW) * travel;
+        return (
+          <div
+            key={i}
+            aria-hidden
+            className="lg:hidden absolute left-0 w-px h-px pointer-events-none snap-start snap-always"
+            style={{ top: `${topVh}vh` }}
+          />
+        );
+      })}
+    </>
   );
 }
 

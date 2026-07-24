@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { EX, CONTRACT, ALEX, MIRA } from "./content";
 import { INK, ORANGE, CYAN, MUTED, FAINT } from "./ui";
-import { type BeatDef, useBeatChapter, useSnapChapter, SnapShell, computeBounds, clamp01, Phase, Pop, Enter, MobileRail, TitleZone, useTap, CUT_MS, POP_MS, CASCADE_MS, EASE, FIT, AutoFit } from "./chapterEngine";
+import { type BeatDef, useBeatChapter, SnapMarkers, computeBounds, clamp01, Phase, Pop, Enter, MobileRail, TitleZone, useTap, CUT_MS, POP_MS, CASCADE_MS, EASE, FIT, AutoFit } from "./chapterEngine";
 
 /**
  * M3 · HOW TO COLLABORATE ON INFITRA — the beat engine, in the dark room.
@@ -799,36 +799,29 @@ export function HowItWorks() {
 
   const beats = isMobile ? BEATS_M : BEATS;
   const bounds = computeBounds(beats);
+  const totalW = beats.reduce((a, b) => a + b.w, 0);
   const stepSpan: [number, number] = [bounds[1][0], bounds[10][1]];
+  // Beats 0..10 are discrete snap points on mobile; beat 11 (the outro
+  // heartbeat) scrubs free so it can draw/undraw smoothly and hand back to
+  // the page. Kept in sync with SnapMarkers count below.
+  const SNAP_BEATS = 11;
 
-  // the heartbeat draws from live position, eased — smooth but energetic
-  const drawEcg = (draw: number) => {
-    ecgShownRef.current += (draw - ecgShownRef.current) * 0.11;
-    if (Math.abs(draw - ecgShownRef.current) < 0.001) ecgShownRef.current = draw;
-    frameRefs.current[5]?.querySelectorAll<SVGPathElement>("[data-ecg]").forEach((path) => {
-      path.style.strokeDashoffset = String(1 - ecgShownRef.current);
-    });
-  };
-
-  // Desktop: the paced engine on the page scroller. Also owns the static
-  // fallback decision (`pinned`). Inert on mobile — its wrapper never mounts.
-  const { beat: paceBeat, pinned, wrapperRef, jumpToBeat: paceJump, runwayVh } = useBeatChapter({
+  const { beat, pinned, wrapperRef, jumpToBeat, runwayVh } = useBeatChapter({
     beats,
+    snapBeats: SNAP_BEATS,
     onTick: (pos) => {
+      // the heartbeat draws from live position, eased — smooth but energetic.
+      // Mobile completes the draw at 55% of the (shorter) outro so one good
+      // swipe finishes the line instead of demanding several.
       const [oa, ob] = bounds[bounds.length - 1];
-      drawEcg(clamp01((pos - oa) / ((ob - oa) * 0.75)));
+      const draw = clamp01((pos - oa) / ((ob - oa) * (isMobile ? 0.55 : 0.75)));
+      ecgShownRef.current += (draw - ecgShownRef.current) * 0.11;
+      if (Math.abs(draw - ecgShownRef.current) < 0.001) ecgShownRef.current = draw;
+      frameRefs.current[5]?.querySelectorAll<SVGPathElement>("[data-ecg]").forEach((path) => {
+        path.style.strokeDashoffset = String(1 - ecgShownRef.current);
+      });
     },
   });
-  // Mobile: native snap paging on the chapter's own scroller. Inert on
-  // desktop — its shell never mounts. Mobile completes the ECG draw at 55%
-  // of the outro scrub so one good swipe finishes the line.
-  const snap = useSnapChapter({
-    cells: beats.length,
-    outroCells: 1,
-    onTick: (pos) => drawEcg(clamp01((pos - (beats.length - 1)) / 0.55)),
-  });
-  const beat = isMobile ? snap.beat : paceBeat;
-  const jump = isMobile ? snap.jumpToBeat : paceJump;
 
   const cur = beats[Math.min(beat, beats.length - 1)];
   const frame = cur.f;
@@ -884,16 +877,17 @@ export function HowItWorks() {
     );
   }
 
-  // The stage — identical content in both shells; only the scroller that
-  // drives `beat` differs (page runway on desktop, snap scroller on mobile).
-  const stageStyle: React.CSSProperties = {
-    backgroundColor: isOutro ? "rgba(12,38,46,0)" : TEAL,
-    transition: `background-color 450ms ${EASE}`,
-  };
-  const stage = (
-    <>
-      {/* the brand waves, dark theme */}
-      <DarkWaves hidden={isOutro} />
+  return (
+    <section>
+      <div ref={wrapperRef} className="relative" style={{ height: `${runwayVh}vh` }}>
+        {/* per-beat snap points (mobile) — one swipe, one beat, no overjump */}
+        <SnapMarkers bounds={bounds} totalW={totalW} runwayVh={runwayVh} count={SNAP_BEATS} />
+        <div
+          className="sticky top-0 w-full overflow-hidden h-screen"
+          style={{ height: "100dvh", backgroundColor: isOutro ? "rgba(12,38,46,0)" : TEAL, transition: `background-color 450ms ${EASE}` }}
+        >
+          {/* the brand waves, dark theme */}
+          <DarkWaves hidden={isOutro} />
 
           {/* Rail — desktop. top-[56%]: the content zone's centre sits below
              the viewport centre (title zone above it) — align with content. */}
@@ -906,7 +900,7 @@ export function HowItWorks() {
                 <button
                   key={s.label}
                   type="button"
-                  onClick={() => jump(s.firstBeat)}
+                  onClick={() => jumpToBeat(s.firstBeat)}
                   className="flex items-center gap-4 text-left transition-opacity duration-300"
                   style={{ opacity: frame === s.frame ? 1 : 0.38 }}
                 >
@@ -936,7 +930,7 @@ export function HowItWorks() {
             frame={frame}
             progress={frameProgress}
             light={!isOutro}
-            onStep={(f) => jump(BEATS.findIndex((b) => b.f === f))}
+            onStep={(f) => jumpToBeat(BEATS.findIndex((b) => b.f === f))}
           />
 
           {/* Frames — hard cuts, one visible at a time. Railed frames anchor
@@ -984,32 +978,13 @@ export function HowItWorks() {
                     {f === 1 && <InvitationFrame phase={active ? phase : 0} />}
                     {f === 2 && (isMobile ? <WorkspaceFrameMobile phase={active ? phase : 0} /> : <WorkspaceFrame phase={active ? phase : 0} />)}
                     {f === 3 && (isMobile ? <AgreementFrameMobile phase={active ? phase : 0} /> : <AgreementFrame phase={active ? phase : 0} />)}
-                    {f === 4 && <PublishFrame phase={active ? phase : 0} onPublish={() => jump(10)} />}
+                    {f === 4 && <PublishFrame phase={active ? phase : 0} onPublish={() => jumpToBeat(10)} />}
                     {f === 5 && <OutroFrame />}
                   </AutoFit>
                 </div>
               </div>
             );
           })}
-    </>
-  );
-
-  // Mobile: the chapter is its own snap scroller — one swipe, one beat,
-  // enforced by the compositor. Desktop: the paced page runway, unchanged.
-  if (isMobile) {
-    return (
-      <section>
-        <SnapShell snap={snap} cells={beats.length} outroCells={1} stageStyle={stageStyle}>
-          {stage}
-        </SnapShell>
-      </section>
-    );
-  }
-  return (
-    <section>
-      <div ref={wrapperRef} className="relative" style={{ height: `${runwayVh}vh` }}>
-        <div className="sticky top-0 w-full overflow-hidden h-screen" style={{ height: "100dvh", ...stageStyle }}>
-          {stage}
         </div>
       </div>
     </section>
