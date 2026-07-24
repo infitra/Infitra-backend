@@ -25,7 +25,7 @@ export function Hero() {
         >
           <span className="w-1.5 h-1.5 rounded-full bg-[#0891b2] animate-pulse" />
           <span className="text-[#0891b2] text-[10px] tracking-widest uppercase font-headline" style={{ fontWeight: 700 }}>
-            Closed pilot · Applications open
+            Founding pilot · only 5 pairs
           </span>
         </div>
 
@@ -42,17 +42,17 @@ export function Hero() {
           <span className="block" style={{ color: CYAN, fontWeight: 700 }}>one live fitness experience.</span>
         </h1>
 
-        {/* Short deck — the five-item feature list moved to the demo, which
-           proves it in full. Here, only the promise. */}
-        <p className="text-base md:text-xl max-w-2xl mx-auto leading-relaxed mb-7" style={{ color: MUTED }}>
-          Team up with a complementary expert and run one seamless live experience for your
-          audience. INFITRA handles everything around it,
-          <span style={{ color: INK, fontWeight: 600 }}> so you can focus on showing up.</span>
+        {/* Short deck — one breath. The five-item feature list moved to the
+           demo, which proves it in full. */}
+        <p className="text-base md:text-xl max-w-2xl mx-auto leading-relaxed mb-8" style={{ color: MUTED }}>
+          Team up with a complementary expert to run one live experience for your audience.
+          INFITRA handles everything around it,
+          <span style={{ color: INK, fontWeight: 600 }}> so you just show up.</span>
         </p>
 
         {/* The deal, led by what experts KEEP — 90% reads far better than a
            10% cut. The fee is still disclosed, just second. */}
-        <div className="mb-7">
+        <div className="mb-9">
           <p className="text-xl md:text-2xl font-headline" style={{ color: INK, fontWeight: 700, letterSpacing: "-0.01em" }}>
             You and your partner keep <span style={{ color: ORANGE }}>90%</span> of revenue.
           </p>
@@ -61,12 +61,7 @@ export function Hero() {
           </p>
         </div>
 
-        {/* Who it's for + the partner objection killed up front. */}
-        <p className="text-[13.5px] sm:text-sm mb-7 max-w-xl mx-auto font-headline" style={{ color: MUTED, fontWeight: 600 }}>
-          For fitness and wellness experts. No partner needed to apply.
-        </p>
-
-        <ApplyCTA micro="5 founding pairs · reviewed personally · starting now" />
+        <ApplyCTA />
 
         {/* The quiet second door — extends into the form right here */}
         <HeroWaitlist />
