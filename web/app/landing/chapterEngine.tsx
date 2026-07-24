@@ -41,6 +41,7 @@ const SETTLE_MS = 140; // rest this long before the silent re-anchor
 const STEP_GAP_MS = 320; // minimum time between beat cuts
 const SCRUB_SETTLE_MS = 160; // scroll silence before the mobile settle acts
 const DRAG_STEP_PX = 130; // finger travel that advances one beat while dragging
+const SCRUB_DRIFT = 0.75; // bands the position may roam past the current band before the leash yanks (finger up only)
 const WALL_OVERHANG = 0.35; // beats of free travel beyond the current band before the wall
 const OUTRO_FREE_ZONE = 0.12; // inside the last beat past this depth, position scrubs freely
 
@@ -130,8 +131,9 @@ export function useBeatChapter({
       // gesture itself — one step per swipe, firing once the swipe's
       // travel (finger contact plus its early momentum) passes
       // DRAG_STEP_PX — while the scroll position free-runs natively,
-      // never fought. Beyond that single step, momentum can carry the
-      // position anywhere; it can never advance the story. Once motion
+      // never fought while the finger is down. Beyond that single step,
+      // momentum can never advance the story, and the LEASH below keeps
+      // the position within SCRUB_DRIFT bands of it. Once motion
       // fully stops
       // (SCRUB_SETTLE_MS of silence, finger up), the position silently
       // re-anchors to the current beat's band under the pinned stage —
@@ -164,12 +166,12 @@ export function useBeatChapter({
             }
             const line = document.createElement("div");
             host.appendChild(line);
-            const c = { ent: 0, ts: 0, te: 0, stp: 0, blk: 0, set: 0, rst: 0, accPk: 0, maxDy: 0 };
+            const c = { ent: 0, ts: 0, te: 0, stp: 0, blk: 0, set: 0, rst: 0, wal: 0, accPk: 0, maxDy: 0 };
             return {
               c,
               line,
               paint(extra: string) {
-                line.textContent = `[${cfgRef.current.totalW}] ${extra} | ent${c.ent} ts${c.ts} te${c.te} stp${c.stp} blk${c.blk} set${c.set} rst${c.rst} pk${Math.round(c.accPk)} mx${Math.round(c.maxDy)}`;
+                line.textContent = `[${cfgRef.current.totalW}] ${extra} | ent${c.ent} ts${c.ts} te${c.te} stp${c.stp} blk${c.blk} set${c.set} rst${c.rst} wal${c.wal} pk${Math.round(c.accPk)} mx${Math.round(c.maxDy)}`;
               },
             };
           })()
@@ -354,6 +356,34 @@ export function useBeatChapter({
         }
         velPrevY = yNow;
         velPrevT = now;
+        // THE LEASH — the mobile wall. Between rests, momentum may roam only
+        // SCRUB_DRIFT bands beyond the current beat's band. Without it, a
+        // natural swipe RHYTHM (no rest between swipes, so the settle never
+        // fires) let the position outrun the story by about a band per swipe
+        // until it fell off the runway's end — covering broke, position
+        // authority snapped the beat to the outro, and the reader was dumped
+        // into the next section. The yank is invisible under the pinned
+        // stage and only ever fires with the finger up (iOS ignores
+        // programmatic scrolls during an active touch). Runs AFTER the step
+        // logic so a step this event moves the leash before it clamps. The
+        // outro keeps its free downward exit and beat 0 its upward exit.
+        if (!touchActive) {
+          const bNow = beatRef.current;
+          const lastB = BOUNDS.length - 1;
+          const freeUp = bNow === 0 && lastDir < 0;
+          if (bNow < lastB && !freeUp) {
+            const [lo, hi] = BOUNDS[bNow];
+            if (pos > hi + SCRUB_DRIFT || pos < lo - SCRUB_DRIFT) {
+              const anchor = (lo + hi) / 2;
+              window.scrollTo({ top: yNow + r.top + (anchor / TOTAL_W) * total, behavior: "instant" });
+              // the correction is not motion
+              lastY = window.scrollY;
+              velPrevY = window.scrollY;
+              accum = 0;
+              if (dbg) dbg.c.wal++;
+            }
+          }
+        }
         onTickRef.current?.(pos, beatRef.current);
       };
       onScroll();
