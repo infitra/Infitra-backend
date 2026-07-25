@@ -1490,7 +1490,7 @@ export function LiveWeek() {
 
   // Shorter mobile runway → the snap midpoint a from-rest swipe must cross is
   // closer, so a normal/gentle swipe advances one beat (no "two swipes").
-  const { beat, pinned, wrapperRef, jumpToBeat, runwayVh } = useBeatChapter({ beats, snapBeats: SNAP_BEATS, beatVh: isMobile ? 44 : 70 });
+  const { beat, pinned, wrapperRef, jumpToBeat, runwayVh } = useBeatChapter({ beats, snapBeats: SNAP_BEATS, beatVh: isMobile ? 40 : 70 });
 
   // the beat index can momentarily exceed the map during the swap
   const cur = beats[Math.min(beat, beats.length - 1)];
