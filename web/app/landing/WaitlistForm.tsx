@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef } from "react";
 import { submitWaitlist } from "@/app/actions/waitlist";
+import { trackEvent } from "@/lib/analytics";
 import { CYAN, FAINT, MUTED } from "./ui";
 
 /**
@@ -10,6 +11,16 @@ import { CYAN, FAINT, MUTED } from "./ui";
  */
 export function WaitlistForm() {
   const [state, action, pending] = useActionState(submitWaitlist, null);
+
+  // Fire the conversion once when the submit succeeds (hook must run before
+  // the early success return below).
+  const tracked = useRef(false);
+  useEffect(() => {
+    if (state && "success" in state && state.success && !tracked.current) {
+      tracked.current = true;
+      trackEvent("Waitlist Signup");
+    }
+  }, [state]);
 
   if (state && "success" in state && state.success) {
     return (

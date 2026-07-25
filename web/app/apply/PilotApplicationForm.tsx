@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { submitPilotApplication } from "@/app/actions/pilot-application";
+import { trackEvent } from "@/lib/analytics";
 
 /**
  * Pilot application form — single page, conditional partner sections.
@@ -26,6 +27,16 @@ const AUDIENCE_OPTIONS: { value: string; label: string }[] = [
 export function PilotApplicationForm() {
   const [state, action, pending] = useActionState(submitPilotApplication, null);
   const [hasPartner, setHasPartner] = useState<"yes" | "no">("no");
+
+  // Fire the conversion once when the submit succeeds (hook must run before
+  // the early success return below).
+  const tracked = useRef(false);
+  useEffect(() => {
+    if (state && "success" in state && state.success && !tracked.current) {
+      tracked.current = true;
+      trackEvent("Application Submitted");
+    }
+  }, [state]);
 
   // Success state — replace the form entirely.
   if (state && "success" in state && state.success) {
