@@ -809,6 +809,9 @@ export function HowItWorks() {
   const { beat, pinned, wrapperRef, jumpToBeat, runwayVh } = useBeatChapter({
     beats,
     snapBeats: SNAP_BEATS,
+    // Shorter mobile runway → the snap midpoint a from-rest swipe must cross
+    // is closer, so a normal/gentle swipe advances one beat (no "two swipes").
+    beatVh: isMobile ? 48 : 70,
     onTick: (pos) => {
       // the heartbeat draws from live position, eased — smooth but energetic.
       // Mobile completes the draw at 55% of the (shorter) outro so one good

@@ -1488,7 +1488,9 @@ export function LiveWeek() {
   // the final marker so you glide out to the Finale.
   const SNAP_BEATS = beats.length;
 
-  const { beat, pinned, wrapperRef, jumpToBeat, runwayVh } = useBeatChapter({ beats, snapBeats: SNAP_BEATS });
+  // Shorter mobile runway → the snap midpoint a from-rest swipe must cross is
+  // closer, so a normal/gentle swipe advances one beat (no "two swipes").
+  const { beat, pinned, wrapperRef, jumpToBeat, runwayVh } = useBeatChapter({ beats, snapBeats: SNAP_BEATS, beatVh: isMobile ? 48 : 70 });
 
   // the beat index can momentarily exceed the map during the swap
   const cur = beats[Math.min(beat, beats.length - 1)];

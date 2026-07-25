@@ -79,6 +79,7 @@ export function useBeatChapter({
   beats,
   onTick,
   snapBeats,
+  beatVh = BEAT_VH,
 }: {
   beats: BeatDef[];
   /** Per-frame extras (e.g. scrub-drawn artwork). Runs after the control logic. */
@@ -89,6 +90,12 @@ export function useBeatChapter({
    *  (the outro / exit tail) scrub free. Render <SnapMarkers> to match.
    *  Default: all beats snap. */
   snapBeats?: number;
+  /** Scroll runway per beat unit, in vh. Mobile passes a SHORTER value so the
+   *  mandatory-snap midpoint a swipe must cross is closer — a normal/gentle
+   *  from-rest swipe then advances exactly one beat instead of snapping back
+   *  ("needs two swipes"). Desktop keeps BEAT_VH (its paced engine is tuned
+   *  for it). */
+  beatVh?: number;
 }) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [beat, setBeat] = useState(0);
@@ -358,7 +365,7 @@ export function useBeatChapter({
     window.scrollTo({ top: window.scrollY + r.top + (mid / totalW) * total, behavior: "smooth" });
   }
 
-  return { beat, pinned, wrapperRef, jumpToBeat, bounds, totalW, runwayVh: totalW * BEAT_VH };
+  return { beat, pinned, wrapperRef, jumpToBeat, bounds, totalW, runwayVh: totalW * beatVh };
 }
 
 /* ── SnapMarkers — the per-beat snap points (mobile) ─────────
