@@ -54,7 +54,7 @@ export function Hero() {
            10% cut. The fee is still disclosed, just second. */}
         <div className="mb-9">
           <p className="text-xl md:text-2xl font-headline" style={{ color: INK, fontWeight: 700, letterSpacing: "-0.01em" }}>
-            You and your partner keep <span style={{ color: ORANGE }}>90%</span> of revenue.
+            Experts keep <span style={{ color: ORANGE }}>90%</span> of revenue.
           </p>
           <p className="text-[13px] sm:text-sm mt-2" style={{ color: MUTED }}>
             No upfront cost, no subscription. Founding 10% platform fee.
