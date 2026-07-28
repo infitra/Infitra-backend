@@ -112,7 +112,7 @@ export default function PilotTermsPage() {
                 </p>
                 <p>
                   INFITRA&apos;s founding platform fee is the remaining 10%, locked in for
-                  pilot experts. Every sale shows in your earnings dashboard in real time,
+                  the duration of the pilot. Every sale shows in your earnings dashboard in real time,
                   and we pay out manually within 14 days of your experience ending. All
                   pricing is in Swiss francs for the pilot.
                 </p>
