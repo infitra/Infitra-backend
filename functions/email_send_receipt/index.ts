@@ -25,34 +25,20 @@ type OutboxRow = {
 
 Deno.serve(async (_req) => {
   try {
-    // 1) grab one pending email atomically
-    // NOTE: Supabase RPC is easier for true "claim & lock". For simplicity, use a single UPDATE ... RETURNING.
-    const { data: claim, error: claimErr } = await admin
-      .from("app_email_outbox")
-      .update({ attempt_count: (null as any) }) // placeholder; we’ll set properly below
-      .eq("kind", "receipt" as const)
-      .is("sent_at", null)
-      .order("enqueued_at", { ascending: true })
-      .limit(1)
-      .select("*");
+    // 1) claim one pending email, atomically.
+    // Delegated to app_claim_email(), which uses FOR UPDATE SKIP LOCKED so a
+    // row is claimed exactly once even if two invocations overlap, and bumps
+    // attempt_count in the same statement. The previous inline version wrote
+    // NULL into attempt_count (NOT NULL) as a placeholder, which Postgres
+    // rejected, and claimed in two non-atomic steps.
+    const { data: job, error: claimErr } = await admin
+      .rpc("app_claim_email", { p_kind: "receipt" })
+      .maybeSingle<OutboxRow>();
 
     if (claimErr) throw new Error(`claim failed: ${claimErr.message}`);
-    if (!claim || !claim.length) {
+    if (!job) {
       return json({ ok: true, picked: 0, note: "no pending" }, 200);
     }
-
-    const row = claim[0] as OutboxRow;
-
-    // refresh attempt_count properly (race-safe “bump and fetch”)
-    const { data: bumped, error: bumpErr } = await admin
-      .from("app_email_outbox")
-      .update({ attempt_count: row.attempt_count + 1 })
-      .eq("id", row.id)
-      .select("*")
-      .maybeSingle();
-
-    if (bumpErr) throw new Error(`bump failed: ${bumpErr.message}`);
-    const job = bumped as OutboxRow;
 
     // 2) send
     if (!RESEND_API_KEY) {
