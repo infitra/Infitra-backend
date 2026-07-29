@@ -64,6 +64,48 @@ html, body {
     var(--cream);
 }
 
+/* BAND STRUCTURE.
+   The site's background reads as distinct diagonal bands, not a flat wash.
+   These are soft streaks on the same 116deg axis as the sweep above, so they
+   run perpendicular to it: lower-left to upper-right, the brand's diagonal.
+   Wide stops and low alpha keep them as structure rather than stripes.
+   Sits behind content (.body and .brand carry z-index 2). */
+.stage:not(.dark)::before {
+  content: "";
+  position: absolute;
+  inset: -12%;
+  pointer-events: none;
+  background:
+    /* deep cyan band, lower left */
+    linear-gradient(135deg,
+      rgba(120,225,250,0) 2%,
+      rgba(120,225,250,0.46) 14%,
+      rgba(120,225,250,0.18) 22%,
+      rgba(120,225,250,0) 30%),
+    /* bright channel separating the cyan bands */
+    linear-gradient(135deg,
+      rgba(255,255,255,0) 22%,
+      rgba(255,255,255,0.62) 33%,
+      rgba(255,255,255,0) 44%),
+    /* second cyan band, narrower */
+    linear-gradient(135deg,
+      rgba(120,225,250,0) 40%,
+      rgba(120,225,250,0.30) 49%,
+      rgba(120,225,250,0) 58%),
+    /* the wide white channel through the middle, the brand's signature gap */
+    linear-gradient(135deg,
+      rgba(255,255,255,0) 54%,
+      rgba(255,255,255,0.70) 66%,
+      rgba(255,255,255,0.22) 74%,
+      rgba(255,255,255,0) 82%),
+    /* warm band, upper right */
+    linear-gradient(135deg,
+      rgba(255,97,48,0) 76%,
+      rgba(255,97,48,0.34) 90%,
+      rgba(255,97,48,0.10) 97%,
+      rgba(255,97,48,0) 100%);
+}
+
 /* the brand waves, same paths as the site background */
 .waves { position: absolute; inset: 0; pointer-events: none; }
 
