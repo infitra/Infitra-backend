@@ -12,3 +12,6 @@ supabase/.temp/
 
 # Supabase CLI scratch state (not for git)
 .temp/
+
+# rendered post exports (regenerate with content/render.sh)
+content/out/

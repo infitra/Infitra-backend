@@ -1,5 +1,7 @@
 # INFITRA — Claude Project Context
 
+Brand, voice and visual identity for anything public-facing: @BRAND.md
+
 ## What is INFITRA
 A **creator collaboration platform for live fitness experiences**. Creators publish sessions and challenges, participants purchase access, revenue is distributed via transparent collaboration contracts. Collaboration is a first-class system primitive.
 

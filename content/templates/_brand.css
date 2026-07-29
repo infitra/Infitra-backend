@@ -1,0 +1,92 @@
+/* INFITRA post templates — shared brand layer.
+   Tokens mirror BRAND.md. Change them here, every template follows. */
+
+:root {
+  --orange: #FF6130;
+  --cyan: #0891b2;
+  --cyan-bright: #9CF0FF;
+  --ink: #0F2229;
+  --muted: #475569;
+  --cream: #F2EFE8;
+  --teal: #0C262E;
+  --light: #F6F3EC;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: var(--w);
+  height: var(--h);
+  overflow: hidden;
+  font-family: 'General Sans', ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.stage {
+  width: var(--w);
+  height: var(--h);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: var(--pad);
+  overflow: hidden;
+}
+
+/* the brand waves, same paths as the site background */
+.waves { position: absolute; inset: 0; pointer-events: none; }
+
+/* logo lockup, bottom-left on every post */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--pad) * 0.22);
+  position: relative;
+  z-index: 2;
+}
+.brand img { width: var(--mark); height: var(--mark); border-radius: calc(var(--mark) * 0.225); display: block; }
+.brand span {
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--orange);
+  font-size: calc(var(--mark) * 0.72);
+  line-height: 1;
+}
+
+.body { position: relative; z-index: 2; }
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  font-weight: 700;
+  font-size: calc(var(--w) * 0.021);
+  color: var(--cyan);
+  margin-bottom: calc(var(--pad) * 0.42);
+}
+
+h1 {
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.06;
+  color: var(--ink);
+  text-wrap: balance;
+}
+
+.accent { color: var(--orange); }
+.accent-cyan { color: var(--cyan); }
+
+.sub {
+  margin-top: calc(var(--pad) * 0.5);
+  color: var(--muted);
+  font-size: calc(var(--w) * 0.033);
+  line-height: 1.45;
+  max-width: 88%;
+  font-weight: 500;
+}
+
+/* dark variant */
+.stage.dark { background: var(--teal); }
+.stage.dark h1 { color: var(--light); }
+.stage.dark .sub { color: rgba(244,241,232,0.72); }
+.stage.dark .eyebrow { color: var(--cyan-bright); }
+.stage.dark .brand span { color: var(--orange); }
