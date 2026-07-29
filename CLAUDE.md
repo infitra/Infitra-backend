@@ -2,6 +2,8 @@
 
 Brand, voice and visual identity for anything public-facing: @BRAND.md
 
+Social post templates (on-brand graphics rendered from HTML): `content/README.md`
+
 ## What is INFITRA
 A **creator collaboration platform for live fitness experiences**. Creators publish sessions and challenges, participants purchase access, revenue is distributed via transparent collaboration contracts. Collaboration is a first-class system primitive.
 
