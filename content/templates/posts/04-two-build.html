@@ -12,21 +12,24 @@
 </head>
 <body>
   <div class="stage dark">
-    <svg class="waves" viewBox="0 0 1080 1080" preserveAspectRatio="none">
+    <svg class="waves" viewBox="0 0 1600 1000" preserveAspectRatio="none">
       <defs>
-        <linearGradient id="w1" x1="0" y1="1" x2="1" y2="0">
-          <stop offset="0%" stop-color="#7FD8F0" stop-opacity=".22"/>
-          <stop offset="55%" stop-color="#7FD8F0" stop-opacity=".10"/>
-          <stop offset="100%" stop-color="#FF6130" stop-opacity="0"/>
+        <linearGradient id="d1" x1="0%" y1="100%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#9CF0FF" stop-opacity="0.10"/>
+          <stop offset="40%" stop-color="#9CF0FF" stop-opacity="0.045"/>
+          <stop offset="52%" stop-color="#0C262E" stop-opacity="0"/>
+          <stop offset="64%" stop-color="#FF6130" stop-opacity="0.05"/>
+          <stop offset="100%" stop-color="#FF6130" stop-opacity="0.11"/>
         </linearGradient>
-        <linearGradient id="w2" x1="0" y1="1" x2="1" y2="0">
-          <stop offset="0%" stop-color="#FF6130" stop-opacity="0"/>
-          <stop offset="65%" stop-color="#FF6130" stop-opacity=".14"/>
-          <stop offset="100%" stop-color="#FF6130" stop-opacity=".20"/>
+        <linearGradient id="d2" x1="0%" y1="100%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#9CF0FF" stop-opacity="0.07"/>
+          <stop offset="50%" stop-color="#0C262E" stop-opacity="0"/>
+          <stop offset="100%" stop-color="#FF6130" stop-opacity="0.07"/>
         </linearGradient>
       </defs>
-      <path d="M-60 980 C 200 880, 420 960, 660 800 C 850 672, 980 700, 1160 560 L1160 1160 L-60 1160 Z" fill="url(#w1)"/>
-      <path d="M-60 200 C 220 320, 520 120, 720 190 C 900 252, 1020 120, 1160 -40 L1160 -120 L-60 -120 Z" fill="url(#w2)"/>
+      <g filter="url(#wash)">
+      <path d="M -400 1700 C 100 1300, 500 1500, 900 1100 C 1300 700, 1700 950, 2100 -400 L 2100 -1400 C 1700 -200, 1300 -500, 900 -100 C 500 300, 100 50, -400 600 Z" fill="url(#d1)"/>
+      <path d="M -200 1300 C 150 1020, 480 1180, 820 880 C 1160 580, 1480 740, 1800 -100 L 1800 -550 C 1480 250, 1160 80, 820 380 C 480 680, 150 520, -200 880 Z" fill="url(#d2)"/>
     </svg>
 
     <div class="body">
