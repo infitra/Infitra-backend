@@ -69,7 +69,55 @@ POSTS = [
 # gradient, back layer blurred. Same viewBox (1600x1000) stretched onto the
 # square with preserveAspectRatio="none", exactly as the site does on portrait
 # phones, so the diagonal reads steeper and more dramatic.
-WAVES_LIGHT = ""  # light background is pure CSS, see _brand.css
+# The real INFITRA background, faithful port of WaveFlowingBackground.tsx.
+#
+# Two problems had to be solved to make it work in a square:
+#  1. preserveAspectRatio="none" stretched the bands and made them terminate
+#     mid-frame, because these paths are authored for a wide viewport.
+#     "xMidYMid slice" instead COVERS the square (like background-size:cover),
+#     cropping the sides, so the bands sweep across without ending in frame
+#     and keep their designed curvature.
+#  2. The back layer's SVG feGaussianBlur got its filter surface clipped by
+#     Chrome, leaving a hard seam that survived even a 42px blur. Using a CSS
+#     filter on the wrapping element instead has no such clip.
+#
+# Each band is its own <svg> so the back one can be blurred independently.
+WAVES_LIGHT = """<div class="waves">
+      <svg class="wv wv1" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <linearGradient id="f1" x1="0%" y1="100%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#9CF0FF" stop-opacity="0.92"/>
+            <stop offset="35%" stop-color="#9CF0FF" stop-opacity="0.62"/>
+            <stop offset="50%" stop-color="#FFFFFF" stop-opacity="0.40"/>
+            <stop offset="65%" stop-color="#FF6130" stop-opacity="0.62"/>
+            <stop offset="100%" stop-color="#FF6130" stop-opacity="0.92"/>
+          </linearGradient>
+        </defs>
+        <path d="M -400 1700 C 100 1300, 500 1500, 900 1100 C 1300 700, 1700 950, 2100 -400 L 2100 -1400 C 1700 -200, 1300 -500, 900 -100 C 500 300, 100 50, -400 600 Z" fill="url(#f1)"/>
+      </svg>
+      <svg class="wv wv2" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <linearGradient id="f2" x1="0%" y1="100%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#9CF0FF" stop-opacity="0.92"/>
+            <stop offset="35%" stop-color="#9CF0FF" stop-opacity="0.62"/>
+            <stop offset="50%" stop-color="#FFFFFF" stop-opacity="0.40"/>
+            <stop offset="65%" stop-color="#FF6130" stop-opacity="0.62"/>
+            <stop offset="100%" stop-color="#FF6130" stop-opacity="0.92"/>
+          </linearGradient>
+        </defs>
+        <path d="M -300 1500 C 150 1180, 500 1330, 850 980 C 1200 620, 1550 800, 1950 -300 L 1950 -1000 C 1550 -50, 1200 -250, 850 100 C 500 460, 150 250, -300 720 Z" fill="url(#f2)"/>
+      </svg>
+      <svg class="wv wv3" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <linearGradient id="f3" x1="0%" y1="100%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#9CF0FF" stop-opacity="1"/>
+            <stop offset="50%" stop-color="#FFFFFF" stop-opacity="0.75"/>
+            <stop offset="100%" stop-color="#FF6130" stop-opacity="1"/>
+          </linearGradient>
+        </defs>
+        <path d="M -200 1300 C 150 1020, 480 1180, 820 880 C 1160 580, 1480 740, 1800 -100 L 1800 -550 C 1480 250, 1160 80, 820 380 C 480 680, 150 520, -200 880 Z" fill="url(#f3)"/>
+      </svg>
+    </div>"""
 
 # Dark stage: same paths, gradients pulled right down so the teal stays
 # dominant and light type keeps its contrast.
