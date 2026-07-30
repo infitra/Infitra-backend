@@ -22,6 +22,8 @@ type CheckoutMeta = {
   currency: string;
   price_cents: string | number;
   platform_fee_percent?: string | number;
+  buyer_fee_percent_cents?: string | number;
+  buyer_fee_fixed_cents?: string | number;
 };
 
 type TxRow = {
@@ -41,6 +43,7 @@ type TxRow = {
   creator_cut_cents: number;
   platform_fee_percent: number;
   amount_after_stripe_cents: number;
+  buyer_processing_fee_cents: number | null;
 };
 
 // ---- Helpers ---------------------------------------------------------------
@@ -70,6 +73,8 @@ function parseMeta(md: unknown): CheckoutMeta {
     currency: m.currency,
     price_cents: m.price_cents,
     platform_fee_percent: m.platform_fee_percent,
+    buyer_fee_percent_cents: m.buyer_fee_percent_cents,
+    buyer_fee_fixed_cents: m.buyer_fee_fixed_cents,
   };
   if (!out.kind || !["session", "challenge"].includes(out.kind)) throw new Error("metadata.kind invalid");
   if (!out.target_id) throw new Error("metadata.target_id missing");
@@ -219,6 +224,18 @@ Deno.serve(async (req) => {
         try { math = computeEconomics(md, totalFeeCents, platformFeePercent); }
         catch (e) { console.error("Economics compute failed", e); return json({ code: 422, message: "Economics compute failed", detail: String(e) }, 422); }
 
+        // What the buyer's card was charged on top of the base price — recorded
+        // by create_checkout_session in metadata. Explicit null (never omitted)
+        // when absent: the column defaults to 0, which would mask the receipt
+        // generator's coalesce() fallback reconstruction.
+        const buyerPctCents = Number(md.buyer_fee_percent_cents);
+        const buyerFixCents = Number(md.buyer_fee_fixed_cents);
+        const buyerFeeCents =
+          Number.isFinite(buyerPctCents) && buyerPctCents >= 0 &&
+          Number.isFinite(buyerFixCents) && buyerFixCents >= 0
+            ? buyerPctCents + buyerFixCents
+            : null;
+
         const baseRow: TxRow = {
           buyer_id: md.buyer_id,
           creator_id: md.creator_id ?? null,
@@ -236,6 +253,7 @@ Deno.serve(async (req) => {
           creator_cut_cents: math.creatorCut,
           platform_fee_percent: math.platformFeePercent,
           amount_after_stripe_cents: math.afterStripe,
+          buyer_processing_fee_cents: buyerFeeCents,
         };
 
         try {
