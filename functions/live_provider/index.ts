@@ -26,7 +26,19 @@ export function provider(): string {
   return ACTIVE;
 }
 
-export async function createRoom(title: string) {
+/** Room lifetime for a session: joinable from creation until the session's
+ *  scheduled end plus an overrun buffer. The old fixed windows were both
+ *  wrong in production: created+1h blocked late joiners of any session that
+ *  started more than an hour after room creation, and precreate's created+3h
+ *  ejected everyone from long sessions at an arbitrary moment. */
+export function sessionRoomExp(startTime: string | Date, durationMinutes: number | null): number {
+  const start = new Date(startTime).getTime();
+  const durationMs = Math.max(durationMinutes ?? 60, 15) * 60 * 1000;
+  const bufferMs = 60 * 60 * 1000; // overrun allowance
+  return Math.floor((start + durationMs + bufferMs) / 1000);
+}
+
+export async function createRoom(title: string, opts?: { expUnix?: number }) {
   if (ACTIVE === "daily") {
     const DAILY_API_BASE = requireEnv("DAILY_API_BASE");
     const DAILY_API_KEY  = requireEnv("DAILY_API_KEY");
@@ -38,12 +50,19 @@ export async function createRoom(title: string) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
+        // ALWAYS private: entry only via issued meeting token. A public room
+        // would let anyone who sees the room URL strip the token and share a
+        // joinable link — the exact drift precreate_rooms had before it was
+        // unified onto this adapter.
         privacy: "private",
         properties: {
           enable_screenshare: true,
           enable_chat: true,
           enable_knocking: false,
-          exp: Math.floor(Date.now() / 1000) + 60 * 60, // 1 hour
+          // eject at expiry: the room self-cleans instead of lingering as a
+          // joinable-forever artifact on the Daily account.
+          eject_at_room_exp: true,
+          exp: opts?.expUnix ?? Math.floor(Date.now() / 1000) + 2 * 60 * 60,
         },
       }),
     });

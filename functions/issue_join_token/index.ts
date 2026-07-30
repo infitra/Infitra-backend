@@ -7,7 +7,7 @@
 // - Returns a ready-to-open room_url using DAILY_DOMAIN (fallback: infitra.daily.co)
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { provider, issueToken } from "../live_provider/index.ts";
+import { provider, issueToken, createRoom, sessionRoomExp } from "../live_provider/index.ts";
 
 const SUPABASE_URL     = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -91,19 +91,15 @@ Deno.serve(async (req) => {
     // 4) Load session
     const { data: s, error: sErr } = await admin
       .from("app_session")
-      .select("id, title, host_id, live_provider, live_room_id, started_at")
+      .select("id, title, host_id, live_provider, live_room_id, started_at, start_time, duration_minutes, status, ended_at")
       .eq("id", session_id)
       .single();
     if (sErr || !s) {
       return json({ error: "Session not found" }, 404);
     }
 
-    const activeProvider = provider();
-    if (s.live_provider !== activeProvider || !s.live_room_id) {
-      return json({ error: "Live room not initialized" }, 400);
-    }
-
-    // 5) Entitlement
+    // 5) Entitlement — BEFORE any room work, so an unentitled caller can
+    // never trigger a provider API call.
     let entitled = s.host_id === callerId;
 
     if (!entitled) {
@@ -130,9 +126,52 @@ Deno.serve(async (req) => {
       return json({ error: "Forbidden" }, 403);
     }
 
+    // 5b) Ensure the room exists — LAZY FALLBACK.
+    // The precreate-rooms cron is the primary provisioner (15 min ahead);
+    // this path self-heals when it misses (cron down, session created inside
+    // the window). Only entitled callers reach here, the session must be
+    // joinable at all, and the persist is race-guarded: if the cron or a
+    // concurrent joiner wins, we adopt their room and ours simply expires.
+    const activeProvider = provider();
+    let liveRoomId = s.live_provider === activeProvider ? s.live_room_id : null;
+
+    if (!liveRoomId) {
+      if (s.status !== "published" || s.ended_at) {
+        return json({ error: "Session is not joinable" }, 400);
+      }
+      // Not before the product's own provisioning horizon: the cron creates
+      // rooms 15 minutes ahead, and the space shows "Live now" from the same
+      // moment. Earlier requests are premature, not broken.
+      const msUntilStart = new Date(s.start_time).getTime() - Date.now();
+      if (msUntilStart > 15 * 60 * 1000) {
+        return json({ error: "Live room not open yet" }, 400);
+      }
+
+      const { roomId } = await createRoom(s.title ?? "Live Session", {
+        expUnix: sessionRoomExp(s.start_time, s.duration_minutes),
+      });
+
+      const { error: claimErr } = await admin
+        .from("app_session")
+        .update({ live_provider: activeProvider, live_room_id: roomId })
+        .eq("id", session_id)
+        .is("live_room_id", null);
+      if (claimErr) {
+        return json({ error: "Failed to persist room", detail: claimErr.message }, 500);
+      }
+
+      // Re-read: whoever won the race, that room is THE room.
+      const { data: s2 } = await admin
+        .from("app_session")
+        .select("live_room_id, live_provider")
+        .eq("id", session_id)
+        .single();
+      liveRoomId = s2?.live_provider === activeProvider ? s2?.live_room_id ?? roomId : roomId;
+    }
+
     // 6) Issue provider token
     const userName = u.user.email ?? "User";
-    const { token } = await issueToken(s.live_room_id, userName);
+    const { token } = await issueToken(liveRoomId, userName);
 
     // 7) Mark started_at (first-join) and attendance idempotently
     await admin
@@ -161,7 +200,7 @@ Deno.serve(async (req) => {
     }
 
     // 9) Return token + ready-to-open URL
-    const room_url = `https://${DAILY_DOMAIN}/${s.live_room_id}?t=${encodeURIComponent(token)}`;
+    const room_url = `https://${DAILY_DOMAIN}/${liveRoomId}?t=${encodeURIComponent(token)}`;
     return json({ token, expires_at: expires, room_url }, 200);
   } catch (e) {
     return json({ error: "Unhandled exception", detail: String(e) }, 500);

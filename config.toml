@@ -114,9 +114,11 @@ entrypoint = "./functions/live_provider/index.ts"
 
 [functions.precreate_rooms]
 enabled = true
-# verify_jwt false matches PRODUCTION. NOTE: no internal auth either - invocable
-# by anyone. Tracked separately; do not "fix" by flipping this flag, that
-# would break the cron invoker silently.
+# verify_jwt false matches PRODUCTION. The function authenticates via the
+# x-cron-secret shared header (CRON_SECRET function secret = Vault
+# precreate_cron_secret), invoked every minute by the pg_cron job
+# precreate-rooms. The earlier "no internal auth" note here was wrong: the
+# header check existed all along, the audit grep just missed it.
 verify_jwt = false
 import_map = "./functions/precreate_rooms/deno.json"
 # Uncomment to specify a custom file path to the entrypoint.
