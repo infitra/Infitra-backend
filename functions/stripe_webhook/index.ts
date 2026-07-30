@@ -44,6 +44,7 @@ type TxRow = {
   platform_fee_percent: number;
   amount_after_stripe_cents: number;
   buyer_processing_fee_cents: number | null;
+  buyer_name: string | null;
 };
 
 // ---- Helpers ---------------------------------------------------------------
@@ -254,6 +255,11 @@ Deno.serve(async (req) => {
           platform_fee_percent: math.platformFeePercent,
           amount_after_stripe_cents: math.afterStripe,
           buyer_processing_fee_cents: buyerFeeCents,
+          // The only real name available when the receipt is written. The
+          // receipt trigger fires on this insert, and the buy-intent signup
+          // has put nothing but an email handle on the profile by then (the
+          // buyer picks a display name later, on the success page).
+          buyer_name: s.customer_details?.name?.trim() || null,
         };
 
         try {

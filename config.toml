@@ -65,16 +65,22 @@ entrypoint = "./functions/unfollow_user/index.ts"
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/unfollow_user/*.html" ]
 
-[functions.stripe-webhook]
+[functions.stripe_webhook]
 enabled = true
-verify_jwt = true
-import_map = "./functions/stripe-webhook/deno.json"
-# Uncomment to specify a custom file path to the entrypoint.
-# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
-entrypoint = "./functions/stripe-webhook/index.ts"
-# Specifies static files to be bundled with the function. Supports glob patterns.
-# For example, if you want to serve static HTML pages in your function:
-# static_files = [ "./functions/stripe-webhook/*.html" ]
+# verify_jwt MUST stay false: Stripe calls this endpoint unauthenticated and
+# signs the request instead (STRIPE_WEBHOOK_SECRET, verified in the handler).
+# Platform-level JWT verification would reject every Stripe delivery, so
+# payments would still succeed at Stripe while no transaction, entitlement or
+# receipt was ever created here.
+#
+# This section was named "stripe-webhook" (hyphen) with verify_jwt = true,
+# matching no deployed function: the real slug uses underscores, like the
+# directory and every other function. A CLI deploy therefore matched nothing
+# and would have applied the CLI default. Renamed to the true slug and pinned
+# to the live setting.
+verify_jwt = false
+import_map = "./functions/stripe_webhook/deno.json"
+entrypoint = "./functions/stripe_webhook/index.ts"
 
 [functions.create_checkout_session]
 enabled = true
