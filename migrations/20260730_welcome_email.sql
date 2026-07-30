@@ -65,11 +65,12 @@ begin
         <img src="https://www.infitra.fit/email-logo.png" width="150" alt="INFITRA" style="display:block;height:auto;border:0;margin-bottom:28px;">
 
         <p style="margin:0 0 16px;font-size:15px;line-height:1.7;">Hi {FIRST},</p>
-        <p style="margin:0 0 16px;font-size:15px;line-height:1.7;">I'm Yves, the founder of INFITRA. Thanks for being here this early.</p>
-        <p style="margin:0 0 16px;font-size:15px;line-height:1.7;">A short word on why this exists. Fitness moved online and became endless content, and it changed very little. What actually works is live: real experts with complementary skills in one room, and a group that shows up with you. That is what INFITRA is for: live experiences, built and run by two experts together.</p>
-        <p style="margin:0 0 16px;font-size:15px;line-height:1.7;">If you have already joined an experience, everything happens in your experience space. If you are just looking around, that is exactly right too.</p>
-        <p style="margin:0 0 16px;font-size:15px;line-height:1.7;">One thing I mean sincerely: reply to this email and tell me what brought you here. I read every answer myself.</p>
-        <p style="margin:24px 0 0;font-size:15px;line-height:1.6;">Yves<br>
+        <p style="margin:0 0 16px;font-size:15px;line-height:1.7;">I'm Yves, founder of INFITRA. Welcome, and thank you for being one of our Pioneers.</p>
+        <p style="margin:0 0 16px;font-size:15px;line-height:1.7;">Here is what you'll find. Experts team up instead of trying to do everything alone, so each session is led by people who truly know their craft. Live sessions you show up to rather than watch. And between sessions, your tribe and your experts stay in one space with you, where you can share how it's going and ask them anything.</p>
+        <p style="margin:0 0 16px;font-size:15px;line-height:1.7;">If you've already joined an experience, everything is waiting in your experience space. If you're still deciding, take your time. The next ones are being built right now.</p>
+        <p style="margin:0 0 16px;font-size:15px;line-height:1.7;">One thing I'd genuinely like to know: what brought you here? Just reply, I read every answer myself.</p>
+        <p style="margin:24px 0 0;font-size:15px;line-height:1.6;">See you inside,</p>
+        <p style="margin:12px 0 0;font-size:15px;line-height:1.6;">Yves<br>
         <span style="color:#475569;font-size:13px;">Founder, INFITRA</span></p>
 
       </td></tr>
@@ -83,20 +84,23 @@ begin
 
   v_text := $txt$Hi {FIRST},
 
-I'm Yves, the founder of INFITRA. Thanks for being here this early.
+I'm Yves, founder of INFITRA. Welcome, and thank you for being one of
+our Pioneers.
 
-A short word on why this exists. Fitness moved online and became
-endless content, and it changed very little. What actually works is
-live: real experts with complementary skills in one room, and a group
-that shows up with you. That is what INFITRA is for: live experiences,
-built and run by two experts together.
+Here is what you'll find. Experts team up instead of trying to do
+everything alone, so each session is led by people who truly know
+their craft. Live sessions you show up to rather than watch. And
+between sessions, your tribe and your experts stay in one space with
+you, where you can share how it's going and ask them anything.
 
-If you have already joined an experience, everything happens in your
-experience space. If you are just looking around, that is exactly
-right too.
+If you've already joined an experience, everything is waiting in your
+experience space. If you're still deciding, take your time. The next
+ones are being built right now.
 
-One thing I mean sincerely: reply to this email and tell me what
-brought you here. I read every answer myself.
+One thing I'd genuinely like to know: what brought you here? Just
+reply, I read every answer myself.
+
+See you inside,
 
 Yves
 Founder, INFITRA

@@ -87,6 +87,7 @@ buy. Don't build participant-facing demand before there is supply.
 | founding pilot, pilot experts | beta testers |
 | participants | customers, users |
 | workspace | dashboard (for the co-creation surface) |
+| Pioneers (early participants) | early adopters, beta users |
 
 **Money framing:** always lead with what experts *keep*. "Experts keep 90% of
 revenue," never "we take 10%." The fee is disclosed second.
