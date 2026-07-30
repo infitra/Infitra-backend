@@ -106,10 +106,39 @@ async function getOrCreateEventLock(eventId: string) {
     .select("provider_event_id")
     .maybeSingle();
   if (error) {
-    if (error.code === "23505") return { deduped: true as const };
+    if (error.code === "23505") {
+      // Seen before — but "seen" is not "done". The lock row is written
+      // BEFORE any processing, so if a prior attempt died mid-flight the row
+      // exists with processed_at NULL and Stripe's retry is the recovery
+      // path. Deduping those retries would drop the payment permanently.
+      // Reprocessing is safe: tx upsert tolerates 23505, status transitions
+      // are guarded, entitlements upsert, receipt enqueue is idempotent.
+      const { data, error: selErr } = await admin
+        .from("webhook_event_lock")
+        .select("processed_at")
+        .eq("provider", "stripe")
+        .eq("provider_event_id", eventId)
+        .maybeSingle();
+      if (selErr) throw selErr;
+      if (data?.processed_at) return { deduped: true as const };
+      return { deduped: false as const };
+    }
     throw error;
   }
   return { deduped: false as const };
+}
+
+// Flip the lock from "arrived" to "finished". Called on every terminal
+// success path (processed or deliberately ignored), never on error paths, so
+// failed events stay reprocessable. Best-effort: if this update itself fails,
+// the worst case is one extra idempotent reprocess on Stripe's next retry.
+async function markEventProcessed(eventId: string) {
+  const { error } = await admin
+    .from("webhook_event_lock")
+    .update({ processed_at: new Date().toISOString() })
+    .eq("provider", "stripe")
+    .eq("provider_event_id", eventId);
+  if (error) console.error("markEventProcessed failed", error);
 }
 
 async function fetchExistingTx(paymentIntentId: string) {
@@ -188,6 +217,7 @@ Deno.serve(async (req) => {
       case "checkout.session.completed": {
         const s = event.data.object as Stripe.Checkout.Session;
         if (s.mode !== "payment" || s.payment_status !== "paid") {
+          await markEventProcessed(event.id);
           return json({ ok: true, ignored: true, reason: "not a paid one-time session" });
         }
 
@@ -266,7 +296,10 @@ Deno.serve(async (req) => {
           const existing = await fetchExistingTx(piId);
           if (!existing) await insertTx(baseRow);
           else if (isAllowedTransition(existing.status, "succeeded")) await updateTx(existing.id, baseRow);
-          else return json({ ok: true, ignored: true, reason: `transition ${existing.status} → succeeded not allowed` });
+          else {
+            await markEventProcessed(event.id);
+            return json({ ok: true, ignored: true, reason: `transition ${existing.status} → succeeded not allowed` });
+          }
         } catch (e) {
           console.error("Transaction upsert failed", e);
           return json({ code: 500, message: "DB upsert failed", detail: String(e) }, 500);
@@ -275,8 +308,12 @@ Deno.serve(async (req) => {
         try {
           await grantEntitlements(md);
         } catch (e) {
+          // 5xx, NOT ok:true — the buyer has PAID at this point, so a swallowed
+          // failure here means charged-but-no-access with nothing but a console
+          // line to show for it. A 5xx makes Stripe retry, the unfinished lock
+          // lets the retry through, and the tx upsert path is idempotent.
           console.error("Entitlement grant failed", e);
-          return json({ ok: true, warning: "entitlement grant failed", detail: String(e) });
+          return json({ code: 500, message: "Entitlement grant failed", detail: String(e) }, 500);
         }
 
         // 📨 Enqueue receipt (add-on)
@@ -296,10 +333,12 @@ Deno.serve(async (req) => {
           console.error("enqueue receipt exception", e);
         }
 
+        await markEventProcessed(event.id);
         return json({ ok: true, event: event.type, processed: true });
       }
 
       default:
+        await markEventProcessed(event.id);
         return json({ ok: true, event: event.type, ignored: true });
     }
   } catch (e) {

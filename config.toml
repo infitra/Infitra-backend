@@ -1,7 +1,9 @@
 
 [functions.create_live_room]
 enabled = true
-verify_jwt = true
+# verify_jwt false matches PRODUCTION: the function authenticates internally
+# (getUser) and must answer the unauthenticated CORS preflight itself.
+verify_jwt = false
 import_map = "./functions/create_live_room/deno.json"
 # Uncomment to specify a custom file path to the entrypoint.
 # Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
@@ -12,7 +14,8 @@ entrypoint = "./functions/create_live_room/index.ts"
 
 [functions.issue_join_token]
 enabled = true
-verify_jwt = true
+# verify_jwt false matches PRODUCTION: internal auth (getUser) + CORS preflight.
+verify_jwt = false
 import_map = "./functions/issue_join_token/deno.json"
 # Uncomment to specify a custom file path to the entrypoint.
 # Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
@@ -34,7 +37,8 @@ entrypoint = "./functions/live_webhook/index.ts"
 
 [functions.end_session]
 enabled = true
-verify_jwt = true
+# verify_jwt false matches PRODUCTION: internal auth (getUser) + CORS preflight.
+verify_jwt = false
 import_map = "./functions/end_session/deno.json"
 # Uncomment to specify a custom file path to the entrypoint.
 # Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
@@ -110,7 +114,10 @@ entrypoint = "./functions/live_provider/index.ts"
 
 [functions.precreate_rooms]
 enabled = true
-verify_jwt = true
+# verify_jwt false matches PRODUCTION. NOTE: no internal auth either - invocable
+# by anyone. Tracked separately; do not "fix" by flipping this flag, that
+# would break the cron invoker silently.
+verify_jwt = false
 import_map = "./functions/precreate_rooms/deno.json"
 # Uncomment to specify a custom file path to the entrypoint.
 # Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
