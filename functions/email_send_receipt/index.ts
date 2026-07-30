@@ -1,7 +1,13 @@
 // supabase/functions/email_send_receipt/index.ts
 // Service-only sender for transactional receipts.
-// Pulls one pending row from app_email_outbox (kind='receipt'), sends it, marks sent_at.
-// If RESEND_API_KEY missing, it logs-only (dev-safe).
+// Drains pending app_email_outbox rows (kind='receipt') via Resend, marking
+// each sent_at. Invoked every minute by the app_drain_email_outbox cron job.
+// If RESEND_API_KEY is missing it logs-only (dev-safe).
+//
+// Rows that keep failing are retired by app_claim_email() after
+// MAX_EMAIL_ATTEMPTS tries, so a hard-bouncing address cannot be retried
+// every minute forever. Inspect them with:
+//   select * from app_email_outbox where sent_at is null and attempt_count >= 5;
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -23,60 +29,72 @@ type OutboxRow = {
   attempt_count: number;
 };
 
+// Drain the whole queue per invocation, not one email. The scheduler runs
+// this every minute; sending one per run would mean a burst of purchases
+// trickles out at one receipt per minute. MAX_BATCH bounds the run so a
+// large backlog can't exceed the function's wall-clock limit; whatever is
+// left is picked up by the next tick.
+const MAX_BATCH = 20;
+
 Deno.serve(async (_req) => {
+  const result = { picked: 0, sent: 0, failed: 0, mode: RESEND_API_KEY ? "resend" : "log-only" };
+
   try {
-    // 1) claim one pending email, atomically.
-    // Delegated to app_claim_email(), which uses FOR UPDATE SKIP LOCKED so a
-    // row is claimed exactly once even if two invocations overlap, and bumps
-    // attempt_count in the same statement. The previous inline version wrote
-    // NULL into attempt_count (NOT NULL) as a placeholder, which Postgres
-    // rejected, and claimed in two non-atomic steps.
-    const { data: job, error: claimErr } = await admin
-      .rpc("app_claim_email", { p_kind: "receipt" })
-      .maybeSingle<OutboxRow>();
+    while (result.picked < MAX_BATCH) {
+      // Claim one pending email, atomically. app_claim_email() uses FOR
+      // UPDATE SKIP LOCKED so a row is claimed exactly once even if two
+      // invocations overlap, and bumps attempt_count in the same statement.
+      // It returns SETOF, so an empty queue yields null rather than a row of
+      // NULLs (which would be truthy here).
+      const { data: job, error: claimErr } = await admin
+        .rpc("app_claim_email", { p_kind: "receipt" })
+        .maybeSingle<OutboxRow>();
 
-    if (claimErr) throw new Error(`claim failed: ${claimErr.message}`);
-    if (!job) {
-      return json({ ok: true, picked: 0, note: "no pending" }, 200);
-    }
+      if (claimErr) throw new Error(`claim failed: ${claimErr.message}`);
+      if (!job) break;
 
-    // 2) send
-    if (!RESEND_API_KEY) {
-      console.log("[DEV] would send", {
-        to: job.to_email,
-        subject: job.subject,
-        preview: job.text_body.slice(0, 120) + "...",
+      result.picked++;
+
+      if (!RESEND_API_KEY) {
+        console.log("[DEV] would send", { to: job.to_email, subject: job.subject });
+        await markSent(job.id);
+        result.sent++;
+        continue;
+      }
+
+      const sendRes = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${RESEND_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: RESEND_FROM,
+          to: [job.to_email],
+          subject: job.subject,
+          html: job.html_body,
+          text: job.text_body,
+        }),
       });
+
+      if (!sendRes.ok) {
+        // Record and move on rather than aborting: one bad address must not
+        // block every other receipt behind it in the queue.
+        const msg = await sendRes.text();
+        console.error(`send failed for outbox ${job.id}: ${msg}`);
+        await markError(job.id, msg);
+        result.failed++;
+        continue;
+      }
+
       await markSent(job.id);
-      return json({ ok: true, picked: 1, sent: true, mode: "log-only" });
+      result.sent++;
     }
 
-    const sendRes = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: RESEND_FROM,
-        to: [job.to_email],
-        subject: job.subject,
-        html: job.html_body,
-        text: job.text_body,
-      }),
-    });
-
-    if (!sendRes.ok) {
-      const msg = await sendRes.text();
-      await markError(job.id, msg);
-      return json({ ok: false, picked: 1, sent: false, error: msg }, 502);
-    }
-
-    await markSent(job.id);
-    return json({ ok: true, picked: 1, sent: true, mode: "resend" });
+    return json({ ok: result.failed === 0, ...result }, 200);
   } catch (e) {
     console.error("email_send_receipt failed", e);
-    return json({ ok: false, error: String(e) }, 500);
+    return json({ ok: false, ...result, error: String(e) }, 500);
   }
 });
 
