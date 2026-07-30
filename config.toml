@@ -126,16 +126,14 @@ entrypoint = "./functions/precreate_rooms/index.ts"
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/precreate_rooms/*.html" ]
 
-[functions.email_send_receipt]
+[functions.email_outbox_drain]
 enabled = true
+# Invoked by the drain-email-outbox pg_cron job with the anon JWT from Vault,
+# so platform JWT verification stays on. Replaces email_send_receipt (the
+# outbox outgrew receipts; this drains every kind).
 verify_jwt = true
-import_map = "./functions/email_send_receipt/deno.json"
-# Uncomment to specify a custom file path to the entrypoint.
-# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
-entrypoint = "./functions/email_send_receipt/index.ts"
-# Specifies static files to be bundled with the function. Supports glob patterns.
-# For example, if you want to serve static HTML pages in your function:
-# static_files = [ "./functions/email_send_receipt/*.html" ]
+import_map = "./functions/email_outbox_drain/deno.json"
+entrypoint = "./functions/email_outbox_drain/index.ts"
 
 [functions.monthly_badges]
 enabled = true
