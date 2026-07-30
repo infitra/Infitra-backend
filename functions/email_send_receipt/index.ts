@@ -15,6 +15,11 @@ const SUPABASE_URL     = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const RESEND_API_KEY   = Deno.env.get("RESEND_API_KEY") || "";
 const RESEND_FROM      = Deno.env.get("RESEND_FROM") || "no-reply@example.com";
+// Explicit reply address. Without it a reply follows whatever From happens to
+// be, which silently changes if the sending identity is ever reconfigured.
+// The receipt tells buyers "just reply to this email", so this must land in a
+// mailbox a human reads.
+const RESEND_REPLY_TO  = Deno.env.get("RESEND_REPLY_TO") || "hello@infitra.fit";
 
 const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
@@ -70,6 +75,7 @@ Deno.serve(async (_req) => {
         },
         body: JSON.stringify({
           from: RESEND_FROM,
+          reply_to: RESEND_REPLY_TO,
           to: [job.to_email],
           subject: job.subject,
           html: job.html_body,
