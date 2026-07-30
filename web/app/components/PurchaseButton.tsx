@@ -1,7 +1,25 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+
+/** Buyer-facing message for a checkout rejection code. The Edge Function
+ *  returns these as HTTP 400, which supabase-js surfaces as a
+ *  FunctionsHttpError — NOT as `data` — so both branches below need this. */
+function rejectionMessage(code: string | null): string {
+  switch (code) {
+    case "ALREADY_PURCHASED":
+      return "You're already in this experience.";
+    case "CHALLENGE_FULL":
+      return "This experience is at capacity right now.";
+    case "SESSION_FULL":
+      return "This session is full.";
+    default:
+      return "Checkout couldn't open. Please try again in a moment.";
+  }
+}
 
 interface Props {
   kind: "session" | "challenge";
@@ -23,8 +41,24 @@ export function PurchaseButton({
   children,
   className,
 }: Props) {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [alreadyOwned, setAlreadyOwned] = useState(false);
+
+  function handleRejection(code: string | null) {
+    if (code === "ALREADY_PURCHASED") {
+      // Reached from a page rendered BEFORE the purchase (back-navigation,
+      // old tab): the server guard correctly refused a double charge. Swap
+      // the CTA for the space link and refresh so the server components
+      // re-render with the real membership state.
+      setAlreadyOwned(true);
+      router.refresh();
+    } else {
+      setError(rejectionMessage(code));
+    }
+    setLoading(false);
+  }
 
   async function handlePurchase() {
     setLoading(true);
@@ -41,22 +75,23 @@ export function PurchaseButton({
       );
 
       if (fnError) {
-        setError(fnError.message || "Something went wrong.");
-        setLoading(false);
+        // Non-2xx: the rejection body ({error: "ALREADY_PURCHASED", ...}) is
+        // on the Response in fnError.context, NOT in `data`. Without reading
+        // it, buyers saw the raw "Edge Function returned a non-2xx status
+        // code" — which is exactly what happened on a stale buyer page.
+        let code: string | null = null;
+        try {
+          const body = await (fnError as { context?: Response }).context?.json();
+          code = typeof body?.error === "string" ? body.error : null;
+        } catch {
+          // body unreadable — fall through to the generic message
+        }
+        handleRejection(code);
         return;
       }
 
       if (data?.error) {
-        const msg =
-          data.error === "SESSION_FULL"
-            ? "This session is full."
-            : data.error === "CHALLENGE_FULL"
-              ? "This challenge is full."
-              : data.error === "ALREADY_PURCHASED"
-                ? "You already have a ticket for this."
-                : data.error;
-        setError(msg);
-        setLoading(false);
+        handleRejection(typeof data.error === "string" ? data.error : null);
         return;
       }
 
@@ -72,6 +107,26 @@ export function PurchaseButton({
       setError(err?.message || "Something went wrong.");
       setLoading(false);
     }
+  }
+
+  // The guard said this buyer already owns the item. Show the way in instead
+  // of a buy button they must not press twice.
+  if (alreadyOwned) {
+    return (
+      <div>
+        <Link
+          href={kind === "challenge" ? `/experiences/${targetId}/space` : "/me"}
+          className="inline-block w-full text-center px-7 py-4 rounded-full text-white text-sm font-black font-headline transition-transform hover:scale-[1.01]"
+          style={{
+            backgroundColor: "#0891b2",
+            boxShadow:
+              "0 6px 20px rgba(8,145,178,0.30), 0 2px 6px rgba(8,145,178,0.20)",
+          }}
+        >
+          You&apos;re in — open your {kind === "challenge" ? "experience space" : "sessions"} →
+        </Link>
+      </div>
+    );
   }
 
   return (
