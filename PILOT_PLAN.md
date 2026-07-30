@@ -2296,3 +2296,111 @@ POST-PILOT:   Stripe Connect · tiered pricing · scale to 20/10
 3. Session-reminder email firing.
 4. Vercel Pro live + spend cap set.
 5. Payout details captured (off-DB) for that creator.
+
+---
+
+## 12. v7 — infrastructure hardened; the gate is now the dress rehearsal (AUTHORITATIVE)
+
+> Updated 2026-07-30. Supersedes §11's Track B list. Track A (recruit) is running:
+> **Pair 1 is forming** (Roberta Burla × Maria Pountou), intro call **Mon 3 Aug,
+> 10:00 Zurich**. Landing + `/apply` are live and read true to the product.
+> Since §11 the *plumbing* around a real run has been built and proven in
+> production; what remains un-proven is the **one real end-to-end run**.
+
+### What shipped since §11 (all verified against production, not just deployed)
+
+**Transactional email — Bundle 10 complete, and further than planned.**
+Architecture: enqueuers write branded HTML + matching text into
+`app_email_outbox`; pg_cron `drain-email-outbox` (jobid 2, every minute) invokes
+the `email_outbox_drain` Edge Function via pg_net → Resend →
+`INFITRA <hello@infitra.fit>`, `Reply-To` pinned so replies reach the founder
+regardless of sending identity.
+
+| Kind | Trigger | Status |
+|---|---|---|
+| `receipt` | Stripe webhook → tx trigger | live, greets by Stripe cardholder name |
+| `session_reminder` | pg_cron jobid 3, 60-min pre-start window | live, one per participant per session ever |
+| `welcome` | `app_profile` insert (participants only) | live, founder voice, Pioneers framing |
+
+The outbox had **no drain at all** before this cycle: every receipt since launch
+went out only because someone invoked the function by hand, and a real buyer
+received nothing. Retry cap of 5 attempts retires poison rows.
+Kickoff + missed-session emails remain **deliberately deferred** — founder call,
+email fatigue is real; revisit only with evidence from the pilot.
+
+**Payments hardened (SR-I7/I8 in practice).** Audit of the whole retry story found
+three ways a paid purchase could vanish, all fixed and deployed (stripe_webhook
+v13): the dedupe lock recorded *arrival* not *completion*, so any mid-flight
+failure made Stripe's retry hit the dedupe and drop the payment permanently;
+entitlement-grant failure returned `ok:true` (charged-but-no-access, evidenced
+only by a console line); and the receipt trigger could `raise` inside the payment
+transaction and roll back the financial record itself. Also fixed a `config.toml`
+landmine class: five functions' `verify_jwt` disagreed with production, including
+`stripe_webhook` under a **hyphenated section name that matched nothing** — a CLI
+deploy would have silently enabled JWT verification and broken every Stripe
+delivery while payments kept succeeding at Stripe.
+
+**Live rooms reworked.** `precreate_rooms` ran on an external cron service
+predating Supabase scheduling, with no recent invocations — and the "lazy
+fallback" did not exist in the product (the frontend only calls
+`issue_join_token`, which hard-failed without a room; `create_live_room` is called
+by nothing). Now: pg_cron `precreate-rooms` (jobid 4) is primary at 15 min ahead,
+`issue_join_token` self-heals for entitled callers inside the same horizon, and
+all paths share one adapter. Two latent defects fixed: precreated rooms were
+**public** (token strippable from a shared URL), and both expiry rules were
+creation-relative rather than session-relative.
+
+**Buy button** no longer leaks `Edge Function returned a non-2xx status code`;
+`ALREADY_PURCHASED` now swaps in the "open your experience space" CTA.
+
+### Standing infrastructure (4 cron jobs, all green)
+
+```
+1  complete-ended-experiences   0 3 * * *
+2  drain-email-outbox           * * * * *   → email_outbox_drain
+3  enqueue-session-reminders    * * * * *   → SQL, no HTTP
+4  precreate-rooms              * * * * *   → precreate_rooms (x-cron-secret from Vault)
+```
+
+### The gate is unchanged and now singular: **Bundle 11, the dress rehearsal**
+
+Everything around the run is built and proven in isolation. What has *never* run
+end to end on real integrations is the run itself. Nothing else on this list
+outranks it.
+
+1. **Dress rehearsal (Bundle 11)** — one full loop with a real Daily.co session
+   and two devices: publish → buy → webhook → entitlement → reminder email fires
+   → room provisioned by cron → join token → **actual live video** → end session
+   → reflection → review → earnings accrual. Fix what breaks.
+2. **Confirm Stripe mode.** All testing to date assumed test-mode keys; this must
+   be positively verified before a real buyer, along with the live-mode webhook
+   endpoint and signing secret. Live mode is a distinct set of keys, a distinct
+   webhook registration, and a distinct dashboard.
+3. **Vercel Pro + spend cap** — Hobby is non-commercial; compliance gate, flip
+   immediately before the first real-money run.
+4. **Payout details** captured off-DB for Pair 1 (Stripe Connect stays deferred).
+
+### Open, ordered, after the gate
+
+- **DMARC → `p=quarantine`** once Postmark digests read clean (~2 weeks). Free,
+  correct on its own merits, and step one of BIMI.
+- **Security advisor sweep before real money.** 8 `SECURITY DEFINER` view ERRORs
+  and ~74 anon/authenticated-executable `SECURITY DEFINER` function WARNs. Some are
+  by design and documented in CLAUDE.md (`app_profile_public`,
+  `vw_my_lifetime_summary`); the rest have never been triaged. Not a pilot blocker,
+  but it should not meet real customer data untriaged.
+- **Post-purchase calendar export** on the success page (founder idea, still open;
+  cheap, directly serves turnout).
+- **Plausible analytics** — coded and deployed but INERT; needs env var + account +
+  goals. Zero funnel visibility until then.
+- **Retire the external cron service** — its secret is rotated so it now receives
+  403s; delete the job at whichever provider hosts it.
+- **Account anonymisation** (`app_anonymize_user`) — `app_transaction` FKs are
+  `RESTRICT`, so a buyer can never be hard-deleted. Correct for financial
+  integrity, but it means a GDPR erasure request needs anonymisation instead.
+  Build before real customers can ask.
+
+### Parked, unchanged
+
+Stripe Connect · tiered pricing · content-safety layer → public creator sign-up ·
+BIMI/VMC (four figures/yr + trademark; revisit post-revenue) · replay window.
