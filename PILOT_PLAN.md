@@ -2404,3 +2404,114 @@ outranks it.
 
 Stripe Connect · tiered pricing · content-safety layer → public creator sign-up ·
 BIMI/VMC (four figures/yr + trademark; revisit post-revenue) · replay window.
+
+---
+
+## 13. v8 — BUILD COMPLETE → completion plan to first real run (AUTHORITATIVE)
+
+> 2026-07-31. Supersedes §12's open-points list as the working order.
+> **The build phase of this plan is COMPLETE.** Every bundle that produces
+> product surface has shipped and is live; §12 records the infrastructure
+> hardening. What remains is polish, instrumentation, oversight, legal
+> readiness and verification — none of it new construction. Structured below
+> as three phases against the Pair 1 calendar (call Mon 3 Aug; their design →
+> publish → first paid session realistically lands late August).
+
+### Sequencing logic (locked)
+
+1. **Polish before rehearsal** — rehearsing on unpolished flows produces noise,
+   not signal. The founder's user-journey walk generates the punch list first.
+2. **Analytics before outreach traffic** — Plausible must be live before posts
+   and outreach drive real visitors, or the funnel data is lost forever.
+3. **Security sweep on a FROZEN system** — triaging 88 advisor findings while
+   surfaces still change means re-triaging. Freeze first, sweep once.
+4. **Rehearsal last, gate unchanged** — the dress rehearsal validates the
+   frozen, swept, instrumented system, not a moving target.
+5. **Legal-lean before real money** — impressum + privacy policy (nDSG/GDPR)
+   + T&C with a refund clause are a legal exposure at first franc, not a
+   post-pilot nicety. Lean pass now; lawyer polish can follow.
+
+### Phase A — Polish & instrument (now → ~Fri 8 Aug)
+
+- **A1 · Founder user-journey walk** → punch list → fixes rolling. Include on
+  the walk: dashboard with 2+ active experiences (known-broken hero, memory),
+  H4 locked-state buyer preview (verify whether actually built), review
+  visibility on the expert profile (confirmed NOT built; buyer page has it).
+- **A2 · Plausible live** — env var + account + goals (signup, purchase,
+  apply submit, join-live). Currently coded but INERT; zero funnel visibility.
+- **A3 · Calendar export on the success page** — confirmed never built.
+  Cheap, serves turnout (the pilot's #1 metric).
+- **A4 · Quick wins:** enable Supabase leaked-password protection (one
+  toggle, advisor WARN); decide the hello@ skip-inbox filter (recommend:
+  label only during pilot); decide welcome-email suppression for buy-intent
+  signups (currently: welcome + receipt within ~2 min — acceptable, revisit).
+
+### Phase B — Oversight & readiness (~Mon 11 → Fri 15 Aug)
+
+- **B1 · Admin board v1 (lean).** One page, admin-role gated: cron job health
+  (last runs + failures), outbox state (pending / dead rows), webhook locks
+  stuck unprocessed, recent purchases + members, `/apply` triage
+  (new→contacted→accepted→declined), links out to Supabase / Stripe / Resend
+  / Plausible dashboards. NOT the full hazard board — that grows post-pilot.
+- **B2 · Ops playbook.** Confirm current Supabase plan; document upgrade
+  triggers (CPU, connections, storage, egress) and what each tier buys;
+  Vercel spend cap; Resend daily limits. One doc, so "when do we upgrade
+  what" is a lookup, not a research project. Feeds admin board v2 later.
+- **B3 · Refund policy v1 + scam stance.** Written policy linked at checkout
+  and in pilot terms: what happens when an experience is cancelled, partly
+  delivered, or a participant disputes. Pilot reality: 5 curated pairs,
+  manual refunds via Stripe dashboard, founder discretion — but the POLICY
+  must exist at first sale. Chargeback/creator-fraud automation: post-pilot.
+- **B4 · Legal lean pass.** Impressum (Swiss UWG requirement), privacy policy
+  (nDSG + GDPR — we collect emails, payments, health-adjacent data), T&C
+  including the refund clause and the collaboration-contract framing.
+  Founder drives content (template + lawyer touch recommended); we wire the
+  pages and footer links.
+- **B5 · `app_anonymize_user()`** — GDPR erasure path. Financial FKs are
+  RESTRICT by design, so erasure = scrub PII, keep the books. Small, build
+  before a real customer can ask.
+
+### Phase C — Freeze, sweep, rehearse (~Mon 18 → Fri 22 Aug)
+
+- **C1 · Feature freeze.** After A+B, nothing ships but fixes.
+- **C2 · Security advisor sweep** on the frozen system: triage all 88 findings
+  (8 SECURITY DEFINER view ERRORs, ~74 SECURITY DEFINER function WARNs, RLS
+  always-true INSERT policies on the two public forms). Each: fix, or
+  document as intended with rationale. Plus RLS spot-audit of the four
+  mutation surfaces.
+- **C3 · Full dress rehearsal** — the §11/§12 gate, unchanged: real Daily
+  video, two devices, apply → approve → onboard → create → publish → buy →
+  webhook → entitlement → reminder email → room via cron → join → live →
+  end → reflect → review → earnings accrual. PLUS: a refund drill (Stripe
+  dashboard → books correct), and a light load probe of the join path (the
+  only real concurrency moment: N participants hitting issue_join_token +
+  space load at once — probe at pilot scale ~30, not a synthetic stress
+  test). Full load testing: post-pilot, with real usage shapes.
+- **C4 · Go-live mechanics:** verify Stripe LIVE-mode keys + webhook + signing
+  secret (all testing so far assumed test mode); Vercel Pro + spend cap;
+  payout details for Pair 1 captured off-DB; DMARC → p=quarantine if the
+  first Postmark digest reads clean.
+
+### First-real-run gate (carried from §11, still the gate)
+
+1. ≥1 real creator pair onboarded with a published real experience.
+2. Dress rehearsal green end-to-end, refund drill included.
+3. Reminder + receipt + welcome emails observed firing in the rehearsal.
+4. Stripe live mode verified; Vercel Pro live; spend caps set.
+5. Payout details captured; refund policy + impressum + privacy + T&C live.
+
+### Post-pilot rail (consolidated; unchanged items compressed)
+
+Moderation & report system + content-safety automation (hard gate before
+public creator sign-up) · Stripe Connect + tiered pricing (needs
+incorporation — founder-side) · LiveKit migration (greenlit, cheap via
+adapter) · native app / PWA-lite · kickoff + missed-session emails + push
+notifications (evidence-driven) · dashboard rebuild with real usage data ·
+admin board v2 (hazards, trends, upgrade signals inline) · full stress test ·
+solo-session reviews · BIMI/VMC · .com domain · replay window.
+
+### Standing user actions (founder, any time)
+
+Delete the retired external cron job at its provider · infitra.ch/.app
+redirects at the registrars · reply to Postmark DMARC digests decision ·
+incorporation groundwork (unlocks Connect post-pilot).
