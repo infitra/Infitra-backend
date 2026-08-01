@@ -217,10 +217,10 @@ export function FirstMovesCard({
       {canIntro ? (
         <>
           <p className="text-sm mb-3" style={{ color: INK }}>
-            <span className="font-bold">One more thing, the nicest one: say hi.</span>{" "}
+            <span className="font-bold">You are part of a tribe now: say hi!</span>{" "}
             <span style={{ color: MUTED }}>
-              Your experts have a question for you, and your answer is the
-              first thing your tribe will see.
+              Your experts have a question for you. Introduce yourself and check
+              out your experience to meet your tribe!
             </span>
           </p>
           <div
