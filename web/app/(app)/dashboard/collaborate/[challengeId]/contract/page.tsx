@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { PrintButton } from "./PrintButton";
 import { ContractDocument, type ContractSnapshot } from "./ContractDocument";
 import { resolveViewerTimeZone } from "@/lib/time/viewerTimeZone";
 
@@ -74,13 +75,16 @@ export default async function ContractPage({
 
   return (
     <div className="py-8 max-w-3xl mx-auto px-4">
-      <Link
-        href="/dashboard"
-        className="text-xs font-bold font-headline inline-block mb-5 hover:underline"
-        style={{ color: "#94a3b8" }}
-      >
-        ← Back to dashboard
-      </Link>
+      <div className="print-hide flex items-center justify-between mb-5">
+        <Link
+          href="/dashboard"
+          className="text-xs font-bold font-headline inline-block hover:underline"
+          style={{ color: "#94a3b8" }}
+        >
+          ← Back to dashboard
+        </Link>
+        <PrintButton />
+      </div>
       <ContractDocument
         snapshot={contract.snapshot_json as ContractSnapshot}
         version={Number(contract.version)}

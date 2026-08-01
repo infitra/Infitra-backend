@@ -74,6 +74,10 @@ export interface ProgramSummary {
   newMembersThisWeek?: number;
   sessionsDoneThisWeek?: number;
   pendingQuestions?: number;
+  /** Lineage-cumulative rating from vw_experience_review_stats (P6c). */
+  reviewAvg?: number | null;
+  reviewCount?: number;
+  reviewsThisWeek?: number;
   newPosts?: number;
   nextSession?: {
     id: string;
@@ -394,6 +398,8 @@ async function loadDashboard(userId: string) {
       newMembersResult,
       txResult,
       sessionLinksResult,
+      reviewStatsResult,
+      recentReviewsResult,
     ] = await Promise.all([
       supabase
         .from("app_challenge_member")
@@ -413,6 +419,17 @@ async function loadDashboard(userId: string) {
         .from("app_challenge_session")
         .select("challenge_id, app_session(id, title, start_time, status, image_url)")
         .in("challenge_id", activeIds),
+      // Reviews as oversight (founder's walk): aggregate + this-week
+      // activity on the card that is the door into the experience.
+      supabase
+        .from("vw_experience_review_stats")
+        .select("challenge_id, avg_rating, total_reviews")
+        .in("challenge_id", activeIds),
+      supabase
+        .from("app_review")
+        .select("challenge_id")
+        .in("challenge_id", activeIds)
+        .gte("created_at", sevenDaysAgo),
     ]);
 
     const totalByChallenge: Record<string, number> = {};
@@ -445,6 +462,16 @@ async function loadDashboard(userId: string) {
 
     for (const p of activePrograms) {
       p.enrolledCount = totalByChallenge[p.id] ?? 0;
+      {
+        const rs = ((reviewStatsResult.data ?? []) as Array<{ challenge_id: string; avg_rating: number | null; total_reviews: number }>).find(
+          (r) => r.challenge_id === p.id,
+        );
+        p.reviewAvg = rs?.avg_rating ?? null;
+        p.reviewCount = rs?.total_reviews ?? 0;
+        p.reviewsThisWeek = ((recentReviewsResult.data ?? []) as Array<{ challenge_id: string }>).filter(
+          (r) => r.challenge_id === p.id,
+        ).length;
+      }
       p.newMembersThisWeek = weeklyMembers[p.id] ?? 0;
       p.earningsCentsThisWeek = weeklyEarnings[p.id] ?? 0;
 

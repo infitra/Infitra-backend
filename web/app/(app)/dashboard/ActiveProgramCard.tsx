@@ -52,6 +52,10 @@ interface Program {
   sessionsDoneThisWeek?: number;
   /** Experience-pulse signals (H5) — populated by the loader. */
   pendingQuestions?: number;
+  /** Lineage-cumulative rating (vw_experience_review_stats), P6c. */
+  reviewAvg?: number | null;
+  reviewCount?: number;
+  reviewsThisWeek?: number;
   newPosts?: number;
   nextSession?: ProgramSession | null;
   sessions?: ProgramSession[];
@@ -419,6 +423,22 @@ function SignalStrip({ program }: { program: Program }) {
     );
   } else if (isLive && tw > 0) {
     cells.push(<SignalCell key="week" value={`${cw}/${tw}`} label="week" />);
+  }
+  // Reviews as oversight (P6c): lineage-cumulative rating, with a dot when
+  // fresh reviews landed this week. Only once reviews exist — an active
+  // experience with none yet keeps the strip quiet.
+  if ((program.reviewCount ?? 0) > 0) {
+    cells.push(
+      <SignalCell
+        key="reviews"
+        value={`★ ${Number(program.reviewAvg ?? 0).toFixed(1)}`}
+        delta={
+          (program.reviewsThisWeek ?? 0) > 0 ? `+${program.reviewsThisWeek}` : undefined
+        }
+        label={`${program.reviewCount} ${program.reviewCount === 1 ? "review" : "reviews"}`}
+        dot={(program.reviewsThisWeek ?? 0) > 0}
+      />,
+    );
   }
 
   return (

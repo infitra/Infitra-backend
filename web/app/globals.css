@@ -373,3 +373,19 @@ body {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
 }
 
+
+/* ── Print (P6e): "Export as PDF" prints ONLY the document. The app chrome
+   (nav, back links, buttons marked .print-hide) disappears; backgrounds are
+   forced white so the contract reads as paper. ── */
+@media print {
+  nav,
+  .print-hide {
+    display: none !important;
+  }
+  body {
+    background: #ffffff !important;
+  }
+  .wfg-root {
+    display: none !important;
+  }
+}

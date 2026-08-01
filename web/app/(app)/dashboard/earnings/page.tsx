@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata = {
@@ -47,7 +48,12 @@ type EarningLine = {
   your_cut_cents: number | string;
 };
 
-export default async function EarningsPage() {
+export default async function EarningsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ exp?: string; who?: string; from?: string; to?: string }>;
+}) {
+  const { exp, who, from, to } = await searchParams;
   const supabase = await createClient();
 
   // Co-host-aware earnings: one attributed line per sale for the current user
@@ -57,7 +63,22 @@ export default async function EarningsPage() {
     .select("*")
     .order("created_at", { ascending: false });
 
-  const rows = (data ?? []) as EarningLine[];
+  const allRows = (data ?? []) as EarningLine[];
+
+  // Lean filters (founder's walk, P6d): searchParams-driven so the page stays
+  // a server component and every stat below recomputes under the filter —
+  // "what did THIS experience earn" needs no separate feature.
+  const expOptions = [...new Set(allRows.map((r) => r.product_title).filter(Boolean))] as string[];
+  const whoOptions = [...new Set(allRows.map((r) => r.cohost_name).filter(Boolean))] as string[];
+  const rows = allRows.filter((r) => {
+    if (exp && r.product_title !== exp) return false;
+    if (who && r.cohost_name !== who) return false;
+    const day = r.created_at.slice(0, 10);
+    if (from && day < from) return false;
+    if (to && day > to) return false;
+    return true;
+  });
+  const filtered = !!(exp || who || from || to);
 
   const totalEarned = rows.reduce((s, r) => s + num(r.your_cut_cents), 0);
   const totalGross = rows.reduce((s, r) => s + num(r.amount_gross_cents), 0);
@@ -66,7 +87,8 @@ export default async function EarningsPage() {
   const salesCount = rows.length;
   const buyers = new Set(rows.map((r) => r.buyer_id).filter(Boolean)).size;
   const hasCohosts = rows.some((r) => num(r.cohost_cut_cents) > 0);
-  const hasRows = rows.length > 0;
+  const hasRows = allRows.length > 0;
+  const hasVisibleRows = rows.length > 0;
 
   // Column spans flex depending on whether the Co-host column is shown.
   const C = hasCohosts
@@ -164,6 +186,58 @@ export default async function EarningsPage() {
         >
           Transactions
         </h2>
+
+        {/* Lean filters — native GET form, server-filtered above. */}
+        {hasRows && (
+          <form
+            method="get"
+            className="flex flex-wrap items-end gap-2.5 mb-4 rounded-2xl px-4 py-3"
+            style={{ backgroundColor: "rgba(255,255,255,0.6)", border: "1px solid rgba(15,34,41,0.08)" }}
+          >
+            <label className="block">
+              <span className="block text-[10px] font-bold uppercase tracking-widest font-headline mb-1" style={{ color: "rgba(15,34,41,0.55)" }}>Experience</span>
+              <select name="exp" defaultValue={exp ?? ""} className="rounded-lg px-2.5 py-1.5 text-xs" style={{ border: "1px solid rgba(15,34,41,0.14)", backgroundColor: "#fff", color: "#0F2229" }}>
+                <option value="">All</option>
+                {expOptions.map((t) => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+            </label>
+            {whoOptions.length > 0 && (
+              <label className="block">
+                <span className="block text-[10px] font-bold uppercase tracking-widest font-headline mb-1" style={{ color: "rgba(15,34,41,0.55)" }}>Collaborator</span>
+                <select name="who" defaultValue={who ?? ""} className="rounded-lg px-2.5 py-1.5 text-xs" style={{ border: "1px solid rgba(15,34,41,0.14)", backgroundColor: "#fff", color: "#0F2229" }}>
+                  <option value="">All</option>
+                  {whoOptions.map((n) => (
+                    <option key={n} value={n}>{n}</option>
+                  ))}
+                </select>
+              </label>
+            )}
+            <label className="block">
+              <span className="block text-[10px] font-bold uppercase tracking-widest font-headline mb-1" style={{ color: "rgba(15,34,41,0.55)" }}>From</span>
+              <input type="date" name="from" defaultValue={from ?? ""} className="rounded-lg px-2.5 py-1 text-xs" style={{ border: "1px solid rgba(15,34,41,0.14)", backgroundColor: "#fff", color: "#0F2229" }} />
+            </label>
+            <label className="block">
+              <span className="block text-[10px] font-bold uppercase tracking-widest font-headline mb-1" style={{ color: "rgba(15,34,41,0.55)" }}>To</span>
+              <input type="date" name="to" defaultValue={to ?? ""} className="rounded-lg px-2.5 py-1 text-xs" style={{ border: "1px solid rgba(15,34,41,0.14)", backgroundColor: "#fff", color: "#0F2229" }} />
+            </label>
+            <button type="submit" className="px-4 py-2 rounded-full text-[11px] font-black font-headline uppercase tracking-wider text-white" style={{ backgroundColor: "#FF6130" }}>
+              Filter
+            </button>
+            {filtered && (
+              <Link href="/dashboard/earnings" className="px-3 py-2 text-[11px] font-bold font-headline uppercase tracking-wider" style={{ color: "#64748b" }}>
+                Reset
+              </Link>
+            )}
+          </form>
+        )}
+
+        {hasRows && !hasVisibleRows && (
+          <p className="text-sm mb-4 text-center py-8" style={{ color: MUTED }}>
+            No sales match this filter.
+          </p>
+        )}
 
         {!hasRows ? (
           <div
