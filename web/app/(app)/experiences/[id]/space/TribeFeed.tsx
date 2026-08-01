@@ -64,7 +64,7 @@ const INK = "#0F2229";
 
 const COMPOSE_KINDS = [
   { key: "talk", label: "Share", color: CYAN },
-  { key: "question", label: "Question", color: ORANGE },
+  { key: "question", label: "Ask a question", color: ORANGE },
 ] as const;
 type ComposeKind = (typeof COMPOSE_KINDS)[number]["key"];
 
@@ -345,6 +345,22 @@ export function TribeFeed({
 
   const needsAsk = kind === "question" && !askId;
   const textLocked = kind === null || needsAsk;
+  const openForMeCount = useMemo(
+    () =>
+      posts.filter(
+        (p) => p.kind === "question" && !p.coachAnswer && p.directedTo.includes(viewer.id),
+      ).length,
+    [posts, viewer.id],
+  );
+
+  // While the focus filter is active, pull the remaining pages automatically:
+  // an open question further back must not hide behind "Show earlier posts".
+  // Pilot volumes make the cascade cheap; the button stays as the manual path
+  // for the other filters.
+  useEffect(() => {
+    if (feedFilter === "open_for_me" && hasMore && !loadingMore && !loading) loadMore();
+  }, [feedFilter, hasMore, loadingMore, loading, loadMore]);
+
   const visiblePosts = useMemo(() => {
     if (feedFilter === "questions") return posts.filter((p) => p.kind === "question");
     if (feedFilter === "open_for_me")
@@ -520,21 +536,28 @@ export function TribeFeed({
                 open_for_me so creators see exactly the questions waiting on
                 them instead of the whole stream. Filters the LOADED pages;
                 open questions are recent by nature. */}
-            <div className="flex items-center gap-1.5 pb-1">
+            {/* Quiet underline TABS + funnel glyph — deliberately a different
+                visual species from the pill composer buttons above, so
+                "filter the stream" can't be confused with "write a post"
+                (founder's walk). */}
+            <div className="flex items-center gap-4 pb-1.5" style={{ borderBottom: "1px solid rgba(15,34,41,0.07)" }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" />
+              </svg>
               {([
                 ["all", "All"],
                 ["questions", "Questions"],
-                ...(isCreator ? [["open_for_me", "Open for you"] as const] : []),
+                ...(isCreator ? [["open_for_me", `Open for you (${openForMeCount})`] as const] : []),
               ] as const).map(([key, label]) => (
                 <button
                   key={key}
                   type="button"
                   onClick={() => setFeedFilter(key)}
-                  className="px-3 py-1.5 rounded-full text-[11px] font-black font-headline uppercase tracking-wider transition-colors"
+                  className="text-[11px] font-black font-headline uppercase tracking-wider pb-1 transition-colors"
                   style={
                     feedFilter === key
-                      ? { backgroundColor: "rgba(255,97,48,0.12)", color: "#c2410c", boxShadow: "inset 0 0 0 1.5px rgba(255,97,48,0.35)" }
-                      : { backgroundColor: "rgba(15,34,41,0.04)", color: "#64748b" }
+                      ? { color: "#0F2229", boxShadow: "inset 0 -2px 0 #FF6130" }
+                      : { color: "#94a3b8" }
                   }
                 >
                   {label}

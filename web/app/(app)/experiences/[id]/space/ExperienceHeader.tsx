@@ -143,6 +143,26 @@ export function ExperienceHeader() {
                   <p className="text-[11px] mt-1" style={{ color: "#94a3b8" }} suppressHydrationWarning>Week 1 begins {startStr}</p>
                 )}
               </div>
+              {/* Mobile: Active now sits at the status number's height (the
+                  founder's alignment call); desktop keeps it on the toggles
+                  row, right-aligned. */}
+              <div className="flex lg:hidden items-center gap-2 shrink-0">
+                {present.length > 0 && (
+                  <div className="flex -space-x-2">
+                    {present.slice(0, 3).map((u) => (
+                      <div key={u.id} className="relative">
+                        <Avatar src={u.avatar} name={u.name} size={32} ring="#FFFFFF" bg={CYAN} />
+                        <span
+                          className="absolute bottom-0 right-0 rounded-full animate-pulse"
+                          style={{ width: 8, height: 8, backgroundColor: DARKCYAN, border: "2px solid #FFFFFF" }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <span className="text-[11px] uppercase tracking-[0.14em] font-headline" style={{ color: "#64748b", fontWeight: 800 }}>Active now</span>
+                <span className="text-sm font-black font-headline" style={{ color: INK }}>{present.length}</span>
+              </div>
             </div>
 
             {/* Expand toggles + presence — ONE line (founder's walk note):
@@ -153,7 +173,7 @@ export function ExperienceHeader() {
             <div className="flex flex-wrap items-center gap-2 mt-5 lg:mt-7">
               <Toggle label="Meet your Experts" active={open === "experts"} onClick={() => toggle("experts")} />
               {hasStructure && <Toggle label="Structure" active={open === "structure"} onClick={() => toggle("structure")} />}
-              <div className="ml-auto flex items-center gap-2 shrink-0">
+              <div className="ml-auto hidden lg:flex items-center gap-2 shrink-0">
                 {present.length > 0 && (
                   <div className="flex -space-x-2">
                     {present.slice(0, 3).map((u) => (
