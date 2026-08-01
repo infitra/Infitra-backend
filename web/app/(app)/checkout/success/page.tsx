@@ -148,48 +148,15 @@ export default async function CheckoutSuccessPage({
           </div>
 
           {challengeId ? (
-            <>
-              <FirstMovesCard
-                challengeId={challengeId}
-                entitled={entitled}
-                canIntro={canIntro}
-                chapterOpens={chapterOpens}
-                introPrompt={introPrompt}
-                initialDisplayName={profile?.display_name ?? ""}
-                initialAvatarUrl={(profile?.avatar_url as string | null) ?? null}
-              />
-
-              {/* Calendar export — the founder's turnout lever, offered at the
-                  moment commitment is highest. The /calendar route existed and
-                  was only reachable from inside the space; a buyer's best
-                  chance to block out the sessions is RIGHT NOW. Plain anchor:
-                  the route answers with a .ics attachment. (A click in the
-                  first seconds can 403 while the webhook finalizes enrolment;
-                  a human reaching this link is past that window.) */}
-              <a
-                href={`/experiences/${challengeId}/calendar`}
-                className="mt-4 flex items-center justify-center gap-2 w-full py-3 rounded-full text-sm font-bold font-headline transition-colors hover:bg-[rgba(8,145,178,0.08)]"
-                style={{
-                  color: "#0891b2",
-                  border: "1.5px solid rgba(8,145,178,0.35)",
-                }}
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <rect x="3" y="4" width="18" height="18" rx="2" />
-                  <path d="M16 2v4M8 2v4M3 10h18" />
-                </svg>
-                Add every live session to your calendar
-              </a>
-            </>
+            <FirstMovesCard
+              challengeId={challengeId}
+              entitled={entitled}
+              canIntro={canIntro}
+              chapterOpens={chapterOpens}
+              introPrompt={introPrompt}
+              initialDisplayName={profile?.display_name ?? ""}
+              initialAvatarUrl={(profile?.avatar_url as string | null) ?? null}
+            />
           ) : (
             <Link
               href="/me"

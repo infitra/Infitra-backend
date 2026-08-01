@@ -181,36 +181,72 @@ export function FirstMovesCard({
         className="w-full px-4 py-2.5 rounded-xl text-sm mb-1.5 outline-none"
         style={{ border: "1px solid rgba(15,34,41,0.14)", color: INK, backgroundColor: "white" }}
       />
-      <p className="text-[11px] mb-6" style={{ color: MUTED }}>
+      <p className="text-[11px] mb-5" style={{ color: MUTED }}>
         How your tribe sees you.
       </p>
 
-      {/* Intro — offered only when the run they bought is live. An upcoming buyer
-          (bought a future run while a prior one runs) is told it comes at kickoff. */}
-      {canIntro ? (
-        <div
-          className="rounded-2xl p-4 mb-6"
-          style={{ backgroundColor: "rgba(8,145,178,0.06)", boxShadow: `inset 3.5px 0 0 ${CYAN}` }}
+      {/* Calendar export — closes the ORGANISATION cluster (photo, name,
+          calendar) before the warmer intro moment below. Founder's ordering
+          call: set yourself up first, then break the ice. */}
+      <a
+        href={`/experiences/${challengeId}/calendar`}
+        className="flex items-center justify-center gap-2 w-full py-2.5 rounded-full text-[13px] font-bold font-headline transition-colors hover:bg-[rgba(8,145,178,0.08)] mb-8"
+        style={{ color: CYAN, border: "1.5px solid rgba(8,145,178,0.30)" }}
+      >
+        <svg
+          width="15"
+          height="15"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
         >
-          <p
-            className="text-[11px] font-black font-headline uppercase tracking-[0.12em] mb-1.5"
-            style={{ color: CYAN }}
+          <rect x="3" y="4" width="18" height="18" rx="2" />
+          <path d="M16 2v4M8 2v4M3 10h18" />
+        </svg>
+        Add every live session to your calendar
+      </a>
+
+      {/* Intro — offered only when the run they bought is live. An upcoming buyer
+          (bought a future run while a prior one runs) is told it comes at kickoff.
+          This is the warm beat of the card: everything above is organisation,
+          this is the first human moment in the tribe, so it gets a guided
+          lead-in instead of a bare form field. */}
+      {canIntro ? (
+        <>
+          <p className="text-sm mb-3" style={{ color: INK }}>
+            <span className="font-bold">One more thing, the nicest one: say hi.</span>{" "}
+            <span style={{ color: MUTED }}>
+              Your experts have a question for you, and your answer is the
+              first thing your tribe will see.
+            </span>
+          </p>
+          <div
+            className="rounded-2xl p-4 mb-6"
+            style={{ backgroundColor: "rgba(8,145,178,0.06)", boxShadow: `inset 3.5px 0 0 ${CYAN}` }}
           >
-            Your experts asked
-          </p>
-          <p className="text-sm font-semibold mb-3" style={{ color: INK }}>
-            {introPrompt}
-          </p>
-          <textarea
-            value={introText}
-            onChange={(e) => setIntroText(e.target.value)}
-            maxLength={2000}
-            rows={3}
-            placeholder="Share a little about yourself with the tribe…"
-            className="w-full px-3.5 py-2.5 rounded-xl text-sm outline-none resize-none"
-            style={{ border: "1px solid rgba(8,145,178,0.25)", color: INK, backgroundColor: "white" }}
-          />
-        </div>
+            <p
+              className="text-[11px] font-black font-headline uppercase tracking-[0.12em] mb-1.5"
+              style={{ color: CYAN }}
+            >
+              Your experts ask
+            </p>
+            <p className="text-sm font-semibold mb-3" style={{ color: INK }}>
+              {introPrompt}
+            </p>
+            <textarea
+              value={introText}
+              onChange={(e) => setIntroText(e.target.value)}
+              maxLength={2000}
+              rows={3}
+              placeholder="Two honest sentences is plenty…"
+              className="w-full px-3.5 py-2.5 rounded-xl text-sm outline-none resize-none"
+              style={{ border: "1px solid rgba(8,145,178,0.25)", color: INK, backgroundColor: "white" }}
+            />
+          </div>
+        </>
       ) : (
         <div
           className="rounded-2xl p-4 mb-6"
