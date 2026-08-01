@@ -23,7 +23,12 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.infitra.fit";
 // after a 30-day trial. Inert until NEXT_PUBLIC_UMAMI_WEBSITE_ID is set in
 // the Vercel env, so this code ships now and goes live the moment the
 // account exists. Swapping providers again is this block + lib/analytics.ts.
-const UMAMI_WEBSITE_ID = process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID;
+// Accept either the bare website UUID or a pasted <script> tag: Umami's UI
+// hands you the whole snippet, and pasting that verbatim silently nests the
+// tag inside data-website-id, so tracking looks configured but records
+// nothing. Extract the first UUID and ignore the rest.
+const UMAMI_WEBSITE_ID = (process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID ?? "")
+  .match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i)?.[0];
 const UMAMI_SRC =
   process.env.NEXT_PUBLIC_UMAMI_SRC ?? "https://cloud.umami.is/script.js";
 const DESCRIPTION =
