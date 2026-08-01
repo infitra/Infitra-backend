@@ -65,7 +65,7 @@ export function PublicCommitBlock({
 
   return (
     <section
-      className="px-6 lg:px-12 py-16 lg:py-24"
+      className="px-6 lg:px-12 py-12 lg:py-16"
       style={{
         // Transparent at the top so the (app) layout's cream + wave
         // shines through; warms toward the orange CTA at the bottom.
@@ -84,18 +84,18 @@ export function PublicCommitBlock({
           className="text-3xl lg:text-5xl font-black font-headline tracking-tight mb-5"
           style={{ color: "#0F2229", letterSpacing: "-0.02em" }}
         >
-          Ready to step in?
+          All of it opens the moment you join.
         </h2>
         <p
           className="text-base lg:text-lg leading-relaxed mb-10"
           style={{ color: "#475569" }}
         >
-          The program runs{" "}
+          The experience runs{" "}
           <span className="font-bold" style={{ color: "#0F2229" }}>
             {formatLongDate(startDate)} → {formatLongDate(endDate)}
           </span>
           . Block out the {sessionCount}{" "}
-          {sessionCount === 1 ? "live moment" : "live moments"} so you can
+          {sessionCount === 1 ? "live session" : "live sessions"} so you can
           show up.
         </p>
 
@@ -183,7 +183,7 @@ function SecondCTA({
         }}
       >
         <span>👀</span>
-        <span>Preview — you&apos;re an Expert on this program</span>
+        <span>Preview — you&apos;re an Expert on this experience</span>
       </div>
     );
   }

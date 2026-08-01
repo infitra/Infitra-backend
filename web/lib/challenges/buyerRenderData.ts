@@ -27,6 +27,31 @@ export interface BuyerChallengeInput {
  * ownership, and the hero's two-beat promise/description. Used by BOTH the
  * post-publish page and the pre-publish preview so they can never drift.
  */
+/**
+ * topic_ownership is stored as an ARRAY of {creator_id, topics} rows (the
+ * workspace's shape), but every renderer wants a creator_id -> topics record.
+ * The old inline cast pretended the array WAS the record, so the lookup
+ * returned undefined for every expert and the buyer-page topic chips never
+ * rendered — the founder's "topics owned never gets rendered" report, which
+ * was a data-path break, not a missing render. Accepts the legacy record
+ * shape too, defensively.
+ */
+export function topicOwnershipRecord(raw: unknown): Record<string, string[]> {
+  if (Array.isArray(raw)) {
+    const out: Record<string, string[]> = {};
+    for (const row of raw as Array<{ creator_id?: string; topics?: unknown }>) {
+      if (row?.creator_id && Array.isArray(row.topics)) {
+        out[row.creator_id] = (row.topics as unknown[]).filter(
+          (t): t is string => typeof t === "string",
+        );
+      }
+    }
+    return out;
+  }
+  if (raw && typeof raw === "object") return raw as Record<string, string[]>;
+  return {};
+}
+
 export async function loadBuyerRenderData(
   supabase: ServerClient,
   challenge: BuyerChallengeInput
@@ -99,8 +124,7 @@ export async function loadBuyerRenderData(
     (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
   );
 
-  const topicsByCreator: Record<string, string[]> =
-    (challenge.topic_ownership as Record<string, string[]>) ?? {};
+  const topicsByCreator = topicOwnershipRecord(challenge.topic_ownership);
 
   const weeklyArc =
     (challenge.weekly_arc as Array<{ week: number; theme: string }>) ?? [];

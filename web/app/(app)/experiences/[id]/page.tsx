@@ -9,6 +9,7 @@ import { PublicInsideExperienceBlock } from "./PublicInsideExperienceBlock";
 import { PublicCommitBlock } from "./PublicCommitBlock";
 import { StickyJoinCTA } from "./StickyJoinCTA";
 import { buildWeeks } from "@/lib/challenges/buildWeeks";
+import { topicOwnershipRecord } from "@/lib/challenges/buyerRenderData";
 import { loadSessionCohosts } from "@/lib/challenges/sessionCohosts";
 import { resolveViewerTimeZone } from "@/lib/time/viewerTimeZone";
 
@@ -235,9 +236,10 @@ export default async function ChallengePage({
     })),
   }));
 
-  // topic_ownership shape: { [creator_profile_id]: string[] }
-  const topicsByCreator: Record<string, string[]> =
-    (buyerView.topic_ownership as Record<string, string[]>) ?? {};
+  // topic_ownership is an ARRAY of {creator_id, topics}; the converter
+  // yields the creator_id -> topics record the renderers want. The previous
+  // inline cast made every lookup undefined, so the chips never showed.
+  const topicsByCreator = topicOwnershipRecord(buyerView.topic_ownership);
 
   return (
     <>
@@ -282,10 +284,14 @@ export default async function ChallengePage({
                 INFITRA
               </span>
             </Link>
+            {/* Deliberately quiet: on this page the one primary action is
+                the buy CTA. An orange sign-in pill up here competed with it
+                and led buyers AWAY from purchasing. Returning participants
+                still get their door; it just doesn't shout. */}
             <Link
               href={`/login?returnTo=/experiences/${id}`}
-              className="px-5 py-2 rounded-full text-xs font-headline font-bold text-white uppercase tracking-widest"
-              style={{ backgroundColor: "#FF6130", boxShadow: "0 2px 8px rgba(255,97,48,0.3)" }}
+              className="px-4 py-2 rounded-full text-xs font-headline font-bold uppercase tracking-widest transition-colors hover:bg-[rgba(15,34,41,0.05)]"
+              style={{ color: "#475569", border: "1px solid rgba(15,34,41,0.15)" }}
             >
               Sign in
             </Link>

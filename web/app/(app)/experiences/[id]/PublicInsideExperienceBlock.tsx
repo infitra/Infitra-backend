@@ -44,7 +44,7 @@ export function PublicInsideExperienceBlock({ experts, introPrompt }: Props) {
   const askName = owner?.display_name ?? "your expert";
 
   return (
-    <section className="px-6 lg:px-12 py-16 lg:py-24">
+    <section className="px-6 lg:px-12 py-12 lg:py-16">
       <div className="max-w-3xl mx-auto">
         {/* Section head */}
         <div className="text-center mb-10 lg:mb-12">
@@ -239,12 +239,9 @@ export function PublicInsideExperienceBlock({ experts, introPrompt }: Props) {
           </MechCard>
         </div>
 
-        <p
-          className="text-center text-sm lg:text-base font-medium mt-8 lg:mt-10"
-          style={{ color: "#64748b" }}
-        >
-          All of it opens the moment you join.
-        </p>
+        {/* The "All of it opens the moment you join" line moved into the
+            commit block below as its HEADLINE — saying it here and then
+            restarting with a weak "Ready to step in?" diluted the close. */}
       </div>
     </section>
   );

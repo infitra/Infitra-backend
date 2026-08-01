@@ -221,11 +221,15 @@ Deno.serve(async (req) => {
       body.set("metadata[buyer_fee_fixed_cents]",   String(FIXED_FEE_CENTS));
       body.set("metadata[buyer_total_cents]",       String(totalCents));
 
-      addLineItem(body, { name: kind === "session" ? `Session · ${title}` : `Challenge · ${title}`, currency, unit_amount: baseCents, quantity: 1 });
-      if (percentCents > 0) addLineItem(body, { name: "Card processing (3%)", currency, unit_amount: percentCents, quantity: 1 });
-      addLineItem(body, { name: "Fixed fee (CHF 0.30)", currency, unit_amount: FIXED_FEE_CENTS, quantity: 1 });
+      // ONE merged fee line (founder decision, 2026-07-31): "3%" and a
+      // separate "Fixed fee (CHF 0.30)" read as two mystery charges at the
+      // worst possible moment. One honest line, same total. Metadata keeps
+      // the split (buyer_fee_percent_cents / buyer_fee_fixed_cents) so the
+      // webhook economics are untouched.
+      addLineItem(body, { name: kind === "session" ? `Session · ${title}` : `Experience · ${title}`, currency, unit_amount: baseCents, quantity: 1 });
+      addLineItem(body, { name: "Card processing (3% + CHF 0.30)", currency, unit_amount: percentCents + FIXED_FEE_CENTS, quantity: 1 });
     } else {
-      addLineItem(body, { name: kind === "session" ? `Session · ${title}` : `Challenge · ${title}`, currency, unit_amount: baseCents, quantity: 1 });
+      addLineItem(body, { name: kind === "session" ? `Session · ${title}` : `Experience · ${title}`, currency, unit_amount: baseCents, quantity: 1 });
       addLineItem(body, { name: "Processing fee", currency, unit_amount: FIXED_FEE_CENTS, quantity: 1 });
     }
 

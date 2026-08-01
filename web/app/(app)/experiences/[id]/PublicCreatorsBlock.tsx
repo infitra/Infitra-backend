@@ -35,7 +35,7 @@ interface Props {
 
 export function PublicCreatorsBlock({ creators, topicsByCreator }: Props) {
   return (
-    <section className="px-6 lg:px-12 py-16 lg:py-24">
+    <section className="px-6 lg:px-12 py-12 lg:py-16">
       <div className="max-w-5xl mx-auto">
         {/* Section eyebrow + heading. Bundle 4.2.2: "Experts" not "coaches"
             (brand-language shift — capitalized as a noun). Section 2 begins
@@ -56,7 +56,7 @@ export function PublicCreatorsBlock({ creators, topicsByCreator }: Props) {
             : "Meet your Experts"}
         </h2>
         <p
-          className="text-sm sm:text-base text-center mb-12 lg:mb-16 max-w-xl mx-auto leading-relaxed"
+          className="text-sm sm:text-base text-center mb-10 lg:mb-12 max-w-xl mx-auto leading-relaxed"
           style={{ color: "#475569" }}
         >
           {creators.length === 1

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { PublicChallengeHero } from "@/app/(app)/experiences/[id]/PublicChallengeHero";
 import { PublicCreatorsBlock } from "@/app/(app)/experiences/[id]/PublicCreatorsBlock";
 import { PublicInsideExperienceBlock } from "@/app/(app)/experiences/[id]/PublicInsideExperienceBlock";
+import { PublicCommitBlock } from "@/app/(app)/experiences/[id]/PublicCommitBlock";
 import { loadBuyerRenderData } from "@/lib/challenges/buyerRenderData";
 import { resolveViewerTimeZone } from "@/lib/time/viewerTimeZone";
 
@@ -126,6 +127,23 @@ export default async function PreviewPage({
         <PublicCreatorsBlock creators={creators} topicsByCreator={topicsByCreator} />
 
         <PublicInsideExperienceBlock experts={creators} introPrompt={(c as any).intro_prompt ?? null} />
+
+        {/* Closing commit block — previously missing here, so experts never
+            saw the final CTA their buyers get before pulling the trigger.
+            isCreator renders the preview chip instead of a live buy button. */}
+        <PublicCommitBlock
+          challengeId={challengeId}
+          spaceId={null}
+          priceCents={c.price_cents}
+          currency={c.currency}
+          startDate={c.start_date}
+          endDate={c.end_date}
+          sessionCount={sessions.length}
+          spotsLeft={null}
+          isAuthenticated={true}
+          hasPurchased={false}
+          isCreator={true}
+        />
       </main>
     </>
   );
