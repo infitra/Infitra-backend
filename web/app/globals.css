@@ -389,3 +389,10 @@ body {
     display: none !important;
   }
 }
+
+/* Contract export: sane page geometry + no mid-block page tears. */
+@media print {
+  @page {
+    margin: 15mm;
+  }
+}

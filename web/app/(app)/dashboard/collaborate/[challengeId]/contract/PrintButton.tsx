@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+
 /**
  * PrintButton — "Export as PDF" via the browser's print dialog (P6e, lean by
  * design: every OS ships a save-as-PDF printer, so this delivers the artifact
@@ -7,6 +9,29 @@
  * chrome so only the contract document prints.
  */
 export function PrintButton() {
+  // A closed <details> renders nothing on paper and CSS cannot open it, so
+  // the sessions list would vanish from the export. Open every details
+  // before printing — via the button AND beforeprint (Cmd+P) — and restore
+  // the previously-closed ones afterwards.
+  useEffect(() => {
+    const opened: HTMLDetailsElement[] = [];
+    const before = () => {
+      document.querySelectorAll("details:not([open])").forEach((d) => {
+        (d as HTMLDetailsElement).open = true;
+        opened.push(d as HTMLDetailsElement);
+      });
+    };
+    const after = () => {
+      opened.splice(0).forEach((d) => (d.open = false));
+    };
+    window.addEventListener("beforeprint", before);
+    window.addEventListener("afterprint", after);
+    return () => {
+      window.removeEventListener("beforeprint", before);
+      window.removeEventListener("afterprint", after);
+    };
+  }, []);
+
   return (
     <button
       type="button"

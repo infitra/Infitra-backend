@@ -78,6 +78,13 @@ export interface ProgramSummary {
   reviewAvg?: number | null;
   reviewCount?: number;
   reviewsThisWeek?: number;
+  reviews?: Array<{
+    id: string;
+    rating: number;
+    comment: string | null;
+    createdAt: string;
+    reviewerName: string | null;
+  }>;
   newPosts?: number;
   nextSession?: {
     id: string;
@@ -400,6 +407,7 @@ async function loadDashboard(userId: string) {
       sessionLinksResult,
       reviewStatsResult,
       recentReviewsResult,
+      reviewListResult,
     ] = await Promise.all([
       supabase
         .from("app_challenge_member")
@@ -430,6 +438,11 @@ async function loadDashboard(userId: string) {
         .select("challenge_id")
         .in("challenge_id", activeIds)
         .gte("created_at", sevenDaysAgo),
+      supabase
+        .from("vw_experience_reviews_public")
+        .select("challenge_id, review_id, rating, comment, created_at, reviewer_name")
+        .in("challenge_id", activeIds)
+        .order("created_at", { ascending: false }),
     ]);
 
     const totalByChallenge: Record<string, number> = {};
@@ -471,6 +484,18 @@ async function loadDashboard(userId: string) {
         p.reviewsThisWeek = ((recentReviewsResult.data ?? []) as Array<{ challenge_id: string }>).filter(
           (r) => r.challenge_id === p.id,
         ).length;
+        p.reviews = ((reviewListResult.data ?? []) as Array<{
+          challenge_id: string; review_id: string; rating: number;
+          comment: string | null; created_at: string; reviewer_name: string | null;
+        }>)
+          .filter((r) => r.challenge_id === p.id)
+          .map((r) => ({
+            id: r.review_id,
+            rating: r.rating,
+            comment: r.comment,
+            createdAt: r.created_at,
+            reviewerName: r.reviewer_name,
+          }));
       }
       p.newMembersThisWeek = weeklyMembers[p.id] ?? 0;
       p.earningsCentsThisWeek = weeklyEarnings[p.id] ?? 0;

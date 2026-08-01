@@ -72,7 +72,7 @@ function chf(cents: number, currency: string): string {
 
 function Section({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <section className="mt-8">
+    <section className="mt-8 break-inside-avoid">
       <p
         className="text-[10px] font-bold uppercase tracking-[0.18em] font-headline mb-3"
         style={{ color: FAINT }}

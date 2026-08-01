@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { PrimaryActionPill } from "./PrimaryActionPill";
 import { ShareButton } from "./ShareButton";
+import { ReviewsDisclosure, type CardReview } from "./ReviewsDisclosure";
 
 /**
  * ActiveProgramCard — a live experience, side-by-side.
@@ -56,6 +57,7 @@ interface Program {
   reviewAvg?: number | null;
   reviewCount?: number;
   reviewsThisWeek?: number;
+  reviews?: CardReview[];
   newPosts?: number;
   nextSession?: ProgramSession | null;
   sessions?: ProgramSession[];
@@ -424,22 +426,6 @@ function SignalStrip({ program }: { program: Program }) {
   } else if (isLive && tw > 0) {
     cells.push(<SignalCell key="week" value={`${cw}/${tw}`} label="week" />);
   }
-  // Reviews as oversight (P6c): lineage-cumulative rating, with a dot when
-  // fresh reviews landed this week. Only once reviews exist — an active
-  // experience with none yet keeps the strip quiet.
-  if ((program.reviewCount ?? 0) > 0) {
-    cells.push(
-      <SignalCell
-        key="reviews"
-        value={`★ ${Number(program.reviewAvg ?? 0).toFixed(1)}`}
-        delta={
-          (program.reviewsThisWeek ?? 0) > 0 ? `+${program.reviewsThisWeek}` : undefined
-        }
-        label={`${program.reviewCount} ${program.reviewCount === 1 ? "review" : "reviews"}`}
-        dot={(program.reviewsThisWeek ?? 0) > 0}
-      />,
-    );
-  }
 
   return (
     <div className="flex rounded-xl overflow-hidden" style={{ border: "1px solid rgba(15,34,41,0.10)" }}>
@@ -688,7 +674,19 @@ export function ActiveProgramCard({ program, partner, user, density = "hero", ti
               Your tribe is forming — share to fill it
             </div>
           ) : (
-            <SignalStrip program={program} />
+            <>
+              <SignalStrip program={program} />
+              {(program.reviewCount ?? 0) > 0 && (
+                <div className="mt-2.5">
+                  <ReviewsDisclosure
+                    avg={Number(program.reviewAvg ?? 0)}
+                    count={program.reviewCount ?? 0}
+                    thisWeek={program.reviewsThisWeek ?? 0}
+                    reviews={program.reviews ?? []}
+                  />
+                </div>
+              )}
+            </>
           )}
         </div>
 

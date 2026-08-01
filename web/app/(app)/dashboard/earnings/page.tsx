@@ -191,12 +191,12 @@ export default async function EarningsPage({
         {hasRows && (
           <form
             method="get"
-            className="flex flex-wrap items-end gap-2.5 mb-4 rounded-2xl px-4 py-3"
+            className="flex flex-wrap items-center gap-3 mb-4 rounded-2xl px-4 py-3.5"
             style={{ backgroundColor: "rgba(255,255,255,0.6)", border: "1px solid rgba(15,34,41,0.08)" }}
           >
             <label className="block">
               <span className="block text-[10px] font-bold uppercase tracking-widest font-headline mb-1" style={{ color: "rgba(15,34,41,0.55)" }}>Experience</span>
-              <select name="exp" defaultValue={exp ?? ""} className="rounded-lg px-2.5 py-1.5 text-xs" style={{ border: "1px solid rgba(15,34,41,0.14)", backgroundColor: "#fff", color: "#0F2229" }}>
+              <select name="exp" defaultValue={exp ?? ""} className="h-9 min-w-[170px] rounded-lg px-2.5 text-xs" style={{ border: "1px solid rgba(15,34,41,0.14)", backgroundColor: "#fff", color: "#0F2229" }}>
                 <option value="">All</option>
                 {expOptions.map((t) => (
                   <option key={t} value={t}>{t}</option>
@@ -206,7 +206,7 @@ export default async function EarningsPage({
             {whoOptions.length > 0 && (
               <label className="block">
                 <span className="block text-[10px] font-bold uppercase tracking-widest font-headline mb-1" style={{ color: "rgba(15,34,41,0.55)" }}>Collaborator</span>
-                <select name="who" defaultValue={who ?? ""} className="rounded-lg px-2.5 py-1.5 text-xs" style={{ border: "1px solid rgba(15,34,41,0.14)", backgroundColor: "#fff", color: "#0F2229" }}>
+                <select name="who" defaultValue={who ?? ""} className="h-9 min-w-[150px] rounded-lg px-2.5 text-xs" style={{ border: "1px solid rgba(15,34,41,0.14)", backgroundColor: "#fff", color: "#0F2229" }}>
                   <option value="">All</option>
                   {whoOptions.map((n) => (
                     <option key={n} value={n}>{n}</option>
@@ -216,17 +216,17 @@ export default async function EarningsPage({
             )}
             <label className="block">
               <span className="block text-[10px] font-bold uppercase tracking-widest font-headline mb-1" style={{ color: "rgba(15,34,41,0.55)" }}>From</span>
-              <input type="date" name="from" defaultValue={from ?? ""} className="rounded-lg px-2.5 py-1 text-xs" style={{ border: "1px solid rgba(15,34,41,0.14)", backgroundColor: "#fff", color: "#0F2229" }} />
+              <input type="date" name="from" defaultValue={from ?? ""} className="h-9 rounded-lg px-2.5 text-xs" style={{ border: "1px solid rgba(15,34,41,0.14)", backgroundColor: "#fff", color: "#0F2229" }} />
             </label>
             <label className="block">
               <span className="block text-[10px] font-bold uppercase tracking-widest font-headline mb-1" style={{ color: "rgba(15,34,41,0.55)" }}>To</span>
-              <input type="date" name="to" defaultValue={to ?? ""} className="rounded-lg px-2.5 py-1 text-xs" style={{ border: "1px solid rgba(15,34,41,0.14)", backgroundColor: "#fff", color: "#0F2229" }} />
+              <input type="date" name="to" defaultValue={to ?? ""} className="h-9 rounded-lg px-2.5 text-xs" style={{ border: "1px solid rgba(15,34,41,0.14)", backgroundColor: "#fff", color: "#0F2229" }} />
             </label>
-            <button type="submit" className="px-4 py-2 rounded-full text-[11px] font-black font-headline uppercase tracking-wider text-white" style={{ backgroundColor: "#FF6130" }}>
+            <button type="submit" className="h-9 self-end px-5 rounded-full text-[11px] font-black font-headline uppercase tracking-wider text-white" style={{ backgroundColor: "#FF6130" }}>
               Filter
             </button>
             {filtered && (
-              <Link href="/dashboard/earnings" className="px-3 py-2 text-[11px] font-bold font-headline uppercase tracking-wider" style={{ color: "#64748b" }}>
+              <Link href="/dashboard/earnings" className="h-9 self-end inline-flex items-center px-3 text-[11px] font-bold font-headline uppercase tracking-wider" style={{ color: "#64748b" }}>
                 Reset
               </Link>
             )}
