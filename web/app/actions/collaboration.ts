@@ -46,7 +46,7 @@ export async function sendCollabInvites(params: {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated." };
 
-  if (params.invitees.length === 0) return { error: "Select at least one creator." };
+  if (params.invitees.length === 0) return { error: "Select at least one expert." };
   if (!params.message.trim()) return { error: "Please write a message." };
 
   const { data, error } = await supabase.rpc("send_collab_invites_with_draft", {

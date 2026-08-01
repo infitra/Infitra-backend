@@ -246,7 +246,7 @@ export async function updateChallenge(prevState: unknown, formData: FormData) {
 function humanizeUpdateError(code: string): string {
   const map: Record<string, string> = {
     not_authenticated: "You need to be signed in.",
-    challenge_not_found: "Challenge not found.",
+    challenge_not_found: "Experience not found.",
     challenge_not_draft: "Only drafts can be edited.",
     challenge_locked: "The contract is locked — reactivate drafting to edit.",
     not_a_collaborator: "Only the owner or a cohost can edit this challenge.",
@@ -457,7 +457,7 @@ export async function publishChallenge(challengeId: string) {
 
   // Publish is a milestone — keep it in the chat thread (cohorts want
   // to see this conversationally, not buried in the activity log).
-  await logWorkspaceMilestone(challengeId, "published the challenge");
+  await logWorkspaceMilestone(challengeId, "published the experience");
   // Land on the celebration page for collaboration publishes (it handles the
   // party-membership check and renders a summary with a single CTA back to
   // the dashboard). Solo publishes also route here — the page reads fine
@@ -525,13 +525,13 @@ export async function updateTribeCover(spaceId: string, coverImageUrl: string | 
 /** Maps DB blocker codes to human-readable messages. */
 function humanizeBlockers(codes: string[]): string {
   const map: Record<string, string> = {
-    challenge_not_found: "Challenge not found.",
-    only_owner_can_publish: "Only the owner can publish this challenge.",
+    challenge_not_found: "Experience not found.",
+    only_owner_can_publish: "Only the owner can publish this experience.",
     start_date_missing: "Start date is required.",
     start_date_cannot_be_past: "Start date must be in the future.",
     price_must_be_positive: "Price must be greater than zero to publish.",
     not_enough_sessions_min_3:
-      "At least 3 sessions are required to publish a challenge.",
+      "At least 3 sessions are required to publish an experience.",
     cohost_split_exceeds_100: "Cohost splits exceed 100%.",
     cohost_without_session:
       "A cohost has no linked session in the challenge.",

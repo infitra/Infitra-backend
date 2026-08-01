@@ -193,7 +193,7 @@ async function loadDashboard(userId: string) {
         .single(),
       supabase
         .from("app_challenge")
-        .select("id, title, image_url, status, start_date, end_date, owner_id, contract_id, created_at, continuation_group_id")
+        .select("id, title, description, image_url, status, start_date, end_date, owner_id, contract_id, created_at, continuation_group_id")
         .eq("owner_id", userId)
         .order("created_at", { ascending: false }),
       supabase
@@ -310,6 +310,14 @@ async function loadDashboard(userId: string) {
       };
   }
 
+  // Empty-draft noise guard: an owned draft with no title, description,
+  // cover, cohost or pending invite is an accidental "+ Create" visit, not
+  // work. Same rule as the create page's isMeaningfulDraft, which also
+  // prunes these from the DB after 30 min — this hides whatever that
+  // cleanup hasn't seen yet. Collected during the map (where cohost and
+  // invite context lives) and filtered after.
+  const noiseDraftIds = new Set<string>();
+
   // Build program summaries with stage + partner
   const rawPrograms: ProgramSummary[] = allChallenges
     .map((ch) => {
@@ -332,6 +340,19 @@ async function loadDashboard(userId: string) {
         partner?.pendingInvite ?? false,
         contractLocks[ch.id] ?? null,
       );
+
+      if (
+        ch.status === "draft" &&
+        ch.isOwner &&
+        (ch.title ?? "").trim() === "Untitled Challenge" &&
+        !((ch as any).description ?? "").trim() &&
+        !ch.image_url &&
+        cohostIds.length === 0 &&
+        !pendingTo
+      ) {
+        noiseDraftIds.add(ch.id);
+      }
+
       return {
         id: ch.id,
         title: ch.title,
@@ -346,9 +367,16 @@ async function loadDashboard(userId: string) {
         partner,
       };
     })
-    // Hide stale empty drafts (defensive — the create-page cleanup
-    // also handles this on its own visit)
-    .filter((p) => p.stage !== ("completed" as ProgramStage) || p.endDate);
+    // Two hides: completed rows without an end date (legacy artifacts), and
+    // the empty-draft noise collected above. NOTE: the previous version of
+    // this comment claimed to hide empty drafts while the predicate only
+    // checked the completed case — that gap was exactly the draft noise the
+    // founder saw on the dashboard.
+    .filter(
+      (p) =>
+        (p.stage !== ("completed" as ProgramStage) || p.endDate) &&
+        !noiseDraftIds.has(p.id),
+    );
 
   // One card per lineage: collapse a continuation group's published runs into the
   // active run, carrying the upcoming next run as an inside-the-card chip.
