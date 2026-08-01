@@ -185,6 +185,11 @@ export interface ExperienceSpaceState {
     /** Bumped by the feed's existing realtime channel on a question/comment —
      *  a cheap signal to re-fetch creatorStats without opening a 2nd channel. */
     feedActivity: number;
+    /** Tribe-feed focus filter. "open_for_me" = unanswered questions directed
+     *  at the viewing creator — the console's "Answer" deep-link sets it so
+     *  creators land on exactly the posts waiting on them (founder's walk:
+     *  "3 open questions" previously dropped them into the whole stream). */
+    feedFilter: "all" | "questions" | "open_for_me";
   };
 }
 
@@ -196,6 +201,7 @@ export interface ExperienceSpaceActions {
   setChannelStatus: (status: SpaceChannelStatus) => void;
   /** Hub asks the feed composer to open in a given mode (share / question). */
   setComposeIntent: (intent: ComposeIntent) => void;
+  setFeedFilter: (feedFilter: "all" | "questions" | "open_for_me") => void;
   /** Creator console: replace the at-a-glance numbers (after a live re-fetch). */
   setCreatorStats: (stats: CreatorStats) => void;
   /** Feed → "something happened" tick; the Shell re-fetches creatorStats on it. */
@@ -232,6 +238,8 @@ export function createExperienceSpaceStore(
       set((s) => ({ ui: { ...s.ui, channelStatus: status } })),
     setComposeIntent: (intent) =>
       set((s) => ({ ui: { ...s.ui, composeIntent: intent } })),
+    setFeedFilter: (feedFilter) =>
+      set((s) => ({ ui: { ...s.ui, feedFilter } })),
     setCreatorStats: (stats) =>
       set((s) => ({ ui: { ...s.ui, creatorStats: stats } })),
     bumpFeedActivity: () =>

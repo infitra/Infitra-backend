@@ -13,6 +13,7 @@ export function initFromSeed(
     ui: {
       channelStatus: "idle",
       composeIntent: null,
+      feedFilter: "all" as const,
       creatorStats,
       feedActivity: 0,
     },

@@ -58,6 +58,7 @@ export type CreatorContinuation = {
 
 export function YouPanel({ continuation }: { continuation?: CreatorContinuation | null }) {
   const viewer = useExperienceSpaceStore((s) => s.viewer);
+  const setFeedFilter = useExperienceSpaceStore((s) => s.setFeedFilter);
   const experience = useExperienceSpaceStore((s) => s.experience);
   const programState = useExperienceSpaceStore((s) => s.programState);
   const sessions = useExperienceSpaceStore((s) => s.sessions);
@@ -165,7 +166,7 @@ export function YouPanel({ continuation }: { continuation?: CreatorContinuation 
             {stats && stats.pending > 0 ? (
               <a
                 href="#tribe"
-                onClick={(e) => { e.preventDefault(); scrollToId("tribe"); }}
+                onClick={(e) => { e.preventDefault(); setFeedFilter("open_for_me"); scrollToId("tribe"); }}
                 className="flex items-center gap-2 rounded-xl px-3.5 py-3 transition-transform hover:scale-[1.01]"
                 style={{ backgroundColor: "rgba(255,97,48,0.10)", boxShadow: `inset 0 0 0 1.5px ${ORANGE}40` }}
               >

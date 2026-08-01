@@ -85,6 +85,8 @@ export function TribeFeed({
   const sessions = useExperienceSpaceStore((s) => s.sessions);
   const members = useExperienceSpaceStore((s) => s.members);
   const composeIntent = useExperienceSpaceStore((s) => s.ui.composeIntent);
+  const feedFilter = useExperienceSpaceStore((s) => s.ui.feedFilter);
+  const setFeedFilter = useExperienceSpaceStore((s) => s.setFeedFilter);
   const setComposeIntent = useExperienceSpaceStore((s) => s.setComposeIntent);
   // Reused by the creator console: this feed already holds the realtime channel
   // for questions/comments, so we tick a shared counter instead of opening a
@@ -343,6 +345,15 @@ export function TribeFeed({
 
   const needsAsk = kind === "question" && !askId;
   const textLocked = kind === null || needsAsk;
+  const visiblePosts = useMemo(() => {
+    if (feedFilter === "questions") return posts.filter((p) => p.kind === "question");
+    if (feedFilter === "open_for_me")
+      return posts.filter(
+        (p) => p.kind === "question" && !p.coachAnswer && p.directedTo.includes(viewer.id),
+      );
+    return posts;
+  }, [posts, feedFilter, viewer.id]);
+
   const canSubmit = !!body.trim() && !posting && !uploading && !textLocked;
   const placeholder =
     kind === null ? "Choose Share or Question to begin…"
@@ -505,7 +516,37 @@ export function TribeFeed({
           </div>
         ) : (
           <div className="space-y-3">
-            {posts.map((p) => (
+            {/* Focus chips — the console's "Answer" deep-link lands on
+                open_for_me so creators see exactly the questions waiting on
+                them instead of the whole stream. Filters the LOADED pages;
+                open questions are recent by nature. */}
+            <div className="flex items-center gap-1.5 pb-1">
+              {([
+                ["all", "All"],
+                ["questions", "Questions"],
+                ...(isCreator ? [["open_for_me", "Open for you"] as const] : []),
+              ] as const).map(([key, label]) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setFeedFilter(key)}
+                  className="px-3 py-1.5 rounded-full text-[11px] font-black font-headline uppercase tracking-wider transition-colors"
+                  style={
+                    feedFilter === key
+                      ? { backgroundColor: "rgba(255,97,48,0.12)", color: "#c2410c", boxShadow: "inset 0 0 0 1.5px rgba(255,97,48,0.35)" }
+                      : { backgroundColor: "rgba(15,34,41,0.04)", color: "#64748b" }
+                  }
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {visiblePosts.length === 0 && (
+              <p className="text-sm font-bold font-headline text-center py-6" style={{ color: "#94a3b8" }}>
+                {feedFilter === "open_for_me" ? "Nothing waiting on you. Nice." : "No questions yet."}
+              </p>
+            )}
+            {visiblePosts.map((p) => (
               <PostCard
                 key={p.id}
                 post={p}
