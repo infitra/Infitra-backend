@@ -17,10 +17,15 @@ export const viewport: Viewport = {
 };
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.infitra.fit";
-// Plausible analytics — cookieless, so no consent banner needed. Inert until
-// NEXT_PUBLIC_PLAUSIBLE_DOMAIN is set (e.g. "infitra.fit") in the Vercel env,
-// so this code can ship now and go live the moment the account exists.
-const PLAUSIBLE_DOMAIN = process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN;
+// Umami analytics (cloud.umami.is) — cookieless, so no consent banner
+// needed, and the free tier (100k events/mo) is far beyond pilot volume.
+// Replaced Plausible before activation: Plausible turned out to be paid
+// after a 30-day trial. Inert until NEXT_PUBLIC_UMAMI_WEBSITE_ID is set in
+// the Vercel env, so this code ships now and goes live the moment the
+// account exists. Swapping providers again is this block + lib/analytics.ts.
+const UMAMI_WEBSITE_ID = process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID;
+const UMAMI_SRC =
+  process.env.NEXT_PUBLIC_UMAMI_SRC ?? "https://cloud.umami.is/script.js";
 const DESCRIPTION =
   "Complementary experts, one live fitness experience. INFITRA provides the live rooms, the tribe space, the marketing page with checkout, the collaboration contract and the revenue splitting.";
 
@@ -70,19 +75,12 @@ export default function RootLayout({
           rule in globals.css with the grey surface token */}
       <body className="min-h-full flex flex-col antialiased text-on-surface">
         {children}
-        {PLAUSIBLE_DOMAIN && (
-          <>
-            <Script
-              src="https://plausible.io/js/script.js"
-              data-domain={PLAUSIBLE_DOMAIN}
-              strategy="afterInteractive"
-            />
-            {/* Queue stub so window.plausible() calls before the script loads
-                are captured (trackEvent in lib/analytics.ts). */}
-            <Script id="plausible-init" strategy="afterInteractive">
-              {`window.plausible=window.plausible||function(){(window.plausible.q=window.plausible.q||[]).push(arguments)}`}
-            </Script>
-          </>
+        {UMAMI_WEBSITE_ID && (
+          <Script
+            src={UMAMI_SRC}
+            data-website-id={UMAMI_WEBSITE_ID}
+            strategy="afterInteractive"
+          />
         )}
       </body>
     </html>
