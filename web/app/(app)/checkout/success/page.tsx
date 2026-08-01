@@ -5,7 +5,7 @@ import { ParticipantNav } from "@/app/components/ParticipantNav";
 import { FirstMovesCard } from "./FirstMovesCard";
 
 export const metadata = {
-  title: "Payment Confirmed — INFITRA",
+  title: "Payment confirmed · INFITRA",
 };
 
 const DEFAULT_INTRO_PROMPT = "What are you hoping to get from this experience?";
@@ -141,23 +141,55 @@ export default async function CheckoutSuccessPage({
               You&apos;re in!
             </h1>
             <p className="text-sm leading-relaxed" style={{ color: "#64748b" }}>
-              Payment confirmed — a receipt is on its way.
               {challengeId
-                ? " Take a moment to set yourself up, then step into your Experience."
-                : " We're finalizing your enrollment — it'll appear in My Programs in a few seconds."}
+                ? "Welcome to the tribe. Your spot is locked in and your receipt is on its way. Set yourself up below, then step inside."
+                : "Payment confirmed. We're finalizing your enrollment, it will appear in your experiences in a few seconds."}
             </p>
           </div>
 
           {challengeId ? (
-            <FirstMovesCard
-              challengeId={challengeId}
-              entitled={entitled}
-              canIntro={canIntro}
-              chapterOpens={chapterOpens}
-              introPrompt={introPrompt}
-              initialDisplayName={profile?.display_name ?? ""}
-              initialAvatarUrl={(profile?.avatar_url as string | null) ?? null}
-            />
+            <>
+              <FirstMovesCard
+                challengeId={challengeId}
+                entitled={entitled}
+                canIntro={canIntro}
+                chapterOpens={chapterOpens}
+                introPrompt={introPrompt}
+                initialDisplayName={profile?.display_name ?? ""}
+                initialAvatarUrl={(profile?.avatar_url as string | null) ?? null}
+              />
+
+              {/* Calendar export — the founder's turnout lever, offered at the
+                  moment commitment is highest. The /calendar route existed and
+                  was only reachable from inside the space; a buyer's best
+                  chance to block out the sessions is RIGHT NOW. Plain anchor:
+                  the route answers with a .ics attachment. (A click in the
+                  first seconds can 403 while the webhook finalizes enrolment;
+                  a human reaching this link is past that window.) */}
+              <a
+                href={`/experiences/${challengeId}/calendar`}
+                className="mt-4 flex items-center justify-center gap-2 w-full py-3 rounded-full text-sm font-bold font-headline transition-colors hover:bg-[rgba(8,145,178,0.08)]"
+                style={{
+                  color: "#0891b2",
+                  border: "1.5px solid rgba(8,145,178,0.35)",
+                }}
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <rect x="3" y="4" width="18" height="18" rx="2" />
+                  <path d="M16 2v4M8 2v4M3 10h18" />
+                </svg>
+                Add every live session to your calendar
+              </a>
+            </>
           ) : (
             <Link
               href="/me"
@@ -168,7 +200,7 @@ export default async function CheckoutSuccessPage({
                   "0 4px 14px rgba(255,97,48,0.35), 0 2px 6px rgba(255,97,48,0.20)",
               }}
             >
-              Go to My Programs
+              Go to my experiences
             </Link>
           )}
         </div>
