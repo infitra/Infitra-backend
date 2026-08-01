@@ -47,13 +47,28 @@ export function ProgressCard() {
         </div>
       ) : (
         <div className="flex items-center gap-4">
-          <Ring pct={progress.attendancePercent} />
+          {/* The ring is ATTENDANCE, not course progress — label it so the
+              two metrics can't blur (founder's walk note). */}
+          <div className="shrink-0 text-center">
+            <Ring pct={progress.attendancePercent} />
+            <p
+              className="text-[9px] uppercase tracking-[0.16em] font-headline mt-1"
+              style={{ color: "#94a3b8", fontWeight: 800 }}
+            >
+              Attendance
+            </p>
+          </div>
           <div className="min-w-0">
             <p className="text-sm font-black font-headline" style={{ color: INK }}>
-              {progress.attendedPastSessions} of {progress.pastSessions} attended
+              {progress.attendedPastSessions} of {progress.pastSessions} live sessions attended
             </p>
-            <p className="text-[12px] mt-1" style={{ color: "#64748b" }}>
-              {progress.upcomingSessions} ahead · {progress.progressPercent}% through
+            <p
+              className="text-[12px] mt-2 pt-2"
+              style={{ color: "#64748b", borderTop: "1px solid rgba(15,34,41,0.07)" }}
+            >
+              Experience {progress.progressPercent}% through ·{" "}
+              {progress.upcomingSessions}{" "}
+              {progress.upcomingSessions === 1 ? "session" : "sessions"} ahead
             </p>
           </div>
         </div>

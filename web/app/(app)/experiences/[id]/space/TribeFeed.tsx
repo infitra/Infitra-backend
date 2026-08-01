@@ -23,6 +23,7 @@ import type { ExperienceViewer, SpaceCreator, SpaceSession } from "@/lib/experie
 import { sessionTeamLabel } from "@/lib/experienceSpace/store";
 import { SessionDetailModal } from "@/app/components/SessionDetailModal";
 import { Avatar } from "./Avatar";
+import { ProfilePopover } from "./ProfilePopover";
 
 interface CoachAnswer { authorId: string; body: string; createdAt: string }
 
@@ -95,6 +96,11 @@ export function TribeFeed({
 
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [loading, setLoading] = useState(true);
+  // Keyset pagination (founder's walk note: the feed must not grow endless).
+  // list_challenge_posts already supports p_before_created_at/p_before_id;
+  // a full page back means there may be more.
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [body, setBody] = useState("");
   // Creators always compose a Share (context is an optional add-on, not a mode);
   // participants pick Share/Question, so they start ungated.
@@ -163,14 +169,42 @@ export function TribeFeed({
     authorName: profRef.current[r.author_id]?.name ?? "Member", authorAvatar: profRef.current[r.author_id]?.avatar ?? null,
   }), []);
 
+  const PAGE_SIZE = 30;
+
   const fetchPosts = useCallback(async () => {
     const supabase = createClient();
-    const { data } = await supabase.rpc("list_challenge_posts", { p_space: spaceId, p_limit: 30 });
+    const { data } = await supabase.rpc("list_challenge_posts", { p_space: spaceId, p_limit: PAGE_SIZE });
     const rows = (data as RawRow[]) ?? [];
     await enrich(rows);
     setPosts(rows.map(toPost));
+    setHasMore(rows.length === PAGE_SIZE);
     setLoading(false);
   }, [spaceId, enrich, toPost]);
+
+  const loadMore = useCallback(async () => {
+    setLoadingMore(true);
+    try {
+      // Keyset cursor = the oldest loaded post (list is newest-first).
+      const oldest = posts[posts.length - 1];
+      if (!oldest) return;
+      const supabase = createClient();
+      const { data } = await supabase.rpc("list_challenge_posts", {
+        p_space: spaceId,
+        p_limit: PAGE_SIZE,
+        p_before_created_at: oldest.created_at,
+        p_before_id: oldest.id,
+      });
+      const rows = (data as RawRow[]) ?? [];
+      await enrich(rows);
+      setPosts((prev) => {
+        const seen = new Set(prev.map((p) => p.id));
+        return [...prev, ...rows.map(toPost).filter((p) => !seen.has(p.id))];
+      });
+      setHasMore(rows.length === PAGE_SIZE);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [posts, spaceId, enrich, toPost]);
 
   useEffect(() => { fetchPosts(); }, [fetchPosts]);
 
@@ -489,6 +523,18 @@ export function TribeFeed({
                 onSubmitComment={(text) => submitComment(p, text)}
               />
             ))}
+
+            {hasMore && (
+              <button
+                type="button"
+                onClick={loadMore}
+                disabled={loadingMore}
+                className="w-full py-3 rounded-full text-[13px] font-bold font-headline transition-colors hover:bg-[rgba(15,34,41,0.04)] disabled:opacity-60"
+                style={{ color: "#64748b", border: "1px solid rgba(15,34,41,0.12)" }}
+              >
+                {loadingMore ? "Loading…" : "Show earlier posts"}
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -541,7 +587,11 @@ function PostCard({
   return (
     <article className="rounded-xl p-4" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.04), 0 1px 4px rgba(15,34,41,0.04)" }}>
       <div className="flex gap-3">
-        <Avatar src={post.authorAvatar} name={post.authorName} size={48} ring={ring} />
+        {/* Identity is the profile-layer trigger: tap the photo to meet the
+            person (P5 lean popover; stats/rankings deferred to Round 2). */}
+        <ProfilePopover profileId={post.author_id}>
+          <Avatar src={post.authorAvatar} name={post.authorName} size={48} ring={ring} />
+        </ProfilePopover>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
             <span className="text-sm font-black font-headline" style={{ color: INK }}>{post.authorName}</span>

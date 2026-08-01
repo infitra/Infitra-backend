@@ -143,7 +143,17 @@ export function ExperienceHeader() {
                   <p className="text-[11px] mt-1" style={{ color: "#94a3b8" }} suppressHydrationWarning>Week 1 begins {startStr}</p>
                 )}
               </div>
-              <div className="flex items-center gap-2 lg:justify-end lg:mt-3 shrink-0">
+            </div>
+
+            {/* Expand toggles + presence — ONE line (founder's walk note):
+                "Active now" used to float mid-height inside the status block;
+                it now sits on the same row as the toggles, right-aligned, so
+                the header reads as two clean lines: identity+status, then
+                controls. */}
+            <div className="flex flex-wrap items-center gap-2 mt-5 lg:mt-7">
+              <Toggle label="Meet your Experts" active={open === "experts"} onClick={() => toggle("experts")} />
+              {hasStructure && <Toggle label="Structure" active={open === "structure"} onClick={() => toggle("structure")} />}
+              <div className="ml-auto flex items-center gap-2 shrink-0">
                 {present.length > 0 && (
                   <div className="flex -space-x-2">
                     {present.slice(0, 3).map((u) => (
@@ -160,12 +170,6 @@ export function ExperienceHeader() {
                 <span className="text-[11px] uppercase tracking-[0.14em] font-headline" style={{ color: "#64748b", fontWeight: 800 }}>Active now</span>
                 <span className="text-sm font-black font-headline" style={{ color: INK }}>{present.length}</span>
               </div>
-            </div>
-
-            {/* Expand toggles */}
-            <div className="flex flex-wrap gap-2 mt-5 lg:mt-7 lg:pr-64">
-              <Toggle label="Meet your Experts" active={open === "experts"} onClick={() => toggle("experts")} />
-              {hasStructure && <Toggle label="Structure" active={open === "structure"} onClick={() => toggle("structure")} />}
             </div>
           </div>
         </div>
