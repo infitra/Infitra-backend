@@ -77,11 +77,15 @@ export function ProfilePopover({
   const isExpert = profile?.role === "creator";
 
   return (
-    <div ref={rootRef} className="relative inline-flex">
+    // self-start: as a flex child of the post row this wrapper would STRETCH
+    // to the card's full height and the button's centering floated the photo
+    // to mid-height — the founder's "picture is always in the middle" bug.
+    // Identity pins top-left, next to the name, like every feed ever.
+    <div ref={rootRef} className="relative inline-flex self-start">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex items-center gap-2 text-left cursor-pointer"
+        className="inline-flex items-start gap-2 text-left cursor-pointer"
         aria-expanded={open}
         aria-label="View profile"
       >
