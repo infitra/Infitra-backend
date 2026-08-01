@@ -345,7 +345,20 @@ function NextChapterSection({
   if (!continuation) return null;
 
   if (continuation.status === "none") {
-    if (!isOwner) return null;
+    if (!isOwner) {
+      // Cohosts used to get NOTHING here (the DB allows only the owner to
+      // create the continuation draft), which read as "the option is gone" —
+      // the founder hit exactly this on a completed run owned by the other
+      // account. Say the true state instead of hiding it.
+      return (
+        <Section label="Next chapter">
+          <p className="text-[12px] font-bold font-headline" style={{ color: "#64748b" }}>
+            Ready for a next run? The experience owner can prepare it from
+            this console — sessions and team carry over into a draft.
+          </p>
+        </Section>
+      );
+    }
     return (
       <Section label="Next chapter">
         <p className="text-[12px] font-bold font-headline mb-2.5" style={{ color: "#64748b" }}>

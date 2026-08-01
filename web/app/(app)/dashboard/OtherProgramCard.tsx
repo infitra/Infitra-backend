@@ -178,12 +178,17 @@ export function OtherProgramCard({ program, user }: Props) {
         {isUntitled ? "Untitled experience" : program.title}
       </p>
 
-      {/* NEXT STEP. */}
+      {/* NEXT STEP. Completed + owned experiences advertise the continuation
+          door explicitly (founder's walk: the archive gave no hint the next
+          run starts from the space; the actual action stays in the space's
+          console, owner-gated by the DB). */}
       <p
         className="text-[11px] uppercase tracking-widest font-headline mt-3.5 transition-colors group-hover:text-[#FF6130]"
         style={{ color: "#0F2229", fontWeight: 700 }}
       >
-        {cfg.cta}
+        {program.stage === "completed" && program.isOwner
+          ? "Prepare the next run →"
+          : cfg.cta}
       </p>
     </Link>
   );
