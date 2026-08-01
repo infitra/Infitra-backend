@@ -2515,3 +2515,50 @@ solo-session reviews · BIMI/VMC · .com domain · replay window.
 Delete the retired external cron job at its provider · infitra.ch/.app
 redirects at the registrars · reply to Postmark DMARC digests decision ·
 incorporation groundwork (unlocks Connect post-pilot).
+
+### §13.A — Phase A detail (locked 2026-07-31, from founder frontend walk, round 1)
+
+Decisions locked: fee display = ONE merged line, buyer pays (revisit with
+funnel data) · solo creation fully hidden for pilot · login CTA demoted, not
+removed · profile stats / rankings deferred to Round 2 as a designed feature.
+
+Polish rounds, in order (sequenced by who meets the surface first — Pair 1
+touches creator surfaces within days; participants weeks later). Verified
+against code before planning: buyer-page topic chips DO render
+(PublicCreatorsBlock) so P3 verifies the workspace→buyer data path rather
+than adding a render; tribe-feed pagination params already exist in
+list_challenge_posts (wiring only); cover_image is still referenced by
+ProfilePanel/dashboard so P1 verifies before deleting.
+
+- **P1 · Brand language sweep** — creator surfaces (dashboard, create,
+  workspace, console): challenge→experience, creator→Expert, cohort→tribe,
+  program→experience; "The promise"→"The outcome" as DISPLAY label only
+  (schema keeps promise_text).
+- **P2 · Create flow repair** — fix solo-click misroute (verify first); hide
+  solo creation for pilot; rebuild create page as the lean landing for
+  +Create on a populated dashboard; empty-draft hygiene (hide from grid,
+  avoid creating where detectable).
+- **P3 · Buyer funnel** — compact spacing; closing section rewrite leading
+  "All of it opens the moment you join" + strong CTA; demote desktop login
+  link; preview parity (final CTA section missing in preview); verify
+  topic-ownership data path; merge Stripe fee line items into one.
+- **P4 · Success page** — warmth pass in founder voice; full brand; calendar
+  export of all sessions (client .ics); keep photo + name + intro prompt.
+- **P5 · Experience space (participant)** — lean profile popovers (existing
+  data only); feed load-more; "Active now" row alignment; progress-card copy
+  distinguishing enrolment / progress / attendance.
+- **P6 · Creator oversight** — reviews on dashboard experience card
+  (aggregate + recent, card as door) + expert-profile rating (H3 leftover);
+  open-questions filter chips + console deep-link; archive continuation
+  option regression (verify); lean client-side earnings filters; contract
+  print-to-PDF via print stylesheet.
+
+Parallel: Plausible activation FIRST (funnel data is lost daily while
+inert) · leaked-password toggle · hello@ filter decision · welcome/buy-intent
+overlap stays as is.
+
+Round 2 backlog (explicit): profile stats + privacy toggle + opt-in
+rankings · console settings/contracts menu IA · design-coherence pass ·
+participant dashboard revisit · continuation surfaces re-walk · 2+ active
+experiences dashboard hero · real PDF generation if print CSS insufficient ·
+invite-code button (→ Phase B admin board).
