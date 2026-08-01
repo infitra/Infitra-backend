@@ -8,7 +8,7 @@ export const metadata = {
   title: "Payment Confirmed — INFITRA",
 };
 
-const DEFAULT_INTRO_PROMPT = "What are you hoping to get from this Experience?";
+const DEFAULT_INTRO_PROMPT = "What are you hoping to get from this experience?";
 
 /**
  * Post-purchase confirmation + onboarding. Reached right after Stripe redirects

@@ -202,7 +202,7 @@ export function TeamSection({
       {/* Description — polish v12.X: clarify that only the owner can
           change the revenue split (cohorts read-only). */}
       <p className="text-sm leading-relaxed mb-6" style={{ color: "#475569" }}>
-        Each creator&apos;s revenue share, sessions they lead, and the topics
+        Each expert&apos;s revenue share, sessions they lead, and the topics
         they own. Only the owner can adjust the revenue split. Topics help
         participants know who to ask about what.
       </p>

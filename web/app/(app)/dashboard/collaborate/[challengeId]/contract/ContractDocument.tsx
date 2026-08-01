@@ -205,7 +205,7 @@ export function ContractDocument({
           })}
         </div>
         <p className="text-[11px] mt-2" style={{ color: FAINT }}>
-          Share of creator earnings, after the platform fee. See Earnings for
+          Share of expert earnings, after the platform fee. See Earnings for
           per-sale figures.
         </p>
       </Section>

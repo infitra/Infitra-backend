@@ -213,7 +213,7 @@ export default async function PublishedCelebrationPage({
             className="text-base lg:text-lg leading-relaxed mb-8"
             style={{ color: "#475569" }}
           >
-            Your program lives at the link above. Share it in your community,
+            Your experience lives at the link above. Share it with your audience,
             DMs, or wherever your people are.
           </p>
           <Link

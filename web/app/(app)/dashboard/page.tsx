@@ -305,7 +305,7 @@ async function loadDashboard(userId: string) {
       .in("id", [...partnerProfileIds]);
     for (const p of data ?? [])
       partnerProfiles[(p as any).id] = {
-        name: (p as any).display_name ?? "Creator",
+        name: (p as any).display_name ?? "Expert",
         avatar: (p as any).avatar_url,
       };
   }
@@ -534,7 +534,7 @@ async function loadDashboard(userId: string) {
     const inviterMap: Record<string, { name: string; avatar: string | null; tagline: string | null }> = {};
     for (const p of inviterProfiles ?? [])
       inviterMap[(p as any).id] = {
-        name: (p as any).display_name ?? "Creator",
+        name: (p as any).display_name ?? "Expert",
         avatar: (p as any).avatar_url,
         tagline: (p as any).tagline,
       };
@@ -545,7 +545,7 @@ async function loadDashboard(userId: string) {
         !!rawTitle && rawTitle !== "Untitled Collaboration" && rawTitle !== "Untitled Challenge";
       pendingReceivedInvites.push({
         id: i.id,
-        fromName: inviterMap[i.from_id]?.name ?? "Creator",
+        fromName: inviterMap[i.from_id]?.name ?? "Expert",
         fromAvatar: inviterMap[i.from_id]?.avatar ?? null,
         fromTagline: inviterMap[i.from_id]?.tagline ?? null,
         message: i.message,

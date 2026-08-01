@@ -527,8 +527,8 @@ function EmptyState({ user }: { user: UserProfile }) {
             Build an experience with another expert.
           </h2>
           <p className="text-sm md:text-base mb-5" style={{ color: "#64748b" }}>
-            Co-create one live experience with a complementary creator, sell it as one
-            product, split revenue cleanly.
+            Team up with a complementary expert: design one live experience together,
+            sell it as one product, split revenue as you agree.
           </p>
           <Link
             href="/dashboard/create"
@@ -539,7 +539,7 @@ function EmptyState({ user }: { user: UserProfile }) {
               boxShadow: "0 4px 14px rgba(255,97,48,0.35), 0 2px 6px rgba(255,97,48,0.20)",
             }}
           >
-            Invite a creator →
+            Invite your expert partner →
           </Link>
         </div>
       </div>

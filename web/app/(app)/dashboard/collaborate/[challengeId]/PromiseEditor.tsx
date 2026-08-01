@@ -41,7 +41,7 @@ export function PromiseEditor({
     <div className="rounded-2xl infitra-card p-6">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-black font-headline text-[#94a3b8] uppercase tracking-wider">
-          The Promise
+          The Outcome
         </h3>
         {canEdit && (
           <span
@@ -53,7 +53,7 @@ export function PromiseEditor({
         )}
       </div>
       <p className="text-xs mb-4 leading-relaxed" style={{ color: "#64748b" }}>
-        One to three sentences. What this program will do for the participant —
+        One to three sentences. What this experience will do for the participant,
         in your own voice, jointly written.
       </p>
 
@@ -78,7 +78,7 @@ export function PromiseEditor({
         </p>
       ) : (
         <p className="text-sm italic" style={{ color: "#94a3b8" }}>
-          No Promise written yet.
+          No outcome written yet.
         </p>
       )}
 

@@ -6,7 +6,7 @@ import type { ActivityRow } from "./useWorkspaceRealtime";
 /**
  * The intro prompt — the question that fires for each new buyer the
  * first time they land in the cohort space (Bundle 8). Default
- * fallback ("What are you hoping to get from this program?") is used
+ * fallback ("What are you hoping to get from this experience?") is used
  * when the field is empty; this is a custom version creators can
  * write to set a more program-shaped tone.
  *
@@ -23,7 +23,7 @@ interface Props {
   profileMap: Record<string, { name: string; avatar: string | null }>;
 }
 
-const DEFAULT_PLACEHOLDER = "What are you hoping to get from this program?";
+const DEFAULT_PLACEHOLDER = "What are you hoping to get from this experience?";
 const MAX_LENGTH = 500;
 const INTRO_ATTRIBUTION_FIELDS = ["intro_prompt"];
 
@@ -54,7 +54,7 @@ export function IntroPromptEditor({
         )}
       </div>
       <p className="text-xs mb-4 leading-relaxed" style={{ color: "#64748b" }}>
-        Fires for each new participant the first time they open the cohort
+        Fires for each new participant the first time they open the tribe
         space. Leave blank to use the default question.
       </p>
 

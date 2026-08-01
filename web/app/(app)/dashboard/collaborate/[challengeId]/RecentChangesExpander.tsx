@@ -51,9 +51,9 @@ function describe(row: ActivityRow): string {
     case "capacity":
       return "updated the capacity";
     case "challenge_details":
-      return "updated the challenge details";
+      return "updated the experience details";
     case "promise_text":
-      return "updated the Promise";
+      return "updated the Outcome";
     case "weekly_focus":
     case "weekly_arc":
       return "updated the Weekly Focus";

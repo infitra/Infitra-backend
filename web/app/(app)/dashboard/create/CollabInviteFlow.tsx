@@ -112,7 +112,7 @@ export function CollabInviteFlow({ existingChallengeId, existingCollaboratorIds,
   }
 
   async function handleSend() {
-    if (invitees.length === 0) { setError("Select at least one creator."); return; }
+    if (invitees.length === 0) { setError("Select at least one expert."); return; }
     if (!message.trim()) { setError("Please write a message about your idea."); return; }
     setSending(true); setError(null);
 
@@ -187,7 +187,7 @@ export function CollabInviteFlow({ existingChallengeId, existingCollaboratorIds,
   return (
     <>
       <button onClick={() => setOpen(true)} className={triggerClass} style={triggerStyle}>
-        {isAdditional ? "+ Invite More" : "Invite Creators"}
+        {isAdditional ? "+ Invite More" : "Invite Experts"}
       </button>
       <Dialog open={open} onClose={closeAndReset} closeOnBackdrop={invitees.length === 0 && !message.trim()}>
         <div className="p-6 space-y-4">
@@ -224,7 +224,7 @@ export function CollabInviteFlow({ existingChallengeId, existingCollaboratorIds,
         <input
           value={query}
           onChange={(e) => handleSearch(e.target.value)}
-          placeholder={invitees.length > 0 && !isAdditional ? "Add more creators..." : "Search creators by name..."}
+          placeholder={invitees.length > 0 && !isAdditional ? "Add more experts..." : "Search experts by name..."}
           autoFocus
           className="w-full rounded-xl p-3 text-sm focus:outline-none"
           style={{ border: "1px solid rgba(15,34,41,0.12)", color: "#0F2229" }}
@@ -255,7 +255,7 @@ export function CollabInviteFlow({ existingChallengeId, existingCollaboratorIds,
           </div>
         )}
         {query.length >= 2 && !searching && results.length === 0 && (
-          <p className="text-xs text-[#94a3b8] py-3 text-center">No creators found</p>
+          <p className="text-xs text-[#94a3b8] py-3 text-center">No experts found</p>
         )}
       </div>
 

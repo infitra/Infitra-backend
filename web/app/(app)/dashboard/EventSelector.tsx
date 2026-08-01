@@ -59,7 +59,7 @@ export function EventSelector({
           <div className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
           <div className="relative w-full max-w-lg max-h-[70vh] rounded-2xl overflow-hidden flex flex-col" style={{ backgroundColor: "#FEFEFF", border: "1px solid rgba(0,0,0,0.08)", boxShadow: "0 8px 30px rgba(0,0,0,0.15)" }}>
             <div className="px-5 py-4 flex items-center justify-between" style={{ borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
-              <h3 className="text-base font-bold font-headline text-[#0F2229]">Link to a challenge or session</h3>
+              <h3 className="text-base font-bold font-headline text-[#0F2229]">Link to an experience or session</h3>
               <button onClick={() => setOpen(false)} className="text-[#94a3b8] hover:text-[#0F2229]">
                 <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" /></svg>
               </button>

@@ -5,7 +5,7 @@ import { SectionAttribution } from "./SectionAttribution";
 import type { ActivityRow } from "./useWorkspaceRealtime";
 
 /**
- * Program Rhythm — combined Weekly Focus + Sessions slotted under each
+ * Experience Rhythm — combined Weekly Focus + Sessions slotted under each
  * week. Replaces the two scattered sections from Bundle 3 v1.
  *
  * Sessions are slotted by their start_time into the week range
@@ -136,10 +136,10 @@ export function ProgramRhythmSection({
     return (
       <div className="rounded-2xl infitra-card p-6">
         <h3 className="text-sm font-black font-headline text-[#94a3b8] uppercase tracking-wider mb-3">
-          Program Rhythm
+          Experience Rhythm
         </h3>
         <p className="text-sm italic" style={{ color: "#94a3b8" }}>
-          Set the program dates above to build the weekly structure.
+          Set the experience dates above to build the weekly structure.
         </p>
       </div>
     );
@@ -149,7 +149,7 @@ export function ProgramRhythmSection({
     <div className="rounded-2xl infitra-card p-6">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <h3 className="text-sm font-black font-headline text-[#94a3b8] uppercase tracking-wider">
-          Program Rhythm
+          Experience Rhythm
         </h3>
         <span
           className="text-[10px] font-bold font-headline uppercase tracking-wider"

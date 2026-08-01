@@ -268,7 +268,7 @@ export function CollabInvitations({ invites }: { invites: Invite[] }) {
                     >
                       {invite.challengeTitle ?? (
                         <span className="italic" style={{ color: "#94a3b8" }}>
-                          an untitled program
+                          an untitled experience
                         </span>
                       )}
                     </p>

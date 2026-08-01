@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { trackEvent } from "@/lib/analytics";
 
 type Status = "loading" | "ready" | "ending" | "ended" | "error";
 
@@ -59,6 +60,7 @@ export function LiveRoomEmbed({
 
       setRoomUrl(data.room_url);
       setStatus("ready");
+      trackEvent("Join Live", { session: sessionId });
     } catch (err: any) {
       setError(err?.message || "Something went wrong.");
       setStatus("error");

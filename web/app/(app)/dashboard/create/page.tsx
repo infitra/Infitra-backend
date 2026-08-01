@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { createDraftChallenge } from "@/app/actions/challenge";
 import { CollabInviteFlow } from "./CollabInviteFlow";
 
 export const metadata = {
@@ -138,7 +137,7 @@ export default async function CreatePage() {
       .in("id", allPartnerIds);
     for (const p of profs ?? [])
       partnerProfiles[(p as any).id] = {
-        name: (p as any).display_name ?? "Creator",
+        name: (p as any).display_name ?? "Expert",
         avatar: (p as any).avatar_url,
       };
   }
@@ -195,7 +194,7 @@ export default async function CreatePage() {
       .in("id", cohostOwnerIds);
     for (const p of profs ?? [])
       ownerProfiles[(p as any).id] = {
-        name: (p as any).display_name ?? "Creator",
+        name: (p as any).display_name ?? "Expert",
         avatar: (p as any).avatar_url,
       };
   }
@@ -226,12 +225,15 @@ export default async function CreatePage() {
           </h1>
         </div>
         <p className="text-base text-[#64748b] ml-[19px] max-w-xl">
-          Start a new live program. Build it solo, or co-create with other experts.
+          Start a new live experience with a complementary expert.
         </p>
       </div>
 
-      {/* ── TWO PATHS — visual scene cards ───────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12">
+      {/* ── ONE PATH — collaboration only during the pilot. The solo card
+          is removed, not hidden: every pilot experience is built by a pair,
+          and the solo entry also had a misroute into the collaboration
+          workspace. Reintroduce deliberately post-pilot if solo returns. ── */}
+      <div className="grid grid-cols-1 gap-4 mb-12 max-w-xl">
         {/* Collaboration — primary (orange) */}
         <div
           className="rounded-2xl overflow-hidden infitra-card"
@@ -282,8 +284,8 @@ export default async function CreatePage() {
               Start Collaboration
             </h2>
             <p className="text-sm text-[#64748b] mb-4">
-              Co-create with other experts. Sell as one program. Split revenue
-              cleanly.
+              Design one live experience together, sell it as one product, and
+              split revenue as you agree.
             </p>
 
             {/* Value pills — system features the path gives you */}
@@ -308,87 +310,6 @@ export default async function CreatePage() {
           </div>
         </div>
 
-        {/* Solo — secondary (cyan) */}
-        <div
-          className="rounded-2xl overflow-hidden infitra-card"
-          style={{ border: "1px solid rgba(8,145,178,0.20)" }}
-        >
-          <div
-            className="h-1.5"
-            style={{ background: "linear-gradient(90deg, #9CF0FF, rgba(156,240,255,0.30))" }}
-          />
-          <div className="p-6">
-            {/* Mini scene: just the creator */}
-            <div className="flex items-center mb-5">
-              {userAvatar ? (
-                <img
-                  src={userAvatar}
-                  alt=""
-                  className="w-10 h-10 rounded-full object-cover"
-                  style={{
-                    border: "2px solid #FFFFFF",
-                    boxShadow: "0 2px 6px rgba(15,34,41,0.10)",
-                  }}
-                />
-              ) : (
-                <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center"
-                  style={{
-                    border: "2px solid #FFFFFF",
-                    backgroundColor: "rgba(8,145,178,0.18)",
-                    boxShadow: "0 2px 6px rgba(15,34,41,0.10)",
-                  }}
-                >
-                  <span className="text-sm font-black font-headline" style={{ color: "#0891b2" }}>
-                    {userInitial}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            <h2
-              className="text-lg md:text-xl font-headline tracking-tight mb-1.5"
-              style={{ color: "#0F2229", fontWeight: 700 }}
-            >
-              Solo Challenge
-            </h2>
-            <p className="text-sm text-[#64748b] mb-4">
-              Build and run a program on your own. You keep 100% of the
-              creator share.
-            </p>
-
-            <div className="flex flex-wrap gap-1.5 mb-5">
-              {["100% creator share", "Full ownership", "Same workspace"].map((v) => (
-                <span
-                  key={v}
-                  className="text-[10px] uppercase tracking-widest font-headline px-2.5 py-1 rounded-full"
-                  style={{
-                    color: "#0891b2",
-                    backgroundColor: "rgba(8,145,178,0.08)",
-                    border: "1px solid rgba(8,145,178,0.20)",
-                    fontWeight: 700,
-                  }}
-                >
-                  {v}
-                </span>
-              ))}
-            </div>
-
-            <form action={createDraftChallenge}>
-              <button
-                type="submit"
-                className="px-6 py-3 rounded-full text-sm font-black font-headline w-full"
-                style={{
-                  color: "#0891b2",
-                  border: "2px solid #9CF0FF",
-                  backgroundColor: "rgba(156,240,255,0.10)",
-                }}
-              >
-                + Start Solo
-              </button>
-            </form>
-          </div>
-        </div>
       </div>
 
       {/* ── DRAFTS — only shown if any meaningful drafts exist ── */}

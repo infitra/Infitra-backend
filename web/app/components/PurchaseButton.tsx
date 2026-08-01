@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { trackEvent } from "@/lib/analytics";
 
 /** Buyer-facing message for a checkout rejection code. The Edge Function
  *  returns these as HTTP 400, which supabase-js surfaces as a
@@ -63,6 +64,7 @@ export function PurchaseButton({
   async function handlePurchase() {
     setLoading(true);
     setError(null);
+    trackEvent("Checkout Started", { kind });
 
     try {
       const supabase = createClient();

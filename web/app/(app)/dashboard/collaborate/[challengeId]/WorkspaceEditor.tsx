@@ -352,7 +352,7 @@ export function WorkspaceEditor({
       return false;
     }
     if (!isDraft) {
-      setError("Program is no longer in draft.");
+      setError("This experience is no longer in draft.");
       return false;
     }
     return true;
@@ -954,7 +954,7 @@ export function WorkspaceEditor({
         {/* ── 2. CHALLENGE DETAILS (auto-save on blur) ─── */}
         <div className="rounded-2xl infitra-card p-6">
           <h3 className="text-sm font-black font-headline text-[#94a3b8] uppercase tracking-wider mb-5">
-            Challenge Details
+            Experience Details
           </h3>
 
           {canEdit ? (
@@ -1440,7 +1440,7 @@ export function WorkspaceEditor({
                     "0 6px 20px rgba(255,97,48,0.40), 0 2px 6px rgba(255,97,48,0.20)",
                 }}
               >
-                {publishing ? "Publishing..." : "Publish Challenge"}
+                {publishing ? "Publishing..." : "Publish Experience"}
               </button>
               <button
                 onClick={handleReactivate}

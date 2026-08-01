@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { trackEvent } from "@/lib/analytics";
 import { saveFirstMoves } from "@/app/actions/profile";
 import { submitIntro } from "@/app/actions/intro";
 import { uploadImage } from "@/lib/uploadImage";
@@ -60,6 +61,15 @@ export function FirstMovesCard({
   const [error, setError] = useState<string | null>(null);
 
   const destination = entitled ? `/experiences/${challengeId}/space` : "/me";
+
+  // Purchase conversion event, once per purchase per browser: the success
+  // page can be reloaded or revisited, and refires would inflate the goal.
+  useEffect(() => {
+    const key = `px_${challengeId}`;
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, "1");
+    trackEvent("Purchase", { challenge: challengeId });
+  }, [challengeId]);
 
   function onPickFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
