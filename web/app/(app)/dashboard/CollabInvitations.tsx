@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { acceptCollabInvite, declineCollabInvite } from "@/app/actions/collaboration";
+import { ProfileTrigger } from "@/app/components/ProfileModal";
 
 /**
  * CollabInvitations — redesigned (founder's polish round): warm and personal,
@@ -16,6 +17,7 @@ import { acceptCollabInvite, declineCollabInvite } from "@/app/actions/collabora
 
 interface Invite {
   id: string;
+  fromId: string;
   fromName: string;
   fromAvatar: string | null;
   fromTagline: string | null;
@@ -79,8 +81,12 @@ export function CollabInvitations({ invites }: { invites: Invite[] }) {
             }}
           >
             <div className="p-6 flex flex-col gap-4">
-              {/* WHO — the person, big and warm. */}
-              <div className="flex items-center gap-3.5">
+              {/* WHO — the person, big and warm; the whole identity opens
+                  their profile (founder: you should meet who's inviting you). */}
+              <ProfileTrigger
+                profileId={invite.fromId}
+                className="flex items-center gap-3.5 text-left w-full cursor-pointer"
+              >
                 {invite.fromAvatar ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -104,7 +110,7 @@ export function CollabInvitations({ invites }: { invites: Invite[] }) {
                 )}
                 <div className="min-w-0 flex-1">
                   <p className="text-[10px] uppercase tracking-[0.18em] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>
-                    Wants to build with you
+                    Wants to collaborate with you
                   </p>
                   <p className="text-lg font-black font-headline truncate leading-tight" style={{ color: INK }}>
                     {invite.fromName}
@@ -114,7 +120,7 @@ export function CollabInvitations({ invites }: { invites: Invite[] }) {
                     {timeAgo(invite.createdAt)}
                   </p>
                 </div>
-              </div>
+              </ProfileTrigger>
 
               {/* THE MESSAGE — the hero of the card. */}
               <blockquote
@@ -161,7 +167,7 @@ export function CollabInvitations({ invites }: { invites: Invite[] }) {
                       boxShadow: "0 4px 14px rgba(255,97,48,0.32), 0 2px 6px rgba(255,97,48,0.18)",
                     }}
                   >
-                    {isLoading ? "…" : "Let's build it →"}
+                    {isLoading ? "…" : "I am interested!"}
                   </button>
                   <button
                     onClick={() => handleDecline(invite.id)}

@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ParticipantNav } from "@/app/components/ParticipantNav";
 import { ParticipantPanel } from "./ParticipantPanel";
-import { ConnectionsGrid } from "@/app/components/ConnectionsGrid";
 import { ProfileModalHost } from "@/app/components/ProfileModal";
 import { OverlayHost } from "@/app/components/DashboardOverlay";
 import {
@@ -252,12 +251,8 @@ async function loadMe(userId: string) {
 
   const active = experiences.filter((e) => e.stage !== "completed");
   const completed = experiences.filter((e) => e.stage === "completed");
-  const tribePulse = {
-    newPosts: active.reduce((n, e) => n + e.newPosts, 0),
-    experiences: active.length,
-  };
 
-  return { profile, active, completed, tribePulse };
+  return { profile, active, completed };
 }
 
 export default async function MeHomePage() {
@@ -280,7 +275,7 @@ export default async function MeHomePage() {
       .not("joined_at", "is", null),
   ]);
   const connections = (connectionRows ?? []) as import("@/app/components/ConnectionsGrid").ConnectionRow[];
-  const { profile, active, completed, tribePulse } = await loadMe(user.id);
+  const { profile, active, completed } = await loadMe(user.id);
   const pendingReviews = completed.filter((e) => !e.rated).map((e) => ({ id: e.id, title: e.title }));
 
   return (
@@ -303,9 +298,8 @@ export default async function MeHomePage() {
                 displayName={profile?.display_name ?? ""}
                 avatarUrl={profile?.avatar_url ?? null}
                 joinedAt={(profile as { created_at?: string } | null)?.created_at ?? null}
-                tribePulse={tribePulse}
-                hasActiveExperiences={active.length > 0}
                 pendingReviews={pendingReviews}
+                connections={connections}
                 facts={(profile as { profile_facts?: Record<string, unknown> } | null)?.profile_facts ?? {}}
                 viewerId={user.id}
                 journey={{
@@ -351,25 +345,6 @@ export default async function MeHomePage() {
             </div>
           )}
 
-          {/* Tribe connections — the people this member has ACTUALLY trained
-              with, derived from shared experiences (never from an invite).
-              Every card opens the profile modal with the "YOU & X" strip. */}
-          {connections.length > 0 && (
-            <div className="mt-14">
-              <p
-                className="text-[11px] uppercase tracking-[0.22em] font-headline mb-2 px-1"
-                style={{ color: "#475569", fontWeight: 700 }}
-              >
-                Tribe connections
-                <span style={{ color: "#94a3b8" }}> · {connections.length}</span>
-              </p>
-              <p className="text-[12px] mb-5 px-1" style={{ color: "#94a3b8" }}>
-                People you have trained with, from every experience you have
-                been part of.
-              </p>
-              <ConnectionsGrid rows={connections} />
-            </div>
-          )}
 
           {/* Discover — fills the footer + invites joining more. */}
           {(active.length > 0 || completed.length > 0) && (

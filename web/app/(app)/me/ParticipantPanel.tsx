@@ -6,8 +6,9 @@ import { saveFirstMoves } from "@/app/actions/profile";
 import { uploadImage } from "@/lib/uploadImage";
 import { ProfileTrigger } from "@/app/components/ProfileModal";
 import { useOverlay, railActionStyle, OverlayPanel, OverlaySection } from "@/app/components/DashboardOverlay";
-import { AccountSettingsPanel } from "@/app/components/AccountPanels";
-import { MetricStrip, type Metric } from "@/app/(app)/dashboard/MetricStrip";
+import { AccountSettingsPanel, PeoplePanel } from "@/app/components/AccountPanels";
+import { StatCard, StatCardGrid, STAT_ICONS } from "@/app/components/StatCards";
+import type { ConnectionRow } from "@/app/components/ConnectionsGrid";
 import { RateExperienceButton } from "./RateExperienceButton";
 
 /**
@@ -17,12 +18,14 @@ import { RateExperienceButton } from "./RateExperienceButton";
  * settings open as pop-ups inside the page, never as separate pages.
  *
  *   PROFILE       — avatar + greeting + pilot footing.
- *   MY JOURNEY    — the member's own numbers: experiences, completed,
- *                   sessions attended, connections. What you built here —
- *                   the glue that makes this account YOURS.
- *   QUICK ACTIONS — edit profile · view my public profile · settings.
+ *   MY JOURNEY    — Pioneer crown + designed stat cards (each with its own
+ *                   accent and warmth, never a spreadsheet grid). The
+ *                   connections card opens Your people. What you built here
+ *                   is the glue that makes this account YOURS.
+ *   QUICK ACTIONS — edit profile · view my profile · your people · settings.
  *   TO DO         — pending ratings.
- *   ACROSS TRIBES — the live pulse.
+ * The "Across your tribes" pulse is gone (legacy — the per-experience cards
+ * carry those numbers).
  */
 
 const ORANGE = "#FF6130";
@@ -48,13 +51,12 @@ interface Props {
   displayName: string;
   avatarUrl: string | null;
   joinedAt: string | null;
-  tribePulse: { newPosts: number; experiences: number };
-  hasActiveExperiences: boolean;
   facts?: ParticipantFacts;
   viewerId: string;
   pendingReviews: { id: string; title: string }[];
   journey: Journey;
   visibility: string;
+  connections: ConnectionRow[];
 }
 
 function timeOfDayGreeting(): string {
@@ -98,40 +100,29 @@ function Section({ label, children }: { label: string; children: React.ReactNode
   );
 }
 
-function JourneyTiles({ journey, joinedAt }: { journey: Journey; joinedAt: string | null }) {
-  const tiles = [
-    { value: journey.experiences, label: journey.experiences === 1 ? "experience" : "experiences" },
-    { value: journey.completed, label: "completed" },
-    { value: journey.sessionsAttended, label: "sessions attended" },
-    { value: journey.connections, label: journey.connections === 1 ? "connection" : "connections" },
-  ];
+function PioneerCrown({ joinedAt }: { joinedAt: string | null }) {
   const since = pioneerSince(joinedAt);
+  if (!since) return null;
   return (
-    <div>
-      <div
-        className="grid grid-cols-2 rounded-xl overflow-hidden"
-        style={{ backgroundColor: "rgba(15,34,41,0.06)", gap: "1px", border: "1px solid rgba(15,34,41,0.06)" }}
+    <div
+      className="rounded-xl px-3 py-2 mb-2.5 flex items-center justify-center gap-1.5"
+      style={{
+        background: "linear-gradient(120deg, rgba(234,179,8,0.14), rgba(255,97,48,0.10))",
+        border: "1px solid rgba(234,179,8,0.35)",
+      }}
+    >
+      <span style={{ color: "#EAB308" }}>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 3l2.7 5.6 6.1.8-4.5 4.2 1.1 6-5.4-3-5.4 3 1.1-6L3.2 9.4l6.1-.8L12 3Z" />
+        </svg>
+      </span>
+      <span
+        className="text-[10.5px] uppercase tracking-[0.16em] font-headline"
+        style={{ color: "#92700c", fontWeight: 800 }}
+        suppressHydrationWarning
       >
-        {tiles.map((t, i) => (
-          <div key={i} className="px-2 py-2.5 text-center" style={{ backgroundColor: "#FFFFFF" }}>
-            <p className="text-[16px] font-black font-headline leading-none" style={{ color: INK, letterSpacing: "-0.02em" }}>
-              {t.value}
-            </p>
-            <p className="text-[9.5px] mt-1 leading-tight" style={{ color: "#94a3b8" }}>
-              {t.label}
-            </p>
-          </div>
-        ))}
-      </div>
-      {since && (
-        <p
-          className="text-[10px] uppercase tracking-[0.16em] font-headline mt-2.5 text-center"
-          style={{ color: "#c2410c", fontWeight: 800 }}
-          suppressHydrationWarning
-        >
-          ★ {since}
-        </p>
-      )}
+        {since}
+      </span>
     </div>
   );
 }
@@ -140,13 +131,12 @@ export function ParticipantPanel({
   displayName,
   avatarUrl,
   joinedAt,
-  tribePulse,
-  hasActiveExperiences,
   pendingReviews,
   facts = {},
   viewerId,
   journey,
   visibility,
+  connections,
 }: Props) {
   const router = useRouter();
   const openOverlay = useOverlay();
@@ -292,9 +282,38 @@ export function ParticipantPanel({
           </div>
         </div>
 
-        {/* ── MY JOURNEY ── what you built here. */}
+        {/* ── MY JOURNEY ── what you built here: the Pioneer crown, then
+            accented cards. The connections card is a door into Your people. */}
         <Section label="My journey">
-          <JourneyTiles journey={journey} joinedAt={joinedAt} />
+          <PioneerCrown joinedAt={joinedAt} />
+          <StatCardGrid>
+            <StatCard
+              icon={STAT_ICONS.flame}
+              value={`${journey.experiences}`}
+              label={journey.experiences === 1 ? "experience joined" : "experiences joined"}
+              accent={ORANGE}
+            />
+            <StatCard
+              icon={STAT_ICONS.check}
+              value={`${journey.completed}`}
+              label="completed"
+              accent="#1D9E75"
+            />
+            <StatCard
+              icon={STAT_ICONS.live}
+              value={`${journey.sessionsAttended}`}
+              label="live sessions attended"
+              accent={CYAN}
+            />
+            <StatCard
+              icon={STAT_ICONS.people}
+              value={`${journey.connections}`}
+              label="tribe connections"
+              sub="meet your people"
+              accent={CYAN}
+              onClick={() => openOverlay("people")}
+            />
+          </StatCardGrid>
         </Section>
 
         {/* ── QUICK ACTIONS ── everything opens inside the page. */}
@@ -305,9 +324,12 @@ export function ParticipantPanel({
           </button>
           <ProfileTrigger profileId={viewerId} className="w-full mb-2">
             <span className={railBtn} style={railActionStyle}>
-              View my public profile
+              View my profile
             </span>
           </ProfileTrigger>
+          <button type="button" onClick={() => openOverlay("people")} className={`${railBtn} mb-2`} style={railActionStyle}>
+            Your people
+          </button>
           <button type="button" onClick={() => openOverlay("settings")} className={railBtn} style={railActionStyle}>
             Account settings
           </button>
@@ -334,28 +356,6 @@ export function ParticipantPanel({
           </Section>
         )}
 
-        {/* ── ACROSS YOUR TRIBES ── */}
-        {hasActiveExperiences && (
-          <Section label="Across your tribes">
-            {tribePulse.newPosts > 0 ? (
-              <MetricStrip
-                metrics={
-                  [
-                    { value: tribePulse.newPosts, label: "new posts", accent: "cyan" },
-                    {
-                      value: tribePulse.experiences,
-                      label: tribePulse.experiences === 1 ? "experience" : "experiences",
-                    },
-                  ] as Metric[]
-                }
-              />
-            ) : (
-              <p className="text-[12px] font-bold font-headline" style={{ color: "#94a3b8" }}>
-                All caught up — quiet for now
-              </p>
-            )}
-          </Section>
-        )}
       </div>
 
       {/* ── OVERLAYS ── the same shell as the expert dashboard. */}
@@ -422,7 +422,8 @@ export function ParticipantPanel({
         </div>
       </OverlayPanel>
 
-      <AccountSettingsPanel visibility={visibility} agreements={[]} />
+      <AccountSettingsPanel visibility={visibility} />
+      <PeoplePanel connections={connections} isExpert={false} />
     </>
   );
 }

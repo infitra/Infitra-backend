@@ -627,6 +627,7 @@ async function loadDashboard(userId: string) {
         !!rawTitle && rawTitle !== "Untitled Collaboration" && rawTitle !== "Untitled Challenge";
       pendingReceivedInvites.push({
         id: i.id,
+        fromId: i.from_id,
         fromName: inviterMap[i.from_id]?.name ?? "Expert",
         fromAvatar: inviterMap[i.from_id]?.avatar ?? null,
         fromTagline: inviterMap[i.from_id]?.tagline ?? null,
@@ -710,6 +711,29 @@ export default async function DashboardPage() {
   const agreements = [...agrById.values()]
     .sort((a, b) => (b.start_date ?? "").localeCompare(a.start_date ?? ""))
     .map(({ id, title, status, start_date }) => ({ id, title, status, start_date }));
+
+  const allPrograms = [...data.activePrograms, ...data.otherPrograms];
+  const titleById = new Map(allPrograms.map((p) => [p.id, p.title]));
+  const allIds = allPrograms.map((p) => p.id);
+  const { data: allReviewRows } = allIds.length
+    ? await supabase
+        .from("vw_experience_reviews_public")
+        .select("challenge_id, review_id, rating, comment, created_at, reviewer_name")
+        .in("challenge_id", allIds)
+        .order("created_at", { ascending: false })
+    : { data: [] };
+  const expertReviews = ((allReviewRows ?? []) as Array<{
+    challenge_id: string; review_id: string; rating: number;
+    comment: string | null; created_at: string; reviewer_name: string | null;
+  }>).map((r) => ({
+    id: r.review_id,
+    challengeId: r.challenge_id,
+    challengeTitle: titleById.get(r.challenge_id) ?? "Experience",
+    rating: r.rating,
+    comment: r.comment,
+    createdAt: r.created_at,
+    reviewerName: r.reviewer_name,
+  }));
   const userInitial = data.profile.displayName?.[0]?.toUpperCase() ?? "?";
   const userProp = {
     name: data.profile.displayName,
@@ -744,6 +768,7 @@ export default async function DashboardPage() {
     invitations: data.pendingReceivedInvites.length,
     openQuestions: data.activePrograms.reduce((n, p) => n + (p.pendingQuestions ?? 0), 0),
     awaitingSignatures: drafts.filter((p) => p.stage === "awaiting-signatures").length,
+    nextChapters: archive.filter((p) => p.isOwner).length,
   };
   const earningsWeekCents = data.activePrograms.reduce(
     (n, p) => n + (p.earningsCentsThisWeek ?? 0),
@@ -791,12 +816,13 @@ export default async function DashboardPage() {
             profileFacts={data.profile.profileFacts}
             viewerId={user.id}
             joinedAt={data.profile.joinedAt}
-            tribePulse={tribePulse}
-            hasActivePrograms={activeCount > 0}
-            visibility={data.profile.visibility}
             agreements={agreements}
             connections={connections}
-            accountProof={accountProof}
+            reviews={expertReviews}
+            activeMembers={tribePulse.members}
+            avgRating={accountProof.avgRating}
+            totalReviews={accountProof.totalReviews}
+            sessionsLed={accountProof.sessionsLed}
             needsYou={needsYou}
             earningsWeekCents={earningsWeekCents}
           />
@@ -866,7 +892,7 @@ export default async function DashboardPage() {
                 </Section>
               )}
               {archiveCount > 0 && (
-                <Section label="Archive" count={archiveCount}>
+                <Section label="Archive" count={archiveCount} id="archive">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {archive.map((p) => (
                       <OtherProgramCard key={p.id} program={p} user={userProp} />
@@ -924,7 +950,7 @@ export default async function DashboardPage() {
           )}
 
           {archiveCount > 0 && (
-            <Section label="Archive" count={archiveCount}>
+            <Section label="Archive" count={archiveCount} id="archive">
               <ProgramBand>
                 {archive.map((p) => (
                   <div key={p.id} className="w-[300px] shrink-0">

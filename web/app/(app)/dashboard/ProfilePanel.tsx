@@ -5,58 +5,41 @@ import { CalendarButton } from "@/app/components/CalendarButton";
 import { ProfileTrigger } from "@/app/components/ProfileModal";
 import { useOverlay, railActionStyle } from "@/app/components/DashboardOverlay";
 import {
-  AccountSettingsPanel,
+  AgreementsPanel,
   EditProfilePanel,
   PeoplePanel,
+  ReviewsPanel,
   type AgreementRow,
+  type ExpertReview,
 } from "@/app/components/AccountPanels";
+import { StatCard, StatCardGrid, STAT_ICONS } from "@/app/components/StatCards";
 import type { ProfileFacts } from "@/app/components/ProfileEditForm";
 import type { ConnectionRow } from "@/app/components/ConnectionsGrid";
-import { MetricStrip, type Metric } from "./MetricStrip";
 
 /**
- * ProfilePanel — the expert's ACCOUNT CONSOLE (founder's coherence pass).
- * Not just "this is you" any more: the whole account at a glance, plus the
- * one place where everything that needs attention comes together.
+ * ProfilePanel — the expert's management console (founder's second polish
+ * round). Three jobs, in order:
  *
- *   PROFILE       — avatar + greeting + pilot footing (unchanged beat).
- *   NEEDS YOU     — the attention stack: invitations, open questions,
- *                   agreements awaiting signature. Each row jumps to its
- *                   section. Rendered only when something actually needs you.
- *   YOUR ACCOUNT  — whole-account numbers: tribe total, rating, sessions
- *                   led, earnings this week (door to earnings). The "I am in
- *                   control" band.
- *   QUICK ACTIONS — every secondary surface opens as an overlay INSIDE the
- *                   dashboard (edit profile, settings, your people): no
- *                   page-hopping, one visual grammar.
- *   ACROSS TRIBES — the live pulse (unchanged).
+ *   NEEDS YOU     — what should have my focus right now: invitations, open
+ *                   questions, agreements awaiting signature, and next
+ *                   chapters ready to open (continuations). The console's
+ *                   promise: you cannot miss anything important here.
+ *   YOUR ACCOUNT  — the account growing and moving: active tribe members,
+ *                   rating (opens ALL reviews, filterable), sessions led,
+ *                   money coming in. Designed stat cards, each with its own
+ *                   accent and weight — no spreadsheet grids.
+ *   QUICK ACTIONS — easy access; every secondary surface opens as an
+ *                   overlay inside the dashboard.
+ *
+ * The old "Across your tribes" pulse is gone (legacy): its numbers live in
+ * the stat cards and the per-experience cards now.
  */
 
 const ORANGE = "#FF6130";
 const CYAN = "#0891b2";
 const INK = "#0F2229";
 const GOLD = "#EAB308";
-
-interface TribePulse {
-  members: number;
-  newPosts: number;
-  pendingQuestions: number;
-  experiences: number;
-}
-
-export interface AccountProof {
-  tribeCount: number;
-  avgRating: number;
-  totalReviews: number;
-  sessionsLed: number;
-  hostingCount: number;
-}
-
-export interface NeedsYou {
-  invitations: number;
-  openQuestions: number;
-  awaitingSignatures: number;
-}
+const GREEN = "#1D9E75";
 
 interface Props {
   displayName: string;
@@ -66,14 +49,22 @@ interface Props {
   profileFacts: Record<string, unknown>;
   viewerId: string;
   joinedAt: string | null;
-  tribePulse: TribePulse;
-  hasActivePrograms: boolean;
-  visibility: string;
   agreements: AgreementRow[];
   connections: ConnectionRow[];
-  accountProof: AccountProof;
-  needsYou: NeedsYou;
+  reviews: ExpertReview[];
+  /** Members across currently ACTIVE experiences (all-time totals live in
+   *  Your people — this number is "moving now"). */
+  activeMembers: number;
+  avgRating: number;
+  totalReviews: number;
+  sessionsLed: number;
   earningsWeekCents: number;
+  needsYou: {
+    invitations: number;
+    openQuestions: number;
+    awaitingSignatures: number;
+    nextChapters: number;
+  };
 }
 
 function timeOfDayGreeting(): string {
@@ -126,27 +117,6 @@ function Section({ label, children }: { label: string; children: React.ReactNode
   );
 }
 
-function TribesPulse({ pulse }: { pulse: TribePulse }) {
-  const { members, newPosts, pendingQuestions } = pulse;
-  if (members === 0 && newPosts === 0 && pendingQuestions === 0) {
-    return (
-      <p className="text-[12px] font-bold font-headline" style={{ color: "#94a3b8" }}>
-        Your tribes are forming — share to fill them
-      </p>
-    );
-  }
-  const metrics: Metric[] = [
-    { value: members, label: members === 1 ? "member" : "members" },
-    { value: newPosts, label: "new posts", accent: "cyan" },
-  ];
-  if (pendingQuestions > 0) {
-    metrics.push({ value: pendingQuestions, label: "open questions", accent: "orange" });
-  }
-  return <MetricStrip metrics={metrics} />;
-}
-
-// ─── NEEDS YOU — the attention stack ─────────────────────────
-
 function AttentionRow({
   count,
   label,
@@ -178,55 +148,6 @@ function AttentionRow({
   );
 }
 
-// ─── YOUR ACCOUNT — the whole-account tiles ──────────────────
-
-function AccountTiles({ proof, earningsWeekCents }: { proof: AccountProof; earningsWeekCents: number }) {
-  const tiles: Array<{ value: string; label: string; gold?: boolean; href?: string }> = [
-    { value: `${proof.tribeCount}`, label: "in your tribes" },
-    ...(proof.totalReviews > 0
-      ? [{ value: `★ ${proof.avgRating.toFixed(1)}`, label: `${proof.totalReviews} reviews`, gold: true }]
-      : [{ value: `${proof.hostingCount}`, label: proof.hostingCount === 1 ? "experience" : "experiences" }]),
-    { value: `${proof.sessionsLed}`, label: "sessions led" },
-    {
-      value: `CHF ${(earningsWeekCents / 100).toFixed(0)}`,
-      label: "this week",
-      href: "/dashboard/earnings",
-    },
-  ];
-  return (
-    <div
-      className="grid grid-cols-2 rounded-xl overflow-hidden"
-      style={{ backgroundColor: "rgba(15,34,41,0.06)", gap: "1px", border: "1px solid rgba(15,34,41,0.06)" }}
-    >
-      {tiles.map((t, i) => {
-        const inner = (
-          <div className="px-2 py-2.5 text-center h-full" style={{ backgroundColor: "#FFFFFF" }}>
-            <p
-              className="text-[16px] font-black font-headline leading-none whitespace-nowrap"
-              style={{ color: t.gold ? GOLD : INK, letterSpacing: "-0.02em" }}
-            >
-              {t.value}
-            </p>
-            <p className="text-[9.5px] mt-1 leading-tight" style={{ color: "#94a3b8" }}>
-              {t.label}
-              {t.href && <span style={{ color: CYAN }}> →</span>}
-            </p>
-          </div>
-        );
-        return t.href ? (
-          <Link key={i} href={t.href} className="block transition-colors hover:bg-[rgba(8,145,178,0.04)]">
-            {inner}
-          </Link>
-        ) : (
-          <div key={i}>{inner}</div>
-        );
-      })}
-    </div>
-  );
-}
-
-// ─── Panel ───────────────────────────────────────────────────
-
 export function ProfilePanel({
   displayName,
   avatarUrl,
@@ -235,14 +156,15 @@ export function ProfilePanel({
   profileFacts,
   viewerId,
   joinedAt,
-  tribePulse,
-  hasActivePrograms,
-  visibility,
   agreements,
   connections,
-  accountProof,
-  needsYou,
+  reviews,
+  activeMembers,
+  avgRating,
+  totalReviews,
+  sessionsLed,
   earningsWeekCents,
+  needsYou,
 }: Props) {
   const openOverlay = useOverlay();
   const firstName = displayName.split(" ")[0] || displayName;
@@ -280,6 +202,17 @@ export function ProfilePanel({
         label={needsYou.awaitingSignatures === 1 ? "agreement awaiting signature" : "agreements awaiting signature"}
         href="#drafts"
         accent="#92700c"
+      />,
+    );
+  }
+  if (needsYou.nextChapters > 0) {
+    attention.push(
+      <AttentionRow
+        key="next"
+        count={needsYou.nextChapters}
+        label={needsYou.nextChapters === 1 ? "next chapter ready to open" : "next chapters ready to open"}
+        href="#archive"
+        accent={GREEN}
       />,
     );
   }
@@ -350,19 +283,56 @@ export function ProfilePanel({
           )}
         </div>
 
-        {/* ── NEEDS YOU ── only when something does. */}
+        {/* ── NEEDS YOU ── the focus stack; only when something does. */}
         {attention.length > 0 && (
           <Section label="Needs you">
             <div className="space-y-2">{attention}</div>
           </Section>
         )}
 
-        {/* ── YOUR ACCOUNT ── */}
+        {/* ── YOUR ACCOUNT ── the account, growing and moving. */}
         <Section label="Your account">
-          <AccountTiles proof={accountProof} earningsWeekCents={earningsWeekCents} />
+          <StatCardGrid>
+            <StatCard
+              icon={STAT_ICONS.people}
+              value={`${activeMembers}`}
+              label="active tribe members"
+              accent={CYAN}
+            />
+            {totalReviews > 0 ? (
+              <StatCard
+                icon={STAT_ICONS.star}
+                value={`★ ${avgRating.toFixed(1)}`}
+                label={`${totalReviews} ${totalReviews === 1 ? "review" : "reviews"}`}
+                sub="read them all"
+                accent={GOLD}
+                onClick={() => openOverlay("reviews")}
+              />
+            ) : (
+              <StatCard
+                icon={STAT_ICONS.star}
+                value="—"
+                label="no reviews yet"
+                accent={GOLD}
+              />
+            )}
+            <StatCard
+              icon={STAT_ICONS.bolt}
+              value={`${sessionsLed}`}
+              label="sessions led"
+              accent={ORANGE}
+            />
+            <StatCard
+              icon={STAT_ICONS.coins}
+              value={`CHF ${(earningsWeekCents / 100).toFixed(0)}`}
+              label="earned this week"
+              accent={GREEN}
+              href="/dashboard/earnings"
+            />
+          </StatCardGrid>
         </Section>
 
-        {/* ── QUICK ACTIONS ── every secondary surface is an overlay. */}
+        {/* ── QUICK ACTIONS ── */}
         <Section label="Quick actions">
           <Link
             href="/dashboard/create"
@@ -378,24 +348,17 @@ export function ProfilePanel({
           </button>
           <ProfileTrigger profileId={viewerId} className="w-full mb-2">
             <span className={railBtn} style={railActionStyle}>
-              View my public profile
+              View my profile
             </span>
           </ProfileTrigger>
           <button type="button" onClick={() => openOverlay("people")} className={`${railBtn} mb-2`} style={railActionStyle}>
             Your people
           </button>
           <button type="button" onClick={() => openOverlay("settings")} className={`${railBtn} mb-2`} style={railActionStyle}>
-            Account settings
+            My recorded agreements
           </button>
           <CalendarButton href="/dashboard/calendar" label="Export calendar" block />
         </Section>
-
-        {/* ── ACROSS YOUR TRIBES ── */}
-        {hasActivePrograms && (
-          <Section label="Across your tribes">
-            <TribesPulse pulse={tribePulse} />
-          </Section>
-        )}
       </div>
 
       {/* The overlays this rail opens. */}
@@ -407,8 +370,9 @@ export function ProfilePanel({
         isCreator
         initialFacts={profileFacts as ProfileFacts}
       />
-      <AccountSettingsPanel visibility={visibility} agreements={agreements} />
+      <AgreementsPanel agreements={agreements} />
       <PeoplePanel connections={connections} isExpert />
+      <ReviewsPanel reviews={reviews} />
     </>
   );
 }
