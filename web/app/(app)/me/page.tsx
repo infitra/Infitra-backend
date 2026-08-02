@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ParticipantNav } from "@/app/components/ParticipantNav";
 import { ParticipantPanel } from "./ParticipantPanel";
+import { ConnectionsGrid } from "@/app/components/ConnectionsGrid";
+import { ProfileModalHost } from "@/app/components/ProfileModal";
 import {
   ParticipantExperienceCard,
   CompletedExperienceCard,
@@ -265,11 +267,15 @@ export default async function MeHomePage() {
   if (!user) redirect("/login?returnTo=/me");
 
   const viewerTimeZone = await resolveViewerTimeZone();
+
+  // Social layer: the caller's derived connection graph (one definer RPC).
+  const { data: connectionRows } = await supabase.rpc("load_my_connections");
+  const connections = (connectionRows ?? []) as import("@/app/components/ConnectionsGrid").ConnectionRow[];
   const { profile, active, completed, tribePulse } = await loadMe(user.id);
   const pendingReviews = completed.filter((e) => !e.rated).map((e) => ({ id: e.id, title: e.title }));
 
   return (
-    <>
+    <ProfileModalHost>
       <ParticipantNav displayName={profile?.display_name ?? null} role={profile?.role ?? undefined} />
 
       <div className="pt-20 px-6">
@@ -324,6 +330,26 @@ export default async function MeHomePage() {
             </div>
           )}
 
+          {/* Tribe connections — the people this member has ACTUALLY trained
+              with, derived from shared experiences (never from an invite).
+              Every card opens the profile modal with the "YOU & X" strip. */}
+          {connections.length > 0 && (
+            <div className="mt-14">
+              <p
+                className="text-[11px] uppercase tracking-[0.22em] font-headline mb-2 px-1"
+                style={{ color: "#475569", fontWeight: 700 }}
+              >
+                Tribe connections
+                <span style={{ color: "#94a3b8" }}> · {connections.length}</span>
+              </p>
+              <p className="text-[12px] mb-5 px-1" style={{ color: "#94a3b8" }}>
+                People you have trained with, from every experience you have
+                been part of.
+              </p>
+              <ConnectionsGrid rows={connections} />
+            </div>
+          )}
+
           {/* Discover — fills the footer + invites joining more. */}
           {(active.length > 0 || completed.length > 0) && (
             <div className="mt-14">
@@ -370,7 +396,7 @@ export default async function MeHomePage() {
           )}
         </div>
       </div>
-    </>
+    </ProfileModalHost>
   );
 }
 

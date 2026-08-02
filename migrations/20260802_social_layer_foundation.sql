@@ -1,0 +1,16 @@
+-- Social layer foundation (2026-08-02). Applied to production as
+-- social_layer_foundation; kept for the repo record. Summary:
+-- 1) BUGFIX app_profile_stats.creator_tribe_members_count: counted creator-
+--    space FOLLOWERS, not experience members (seed data made both coincide).
+--    Now: distinct members across owned + co-hosted experiences.
+-- 2) load_public_profile(uuid): one definer call per profile-modal open —
+--    base + facts + credentials + proof numbers (experts: rating, tribe,
+--    hosting, sessions LED, questions answered; public participants: tribes,
+--    completed, sessions ATTENDED via joined_at) + the "YOU & X" shared strip
+--    vs the caller (always rendered: it is the intersection both parties
+--    already know). Private profiles return limited: name/photo/role/shared.
+-- 3) load_my_connections(): the caller's DERIVED graph from memberships +
+--    cohost links — kind collaborator > expert > member, shared counts and
+--    titles, active-together flag. No stored graph, no requests: connections
+--    exist because the experiences happened, and persist because membership
+--    rows survive completion.

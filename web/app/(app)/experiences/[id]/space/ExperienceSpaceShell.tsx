@@ -21,6 +21,7 @@ import { TribeFeed } from "./TribeFeed";
 import { IntroActionCard } from "./IntroActionCard";
 import { ReactivateCard, ContinueStrip } from "./ViewOnlyBanner";
 import { Antechamber } from "./Antechamber";
+import { ProfileModalHost } from "@/app/components/ProfileModal";
 import { PrePulseCard } from "./PrePulseCard";
 import { ReflectionCard } from "./ReflectionCard";
 import { WeekJourney } from "./WeekJourney";
@@ -50,7 +51,9 @@ export function ExperienceSpaceShell({
 }) {
   return (
     <ExperienceSpaceStoreProvider initialState={initFromSeed(seed, initialCreatorStats ?? null)}>
-      <SpaceBody reviewState={reviewState} continuation={continuation} />
+      <ProfileModalHost>
+        <SpaceBody reviewState={reviewState} continuation={continuation} />
+      </ProfileModalHost>
     </ExperienceSpaceStoreProvider>
   );
 }

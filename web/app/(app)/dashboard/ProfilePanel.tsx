@@ -233,6 +233,13 @@ export function ProfilePanel({
             Edit profile
           </button>
           <CalendarButton href="/dashboard/calendar" label="Export calendar" block />
+          <Link
+            href="/dashboard/people"
+            className="flex w-full items-center justify-center gap-1.5 rounded-xl py-3 px-4 text-[13px] font-black font-headline transition-colors mt-2"
+            style={{ color: "#475569", border: "1px solid rgba(15,34,41,0.12)", backgroundColor: "rgba(255,255,255,0.6)" }}
+          >
+            Your people
+          </Link>
         </Section>
 
         {/* ── ACROSS YOUR TRIBES ── global pulse, only when something's live. */}

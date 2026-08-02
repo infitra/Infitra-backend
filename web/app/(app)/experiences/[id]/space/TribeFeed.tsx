@@ -23,7 +23,7 @@ import type { ExperienceViewer, SpaceCreator, SpaceSession } from "@/lib/experie
 import { sessionTeamLabel } from "@/lib/experienceSpace/store";
 import { SessionDetailModal } from "@/app/components/SessionDetailModal";
 import { Avatar } from "./Avatar";
-import { ProfilePopover } from "./ProfilePopover";
+import { ProfileTrigger } from "@/app/components/ProfileModal";
 
 interface CoachAnswer { authorId: string; body: string; createdAt: string }
 
@@ -653,9 +653,9 @@ function PostCard({
       <div className="flex gap-3">
         {/* Identity is the profile-layer trigger: tap the photo to meet the
             person (P5 lean popover; stats/rankings deferred to Round 2). */}
-        <ProfilePopover profileId={post.author_id}>
+        <ProfileTrigger profileId={post.author_id}>
           <Avatar src={post.authorAvatar} name={post.authorName} size={48} ring={ring} />
-        </ProfilePopover>
+        </ProfileTrigger>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
             <span className="text-sm font-black font-headline" style={{ color: INK }}>{post.authorName}</span>
@@ -757,7 +757,9 @@ function PostCard({
                   const cRing = cCreator ? ORANGE : CYAN;
                   return (
                     <div key={c.id} className="flex gap-2.5">
-                      <Avatar src={c.authorAvatar} name={c.authorName} size={34} ring={cRing} />
+                      <ProfileTrigger profileId={c.author_id}>
+                        <Avatar src={c.authorAvatar} name={c.authorName} size={34} ring={cRing} />
+                      </ProfileTrigger>
                       <div className="flex-1 min-w-0 rounded-xl px-3 py-2" style={{ backgroundColor: c.isCoachAnswer ? "rgba(8,145,178,0.07)" : "#FAF7F1" }}>
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="text-[12px] font-black font-headline" style={{ color: INK }}>{c.authorName}</span>

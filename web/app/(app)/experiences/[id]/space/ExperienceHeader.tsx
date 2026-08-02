@@ -19,6 +19,7 @@ import { useExperienceSpaceStore } from "@/lib/experienceSpace/StoreProvider";
 import { programStatus } from "@/lib/experienceSpace/weekJourney";
 import { usePresence } from "./usePresence";
 import { Avatar } from "./Avatar";
+import { ProfileTrigger } from "@/app/components/ProfileModal";
 import { FoundingExpertStar, FoundingExpertBadge } from "../PublicChallengeHero";
 
 const ORANGE = "#FF6130";
@@ -109,7 +110,9 @@ export function ExperienceHeader() {
               <div className="flex items-center gap-2 mt-3">
                 <div className="flex -space-x-2">
                   {creators.map((c) => (
-                    <Avatar key={c.id} src={c.avatar} name={c.name} size={36} ring={ORANGE} />
+                    <ProfileTrigger key={c.id} profileId={c.id} className="cursor-pointer">
+                      <Avatar src={c.avatar} name={c.name} size={36} ring={ORANGE} />
+                    </ProfileTrigger>
                   ))}
                 </div>
                 <span className="text-sm font-bold font-headline" style={{ color: "#475569" }}>
@@ -151,7 +154,9 @@ export function ExperienceHeader() {
                   <div className="flex -space-x-2">
                     {present.slice(0, 3).map((u) => (
                       <div key={u.id} className="relative">
-                        <Avatar src={u.avatar} name={u.name} size={32} ring="#FFFFFF" bg={CYAN} />
+                        <ProfileTrigger profileId={u.id} className="cursor-pointer">
+                          <Avatar src={u.avatar} name={u.name} size={32} ring="#FFFFFF" bg={CYAN} />
+                        </ProfileTrigger>
                         <span
                           className="absolute bottom-0 right-0 rounded-full animate-pulse"
                           style={{ width: 8, height: 8, backgroundColor: DARKCYAN, border: "2px solid #FFFFFF" }}
@@ -178,7 +183,9 @@ export function ExperienceHeader() {
                   <div className="flex -space-x-2">
                     {present.slice(0, 3).map((u) => (
                       <div key={u.id} className="relative">
-                        <Avatar src={u.avatar} name={u.name} size={32} ring="#FFFFFF" bg={CYAN} />
+                        <ProfileTrigger profileId={u.id} className="cursor-pointer">
+                          <Avatar src={u.avatar} name={u.name} size={32} ring="#FFFFFF" bg={CYAN} />
+                        </ProfileTrigger>
                         <span
                           className="absolute bottom-0 right-0 rounded-full animate-pulse"
                           style={{ width: 8, height: 8, backgroundColor: DARKCYAN, border: "2px solid #FFFFFF" }}
