@@ -28,12 +28,28 @@ interface Creator {
   is_founding_expert?: boolean | null;
 }
 
+export interface CreatorCredential {
+  id: string;
+  kind: string;
+  title: string;
+  org: string | null;
+  year: number | null;
+}
+
 interface Props {
   creators: Creator[];
   topicsByCreator: Record<string, string[]>;
+  /** P7 trust strip: structured, self-declared background per expert. */
+  credentialsByCreator?: Record<string, CreatorCredential[]>;
 }
 
-export function PublicCreatorsBlock({ creators, topicsByCreator }: Props) {
+const CRED_GLYPH: Record<string, string> = {
+  certification: "📜",
+  education: "🎓",
+  experience: "💼",
+};
+
+export function PublicCreatorsBlock({ creators, topicsByCreator, credentialsByCreator = {} }: Props) {
   return (
     <section className="px-6 lg:px-12 py-12 lg:py-16">
       <div className="max-w-5xl mx-auto">
@@ -77,6 +93,7 @@ export function PublicCreatorsBlock({ creators, topicsByCreator }: Props) {
           {creators.map((c) => {
             const roleColor = c.role === "owner" ? "#FF6130" : "#0891b2";
             const topics = topicsByCreator[c.id] ?? [];
+            const credentials = credentialsByCreator[c.id] ?? [];
 
             return (
               <article
@@ -174,6 +191,31 @@ export function PublicCreatorsBlock({ creators, topicsByCreator }: Props) {
                         </span>
                       ))}
                     </div>
+                  </>
+                )}
+
+                {/* P7 · BACKGROUND — the legitimacy layer. Structured
+                    credentials, rendered as a quiet document-like list: this
+                    is where a buyer's "are these people qualified?" gets its
+                    answer, on the page where the money decision happens. */}
+                {credentials.length > 0 && (
+                  <>
+                    <p
+                      className="text-[10px] font-bold font-headline uppercase tracking-[0.18em] mt-4 mb-2"
+                      style={{ color: "#94a3b8" }}
+                    >
+                      Background
+                    </p>
+                    <ul className="space-y-1">
+                      {credentials.map((cr) => (
+                        <li key={cr.id} className="flex items-baseline gap-1.5 text-[12.5px]" style={{ color: "#475569" }}>
+                          <span aria-hidden className="text-[11px]">{CRED_GLYPH[cr.kind] ?? "•"}</span>
+                          <span className="font-bold font-headline" style={{ color: "#0F2229" }}>{cr.title}</span>
+                          {cr.org && <span>· {cr.org}</span>}
+                          {cr.year && <span style={{ color: "#94a3b8" }}>· {cr.year}</span>}
+                        </li>
+                      ))}
+                    </ul>
                   </>
                 )}
               </article>

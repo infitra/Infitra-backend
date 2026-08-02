@@ -72,7 +72,7 @@ export default async function PublishedCelebrationPage({
     .eq("id", challengeId)
     .maybeSingle();
   // Shared with the pre-publish preview (H4) so the two renders never drift.
-  const { creators, topicsByCreator, weeks, sessions, heroPromise, heroDescription } =
+  const { creators, topicsByCreator, credentialsByCreator, weeks, sessions, heroPromise, heroDescription } =
     await loadBuyerRenderData(supabase, {
       id: challengeId,
       owner_id: buyerView.owner_id,
@@ -180,6 +180,7 @@ export default async function PublishedCelebrationPage({
         <PublicCreatorsBlock
           creators={creators}
           topicsByCreator={topicsByCreator}
+          credentialsByCreator={credentialsByCreator}
         />
 
         <PublicInsideExperienceBlock experts={creators} introPrompt={(challengeDetails as any)?.intro_prompt ?? null} />

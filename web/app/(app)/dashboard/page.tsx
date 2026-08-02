@@ -199,7 +199,7 @@ async function loadDashboard(userId: string) {
     await Promise.all([
       supabase
         .from("app_profile")
-        .select("display_name, avatar_url, tagline, bio, cover_image_url, role, created_at")
+        .select("display_name, avatar_url, tagline, bio, profile_facts, role, created_at")
         .eq("id", userId)
         .single(),
       supabase
@@ -641,7 +641,7 @@ async function loadDashboard(userId: string) {
     profile: {
       displayName: profile?.display_name ?? "",
       avatarUrl: profile?.avatar_url ?? null,
-      coverImageUrl: profile?.cover_image_url ?? null,
+      profileFacts: (profile?.profile_facts ?? {}) as Record<string, unknown>,
       tagline: profile?.tagline ?? null,
       bio: profile?.bio ?? null,
       joinedAt: (profile as any)?.created_at ?? null,
@@ -735,7 +735,7 @@ export default async function DashboardPage() {
             avatarUrl={data.profile.avatarUrl}
             tagline={data.profile.tagline}
             bio={data.profile.bio}
-            coverImageUrl={data.profile.coverImageUrl}
+            profileFacts={data.profile.profileFacts}
             joinedAt={data.profile.joinedAt}
             tribePulse={tribePulse}
             hasActivePrograms={activeCount > 0}

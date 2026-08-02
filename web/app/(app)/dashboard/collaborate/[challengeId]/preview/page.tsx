@@ -61,7 +61,7 @@ export default async function PreviewPage({
   }
 
   const viewerTimeZone = await resolveViewerTimeZone();
-  const { creators, topicsByCreator, weeks, sessions, heroPromise, heroDescription } =
+  const { creators, topicsByCreator, credentialsByCreator, weeks, sessions, heroPromise, heroDescription } =
     await loadBuyerRenderData(supabase, {
       id: c.id,
       owner_id: c.owner_id,
@@ -124,7 +124,8 @@ export default async function PreviewPage({
           reviews={[]}
         />
 
-        <PublicCreatorsBlock creators={creators} topicsByCreator={topicsByCreator} />
+        <PublicCreatorsBlock creators={creators} topicsByCreator={topicsByCreator}
+          credentialsByCreator={credentialsByCreator} />
 
         <PublicInsideExperienceBlock experts={creators} introPrompt={(c as any).intro_prompt ?? null} />
 

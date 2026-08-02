@@ -181,6 +181,20 @@ export default async function ChallengePage({
   ];
   const creatorsById = new Map(creators.map((c) => [c.id, c]));
 
+  // P7 trust strip data (see PublicCreatorsBlock). RLS already limits rows to
+  // creator profiles, so the public page can read them directly.
+  const credentialsByCreator: Record<string, Array<{ id: string; kind: string; title: string; org: string | null; year: number | null }>> = {};
+  if (creators.length > 0) {
+    const { data: credRows } = await supabase
+      .from("app_expert_credential")
+      .select("id, profile_id, kind, title, org, year")
+      .in("profile_id", creators.map((c) => c.id))
+      .order("year", { ascending: false });
+    for (const r of (credRows ?? []) as Array<{ id: string; profile_id: string; kind: string; title: string; org: string | null; year: number | null }>) {
+      (credentialsByCreator[r.profile_id] ??= []).push({ id: r.id, kind: r.kind, title: r.title, org: r.org, year: r.year });
+    }
+  }
+
   // Viewer state (page is public; these are only meaningful when signed in).
   const hasPurchased = !!(membershipRes.data as { id: string } | null);
   const isCreator =
@@ -386,6 +400,7 @@ export default async function ChallengePage({
         <PublicCreatorsBlock
           creators={creators}
           topicsByCreator={topicsByCreator}
+          credentialsByCreator={credentialsByCreator}
         />
 
         <PublicInsideExperienceBlock

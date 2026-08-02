@@ -1,0 +1,6 @@
+-- P7 · The profile layer (2026-08-02). Applied to production as
+-- profile_layer_p7; kept for the repo record. Full commentary inline there.
+-- Summary: app_profile.profile_facts jsonb (fill = share),
+-- app_expert_credential (kind/title/org/year, owner-managed under RLS,
+-- readable only for creator profiles), app_profile_public extended with
+-- profile_facts through the same can_view_profile gate.

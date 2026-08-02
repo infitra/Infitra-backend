@@ -29,6 +29,19 @@ interface PublicProfile {
   avg_rating: number | null;
   total_reviews: number | null;
   creator_tribe_members_count: number | null;
+  profile_facts: {
+    age?: number;
+    city?: string;
+    training_since?: number;
+    disciplines?: string[];
+    focus?: string;
+  } | null;
+}
+
+interface TopCredential {
+  kind: string;
+  title: string;
+  org: string | null;
 }
 
 export function ProfilePopover({
@@ -40,6 +53,7 @@ export function ProfilePopover({
 }) {
   const [open, setOpen] = useState(false);
   const [profile, setProfile] = useState<PublicProfile | null>(null);
+  const [credentials, setCredentials] = useState<TopCredential[]>([]);
   const [failed, setFailed] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -48,12 +62,26 @@ export function ProfilePopover({
     const { data, error } = await supabase
       .from("app_profile_public")
       .select(
-        "profile_id, display_name, role, bio, avatar_url, avg_rating, total_reviews, creator_tribe_members_count",
+        "profile_id, display_name, role, bio, avatar_url, avg_rating, total_reviews, creator_tribe_members_count, profile_facts",
       )
       .eq("profile_id", profileId)
       .maybeSingle();
-    if (error || !data) setFailed(true);
-    else setProfile(data as PublicProfile);
+    if (error || !data) {
+      setFailed(true);
+      return;
+    }
+    setProfile(data as PublicProfile);
+    // Experts: top of the Background list for the quick card (P7). RLS only
+    // exposes credentials for creator profiles, so this no-ops otherwise.
+    if ((data as PublicProfile).role === "creator") {
+      const { data: creds } = await supabase
+        .from("app_expert_credential")
+        .select("kind, title, org")
+        .eq("profile_id", profileId)
+        .order("year", { ascending: false })
+        .limit(2);
+      setCredentials((creds ?? []) as TopCredential[]);
+    }
   }, [profileId]);
 
   useEffect(() => {
@@ -142,6 +170,44 @@ export function ProfilePopover({
                 >
                   {profile.bio}
                 </p>
+              )}
+
+              {/* P7 · Human facts — fill = share; only present keys exist. */}
+              {(() => {
+                const f = profile.profile_facts ?? {};
+                const chips: string[] = [];
+                if (f.age) chips.push(`${f.age}`);
+                if (f.city) chips.push(f.city);
+                if (f.training_since) chips.push(`Training since ${f.training_since}`);
+                for (const d of (f.disciplines ?? []).slice(0, 3)) chips.push(d);
+                if (f.focus) chips.push(`Working on: ${f.focus}`);
+                if (chips.length === 0) return null;
+                return (
+                  <div className="flex flex-wrap gap-1 mt-3">
+                    {chips.map((c, i) => (
+                      <span
+                        key={i}
+                        className="text-[10px] font-bold font-headline px-2 py-0.5 rounded-full"
+                        style={{ color: "#475569", backgroundColor: "rgba(15,34,41,0.05)" }}
+                      >
+                        {c}
+                      </span>
+                    ))}
+                  </div>
+                );
+              })()}
+
+              {/* P7 · Top credentials — experts only, one line each. */}
+              {credentials.length > 0 && (
+                <ul className="mt-3 space-y-0.5">
+                  {credentials.map((cr, i) => (
+                    <li key={i} className="text-[11px] truncate" style={{ color: "#475569" }}>
+                      <span aria-hidden>{cr.kind === "education" ? "🎓" : cr.kind === "experience" ? "💼" : "📜"}</span>{" "}
+                      <span className="font-bold font-headline" style={{ color: INK }}>{cr.title}</span>
+                      {cr.org && <span> · {cr.org}</span>}
+                    </li>
+                  ))}
+                </ul>
               )}
 
               {isExpert &&
