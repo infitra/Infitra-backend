@@ -20,3 +20,12 @@ alter table public.app_expert_credential
 -- adding their first credential.
 alter table public.app_expert_credential
   alter column profile_id set default auth.uid();
+
+-- Credentials can span years: year is the START, year_end the optional end
+-- (checked >= year so a range can never render backwards). Renders "2018-2020".
+alter table public.app_expert_credential
+  add column if not exists year_end int
+    check (year_end is null or (year_end between 1950 and 2100));
+alter table public.app_expert_credential
+  add constraint app_expert_credential_year_range_ok
+  check (year_end is null or year is null or year_end >= year);

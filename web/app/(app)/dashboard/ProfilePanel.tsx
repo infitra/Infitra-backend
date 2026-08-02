@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { SlideOver } from "@/app/components/SlideOver";
 import { createClient } from "@/lib/supabase/client";
-import { ProfileEditForm, type EditableCredential, type ProfileFacts } from "@/app/components/ProfileEditForm";
+import { ProfileEditForm, type ProfileFacts } from "@/app/components/ProfileEditForm";
 import { CalendarButton } from "@/app/components/CalendarButton";
 import { MetricStrip, type Metric } from "./MetricStrip";
 
@@ -129,25 +129,6 @@ export function ProfilePanel({
   hasActivePrograms,
 }: Props) {
   const [editOpen, setEditOpen] = useState(false);
-  // Credentials load lazily when the editor opens — the panel itself never
-  // renders them, and the editor needs the CURRENT list to manage.
-  const [credentials, setCredentials] = useState<EditableCredential[]>([]);
-  useEffect(() => {
-    if (!editOpen) return;
-    const supabase = createClient();
-    // MUST be scoped: the select policy intentionally exposes every creator's
-    // credentials (the buyer page is public), so an unscoped read here would
-    // list other experts' background in this user's editor.
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) return;
-      supabase
-        .from("app_expert_credential")
-        .select("id, kind, title, org, year")
-        .eq("profile_id", user.id)
-        .order("year", { ascending: false })
-        .then(({ data }) => setCredentials((data ?? []) as EditableCredential[]));
-    });
-  }, [editOpen]);
   const router = useRouter();
   const firstName = displayName.split(" ")[0] || displayName;
   const initial = (firstName[0] ?? "?").toUpperCase();
@@ -270,7 +251,6 @@ export function ProfilePanel({
           avatarUrl={avatarUrl}
           isCreator
           initialFacts={profileFacts as ProfileFacts}
-          initialCredentials={credentials}
           onSaved={() => {
             setTimeout(() => {
               setEditOpen(false);

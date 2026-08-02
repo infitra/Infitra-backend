@@ -147,17 +147,17 @@ export async function loadBuyerRenderData(
 
   // P7 trust strip: structured credentials per expert (RLS exposes them only
   // for creator profiles, so this is safe on the public buyer page).
-  const credentialsByCreator: Record<string, Array<{ id: string; kind: string; title: string; org: string | null; year: number | null }>> = {};
+  const credentialsByCreator: Record<string, Array<{ id: string; kind: string; title: string; org: string | null; year: number | null; year_end: number | null }>> = {};
   {
     const ids = creators.map((c) => c.id);
     if (ids.length > 0) {
       const { data: credRows } = await supabase
         .from("app_expert_credential")
-        .select("id, profile_id, kind, title, org, year")
+        .select("id, profile_id, kind, title, org, year, year_end")
         .in("profile_id", ids)
         .order("year", { ascending: false });
-      for (const r of (credRows ?? []) as Array<{ id: string; profile_id: string; kind: string; title: string; org: string | null; year: number | null }>) {
-        (credentialsByCreator[r.profile_id] ??= []).push({ id: r.id, kind: r.kind, title: r.title, org: r.org, year: r.year });
+      for (const r of (credRows ?? []) as Array<{ id: string; profile_id: string; kind: string; title: string; org: string | null; year: number | null; year_end: number | null }>) {
+        (credentialsByCreator[r.profile_id] ??= []).push({ id: r.id, kind: r.kind, title: r.title, org: r.org, year: r.year, year_end: r.year_end });
       }
     }
   }

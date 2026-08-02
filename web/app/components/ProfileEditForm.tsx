@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { CredentialIcon, credentialPeriod } from "@/app/components/CredentialIcon";
 
 /**
  * ProfileEditForm — the expert's profile editor (dashboard panel), P7.
@@ -32,6 +33,7 @@ export interface EditableCredential {
   title: string;
   org: string | null;
   year: number | null;
+  year_end: number | null;
 }
 
 export interface ProfileFacts {
@@ -42,10 +44,10 @@ export interface ProfileFacts {
   focus?: string;
 }
 
-const KIND_META: Record<EditableCredential["kind"], { label: string; glyph: string }> = {
-  certification: { label: "Certification", glyph: "📜" },
-  education: { label: "Education", glyph: "🎓" },
-  experience: { label: "Experience", glyph: "💼" },
+const KIND_META: Record<EditableCredential["kind"], { label: string }> = {
+  certification: { label: "Certification" },
+  education: { label: "Education" },
+  experience: { label: "Experience" },
 };
 
 export function ProfileEditForm({
@@ -76,11 +78,39 @@ export function ProfileEditForm({
   const formRef = useRef<HTMLFormElement>(null);
 
   // ── Credentials (creators): immediate CRUD, separate from Save. ──
+  // The list is fetched HERE. It used to arrive as a prop the parent filled
+  // asynchronously, but useState only reads its initial value once: the
+  // fetch always resolved after mount, so saved credentials looked like they
+  // had vanished when the editor was reopened.
   const [creds, setCreds] = useState<EditableCredential[]>(initialCredentials);
+  useEffect(() => {
+    if (!isCreator) return;
+    let alive = true;
+    (async () => {
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from("app_expert_credential")
+        .select("id, kind, title, org, year, year_end")
+        // Scoped to the caller: the select policy exposes every creator's
+        // credentials (the buyer page is public), so an unscoped read would
+        // list other experts' background here.
+        .eq("profile_id", user.id)
+        .order("year", { ascending: false });
+      if (alive && data) setCreds(data as EditableCredential[]);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [isCreator]);
   const [credKind, setCredKind] = useState<EditableCredential["kind"]>("certification");
   const [credTitle, setCredTitle] = useState("");
   const [credOrg, setCredOrg] = useState("");
   const [credYear, setCredYear] = useState("");
+  const [credYearEnd, setCredYearEnd] = useState("");
   const [credBusy, setCredBusy] = useState(false);
 
   useEffect(() => setSuccess(false), [creds.length]);
@@ -96,6 +126,12 @@ export function ProfileEditForm({
     try {
       const supabase = createClient();
       const year = credYear.trim() ? parseInt(credYear.trim(), 10) : null;
+      const yearEnd = credYearEnd.trim() ? parseInt(credYearEnd.trim(), 10) : null;
+      if (yearEnd !== null && year !== null && yearEnd < year) {
+        setError("The end year cannot be before the start year.");
+        setCredBusy(false);
+        return;
+      }
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -111,14 +147,16 @@ export function ProfileEditForm({
           title,
           org: credOrg.trim() || null,
           year: Number.isFinite(year as number) ? year : null,
+          year_end: Number.isFinite(yearEnd as number) ? yearEnd : null,
         })
-        .select("id, kind, title, org, year")
+        .select("id, kind, title, org, year, year_end")
         .single();
       if (insErr) throw new Error(insErr.message);
       setCreds((prev) => [...prev, data as EditableCredential]);
       setCredTitle("");
       setCredOrg("");
       setCredYear("");
+      setCredYearEnd("");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not add the credential.");
     }
@@ -383,12 +421,20 @@ export function ProfileEditForm({
                   className="flex items-center gap-2 rounded-xl px-3 py-2 text-[13px]"
                   style={{ backgroundColor: "#FFFFFF", border: "1px solid rgba(15,34,41,0.08)" }}
                 >
-                  <span aria-hidden>{KIND_META[c.kind].glyph}</span>
-                  <span className="font-bold font-headline truncate" style={{ color: INK }}>
-                    {c.title}
+                  <span className="shrink-0" style={{ color: ORANGE }}>
+                    <CredentialIcon kind={c.kind} size={14} />
                   </span>
-                  {c.org && <span className="truncate" style={{ color: "#64748b" }}>· {c.org}</span>}
-                  {c.year && <span style={{ color: "#94a3b8" }}>· {c.year}</span>}
+                  <span className="min-w-0 flex-1">
+                    <span className="font-bold font-headline" style={{ color: INK }}>
+                      {c.title}
+                    </span>
+                    {[c.org, credentialPeriod(c.year, c.year_end)].filter(Boolean).length > 0 && (
+                      <span style={{ color: "#94a3b8" }}>
+                        {" · "}
+                        {[c.org, credentialPeriod(c.year, c.year_end)].filter(Boolean).join(" · ")}
+                      </span>
+                    )}
+                  </span>
                   <button
                     type="button"
                     onClick={() => removeCredential(c.id)}
@@ -416,15 +462,27 @@ export function ProfileEditForm({
                 </option>
               ))}
             </select>
-            <input
-              value={credYear}
-              onChange={(e) => setCredYear(e.target.value)}
-              placeholder="Year (optional)"
-              inputMode="numeric"
-              maxLength={4}
-              className="h-9 rounded-lg px-2.5 text-xs col-span-1"
-              style={inputStyle}
-            />
+            <div className="col-span-1 flex items-center gap-1.5">
+              <input
+                value={credYear}
+                onChange={(e) => setCredYear(e.target.value)}
+                placeholder="Year"
+                inputMode="numeric"
+                maxLength={4}
+                className="h-9 w-full rounded-lg px-2.5 text-xs"
+                style={inputStyle}
+              />
+              <span className="text-xs shrink-0" style={{ color: "#94a3b8" }}>–</span>
+              <input
+                value={credYearEnd}
+                onChange={(e) => setCredYearEnd(e.target.value)}
+                placeholder="To"
+                inputMode="numeric"
+                maxLength={4}
+                className="h-9 w-full rounded-lg px-2.5 text-xs"
+                style={inputStyle}
+              />
+            </div>
             <input
               value={credTitle}
               onChange={(e) => setCredTitle(e.target.value)}

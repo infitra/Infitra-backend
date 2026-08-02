@@ -16,6 +16,7 @@
  */
 
 import Image from "next/image";
+import { CredentialIcon, credentialPeriod } from "@/app/components/CredentialIcon";
 import { FoundingExpertBadge } from "./PublicChallengeHero";
 
 interface Creator {
@@ -34,6 +35,7 @@ export interface CreatorCredential {
   title: string;
   org: string | null;
   year: number | null;
+  year_end: number | null;
 }
 
 interface Props {
@@ -42,12 +44,6 @@ interface Props {
   /** P7 trust strip: structured, self-declared background per expert. */
   credentialsByCreator?: Record<string, CreatorCredential[]>;
 }
-
-const CRED_GLYPH: Record<string, string> = {
-  certification: "📜",
-  education: "🎓",
-  experience: "💼",
-};
 
 export function PublicCreatorsBlock({ creators, topicsByCreator, credentialsByCreator = {} }: Props) {
   return (
@@ -76,8 +72,8 @@ export function PublicCreatorsBlock({ creators, topicsByCreator, credentialsByCr
           style={{ color: "#475569" }}
         >
           {creators.length === 1
-            ? "Designed around your goals — focused attention, one program, one Expert."
-            : "Designed and led together. Different strengths, one program, shared accountability for your results."}
+            ? "Designed around your goals: focused attention, one experience, one Expert."
+            : "Designed and led together. Different strengths, one experience, shared accountability for your results."}
         </p>
 
         {/* Cards: side-by-side on desktop, stacked on mobile */}
@@ -175,7 +171,7 @@ export function PublicCreatorsBlock({ creators, topicsByCreator, credentialsByCr
                       className="text-[10px] font-bold font-headline uppercase tracking-[0.18em] mb-2.5"
                       style={{ color: "#94a3b8" }}
                     >
-                      Brings
+                      Focuses on
                     </p>
                     <div className="flex flex-wrap gap-1.5">
                       {topics.map((topic, i) => (
@@ -206,15 +202,27 @@ export function PublicCreatorsBlock({ creators, topicsByCreator, credentialsByCr
                     >
                       Background
                     </p>
-                    <ul className="space-y-1">
-                      {credentials.map((cr) => (
-                        <li key={cr.id} className="flex items-baseline gap-1.5 text-[12.5px]" style={{ color: "#475569" }}>
-                          <span aria-hidden className="text-[11px]">{CRED_GLYPH[cr.kind] ?? "•"}</span>
-                          <span className="font-bold font-headline" style={{ color: "#0F2229" }}>{cr.title}</span>
-                          {cr.org && <span>· {cr.org}</span>}
-                          {cr.year && <span style={{ color: "#94a3b8" }}>· {cr.year}</span>}
-                        </li>
-                      ))}
+                    <ul className="space-y-1.5">
+                      {credentials.map((cr) => {
+                        const period = credentialPeriod(cr.year, cr.year_end);
+                        const meta = [cr.org, period].filter(Boolean).join(" · ");
+                        return (
+                          // Icon in its own fixed column, text free to wrap:
+                          // the old baseline-flex row let long titles wrap and
+                          // stranded the org/year fragments mid-line.
+                          <li key={cr.id} className="flex gap-2">
+                            <span className="shrink-0 mt-[3px]" style={{ color: roleColor }}>
+                              <CredentialIcon kind={cr.kind} size={14} />
+                            </span>
+                            <span className="text-[12.5px] leading-snug">
+                              <span className="font-bold font-headline" style={{ color: "#0F2229" }}>
+                                {cr.title}
+                              </span>
+                              {meta && <span style={{ color: "#94a3b8" }}> · {meta}</span>}
+                            </span>
+                          </li>
+                        );
+                      })}
                     </ul>
                   </>
                 )}

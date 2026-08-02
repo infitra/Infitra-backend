@@ -94,9 +94,8 @@ export function PublicCommitBlock({
           <span className="font-bold" style={{ color: "#0F2229" }}>
             {formatLongDate(startDate)} → {formatLongDate(endDate)}
           </span>
-          . Block out the {sessionCount}{" "}
-          {sessionCount === 1 ? "live session" : "live sessions"} so you can
-          show up.
+          . Commit now and join a movement with real people, momentum and
+          focused experts.
         </p>
 
         {/* Spots-left urgency badge — bundle 4.1, only when cap is set
@@ -145,13 +144,6 @@ export function PublicCommitBlock({
           />
         </div>
 
-        {/* Quiet trust strip */}
-        <p
-          className="text-[11px] font-bold font-headline uppercase tracking-[0.18em]"
-          style={{ color: "#94a3b8" }}
-        >
-          Live coaching · Experts collaborating · your tribe stays
-        </p>
       </div>
     </section>
   );
