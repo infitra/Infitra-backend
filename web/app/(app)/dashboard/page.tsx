@@ -826,6 +826,7 @@ export default async function DashboardPage() {
             connections={connections}
             reviews={expertReviews}
             isFoundingExpert={data.profile.isFoundingExpert}
+            activeExperiences={activeCount}
             activeMembers={accountProof.activeTribeMembers}
             tribeConnections={accountProof.tribeCount}
             avgRating={accountProof.avgRating}

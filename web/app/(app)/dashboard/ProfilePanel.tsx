@@ -25,10 +25,12 @@ import type { ConnectionRow } from "@/app/components/ConnectionsGrid";
  *                   questions, agreements awaiting signature, and next
  *                   chapters ready to open (continuations). The console's
  *                   promise: you cannot miss anything important here.
- *   YOUR ACCOUNT  — the account growing and moving: active tribe members,
- *                   rating (opens ALL reviews, filterable), sessions led,
- *                   money coming in. Designed stat cards, each with its own
- *                   accent and weight — no spreadsheet grids.
+ *   YOUR ACCOUNT  — two columns, one rule. LEFT is what is live right now
+ *                   (orange, read-only status): active experiences, active
+ *                   tribe members, sessions led. RIGHT is what it has added
+ *                   up to (cyan, and every one is a door): tribe
+ *                   connections → Your people, rating → all reviews,
+ *                   earnings → the earnings page.
  *   QUICK ACTIONS — easy access; every secondary surface opens as an
  *                   overlay inside the dashboard.
  *
@@ -53,6 +55,8 @@ interface Props {
   connections: ConnectionRow[];
   reviews: ExpertReview[];
   isFoundingExpert: boolean;
+  /** Experiences running or about to run. */
+  activeExperiences: number;
   /** Members across currently ACTIVE experiences — "moving now". */
   activeMembers: number;
   /** Everyone who has EVER joined one of their experiences. */
@@ -181,6 +185,7 @@ export function ProfilePanel({
   connections,
   reviews,
   isFoundingExpert,
+  activeExperiences,
   activeMembers,
   tribeConnections,
   avgRating,
@@ -325,9 +330,9 @@ export function ProfilePanel({
         <Section label="Your account">
           <StatCardGrid>
             <StatCard
-              icon={STAT_ICONS.people}
-              value={`${activeMembers}`}
-              label="active tribe members"
+              icon={STAT_ICONS.flame}
+              value={`${activeExperiences}`}
+              label={activeExperiences === 1 ? "active experience" : "active experiences"}
               accent={ORANGE}
             />
             <StatCard
@@ -339,9 +344,9 @@ export function ProfilePanel({
               onClick={() => openOverlay("people")}
             />
             <StatCard
-              icon={STAT_ICONS.bolt}
-              value={`${sessionsLed}`}
-              label="sessions led"
+              icon={STAT_ICONS.people}
+              value={`${activeMembers}`}
+              label="active tribe members"
               accent={ORANGE}
             />
             {totalReviews > 0 ? (
@@ -357,9 +362,16 @@ export function ProfilePanel({
               <StatCard icon={STAT_ICONS.star} value="—" label="no reviews yet" accent={CYAN} />
             )}
             <StatCard
+              icon={STAT_ICONS.bolt}
+              value={`${sessionsLed}`}
+              label="sessions led"
+              accent={ORANGE}
+            />
+            <StatCard
               icon={STAT_ICONS.coins}
               value={`CHF ${(earningsWeekCents / 100).toFixed(0)}`}
               label="earned this week"
+              sub="see earnings"
               accent={CYAN}
               href="/dashboard/earnings"
             />
