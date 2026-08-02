@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { CalendarButton } from "@/app/components/CalendarButton";
+import { FoundingExpertBadge } from "@/app/(app)/experiences/[id]/PublicChallengeHero";
 import { ProfileTrigger } from "@/app/components/ProfileModal";
 import { useOverlay, railActionStyle } from "@/app/components/DashboardOverlay";
 import {
@@ -38,7 +39,6 @@ import type { ConnectionRow } from "@/app/components/ConnectionsGrid";
 const ORANGE = "#FF6130";
 const CYAN = "#0891b2";
 const INK = "#0F2229";
-const GOLD = BRAND_ACCENT.gold;
 const TEAL = BRAND_ACCENT.teal;
 
 interface Props {
@@ -52,9 +52,11 @@ interface Props {
   agreements: AgreementRow[];
   connections: ConnectionRow[];
   reviews: ExpertReview[];
-  /** Members across currently ACTIVE experiences (all-time totals live in
-   *  Your people — this number is "moving now"). */
+  isFoundingExpert: boolean;
+  /** Members across currently ACTIVE experiences — "moving now". */
   activeMembers: number;
+  /** Everyone who has EVER joined one of their experiences. */
+  tribeConnections: number;
   avgRating: number;
   totalReviews: number;
   sessionsLed: number;
@@ -178,7 +180,9 @@ export function ProfilePanel({
   agreements,
   connections,
   reviews,
+  isFoundingExpert,
   activeMembers,
+  tribeConnections,
   avgRating,
   totalReviews,
   sessionsLed,
@@ -232,9 +236,9 @@ export function ProfilePanel({
       <AttentionRow
         key={`next-${nc.id}`}
         icon={<span className="scale-[0.8] flex">{STAT_ICONS.flame}</span>}
-        label="Start the next run"
+        label="Ready to run again"
         detail={nc.title}
-        href={nc.spaceId ? `/experiences/${nc.id}/space#next-chapter` : "#completed"}
+        href="#completed"
         accent={ORANGE}
       />,
     );
@@ -289,13 +293,17 @@ export function ProfilePanel({
               >
                 {greeting}, {firstName}
               </p>
-              <p
-                className="text-[11px] uppercase tracking-widest font-headline"
-                style={{ color: CYAN, fontWeight: 700 }}
-                suppressHydrationWarning
-              >
-                {pilotLine(joinedAt)}
-              </p>
+              {isFoundingExpert ? (
+                <FoundingExpertBadge className="mt-1" />
+              ) : (
+                <p
+                  className="text-[11px] uppercase tracking-widest font-headline"
+                  style={{ color: CYAN, fontWeight: 700 }}
+                  suppressHydrationWarning
+                >
+                  {pilotLine(joinedAt)}
+                </p>
+              )}
             </div>
           </div>
 
@@ -320,7 +328,21 @@ export function ProfilePanel({
               icon={STAT_ICONS.people}
               value={`${activeMembers}`}
               label="active tribe members"
+              accent={ORANGE}
+            />
+            <StatCard
+              icon={STAT_ICONS.people}
+              value={`${tribeConnections}`}
+              label="tribe connections"
+              sub="meet your people"
               accent={CYAN}
+              onClick={() => openOverlay("people")}
+            />
+            <StatCard
+              icon={STAT_ICONS.bolt}
+              value={`${sessionsLed}`}
+              label="sessions led"
+              accent={ORANGE}
             />
             {totalReviews > 0 ? (
               <StatCard
@@ -328,28 +350,17 @@ export function ProfilePanel({
                 value={`★ ${avgRating.toFixed(1)}`}
                 label={`${totalReviews} ${totalReviews === 1 ? "review" : "reviews"}`}
                 sub="read them all"
-                accent={GOLD}
+                accent={CYAN}
                 onClick={() => openOverlay("reviews")}
               />
             ) : (
-              <StatCard
-                icon={STAT_ICONS.star}
-                value="—"
-                label="no reviews yet"
-                accent={GOLD}
-              />
+              <StatCard icon={STAT_ICONS.star} value="—" label="no reviews yet" accent={CYAN} />
             )}
-            <StatCard
-              icon={STAT_ICONS.bolt}
-              value={`${sessionsLed}`}
-              label="sessions led"
-              accent={ORANGE}
-            />
             <StatCard
               icon={STAT_ICONS.coins}
               value={`CHF ${(earningsWeekCents / 100).toFixed(0)}`}
               label="earned this week"
-              accent={TEAL}
+              accent={CYAN}
               href="/dashboard/earnings"
             />
           </StatCardGrid>
@@ -374,9 +385,6 @@ export function ProfilePanel({
               View my profile
             </span>
           </ProfileTrigger>
-          <button type="button" onClick={() => openOverlay("people")} className={`${railBtn} mb-2`} style={railActionStyle}>
-            Your people
-          </button>
           <button type="button" onClick={() => openOverlay("settings")} className={`${railBtn} mb-2`} style={railActionStyle}>
             My recorded agreements
           </button>

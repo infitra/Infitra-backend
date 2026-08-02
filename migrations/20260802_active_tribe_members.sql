@@ -1,0 +1,13 @@
+-- Expert proof: ACTIVE tribe members alongside the all-time total
+-- (2026-08-02). Applied as profile_active_tribe_members +
+-- active_tribe_members_include_prelaunch. Two truths, stated separately:
+--   tribe_count          = everyone who has EVER joined one of their
+--                          experiences ("tribe connections")
+--   active_tribe_members = people in experiences that are published and
+--                          have not ended yet, INCLUDING pre-launch. The
+--                          first cut required start_date <= today, so a
+--                          sold-out experience launching next month
+--                          reported zero; the dashboard has always counted
+--                          pre-launch as active, and someone who bought
+--                          their seat is part of your active tribe.
+-- Only the expert branch of load_public_profile changed.

@@ -7,7 +7,7 @@ import { uploadImage } from "@/lib/uploadImage";
 import { ProfileTrigger } from "@/app/components/ProfileModal";
 import { useOverlay, railActionStyle, OverlayPanel, OverlaySection } from "@/app/components/DashboardOverlay";
 import { AccountSettingsPanel, PeoplePanel } from "@/app/components/AccountPanels";
-import { StatCard, StatCardGrid, STAT_ICONS, BRAND_ACCENT } from "@/app/components/StatCards";
+import { StatCard, StatCardGrid, STAT_ICONS } from "@/app/components/StatCards";
 import type { ConnectionRow } from "@/app/components/ConnectionsGrid";
 import { RateExperienceButton } from "./RateExperienceButton";
 
@@ -67,19 +67,11 @@ function timeOfDayGreeting(): string {
   return "Evening";
 }
 
-function pilotLine(joinedAt: string | null): string {
-  if (!joinedAt) return "On the pilot";
-  const w = Math.floor((Date.now() - new Date(joinedAt).getTime()) / (7 * 24 * 60 * 60 * 1000));
-  if (w <= 0) return "On the pilot · just joined";
-  if (w === 1) return "On the pilot · 1 week in";
-  return `On the pilot · ${w} weeks in`;
-}
-
-function pioneerSince(joinedAt: string | null): string | null {
+function sinceMonth(joinedAt: string | null): string | null {
   if (!joinedAt) return null;
   const d = new Date(joinedAt);
   if (isNaN(d.getTime())) return null;
-  return `Pioneer since ${d.toLocaleDateString("en-GB", { month: "long", year: "numeric" })}`;
+  return d.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
 }
 
 const EDIT_ICON = (
@@ -100,29 +92,39 @@ function Section({ label, children }: { label: string; children: React.ReactNode
   );
 }
 
-function PioneerCrown({ joinedAt }: { joinedAt: string | null }) {
-  const since = pioneerSince(joinedAt);
-  if (!since) return null;
+/**
+ * PioneerBadge — the participant's identity line: being a Pioneer is who
+ * they are here, so it sits in the header where the generic pilot line used
+ * to be. The joining month stays, quietly, underneath.
+ */
+function PioneerBadge({ joinedAt }: { joinedAt: string | null }) {
+  const since = sinceMonth(joinedAt);
   return (
-    <div
-      className="rounded-xl px-3 py-2 mb-2.5 flex items-center justify-center gap-1.5"
-      style={{
-        background: "linear-gradient(120deg, rgba(234,179,8,0.14), rgba(255,97,48,0.10))",
-        border: "1px solid rgba(234,179,8,0.35)",
-      }}
-    >
-      <span style={{ color: "#EAB308" }}>
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 3l2.7 5.6 6.1.8-4.5 4.2 1.1 6-5.4-3-5.4 3 1.1-6L3.2 9.4l6.1-.8L12 3Z" />
-        </svg>
-      </span>
+    <div className="mt-1">
       <span
-        className="text-[10.5px] uppercase tracking-[0.16em] font-headline"
-        style={{ color: "#92700c", fontWeight: 800 }}
-        suppressHydrationWarning
+        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full"
+        style={{
+          backgroundColor: "rgba(255,97,48,0.10)",
+          boxShadow: "inset 0 0 0 1px rgba(255,97,48,0.30)",
+        }}
       >
-        {since}
+        <span style={{ color: ORANGE }}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 3l2.7 5.6 6.1.8-4.5 4.2 1.1 6-5.4-3-5.4 3 1.1-6L3.2 9.4l6.1-.8L12 3Z" />
+          </svg>
+        </span>
+        <span
+          className="text-[10px] font-black font-headline uppercase tracking-[0.1em]"
+          style={{ color: "#c2410c" }}
+        >
+          Pioneer
+        </span>
       </span>
+      {since && (
+        <span className="text-[10px] ml-2" style={{ color: "#94a3b8" }} suppressHydrationWarning>
+          since {since}
+        </span>
+      )}
     </div>
   );
 }
@@ -271,13 +273,7 @@ export function ParticipantPanel({
               >
                 {greeting}, {firstName}
               </p>
-              <p
-                className="text-[11px] uppercase tracking-widest font-headline"
-                style={{ color: CYAN, fontWeight: 700 }}
-                suppressHydrationWarning
-              >
-                {pilotLine(joinedAt)}
-              </p>
+              <PioneerBadge joinedAt={joinedAt} />
             </div>
           </div>
         </div>
@@ -285,7 +281,6 @@ export function ParticipantPanel({
         {/* ── MY JOURNEY ── what you built here: the Pioneer crown, then
             accented cards. The connections card is a door into Your people. */}
         <Section label="My journey">
-          <PioneerCrown joinedAt={joinedAt} />
           <StatCardGrid>
             <StatCard
               icon={STAT_ICONS.flame}
@@ -297,13 +292,13 @@ export function ParticipantPanel({
               icon={STAT_ICONS.check}
               value={`${journey.completed}`}
               label="completed"
-              accent={BRAND_ACCENT.teal}
+              accent={CYAN}
             />
             <StatCard
               icon={STAT_ICONS.live}
               value={`${journey.sessionsAttended}`}
               label="live sessions attended"
-              accent={CYAN}
+              accent={ORANGE}
             />
             <StatCard
               icon={STAT_ICONS.people}

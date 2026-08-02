@@ -70,6 +70,7 @@ interface ProfilePayload {
     avg_rating?: number;
     total_reviews?: number;
     tribe_count?: number;
+    active_tribe_members?: number;
     hosting_count?: number;
     sessions_led?: number;
     questions_answered?: number;
@@ -224,27 +225,30 @@ function ModalBody({
 
   // Proof cards — the same designed family the console rails use, on brand:
   // orange = what they run, cyan = their people/answers, gold = stars only.
+  // Proof cards, ordered so the two people-numbers sit together, then what
+  // they run, then reputation. Orange = active, cyan = accumulated.
   const proofCards: Array<{ icon: React.ReactNode; value: string; label: string; accent: string }> = isExpert
     ? [
+        { icon: STAT_ICONS.people, value: `${proof.active_tribe_members ?? 0}`, label: "active tribe members", accent: BRAND_ACCENT.orange },
+        { icon: STAT_ICONS.people, value: `${proof.tribe_count ?? 0}`, label: "tribe connections", accent: BRAND_ACCENT.cyan },
+        { icon: STAT_ICONS.flame, value: `${proof.hosting_count ?? 0}`, label: proof.hosting_count === 1 ? "experience led" : "experiences led", accent: BRAND_ACCENT.orange },
+        { icon: STAT_ICONS.bolt, value: `${proof.sessions_led ?? 0}`, label: "sessions led", accent: BRAND_ACCENT.orange },
+        { icon: STAT_ICONS.check, value: `${proof.questions_answered ?? 0}`, label: "questions answered", accent: BRAND_ACCENT.orange },
         ...((proof.total_reviews ?? 0) > 0
           ? [{
               icon: STAT_ICONS.star,
               value: `★ ${Number(proof.avg_rating ?? 0).toFixed(1)}`,
               label: `${proof.total_reviews} ${proof.total_reviews === 1 ? "review" : "reviews"}`,
-              accent: BRAND_ACCENT.gold,
+              accent: BRAND_ACCENT.cyan,
             }]
           : []),
-        { icon: STAT_ICONS.people, value: `${proof.tribe_count ?? 0}`, label: "in their tribe", accent: BRAND_ACCENT.cyan },
-        { icon: STAT_ICONS.flame, value: `${proof.hosting_count ?? 0}`, label: proof.hosting_count === 1 ? "experience led" : "experiences led", accent: BRAND_ACCENT.orange },
-        { icon: STAT_ICONS.bolt, value: `${proof.sessions_led ?? 0}`, label: "sessions led", accent: BRAND_ACCENT.orange },
-        { icon: STAT_ICONS.check, value: `${proof.questions_answered ?? 0}`, label: "questions answered", accent: BRAND_ACCENT.cyan },
       ]
     : payload.limited || proof.tribes_count === undefined
       ? []
       : [
           { icon: STAT_ICONS.flame, value: `${proof.tribes_count ?? 0}`, label: proof.tribes_count === 1 ? "experience joined" : "experiences joined", accent: BRAND_ACCENT.orange },
-          { icon: STAT_ICONS.check, value: `${proof.completed_count ?? 0}`, label: "completed", accent: BRAND_ACCENT.teal },
-          { icon: STAT_ICONS.live, value: `${proof.sessions_attended ?? 0}`, label: "live sessions attended", accent: BRAND_ACCENT.cyan },
+          { icon: STAT_ICONS.live, value: `${proof.sessions_attended ?? 0}`, label: "live sessions attended", accent: BRAND_ACCENT.orange },
+          { icon: STAT_ICONS.check, value: `${proof.completed_count ?? 0}`, label: "completed", accent: BRAND_ACCENT.cyan },
         ];
 
   const factChips: Array<{ icon: React.ReactNode; text: string }> = [];

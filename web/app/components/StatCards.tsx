@@ -15,16 +15,15 @@ import Link from "next/link";
  */
 
 export const BRAND_ACCENT = {
-  /** Action, opportunity, growth. */
+  /** ACTIVE things: what is live and what you actively do — active tribe
+   *  members, sessions led, experiences you are in, opportunities. */
   orange: "#FF6130",
-  /** Social, information, live. */
+  /** PASSIVE things: accumulated aggregates — reputation, finances, totals,
+   *  completed history. */
   cyan: "#0891b2",
-  /** Money, achievement, formal weight. */
+  /** Formal weight (governance rows). */
   teal: "#0C262E",
-  /** Governance. */
   ink: "#0F2229",
-  /** Stars only: rating + Founding Expert. */
-  gold: "#EAB308",
 } as const;
 
 const INK = "#0F2229";

@@ -201,7 +201,7 @@ async function loadDashboard(userId: string) {
     await Promise.all([
       supabase
         .from("app_profile")
-        .select("display_name, avatar_url, tagline, bio, profile_facts, role, created_at, visibility")
+        .select("display_name, avatar_url, tagline, bio, profile_facts, role, created_at, visibility, is_founding_expert")
         .eq("id", userId)
         .single(),
       supabase
@@ -649,6 +649,7 @@ async function loadDashboard(userId: string) {
       bio: profile?.bio ?? null,
       joinedAt: (profile as any)?.created_at ?? null,
       visibility: ((profile as any)?.visibility as string) ?? "public",
+      isFoundingExpert: !!(profile as any)?.is_founding_expert,
     },
     activePrograms,
     otherPrograms,
@@ -696,6 +697,7 @@ export default async function DashboardPage() {
   const ownProof = ((ownProfilePayload as { proof?: Record<string, number> } | null)?.proof ?? {}) as Record<string, number>;
   const accountProof = {
     tribeCount: ownProof.tribe_count ?? 0,
+    activeTribeMembers: ownProof.active_tribe_members ?? 0,
     avgRating: Number(ownProof.avg_rating ?? 0),
     totalReviews: ownProof.total_reviews ?? 0,
     sessionsLed: ownProof.sessions_led ?? 0,
@@ -823,7 +825,9 @@ export default async function DashboardPage() {
             agreements={agreements}
             connections={connections}
             reviews={expertReviews}
-            activeMembers={tribePulse.members}
+            isFoundingExpert={data.profile.isFoundingExpert}
+            activeMembers={accountProof.activeTribeMembers}
+            tribeConnections={accountProof.tribeCount}
             avgRating={accountProof.avgRating}
             totalReviews={accountProof.totalReviews}
             sessionsLed={accountProof.sessionsLed}

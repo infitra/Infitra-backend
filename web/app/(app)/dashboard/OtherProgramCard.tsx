@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ProgramSummary } from "./page";
+import { CreateNextRunButton } from "./CreateNextRunButton";
 
 /**
  * OtherProgramCard — a collaboration that isn't live yet (draft, awaiting
@@ -12,6 +13,10 @@ import type { ProgramSummary } from "./page";
  * click to its destination:
  *   drafting-* / awaiting-signatures → workspace
  *   completed                        → experience space (read-only)
+ * A completed run you own that has no next run yet carries a SECOND, quiet
+ * action underneath: "Create the next run", which builds the continuation
+ * draft (after explaining what carries over) rather than reopening the old
+ * workspace.
  */
 
 interface UserLite {
@@ -79,17 +84,13 @@ const stageConfig: Record<
     label: "Completed",
     color: SLATE,
     icon: CHECK_ICON,
-    cta: "Open experience →",
+    cta: "Open experience space →",
   },
 };
 
 function destinationFor(p: ProgramSummary): string {
   if (p.stage === "completed") {
-    // Owner + no next run yet → land directly on the Next chapter console,
-    // which is where the action actually lives.
-    return p.isOwner && !p.nextRun
-      ? `/experiences/${p.id}/space#next-chapter`
-      : `/experiences/${p.id}/space`;
+    return `/experiences/${p.id}/space`;
   }
   return `/dashboard/collaborate/${p.id}`;
 }
@@ -126,15 +127,15 @@ export function OtherProgramCard({ program, user }: Props) {
   const showContinuation = program.stage === "completed" && program.isOwner && !program.nextRun;
 
   return (
-    <Link
-      href={destinationFor(program)}
-      className="group block w-full h-full rounded-2xl p-4 transition-transform hover:-translate-y-0.5"
+    <div
+      className="w-full h-full rounded-2xl p-4 flex flex-col"
       style={{
         backgroundColor: "#FFFFFF",
-        borderLeft: `3px solid ${showContinuation ? ORANGE : cfg.color}`,
+        borderLeft: `3px solid ${cfg.color}`,
         boxShadow: "0 0 0 1px rgba(15,34,41,0.05), 0 6px 20px rgba(15,34,41,0.08)",
       }}
     >
+    <Link href={destinationFor(program)} className="group block flex-1 transition-transform hover:-translate-y-0.5">
       {/* WHO — the partner this collaboration is with. */}
       <div className="flex items-center gap-2.5">
         <div className="flex items-center">
@@ -167,11 +168,9 @@ export function OtherProgramCard({ program, user }: Props) {
       </div>
 
       {/* STATE — where this is in the process (the loud part). */}
-      <div className="flex items-center gap-1.5 mt-3.5" style={{ color: showContinuation ? ORANGE : cfg.color }}>
+      <div className="flex items-center gap-1.5 mt-3.5" style={{ color: cfg.color }}>
         {cfg.icon}
-        <span className="text-[13px] font-black font-headline">
-          {showContinuation ? "Ready for a next chapter" : cfg.label}
-        </span>
+        <span className="text-[13px] font-black font-headline">{cfg.label}</span>
       </div>
 
       {/* Title — a quiet subtitle, not the headline. */}
@@ -185,32 +184,23 @@ export function OtherProgramCard({ program, user }: Props) {
         {isUntitled ? "Untitled experience" : program.title}
       </p>
 
-      {showContinuation && (
-        <p className="text-[11.5px] leading-snug mt-2.5" style={{ color: "#64748b" }}>
-          Your group is warm. Bring them into a next run: sessions and team
-          carry over into a draft you can adjust.
-        </p>
-      )}
 
       {/* NEXT STEP. A completed run you own with no next run yet is the
           platform's most valuable moment (the retention loop), so it gets a
           real CTA with weight — not a whisper of uppercase text that gets
           lost. Everything else keeps the quiet next-step line. */}
-      {showContinuation ? (
-        <span
-          className="mt-3.5 flex items-center justify-center gap-1.5 w-full rounded-full py-2.5 px-4 text-[12.5px] font-black font-headline text-white transition-transform group-hover:scale-[1.02]"
-          style={{ backgroundColor: ORANGE, boxShadow: "0 4px 14px rgba(255,97,48,0.30)" }}
-        >
-          Start the next run →
-        </span>
-      ) : (
-        <p
-          className="text-[11px] uppercase tracking-widest font-headline mt-3.5 transition-colors group-hover:text-[#FF6130]"
-          style={{ color: "#0F2229", fontWeight: 700 }}
-        >
-          {cfg.cta}
-        </p>
-      )}
+      <p
+        className="text-[11px] uppercase tracking-widest font-headline mt-3.5 transition-colors group-hover:text-[#FF6130]"
+        style={{ color: "#0F2229", fontWeight: 700 }}
+      >
+        {cfg.cta}
+      </p>
     </Link>
+
+    {/* A completed run you own with no next run yet: the retention moment.
+        Its own action, under the door — it does NOT reopen the old
+        workspace, it creates the next run's draft (explained first). */}
+    {showContinuation && <CreateNextRunButton sourceId={program.id} title={program.title} />}
+    </div>
   );
 }
