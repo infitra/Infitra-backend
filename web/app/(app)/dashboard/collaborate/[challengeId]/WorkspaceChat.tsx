@@ -222,7 +222,11 @@ export function WorkspaceChat({ conversationId, currentUserId, profiles }: Props
                 )}
                 <div className={`max-w-[75%] ${isMe ? "text-right" : ""}`}>
                   <div
-                    className={`inline-block px-3 py-2 rounded-2xl text-sm ${
+                    // text-right on the wrapper is what pushes the bubble to
+                    // the right edge, but it also inherited INTO the bubble and
+                    // ragged-left the sentence inside it. The bubble always
+                    // reads left-to-right regardless of who sent it.
+                    className={`inline-block px-3 py-2 rounded-2xl text-sm text-left ${
                       isMe
                         ? "rounded-br-md text-white"
                         : "rounded-bl-md text-[#0F2229]"
