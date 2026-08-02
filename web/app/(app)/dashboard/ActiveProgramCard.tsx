@@ -683,6 +683,7 @@ export function ActiveProgramCard({ program, partner, user, density = "hero", ti
                     count={program.reviewCount ?? 0}
                     thisWeek={program.reviewsThisWeek ?? 0}
                     reviews={program.reviews ?? []}
+                    experienceTitle={program.title}
                   />
                 </div>
               )}
