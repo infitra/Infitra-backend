@@ -1,0 +1,13 @@
+-- load_tribe_faces (2026-08-02): capped member faces for the tribe
+-- constellation on the dashboard experience cards.
+--
+-- The card stops being a catalogue entry and becomes a picture of the
+-- group, which needs member identities on the DASHBOARD, where only counts
+-- were loaded before.
+--
+-- Privacy: gated on the caller belonging to the experience (owner, cohost
+-- or member). Inside that circle photo + display name are visible even for
+-- private profiles, the same rule as the tribe feed: private hides DETAIL,
+-- never someone's presence among people they train with. Nothing beyond
+-- name/avatar/role leaves the function. Takes an ARRAY so one call serves
+-- every active card on the page.

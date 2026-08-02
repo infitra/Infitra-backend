@@ -24,7 +24,7 @@ const CHECK_ICON = (
   </svg>
 );
 
-export function ShareButton({ challengeId }: { challengeId: string }) {
+export function ShareButton({ challengeId, inline }: { challengeId: string; inline?: boolean }) {
   const [copied, setCopied] = useState(false);
 
   async function copy(e: React.MouseEvent) {
@@ -41,6 +41,20 @@ export function ShareButton({ challengeId }: { challengeId: string }) {
     } catch {
       /* clipboard denied — no-op */
     }
+  }
+
+  if (inline) {
+    return (
+      <button
+        type="button"
+        onClick={copy}
+        className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[12.5px] font-black font-headline transition-colors hover:bg-[rgba(8,145,178,0.08)]"
+        style={{ color: "#0891b2", border: "1.5px solid rgba(8,145,178,0.32)" }}
+      >
+        {copied ? CHECK_ICON : SHARE_ICON}
+        {copied ? "Link copied" : "Share & promote"}
+      </button>
+    );
   }
 
   return (

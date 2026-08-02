@@ -234,6 +234,26 @@ async function loadMe(userId: string) {
     }
   }
 
+  // Tribe faces for the constellation — same definer RPC as the expert
+  // dashboard, gated on the caller belonging to the experience.
+  const facesByChallenge = new Map<string, Array<{ profileId: string; name: string; avatar: string | null }>>();
+  const totalsByChallenge = new Map<string, number>();
+  if (challengeIds.length) {
+    const { data: faceRows } = await supabase.rpc("load_tribe_faces", {
+      p_challenge_ids: challengeIds,
+      p_limit: 11,
+    });
+    for (const f of (faceRows ?? []) as Array<{
+      challenge_id: string; profile_id: string; display_name: string | null;
+      avatar_url: string | null; member_total: number;
+    }>) {
+      const arr = facesByChallenge.get(f.challenge_id) ?? [];
+      arr.push({ profileId: f.profile_id, name: f.display_name ?? "Member", avatar: f.avatar_url });
+      facesByChallenge.set(f.challenge_id, arr);
+      totalsByChallenge.set(f.challenge_id, f.member_total ?? 0);
+    }
+  }
+
   const experiences: MeExperience[] = rows.map((r) => ({
     id: r.id,
     title: r.title,
@@ -247,6 +267,8 @@ async function loadMe(userId: string) {
     newPosts: postsByChallenge.get(r.id) ?? 0,
     rated: ratedSet.has(r.id),
     continuation: continuationByChallenge.get(r.id) ?? null,
+    tribeFaces: facesByChallenge.get(r.id) ?? [],
+    memberTotal: totalsByChallenge.get(r.id) ?? 0,
   }));
 
   const active = experiences.filter((e) => e.stage !== "completed");
@@ -315,7 +337,7 @@ export default async function MeHomePage() {
             <div className="min-w-0 space-y-5">
               {active.length > 0 ? (
                 active.map((e) => (
-                  <ParticipantExperienceCard key={e.id} exp={e} timeZone={viewerTimeZone} />
+                  <ParticipantExperienceCard key={e.id} exp={e} timeZone={viewerTimeZone} viewerId={user.id} />
                 ))
               ) : (
                 <EmptyState hasCompleted={completed.length > 0} />

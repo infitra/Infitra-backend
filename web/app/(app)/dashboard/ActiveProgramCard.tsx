@@ -3,6 +3,7 @@ import Image from "next/image";
 import { PrimaryActionPill } from "./PrimaryActionPill";
 import { ShareButton } from "./ShareButton";
 import { ReviewsDisclosure, type CardReview } from "./ReviewsDisclosure";
+import { TribeConstellation, TribeCountLine, type TribeFace } from "@/app/components/TribeConstellation";
 
 /**
  * ActiveProgramCard — a live experience, side-by-side.
@@ -65,15 +66,19 @@ interface Program {
   /** The upcoming next run in this lineage, folded into this card (it flips to
    *  become the active run once this one ends). */
   nextRun?: { id: string; title: string; startDate: string | null; stage: ProgramStage } | null;
+  /** Capped member faces for the constellation (load_tribe_faces). */
+  tribeFaces?: TribeFace[];
 }
 
 interface Partner {
+  id?: string;
   name: string;
   avatar: string | null;
   pendingInvite: boolean;
 }
 
 interface UserProfile {
+  id?: string;
   name: string;
   avatar: string | null;
   initial: string;
@@ -639,6 +644,11 @@ export function ActiveProgramCard({ program, partner, user, density = "hero", ti
     program.stage === "published-pre-launch" || program.stage === "published-live";
 
   const enrolled = program.enrolledCount ?? 0;
+  const showTribe = isHero && !isDraftStage;
+  const experts = [
+    { id: user.id ?? "", name: user.name, avatar: user.avatar },
+    ...(partner?.id ? [{ id: partner.id, name: partner.name, avatar: partner.avatar }] : []),
+  ].filter((e) => !!e.id);
   const warmingUp =
     enrolled === 0 && (program.newPosts ?? 0) === 0 && (program.pendingQuestions ?? 0) === 0;
 
@@ -650,10 +660,41 @@ export function ActiveProgramCard({ program, partner, user, density = "hero", ti
       style={{ backgroundColor: "#FFFFFF", boxShadow: SOFT_SHADOW }}
     >
       {/* Share the card — copies the public buyer-page link. Top-right corner. */}
-      {showShare && <ShareButton challengeId={program.id} />}
+      {showShare && !isHero && <ShareButton challengeId={program.id} />}
 
-      {/* The face — cover + overlaid status. */}
-      <Cover program={program} density={density} />
+      {/* THE FACE OF THE CARD.
+          A published experience leads with its TRIBE: experts at the centre,
+          members around them, open slots for seats still to fill. The card
+          stops being a catalogue entry and becomes the place where the group
+          lives. Drafts and compact cards keep the cover, because a draft has
+          no tribe yet and the constellation is a hero treatment. */}
+      {showTribe ? (
+        <div
+          className={`relative flex flex-col items-center justify-center px-6 py-7 ${
+            isHero ? "xl:w-[46%] xl:shrink-0" : ""
+          }`}
+          style={{
+            backgroundImage:
+              "linear-gradient(140deg, rgba(8,145,178,0.07) 0%, rgba(242,239,232,0.55) 45%, rgba(255,97,48,0.07) 100%)",
+          }}
+        >
+          <div className="absolute top-4 left-4">
+            <StatusPill program={program} />
+          </div>
+          <TribeConstellation
+            experts={experts}
+            members={program.tribeFaces ?? []}
+            memberTotal={enrolled}
+            viewerId={user.id ?? null}
+            className="mt-6"
+          />
+          <div className="mt-3">
+            <TribeCountLine memberTotal={enrolled} forming={program.stage === "published-pre-launch"} />
+          </div>
+        </div>
+      ) : (
+        <Cover program={program} density={density} />
+      )}
 
       <div className={`${isHero ? "p-7 md:p-8 xl:flex-1 xl:justify-center" : "p-5"} flex flex-col min-w-0`}>
         <h2
@@ -663,10 +704,12 @@ export function ActiveProgramCard({ program, partner, user, density = "hero", ti
           {program.title || "Untitled"}
         </h2>
 
-        {/* PEOPLE — the experts. */}
-        <div className="mt-5">
-          <PartiesRow user={user} partner={partner} isOwner={program.isOwner} />
-        </div>
+        {/* PEOPLE — only when the constellation is not already showing them. */}
+        {!showTribe && (
+          <div className="mt-5">
+            <PartiesRow user={user} partner={partner} isOwner={program.isOwner} />
+          </div>
+        )}
 
         {/* SIGNALS — live stats, or the warming-up line. */}
         <div className="mt-5">
@@ -704,8 +747,9 @@ export function ActiveProgramCard({ program, partner, user, density = "hero", ti
 
         {/* DOOR — one action on a published card: Open Experience Space.
             Share is the top-right icon; the agreement moved to settings. */}
-        <div className="mt-7 flex flex-wrap items-center gap-x-4 gap-y-3">
+        <div className="mt-7 flex flex-wrap items-center gap-x-3 gap-y-3">
           <PrimaryActionPill label={doorLabel} kind="navigate" href={doorHref} variant="filled" />
+          {showShare && <ShareButton challengeId={program.id} inline />}
           <SecondaryActions program={program} />
         </div>
 

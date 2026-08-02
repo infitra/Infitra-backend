@@ -64,6 +64,8 @@ export interface ProgramSummary {
   /** The upcoming next run in this lineage, folded into the active run's card
    *  (set by collapseLineages). null when there is no distinct next run. */
   nextRun: { id: string; title: string; startDate: string | null; stage: ProgramStage } | null;
+  /** Capped member faces for the tribe constellation. */
+  tribeFaces?: Array<{ profileId: string; name: string; avatar: string | null }>;
   partner: {
     id: string;
     name: string;
@@ -714,6 +716,24 @@ export default async function DashboardPage() {
     .sort((a, b) => (b.start_date ?? "").localeCompare(a.start_date ?? ""))
     .map(({ id, title, status, start_date }) => ({ id, title, status, start_date }));
 
+  // Tribe faces for the constellation — one call for every active card.
+  const activeIdsForFaces = data.activePrograms.map((p) => p.id);
+  if (activeIdsForFaces.length > 0) {
+    const { data: faceRows } = await supabase.rpc("load_tribe_faces", {
+      p_challenge_ids: activeIdsForFaces,
+      p_limit: 11,
+    });
+    const byChallenge = new Map<string, Array<{ profileId: string; name: string; avatar: string | null }>>();
+    for (const f of (faceRows ?? []) as Array<{
+      challenge_id: string; profile_id: string; display_name: string | null; avatar_url: string | null;
+    }>) {
+      const arr = byChallenge.get(f.challenge_id) ?? [];
+      arr.push({ profileId: f.profile_id, name: f.display_name ?? "Member", avatar: f.avatar_url });
+      byChallenge.set(f.challenge_id, arr);
+    }
+    for (const p of data.activePrograms) p.tribeFaces = byChallenge.get(p.id) ?? [];
+  }
+
   const allPrograms = [...data.activePrograms, ...data.otherPrograms];
   const titleById = new Map(allPrograms.map((p) => [p.id, p.title]));
   const allIds = allPrograms.map((p) => p.id);
@@ -738,6 +758,7 @@ export default async function DashboardPage() {
   }));
   const userInitial = data.profile.displayName?.[0]?.toUpperCase() ?? "?";
   const userProp = {
+    id: user.id,
     name: data.profile.displayName,
     avatar: data.profile.avatarUrl,
     initial: userInitial,

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { RateExperienceButton } from "./RateExperienceButton";
+import { TribeConstellation, TribeCountLine, type TribeFace } from "@/app/components/TribeConstellation";
 
 /**
  * The participant's view of an experience they've joined — the symmetric
@@ -29,6 +30,9 @@ export interface MeExperience {
   stage: "pre-launch" | "live" | "completed";
   experts: { id: string; name: string; avatar: string | null; role: "owner" | "cohost" }[];
   nextSession: { title: string; startTime: string; imageUrl: string | null } | null;
+  /** Capped member faces + total for the tribe constellation. */
+  tribeFaces?: TribeFace[];
+  memberTotal?: number;
   newPosts: number;
   rated: boolean;
   /** For a completed run whose lineage moved on: the joinable next/live run the
@@ -290,7 +294,15 @@ function Momentum({ exp }: { exp: MeExperience }) {
 
 // ─── Active card (side-by-side, like the creator hero) ───────
 
-export function ParticipantExperienceCard({ exp, timeZone }: { exp: MeExperience; timeZone?: string }) {
+export function ParticipantExperienceCard({
+  exp,
+  timeZone,
+  viewerId,
+}: {
+  exp: MeExperience;
+  timeZone?: string;
+  viewerId?: string;
+}) {
   // Always /space — load_experience_space resolves the space across the lineage
   // (a continuation run shares the source's space, so it has no own spaceId).
   const spaceHref = `/experiences/${exp.id}/space`;
@@ -300,7 +312,24 @@ export function ParticipantExperienceCard({ exp, timeZone }: { exp: MeExperience
       className="relative transition-shadow flex flex-col overflow-hidden rounded-3xl xl:flex-row"
       style={{ backgroundColor: "#FFFFFF", boxShadow: SOFT_SHADOW }}
     >
-      <Cover exp={exp} />
+      {/* THE FACE OF THE CARD — your tribe, with you in it. */}
+      <div
+        className="relative flex flex-col items-center justify-center px-6 py-7 xl:w-[46%] xl:shrink-0"
+        style={{
+          backgroundImage:
+            "linear-gradient(140deg, rgba(8,145,178,0.07) 0%, rgba(242,239,232,0.55) 45%, rgba(255,97,48,0.07) 100%)",
+        }}
+      >
+        <TribeConstellation
+          experts={exp.experts.map((e) => ({ id: e.id, name: e.name, avatar: e.avatar }))}
+          members={exp.tribeFaces ?? []}
+          memberTotal={exp.memberTotal ?? 0}
+          viewerId={viewerId ?? null}
+        />
+        <div className="mt-3">
+          <TribeCountLine memberTotal={exp.memberTotal ?? 0} forming={exp.stage === "pre-launch"} />
+        </div>
+      </div>
 
       <div className="p-7 md:p-8 xl:flex-1 xl:justify-center flex flex-col min-w-0">
         <h2
@@ -309,13 +338,6 @@ export function ParticipantExperienceCard({ exp, timeZone }: { exp: MeExperience
         >
           {exp.title || "Untitled experience"}
         </h2>
-
-        {/* PEOPLE — your experts. */}
-        {exp.experts.length > 0 && (
-          <div className="mt-5">
-            <ExpertsRow experts={exp.experts} />
-          </div>
-        )}
 
         {/* MOMENTUM — where you are + what's moving. */}
         <div className="mt-4">
