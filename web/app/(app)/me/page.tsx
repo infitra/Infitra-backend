@@ -46,7 +46,7 @@ async function loadMe(userId: string) {
 
   const { data: profile } = await supabase
     .from("app_profile")
-    .select("display_name, role, avatar_url, created_at")
+    .select("display_name, role, avatar_url, created_at, profile_facts, visibility")
     .eq("id", userId)
     .maybeSingle();
 
@@ -290,6 +290,8 @@ export default async function MeHomePage() {
                 tribePulse={tribePulse}
                 hasActiveExperiences={active.length > 0}
                 pendingReviews={pendingReviews}
+                facts={(profile as { profile_facts?: Record<string, unknown> } | null)?.profile_facts ?? {}}
+                visibility={(profile as { visibility?: string } | null)?.visibility ?? "public"}
               />
             </aside>
 

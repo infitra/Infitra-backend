@@ -129,6 +129,40 @@ export async function saveFirstMoves(formData: FormData) {
     updates.avatar_url = avatarUrl;
   }
 
+  // Optional human facts (P7). Sent as ONE json field so the caller can
+  // clear a value simply by omitting it: fill = share, empty = invisible.
+  // Server-validated because this is a direct client-driven profile write.
+  const factsRaw = (formData.get("profile_facts") as string)?.trim();
+  if (factsRaw) {
+    let parsed: Record<string, unknown>;
+    try {
+      parsed = JSON.parse(factsRaw) as Record<string, unknown>;
+    } catch {
+      return { error: "Could not read your profile details." };
+    }
+    const facts: Record<string, unknown> = {};
+    const age = Number(parsed.age);
+    if (Number.isInteger(age) && age >= 13 && age <= 120) facts.age = age;
+    if (typeof parsed.city === "string" && parsed.city.trim()) {
+      facts.city = parsed.city.trim().slice(0, 60);
+    }
+    const since = Number(parsed.training_since);
+    if (Number.isInteger(since) && since >= 1950 && since <= 2100) {
+      facts.training_since = since;
+    }
+    if (Array.isArray(parsed.disciplines)) {
+      const ds = parsed.disciplines
+        .filter((d): d is string => typeof d === "string" && d.trim().length > 0)
+        .map((d) => d.trim().slice(0, 40))
+        .slice(0, 8);
+      if (ds.length > 0) facts.disciplines = ds;
+    }
+    if (typeof parsed.focus === "string" && parsed.focus.trim()) {
+      facts.focus = parsed.focus.trim().slice(0, 120);
+    }
+    updates.profile_facts = facts;
+  }
+
   // Nothing filled — treat as a no-op success (they hit "Later" on everything).
   if (Object.keys(updates).length === 0) return { success: true };
 

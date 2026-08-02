@@ -19,6 +19,14 @@ const ORANGE = "#FF6130";
 const CYAN = "#0891b2";
 const INK = "#0F2229";
 
+export interface ParticipantFacts {
+  age?: number;
+  city?: string;
+  training_since?: number;
+  disciplines?: string[];
+  focus?: string;
+}
+
 interface Props {
   displayName: string;
   avatarUrl: string | null;
@@ -27,6 +35,8 @@ interface Props {
   hasActiveExperiences: boolean;
   /** Completed experiences the member hasn't rated yet — the console is the main
    *  action collector, so pending ratings surface here as a to-do. */
+  facts?: ParticipantFacts;
+  visibility?: string;
   pendingReviews: { id: string; title: string }[];
 }
 
@@ -64,7 +74,7 @@ function Section({ label, children }: { label: string; children: React.ReactNode
   );
 }
 
-export function ParticipantPanel({ displayName, avatarUrl, joinedAt, tribePulse, hasActiveExperiences, pendingReviews }: Props) {
+export function ParticipantPanel({ displayName, avatarUrl, joinedAt, tribePulse, hasActiveExperiences, pendingReviews, facts = {}, visibility = "public" }: Props) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -76,6 +86,18 @@ export function ParticipantPanel({ displayName, avatarUrl, joinedAt, tribePulse,
   const [name, setName] = useState(displayName);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Optional facts (P7). Held as strings while editing so a cleared field is
+  // simply an empty string — the action drops absent keys, so clearing one
+  // makes it private again with no extra machinery.
+  const [fAge, setFAge] = useState(facts.age ? String(facts.age) : "");
+  const [fCity, setFCity] = useState(facts.city ?? "");
+  const [fSince, setFSince] = useState(facts.training_since ? String(facts.training_since) : "");
+  const [fDisc, setFDisc] = useState((facts.disciplines ?? []).join(", "));
+  const [fFocus, setFFocus] = useState(facts.focus ?? "");
+  const [isPublic, setIsPublic] = useState(visibility !== "private");
+  const hasFacts =
+    !!facts.age || !!facts.city || !!facts.training_since ||
+    (facts.disciplines?.length ?? 0) > 0 || !!facts.focus;
 
   const firstName = (savedName || "there").split(" ")[0] || "there";
   const initial = (firstName[0] ?? "?").toUpperCase();
@@ -99,6 +121,12 @@ export function ParticipantPanel({ displayName, avatarUrl, joinedAt, tribePulse,
     setAvatarFile(null);
     setPreview(savedAvatar);
     setName(savedName);
+    setFAge(facts.age ? String(facts.age) : "");
+    setFCity(facts.city ?? "");
+    setFSince(facts.training_since ? String(facts.training_since) : "");
+    setFDisc((facts.disciplines ?? []).join(", "));
+    setFFocus(facts.focus ?? "");
+    setIsPublic(visibility !== "private");
   }
 
   async function save() {
@@ -124,6 +152,20 @@ export function ParticipantPanel({ displayName, avatarUrl, joinedAt, tribePulse,
     const fd = new FormData();
     fd.append("display_name", trimmed);
     if (newUrl) fd.append("avatar_url", newUrl);
+    fd.append("visibility", isPublic ? "public" : "private");
+    fd.append(
+      "profile_facts",
+      JSON.stringify({
+        age: fAge.trim() ? Number(fAge.trim()) : undefined,
+        city: fCity.trim() || undefined,
+        training_since: fSince.trim() ? Number(fSince.trim()) : undefined,
+        disciplines: fDisc
+          .split(",")
+          .map((d) => d.trim())
+          .filter(Boolean),
+        focus: fFocus.trim() || undefined,
+      }),
+    );
     const res = await saveFirstMoves(fd);
     if (res && "error" in res && res.error) {
       setError(res.error);
@@ -232,17 +274,107 @@ export function ParticipantPanel({ displayName, avatarUrl, joinedAt, tribePulse,
       {/* ── QUICK ACTIONS ── */}
       <Section label="Quick actions">
         {!editing ? (
-          <button
-            onClick={() => setEditing(true)}
-            className="flex w-full items-center justify-center gap-1.5 rounded-xl py-3 px-4 text-[13px] font-black font-headline transition-colors"
-            style={{ color: "#475569", border: "1px solid rgba(15,34,41,0.12)", backgroundColor: "rgba(255,255,255,0.6)" }}
-          >
-            {EDIT_ICON}
-            Edit profile
-          </button>
+          <>
+            <button
+              onClick={() => setEditing(true)}
+              className="flex w-full items-center justify-center gap-1.5 rounded-xl py-3 px-4 text-[13px] font-black font-headline transition-colors"
+              style={{ color: "#475569", border: "1px solid rgba(15,34,41,0.12)", backgroundColor: "rgba(255,255,255,0.6)" }}
+            >
+              {EDIT_ICON}
+              Edit profile
+            </button>
+            {/* The entire engagement system for facts: one soft chip when the
+                profile is bare. No progress bars, no completion percentage. */}
+            {!hasFacts && (
+              <button
+                onClick={() => setEditing(true)}
+                className="mt-2 w-full rounded-xl py-2 text-[11px] font-bold font-headline transition-colors"
+                style={{ color: CYAN, backgroundColor: "rgba(8,145,178,0.07)" }}
+              >
+                Add a little about yourself →
+              </button>
+            )}
+          </>
         ) : (
           <>
             {error && <p className="text-xs mb-2" style={{ color: "#b91c1c" }}>{error}</p>}
+
+            {/* ── SHARE MORE — optional facts. Invitation, never a form to
+                complete: everything blank stays private, and the copy says
+                so plainly right here. ── */}
+            <div
+              className="rounded-xl p-3 mb-3"
+              style={{ backgroundColor: "rgba(8,145,178,0.05)", border: "1px solid rgba(8,145,178,0.16)" }}
+            >
+              <p className="text-[10px] uppercase tracking-widest font-headline mb-1" style={{ color: CYAN, fontWeight: 800 }}>
+                Share more with your tribe
+              </p>
+              <p className="text-[11px] mb-2.5" style={{ color: "#64748b" }}>
+                All optional. Only what you fill in is shown.
+              </p>
+              <div className="grid grid-cols-2 gap-1.5">
+                <input
+                  value={fAge}
+                  onChange={(e) => setFAge(e.target.value)}
+                  placeholder="Age"
+                  inputMode="numeric"
+                  maxLength={3}
+                  className="h-8 rounded-lg px-2 text-xs outline-none"
+                  style={{ border: "1px solid rgba(15,34,41,0.14)", color: INK, backgroundColor: "white" }}
+                />
+                <input
+                  value={fCity}
+                  onChange={(e) => setFCity(e.target.value)}
+                  placeholder="City"
+                  maxLength={60}
+                  className="h-8 rounded-lg px-2 text-xs outline-none"
+                  style={{ border: "1px solid rgba(15,34,41,0.14)", color: INK, backgroundColor: "white" }}
+                />
+                <input
+                  value={fSince}
+                  onChange={(e) => setFSince(e.target.value)}
+                  placeholder="Training since"
+                  inputMode="numeric"
+                  maxLength={4}
+                  className="h-8 rounded-lg px-2 text-xs outline-none"
+                  style={{ border: "1px solid rgba(15,34,41,0.14)", color: INK, backgroundColor: "white" }}
+                />
+                <input
+                  value={fDisc}
+                  onChange={(e) => setFDisc(e.target.value)}
+                  placeholder="Disciplines"
+                  maxLength={200}
+                  className="h-8 rounded-lg px-2 text-xs outline-none"
+                  style={{ border: "1px solid rgba(15,34,41,0.14)", color: INK, backgroundColor: "white" }}
+                />
+                <input
+                  value={fFocus}
+                  onChange={(e) => setFFocus(e.target.value)}
+                  placeholder="Currently working on…"
+                  maxLength={120}
+                  className="h-8 rounded-lg px-2 text-xs outline-none col-span-2"
+                  style={{ border: "1px solid rgba(15,34,41,0.14)", color: INK, backgroundColor: "white" }}
+                />
+              </div>
+
+              {/* The master switch. Private keeps name + photo (so nobody is a
+                  ghost in their own tribe) and hides the rest. */}
+              <label className="flex items-start gap-2 mt-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isPublic}
+                  onChange={(e) => setIsPublic(e.target.checked)}
+                  className="mt-0.5"
+                />
+                <span className="text-[11px] leading-snug" style={{ color: "#64748b" }}>
+                  Show these details to your tribe.{" "}
+                  <span style={{ color: "#94a3b8" }}>
+                    Off keeps your name and photo visible and hides the rest.
+                  </span>
+                </span>
+              </label>
+            </div>
+
             <div className="flex items-center gap-2">
               <button
                 onClick={save}
