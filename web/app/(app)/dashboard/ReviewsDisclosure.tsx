@@ -89,7 +89,7 @@ export function ReviewsDisclosure({
         {thisWeek > 0 && (
           <span
             className="text-[10px] font-black font-headline px-1.5 py-0.5 rounded-full"
-            style={{ color: "#1D9E75", backgroundColor: "rgba(29,158,117,0.10)" }}
+            style={{ color: "#c2410c", backgroundColor: "rgba(255,97,48,0.10)" }}
           >
             +{thisWeek} this week
           </span>

@@ -266,9 +266,9 @@ export function YouPanel({ continuation }: { continuation?: CreatorContinuation 
   );
 }
 
-function Section({ label, children, mobileOnly }: { label: string; children: ReactNode; mobileOnly?: boolean }) {
+function Section({ label, children, mobileOnly, id }: { label: string; children: ReactNode; mobileOnly?: boolean; id?: string }) {
   return (
-    <div className={`px-5 py-4 ${mobileOnly ? "lg:hidden" : ""}`} style={{ borderTop: "1px solid rgba(15,34,41,0.06)" }}>
+    <div id={id} className={`px-5 py-4 scroll-mt-24 ${mobileOnly ? "lg:hidden" : ""}`} style={{ borderTop: "1px solid rgba(15,34,41,0.06)" }}>
       <p className="text-[10px] uppercase tracking-[0.18em] font-headline mb-3" style={{ color: "#94a3b8", fontWeight: 800 }}>{label}</p>
       {children}
     </div>
@@ -352,7 +352,7 @@ function NextChapterSection({
       // the founder hit exactly this on a completed run owned by the other
       // account. Say the true state instead of hiding it.
       return (
-        <Section label="Next chapter">
+        <Section label="Next chapter" id="next-chapter">
           <p className="text-[12px] font-bold font-headline" style={{ color: "#64748b" }}>
             Ready for a next run? The experience owner can prepare it from
             this console — sessions and team carry over into a draft.
@@ -361,7 +361,7 @@ function NextChapterSection({
       );
     }
     return (
-      <Section label="Next chapter">
+      <Section label="Next chapter" id="next-chapter">
         <p className="text-[12px] font-bold font-headline mb-2.5" style={{ color: "#64748b" }}>
           Bring your group into the next run — we&apos;ll copy your sessions and team into a draft you can adjust.
         </p>
@@ -382,7 +382,7 @@ function NextChapterSection({
   const cta = published ? "View" : "Finish";
 
   return (
-    <Section label="Next chapter">
+    <Section label="Next chapter" id="next-chapter">
       <a
         href={href}
         className="flex items-center gap-2 rounded-xl px-3.5 py-3 transition-transform hover:scale-[1.01]"

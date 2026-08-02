@@ -3,12 +3,29 @@
 import Link from "next/link";
 
 /**
- * StatCards — the designed stat family for both console rails (founder's
- * call: the hairline spreadsheet grid had zero energy; every number needs
- * its own weight). Each card carries its own accent: a tinted wash, an icon
- * tile, a big headline number. Clickable cards lift and carry an arrow —
- * they are doors, not cells.
+ * StatCards — the designed stat family used by both console rails AND the
+ * profile modal (founder's call: hairline spreadsheet grids have zero
+ * energy; every number needs its own weight). Each card carries its own
+ * accent: a tinted wash, an icon tile, a big headline number. Clickable
+ * cards lift and carry an arrow — they are doors, not cells.
+ *
+ * ON BRAND, strictly: accents come from BRAND_ACCENT below — orange, cyan,
+ * dark teal, ink. Gold is reserved for stars (rating / Founding Expert),
+ * the one exception the founder set. No greens, no invented colours.
  */
+
+export const BRAND_ACCENT = {
+  /** Action, opportunity, growth. */
+  orange: "#FF6130",
+  /** Social, information, live. */
+  cyan: "#0891b2",
+  /** Money, achievement, formal weight. */
+  teal: "#0C262E",
+  /** Governance. */
+  ink: "#0F2229",
+  /** Stars only: rating + Founding Expert. */
+  gold: "#EAB308",
+} as const;
 
 const INK = "#0F2229";
 
@@ -21,21 +38,23 @@ export interface StatCardProps {
   sub?: string;
   href?: string;
   onClick?: () => void;
+  /** Tighter padding + smaller number, for the profile modal. */
+  compact?: boolean;
 }
 
-export function StatCard({ icon, value, label, accent, sub, href, onClick }: StatCardProps) {
+export function StatCard({ icon, value, label, accent, sub, href, onClick, compact }: StatCardProps) {
   const interactive = !!href || !!onClick;
   const body = (
     <div
-      className={`rounded-xl p-3 h-full ${interactive ? "transition-transform hover:-translate-y-0.5 cursor-pointer" : ""}`}
+      className={`rounded-xl ${compact ? "p-2.5" : "p-3"} h-full ${interactive ? "transition-transform hover:-translate-y-0.5 cursor-pointer" : ""}`}
       style={{
         background: `linear-gradient(135deg, ${accent}14, rgba(255,255,255,0.9) 70%)`,
         border: `1px solid ${accent}2E`,
       }}
     >
-      <div className="flex items-center justify-between mb-2">
+      <div className={`flex items-center justify-between ${compact ? "mb-1.5" : "mb-2"}`}>
         <span
-          className="w-7 h-7 rounded-lg flex items-center justify-center"
+          className={`${compact ? "w-6 h-6" : "w-7 h-7"} rounded-lg flex items-center justify-center`}
           style={{ backgroundColor: `${accent}1C`, color: accent }}
         >
           {icon}
@@ -45,7 +64,7 @@ export function StatCard({ icon, value, label, accent, sub, href, onClick }: Sta
         )}
       </div>
       <p
-        className="text-[20px] font-black font-headline leading-none whitespace-nowrap"
+        className={`${compact ? "text-[17px]" : "text-[20px]"} font-black font-headline leading-none whitespace-nowrap`}
         style={{ color: INK, letterSpacing: "-0.02em" }}
       >
         {value}

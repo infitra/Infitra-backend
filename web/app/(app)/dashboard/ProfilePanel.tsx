@@ -12,7 +12,7 @@ import {
   type AgreementRow,
   type ExpertReview,
 } from "@/app/components/AccountPanels";
-import { StatCard, StatCardGrid, STAT_ICONS } from "@/app/components/StatCards";
+import { StatCard, StatCardGrid, STAT_ICONS, BRAND_ACCENT } from "@/app/components/StatCards";
 import type { ProfileFacts } from "@/app/components/ProfileEditForm";
 import type { ConnectionRow } from "@/app/components/ConnectionsGrid";
 
@@ -38,8 +38,8 @@ import type { ConnectionRow } from "@/app/components/ConnectionsGrid";
 const ORANGE = "#FF6130";
 const CYAN = "#0891b2";
 const INK = "#0F2229";
-const GOLD = "#EAB308";
-const GREEN = "#1D9E75";
+const GOLD = BRAND_ACCENT.gold;
+const TEAL = BRAND_ACCENT.teal;
 
 interface Props {
   displayName: string;
@@ -63,7 +63,10 @@ interface Props {
     invitations: number;
     openQuestions: number;
     awaitingSignatures: number;
-    nextChapters: number;
+    /** Completed experiences the caller OWNS whose lineage has no next run
+     *  yet. Each is a concrete opportunity, so each gets its own row with a
+     *  title and a link straight to the action. */
+    nextChapters: Array<{ id: string; title: string; spaceId: string | null }>;
   };
 }
 
@@ -117,14 +120,23 @@ function Section({ label, children }: { label: string; children: React.ReactNode
   );
 }
 
+/**
+ * One row of the focus stack: a count badge OR an icon, the action in plain
+ * words, and an optional context line naming WHAT it is about (an
+ * instruction without its subject sends people nowhere).
+ */
 function AttentionRow({
   count,
+  icon,
   label,
+  detail,
   href,
   accent,
 }: {
-  count: number;
+  count?: number;
+  icon?: React.ReactNode;
   label: string;
+  detail?: string;
   href: string;
   accent: string;
 }) {
@@ -138,12 +150,19 @@ function AttentionRow({
         className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black font-headline shrink-0 text-white"
         style={{ backgroundColor: accent }}
       >
-        {count}
+        {icon ?? count}
       </span>
-      <span className="text-[12.5px] font-bold font-headline flex-1" style={{ color: INK }}>
-        {label}
+      <span className="min-w-0 flex-1">
+        <span className="block text-[12.5px] font-bold font-headline leading-tight" style={{ color: INK }}>
+          {label}
+        </span>
+        {detail && (
+          <span className="block text-[10.5px] truncate leading-tight mt-0.5" style={{ color: "#64748b" }}>
+            {detail}
+          </span>
+        )}
       </span>
-      <span className="text-[11px] font-black" style={{ color: accent }}>→</span>
+      <span className="text-[11px] font-black shrink-0" style={{ color: accent }}>→</span>
     </Link>
   );
 }
@@ -201,18 +220,22 @@ export function ProfilePanel({
         count={needsYou.awaitingSignatures}
         label={needsYou.awaitingSignatures === 1 ? "agreement awaiting signature" : "agreements awaiting signature"}
         href="#drafts"
-        accent="#92700c"
+        accent={TEAL}
       />,
     );
   }
-  if (needsYou.nextChapters > 0) {
+  // One row PER opportunity, named, linking straight to the action (the
+  // space's Next chapter console). A fast track that dead-ends is worse
+  // than no fast track.
+  for (const nc of needsYou.nextChapters) {
     attention.push(
       <AttentionRow
-        key="next"
-        count={needsYou.nextChapters}
-        label={needsYou.nextChapters === 1 ? "next chapter ready to open" : "next chapters ready to open"}
-        href="#archive"
-        accent={GREEN}
+        key={`next-${nc.id}`}
+        icon={<span className="scale-[0.8] flex">{STAT_ICONS.flame}</span>}
+        label="Start the next run"
+        detail={nc.title}
+        href={nc.spaceId ? `/experiences/${nc.id}/space#next-chapter` : "#completed"}
+        accent={ORANGE}
       />,
     );
   }
@@ -326,7 +349,7 @@ export function ProfilePanel({
               icon={STAT_ICONS.coins}
               value={`CHF ${(earningsWeekCents / 100).toFixed(0)}`}
               label="earned this week"
-              accent={GREEN}
+              accent={TEAL}
               href="/dashboard/earnings"
             />
           </StatCardGrid>

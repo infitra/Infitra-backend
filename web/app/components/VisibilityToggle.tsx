@@ -75,7 +75,7 @@ export function VisibilityToggle({ initial }: { initial: string }) {
         </p>
       )}
       {saved && !error && (
-        <p className="text-xs mt-3 font-bold font-headline" style={{ color: "#1D9E75" }}>
+        <p className="text-xs mt-3 font-bold font-headline" style={{ color: "#0891b2" }}>
           Saved.
         </p>
       )}

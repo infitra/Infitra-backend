@@ -85,7 +85,11 @@ const stageConfig: Record<
 
 function destinationFor(p: ProgramSummary): string {
   if (p.stage === "completed") {
-    return `/experiences/${p.id}/space`;
+    // Owner + no next run yet → land directly on the Next chapter console,
+    // which is where the action actually lives.
+    return p.isOwner && !p.nextRun
+      ? `/experiences/${p.id}/space#next-chapter`
+      : `/experiences/${p.id}/space`;
   }
   return `/dashboard/collaborate/${p.id}`;
 }
@@ -119,6 +123,7 @@ export function OtherProgramCard({ program, user }: Props) {
     program.title === "Untitled Challenge" ||
     program.title === "Untitled Collaboration";
   const partner = program.partner;
+  const showContinuation = program.stage === "completed" && program.isOwner && !program.nextRun;
 
   return (
     <Link
@@ -126,7 +131,7 @@ export function OtherProgramCard({ program, user }: Props) {
       className="group block w-full h-full rounded-2xl p-4 transition-transform hover:-translate-y-0.5"
       style={{
         backgroundColor: "#FFFFFF",
-        borderLeft: `3px solid ${cfg.color}`,
+        borderLeft: `3px solid ${showContinuation ? ORANGE : cfg.color}`,
         boxShadow: "0 0 0 1px rgba(15,34,41,0.05), 0 6px 20px rgba(15,34,41,0.08)",
       }}
     >
@@ -162,9 +167,11 @@ export function OtherProgramCard({ program, user }: Props) {
       </div>
 
       {/* STATE — where this is in the process (the loud part). */}
-      <div className="flex items-center gap-1.5 mt-3.5" style={{ color: cfg.color }}>
+      <div className="flex items-center gap-1.5 mt-3.5" style={{ color: showContinuation ? ORANGE : cfg.color }}>
         {cfg.icon}
-        <span className="text-[13px] font-black font-headline">{cfg.label}</span>
+        <span className="text-[13px] font-black font-headline">
+          {showContinuation ? "Ready for a next chapter" : cfg.label}
+        </span>
       </div>
 
       {/* Title — a quiet subtitle, not the headline. */}
@@ -178,18 +185,32 @@ export function OtherProgramCard({ program, user }: Props) {
         {isUntitled ? "Untitled experience" : program.title}
       </p>
 
-      {/* NEXT STEP. Completed + owned experiences advertise the continuation
-          door explicitly (founder's walk: the archive gave no hint the next
-          run starts from the space; the actual action stays in the space's
-          console, owner-gated by the DB). */}
-      <p
-        className="text-[11px] uppercase tracking-widest font-headline mt-3.5 transition-colors group-hover:text-[#FF6130]"
-        style={{ color: "#0F2229", fontWeight: 700 }}
-      >
-        {program.stage === "completed" && program.isOwner
-          ? "Prepare the next run →"
-          : cfg.cta}
-      </p>
+      {showContinuation && (
+        <p className="text-[11.5px] leading-snug mt-2.5" style={{ color: "#64748b" }}>
+          Your group is warm. Bring them into a next run: sessions and team
+          carry over into a draft you can adjust.
+        </p>
+      )}
+
+      {/* NEXT STEP. A completed run you own with no next run yet is the
+          platform's most valuable moment (the retention loop), so it gets a
+          real CTA with weight — not a whisper of uppercase text that gets
+          lost. Everything else keeps the quiet next-step line. */}
+      {showContinuation ? (
+        <span
+          className="mt-3.5 flex items-center justify-center gap-1.5 w-full rounded-full py-2.5 px-4 text-[12.5px] font-black font-headline text-white transition-transform group-hover:scale-[1.02]"
+          style={{ backgroundColor: ORANGE, boxShadow: "0 4px 14px rgba(255,97,48,0.30)" }}
+        >
+          Start the next run →
+        </span>
+      ) : (
+        <p
+          className="text-[11px] uppercase tracking-widest font-headline mt-3.5 transition-colors group-hover:text-[#FF6130]"
+          style={{ color: "#0F2229", fontWeight: 700 }}
+        >
+          {cfg.cta}
+        </p>
+      )}
     </Link>
   );
 }

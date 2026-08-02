@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useState } from "rea
 import { createPortal } from "react-dom";
 import { createClient } from "@/lib/supabase/client";
 import { CredentialIcon, credentialPeriod } from "@/app/components/CredentialIcon";
+import { StatCard, STAT_ICONS, BRAND_ACCENT } from "@/app/components/StatCards";
 
 /**
  * ProfileModal + ProfileTrigger — THE profile surface (social layer).
@@ -221,22 +222,29 @@ function ModalBody({
       ? { label: "Expert", color: "#c2410c", bg: "rgba(255,97,48,0.10)", border: "rgba(255,97,48,0.22)" }
       : { label: "Tribe member", color: CYAN, bg: "rgba(8,145,178,0.08)", border: "rgba(8,145,178,0.20)" };
 
-  const proofTiles: Array<{ value: string; label: string; gold?: boolean }> = isExpert
+  // Proof cards — the same designed family the console rails use, on brand:
+  // orange = what they run, cyan = their people/answers, gold = stars only.
+  const proofCards: Array<{ icon: React.ReactNode; value: string; label: string; accent: string }> = isExpert
     ? [
         ...((proof.total_reviews ?? 0) > 0
-          ? [{ value: `★ ${Number(proof.avg_rating ?? 0).toFixed(1)}`, label: `${proof.total_reviews} reviews`, gold: true }]
+          ? [{
+              icon: STAT_ICONS.star,
+              value: `★ ${Number(proof.avg_rating ?? 0).toFixed(1)}`,
+              label: `${proof.total_reviews} ${proof.total_reviews === 1 ? "review" : "reviews"}`,
+              accent: BRAND_ACCENT.gold,
+            }]
           : []),
-        { value: `${proof.tribe_count ?? 0}`, label: "in their tribe" },
-        { value: `${proof.hosting_count ?? 0}`, label: proof.hosting_count === 1 ? "experience" : "experiences" },
-        { value: `${proof.sessions_led ?? 0}`, label: "sessions led" },
-        { value: `${proof.questions_answered ?? 0}`, label: "questions answered" },
+        { icon: STAT_ICONS.people, value: `${proof.tribe_count ?? 0}`, label: "in their tribe", accent: BRAND_ACCENT.cyan },
+        { icon: STAT_ICONS.flame, value: `${proof.hosting_count ?? 0}`, label: proof.hosting_count === 1 ? "experience led" : "experiences led", accent: BRAND_ACCENT.orange },
+        { icon: STAT_ICONS.bolt, value: `${proof.sessions_led ?? 0}`, label: "sessions led", accent: BRAND_ACCENT.orange },
+        { icon: STAT_ICONS.check, value: `${proof.questions_answered ?? 0}`, label: "questions answered", accent: BRAND_ACCENT.cyan },
       ]
     : payload.limited || proof.tribes_count === undefined
       ? []
       : [
-          { value: `${proof.tribes_count ?? 0}`, label: proof.tribes_count === 1 ? "tribe" : "tribes" },
-          { value: `${proof.completed_count ?? 0}`, label: "completed" },
-          { value: `${proof.sessions_attended ?? 0}`, label: "sessions attended" },
+          { icon: STAT_ICONS.flame, value: `${proof.tribes_count ?? 0}`, label: proof.tribes_count === 1 ? "experience joined" : "experiences joined", accent: BRAND_ACCENT.orange },
+          { icon: STAT_ICONS.check, value: `${proof.completed_count ?? 0}`, label: "completed", accent: BRAND_ACCENT.teal },
+          { icon: STAT_ICONS.live, value: `${proof.sessions_attended ?? 0}`, label: "live sessions attended", accent: BRAND_ACCENT.cyan },
         ];
 
   const factChips: Array<{ icon: React.ReactNode; text: string }> = [];
@@ -390,33 +398,15 @@ function ModalBody({
                 </div>
               )}
 
-              {/* PROOF — the On INFITRA band: tiled numbers, hairline grid. */}
-              {proofTiles.length > 0 && (
+              {/* PROOF — On INFITRA, in the designed card family. */}
+              {proofCards.length > 0 && (
                 <div>
                   <p className="text-[10px] font-bold font-headline uppercase tracking-[0.18em] mb-2" style={{ color: "#94a3b8" }}>
                     On INFITRA
                   </p>
-                  <div
-                    className="grid rounded-xl overflow-hidden"
-                    style={{
-                      gridTemplateColumns: `repeat(${Math.min(proofTiles.length, 3)}, 1fr)`,
-                      backgroundColor: "rgba(15,34,41,0.06)",
-                      gap: "1px",
-                      border: "1px solid rgba(15,34,41,0.06)",
-                    }}
-                  >
-                    {proofTiles.map((t, i) => (
-                      <div key={i} className="px-2 py-2.5 text-center" style={{ backgroundColor: "#FFFFFF" }}>
-                        <p
-                          className="text-[17px] font-black font-headline leading-none whitespace-nowrap"
-                          style={{ color: t.gold ? GOLD : INK, letterSpacing: "-0.02em" }}
-                        >
-                          {t.value}
-                        </p>
-                        <p className="text-[9.5px] mt-1 leading-tight" style={{ color: "#94a3b8" }}>
-                          {t.label}
-                        </p>
-                      </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {proofCards.map((c, i) => (
+                      <StatCard key={i} icon={c.icon} value={c.value} label={c.label} accent={c.accent} compact />
                     ))}
                   </div>
                 </div>

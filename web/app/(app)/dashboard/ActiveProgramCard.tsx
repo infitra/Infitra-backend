@@ -91,7 +91,7 @@ interface Props {
 const INK = "#0F2229";
 const CYAN = "#0891b2";
 const ORANGE_TXT = "#c2410c";
-const GREEN = "#1D9E75";
+const GROWTH = "#FF6130"; // growth deltas: brand orange, never green
 const MUTED = "#94a3b8";
 const SOFT_SHADOW = "0 0 0 1px rgba(15,34,41,0.05), 0 10px 32px rgba(15,34,41,0.10)";
 
@@ -389,7 +389,7 @@ function SignalCell({
           {value}
         </span>
         {delta && (
-          <span className="text-[10px] font-bold font-headline" style={{ color: GREEN }}>
+          <span className="text-[10px] font-bold font-headline" style={{ color: GROWTH }}>
             {delta}
           </span>
         )}

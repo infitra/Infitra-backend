@@ -768,7 +768,11 @@ export default async function DashboardPage() {
     invitations: data.pendingReceivedInvites.length,
     openQuestions: data.activePrograms.reduce((n, p) => n + (p.pendingQuestions ?? 0), 0),
     awaitingSignatures: drafts.filter((p) => p.stage === "awaiting-signatures").length,
-    nextChapters: archive.filter((p) => p.isOwner).length,
+    // Real opportunities, named: owned completed runs with no next run in
+    // the lineage yet. Each links to its space's Next chapter console.
+    nextChapters: archive
+      .filter((p) => p.isOwner && !p.nextRun)
+      .map((p) => ({ id: p.id, title: p.title, spaceId: p.spaceId ?? null })),
   };
   const earningsWeekCents = data.activePrograms.reduce(
     (n, p) => n + (p.earningsCentsThisWeek ?? 0),
@@ -892,7 +896,7 @@ export default async function DashboardPage() {
                 </Section>
               )}
               {archiveCount > 0 && (
-                <Section label="Archive" count={archiveCount} id="archive">
+                <Section label="Completed" count={archiveCount} id="completed">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {archive.map((p) => (
                       <OtherProgramCard key={p.id} program={p} user={userProp} />
@@ -950,7 +954,7 @@ export default async function DashboardPage() {
           )}
 
           {archiveCount > 0 && (
-            <Section label="Archive" count={archiveCount} id="archive">
+            <Section label="Completed" count={archiveCount} id="completed">
               <ProgramBand>
                 {archive.map((p) => (
                   <div key={p.id} className="w-[300px] shrink-0">

@@ -7,7 +7,7 @@ import { uploadImage } from "@/lib/uploadImage";
 import { ProfileTrigger } from "@/app/components/ProfileModal";
 import { useOverlay, railActionStyle, OverlayPanel, OverlaySection } from "@/app/components/DashboardOverlay";
 import { AccountSettingsPanel, PeoplePanel } from "@/app/components/AccountPanels";
-import { StatCard, StatCardGrid, STAT_ICONS } from "@/app/components/StatCards";
+import { StatCard, StatCardGrid, STAT_ICONS, BRAND_ACCENT } from "@/app/components/StatCards";
 import type { ConnectionRow } from "@/app/components/ConnectionsGrid";
 import { RateExperienceButton } from "./RateExperienceButton";
 
@@ -297,7 +297,7 @@ export function ParticipantPanel({
               icon={STAT_ICONS.check}
               value={`${journey.completed}`}
               label="completed"
-              accent="#1D9E75"
+              accent={BRAND_ACCENT.teal}
             />
             <StatCard
               icon={STAT_ICONS.live}
@@ -327,9 +327,6 @@ export function ParticipantPanel({
               View my profile
             </span>
           </ProfileTrigger>
-          <button type="button" onClick={() => openOverlay("people")} className={`${railBtn} mb-2`} style={railActionStyle}>
-            Your people
-          </button>
           <button type="button" onClick={() => openOverlay("settings")} className={railBtn} style={railActionStyle}>
             Account settings
           </button>
