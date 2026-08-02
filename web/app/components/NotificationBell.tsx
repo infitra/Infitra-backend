@@ -73,8 +73,13 @@ function stars(rating: unknown): string {
   return "★★★★★".slice(0, r) + "☆☆☆☆☆".slice(0, 5 - r);
 }
 
-/** Format a stored-UTC session time for display in the project timezone
- *  (Asia/Phnom_Penh), e.g. "Mon, Jun 8, 6:00 PM". Null on bad input. */
+/** Format a stored-UTC session time in the VIEWER's own zone, e.g.
+ *  "Mon, Jun 8, 6:00 PM". Null on bad input.
+ *
+ *  This used to pin the zone to Asia/Phnom_Penh, so every notification
+ *  showed Cambodia time no matter where the reader was. This is a client
+ *  component, so omitting timeZone resolves to the device zone, which is
+ *  what every other surface already does via the viewer_tz cookie. */
 function formatSessionTime(iso: unknown): string | null {
   if (typeof iso !== "string") return null;
   const t = new Date(iso);
@@ -86,7 +91,6 @@ function formatSessionTime(iso: unknown): string | null {
       day: "numeric",
       hour: "numeric",
       minute: "2-digit",
-      timeZone: "Asia/Phnom_Penh",
     }).format(t);
   } catch {
     return null;
