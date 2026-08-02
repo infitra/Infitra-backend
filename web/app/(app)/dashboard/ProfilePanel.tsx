@@ -135,11 +135,18 @@ export function ProfilePanel({
   useEffect(() => {
     if (!editOpen) return;
     const supabase = createClient();
-    supabase
-      .from("app_expert_credential")
-      .select("id, kind, title, org, year")
-      .order("year", { ascending: false })
-      .then(({ data }) => setCredentials((data ?? []) as EditableCredential[]));
+    // MUST be scoped: the select policy intentionally exposes every creator's
+    // credentials (the buyer page is public), so an unscoped read here would
+    // list other experts' background in this user's editor.
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      supabase
+        .from("app_expert_credential")
+        .select("id, kind, title, org, year")
+        .eq("profile_id", user.id)
+        .order("year", { ascending: false })
+        .then(({ data }) => setCredentials((data ?? []) as EditableCredential[]));
+    });
   }, [editOpen]);
   const router = useRouter();
   const firstName = displayName.split(" ")[0] || displayName;

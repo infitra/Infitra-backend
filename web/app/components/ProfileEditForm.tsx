@@ -96,9 +96,17 @@ export function ProfileEditForm({
     try {
       const supabase = createClient();
       const year = credYear.trim() ? parseInt(credYear.trim(), 10) : null;
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated.");
       const { data, error: insErr } = await supabase
         .from("app_expert_credential")
         .insert({
+          // Explicit even though the column defaults to auth.uid(): the RLS
+          // check compares profile_id to the caller, and a missing value
+          // reads as an RLS violation rather than a clear error.
+          profile_id: user.id,
           kind: credKind,
           title,
           org: credOrg.trim() || null,
