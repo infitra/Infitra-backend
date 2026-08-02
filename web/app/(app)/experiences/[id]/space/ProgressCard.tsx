@@ -21,7 +21,12 @@ const INK = "#0F2229";
 export function ProgressCard() {
   const progress = useExperienceSpaceStore((s) => s.progress);
   const experience = useExperienceSpaceStore((s) => s.experience);
-  if (!progress) return null;
+  const isCreator = useExperienceSpaceStore((s) => s.isCreator);
+  // An expert LEADS this experience, they do not attend it. The progress
+  // view happened to return a row for cohosts but not owners, so a cohost
+  // saw "1 of 10 live sessions attended" about sessions they were hosting.
+  // isCreator covers owner AND cohost, which is the honest gate.
+  if (!progress || isCreator) return null;
 
   const status = programStatus(experience);
   const preStart = status.phase === "upcoming" || progress.pastSessions === 0;

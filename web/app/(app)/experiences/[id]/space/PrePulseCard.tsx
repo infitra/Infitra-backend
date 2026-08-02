@@ -7,7 +7,7 @@
  * surfaced on the session). Clears itself from the action items on submit/skip.
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { submitPrePulse } from "@/app/actions/pulse";
 import { useExperienceSpaceStore } from "@/lib/experienceSpace/StoreProvider";
 import { Slider } from "@/app/components/Slider";
@@ -26,7 +26,17 @@ export function PrePulseCard({
   const clearActionItem = useExperienceSpaceStore((s) => s.clearActionItem);
   const [value, setValue] = useState(5);
   const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Submitting used to make the card disappear instantly, which read as "did
+  // that even save?" — especially since the group average stays hidden until
+  // a few people have answered. Say so, then clear.
+  useEffect(() => {
+    if (!done) return;
+    const t = setTimeout(() => clearActionItem("pre_pulse", sessionId), 3200);
+    return () => clearTimeout(t);
+  }, [done, clearActionItem, sessionId]);
 
   const whenStr = startTime
     ? new Date(startTime).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
@@ -42,7 +52,39 @@ export function PrePulseCard({
       setBusy(false);
       return;
     }
-    clearActionItem("pre_pulse", sessionId);
+    setBusy(false);
+    setDone(true);
+  }
+
+  if (done) {
+    return (
+      <div
+        className="rounded-2xl relative overflow-hidden"
+        style={{
+          background: "linear-gradient(135deg, rgba(8,145,178,0.12), rgba(156,240,255,0.06))",
+          boxShadow: "0 0 0 1.5px rgba(8,145,178,0.35), 0 10px 30px rgba(8,145,178,0.10)",
+        }}
+      >
+        <div className="absolute left-0 top-0 bottom-0 w-1.5" style={{ backgroundColor: CYAN }} aria-hidden />
+        <div className="pl-6 pr-5 py-5 flex items-start gap-3">
+          <span
+            className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-white"
+            style={{ backgroundColor: CYAN }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5" /></svg>
+          </span>
+          <div className="min-w-0">
+            <p className="font-black font-headline text-[15px]" style={{ color: "#0F2229" }}>
+              Thanks, your experts can see it
+            </p>
+            <p className="text-[12.5px] leading-snug mt-0.5" style={{ color: "#475569" }}>
+              Your answer stays private. The group&apos;s readiness appears once
+              a few more people have checked in.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
