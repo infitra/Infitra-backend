@@ -5,6 +5,7 @@ import { ParticipantNav } from "@/app/components/ParticipantNav";
 import { ParticipantPanel } from "./ParticipantPanel";
 import { ConnectionsGrid } from "@/app/components/ConnectionsGrid";
 import { ProfileModalHost } from "@/app/components/ProfileModal";
+import { OverlayHost } from "@/app/components/DashboardOverlay";
 import {
   ParticipantExperienceCard,
   CompletedExperienceCard,
@@ -268,14 +269,23 @@ export default async function MeHomePage() {
 
   const viewerTimeZone = await resolveViewerTimeZone();
 
-  // Social layer: the caller's derived connection graph (one definer RPC).
-  const { data: connectionRows } = await supabase.rpc("load_my_connections");
+  // Social layer: the caller's derived connection graph (one definer RPC),
+  // plus real turnout for MY JOURNEY (joined_at set = actually showed up).
+  const [{ data: connectionRows }, { count: sessionsAttended }] = await Promise.all([
+    supabase.rpc("load_my_connections"),
+    supabase
+      .from("app_attendance")
+      .select("session_id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .not("joined_at", "is", null),
+  ]);
   const connections = (connectionRows ?? []) as import("@/app/components/ConnectionsGrid").ConnectionRow[];
   const { profile, active, completed, tribePulse } = await loadMe(user.id);
   const pendingReviews = completed.filter((e) => !e.rated).map((e) => ({ id: e.id, title: e.title }));
 
   return (
     <ProfileModalHost>
+    <OverlayHost>
       <ParticipantNav displayName={profile?.display_name ?? null} role={profile?.role ?? undefined} />
 
       <div className="pt-20 px-6">
@@ -298,6 +308,13 @@ export default async function MeHomePage() {
                 pendingReviews={pendingReviews}
                 facts={(profile as { profile_facts?: Record<string, unknown> } | null)?.profile_facts ?? {}}
                 viewerId={user.id}
+                journey={{
+                  experiences: active.length + completed.length,
+                  completed: completed.length,
+                  sessionsAttended: sessionsAttended ?? 0,
+                  connections: connections.length,
+                }}
+                visibility={(profile as { visibility?: string } | null)?.visibility ?? "public"}
               />
             </aside>
 
@@ -319,8 +336,12 @@ export default async function MeHomePage() {
                 className="text-[11px] uppercase tracking-[0.22em] font-headline mb-5 px-1"
                 style={{ color: "#475569", fontWeight: 700 }}
               >
-                Completed
-                <span style={{ color: "#94a3b8" }}> · {completed.length}</span>
+                Your story
+                <span style={{ color: "#94a3b8" }}> · {completed.length} completed</span>
+              </p>
+              <p className="text-[12px] mb-5 px-1 -mt-3" style={{ color: "#94a3b8" }}>
+                Every experience you finished stays yours: the space, the
+                people, the proof.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {completed.map((e) => (
@@ -396,6 +417,7 @@ export default async function MeHomePage() {
           )}
         </div>
       </div>
+    </OverlayHost>
     </ProfileModalHost>
   );
 }

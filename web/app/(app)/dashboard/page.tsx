@@ -6,6 +6,7 @@ import { TopAlert } from "./TopAlert";
 import { CollabInvitations } from "./CollabInvitations";
 import { ProfilePanel } from "./ProfilePanel";
 import { ProfileModalHost } from "@/app/components/ProfileModal";
+import { OverlayHost } from "@/app/components/DashboardOverlay";
 import { resolveViewerTimeZone } from "@/lib/time/viewerTimeZone";
 import Link from "next/link";
 
@@ -200,7 +201,7 @@ async function loadDashboard(userId: string) {
     await Promise.all([
       supabase
         .from("app_profile")
-        .select("display_name, avatar_url, tagline, bio, profile_facts, role, created_at")
+        .select("display_name, avatar_url, tagline, bio, profile_facts, role, created_at, visibility")
         .eq("id", userId)
         .single(),
       supabase
@@ -646,6 +647,7 @@ async function loadDashboard(userId: string) {
       tagline: profile?.tagline ?? null,
       bio: profile?.bio ?? null,
       joinedAt: (profile as any)?.created_at ?? null,
+      visibility: ((profile as any)?.visibility as string) ?? "public",
     },
     activePrograms,
     otherPrograms,
@@ -670,6 +672,44 @@ export default async function DashboardPage() {
 
   const data = await loadDashboard(user.id);
   const viewerTimeZone = await resolveViewerTimeZone();
+
+  // Console data — the account-wide layer the rail now surfaces: the derived
+  // connection graph (Your people overlay), the recorded agreements
+  // (Account settings overlay) and the caller's own proof numbers (the same
+  // definer RPC the profile modal uses, turned inward for YOUR ACCOUNT).
+  const [{ data: connectionRows }, { data: ownProfilePayload }, { data: ownedAgr }, { data: cohostAgr }] =
+    await Promise.all([
+      supabase.rpc("load_my_connections"),
+      supabase.rpc("load_public_profile", { p_profile_id: user.id }),
+      supabase
+        .from("app_challenge")
+        .select("id, title, status, start_date, contract_id")
+        .eq("owner_id", user.id)
+        .not("contract_id", "is", null),
+      supabase
+        .from("app_challenge_cohost")
+        .select("app_challenge(id, title, status, start_date, contract_id)")
+        .eq("cohost_id", user.id),
+    ]);
+  const connections = (connectionRows ?? []) as import("@/app/components/ConnectionsGrid").ConnectionRow[];
+  const ownProof = ((ownProfilePayload as { proof?: Record<string, number> } | null)?.proof ?? {}) as Record<string, number>;
+  const accountProof = {
+    tribeCount: ownProof.tribe_count ?? 0,
+    avgRating: Number(ownProof.avg_rating ?? 0),
+    totalReviews: ownProof.total_reviews ?? 0,
+    sessionsLed: ownProof.sessions_led ?? 0,
+    hostingCount: ownProof.hosting_count ?? 0,
+  };
+  type Agr = { id: string; title: string | null; status: string; start_date: string | null; contract_id: string | null };
+  const agrById = new Map<string, Agr>();
+  for (const a of (ownedAgr ?? []) as Agr[]) agrById.set(a.id, a);
+  for (const l of (cohostAgr ?? []) as Array<{ app_challenge: Agr | Agr[] | null }>) {
+    const c = Array.isArray(l.app_challenge) ? l.app_challenge[0] : l.app_challenge;
+    if (c?.contract_id) agrById.set(c.id, c);
+  }
+  const agreements = [...agrById.values()]
+    .sort((a, b) => (b.start_date ?? "").localeCompare(a.start_date ?? ""))
+    .map(({ id, title, status, start_date }) => ({ id, title, status, start_date }));
   const userInitial = data.profile.displayName?.[0]?.toUpperCase() ?? "?";
   const userProp = {
     name: data.profile.displayName,
@@ -700,6 +740,16 @@ export default async function DashboardPage() {
   // Global pulse for the profile rail — summed from the live experiences the
   // page already loaded (zero extra queries). The feeling we're after:
   // "this is happening, jump in."
+  const needsYou = {
+    invitations: data.pendingReceivedInvites.length,
+    openQuestions: data.activePrograms.reduce((n, p) => n + (p.pendingQuestions ?? 0), 0),
+    awaitingSignatures: drafts.filter((p) => p.stage === "awaiting-signatures").length,
+  };
+  const earningsWeekCents = data.activePrograms.reduce(
+    (n, p) => n + (p.earningsCentsThisWeek ?? 0),
+    0,
+  );
+
   const tribePulse = {
     members: data.activePrograms.reduce((n, p) => n + (p.enrolledCount ?? 0), 0),
     newPosts: data.activePrograms.reduce((n, p) => n + (p.newPosts ?? 0), 0),
@@ -712,6 +762,7 @@ export default async function DashboardPage() {
     // (overflow-x-clip there) — adding it again here created a nested clip
     // context that broke the wave background on iOS scroll-up.
     <ProfileModalHost>
+    <OverlayHost>
     <div className="py-8">
       {/* TopAlert sits above everything else — global urgency signal,
           rendered without a section heading because it speaks for
@@ -742,6 +793,12 @@ export default async function DashboardPage() {
             joinedAt={data.profile.joinedAt}
             tribePulse={tribePulse}
             hasActivePrograms={activeCount > 0}
+            visibility={data.profile.visibility}
+            agreements={agreements}
+            connections={connections}
+            accountProof={accountProof}
+            needsYou={needsYou}
+            earningsWeekCents={earningsWeekCents}
           />
         </aside>
 
@@ -763,7 +820,7 @@ export default async function DashboardPage() {
               the state, and a heading here pushed the card out of alignment
               with the profile console. */}
           {activeCount > 0 && (
-            <div className="space-y-5">
+            <div className="space-y-5 scroll-mt-24" id="active">
               {hero && (
                   <ActiveProgramCard
                     program={hero}
@@ -798,6 +855,7 @@ export default async function DashboardPage() {
                 <Section
                   label="Experience drafts"
                   count={draftsCount}
+                  id="drafts"
                   action={{ label: "+ Start new", href: "/dashboard/create" }}
                 >
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -822,7 +880,7 @@ export default async function DashboardPage() {
                   count={data.pendingReceivedInvites.length}
                 >
                   <div id="invitations">
-                    <CollabInvitations invites={data.pendingReceivedInvites} />
+                    <div id="invitations" className="scroll-mt-24"><CollabInvitations invites={data.pendingReceivedInvites} /></div>
                   </div>
                 </Section>
               )}
@@ -838,7 +896,7 @@ export default async function DashboardPage() {
       {activeCount > 0 && (
         <div className="mt-14 space-y-12">
           {draftsCount > 0 ? (
-            <Section label="Experience drafts" count={draftsCount}>
+            <Section label="Experience drafts" count={draftsCount} id="drafts">
               <ProgramBand>
                 {drafts.map((p) => (
                   <div key={p.id} className="w-[300px] shrink-0">
@@ -883,13 +941,14 @@ export default async function DashboardPage() {
               count={data.pendingReceivedInvites.length}
             >
               <div id="invitations">
-                <CollabInvitations invites={data.pendingReceivedInvites} />
+                <div id="invitations" className="scroll-mt-24"><CollabInvitations invites={data.pendingReceivedInvites} /></div>
               </div>
             </Section>
           )}
         </div>
       )}
     </div>
+    </OverlayHost>
     </ProfileModalHost>
   );
 }
@@ -934,15 +993,17 @@ function Section({
   label,
   count,
   action,
+  id,
   children,
 }: {
   label: string;
   count?: number;
   action?: { label: string; href: string };
+  id?: string;
   children: React.ReactNode;
 }) {
   return (
-    <section>
+    <section id={id} className="scroll-mt-24">
       <div className="flex items-center justify-between mb-5 px-1">
         <p
           className="text-[11px] uppercase tracking-[0.22em] font-headline"

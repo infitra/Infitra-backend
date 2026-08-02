@@ -1,35 +1,41 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { SlideOver } from "@/app/components/SlideOver";
-import { createClient } from "@/lib/supabase/client";
-import { ProfileEditForm, type ProfileFacts } from "@/app/components/ProfileEditForm";
 import { CalendarButton } from "@/app/components/CalendarButton";
 import { ProfileTrigger } from "@/app/components/ProfileModal";
+import { useOverlay, railActionStyle } from "@/app/components/DashboardOverlay";
+import {
+  AccountSettingsPanel,
+  EditProfilePanel,
+  PeoplePanel,
+  type AgreementRow,
+} from "@/app/components/AccountPanels";
+import type { ProfileFacts } from "@/app/components/ProfileEditForm";
+import type { ConnectionRow } from "@/app/components/ConnectionsGrid";
 import { MetricStrip, type Metric } from "./MetricStrip";
 
 /**
- * ProfilePanel — the "this is you" console in the dashboard's left rail.
+ * ProfilePanel — the expert's ACCOUNT CONSOLE (founder's coherence pass).
+ * Not just "this is you" any more: the whole account at a glance, plus the
+ * one place where everything that needs attention comes together.
  *
- * Same card grammar as the in-Space YouPanel (white card, tinted profile
- * header, labelled sections separated by hairlines, cyan/orange discipline)
- * so the dashboard and the inside-the-Space view share one spatial language:
- * "you" on the left, "what's happening" on the right. On desktop this sticks
- * in a 340px rail; on mobile it's the top card of the stack.
- *
- *   PROFILE         — avatar + greeting + tagline/bio + pilot footing.
- *   QUICK ACTIONS   — edit profile · export calendar.
- *   ACROSS YOUR     — a quiet global pulse summed from the live experiences
- *   TRIBES            (members · new posts · waiting questions). Signal only —
- *                     the action lives inside each Experience Space. Rendered
- *                     only when there's at least one active experience.
+ *   PROFILE       — avatar + greeting + pilot footing (unchanged beat).
+ *   NEEDS YOU     — the attention stack: invitations, open questions,
+ *                   agreements awaiting signature. Each row jumps to its
+ *                   section. Rendered only when something actually needs you.
+ *   YOUR ACCOUNT  — whole-account numbers: tribe total, rating, sessions
+ *                   led, earnings this week (door to earnings). The "I am in
+ *                   control" band.
+ *   QUICK ACTIONS — every secondary surface opens as an overlay INSIDE the
+ *                   dashboard (edit profile, settings, your people): no
+ *                   page-hopping, one visual grammar.
+ *   ACROSS TRIBES — the live pulse (unchanged).
  */
 
 const ORANGE = "#FF6130";
 const CYAN = "#0891b2";
 const INK = "#0F2229";
+const GOLD = "#EAB308";
 
 interface TribePulse {
   members: number;
@@ -38,17 +44,36 @@ interface TribePulse {
   experiences: number;
 }
 
+export interface AccountProof {
+  tribeCount: number;
+  avgRating: number;
+  totalReviews: number;
+  sessionsLed: number;
+  hostingCount: number;
+}
+
+export interface NeedsYou {
+  invitations: number;
+  openQuestions: number;
+  awaitingSignatures: number;
+}
+
 interface Props {
   displayName: string;
   avatarUrl: string | null;
   tagline: string | null;
   bio: string | null;
-  /** Needed by the SlideOver edit form. */
   profileFacts: Record<string, unknown>;
   viewerId: string;
   joinedAt: string | null;
   tribePulse: TribePulse;
   hasActivePrograms: boolean;
+  visibility: string;
+  agreements: AgreementRow[];
+  connections: ConnectionRow[];
+  accountProof: AccountProof;
+  needsYou: NeedsYou;
+  earningsWeekCents: number;
 }
 
 function timeOfDayGreeting(): string {
@@ -120,6 +145,88 @@ function TribesPulse({ pulse }: { pulse: TribePulse }) {
   return <MetricStrip metrics={metrics} />;
 }
 
+// ─── NEEDS YOU — the attention stack ─────────────────────────
+
+function AttentionRow({
+  count,
+  label,
+  href,
+  accent,
+}: {
+  count: number;
+  label: string;
+  href: string;
+  accent: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 transition-transform hover:-translate-y-0.5"
+      style={{ backgroundColor: `${accent}0D`, boxShadow: `inset 3px 0 0 ${accent}` }}
+    >
+      <span
+        className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black font-headline shrink-0 text-white"
+        style={{ backgroundColor: accent }}
+      >
+        {count}
+      </span>
+      <span className="text-[12.5px] font-bold font-headline flex-1" style={{ color: INK }}>
+        {label}
+      </span>
+      <span className="text-[11px] font-black" style={{ color: accent }}>→</span>
+    </Link>
+  );
+}
+
+// ─── YOUR ACCOUNT — the whole-account tiles ──────────────────
+
+function AccountTiles({ proof, earningsWeekCents }: { proof: AccountProof; earningsWeekCents: number }) {
+  const tiles: Array<{ value: string; label: string; gold?: boolean; href?: string }> = [
+    { value: `${proof.tribeCount}`, label: "in your tribes" },
+    ...(proof.totalReviews > 0
+      ? [{ value: `★ ${proof.avgRating.toFixed(1)}`, label: `${proof.totalReviews} reviews`, gold: true }]
+      : [{ value: `${proof.hostingCount}`, label: proof.hostingCount === 1 ? "experience" : "experiences" }]),
+    { value: `${proof.sessionsLed}`, label: "sessions led" },
+    {
+      value: `CHF ${(earningsWeekCents / 100).toFixed(0)}`,
+      label: "this week",
+      href: "/dashboard/earnings",
+    },
+  ];
+  return (
+    <div
+      className="grid grid-cols-2 rounded-xl overflow-hidden"
+      style={{ backgroundColor: "rgba(15,34,41,0.06)", gap: "1px", border: "1px solid rgba(15,34,41,0.06)" }}
+    >
+      {tiles.map((t, i) => {
+        const inner = (
+          <div className="px-2 py-2.5 text-center h-full" style={{ backgroundColor: "#FFFFFF" }}>
+            <p
+              className="text-[16px] font-black font-headline leading-none whitespace-nowrap"
+              style={{ color: t.gold ? GOLD : INK, letterSpacing: "-0.02em" }}
+            >
+              {t.value}
+            </p>
+            <p className="text-[9.5px] mt-1 leading-tight" style={{ color: "#94a3b8" }}>
+              {t.label}
+              {t.href && <span style={{ color: CYAN }}> →</span>}
+            </p>
+          </div>
+        );
+        return t.href ? (
+          <Link key={i} href={t.href} className="block transition-colors hover:bg-[rgba(8,145,178,0.04)]">
+            {inner}
+          </Link>
+        ) : (
+          <div key={i}>{inner}</div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Panel ───────────────────────────────────────────────────
+
 export function ProfilePanel({
   displayName,
   avatarUrl,
@@ -130,12 +237,55 @@ export function ProfilePanel({
   joinedAt,
   tribePulse,
   hasActivePrograms,
+  visibility,
+  agreements,
+  connections,
+  accountProof,
+  needsYou,
+  earningsWeekCents,
 }: Props) {
-  const [editOpen, setEditOpen] = useState(false);
-  const router = useRouter();
+  const openOverlay = useOverlay();
   const firstName = displayName.split(" ")[0] || displayName;
   const initial = (firstName[0] ?? "?").toUpperCase();
   const greeting = timeOfDayGreeting();
+
+  const attention: React.ReactNode[] = [];
+  if (needsYou.invitations > 0) {
+    attention.push(
+      <AttentionRow
+        key="inv"
+        count={needsYou.invitations}
+        label={needsYou.invitations === 1 ? "collaboration invitation" : "collaboration invitations"}
+        href="#invitations"
+        accent={ORANGE}
+      />,
+    );
+  }
+  if (needsYou.openQuestions > 0) {
+    attention.push(
+      <AttentionRow
+        key="q"
+        count={needsYou.openQuestions}
+        label={needsYou.openQuestions === 1 ? "question waiting on you" : "questions waiting on you"}
+        href="#active"
+        accent={CYAN}
+      />,
+    );
+  }
+  if (needsYou.awaitingSignatures > 0) {
+    attention.push(
+      <AttentionRow
+        key="sig"
+        count={needsYou.awaitingSignatures}
+        label={needsYou.awaitingSignatures === 1 ? "agreement awaiting signature" : "agreements awaiting signature"}
+        href="#drafts"
+        accent="#92700c"
+      />,
+    );
+  }
+
+  const railBtn =
+    "flex w-full items-center justify-center gap-1.5 rounded-xl py-3 px-4 text-[13px] font-black font-headline transition-colors hover:bg-[rgba(15,34,41,0.03)]";
 
   return (
     <>
@@ -146,7 +296,7 @@ export function ProfilePanel({
           boxShadow: "0 0 0 1px rgba(15,34,41,0.05), 0 8px 26px rgba(15,34,41,0.08)",
         }}
       >
-        {/* ── PROFILE ── tinted header, same beat as the in-Space YouPanel. */}
+        {/* ── PROFILE ── */}
         <div
           className="px-5 pt-5 pb-4"
           style={{
@@ -198,23 +348,22 @@ export function ProfilePanel({
               {tagline}
             </p>
           )}
-          {bio && (
-            <p
-              className="text-[13px] mt-1.5 line-clamp-2"
-              style={{ color: "#64748b", fontWeight: 400, lineHeight: 1.55 }}
-            >
-              {bio}
-            </p>
-          )}
         </div>
 
-        {/* ── QUICK ACTIONS ── create leads (it's the primary creator act, and
-            the only place it's reachable on mobile where the nav collapses). */}
+        {/* ── NEEDS YOU ── only when something does. */}
+        {attention.length > 0 && (
+          <Section label="Needs you">
+            <div className="space-y-2">{attention}</div>
+          </Section>
+        )}
+
+        {/* ── YOUR ACCOUNT ── */}
+        <Section label="Your account">
+          <AccountTiles proof={accountProof} earningsWeekCents={earningsWeekCents} />
+        </Section>
+
+        {/* ── QUICK ACTIONS ── every secondary surface is an overlay. */}
         <Section label="Quick actions">
-          {/* Mobile-only: the top nav's "+ Create" is hidden behind the burger
-              on small screens. On desktop that nav button already exists, so a
-              second orange CTA here would only compete with the active card's
-              "Open Experience Space". */}
           <Link
             href="/dashboard/create"
             className="lg:hidden flex w-full items-center justify-center gap-1.5 rounded-xl py-3 px-4 text-[13px] font-black font-headline text-white transition-transform hover:scale-[1.01] mb-2"
@@ -223,44 +372,25 @@ export function ProfilePanel({
             {PLUS_ICON}
             New experience
           </Link>
-          <button
-            onClick={() => setEditOpen(true)}
-            className="flex w-full items-center justify-center gap-1.5 rounded-xl py-3 px-4 text-[13px] font-black font-headline transition-colors mb-2"
-            style={{
-              color: "#475569",
-              border: "1px solid rgba(15,34,41,0.12)",
-              backgroundColor: "rgba(255,255,255,0.6)",
-            }}
-          >
+          <button type="button" onClick={() => openOverlay("edit-profile")} className={`${railBtn} mb-2`} style={railActionStyle}>
             {EDIT_ICON}
             Edit profile
           </button>
-          <CalendarButton href="/dashboard/calendar" label="Export calendar" block />
-          <ProfileTrigger profileId={viewerId} className="w-full mt-2">
-            <span
-              className="flex w-full items-center justify-center gap-1.5 rounded-xl py-3 px-4 text-[13px] font-black font-headline"
-              style={{ color: "#475569", border: "1px solid rgba(15,34,41,0.12)", backgroundColor: "rgba(255,255,255,0.6)" }}
-            >
+          <ProfileTrigger profileId={viewerId} className="w-full mb-2">
+            <span className={railBtn} style={railActionStyle}>
               View my public profile
             </span>
           </ProfileTrigger>
-          <Link
-            href="/settings"
-            className="flex w-full items-center justify-center gap-1.5 rounded-xl py-3 px-4 text-[13px] font-black font-headline mt-2"
-            style={{ color: "#475569", border: "1px solid rgba(15,34,41,0.12)", backgroundColor: "rgba(255,255,255,0.6)" }}
-          >
-            Account settings
-          </Link>
-          <Link
-            href="/dashboard/people"
-            className="flex w-full items-center justify-center gap-1.5 rounded-xl py-3 px-4 text-[13px] font-black font-headline transition-colors mt-2"
-            style={{ color: "#475569", border: "1px solid rgba(15,34,41,0.12)", backgroundColor: "rgba(255,255,255,0.6)" }}
-          >
+          <button type="button" onClick={() => openOverlay("people")} className={`${railBtn} mb-2`} style={railActionStyle}>
             Your people
-          </Link>
+          </button>
+          <button type="button" onClick={() => openOverlay("settings")} className={`${railBtn} mb-2`} style={railActionStyle}>
+            Account settings
+          </button>
+          <CalendarButton href="/dashboard/calendar" label="Export calendar" block />
         </Section>
 
-        {/* ── ACROSS YOUR TRIBES ── global pulse, only when something's live. */}
+        {/* ── ACROSS YOUR TRIBES ── */}
         {hasActivePrograms && (
           <Section label="Across your tribes">
             <TribesPulse pulse={tribePulse} />
@@ -268,22 +398,17 @@ export function ProfilePanel({
         )}
       </div>
 
-      <SlideOver open={editOpen} onClose={() => setEditOpen(false)} title="Edit Profile">
-        <ProfileEditForm
-          displayName={displayName}
-          tagline={tagline ?? ""}
-          bio={bio ?? ""}
-          avatarUrl={avatarUrl}
-          isCreator
-          initialFacts={profileFacts as ProfileFacts}
-          onSaved={() => {
-            setTimeout(() => {
-              setEditOpen(false);
-              router.refresh();
-            }, 800);
-          }}
-        />
-      </SlideOver>
+      {/* The overlays this rail opens. */}
+      <EditProfilePanel
+        displayName={displayName}
+        tagline={tagline ?? ""}
+        bio={bio ?? ""}
+        avatarUrl={avatarUrl}
+        isCreator
+        initialFacts={profileFacts as ProfileFacts}
+      />
+      <AccountSettingsPanel visibility={visibility} agreements={agreements} />
+      <PeoplePanel connections={connections} isExpert />
     </>
   );
 }

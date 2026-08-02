@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { sendCollabInvites, sendAdditionalCollabInvite } from "@/app/actions/collaboration";
-import { ShareDonut } from "@/app/components/ShareDonut";
 import { Dialog } from "@/app/components/Dialog";
 
 interface CreatorResult {
@@ -39,12 +38,6 @@ export function CollabInviteFlow({ existingChallengeId, existingCollaboratorIds,
   const [invitees, setInvitees] = useState<SelectedInvitee[]>([]);
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
-  const [showSplit, setShowSplit] = useState(false);
-  // Tracks whether the user has actually engaged with the split UI.
-  // splitPercent gets sent as 0 for everyone if this stays false →
-  // the dashboard then renders "no split proposed yet" instead of
-  // dressing up an arbitrary auto-default as a real proposal.
-  const [splitEngaged, setSplitEngaged] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -71,44 +64,19 @@ export function CollabInviteFlow({ existingChallengeId, existingCollaboratorIds,
   }
 
   function addInvitee(creator: CreatorResult) {
-    // Only auto-distribute splits if the user has explicitly engaged
-    // with the split UI. Otherwise leave at 0 (= "no split proposed").
-    const newCount = invitees.length + 1;
-    if (splitEngaged) {
-      const evenSplit = Math.floor(80 / newCount);
-      setInvitees([
-        ...invitees.map(i => ({ ...i, splitPercent: evenSplit })),
-        { id: creator.id, display_name: creator.display_name, avatar_url: creator.avatar_url, splitPercent: evenSplit },
-      ]);
-    } else {
-      setInvitees([
-        ...invitees,
-        { id: creator.id, display_name: creator.display_name, avatar_url: creator.avatar_url, splitPercent: 0 },
-      ]);
-    }
+    // No split on invitations any more (founder's call): an invitation is
+    // the intent; the terms are set together in the workspace. splitPercent
+    // stays 0 in the payload for server compatibility.
+    setInvitees([
+      ...invitees,
+      { id: creator.id, display_name: creator.display_name, avatar_url: creator.avatar_url, splitPercent: 0 },
+    ]);
     setQuery("");
     setResults([]);
   }
 
-  function toggleSplit() {
-    if (!splitEngaged) {
-      // First time the user opens the split section — populate the
-      // sliders with sensible defaults so they're not all sitting at 0.
-      // From this point, splits are part of the proposal.
-      const newCount = invitees.length;
-      const evenSplit = newCount > 0 ? Math.floor(80 / newCount) : 0;
-      setInvitees(invitees.map(i => ({ ...i, splitPercent: evenSplit })));
-      setSplitEngaged(true);
-    }
-    setShowSplit(!showSplit);
-  }
-
   function removeInvitee(id: string) {
     setInvitees(invitees.filter(i => i.id !== id));
-  }
-
-  function updateSplit(id: string, percent: number) {
-    setInvitees(invitees.map(i => i.id === id ? { ...i, splitPercent: percent } : i));
   }
 
   async function handleSend() {
@@ -146,12 +114,6 @@ export function CollabInviteFlow({ existingChallengeId, existingCollaboratorIds,
       router.push(`/dashboard/collaborate/${(result as any).challengeId}`);
     }
   }
-
-  const ownerSplit = 100 - invitees.reduce((a, b) => a + b.splitPercent, 0);
-  const shares = [
-    { label: "You", percent: ownerSplit, color: "#FF6130" },
-    ...invitees.map((i, idx) => ({ label: i.display_name, percent: i.splitPercent, color: idx === 0 ? "#9CF0FF" : idx === 1 ? "#0891b2" : "#a78bfa" })),
-  ];
 
   // Trigger button — three styles depending on context:
   //   isAdditional → small cyan ghost ("Invite more" inside an existing workspace)
@@ -292,42 +254,6 @@ export function CollabInviteFlow({ existingChallengeId, existingCollaboratorIds,
             />
           </div>
 
-          {/* Optional revenue split */}
-          <div>
-            <button
-              onClick={toggleSplit}
-              className="text-xs font-bold font-headline text-[#94a3b8] hover:text-[#0F2229]"
-            >
-              {showSplit ? "▼" : "▸"} Add suggested revenue split (optional)
-            </button>
-            {showSplit && (
-              <div className="mt-3 p-4 rounded-xl" style={{ backgroundColor: "rgba(0,0,0,0.02)", border: "1px solid rgba(0,0,0,0.06)" }}>
-                <p className="text-[10px] text-[#94a3b8] mb-3">
-                  Non-binding suggestion — you&apos;ll finalize terms together in the workspace.
-                </p>
-                <div className="flex items-start gap-4">
-                  <ShareDonut size={80} shares={shares} />
-                  <div className="flex-1 space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-bold font-headline text-[#0F2229]">You</span>
-                      <span className="font-black font-headline text-[#FF6130]">{ownerSplit}%</span>
-                    </div>
-                    {invitees.map((inv) => (
-                      <div key={inv.id} className="flex items-center gap-2">
-                        <span className="text-xs font-bold font-headline text-[#0F2229] w-24 truncate">{inv.display_name}</span>
-                        <input
-                          type="range" min={0} max={100} value={inv.splitPercent}
-                          onChange={(e) => updateSplit(inv.id, Number(e.target.value))}
-                          className="flex-1 accent-[#9CF0FF]"
-                        />
-                        <span className="text-xs font-black font-headline text-[#0891b2] w-10 text-right">{inv.splitPercent}%</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
         </>
       )}
 

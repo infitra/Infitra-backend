@@ -6,18 +6,26 @@ import { createClient } from "@/lib/supabase/client";
 import { CredentialIcon, credentialPeriod } from "@/app/components/CredentialIcon";
 
 /**
- * ProfileModal + ProfileTrigger — THE profile surface (social layer
- * foundation). Every display name and avatar in the product wraps in a
- * ProfileTrigger; clicking opens this modal. One artifact, one mental model
- * (it replaces the old in-feed popover).
+ * ProfileModal + ProfileTrigger — THE profile surface (social layer).
+ * Every display name and avatar in the product wraps in a ProfileTrigger;
+ * clicking opens this modal.
  *
- * Data: one call to load_public_profile — base, facts, credentials, proof
- * numbers, and the "YOU & X" shared strip vs the viewer. Private profiles
- * come back `limited`: name, photo and the shared strip only, so a private
- * member is present in their tribe but nothing else is disclosed.
+ * Design pass (founder's polish round): the modal joins the product's visual
+ * language instead of listing content —
+ *   HEADER   — brand-gradient wash band (same grammar as the experience
+ *              header), avatar overlapping the band edge, ONE identity badge
+ *              (Founding Expert stands alone, gold; it outranks Expert).
+ *   YOU & X  — the relational strip, first. On your OWN profile it becomes a
+ *              placeholder explaining what others see here.
+ *   FACTS    — structured chips: quiet icon + text, bordered, cream.
+ *   PROOF    — "On INFITRA" as a tiled band: big headline numbers over small
+ *              labels, hairline dividers. The most persuasive section, so it
+ *              finally looks like it.
  *
- * Mount ONE <ProfileModalHost> per page region; triggers anywhere below it
- * open the shared modal via context, so the tree never holds N modals.
+ * Data: one call to load_public_profile. Private profiles come back
+ * `limited`: name, photo and the shared strip only.
+ * Mount ONE <ProfileModalHost> per page region; triggers below it open the
+ * shared modal via context.
  */
 
 const INK = "#0F2229";
@@ -102,6 +110,7 @@ export function ProfileTrigger({
 export function ProfileModalHost({ children }: { children: React.ReactNode }) {
   const [profileId, setProfileId] = useState<string | null>(null);
   const [payload, setPayload] = useState<ProfilePayload | null>(null);
+  const [viewerId, setViewerId] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => setMounted(true), []);
@@ -117,10 +126,14 @@ export function ProfileModalHost({ children }: { children: React.ReactNode }) {
     let alive = true;
     (async () => {
       const supabase = createClient();
-      const { data, error } = await supabase.rpc("load_public_profile", {
-        p_profile_id: profileId,
-      });
-      if (alive) setPayload(error ? { exists: false } : ((data ?? { exists: false }) as ProfilePayload));
+      const [{ data, error }, { data: auth }] = await Promise.all([
+        supabase.rpc("load_public_profile", { p_profile_id: profileId }),
+        supabase.auth.getUser(),
+      ]);
+      if (alive) {
+        setViewerId(auth?.user?.id ?? null);
+        setPayload(error ? { exists: false } : ((data ?? { exists: false }) as ProfilePayload));
+      }
     })();
 
     const onKey = (e: KeyboardEvent) => {
@@ -154,12 +167,12 @@ export function ProfileModalHost({ children }: { children: React.ReactNode }) {
               className="w-full max-w-md rounded-2xl overflow-hidden flex flex-col"
               style={{
                 backgroundColor: "#FFFFFF",
-                maxHeight: "min(82vh, 680px)",
+                maxHeight: "min(84vh, 700px)",
                 boxShadow: "0 24px 60px rgba(15,34,41,0.28)",
               }}
               onClick={(e) => e.stopPropagation()}
             >
-              <ModalBody payload={payload} onClose={close} />
+              <ModalBody payload={payload} viewerId={viewerId} onClose={close} />
             </div>
           </div>,
           document.body,
@@ -168,39 +181,50 @@ export function ProfileModalHost({ children }: { children: React.ReactNode }) {
   );
 }
 
-function ModalBody({ payload, onClose }: { payload: ProfilePayload | null; onClose: () => void }) {
+// ─── Body ────────────────────────────────────────────────────
+
+function ModalBody({
+  payload,
+  viewerId,
+  onClose,
+}: {
+  payload: ProfilePayload | null;
+  viewerId: string | null;
+  onClose: () => void;
+}) {
   if (!payload) {
     return (
-      <div className="px-6 py-10 text-center">
+      <div className="px-6 py-12 text-center">
         <p className="text-xs" style={{ color: "#94a3b8" }}>Loading…</p>
       </div>
     );
   }
   if (!payload.exists) {
     return (
-      <div className="px-6 py-10 text-center">
+      <div className="px-6 py-12 text-center">
         <p className="text-xs" style={{ color: "#94a3b8" }}>This profile is not available.</p>
       </div>
     );
   }
 
   const isExpert = payload.role === "creator";
-  const facts = payload.facts ?? {};
-  const factChips: string[] = [];
-  if (facts.age) factChips.push(`${facts.age}`);
-  if (facts.city) factChips.push(facts.city);
-  if (facts.training_since) factChips.push(`Training since ${facts.training_since}`);
-  for (const d of (facts.disciplines ?? []).slice(0, 4)) factChips.push(d);
-  if (facts.focus) factChips.push(`Working on: ${facts.focus}`);
-
+  const isSelf = !!viewerId && payload.profile_id === viewerId;
+  const firstName = (payload.display_name ?? "them").split(" ")[0];
   const shared = payload.shared;
   const proof = payload.proof ?? {};
-  const firstName = (payload.display_name ?? "them").split(" ")[0];
+  const facts = payload.facts ?? {};
 
-  const proofItems: Array<{ value: string; label: string }> = isExpert
+  // ONE identity badge — Founding Expert outranks Expert.
+  const badge = payload.is_founding_expert
+    ? { label: "★ Founding Expert", color: "#92700c", bg: "rgba(234,179,8,0.13)", border: "rgba(234,179,8,0.4)" }
+    : isExpert
+      ? { label: "Expert", color: "#c2410c", bg: "rgba(255,97,48,0.10)", border: "rgba(255,97,48,0.22)" }
+      : { label: "Tribe member", color: CYAN, bg: "rgba(8,145,178,0.08)", border: "rgba(8,145,178,0.20)" };
+
+  const proofTiles: Array<{ value: string; label: string; gold?: boolean }> = isExpert
     ? [
         ...((proof.total_reviews ?? 0) > 0
-          ? [{ value: `★ ${Number(proof.avg_rating ?? 0).toFixed(1)}`, label: `${proof.total_reviews} reviews` }]
+          ? [{ value: `★ ${Number(proof.avg_rating ?? 0).toFixed(1)}`, label: `${proof.total_reviews} reviews`, gold: true }]
           : []),
         { value: `${proof.tribe_count ?? 0}`, label: "in their tribe" },
         { value: `${proof.hosting_count ?? 0}`, label: proof.hosting_count === 1 ? "experience" : "experiences" },
@@ -215,173 +239,240 @@ function ModalBody({ payload, onClose }: { payload: ProfilePayload | null; onClo
           { value: `${proof.sessions_attended ?? 0}`, label: "sessions attended" },
         ];
 
+  const factChips: Array<{ icon: React.ReactNode; text: string }> = [];
+  if (facts.city) factChips.push({ icon: PIN_ICON, text: facts.city });
+  if (facts.age) factChips.push({ icon: PERSON_ICON, text: `${facts.age}` });
+  if (facts.training_since) factChips.push({ icon: CAL_ICON, text: `Training since ${facts.training_since}` });
+  for (const d of (facts.disciplines ?? []).slice(0, 4)) factChips.push({ icon: BOLT_ICON, text: d });
+
   return (
     <>
-      {/* Header */}
-      <div className="flex items-center gap-3 px-5 py-4 shrink-0" style={{ borderBottom: "1px solid rgba(15,34,41,0.08)" }}>
-        <ModalAvatar src={payload.avatar_url ?? null} name={payload.display_name ?? "?"} expert={isExpert} />
-        <div className="min-w-0 flex-1">
-          <p className="text-base font-black font-headline truncate" style={{ color: INK }}>
-            {payload.display_name ?? "Member"}
-          </p>
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span
-              className="inline-block px-2 py-0.5 rounded-full text-[9.5px] font-black font-headline uppercase tracking-[0.14em]"
-              style={
-                isExpert
-                  ? { color: "#c2410c", backgroundColor: "rgba(255,97,48,0.10)" }
-                  : { color: CYAN, backgroundColor: "rgba(8,145,178,0.08)" }
-              }
-            >
-              {isExpert ? "Expert" : "Tribe member"}
-            </span>
-            {payload.is_founding_expert && (
-              <span
-                className="inline-block px-2 py-0.5 rounded-full text-[9.5px] font-black font-headline uppercase tracking-[0.12em]"
-                style={{ color: "#92700c", backgroundColor: "rgba(234,179,8,0.12)", border: "1px solid rgba(234,179,8,0.35)" }}
-              >
-                Founding Expert
-              </span>
-            )}
-          </div>
-          {payload.tagline && (
-            <p className="text-[11px] font-bold font-headline truncate mt-0.5" style={{ color: CYAN }}>
-              {payload.tagline}
-            </p>
-          )}
-        </div>
+      {/* HEADER — gradient wash band; avatar overlaps its bottom edge. */}
+      <div className="relative shrink-0">
+        <div
+          className="h-20"
+          style={{
+            backgroundImage:
+              "linear-gradient(112deg, rgba(8,145,178,0.20) 0%, rgba(156,240,255,0.10) 30%, rgba(242,239,232,0.6) 55%, rgba(255,140,90,0.12) 78%, rgba(255,97,48,0.22) 100%)",
+          }}
+        />
         <button
           type="button"
           onClick={onClose}
-          className="w-8 h-8 rounded-full flex items-center justify-center transition-colors hover:bg-[rgba(15,34,41,0.06)] shrink-0"
+          className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center transition-colors hover:bg-[rgba(15,34,41,0.08)]"
+          style={{ backgroundColor: "rgba(255,255,255,0.65)" }}
           aria-label="Close"
         >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth={2.5} strokeLinecap="round">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth={2.5} strokeLinecap="round">
             <path d="M18 6L6 18M6 6l12 12" />
           </svg>
         </button>
-      </div>
-
-      <div className="overflow-y-auto px-5 py-4 space-y-4">
-        {/* YOU & X — the relational hook, always first when it exists. */}
-        {shared && shared.count > 0 && (
-          <div
-            className="rounded-xl px-3.5 py-3"
-            style={{ backgroundColor: "rgba(8,145,178,0.06)", boxShadow: `inset 3px 0 0 ${CYAN}` }}
-          >
-            <p className="text-[10px] font-black font-headline uppercase tracking-[0.16em] mb-1" style={{ color: CYAN }}>
-              You &amp; {firstName}
-            </p>
-            {shared.active_titles.length > 0 && (
-              <p className="text-[12.5px] leading-snug" style={{ color: INK }}>
-                <span className="font-bold">Both active in:</span>{" "}
-                {shared.active_titles.join(", ")}
+        <div className="px-5 pb-4 -mt-9 flex items-end gap-3.5">
+          <ModalAvatar src={payload.avatar_url ?? null} name={payload.display_name ?? "?"} expert={isExpert} founding={!!payload.is_founding_expert} />
+          <div className="min-w-0 flex-1 pb-0.5">
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="text-lg font-black font-headline leading-tight truncate" style={{ color: INK }}>
+                {payload.display_name ?? "Member"}
               </p>
-            )}
-            {shared.completed_titles.length > 0 && (
-              <p className="text-[12.5px] leading-snug mt-0.5" style={{ color: INK }}>
-                <span className="font-bold">Completed together:</span>{" "}
-                {shared.completed_titles.join(", ")}
+              <span
+                className="inline-block px-2 py-0.5 rounded-full text-[9.5px] font-black font-headline uppercase tracking-[0.13em] whitespace-nowrap"
+                style={{ color: badge.color, backgroundColor: badge.bg, border: `1px solid ${badge.border}` }}
+              >
+                {badge.label}
+              </span>
+            </div>
+            {payload.tagline && (
+              <p className="text-[11.5px] font-bold font-headline truncate mt-0.5" style={{ color: CYAN }}>
+                {payload.tagline}
               </p>
             )}
           </div>
-        )}
+        </div>
+      </div>
 
-        {payload.limited ? (
-          <p className="text-xs" style={{ color: "#94a3b8" }}>
-            This member keeps their profile private.
-          </p>
-        ) : (
-          <>
-            {factChips.length > 0 && (
-              <div className="flex flex-wrap gap-1">
-                {factChips.map((c, i) => (
-                  <span
-                    key={i}
-                    className="text-[10.5px] font-bold font-headline px-2 py-0.5 rounded-full"
-                    style={{ color: "#475569", backgroundColor: "rgba(15,34,41,0.05)" }}
-                  >
-                    {c}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            {payload.bio && (
-              <p className="text-[13px] leading-relaxed" style={{ color: "#475569" }}>
-                {payload.bio}
+      <div className="overflow-y-auto px-5 pb-5 space-y-4" style={{ borderTop: "1px solid rgba(15,34,41,0.06)" }}>
+        <div className="pt-4 space-y-4">
+          {/* YOU & X — or, on your own profile, the explainer. */}
+          {isSelf ? (
+            <div
+              className="rounded-xl px-3.5 py-3"
+              style={{ backgroundColor: "rgba(8,145,178,0.05)", border: "1px dashed rgba(8,145,178,0.35)" }}
+            >
+              <p className="text-[10px] font-black font-headline uppercase tracking-[0.16em] mb-1" style={{ color: CYAN }}>
+                You &amp; …
               </p>
-            )}
-
-            {isExpert && (payload.credentials?.length ?? 0) > 0 && (
-              <div>
-                <p className="text-[10px] font-bold font-headline uppercase tracking-[0.18em] mb-1.5" style={{ color: "#94a3b8" }}>
-                  Background
+              <p className="text-[12px] leading-snug" style={{ color: "#64748b" }}>
+                When someone from your tribe opens your profile, this is where
+                they see what you have done together: the experiences that
+                connect you.
+              </p>
+            </div>
+          ) : (
+            shared &&
+            shared.count > 0 && (
+              <div
+                className="rounded-xl px-3.5 py-3"
+                style={{ backgroundColor: "rgba(8,145,178,0.06)", boxShadow: `inset 3px 0 0 ${CYAN}` }}
+              >
+                <p className="text-[10px] font-black font-headline uppercase tracking-[0.16em] mb-1" style={{ color: CYAN }}>
+                  You &amp; {firstName}
                 </p>
-                <ul className="space-y-1.5">
-                  {payload.credentials!.map((cr) => {
-                    const meta = [cr.org, credentialPeriod(cr.year, cr.year_end)].filter(Boolean).join(" · ");
-                    return (
-                      <li key={cr.id} className="flex gap-2">
-                        <span className="shrink-0 mt-[2px]" style={{ color: ORANGE }}>
-                          <CredentialIcon kind={cr.kind} size={13} />
-                        </span>
-                        <span className="text-[12px] leading-snug">
-                          <span className="font-bold font-headline" style={{ color: INK }}>{cr.title}</span>
-                          {meta && <span style={{ color: "#94a3b8" }}> · {meta}</span>}
-                        </span>
-                      </li>
-                    );
-                  })}
-                </ul>
+                {shared.active_titles.length > 0 && (
+                  <p className="text-[12.5px] leading-snug" style={{ color: INK }}>
+                    <span className="font-bold">Both active in:</span> {shared.active_titles.join(", ")}
+                  </p>
+                )}
+                {shared.completed_titles.length > 0 && (
+                  <p className="text-[12.5px] leading-snug mt-0.5" style={{ color: INK }}>
+                    <span className="font-bold">Completed together:</span> {shared.completed_titles.join(", ")}
+                  </p>
+                )}
               </div>
-            )}
+            )
+          )}
 
-            {proofItems.length > 0 && (
-              <div>
-                <p className="text-[10px] font-bold font-headline uppercase tracking-[0.18em] mb-1.5" style={{ color: "#94a3b8" }}>
-                  On INFITRA
-                </p>
-                <div className="flex flex-wrap gap-x-4 gap-y-1.5">
-                  {proofItems.map((it, i) => (
-                    <span key={i} className="text-[12px] font-bold font-headline whitespace-nowrap" style={{ color: "#475569" }}>
-                      <span style={{ color: it.value.startsWith("★") ? GOLD : INK }} className="font-black">
-                        {it.value}
-                      </span>{" "}
-                      {it.label}
+          {payload.limited ? (
+            <p className="text-xs" style={{ color: "#94a3b8" }}>
+              This member keeps their profile private.
+            </p>
+          ) : (
+            <>
+              {/* FACTS — structured chips: icon + text, bordered, cream. */}
+              {factChips.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {factChips.map((c, i) => (
+                    <span
+                      key={i}
+                      className="inline-flex items-center gap-1.5 text-[11px] font-bold font-headline px-2.5 py-1 rounded-full"
+                      style={{ color: "#475569", backgroundColor: "#F7F5F0", border: "1px solid rgba(15,34,41,0.08)" }}
+                    >
+                      <span style={{ color: "#94a3b8" }}>{c.icon}</span>
+                      {c.text}
                     </span>
                   ))}
                 </div>
-              </div>
-            )}
-          </>
-        )}
+              )}
+              {facts.focus && (
+                <p className="text-[12px] leading-snug -mt-1" style={{ color: "#64748b" }}>
+                  <span className="font-bold font-headline" style={{ color: ORANGE }}>Working on:</span>{" "}
+                  {facts.focus}
+                </p>
+              )}
+
+              {payload.bio && (
+                <p className="text-[13px] leading-relaxed" style={{ color: "#475569" }}>
+                  {payload.bio}
+                </p>
+              )}
+
+              {/* BACKGROUND — expert credentials. */}
+              {isExpert && (payload.credentials?.length ?? 0) > 0 && (
+                <div>
+                  <p className="text-[10px] font-bold font-headline uppercase tracking-[0.18em] mb-2" style={{ color: "#94a3b8" }}>
+                    Background
+                  </p>
+                  <ul className="space-y-1.5">
+                    {payload.credentials!.map((cr) => {
+                      const meta = [cr.org, credentialPeriod(cr.year, cr.year_end)].filter(Boolean).join(" · ");
+                      return (
+                        <li key={cr.id} className="flex gap-2">
+                          <span className="shrink-0 mt-[2px]" style={{ color: ORANGE }}>
+                            <CredentialIcon kind={cr.kind} size={13} />
+                          </span>
+                          <span className="text-[12px] leading-snug">
+                            <span className="font-bold font-headline" style={{ color: INK }}>{cr.title}</span>
+                            {meta && <span style={{ color: "#94a3b8" }}> · {meta}</span>}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
+
+              {/* PROOF — the On INFITRA band: tiled numbers, hairline grid. */}
+              {proofTiles.length > 0 && (
+                <div>
+                  <p className="text-[10px] font-bold font-headline uppercase tracking-[0.18em] mb-2" style={{ color: "#94a3b8" }}>
+                    On INFITRA
+                  </p>
+                  <div
+                    className="grid rounded-xl overflow-hidden"
+                    style={{
+                      gridTemplateColumns: `repeat(${Math.min(proofTiles.length, 3)}, 1fr)`,
+                      backgroundColor: "rgba(15,34,41,0.06)",
+                      gap: "1px",
+                      border: "1px solid rgba(15,34,41,0.06)",
+                    }}
+                  >
+                    {proofTiles.map((t, i) => (
+                      <div key={i} className="px-2 py-2.5 text-center" style={{ backgroundColor: "#FFFFFF" }}>
+                        <p
+                          className="text-[17px] font-black font-headline leading-none whitespace-nowrap"
+                          style={{ color: t.gold ? GOLD : INK, letterSpacing: "-0.02em" }}
+                        >
+                          {t.value}
+                        </p>
+                        <p className="text-[9.5px] mt-1 leading-tight" style={{ color: "#94a3b8" }}>
+                          {t.label}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </>
   );
 }
 
-function ModalAvatar({ src, name, expert }: { src: string | null; name: string; expert: boolean }) {
-  const ring = expert ? ORANGE : CYAN;
-  if (src) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={src}
-        alt=""
-        className="w-14 h-14 rounded-full object-cover shrink-0"
-        style={{ border: `2px solid ${ring}` }}
-      />
-    );
-  }
-  return (
-    <div
-      className="w-14 h-14 rounded-full flex items-center justify-center shrink-0"
-      style={{ border: `2px solid ${ring}`, backgroundColor: `${ring}18` }}
-    >
-      <span className="text-xl font-black font-headline" style={{ color: ring }}>
+// ─── Bits ────────────────────────────────────────────────────
+
+function ModalAvatar({ src, name, expert, founding }: { src: string | null; name: string; expert: boolean; founding: boolean }) {
+  const ring = founding ? GOLD : expert ? ORANGE : CYAN;
+  const inner = src ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={src} alt="" className="w-full h-full rounded-full object-cover" />
+  ) : (
+    <span className="w-full h-full rounded-full flex items-center justify-center" style={{ backgroundColor: `${ring}18` }}>
+      <span className="text-2xl font-black font-headline" style={{ color: ring }}>
         {(name[0] ?? "?").toUpperCase()}
       </span>
+    </span>
+  );
+  return (
+    <div
+      className="w-[72px] h-[72px] rounded-full shrink-0 p-[3px]"
+      style={{ backgroundColor: "#FFFFFF", boxShadow: `0 0 0 2px ${ring}, 0 4px 14px rgba(15,34,41,0.15)` }}
+    >
+      {inner}
     </div>
   );
 }
+
+const PIN_ICON = (
+  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+    <circle cx="12" cy="10" r="3" />
+  </svg>
+);
+const PERSON_ICON = (
+  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="8" r="4" />
+    <path d="M4 21c0-4 4-6 8-6s8 2 8 6" />
+  </svg>
+);
+const CAL_ICON = (
+  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="5" width="18" height="16" rx="2" />
+    <path d="M8 3v4M16 3v4M3 11h18" />
+  </svg>
+);
+const BOLT_ICON = (
+  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M13 2L4 14h6l-1 8 9-12h-6l1-8Z" />
+  </svg>
+);
