@@ -148,8 +148,25 @@ export function TribeFeed({
     setComposeIntent(null);
   }, [composeIntent, creators, setComposeIntent, isCreator]);
 
+  // The tribe roster (DEFINER snapshot from load_experience_space) contains
+  // EVERY member, including private ones. Kept in a ref so enrich() can read
+  // it without re-creating itself on every roster change.
+  const peopleRef = useRef(peopleById);
+  useEffect(() => {
+    peopleRef.current = peopleById;
+  }, [peopleById]);
+
   const enrich = useCallback(async (rows: { author_id: string }[]) => {
     const supabase = createClient();
+    // Roster FIRST. A direct app_profile read is RLS-filtered, so a private
+    // member's row comes back empty and their posts rendered as "Member" with
+    // no photo — the founder's report. Private must hide the profile DETAIL,
+    // never someone's identity inside their own tribe.
+    for (const id of new Set(rows.map((r) => r.author_id))) {
+      if (profRef.current[id]) continue;
+      const known = peopleRef.current.get(id);
+      if (known) profRef.current[id] = { name: known.name, avatar: known.avatar };
+    }
     const missing = [...new Set(rows.map((r) => r.author_id))].filter((id) => !profRef.current[id]);
     if (missing.length > 0) {
       const { data } = await supabase.from("app_profile").select("id, display_name, avatar_url").in("id", missing);

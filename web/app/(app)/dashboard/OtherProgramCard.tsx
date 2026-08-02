@@ -73,7 +73,7 @@ const stageConfig: Record<
     label: "Awaiting signatures",
     color: ORANGE,
     icon: SIGN_ICON,
-    cta: "Review contract →",
+    cta: "Review agreement →",
   },
   completed: {
     label: "Completed",

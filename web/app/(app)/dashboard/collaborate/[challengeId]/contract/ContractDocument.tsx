@@ -146,7 +146,7 @@ export function ContractDocument({
         className="text-[11px] font-bold uppercase tracking-[0.2em] font-headline mb-2"
         style={{ color: CYAN }}
       >
-        Collaboration contract
+        Collaboration agreement
       </p>
       <h1
         className="text-2xl sm:text-3xl font-black font-headline tracking-tight"

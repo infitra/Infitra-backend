@@ -297,7 +297,7 @@ export default async function MeHomePage() {
                 hasActiveExperiences={active.length > 0}
                 pendingReviews={pendingReviews}
                 facts={(profile as { profile_facts?: Record<string, unknown> } | null)?.profile_facts ?? {}}
-                visibility={(profile as { visibility?: string } | null)?.visibility ?? "public"}
+                viewerId={user.id}
               />
             </aside>
 

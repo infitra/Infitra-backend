@@ -248,7 +248,7 @@ function humanizeUpdateError(code: string): string {
     not_authenticated: "You need to be signed in.",
     challenge_not_found: "Experience not found.",
     challenge_not_draft: "Only drafts can be edited.",
-    challenge_locked: "The contract is locked — reactivate drafting to edit.",
+    challenge_locked: "The agreement is locked. Reactivate drafting to edit.",
     not_a_collaborator: "Only the owner or a cohost can edit this challenge.",
     title_too_short: "Title must be at least 3 characters.",
     dates_required: "Start date and end date are required.",
@@ -536,8 +536,8 @@ function humanizeBlockers(codes: string[]): string {
     cohost_without_session:
       "A cohost has no linked session in the challenge.",
     contract_id_missing:
-      "A collaboration contract is required for challenges with cohosts.",
-    bound_contract_not_locked: "The collaboration contract is not locked.",
+      "A collaboration agreement is required for experiences with co-hosts.",
+    bound_contract_not_locked: "The collaboration agreement is not locked.",
     contract_has_decline: "A collaborator has declined the contract.",
     challenge_cohosts_not_all_accepted_bound_contract:
       "Not all cohosts have accepted the contract.",

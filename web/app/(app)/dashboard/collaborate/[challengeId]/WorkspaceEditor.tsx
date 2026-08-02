@@ -889,7 +889,7 @@ export function WorkspaceEditor({
         </div>
       )}
 
-      {/* Polish v12.U: the "View locked contract" link was removed.
+      {/* Polish v12.U: the "View locked agreement" link was removed.
           The workspace itself IS the locked agreement surface — the
           ContractStatusBanner below acts as the lock stamp, all
           cards transform to read-only via canEdit, and accept /

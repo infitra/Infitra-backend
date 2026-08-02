@@ -143,11 +143,11 @@ function describeNotification(n: EnrichedNotification): NotificationContent {
       };
     // Polish v12.U.2: contract-flow + publish notifications. Previously
     // these fell through to the default case which just rendered the
-    // raw type string ("contract locked"). Now each gets a real human
+    // raw type string ("agreement locked"). Now each gets a real human
     // sentence, an actionable detail, and a deep link.
     case "contract_locked":
       return {
-        title: sender ? `${sender} locked the contract` : "Contract locked for review",
+        title: sender ? `${sender} locked the contract` : "Agreement locked for review",
         detail: "Review terms and accept or request changes",
         href: p.challenge_id ? `/dashboard/collaborate/${p.challenge_id}` : "/dashboard",
       };

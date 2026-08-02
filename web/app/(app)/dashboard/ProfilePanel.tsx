@@ -7,6 +7,7 @@ import { SlideOver } from "@/app/components/SlideOver";
 import { createClient } from "@/lib/supabase/client";
 import { ProfileEditForm, type ProfileFacts } from "@/app/components/ProfileEditForm";
 import { CalendarButton } from "@/app/components/CalendarButton";
+import { ProfileTrigger } from "@/app/components/ProfileModal";
 import { MetricStrip, type Metric } from "./MetricStrip";
 
 /**
@@ -44,6 +45,7 @@ interface Props {
   bio: string | null;
   /** Needed by the SlideOver edit form. */
   profileFacts: Record<string, unknown>;
+  viewerId: string;
   joinedAt: string | null;
   tribePulse: TribePulse;
   hasActivePrograms: boolean;
@@ -124,6 +126,7 @@ export function ProfilePanel({
   tagline,
   bio,
   profileFacts,
+  viewerId,
   joinedAt,
   tribePulse,
   hasActivePrograms,
@@ -233,6 +236,21 @@ export function ProfilePanel({
             Edit profile
           </button>
           <CalendarButton href="/dashboard/calendar" label="Export calendar" block />
+          <ProfileTrigger profileId={viewerId} className="w-full mt-2">
+            <span
+              className="flex w-full items-center justify-center gap-1.5 rounded-xl py-3 px-4 text-[13px] font-black font-headline"
+              style={{ color: "#475569", border: "1px solid rgba(15,34,41,0.12)", backgroundColor: "rgba(255,255,255,0.6)" }}
+            >
+              View my public profile
+            </span>
+          </ProfileTrigger>
+          <Link
+            href="/settings"
+            className="flex w-full items-center justify-center gap-1.5 rounded-xl py-3 px-4 text-[13px] font-black font-headline mt-2"
+            style={{ color: "#475569", border: "1px solid rgba(15,34,41,0.12)", backgroundColor: "rgba(255,255,255,0.6)" }}
+          >
+            Account settings
+          </Link>
           <Link
             href="/dashboard/people"
             className="flex w-full items-center justify-center gap-1.5 rounded-xl py-3 px-4 text-[13px] font-black font-headline transition-colors mt-2"

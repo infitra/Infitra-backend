@@ -5,7 +5,7 @@ import { PrintButton } from "./PrintButton";
 import { ContractDocument, type ContractSnapshot } from "./ContractDocument";
 import { resolveViewerTimeZone } from "@/lib/time/viewerTimeZone";
 
-export const metadata = { title: "Collaboration Contract — INFITRA" };
+export const metadata = { title: "Collaboration Agreement · INFITRA" };
 export const dynamic = "force-dynamic";
 
 /**

@@ -2,8 +2,10 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { saveFirstMoves } from "@/app/actions/profile";
 import { uploadImage } from "@/lib/uploadImage";
+import { ProfileTrigger } from "@/app/components/ProfileModal";
 import { MetricStrip, type Metric } from "@/app/(app)/dashboard/MetricStrip";
 import { RateExperienceButton } from "./RateExperienceButton";
 
@@ -36,7 +38,7 @@ interface Props {
   /** Completed experiences the member hasn't rated yet — the console is the main
    *  action collector, so pending ratings surface here as a to-do. */
   facts?: ParticipantFacts;
-  visibility?: string;
+  viewerId: string;
   pendingReviews: { id: string; title: string }[];
 }
 
@@ -74,7 +76,7 @@ function Section({ label, children }: { label: string; children: React.ReactNode
   );
 }
 
-export function ParticipantPanel({ displayName, avatarUrl, joinedAt, tribePulse, hasActiveExperiences, pendingReviews, facts = {}, visibility = "public" }: Props) {
+export function ParticipantPanel({ displayName, avatarUrl, joinedAt, tribePulse, hasActiveExperiences, pendingReviews, facts = {}, viewerId }: Props) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -94,7 +96,6 @@ export function ParticipantPanel({ displayName, avatarUrl, joinedAt, tribePulse,
   const [fSince, setFSince] = useState(facts.training_since ? String(facts.training_since) : "");
   const [fDisc, setFDisc] = useState((facts.disciplines ?? []).join(", "));
   const [fFocus, setFFocus] = useState(facts.focus ?? "");
-  const [isPublic, setIsPublic] = useState(visibility !== "private");
   const hasFacts =
     !!facts.age || !!facts.city || !!facts.training_since ||
     (facts.disciplines?.length ?? 0) > 0 || !!facts.focus;
@@ -126,7 +127,6 @@ export function ParticipantPanel({ displayName, avatarUrl, joinedAt, tribePulse,
     setFSince(facts.training_since ? String(facts.training_since) : "");
     setFDisc((facts.disciplines ?? []).join(", "));
     setFFocus(facts.focus ?? "");
-    setIsPublic(visibility !== "private");
   }
 
   async function save() {
@@ -152,7 +152,6 @@ export function ParticipantPanel({ displayName, avatarUrl, joinedAt, tribePulse,
     const fd = new FormData();
     fd.append("display_name", trimmed);
     if (newUrl) fd.append("avatar_url", newUrl);
-    fd.append("visibility", isPublic ? "public" : "private");
     fd.append(
       "profile_facts",
       JSON.stringify({
@@ -283,6 +282,23 @@ export function ParticipantPanel({ displayName, avatarUrl, joinedAt, tribePulse,
               {EDIT_ICON}
               Edit profile
             </button>
+            {/* Everyone can see their own profile exactly as their tribe sees
+                it — the same modal, opened on yourself. */}
+            <ProfileTrigger profileId={viewerId} className="w-full mt-2">
+              <span
+                className="flex w-full items-center justify-center gap-1.5 rounded-xl py-3 px-4 text-[13px] font-black font-headline"
+                style={{ color: "#475569", border: "1px solid rgba(15,34,41,0.12)", backgroundColor: "rgba(255,255,255,0.6)" }}
+              >
+                View my public profile
+              </span>
+            </ProfileTrigger>
+            <Link
+              href="/settings"
+              className="flex w-full items-center justify-center gap-1.5 rounded-xl py-3 px-4 text-[13px] font-black font-headline mt-2"
+              style={{ color: "#475569", border: "1px solid rgba(15,34,41,0.12)", backgroundColor: "rgba(255,255,255,0.6)" }}
+            >
+              Account settings
+            </Link>
             {/* The entire engagement system for facts: one soft chip when the
                 profile is bare. No progress bars, no completion percentage. */}
             {!hasFacts && (
@@ -357,22 +373,6 @@ export function ParticipantPanel({ displayName, avatarUrl, joinedAt, tribePulse,
                 />
               </div>
 
-              {/* The master switch. Private keeps name + photo (so nobody is a
-                  ghost in their own tribe) and hides the rest. */}
-              <label className="flex items-start gap-2 mt-2.5 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={isPublic}
-                  onChange={(e) => setIsPublic(e.target.checked)}
-                  className="mt-0.5"
-                />
-                <span className="text-[11px] leading-snug" style={{ color: "#64748b" }}>
-                  Show these details to your tribe.{" "}
-                  <span style={{ color: "#94a3b8" }}>
-                    Off keeps your name and photo visible and hides the rest.
-                  </span>
-                </span>
-              </label>
             </div>
 
             <div className="flex items-center gap-2">

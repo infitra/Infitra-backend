@@ -5,6 +5,7 @@ import { OtherProgramCard } from "./OtherProgramCard";
 import { TopAlert } from "./TopAlert";
 import { CollabInvitations } from "./CollabInvitations";
 import { ProfilePanel } from "./ProfilePanel";
+import { ProfileModalHost } from "@/app/components/ProfileModal";
 import { resolveViewerTimeZone } from "@/lib/time/viewerTimeZone";
 import Link from "next/link";
 
@@ -710,6 +711,7 @@ export default async function DashboardPage() {
     // Horizontal overflow is already guarded by the (app) layout root
     // (overflow-x-clip there) — adding it again here created a nested clip
     // context that broke the wave background on iOS scroll-up.
+    <ProfileModalHost>
     <div className="py-8">
       {/* TopAlert sits above everything else — global urgency signal,
           rendered without a section heading because it speaks for
@@ -736,6 +738,7 @@ export default async function DashboardPage() {
             tagline={data.profile.tagline}
             bio={data.profile.bio}
             profileFacts={data.profile.profileFacts}
+            viewerId={user.id}
             joinedAt={data.profile.joinedAt}
             tribePulse={tribePulse}
             hasActivePrograms={activeCount > 0}
@@ -887,6 +890,7 @@ export default async function DashboardPage() {
         </div>
       )}
     </div>
+    </ProfileModalHost>
   );
 }
 

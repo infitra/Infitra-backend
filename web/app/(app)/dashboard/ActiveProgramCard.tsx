@@ -14,7 +14,8 @@ import { ReviewsDisclosure, type CardReview } from "./ReviewsDisclosure";
  *   SIGNALS   — live stats: tribe (+ growth), new posts, open questions. Colour
  *               + dots + deltas so it reads as movement, not a static table.
  *   SESSION   — a cream, editorial card for the next session, with its image.
- *   DOOR      — one way in; share + contract are quiet secondaries.
+ *   DOOR      — one way in; share is the quiet secondary. The recorded
+ *               agreement lives in Account settings, not on the card.
  * Stage lives only on the cover chip. Soft shadow matches the Experience Space.
  *
  * Side-by-side engages at xl; below xl the card stacks (cover on top at the
@@ -570,9 +571,12 @@ function SecondaryActions({ program }: { program: Program }) {
     program.stage === "published-pre-launch" ||
     program.stage === "published-live" ||
     program.stage === "completed";
-  const href = postPublish
-    ? `/dashboard/collaborate/${program.id}/contract`
-    : `/dashboard/collaborate/${program.id}`;
+  // Founder's call: a published experience card carries ONE action — the door
+  // into the experience. The recorded agreement is a governance artifact, not
+  // an operational CTA; it lives in Account settings › My agreements. The
+  // pre-publish "Review terms" stays, because that IS the live next step.
+  if (postPublish) return null;
+  const href = `/dashboard/collaborate/${program.id}`;
   return (
     <Link
       href={href}
@@ -584,7 +588,7 @@ function SecondaryActions({ program }: { program: Program }) {
         backgroundColor: "rgba(255,255,255,0.85)",
       }}
     >
-      {postPublish ? "View contract" : "Review terms"}
+      Review terms
     </Link>
   );
 }
@@ -698,8 +702,8 @@ export function ActiveProgramCard({ program, partner, user, density = "hero", ti
           </div>
         )}
 
-        {/* DOOR — Open Experience Space (heaviest) + View contract. Share is
-            the top-right icon now, so the bottom stays to two clean actions. */}
+        {/* DOOR — one action on a published card: Open Experience Space.
+            Share is the top-right icon; the agreement moved to settings. */}
         <div className="mt-7 flex flex-wrap items-center gap-x-4 gap-y-3">
           <PrimaryActionPill label={doorLabel} kind="navigate" href={doorHref} variant="filled" />
           <SecondaryActions program={program} />

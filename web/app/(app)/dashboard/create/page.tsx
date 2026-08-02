@@ -290,7 +290,7 @@ export default async function CreatePage() {
 
             {/* Value pills — system features the path gives you */}
             <div className="flex flex-wrap gap-1.5 mb-5">
-              {["Signed contracts", "Automated splits", "Shared workspace"].map((v) => (
+              {["Signed agreements", "Automated splits", "Shared workspace"].map((v) => (
                 <span
                   key={v}
                   className="text-[10px] uppercase tracking-widest font-headline px-2.5 py-1 rounded-full"
