@@ -17,10 +17,13 @@ export default async function ExperienceSpacePage({
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  // One consolidated round-trip (load_experience_space).
-  const { data, error } = await supabase.rpc("load_experience_space", {
-    p_challenge_id: id,
-  });
+  // One consolidated round-trip (load_experience_space) + the session
+  // materials for the week journey, fetched in parallel (release state is
+  // computed in the RPC; outsiders get []).
+  const [{ data, error }, { data: materialRows }] = await Promise.all([
+    supabase.rpc("load_experience_space", { p_challenge_id: id }),
+    supabase.rpc("load_challenge_materials", { p_challenge_id: id }),
+  ]);
   const seed = mapSnapshot(data as RawExperienceSpaceSnapshot | null, user.id);
 
   // Not authorized / no space yet → send to the Experience's public buyer page
@@ -117,7 +120,7 @@ export default async function ExperienceSpacePage({
     <div className="min-h-screen">
       <ParticipantNav displayName={prof?.display_name ?? null} role={prof?.role} />
       <div className="pt-20">
-        <ExperienceSpaceShell seed={seed} initialCreatorStats={initialCreatorStats} reviewState={reviewState} continuation={continuation} />
+        <ExperienceSpaceShell seed={seed} initialCreatorStats={initialCreatorStats} reviewState={reviewState} continuation={continuation} materials={Array.isArray(materialRows) ? materialRows : []} />
       </div>
     </div>
   );

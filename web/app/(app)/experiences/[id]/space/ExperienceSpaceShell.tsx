@@ -22,6 +22,8 @@ import { IntroActionCard } from "./IntroActionCard";
 import { ReactivateCard, ContinueStrip } from "./ViewOnlyBanner";
 import { Antechamber } from "./Antechamber";
 import { ProfileModalHost } from "@/app/components/ProfileModal";
+import { SpaceMaterialsProvider } from "./SpaceMaterials";
+import type { MaterialRow } from "@/app/(app)/dashboard/collaborate/[challengeId]/SessionMaterials";
 import { PrePulseCard } from "./PrePulseCard";
 import { ReflectionCard } from "./ReflectionCard";
 import { WeekJourney } from "./WeekJourney";
@@ -41,6 +43,7 @@ type ReviewState = {
 export function ExperienceSpaceShell({
   seed,
   initialCreatorStats,
+  materials,
   reviewState,
   continuation,
 }: {
@@ -48,11 +51,14 @@ export function ExperienceSpaceShell({
   initialCreatorStats?: CreatorStats | null;
   reviewState?: ReviewState;
   continuation?: CreatorContinuation | null;
+  materials?: MaterialRow[];
 }) {
   return (
     <ExperienceSpaceStoreProvider initialState={initFromSeed(seed, initialCreatorStats ?? null)}>
       <ProfileModalHost>
-        <SpaceBody reviewState={reviewState} continuation={continuation} />
+        <SpaceMaterialsProvider materials={materials ?? []}>
+          <SpaceBody reviewState={reviewState} continuation={continuation} />
+        </SpaceMaterialsProvider>
       </ProfileModalHost>
     </ExperienceSpaceStoreProvider>
   );

@@ -17,6 +17,7 @@
  */
 
 import Image from "next/image";
+import { SessionMaterialChips } from "./SpaceMaterials";
 import { useEffect, useMemo, useState } from "react";
 import { useExperienceSpaceStore } from "@/lib/experienceSpace/StoreProvider";
 import {
@@ -407,6 +408,8 @@ function HeroSessionCard({
           </span>
         )}
 
+        <SessionMaterialChips sessionId={session.id} />
+
         <div className="flex items-center justify-between gap-3 mt-auto pt-3.5">
           {live ? (
             <a
@@ -485,6 +488,7 @@ function AgendaSessionRow({ session, done, onOpen }: { session: SpaceSession; do
           {session.title}
         </h4>
         <p className="text-[11px] mt-0.5 truncate" style={{ color: "#94a3b8" }}>{sessionTeamLabel(session)}</p>
+        <SessionMaterialChips sessionId={session.id} />
       </div>
 
       <div className="shrink-0 self-center pr-4 pl-2">
