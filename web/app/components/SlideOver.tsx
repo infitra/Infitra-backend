@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useCallback, useRef } from "react";
+import { useBackdropClose } from "@/app/components/useBackdropClose";
 
 interface SlideOverProps {
   open: boolean;
@@ -37,6 +38,8 @@ export function SlideOver({ open, onClose, title, children }: SlideOverProps) {
     };
   }, [open, handleKeyDown]);
 
+  const backdrop = useBackdropClose(onClose);
+
   if (!open) return null;
 
   return (
@@ -45,7 +48,7 @@ export function SlideOver({ open, onClose, title, children }: SlideOverProps) {
       <div
         className="absolute inset-0"
         style={{ backgroundColor: "rgba(15, 34, 41, 0.25)" }}
-        onClick={onClose}
+        {...backdrop}
       />
 
       {/* Panel */}

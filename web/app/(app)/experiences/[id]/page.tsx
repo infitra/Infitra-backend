@@ -374,6 +374,7 @@ export default async function ChallengePage({
         {/* SECTION 1 — cover image is now inside the hero card (4.2.8),
             no separate page-top band. */}
         <PublicChallengeHero
+          materialsCount={materialsCount}
           challengeId={id}
           spaceId={spaceId}
           title={buyerView.title}
@@ -415,7 +416,6 @@ export default async function ChallengePage({
         />
 
         <PublicCommitBlock
-          materialsCount={materialsCount}
           challengeId={id}
           spaceId={spaceId}
           priceCents={buyerView.price_cents}

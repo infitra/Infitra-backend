@@ -109,6 +109,7 @@ export default async function PreviewPage({
 
       <main className="flex-1">
         <PublicChallengeHero
+          materialsCount={materialsCount}
           challengeId={challengeId}
           spaceId={null}
           title={c.title}
@@ -139,7 +140,6 @@ export default async function PreviewPage({
             saw the final CTA their buyers get before pulling the trigger.
             isCreator renders the preview chip instead of a live buy button. */}
         <PublicCommitBlock
-          materialsCount={materialsCount}
           challengeId={challengeId}
           spaceId={null}
           priceCents={c.price_cents}

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { createClient } from "@/lib/supabase/client";
+import { useBackdropClose } from "@/app/components/useBackdropClose";
 
 /**
  * SessionMaterials — the materials strip on a workspace session card
@@ -245,6 +246,12 @@ export function MaterialSheet({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const close = () => {
+    clearSheetDraft();
+    onClose();
+  };
+  const backdrop = useBackdropClose(close);
+
   // Write-through: every field change lands in the module draft, so the
   // next mount (if a remount strikes) restores exactly this state.
   useEffect(() => {
@@ -330,10 +337,7 @@ export function MaterialSheet({
 
   if (!mounted) return null;
 
-  const close = () => {
-    clearSheetDraft();
-    onClose();
-  };
+
 
   const inputStyle: React.CSSProperties = {
     border: "1px solid rgba(15,34,41,0.14)",
@@ -345,7 +349,7 @@ export function MaterialSheet({
     <div
       className="fixed inset-0 z-[110] flex items-center justify-center p-4"
       style={{ backgroundColor: "rgba(15,34,41,0.45)" }}
-      onClick={close}
+      {...backdrop}
       role="dialog"
       aria-modal="true"
       aria-label={existing ? "Edit material" : "Attach material"}

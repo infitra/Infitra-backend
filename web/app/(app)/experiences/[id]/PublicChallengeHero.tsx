@@ -180,6 +180,9 @@ interface Props {
   startDate: string;
   endDate: string;
   sessionCount: number;
+  /** Session-attached guides & templates (count only). Renders a rhythm
+   *  line ONLY when > 0 — an honest claim or no claim. */
+  materialsCount?: number;
   priceCents: number;
   currency: string;
   creators: Creator[];
@@ -259,6 +262,7 @@ export function PublicChallengeHero({
   startDate,
   endDate,
   sessionCount,
+  materialsCount = 0,
   priceCents,
   currency,
   creators,
@@ -466,6 +470,15 @@ export function PublicChallengeHero({
               <span style={{ color: "#cbd5e1" }}>{"  ·  "}</span>
               {sessionCount} live {sessionCount === 1 ? "session" : "sessions"}
             </p>
+            {materialsCount > 0 && (
+              <p
+                className="text-sm lg:text-base font-bold font-headline mt-2"
+                style={{ color: "#0891b2" }}
+              >
+                + {materialsCount} {materialsCount === 1 ? "guide" : "guides & templates"} from
+                your experts, released as you go
+              </p>
+            )}
             <p
               className="text-sm lg:text-base font-medium mt-2"
               style={{ color: "#64748b" }}

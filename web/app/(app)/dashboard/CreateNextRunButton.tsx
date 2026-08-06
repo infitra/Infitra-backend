@@ -3,6 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { createContinuationDraft } from "@/app/actions/challenge";
+import { useBackdropClose } from "@/app/components/useBackdropClose";
 
 /**
  * CreateNextRunButton — the continuation door on a completed experience
@@ -23,6 +24,7 @@ export function CreateNextRunButton({ sourceId, title }: { sourceId: string; tit
   const [pending, startTransition] = useTransition();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+  const backdrop = useBackdropClose(() => setOpen(false));
 
   return (
     <>
@@ -45,10 +47,7 @@ export function CreateNextRunButton({ sourceId, title }: { sourceId: string; tit
           <div
             className="fixed inset-0 z-[110] flex items-center justify-center p-4"
             style={{ backgroundColor: "rgba(15,34,41,0.45)" }}
-            onClick={(e) => {
-              e.stopPropagation();
-              setOpen(false);
-            }}
+            {...backdrop}
             role="dialog"
             aria-modal="true"
             aria-label="Create the next run"

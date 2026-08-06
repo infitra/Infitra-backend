@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { createClient } from "@/lib/supabase/client";
+import { useBackdropClose } from "@/app/components/useBackdropClose";
 import { CredentialIcon, credentialPeriod } from "@/app/components/CredentialIcon";
 import { StatCard, STAT_ICONS, BRAND_ACCENT } from "@/app/components/StatCards";
 
@@ -122,6 +123,7 @@ export function ProfileModalHost({ children }: { children: React.ReactNode }) {
     setProfileId(id);
   }, []);
   const close = useCallback(() => setProfileId(null), []);
+  const backdrop = useBackdropClose(close);
 
   useEffect(() => {
     if (!profileId) return;
@@ -160,7 +162,7 @@ export function ProfileModalHost({ children }: { children: React.ReactNode }) {
           <div
             className="fixed inset-0 z-[100] flex items-center justify-center p-4"
             style={{ backgroundColor: "rgba(15,34,41,0.45)" }}
-            onClick={close}
+            {...backdrop}
             role="dialog"
             aria-modal="true"
             aria-label="Profile"

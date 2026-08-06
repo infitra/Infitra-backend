@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useBackdropClose } from "@/app/components/useBackdropClose";
 import { createPortal } from "react-dom";
 
 interface DialogProps {
@@ -67,6 +68,8 @@ export function Dialog({
     };
   }, [open, handleKey]);
 
+  const backdrop = useBackdropClose(onClose);
+
   if (!open || !mounted) return null;
 
   return createPortal(
@@ -76,7 +79,7 @@ export function Dialog({
       <div
         className="fixed inset-0 z-50"
         style={{ backgroundColor: "rgba(15,34,41,0.5)" }}
-        onClick={closeOnBackdrop ? onClose : undefined}
+        {...(closeOnBackdrop ? backdrop : {})}
         aria-hidden="true"
       />
       {/* Scroll container — sits on top of the backdrop. Click on the
@@ -85,7 +88,7 @@ export function Dialog({
           propagation. */}
       <div
         className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 overflow-y-auto"
-        onClick={closeOnBackdrop ? onClose : undefined}
+        {...(closeOnBackdrop ? backdrop : {})}
         role="dialog"
         aria-modal="true"
       >

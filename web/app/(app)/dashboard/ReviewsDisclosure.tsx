@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useBackdropClose } from "@/app/components/useBackdropClose";
 import { createPortal } from "react-dom";
 
 /**
@@ -52,6 +53,7 @@ export function ReviewsDisclosure({
   experienceTitle?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const backdrop = useBackdropClose(() => setOpen(false));
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => setMounted(true), []);
@@ -105,7 +107,7 @@ export function ReviewsDisclosure({
           <div
             className="fixed inset-0 z-[100] flex items-center justify-center p-4"
             style={{ backgroundColor: "rgba(15,34,41,0.45)" }}
-            onClick={() => setOpen(false)}
+            {...backdrop}
             role="dialog"
             aria-modal="true"
             aria-label="Reviews"

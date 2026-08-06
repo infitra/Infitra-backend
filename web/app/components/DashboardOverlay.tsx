@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { useBackdropClose } from "@/app/components/useBackdropClose";
 
 /**
  * DashboardOverlay — THE secondary-surface shell for both dashboards
@@ -97,6 +98,7 @@ export function OverlayPanel({
   const reg = useContext(OverlayRegisterCtx);
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+  const backdrop = useBackdropClose(() => reg?.close());
 
   if (!reg || reg.openId !== id || !mounted) return null;
 
@@ -104,7 +106,7 @@ export function OverlayPanel({
     <div
       className="fixed inset-0 z-[90] flex items-center justify-center p-4"
       style={{ backgroundColor: "rgba(15,34,41,0.45)" }}
-      onClick={reg.close}
+      {...backdrop}
       role="dialog"
       aria-modal="true"
       aria-label={title}

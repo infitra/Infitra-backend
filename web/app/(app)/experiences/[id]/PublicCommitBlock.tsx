@@ -33,11 +33,6 @@ interface Props {
   isAuthenticated: boolean;
   hasPurchased: boolean;
   isCreator: boolean;
-  /** Materials attached to sessions (count only). The line renders ONLY
-   *  when true, and "released as you go" states the time-bound design on
-   *  the marketing page itself — added value, never a downloadable
-   *  program. */
-  materialsCount?: number;
 }
 
 function formatPrice(cents: number, currency: string): string {
@@ -65,7 +60,6 @@ export function PublicCommitBlock({
   isAuthenticated,
   hasPurchased,
   isCreator,
-  materialsCount = 0,
 }: Props) {
   const priceLabel = formatPrice(priceCents, currency);
 
@@ -104,23 +98,6 @@ export function PublicCommitBlock({
           focused experts.
         </p>
 
-        {materialsCount > 0 && (
-          <p
-            className="text-[12.5px] font-bold font-headline inline-flex items-center gap-2 px-4 py-2 rounded-full mb-8 -mt-4"
-            style={{
-              color: "#0891b2",
-              backgroundColor: "rgba(8,145,178,0.07)",
-              border: "1px solid rgba(8,145,178,0.18)",
-            }}
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-              <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" />
-              <path d="M14 3v5h5" />
-            </svg>
-            Includes {materialsCount} {materialsCount === 1 ? "guide" : "guides & templates"} from
-            your experts, released as you go
-          </p>
-        )}
 
         {/* Spots-left urgency badge — bundle 4.1, only when cap is set
             and there are few enough remaining for urgency to matter. */}
@@ -187,11 +164,6 @@ function SecondCTA({
   isAuthenticated: boolean;
   hasPurchased: boolean;
   isCreator: boolean;
-  /** Materials attached to sessions (count only). The line renders ONLY
-   *  when true, and "released as you go" states the time-bound design on
-   *  the marketing page itself — added value, never a downloadable
-   *  program. */
-  materialsCount?: number;
 }) {
   if (isCreator) {
     return (
