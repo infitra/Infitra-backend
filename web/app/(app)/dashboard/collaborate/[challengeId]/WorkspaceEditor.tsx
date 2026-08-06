@@ -32,6 +32,8 @@ import {
   type WeeklyFocusEntry,
 } from "./ProgramRhythmSection";
 import { SaveStatusPill } from "./SaveStatusPill";
+import { SessionMaterials, type MaterialRow } from "./SessionMaterials";
+import { createClient } from "@/lib/supabase/client";
 import { useSaveStatus } from "./useSaveStatus";
 import { useSyncedField, type ActivityRow } from "./useWorkspaceRealtime";
 import { SectionAttribution } from "./SectionAttribution";
@@ -312,6 +314,21 @@ export function WorkspaceEditor({
   }>({ title: "", startTime: "", duration: "60", imageUrl: null, description: "" });
   const [savingSession, setSavingSession] = useState(false);
   const [openCohostPicker, setOpenCohostPicker] = useState<string | null>(null);
+
+  // Experience materials (Phase 2): one RPC load for every session card's
+  // strip; each strip mutates via Client+RLS then asks for a refetch.
+  const [materials, setMaterials] = useState<MaterialRow[]>([]);
+  async function loadMaterials() {
+    const supabase = createClient();
+    const { data } = await supabase.rpc("load_challenge_materials", {
+      p_challenge_id: challenge.id,
+    });
+    if (Array.isArray(data)) setMaterials(data as MaterialRow[]);
+  }
+  useEffect(() => {
+    loadMaterials();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [challenge.id]);
   const [addingCohostFor, setAddingCohostFor] = useState<string | null>(null);
 
   // ── Contract / signing state ──
@@ -1894,6 +1911,15 @@ export function WorkspaceEditor({
             </button>
           )}
         </div>
+
+        {/* MATERIALS — the strip teaches the model: files belong to live
+            sessions, released on the session's clock. */}
+        <SessionMaterials
+          challengeId={challenge.id}
+          sessionId={s.id}
+          materials={materials.filter((m) => m.session_id === s.id)}
+          onChanged={loadMaterials}
+        />
       </div>
     );
   }
