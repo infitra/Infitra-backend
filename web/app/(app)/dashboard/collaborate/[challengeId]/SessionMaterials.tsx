@@ -65,6 +65,41 @@ function sanitizeFileName(name: string): string {
   return name.replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/-+/g, "-").slice(-80);
 }
 
+/**
+ * The sheet's working draft lives OUTSIDE React. Both rooms (workspace and
+ * space) have realtime machinery that can remount arbitrary subtrees, and
+ * hoisting the modal state helped but did not fully kill the vanish (the
+ * founder lost a selected PDF twice). A module singleton survives ANY
+ * unmount, whatever its cause: the opener rehydrates the open state via
+ * restoreSheetDraft(), and the sheet rehydrates its fields. Cleared on
+ * save, or when the user closes it on purpose.
+ */
+interface SheetDraft {
+  challengeId: string;
+  sessionId: string;
+  existing: MaterialRow | null;
+  file: File | null;
+  title: string;
+  note: string;
+  timing: MaterialRow["timing"];
+}
+let sheetDraft: SheetDraft | null = null;
+
+/** Called by the openers' lazy state init: if a draft is alive for this
+ *  experience, the sheet should be open. */
+export function restoreSheetDraft(
+  challengeId: string,
+): { sessionId: string; existing: MaterialRow | null } | null {
+  if (sheetDraft && sheetDraft.challengeId === challengeId) {
+    return { sessionId: sheetDraft.sessionId, existing: sheetDraft.existing };
+  }
+  return null;
+}
+
+export function clearSheetDraft() {
+  sheetDraft = null;
+}
+
 const FILE_GLYPH = (
   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
     <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" />
@@ -194,12 +229,27 @@ export function MaterialSheet({
   useEffect(() => setMounted(true), []);
 
   const fileRef = useRef<HTMLInputElement>(null);
-  const [file, setFile] = useState<File | null>(null);
-  const [title, setTitle] = useState(existing?.title ?? "");
-  const [note, setNote] = useState(existing?.note ?? "");
-  const [timing, setTiming] = useState<MaterialRow["timing"]>(existing?.timing ?? "after");
+  // Hydrate from the module draft when it matches this sheet (a remount mid
+  // work), otherwise start fresh and claim the draft slot.
+  const matching =
+    sheetDraft &&
+    sheetDraft.challengeId === challengeId &&
+    sheetDraft.sessionId === sessionId &&
+    (sheetDraft.existing?.id ?? null) === (existing?.id ?? null)
+      ? sheetDraft
+      : null;
+  const [file, setFile] = useState<File | null>(matching?.file ?? null);
+  const [title, setTitle] = useState(matching?.title ?? existing?.title ?? "");
+  const [note, setNote] = useState(matching?.note ?? existing?.note ?? "");
+  const [timing, setTiming] = useState<MaterialRow["timing"]>(matching?.timing ?? existing?.timing ?? "after");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Write-through: every field change lands in the module draft, so the
+  // next mount (if a remount strikes) restores exactly this state.
+  useEffect(() => {
+    sheetDraft = { challengeId, sessionId, existing, file, title, note, timing };
+  }, [challengeId, sessionId, existing, file, title, note, timing]);
 
   function pickFile(f: File | undefined | null) {
     if (!f) return;
@@ -228,6 +278,9 @@ export function MaterialSheet({
     }
     setBusy(true);
     setError(null);
+    // Clear the draft NOW: if a remount strikes mid-upload the sheet must
+    // not reopen and invite a duplicate submit.
+    clearSheetDraft();
     const supabase = createClient();
 
     try {
@@ -277,6 +330,11 @@ export function MaterialSheet({
 
   if (!mounted) return null;
 
+  const close = () => {
+    clearSheetDraft();
+    onClose();
+  };
+
   const inputStyle: React.CSSProperties = {
     border: "1px solid rgba(15,34,41,0.14)",
     color: INK,
@@ -287,7 +345,7 @@ export function MaterialSheet({
     <div
       className="fixed inset-0 z-[110] flex items-center justify-center p-4"
       style={{ backgroundColor: "rgba(15,34,41,0.45)" }}
-      onClick={onClose}
+      onClick={close}
       role="dialog"
       aria-modal="true"
       aria-label={existing ? "Edit material" : "Attach material"}
@@ -417,7 +475,7 @@ export function MaterialSheet({
             </button>
             <button
               type="button"
-              onClick={onClose}
+              onClick={close}
               disabled={busy}
               className="px-3 py-2.5 text-xs font-bold font-headline disabled:opacity-40"
               style={{ color: "#94a3b8" }}

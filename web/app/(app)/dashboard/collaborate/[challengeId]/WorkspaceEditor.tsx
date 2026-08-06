@@ -32,7 +32,7 @@ import {
   type WeeklyFocusEntry,
 } from "./ProgramRhythmSection";
 import { SaveStatusPill } from "./SaveStatusPill";
-import { SessionMaterials, MaterialSheet, type MaterialRow } from "./SessionMaterials";
+import { SessionMaterials, MaterialSheet, restoreSheetDraft, type MaterialRow } from "./SessionMaterials";
 import { createClient } from "@/lib/supabase/client";
 import { useSaveStatus } from "./useSaveStatus";
 import { useSyncedField, type ActivityRow } from "./useWorkspaceRealtime";
@@ -321,7 +321,11 @@ export function WorkspaceEditor({
   // The sheet's state lives HERE, not in the card: the realtime refetch
   // reseeds the sessions slice and remounts every card subtree, which was
   // silently closing the sheet a few seconds after opening it.
-  const [materialSheet, setMaterialSheet] = useState<{ sessionId: string; existing: MaterialRow | null } | null>(null);
+  const [materialSheet, setMaterialSheet] = useState<{ sessionId: string; existing: MaterialRow | null } | null>(
+    // A live draft means the sheet was open when something remounted this
+    // tree — reopen it with the draft's state instead of losing the work.
+    () => restoreSheetDraft(challenge.id),
+  );
   async function loadMaterials() {
     const supabase = createClient();
     const { data } = await supabase.rpc("load_challenge_materials", {

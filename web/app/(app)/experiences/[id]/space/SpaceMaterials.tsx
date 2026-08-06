@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { MaterialSheet, type MaterialRow } from "@/app/(app)/dashboard/collaborate/[challengeId]/SessionMaterials";
+import { MaterialSheet, restoreSheetDraft, type MaterialRow } from "@/app/(app)/dashboard/collaborate/[challengeId]/SessionMaterials";
 import { useExperienceSpaceStore } from "@/lib/experienceSpace/StoreProvider";
 
 /**
@@ -58,7 +58,9 @@ export function SpaceMaterialsProvider({
   const isCreator = useExperienceSpaceStore((s) => s.isCreator);
   const experience = useExperienceSpaceStore((s) => s.experience);
   const [materials, setMaterials] = useState<MaterialRow[]>(initial);
-  const [sheet, setSheet] = useState<{ sessionId: string; existing: MaterialRow | null } | null>(null);
+  const [sheet, setSheet] = useState<{ sessionId: string; existing: MaterialRow | null } | null>(
+    () => restoreSheetDraft(experience.id),
+  );
 
   async function refetch() {
     const supabase = createClient();
