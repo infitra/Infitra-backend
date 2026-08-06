@@ -1,0 +1,30 @@
+-- Experience materials Phase 1 (2026-08-03). Applied to production as
+-- experience_materials_foundation; kept for the repo record.
+--
+-- THE LOCKED MODEL (founder-confirmed after two design rounds):
+--   Materials are the preparation for or the residue of LIVE MOMENTS.
+--   ONE anchor: a session. A material cannot exist without a live moment
+--   to belong to — the no-library rule enforced structurally.
+--   ONE choice: timing — before_24h | before_1w | after. The 1-week lead
+--   exists for real preparation (food-diary baselines, equipment).
+--   Release is COMPUTED from the session clock (before: start - lead;
+--   after: ended_at, fallback start + duration). Never stored, never
+--   drifts. No expiry. NO completion bundle ever (the ending block
+--   belongs to next-run promotion; re-enroller access to earlier runs is
+--   folded into the continuation guidance pass).
+--
+-- Infrastructure:
+--   - private bucket experience-materials (20 MB; pdf/jpeg/png/webp/docx/
+--     xlsx), paths {challenge_id}/{material_id}/{filename}
+--   - storage RLS parsed from path: experts write, tribe reads (RLS SELECT
+--     is what lets clients mint signed URLs themselves)
+--   - app_challenge_material: session_id NOT NULL ON DELETE CASCADE,
+--     trigger enforces session-belongs-to-challenge + 30-material ceiling
+--   - table RLS: Client + RLS mutation surface (creator content class)
+--   - load_challenge_materials(uuid): experts see all incl. paths; members
+--     see all metadata, paths only once released; outsiders [].
+--
+-- Verified live: Alex insert via RLS, released/locked computation on a
+-- future session, Tim's member view (locked = no path), Roger (outsider)
+-- gets [] + zero direct rows, member insert blocked, cross-experience
+-- anchor rejected. Probe rows removed.
