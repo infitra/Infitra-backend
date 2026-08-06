@@ -1,0 +1,22 @@
+-- Materials Phase 4 (2026-08-06). Applied as count_challenge_materials;
+-- kept for the repo record.
+--
+-- count_challenge_materials(uuid): the buyer page's added-value line needs
+-- a COUNT and nothing else — no titles, files or release dates leak to the
+-- public page. Anon gets counts only for PUBLISHED experiences; an
+-- experience's own experts also get their draft's count (the preview
+-- page). Granted to anon + authenticated.
+--
+-- Verified live: anon on the Post-Partum draft -> 0; Alex (owner) on the
+-- same draft -> 3.
+--
+-- The rest of Phase 4 is frontend/action code (same deploy):
+-- - PublicCommitBlock renders "Includes N guides & templates from your
+--   experts, released as you go" ONLY when N > 0 — the line advertises the
+--   added value AND the time-bound design in the same breath.
+-- - createContinuationDraft copies materials with the design: the RPC's
+--   copied sessions carry continued_from_session_id, which is the old->new
+--   mapping; storage objects are COPIED to the new challenge's path (never
+--   referenced across challenges — storage RLS scopes reads per challenge
+--   and every experience stays self-contained), storage-first, row only
+--   after the copy succeeds, best-effort per material.

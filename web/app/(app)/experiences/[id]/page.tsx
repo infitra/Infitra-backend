@@ -255,6 +255,12 @@ export default async function ChallengePage({
   // inline cast made every lookup undefined, so the chips never showed.
   const topicsByCreator = topicOwnershipRecord(buyerView.topic_ownership);
 
+  // Materials count for the commit block — renders only when > 0.
+  const { data: materialsCountRaw } = await supabase.rpc("count_challenge_materials", {
+    p_challenge_id: id,
+  });
+  const materialsCount = typeof materialsCountRaw === "number" ? materialsCountRaw : 0;
+
   return (
     <>
       {/* Chrome — auth-aware:
@@ -409,6 +415,7 @@ export default async function ChallengePage({
         />
 
         <PublicCommitBlock
+          materialsCount={materialsCount}
           challengeId={id}
           spaceId={spaceId}
           priceCents={buyerView.price_cents}

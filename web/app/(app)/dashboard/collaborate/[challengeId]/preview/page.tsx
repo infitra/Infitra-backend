@@ -73,6 +73,12 @@ export default async function PreviewPage({
       description: c.description,
     });
 
+  // Materials count for the commit block — renders only when > 0.
+  const { data: materialsCountRaw } = await supabase.rpc("count_challenge_materials", {
+    p_challenge_id: challengeId,
+  });
+  const materialsCount = typeof materialsCountRaw === "number" ? materialsCountRaw : 0;
+
   return (
     <>
       <header className="px-6 lg:px-12 pt-6 lg:pt-10 pb-8 text-center">
@@ -133,6 +139,7 @@ export default async function PreviewPage({
             saw the final CTA their buyers get before pulling the trigger.
             isCreator renders the preview chip instead of a live buy button. */}
         <PublicCommitBlock
+          materialsCount={materialsCount}
           challengeId={challengeId}
           spaceId={null}
           priceCents={c.price_cents}

@@ -126,6 +126,68 @@ export async function createContinuationDraft(sourceChallengeId: string) {
   });
   if (error) throw new Error(error.message);
 
+  // Materials carry over WITH the design (Phase 4): the RPC copied the
+  // sessions; each new session records its origin in
+  // continued_from_session_id, which is exactly the mapping needed to
+  // re-anchor the source's materials. Storage objects are COPIED to the new
+  // challenge's path (never referenced across challenges — storage RLS
+  // scopes reads per challenge, and every experience stays self-contained).
+  // Storage-first per material, row only after the copy succeeds; failures
+  // skip that material rather than blocking the draft (materials are
+  // additive, the expert can re-attach).
+  try {
+    const [{ data: newSessionLinks }, { data: srcMaterials }] = await Promise.all([
+      supabase
+        .from("app_challenge_session")
+        .select("session_id, app_session(id, continued_from_session_id)")
+        .eq("challenge_id", newId as string),
+      supabase
+        .from("app_challenge_material")
+        .select("*")
+        .eq("challenge_id", sourceChallengeId),
+    ]);
+
+    const newBySource = new Map<string, string>();
+    for (const link of (newSessionLinks ?? []) as Array<{
+      app_session: { id: string; continued_from_session_id: string | null } | Array<{ id: string; continued_from_session_id: string | null }> | null;
+    }>) {
+      const sess = Array.isArray(link.app_session) ? link.app_session[0] : link.app_session;
+      if (sess?.continued_from_session_id) newBySource.set(sess.continued_from_session_id, sess.id);
+    }
+
+    for (const m of (srcMaterials ?? []) as Array<{
+      id: string; session_id: string; timing: string; title: string; note: string | null;
+      storage_path: string; file_name: string; file_size_bytes: number; mime_type: string;
+    }>) {
+      const newSessionId = newBySource.get(m.session_id);
+      if (!newSessionId) continue;
+      const newMaterialId = crypto.randomUUID();
+      const fileLeaf = m.storage_path.split("/").pop() ?? m.file_name;
+      const newPath = `${newId}/${newMaterialId}/${fileLeaf}`;
+      const { error: copyErr } = await supabase.storage
+        .from("experience-materials")
+        .copy(m.storage_path, newPath);
+      if (copyErr) continue;
+      const { error: insErr } = await supabase.from("app_challenge_material").insert({
+        id: newMaterialId,
+        challenge_id: newId as string,
+        session_id: newSessionId,
+        timing: m.timing,
+        title: m.title,
+        note: m.note,
+        storage_path: newPath,
+        file_name: m.file_name,
+        file_size_bytes: m.file_size_bytes,
+        mime_type: m.mime_type,
+        uploaded_by: user.id,
+      });
+      if (insErr) await supabase.storage.from("experience-materials").remove([newPath]);
+    }
+  } catch {
+    // Best-effort: the draft exists either way; the workspace shows exactly
+    // which sessions carry materials.
+  }
+
   redirect(`/dashboard/collaborate/${newId}`);
 }
 
