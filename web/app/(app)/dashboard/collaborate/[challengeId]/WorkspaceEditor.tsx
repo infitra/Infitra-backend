@@ -32,7 +32,7 @@ import {
   type WeeklyFocusEntry,
 } from "./ProgramRhythmSection";
 import { SaveStatusPill } from "./SaveStatusPill";
-import { SessionMaterials, type MaterialRow } from "./SessionMaterials";
+import { SessionMaterials, MaterialSheet, type MaterialRow } from "./SessionMaterials";
 import { createClient } from "@/lib/supabase/client";
 import { useSaveStatus } from "./useSaveStatus";
 import { useSyncedField, type ActivityRow } from "./useWorkspaceRealtime";
@@ -318,6 +318,10 @@ export function WorkspaceEditor({
   // Experience materials (Phase 2): one RPC load for every session card's
   // strip; each strip mutates via Client+RLS then asks for a refetch.
   const [materials, setMaterials] = useState<MaterialRow[]>([]);
+  // The sheet's state lives HERE, not in the card: the realtime refetch
+  // reseeds the sessions slice and remounts every card subtree, which was
+  // silently closing the sheet a few seconds after opening it.
+  const [materialSheet, setMaterialSheet] = useState<{ sessionId: string; existing: MaterialRow | null } | null>(null);
   async function loadMaterials() {
     const supabase = createClient();
     const { data } = await supabase.rpc("load_challenge_materials", {
@@ -1746,6 +1750,16 @@ export function WorkspaceEditor({
           </div>
         </div>
       </Dialog>
+
+      {materialSheet && (
+        <MaterialSheet
+          challengeId={challenge.id}
+          sessionId={materialSheet.sessionId}
+          existing={materialSheet.existing}
+          onClose={() => setMaterialSheet(null)}
+          onSaved={() => { setMaterialSheet(null); loadMaterials(); }}
+        />
+      )}
     </div>
   );
 
@@ -1915,9 +1929,8 @@ export function WorkspaceEditor({
         {/* MATERIALS — the strip teaches the model: files belong to live
             sessions, released on the session's clock. */}
         <SessionMaterials
-          challengeId={challenge.id}
-          sessionId={s.id}
           materials={materials.filter((m) => m.session_id === s.id)}
+          onOpenSheet={(existing) => setMaterialSheet({ sessionId: s.id, existing })}
           onChanged={loadMaterials}
         />
       </div>

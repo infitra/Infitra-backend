@@ -73,18 +73,16 @@ const FILE_GLYPH = (
 );
 
 export function SessionMaterials({
-  challengeId,
-  sessionId,
   materials,
+  onOpenSheet,
   onChanged,
 }: {
-  challengeId: string;
-  sessionId: string;
   materials: MaterialRow[];
+  /** Opens the TOP-LEVEL sheet (state must live above the session cards:
+   *  the realtime refetch remounts them and would kill a local modal). */
+  onOpenSheet: (existing: MaterialRow | null) => void;
   onChanged: () => void;
 }) {
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const [editing, setEditing] = useState<MaterialRow | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function download(m: MaterialRow) {
@@ -141,7 +139,7 @@ export function SessionMaterials({
               </button>
               <button
                 type="button"
-                onClick={() => { setEditing(m); setSheetOpen(true); }}
+                onClick={() => onOpenSheet(m)}
                 className="p-0.5 text-[#94a3b8] hover:text-[#0F2229]"
                 title="Edit"
               >
@@ -165,7 +163,7 @@ export function SessionMaterials({
 
         <button
           type="button"
-          onClick={() => { setEditing(null); setSheetOpen(true); }}
+          onClick={() => onOpenSheet(null)}
           className="text-[11px] font-bold font-headline cursor-pointer"
           style={{ color: ORANGE }}
         >
@@ -173,23 +171,13 @@ export function SessionMaterials({
         </button>
       </div>
       {error && <p className="text-[10px] mt-1" style={{ color: "#dc2626" }}>{error}</p>}
-
-      {sheetOpen && (
-        <MaterialSheet
-          challengeId={challengeId}
-          sessionId={sessionId}
-          existing={editing}
-          onClose={() => setSheetOpen(false)}
-          onSaved={() => { setSheetOpen(false); onChanged(); }}
-        />
-      )}
     </div>
   );
 }
 
 // ─── The attach / edit sheet ─────────────────────────────────
 
-function MaterialSheet({
+export function MaterialSheet({
   challengeId,
   sessionId,
   existing,
