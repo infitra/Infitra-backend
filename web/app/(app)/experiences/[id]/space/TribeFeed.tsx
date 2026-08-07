@@ -24,8 +24,7 @@ import { sessionTeamLabel } from "@/lib/experienceSpace/store";
 import { SessionDetailModal } from "@/app/components/SessionDetailModal";
 import { Avatar } from "./Avatar";
 import { ProfileTrigger } from "@/app/components/ProfileModal";
-import { useSpaceMaterials, MaterialContextCard } from "./SpaceMaterials";
-import type { MaterialRow } from "@/app/(app)/dashboard/collaborate/[challengeId]/SessionMaterials";
+import { useSpaceMaterials, PostMaterialChips } from "./SpaceMaterials";
 
 interface CoachAnswer { authorId: string; body: string; createdAt: string }
 
@@ -36,6 +35,9 @@ interface FeedPost {
   kind: string;
   contextType: string | null;
   contextId: string | null;
+  /** Materials the author attached — always a subset of contextId's own
+   *  session (DB-enforced), so they nest inside the session card. */
+  materialIds: string[];
   directedTo: string[];
   mediaUrl: string | null;
   likeCount: number;
@@ -50,6 +52,7 @@ interface FeedPost {
 interface RawRow {
   id: string; author_id: string; body: string; kind?: string;
   context_type?: string | null;
+  metadata?: { material_ids?: string[] } | null;
   context_id?: string | null; directed_to?: string[] | null; media_url?: string | null;
   like_count?: number; comment_count?: number; liked_by_me?: boolean;
   coach_answer?: { author_id: string; body: string; created_at: string } | null;
@@ -116,8 +119,10 @@ export function TribeFeed({
   // state. The tagged co-host reuses askId (it rides on directed_to, like a
   // question — but a tagged Share is silent context, never a notified question).
   const [contextSessionId, setContextSessionId] = useState<string | null>(null);
-  // One context per post: picking a material clears the session and back.
-  const [contextMaterialId, setContextMaterialId] = useState<string | null>(null);
+  // Materials ride WITH the session (never instead of it): a subset of the
+  // chosen session's own files. Cross-session mixing is impossible by
+  // construction here and rejected by the RPC.
+  const [contextMaterialIds, setContextMaterialIds] = useState<string[]>([]);
   const [showContext, setShowContext] = useState(false);
   const [mediaUrl, setMediaUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -152,7 +157,7 @@ export function TribeFeed({
     const k: ComposeKind = !isCreator && composeIntent === "question" ? "question" : "talk";
     setKind(k);
     if (k === "question" && creators.length === 1) setAskId(creators[0].id);
-    else { setAskId(null); setContextSessionId(null); setContextMaterialId(null); setShowContext(false); }
+    else { setAskId(null); setContextSessionId(null); setContextMaterialIds([]); setShowContext(false); }
     setComposeIntent(null);
   }, [composeIntent, creators, setComposeIntent, isCreator]);
 
@@ -184,7 +189,8 @@ export function TribeFeed({
 
   const toPost = useCallback((r: RawRow): FeedPost => ({
     id: r.id, author_id: r.author_id, body: r.body, kind: r.kind ?? "talk",
-    contextType: r.context_type ?? null, contextId: r.context_id ?? null, directedTo: r.directed_to ?? [], mediaUrl: r.media_url ?? null,
+    contextType: r.context_type ?? null, contextId: r.context_id ?? null,
+    materialIds: Array.isArray(r.metadata?.material_ids) ? r.metadata!.material_ids! : [], directedTo: r.directed_to ?? [], mediaUrl: r.media_url ?? null,
     likeCount: r.like_count ?? 0, commentCount: r.comment_count ?? 0, likedByMe: r.liked_by_me ?? false,
     coachAnswer: r.coach_answer ? { authorId: r.coach_answer.author_id, body: r.coach_answer.body, createdAt: r.coach_answer.created_at } : null,
     created_at: r.created_at,
@@ -301,17 +307,18 @@ export function TribeFeed({
     const text = body.trim();
     const isQuestion = kind === "question";
     const media = mediaUrl;
-    // A creator's Share can reference a session or a MATERIAL (Phase 5) —
-    // one context per post. Participants' Shares carry no context.
+    // A creator's Share references ONE session, optionally carrying that
+    // session's own materials. Participants' Shares carry no context.
     const ctxSession = !isQuestion && isCreator ? contextSessionId : null;
-    const ctxMaterial = !isQuestion && isCreator && !ctxSession ? contextMaterialId : null;
+    const ctxMaterials = ctxSession ? contextMaterialIds : [];
     setPosting(true); setError(null);
     const result = isQuestion
       ? await createChallengePost(spaceId, text, { kind: "question", directedTo: [askId!], mediaUrl: media })
       : await createChallengePost(spaceId, text, {
           kind: "talk", mediaUrl: media,
-          contextType: ctxSession ? "session" : ctxMaterial ? "material" : undefined,
-          contextId: ctxSession ?? ctxMaterial ?? undefined,
+          contextType: ctxSession ? "session" : undefined,
+          contextId: ctxSession ?? undefined,
+          metadata: ctxMaterials.length > 0 ? { material_ids: ctxMaterials } : undefined,
         });
     if (result?.error) { setError(result.error); setPosting(false); return; }
     const postId = (result as { postId?: string })?.postId;
@@ -319,15 +326,15 @@ export function TribeFeed({
       profRef.current[viewer.id] = { name: viewer.name, avatar: viewer.avatar };
       const optimistic: FeedPost = {
         id: postId, author_id: viewer.id, body: text, kind: isQuestion ? "question" : "talk",
-        contextType: ctxSession ? "session" : ctxMaterial ? "material" : null,
-        contextId: ctxSession ?? ctxMaterial, directedTo: isQuestion ? [askId!] : [], mediaUrl: media,
+        contextType: ctxSession ? "session" : null, contextId: ctxSession,
+        materialIds: ctxMaterials, directedTo: isQuestion ? [askId!] : [], mediaUrl: media,
         likeCount: 0, commentCount: 0, likedByMe: false, coachAnswer: null,
         created_at: new Date().toISOString(), authorName: viewer.name, authorAvatar: viewer.avatar,
       };
       setPosts((prev) => (prev.some((p) => p.id === postId) ? prev : [optimistic, ...prev]));
     }
     setBody(""); setKind(isCreator ? "talk" : null); setAskId(null);
-    setContextSessionId(null); setContextMaterialId(null); setShowContext(false); setMediaUrl(null); setPosting(false);
+    setContextSessionId(null); setContextMaterialIds([]); setShowContext(false); setMediaUrl(null); setPosting(false);
   }
 
   // ── Likes ──
@@ -431,18 +438,24 @@ export function TribeFeed({
                   className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[12px] font-black font-headline transition-colors"
                   style={showContext ? { color: "#fff", backgroundColor: CYAN, boxShadow: `0 2px 8px ${CYAN}55` } : { color: "#475569", backgroundColor: "rgba(15,34,41,0.05)" }}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-                  {contextSessionId ? "Session added" : contextMaterialId ? "Material added" : "Add context"}
+                  {contextSessionId ? (contextMaterialIds.length > 0 ? `Session + ${contextMaterialIds.length} ${contextMaterialIds.length === 1 ? "file" : "files"}` : "Session added") : "Add context"}
                 </button>
               </div>
 
-              {(contextSessionId || contextMaterialId) && (
+              {contextSessionId && (
                 <div className="mt-2.5 flex flex-wrap items-center gap-2">
-                  {contextSessionId && (
-                    <ContextChip color={CYAN} onRemove={() => setContextSessionId(null)}>On {sessionById.get(contextSessionId)?.title ?? "a session"}</ContextChip>
-                  )}
-                  {contextMaterialId && (
-                    <ContextChip color={ORANGE} onRemove={() => setContextMaterialId(null)}>With {materialById.get(contextMaterialId)?.title ?? "a material"}</ContextChip>
-                  )}
+                  <ContextChip color={CYAN} onRemove={() => { setContextSessionId(null); setContextMaterialIds([]); }}>
+                    On {sessionById.get(contextSessionId)?.title ?? "a session"}
+                  </ContextChip>
+                  {contextMaterialIds.map((mid) => (
+                    <ContextChip
+                      key={mid}
+                      color={materialById.get(mid)?.timing === "after" ? CYAN : ORANGE}
+                      onRemove={() => setContextMaterialIds((prev) => prev.filter((x) => x !== mid))}
+                    >
+                      {materialById.get(mid)?.title ?? "a material"}
+                    </ContextChip>
+                  ))}
                 </div>
               )}
 
@@ -454,7 +467,7 @@ export function TribeFeed({
                       {sessions.map((s) => {
                         const active = contextSessionId === s.id;
                         return (
-                          <button key={s.id} type="button" onClick={() => { setContextSessionId(active ? null : s.id); if (!active) setContextMaterialId(null); }}
+                          <button key={s.id} type="button" onClick={() => { setContextSessionId(active ? null : s.id); setContextMaterialIds([]); }}
                             className="shrink-0 w-40 rounded-xl overflow-hidden text-left transition-shadow"
                             style={{ backgroundColor: "#FFFFFF", boxShadow: active ? `0 0 0 2px ${CYAN}` : "0 0 0 1px rgba(15,34,41,0.08)" }}>
                             <div className="relative w-full aspect-[5/3]" style={{ backgroundColor: "#ECE7DD" }}>
@@ -481,37 +494,64 @@ export function TribeFeed({
                     <p className="text-[12px] font-bold font-headline" style={{ color: "#94a3b8" }}>No sessions to reference yet.</p>
                   )}
 
-                  {/* Materials — Phase 5. Same one-context rule: picking a
-                      material clears the session. The chip vocabulary
-                      matches the journey: orange = before, cyan = after. */}
-                  {spaceMaterials.length > 0 && (
-                    <>
-                      <p className="text-[10px] uppercase tracking-[0.16em] font-headline mt-3 mb-2" style={{ color: "#94a3b8", fontWeight: 800 }}>Reference a material</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {spaceMaterials.map((m) => {
-                          const mActive = contextMaterialId === m.id;
-                          const mAccent = m.timing === "after" ? CYAN : ORANGE;
-                          return (
-                            <button
-                              key={m.id}
-                              type="button"
-                              onClick={() => { setContextMaterialId(mActive ? null : m.id); if (!mActive) setContextSessionId(null); }}
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] font-bold font-headline transition-colors"
-                              style={mActive
-                                ? { color: "#fff", backgroundColor: mAccent, boxShadow: `0 2px 8px ${mAccent}55` }
-                                : { color: "#475569", backgroundColor: `${mAccent}0D`, border: `1px solid ${mAccent}30` }}
-                            >
-                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" />
-                                <path d="M14 3v5h5" />
-                              </svg>
-                              <span className="truncate max-w-[160px]">{m.title}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </>
-                  )}
+                  {/* Materials — Phase 5b. Scoped to the CHOSEN session: a
+                      material cannot exist outside its session, so the
+                      session is picked first and its files ride along.
+                      Multi-select, none selected by default. */}
+                  {contextSessionId && (() => {
+                    const sessionMaterials = spaceMaterials.filter((m) => m.session_id === contextSessionId);
+                    if (sessionMaterials.length === 0) return null;
+                    return (
+                      <>
+                        <p className="text-[10px] uppercase tracking-[0.16em] font-headline mt-3.5 mb-2" style={{ color: "#94a3b8", fontWeight: 800 }}>
+                          Include its materials
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {sessionMaterials.map((m) => {
+                            const on = contextMaterialIds.includes(m.id);
+                            const mAccent = m.timing === "after" ? CYAN : ORANGE;
+                            return (
+                              <button
+                                key={m.id}
+                                type="button"
+                                onClick={() => setContextMaterialIds((prev) =>
+                                  prev.includes(m.id) ? prev.filter((x) => x !== m.id) : [...prev, m.id],
+                                )}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] font-bold font-headline transition-colors"
+                                style={on
+                                  ? { color: "#fff", backgroundColor: mAccent, boxShadow: `0 2px 8px ${mAccent}55` }
+                                  : { color: "#475569", backgroundColor: `${mAccent}0D`, border: `1px solid ${mAccent}30` }}
+                              >
+                                {on ? (
+                                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                                ) : (
+                                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" /><path d="M14 3v5h5" />
+                                  </svg>
+                                )}
+                                <span className="truncate max-w-[160px]">{m.title}</span>
+                                {/* Release state, so an expert never attaches a
+                                    file without realising the tribe cannot
+                                    open it yet. */}
+                                {!m.released && (
+                                  <span
+                                    className="inline-flex items-center gap-0.5 text-[9px] whitespace-nowrap"
+                                    style={{ color: on ? "rgba(255,255,255,0.8)" : "#94a3b8" }}
+                                    suppressHydrationWarning
+                                  >
+                                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
+                                      <rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" />
+                                    </svg>
+                                    not yet released
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               )}
             </div>
@@ -642,8 +682,8 @@ export function TribeFeed({
                 peopleById={peopleById}
                 directedCreator={p.kind === "question" ? creatorById.get(p.directedTo[0]) : undefined}
                 reflectsOn={p.kind === "reflection" && p.contextId ? sessionById.get(p.contextId)?.title ?? null : null}
-                contextSession={p.kind === "talk" && p.contextType !== "material" && p.contextId ? sessionById.get(p.contextId) ?? null : null}
-                contextMaterial={p.kind === "talk" && p.contextType === "material" && p.contextId ? materialById.get(p.contextId) ?? null : null}
+                contextSession={p.kind === "talk" && p.contextId ? sessionById.get(p.contextId) ?? null : null}
+                contextMaterialIds={p.kind === "talk" ? p.materialIds : []}
                 introPrompt={p.kind === "intro" ? introPrompt : null}
                 onLike={() => toggleLike(p)}
                 threadOpen={openPosts.has(p.id)}
@@ -672,7 +712,7 @@ export function TribeFeed({
 }
 
 function PostCard({
-  post, viewer, creatorById, peopleById, directedCreator, reflectsOn, contextSession, contextMaterial, introPrompt,
+  post, viewer, creatorById, peopleById, directedCreator, reflectsOn, contextSession, contextMaterialIds, introPrompt,
   onLike, threadOpen, comments, onToggleThread, onSubmitComment,
 }: {
   post: FeedPost;
@@ -682,7 +722,7 @@ function PostCard({
   directedCreator?: SpaceCreator;
   reflectsOn?: string | null;
   contextSession?: SpaceSession | null;
-  contextMaterial?: MaterialRow | null;
+  contextMaterialIds?: string[];
   introPrompt?: string | null;
   onLike: () => void;
   threadOpen: boolean;
@@ -744,14 +784,11 @@ function PostCard({
           )}
           <p className="text-sm leading-relaxed whitespace-pre-wrap mt-3" style={{ color: "#334155" }}>{post.body}</p>
 
-          {/* Referenced session — renders below the words, like an image embed */}
+          {/* Referenced moment — the session card, carrying the files that
+              came with it. A material cannot exist outside its session, so
+              the session is the container and its materials nest inside. */}
           {post.kind === "talk" && contextSession && (
-            <SessionContextCard session={contextSession} />
-          )}
-          {/* Referenced material — same embed slot; the chip references,
-              never re-hosts: release rules keep governing the download. */}
-          {post.kind === "talk" && contextMaterial && (
-            <MaterialContextCard material={contextMaterial} />
+            <SessionContextCard session={contextSession} materialIds={contextMaterialIds ?? []} />
           )}
 
           {post.mediaUrl && (
@@ -909,7 +946,7 @@ function ContextChip({ color, onRemove, children }: { color: string; onRemove: (
 // WeekJourney agenda row (cover · when · title · host). Clicking it opens the
 // read-only session detail popup (the same modal the buyer carousel uses), so
 // it never navigates out to the standalone session pages. Fed from the store.
-function SessionContextCard({ session }: { session: SpaceSession }) {
+function SessionContextCard({ session, materialIds = [] }: { session: SpaceSession; materialIds?: string[] }) {
   const [open, setOpen] = useState(false);
   const start = new Date(session.startTime);
   const day = start.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
@@ -918,11 +955,14 @@ function SessionContextCard({ session }: { session: SpaceSession }) {
   const dur = m < 60 ? `${m} min` : m % 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${Math.floor(m / 60)}h`;
   return (
     <>
+      <div
+        className="w-full max-w-md rounded-xl overflow-hidden mt-3"
+        style={{ backgroundColor: "#FAF7F1", boxShadow: `inset 3.5px 0 0 ${CYAN}, 0 0 0 1px rgba(15,34,41,0.05)` }}
+      >
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="group w-full max-w-md text-left flex items-stretch rounded-xl overflow-hidden mt-3"
-        style={{ backgroundColor: "#FAF7F1", boxShadow: `inset 3.5px 0 0 ${CYAN}, 0 0 0 1px rgba(15,34,41,0.05)` }}
+        className="group w-full text-left flex items-stretch"
       >
         <div className="relative shrink-0 w-20 sm:w-24" style={{ backgroundColor: "#ECE7DD" }}>
           {session.imageUrl ? (
@@ -942,6 +982,8 @@ function SessionContextCard({ session }: { session: SpaceSession }) {
           </svg>
         </div>
       </button>
+      {materialIds.length > 0 && <PostMaterialChips materialIds={materialIds} />}
+      </div>
       <SessionDetailModal
         open={open}
         onClose={() => setOpen(false)}

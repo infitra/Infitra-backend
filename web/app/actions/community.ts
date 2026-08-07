@@ -25,7 +25,9 @@ export async function createChallengePost(
   options?: {
     mediaUrl?: string | null;
     kind?: "talk" | "intro" | "intro_private" | "reflection" | "question";
-    contextType?: "session" | "material" | null;
+    // Materials ride in metadata.material_ids under a SESSION context —
+    // context_type='material' was retired in Phase 5b.
+    contextType?: "session" | null;
     contextId?: string | null;
     directedTo?: string[] | null;
     metadata?: Record<string, unknown>;

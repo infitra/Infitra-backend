@@ -1,0 +1,30 @@
+-- Materials Phase 5b (2026-08-07). Applied as
+-- post_context_session_with_materials; kept for the repo record.
+--
+-- THE CORRECTION: session and material were modelled as ALTERNATIVES, but
+-- app_challenge_material.session_id is NOT NULL — a material cannot exist
+-- outside a session, so "reference a material" was always "reference a
+-- session, and point at one of its files". One shape now:
+--   context_type='session', context_id=<session>,
+--   metadata.material_ids = [subset of THAT session's materials]
+-- Multi-material solved, and the relationship is portrayed structurally
+-- (files nest inside the session card) instead of by convention.
+--
+-- NO CROSS-SESSION MIXING (founder-confirmed): a post gathering files from
+-- five sessions is a library post, the exact thing the materials model
+-- exists to make unrepresentable. Constraining a post to ONE moment keeps
+-- that guarantee at the last place it could have leaked.
+--
+-- RPC validation added: material_ids must be an array, require a session
+-- context, are expert-only, capped at 10, and every id must be a material
+-- OF THAT SESSION (transitively guaranteeing the experience).
+-- context_type='material' is RETIRED (rejected as invalid).
+--
+-- BACKFILL: the 2 existing material-context posts became session-context
+-- posts carrying that material in metadata; any whose material had been
+-- deleted lost the dangling pointer. Result verified: 9 session posts, 2
+-- with material_ids, 0 material-context.
+--
+-- Guards verified live as Alex/Tim: multi-material accepted; cross-session
+-- mixing rejected; material_ids without a session rejected; retired
+-- 'material' context rejected; member attach rejected.
