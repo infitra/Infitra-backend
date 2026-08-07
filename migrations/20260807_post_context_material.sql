@@ -1,0 +1,19 @@
+-- Materials Phase 5 (2026-08-07). Applied as post_context_material; kept
+-- for the repo record.
+--
+-- Posts can reference a MATERIAL, riding the context mechanism session
+-- references already used (context_type/context_id — no new columns; the
+-- list RPC already returned context_type, the frontend just never read it).
+--
+-- HARDENING (gap found in recon): create_challenge_post never validated
+-- context ids — any post could carry an arbitrary context_id from any
+-- experience. Now: context must be complete (both fields), typed
+-- ('session' | 'material'), must BELONG to the space's experience
+-- (app_challenge_session / app_challenge_material joins), material context
+-- is talk-only, and talk-context of either type is EXPERT-only (the
+-- deliberate "Add context" affordance). Reflections keep their participant
+-- flow, now with the belongs-here check they were missing.
+--
+-- Verified live on the Reset space: Alex's material ref accepted; Tim's
+-- rejected ('only experts'); Alex's cross-experience material rejected
+-- ('does not belong'); probes cleaned.

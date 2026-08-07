@@ -25,7 +25,7 @@ export async function createChallengePost(
   options?: {
     mediaUrl?: string | null;
     kind?: "talk" | "intro" | "intro_private" | "reflection" | "question";
-    contextType?: "session" | null;
+    contextType?: "session" | "material" | null;
     contextId?: string | null;
     directedTo?: string[] | null;
     metadata?: Record<string, unknown>;

@@ -48,6 +48,12 @@ const Ctx = createContext<MaterialsCtx>({
   remove: async () => {},
 });
 
+/** Materials of this experience, for consumers outside the journey (the
+ *  feed's composer picker + reference embeds). */
+export function useSpaceMaterials(): MaterialRow[] {
+  return useContext(Ctx).materials;
+}
+
 export function SpaceMaterialsProvider({
   materials: initial,
   children,
@@ -244,5 +250,64 @@ export function SessionMaterialChips({ sessionId }: { sessionId: string }) {
         </button>
       )}
     </div>
+  );
+}
+
+
+/**
+ * MaterialContextCard — a Share's material reference, rendered below the
+ * post body in the feed (Phase 5). Mirrors SessionContextCard's embed
+ * grammar, and the chip vocabulary everywhere else: orange = before-
+ * material, cyan = after-material; locked = dashed + dimmed + the unlock
+ * moment. It REFERENCES, never re-hosts: released → the same signed-URL
+ * download as the journey chip; locked → the release rules keep governing,
+ * even in the feed.
+ */
+export function MaterialContextCard({ material }: { material: MaterialRow }) {
+  const accent = material.timing === "after" ? CYAN : ORANGE;
+  const locked = !material.released || !material.storage_path;
+
+  async function download() {
+    if (!material.storage_path) return;
+    const supabase = createClient();
+    const { data } = await supabase.storage.from(BUCKET).createSignedUrl(material.storage_path, 120);
+    if (data?.signedUrl) window.open(data.signedUrl, "_blank");
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={download}
+      disabled={locked}
+      className={`mt-3 flex items-center gap-3 rounded-xl p-3 w-full max-w-md text-left ${locked ? "" : "cursor-pointer transition-transform hover:-translate-y-0.5"}`}
+      style={{
+        backgroundColor: locked ? "rgba(255,255,255,0.6)" : `${accent}0D`,
+        border: locked ? "1.5px dashed rgba(15,34,41,0.18)" : `1px solid ${accent}33`,
+        opacity: locked ? 0.8 : 1,
+      }}
+    >
+      <span
+        className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+        style={{ backgroundColor: locked ? "rgba(15,34,41,0.05)" : `${accent}1C`, color: locked ? "#94a3b8" : accent }}
+      >
+        {locked ? LOCK_GLYPH : FILE_GLYPH}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-[10px] uppercase tracking-[0.14em] font-headline" style={{ color: locked ? "#94a3b8" : accent, fontWeight: 800 }}>
+          Material
+        </span>
+        <span className="block text-[13px] font-black font-headline truncate" style={{ color: locked ? "#64748b" : INK }}>
+          {material.title}
+        </span>
+        <span className="block text-[11px] truncate" style={{ color: "#94a3b8" }} suppressHydrationWarning>
+          {locked ? unlockLabel(material) : (material.note ?? material.file_name)}
+        </span>
+      </span>
+      {!locked && (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+          <path d="M12 3v12" /><path d="M8 11l4 4 4-4" /><path d="M5 21h14" />
+        </svg>
+      )}
+    </button>
   );
 }

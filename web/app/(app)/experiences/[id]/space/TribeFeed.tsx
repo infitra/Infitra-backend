@@ -24,6 +24,8 @@ import { sessionTeamLabel } from "@/lib/experienceSpace/store";
 import { SessionDetailModal } from "@/app/components/SessionDetailModal";
 import { Avatar } from "./Avatar";
 import { ProfileTrigger } from "@/app/components/ProfileModal";
+import { useSpaceMaterials, MaterialContextCard } from "./SpaceMaterials";
+import type { MaterialRow } from "@/app/(app)/dashboard/collaborate/[challengeId]/SessionMaterials";
 
 interface CoachAnswer { authorId: string; body: string; createdAt: string }
 
@@ -32,6 +34,7 @@ interface FeedPost {
   author_id: string;
   body: string;
   kind: string;
+  contextType: string | null;
   contextId: string | null;
   directedTo: string[];
   mediaUrl: string | null;
@@ -46,6 +49,7 @@ interface FeedPost {
 
 interface RawRow {
   id: string; author_id: string; body: string; kind?: string;
+  context_type?: string | null;
   context_id?: string | null; directed_to?: string[] | null; media_url?: string | null;
   like_count?: number; comment_count?: number; liked_by_me?: boolean;
   coach_answer?: { author_id: string; body: string; created_at: string } | null;
@@ -112,6 +116,8 @@ export function TribeFeed({
   // state. The tagged co-host reuses askId (it rides on directed_to, like a
   // question — but a tagged Share is silent context, never a notified question).
   const [contextSessionId, setContextSessionId] = useState<string | null>(null);
+  // One context per post: picking a material clears the session and back.
+  const [contextMaterialId, setContextMaterialId] = useState<string | null>(null);
   const [showContext, setShowContext] = useState(false);
   const [mediaUrl, setMediaUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -127,6 +133,8 @@ export function TribeFeed({
   const fileRef = useRef<HTMLInputElement>(null);
 
   const creatorById = useMemo(() => new Map(creators.map((c) => [c.id, c])), [creators]);
+  const spaceMaterials = useSpaceMaterials();
+  const materialById = useMemo(() => new Map(spaceMaterials.map((m) => [m.id, m])), [spaceMaterials]);
   const sessionById = useMemo(() => new Map(sessions.map((s) => [s.id, s])), [sessions]);
   // Name/avatar resolver for likers — the tribe roster (DEFINER snapshot) has
   // everyone, so even private members resolve here. Fallback "Member".
@@ -144,7 +152,7 @@ export function TribeFeed({
     const k: ComposeKind = !isCreator && composeIntent === "question" ? "question" : "talk";
     setKind(k);
     if (k === "question" && creators.length === 1) setAskId(creators[0].id);
-    else { setAskId(null); setContextSessionId(null); setShowContext(false); }
+    else { setAskId(null); setContextSessionId(null); setContextMaterialId(null); setShowContext(false); }
     setComposeIntent(null);
   }, [composeIntent, creators, setComposeIntent, isCreator]);
 
@@ -176,7 +184,7 @@ export function TribeFeed({
 
   const toPost = useCallback((r: RawRow): FeedPost => ({
     id: r.id, author_id: r.author_id, body: r.body, kind: r.kind ?? "talk",
-    contextId: r.context_id ?? null, directedTo: r.directed_to ?? [], mediaUrl: r.media_url ?? null,
+    contextType: r.context_type ?? null, contextId: r.context_id ?? null, directedTo: r.directed_to ?? [], mediaUrl: r.media_url ?? null,
     likeCount: r.like_count ?? 0, commentCount: r.comment_count ?? 0, likedByMe: r.liked_by_me ?? false,
     coachAnswer: r.coach_answer ? { authorId: r.coach_answer.author_id, body: r.coach_answer.body, createdAt: r.coach_answer.created_at } : null,
     created_at: r.created_at,
@@ -293,16 +301,17 @@ export function TribeFeed({
     const text = body.trim();
     const isQuestion = kind === "question";
     const media = mediaUrl;
-    // A creator's Share can reference a session (context_type='session').
-    // Participants' Shares carry no context.
+    // A creator's Share can reference a session or a MATERIAL (Phase 5) —
+    // one context per post. Participants' Shares carry no context.
     const ctxSession = !isQuestion && isCreator ? contextSessionId : null;
+    const ctxMaterial = !isQuestion && isCreator && !ctxSession ? contextMaterialId : null;
     setPosting(true); setError(null);
     const result = isQuestion
       ? await createChallengePost(spaceId, text, { kind: "question", directedTo: [askId!], mediaUrl: media })
       : await createChallengePost(spaceId, text, {
           kind: "talk", mediaUrl: media,
-          contextType: ctxSession ? "session" : undefined,
-          contextId: ctxSession ?? undefined,
+          contextType: ctxSession ? "session" : ctxMaterial ? "material" : undefined,
+          contextId: ctxSession ?? ctxMaterial ?? undefined,
         });
     if (result?.error) { setError(result.error); setPosting(false); return; }
     const postId = (result as { postId?: string })?.postId;
@@ -310,14 +319,15 @@ export function TribeFeed({
       profRef.current[viewer.id] = { name: viewer.name, avatar: viewer.avatar };
       const optimistic: FeedPost = {
         id: postId, author_id: viewer.id, body: text, kind: isQuestion ? "question" : "talk",
-        contextId: ctxSession, directedTo: isQuestion ? [askId!] : [], mediaUrl: media,
+        contextType: ctxSession ? "session" : ctxMaterial ? "material" : null,
+        contextId: ctxSession ?? ctxMaterial, directedTo: isQuestion ? [askId!] : [], mediaUrl: media,
         likeCount: 0, commentCount: 0, likedByMe: false, coachAnswer: null,
         created_at: new Date().toISOString(), authorName: viewer.name, authorAvatar: viewer.avatar,
       };
       setPosts((prev) => (prev.some((p) => p.id === postId) ? prev : [optimistic, ...prev]));
     }
     setBody(""); setKind(isCreator ? "talk" : null); setAskId(null);
-    setContextSessionId(null); setShowContext(false); setMediaUrl(null); setPosting(false);
+    setContextSessionId(null); setContextMaterialId(null); setShowContext(false); setMediaUrl(null); setPosting(false);
   }
 
   // ── Likes ──
@@ -421,13 +431,18 @@ export function TribeFeed({
                   className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[12px] font-black font-headline transition-colors"
                   style={showContext ? { color: "#fff", backgroundColor: CYAN, boxShadow: `0 2px 8px ${CYAN}55` } : { color: "#475569", backgroundColor: "rgba(15,34,41,0.05)" }}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
-                  {contextSessionId ? "Session added" : "Add context"}
+                  {contextSessionId ? "Session added" : contextMaterialId ? "Material added" : "Add context"}
                 </button>
               </div>
 
-              {contextSessionId && (
+              {(contextSessionId || contextMaterialId) && (
                 <div className="mt-2.5 flex flex-wrap items-center gap-2">
-                  <ContextChip color={CYAN} onRemove={() => setContextSessionId(null)}>On {sessionById.get(contextSessionId)?.title ?? "a session"}</ContextChip>
+                  {contextSessionId && (
+                    <ContextChip color={CYAN} onRemove={() => setContextSessionId(null)}>On {sessionById.get(contextSessionId)?.title ?? "a session"}</ContextChip>
+                  )}
+                  {contextMaterialId && (
+                    <ContextChip color={ORANGE} onRemove={() => setContextMaterialId(null)}>With {materialById.get(contextMaterialId)?.title ?? "a material"}</ContextChip>
+                  )}
                 </div>
               )}
 
@@ -439,7 +454,7 @@ export function TribeFeed({
                       {sessions.map((s) => {
                         const active = contextSessionId === s.id;
                         return (
-                          <button key={s.id} type="button" onClick={() => setContextSessionId(active ? null : s.id)}
+                          <button key={s.id} type="button" onClick={() => { setContextSessionId(active ? null : s.id); if (!active) setContextMaterialId(null); }}
                             className="shrink-0 w-40 rounded-xl overflow-hidden text-left transition-shadow"
                             style={{ backgroundColor: "#FFFFFF", boxShadow: active ? `0 0 0 2px ${CYAN}` : "0 0 0 1px rgba(15,34,41,0.08)" }}>
                             <div className="relative w-full aspect-[5/3]" style={{ backgroundColor: "#ECE7DD" }}>
@@ -464,6 +479,38 @@ export function TribeFeed({
                     </div>
                   ) : (
                     <p className="text-[12px] font-bold font-headline" style={{ color: "#94a3b8" }}>No sessions to reference yet.</p>
+                  )}
+
+                  {/* Materials — Phase 5. Same one-context rule: picking a
+                      material clears the session. The chip vocabulary
+                      matches the journey: orange = before, cyan = after. */}
+                  {spaceMaterials.length > 0 && (
+                    <>
+                      <p className="text-[10px] uppercase tracking-[0.16em] font-headline mt-3 mb-2" style={{ color: "#94a3b8", fontWeight: 800 }}>Reference a material</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {spaceMaterials.map((m) => {
+                          const mActive = contextMaterialId === m.id;
+                          const mAccent = m.timing === "after" ? CYAN : ORANGE;
+                          return (
+                            <button
+                              key={m.id}
+                              type="button"
+                              onClick={() => { setContextMaterialId(mActive ? null : m.id); if (!mActive) setContextSessionId(null); }}
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] font-bold font-headline transition-colors"
+                              style={mActive
+                                ? { color: "#fff", backgroundColor: mAccent, boxShadow: `0 2px 8px ${mAccent}55` }
+                                : { color: "#475569", backgroundColor: `${mAccent}0D`, border: `1px solid ${mAccent}30` }}
+                            >
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" />
+                                <path d="M14 3v5h5" />
+                              </svg>
+                              <span className="truncate max-w-[160px]">{m.title}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </>
                   )}
                 </div>
               )}
@@ -595,7 +642,8 @@ export function TribeFeed({
                 peopleById={peopleById}
                 directedCreator={p.kind === "question" ? creatorById.get(p.directedTo[0]) : undefined}
                 reflectsOn={p.kind === "reflection" && p.contextId ? sessionById.get(p.contextId)?.title ?? null : null}
-                contextSession={p.kind === "talk" && p.contextId ? sessionById.get(p.contextId) ?? null : null}
+                contextSession={p.kind === "talk" && p.contextType !== "material" && p.contextId ? sessionById.get(p.contextId) ?? null : null}
+                contextMaterial={p.kind === "talk" && p.contextType === "material" && p.contextId ? materialById.get(p.contextId) ?? null : null}
                 introPrompt={p.kind === "intro" ? introPrompt : null}
                 onLike={() => toggleLike(p)}
                 threadOpen={openPosts.has(p.id)}
@@ -624,7 +672,7 @@ export function TribeFeed({
 }
 
 function PostCard({
-  post, viewer, creatorById, peopleById, directedCreator, reflectsOn, contextSession, introPrompt,
+  post, viewer, creatorById, peopleById, directedCreator, reflectsOn, contextSession, contextMaterial, introPrompt,
   onLike, threadOpen, comments, onToggleThread, onSubmitComment,
 }: {
   post: FeedPost;
@@ -634,6 +682,7 @@ function PostCard({
   directedCreator?: SpaceCreator;
   reflectsOn?: string | null;
   contextSession?: SpaceSession | null;
+  contextMaterial?: MaterialRow | null;
   introPrompt?: string | null;
   onLike: () => void;
   threadOpen: boolean;
@@ -698,6 +747,11 @@ function PostCard({
           {/* Referenced session — renders below the words, like an image embed */}
           {post.kind === "talk" && contextSession && (
             <SessionContextCard session={contextSession} />
+          )}
+          {/* Referenced material — same embed slot; the chip references,
+              never re-hosts: release rules keep governing the download. */}
+          {post.kind === "talk" && contextMaterial && (
+            <MaterialContextCard material={contextMaterial} />
           )}
 
           {post.mediaUrl && (
