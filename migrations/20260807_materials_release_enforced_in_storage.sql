@@ -1,0 +1,31 @@
+-- Close the material release gap at the STORAGE layer (2026-08-07,
+-- before Pair 1). Applied as materials_release_enforced_in_storage.
+--
+-- THE GAP (flagged as accepted risk in Phase 1, closed here): storage read
+-- was granted to ANY tribe member for ANY object in the experience's
+-- folder. The release rule lived only in load_challenge_materials, which
+-- withholds the path from members until release — no path, no signed URL,
+-- no download. That chain holds for anyone USING the app, but not against
+-- a member who guesses a locked file's exact path (they already know the
+-- challenge id and material id; only the filename was unknown). Obscurity,
+-- not a wall.
+--
+-- NOW: the storage.objects SELECT policy enforces release itself.
+--   experts (owner/cohost) -> always, incl. pre-release (check own work)
+--   members                -> only from the release moment onward
+--   everyone else          -> nothing
+-- A material ROW is the authority: an object with no matching row is
+-- unreadable, so an orphaned upload (storage write whose metadata insert
+-- failed) is inert rather than quietly fetchable.
+--
+-- material_released_at(timing, start_time, ended_at, duration_minutes) is
+-- the single source of truth for the release moment, now shared by the
+-- storage policy AND load_challenge_materials so the two can never drift.
+--
+-- Verified live with the real locked/released pair on the Reset:
+--   Tim (member) + exact LOCKED path   -> 0 rows  (the attack, blocked)
+--   Tim + exact RELEASED path          -> 1 row   (still works)
+--   Alex (owner)                       -> 3       (incl. locked)
+--   Mira (cohost)                      -> 3
+--   Roger (outsider)                   -> 0
+--   metadata layer: locked paths leaked -> 0; orphan objects -> 0
