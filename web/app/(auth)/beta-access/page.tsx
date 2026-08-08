@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef, Suspense } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { submitBetaCode } from "@/app/actions/beta";
 
@@ -102,6 +103,28 @@ function BetaForm() {
           {pending ? "..." : "Continue"}
         </button>
       </form>
+
+      {/* The way out. Every gated route lands here, and nothing on the public
+          site links to it, so most arrivals are strangers who typed /login or
+          followed an old link. Without this they hit a brick wall and leave.
+          Cyan, not orange: the code is still the primary action for anyone who
+          has one. */}
+      <div
+        className="mt-6 pt-5 text-center"
+        style={{ borderTop: "1px solid rgba(15,34,41,0.08)" }}
+      >
+        <p className="text-[13px]" style={{ color: "#64748b" }}>
+          No code yet? INFITRA is private while the founding pilot forms.
+        </p>
+        <Link
+          href="/apply"
+          className="inline-flex items-center gap-1.5 mt-2 text-[13px] font-headline transition-opacity hover:opacity-70"
+          style={{ color: "#0891b2", fontWeight: 700 }}
+        >
+          Apply for the pilot
+          <span aria-hidden="true">→</span>
+        </Link>
+      </div>
     </div>
   );
 }
