@@ -35,6 +35,17 @@ export function LiveRoomEmbed({
   const fetchToken = useCallback(async () => {
     setStatus("loading");
     setError(null);
+
+    // Every failure leaves a trace. Tim's mobile join failed on 2 Aug and
+    // we could not diagnose it afterwards because nothing recorded what he
+    // saw — a live room failing silently is the one INFITRA promise that
+    // must never fail silently again.
+    const fail = (reason: string) => {
+      setError(reason);
+      setStatus("error");
+      trackEvent("Join Failed", { session: sessionId, reason });
+    };
+
     try {
       const supabase = createClient();
       const { data, error: fnError } = await supabase.functions.invoke(
@@ -42,28 +53,15 @@ export function LiveRoomEmbed({
         { body: { session_id: sessionId } }
       );
 
-      if (fnError) {
-        setError(fnError.message || "Failed to connect.");
-        setStatus("error");
-        return;
-      }
-      if (data?.error) {
-        setError(data.error);
-        setStatus("error");
-        return;
-      }
-      if (!data?.room_url) {
-        setError("No room URL returned.");
-        setStatus("error");
-        return;
-      }
+      if (fnError) return fail(fnError.message || "Failed to connect.");
+      if (data?.error) return fail(data.error);
+      if (!data?.room_url) return fail("No room URL returned.");
 
       setRoomUrl(data.room_url);
       setStatus("ready");
       trackEvent("Join Live", { session: sessionId });
     } catch (err: any) {
-      setError(err?.message || "Something went wrong.");
-      setStatus("error");
+      fail(err?.message || "Something went wrong.");
     }
   }, [sessionId]);
 
@@ -295,6 +293,33 @@ export function LiveRoomEmbed({
           </h1>
         </div>
         <div className="flex items-center gap-3 shrink-0">
+          {/* Escape hatch: the same room, full-page in the native browser.
+              An iframe is where mobile video goes to die quietly (permission
+              prompts, Low Power Mode autoplay, WebKit quirks) — Daily's
+              prebuilt as a first-class page is far more forgiving. If the
+              embed shows a black box, this link is the user's way out. */}
+          <a
+            href={roomUrl!}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => trackEvent("Join Fallback", { session: sessionId })}
+            className="hidden sm:inline text-xs font-bold font-headline transition-opacity hover:opacity-70"
+            style={{ color: "#0891b2" }}
+            title="Open the room as its own page — use this if the video here stays black"
+          >
+            Open in browser tab
+          </a>
+          <a
+            href={roomUrl!}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => trackEvent("Join Fallback", { session: sessionId })}
+            className="sm:hidden text-xs font-bold font-headline"
+            style={{ color: "#0891b2" }}
+            aria-label="Open the room in a browser tab"
+          >
+            Open in tab
+          </a>
           {isHost ? (
             <button
               onClick={handleEndSession}
