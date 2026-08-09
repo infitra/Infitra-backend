@@ -31,8 +31,9 @@ function fmtRangeWithYear(start: Date, end: Date): string {
   return `${fmt(start, !sameYear)} – ${fmt(end, true)}`;
 }
 import type { ExperienceSummary, ProgramState, SpaceSession } from "./store";
+import { sessionLiveState, type SessionLiveState } from "@/lib/liveWindow";
 
-export type SessionState = "done" | "live" | "next" | "upcoming";
+export type SessionState = "done" | "live" | "doors" | "next" | "upcoming";
 
 export interface WeekBucket {
   weekNumber: number;
@@ -51,17 +52,22 @@ export interface WeekJourneyModel {
   currentWeek: number;
   /** The single "next moment" — live now, else soonest upcoming. */
   heroSessionId: string | null;
+  /** "live" (expert in the room) | "doors" (room open, expert not yet in)
+   *  | null (hero is merely upcoming). The lie this replaces: a bare
+   *  boolean that called an empty precreated room "Live now" and, with no
+   *  clock, kept saying it days after the room had expired. */
+  heroLiveState: Exclude<SessionLiveState, "none"> | null;
+  /** Back-compat convenience: heroLiveState === "live". */
   heroIsLive: boolean;
-}
-
-function isLive(s: SpaceSession): boolean {
-  return !!s.liveRoomId && s.status !== "ended";
 }
 
 /** The session that owns the "next moment" highlight, across the whole program. */
 function pickHeroSession(sessions: SpaceSession[], now: number): SpaceSession | null {
-  const live = sessions.find(isLive);
+  // An expert already in a room outranks an open-but-empty room.
+  const live = sessions.find((s) => sessionLiveState(s, now) === "live");
   if (live) return live;
+  const doors = sessions.find((s) => sessionLiveState(s, now) === "doors");
+  if (doors) return doors;
   const upcoming = sessions
     .filter((s) => s.status !== "ended" && new Date(s.startTime).getTime() > now)
     .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
@@ -121,13 +127,15 @@ export function buildWeekJourney(
   );
 
   const hero = pickHeroSession(sessions, now);
+  const heroState = hero ? sessionLiveState(hero, now) : "none";
 
   return {
     weeks,
     totalWeeks,
     currentWeek,
     heroSessionId: hero?.id ?? null,
-    heroIsLive: hero ? isLive(hero) : false,
+    heroLiveState: heroState === "none" ? null : heroState,
+    heroIsLive: heroState === "live",
   };
 }
 
@@ -172,9 +180,11 @@ export function sessionStateFor(
   now: number = Date.now(),
 ): SessionState {
   if (session.id === model.heroSessionId) {
-    return model.heroIsLive ? "live" : "next";
+    return model.heroLiveState ?? "next";
   }
-  if (isLive(session)) return "live";
+  // A non-hero session can still be live/doors (two rooms at once).
+  const liveState = sessionLiveState(session, now);
+  if (liveState !== "none") return liveState;
   const started = new Date(session.startTime).getTime() <= now;
   if (session.status === "ended" || started) return "done";
   return "upcoming";

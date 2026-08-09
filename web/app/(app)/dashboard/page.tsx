@@ -8,6 +8,7 @@ import { ProfilePanel } from "./ProfilePanel";
 import { ProfileModalHost } from "@/app/components/ProfileModal";
 import { OverlayHost } from "@/app/components/DashboardOverlay";
 import { resolveViewerTimeZone } from "@/lib/time/viewerTimeZone";
+import { sessionLiveState } from "@/lib/liveWindow";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -227,7 +228,7 @@ async function loadDashboard(userId: string) {
         .order("created_at", { ascending: false }),
       supabase
         .from("app_session")
-        .select("id, title, start_time, duration_minutes, status, live_room_id")
+        .select("id, title, start_time, duration_minutes, status, live_room_id, started_at")
         .eq("host_id", userId)
         .in("status", ["published", "ended"])
         .order("start_time", { ascending: true })
@@ -593,17 +594,32 @@ async function loadDashboard(userId: string) {
     .filter((p) => !isActiveStage(p.stage))
     .sort((a, b) => otherRank(a.stage) - otherRank(b.stage));
 
-  // Pulse signals (for TopAlert)
+  // Pulse signals (for TopAlert) — the shared live clock, so this rail can
+  // never claim "Live now" for an expired or merely-precreated room.
   const sessions = (upcomingSessionsResult.data ?? []) as Array<any>;
   const now = Date.now();
-  const liveSession = sessions.find((s) => !!s.live_room_id && s.status !== "ended") ?? null;
+  const liveStateOf = (s: any) =>
+    sessionLiveState(
+      {
+        startTime: s.start_time,
+        durationMinutes: s.duration_minutes,
+        status: s.status,
+        liveRoomId: s.live_room_id,
+        startedAt: s.started_at,
+      },
+      now,
+    );
+  const liveSession = sessions.find((s) => liveStateOf(s) === "live") ?? null;
+  // "Go live": the host's room is provisioned and waiting (doors), or the
+  // T-15 window has opened and the room just isn't created yet.
   const goLiveSoonSession = !liveSession
-    ? sessions.find((s) => {
+    ? (sessions.find((s) => liveStateOf(s) === "doors") ??
+      sessions.find((s) => {
         if (s.live_room_id) return false;
         if (s.status !== "published") return false;
         const startMs = new Date(s.start_time).getTime();
         return now >= startMs - 15 * 60 * 1000 && now < startMs;
-      })
+      }))
     : null;
 
   // Pending received invites

@@ -92,7 +92,11 @@ export function YouPanel({ continuation }: { continuation?: CreatorContinuation 
         ? `Completed · ${totalWeeks} weeks`
         : `Week ${currentWeek} of ${totalWeeks}`;
 
-  const heroHref = model.heroIsLive
+  // Joinable = a room actually exists (live OR doors). Red stays reserved
+  // for a present expert; an open-but-empty room reads orange "Doors open".
+  const heroJoinable = model.heroLiveState !== null;
+  const heroAccent = model.heroIsLive ? RED : ORANGE;
+  const heroHref = heroJoinable
     ? isCreator
       ? `/dashboard/sessions/${hero?.id}/live`
       : `/sessions/${hero?.id}/live`
@@ -101,21 +105,33 @@ export function YouPanel({ continuation }: { continuation?: CreatorContinuation 
   const HeroMoment = hero ? (
     <a
       href={heroHref}
-      onClick={(e) => { if (!model.heroIsLive) { e.preventDefault(); scrollToId("the-week"); } }}
+      onClick={(e) => { if (!heroJoinable) { e.preventDefault(); scrollToId("the-week"); } }}
       className="flex items-center gap-2 rounded-xl px-3 py-2.5 mt-3.5"
-      style={{ backgroundColor: model.heroIsLive ? "rgba(239,68,68,0.08)" : "#FAF7F1" }}
+      style={{
+        backgroundColor: model.heroIsLive
+          ? "rgba(239,68,68,0.08)"
+          : model.heroLiveState === "doors"
+            ? "rgba(255,97,48,0.08)"
+            : "#FAF7F1",
+      }}
     >
-      {model.heroIsLive && <span className="inline-block w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: RED }} />}
+      {heroJoinable && <span className="inline-block w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: heroAccent }} />}
       <div className="min-w-0 flex-1">
-        <p className="text-[9px] uppercase tracking-[0.16em] font-headline" style={{ color: model.heroIsLive ? RED : CYAN, fontWeight: 800 }}>
-          {model.heroIsLive ? "Live now" : isCreator ? "You host next" : "Next moment"}
+        <p className="text-[9px] uppercase tracking-[0.16em] font-headline" style={{ color: heroJoinable ? heroAccent : CYAN, fontWeight: 800 }}>
+          {model.heroIsLive
+            ? "Live now"
+            : model.heroLiveState === "doors"
+              ? "Doors open"
+              : isCreator
+                ? "You host next"
+                : "Next moment"}
         </p>
         <p className="text-[13px] font-black font-headline truncate" style={{ color: INK }}>{hero.title}</p>
       </div>
-      <span className="text-[12px] font-black font-headline tabular-nums shrink-0" style={{ color: model.heroIsLive ? RED : INK }} suppressHydrationWarning>
-        {model.heroIsLive ? "Join" : countdown(hero.startTime, now)}
+      <span className="text-[12px] font-black font-headline tabular-nums shrink-0" style={{ color: heroJoinable ? heroAccent : INK }} suppressHydrationWarning>
+        {heroJoinable ? "Join" : countdown(hero.startTime, now)}
       </span>
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={model.heroIsLive ? RED : "#94a3b8"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={heroJoinable ? heroAccent : "#94a3b8"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
         <polyline points="9 18 15 12 9 6" />
       </svg>
     </a>

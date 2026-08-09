@@ -339,23 +339,28 @@ function WeekSessionCard({
   now: number;
   onOpen: () => void;
 }) {
-  if (state === "next" || state === "live") {
-    return <HeroSessionCard session={session} live={state === "live"} now={now} onOpen={onOpen} />;
+  if (state === "next" || state === "live" || state === "doors") {
+    return <HeroSessionCard session={session} state={state} now={now} onOpen={onOpen} />;
   }
   return <AgendaSessionRow session={session} done={state === "done"} onOpen={onOpen} />;
 }
 
 function HeroSessionCard({
   session,
-  live,
+  state,
   now,
   onOpen,
 }: {
   session: SpaceSession;
-  live: boolean;
+  /** "live" = expert in the room · "doors" = room open, expert not in yet
+   *  · "next" = merely upcoming. Red is EARNED by a present expert; an
+   *  empty room stays orange so "Live now" never points at nobody. */
+  state: "live" | "doors" | "next";
   now: number;
   onOpen: () => void;
 }) {
+  const live = state === "live";
+  const joinable = state !== "next";
   const accent = live ? RED : ORANGE;
   return (
     <div
@@ -384,10 +389,10 @@ function HeroSessionCard({
           className="text-[11px] uppercase tracking-[0.18em] font-headline flex items-center gap-1.5"
           style={{ color: accent, fontWeight: 800 }}
         >
-          {live && (
-            <span className="inline-block w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: RED }} />
+          {joinable && (
+            <span className="inline-block w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: accent }} />
           )}
-          {live ? "Live now" : "Next moment"}
+          {live ? "Live now" : state === "doors" ? "Doors open" : "Next moment"}
         </p>
         <h3
           className="font-black font-headline tracking-tight mt-1.5 leading-tight"
@@ -411,15 +416,31 @@ function HeroSessionCard({
         <SessionMaterialChips sessionId={session.id} />
 
         <div className="flex items-center justify-between gap-3 mt-auto pt-3.5">
-          {live ? (
-            <a
-              href={`/sessions/${session.id}/live`}
-              onClick={(e) => e.stopPropagation()}
-              className="px-6 py-2.5 rounded-full text-white text-sm font-black font-headline transition-transform hover:scale-[1.02]"
-              style={{ backgroundColor: RED, boxShadow: "0 4px 14px rgba(239,68,68,0.35)" }}
-            >
-              Join the room →
-            </a>
+          {joinable ? (
+            <>
+              <a
+                href={`/sessions/${session.id}/live`}
+                onClick={(e) => e.stopPropagation()}
+                className="px-6 py-2.5 rounded-full text-white text-sm font-black font-headline transition-transform hover:scale-[1.02]"
+                style={{
+                  backgroundColor: accent,
+                  boxShadow: live
+                    ? "0 4px 14px rgba(239,68,68,0.35)"
+                    : "0 4px 14px rgba(255,97,48,0.35)",
+                }}
+              >
+                Join the room →
+              </a>
+              {!live && new Date(session.startTime).getTime() > now && (
+                <span
+                  className="text-sm font-black font-headline tabular-nums"
+                  style={{ color: "#94a3b8" }}
+                  suppressHydrationWarning
+                >
+                  starts in {countdown(session.startTime, now)}
+                </span>
+              )}
+            </>
           ) : (
             <>
               <span className="text-[11px] uppercase tracking-wider font-headline" style={{ color: "#94a3b8", fontWeight: 700 }}>

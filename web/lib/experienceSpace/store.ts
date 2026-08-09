@@ -60,6 +60,9 @@ export interface SpaceSession {
   durationMinutes: number;
   status: string;
   liveRoomId: string | null;
+  /** Set by issue_join_token on the EXPERT's first join — separates
+   *  "Doors open" (room exists, empty) from "Live now" (expert inside). */
+  startedAt?: string | null;
   imageUrl: string | null;
   description: string | null;
   hostId: string;
@@ -212,6 +215,7 @@ export interface ExperienceSpaceActions {
     id: string;
     status?: string;
     live_room_id?: string | null;
+    started_at?: string | null;
     title?: string;
     start_time?: string;
     duration_minutes?: number;
@@ -254,6 +258,8 @@ export function createExperienceSpaceStore(
                 status: row.status ?? sess.status,
                 liveRoomId:
                   row.live_room_id !== undefined ? row.live_room_id : sess.liveRoomId,
+                startedAt:
+                  row.started_at !== undefined ? row.started_at : sess.startedAt,
                 title: row.title ?? sess.title,
                 startTime: row.start_time ?? sess.startTime,
                 durationMinutes: row.duration_minutes ?? sess.durationMinutes,

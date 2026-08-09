@@ -3,7 +3,7 @@
 // - Auth required
 // - Entitlement: host OR session cohost OR attendee
 // - Rate limited via edge_rate_limit_use (per user & per IP)
-// - Issues provider token, marks started_at on first join, upserts attendance & stream token
+// - Issues provider token, marks started_at on the EXPERT's first join, upserts attendance & stream token
 // - Returns a ready-to-open room_url using DAILY_DOMAIN (fallback: infitra.daily.co)
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -99,18 +99,22 @@ Deno.serve(async (req) => {
     }
 
     // 5) Entitlement — BEFORE any room work, so an unentitled caller can
-    // never trigger a provider API call.
-    let entitled = s.host_id === callerId;
+    // never trigger a provider API call. Track the expert path separately:
+    // started_at (below) belongs to hosts/cohosts only.
+    const isHost = s.host_id === callerId;
+    let isCohost = false;
 
-    if (!entitled) {
+    if (!isHost) {
       const { data: ch } = await admin
         .from("app_session_cohost")
         .select("session_id")
         .eq("session_id", session_id)
         .eq("cohost_id", callerId)
         .maybeSingle();
-      entitled = !!ch;
+      isCohost = !!ch;
     }
+
+    let entitled = isHost || isCohost;
 
     if (!entitled) {
       const { data: att } = await admin
@@ -173,12 +177,17 @@ Deno.serve(async (req) => {
     const userName = u.user.email ?? "User";
     const { token } = await issueToken(liveRoomId, userName);
 
-    // 7) Mark started_at (first-join) and attendance idempotently
-    await admin
-      .from("app_session")
-      .update({ started_at: new Date().toISOString() })
-      .eq("id", session_id)
-      .is("started_at", null);
+    // 7) Mark started_at on the EXPERT's first join (not any first join:
+    // started_at is what flips every surface from "Doors open" to
+    // "Live now", and a keen participant entering an empty room at T-14
+    // must not make the card claim an expert is present). Idempotent.
+    if (isHost || isCohost) {
+      await admin
+        .from("app_session")
+        .update({ started_at: new Date().toISOString() })
+        .eq("id", session_id)
+        .is("started_at", null);
+    }
 
     await admin
       .from("app_attendance")
