@@ -38,6 +38,9 @@ interface FeedPost {
   /** Materials the author attached — always a subset of contextId's own
    *  session (DB-enforced), so they nest inside the session card. */
   materialIds: string[];
+  /** Reflection posts: the 0–10 post-session energy rating. A moved slider
+   *  with no text is a COMPLETE reflection — this is its content. */
+  energyAfter: number | null;
   directedTo: string[];
   mediaUrl: string | null;
   likeCount: number;
@@ -52,7 +55,7 @@ interface FeedPost {
 interface RawRow {
   id: string; author_id: string; body: string; kind?: string;
   context_type?: string | null;
-  metadata?: { material_ids?: string[] } | null;
+  metadata?: { material_ids?: string[]; energy_after?: number } | null;
   context_id?: string | null; directed_to?: string[] | null; media_url?: string | null;
   like_count?: number; comment_count?: number; liked_by_me?: boolean;
   coach_answer?: { author_id: string; body: string; created_at: string } | null;
@@ -190,7 +193,9 @@ export function TribeFeed({
   const toPost = useCallback((r: RawRow): FeedPost => ({
     id: r.id, author_id: r.author_id, body: r.body, kind: r.kind ?? "talk",
     contextType: r.context_type ?? null, contextId: r.context_id ?? null,
-    materialIds: Array.isArray(r.metadata?.material_ids) ? r.metadata!.material_ids! : [], directedTo: r.directed_to ?? [], mediaUrl: r.media_url ?? null,
+    materialIds: Array.isArray(r.metadata?.material_ids) ? r.metadata!.material_ids! : [],
+    energyAfter: typeof r.metadata?.energy_after === "number" ? r.metadata.energy_after : null,
+    directedTo: r.directed_to ?? [], mediaUrl: r.media_url ?? null,
     likeCount: r.like_count ?? 0, commentCount: r.comment_count ?? 0, likedByMe: r.liked_by_me ?? false,
     coachAnswer: r.coach_answer ? { authorId: r.coach_answer.author_id, body: r.coach_answer.body, createdAt: r.coach_answer.created_at } : null,
     created_at: r.created_at,
@@ -327,7 +332,7 @@ export function TribeFeed({
       const optimistic: FeedPost = {
         id: postId, author_id: viewer.id, body: text, kind: isQuestion ? "question" : "talk",
         contextType: ctxSession ? "session" : null, contextId: ctxSession,
-        materialIds: ctxMaterials, directedTo: isQuestion ? [askId!] : [], mediaUrl: media,
+        materialIds: ctxMaterials, energyAfter: null, directedTo: isQuestion ? [askId!] : [], mediaUrl: media,
         likeCount: 0, commentCount: 0, likedByMe: false, coachAnswer: null,
         created_at: new Date().toISOString(), authorName: viewer.name, authorAvatar: viewer.avatar,
       };
@@ -777,12 +782,27 @@ function PostCard({
           {post.kind === "reflection" && reflectsOn && (
             <ContextBanner color={CYAN} label="Reflection on"><span className="text-[14px] font-black font-headline" style={{ color: CYAN }}>{reflectsOn}</span></ContextBanner>
           )}
+          {/* The slider IS the reflection: a rating-only post must read as
+              content, not as an empty card. Wiped out → energized, 0–10. */}
+          {post.kind === "reflection" && post.energyAfter != null && (
+            <span
+              className="inline-flex items-center gap-1.5 mt-3 px-2.5 py-1 rounded-full text-[12px] font-bold font-headline"
+              style={{ backgroundColor: "rgba(8,145,178,0.10)", color: CYAN }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={CYAN} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+              </svg>
+              Felt {post.energyAfter}/10 after this one
+            </span>
+          )}
           {post.kind === "intro" && (
             <ContextBanner color={CYAN} label="Introduction" stacked>
               {introPrompt && <p className="text-[13px] italic leading-snug" style={{ color: "#475569" }}>“{introPrompt}”</p>}
             </ContextBanner>
           )}
-          <p className="text-sm leading-relaxed whitespace-pre-wrap mt-3" style={{ color: "#334155" }}>{post.body}</p>
+          {post.body.length > 0 && (
+            <p className="text-sm leading-relaxed whitespace-pre-wrap mt-3" style={{ color: "#334155" }}>{post.body}</p>
+          )}
 
           {/* Referenced moment — the session card, carrying the files that
               came with it. A material cannot exist outside its session, so
