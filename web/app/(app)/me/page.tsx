@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { sessionLiveState } from "@/lib/liveWindow";
+import { LiveSessionBanner } from "@/app/components/LiveSessionBanner";
 import Link from "next/link";
 import { ParticipantNav } from "@/app/components/ParticipantNav";
 import { ParticipantPanel } from "./ParticipantPanel";
@@ -336,6 +337,14 @@ export default async function MeHomePage() {
   const { profile, active, completed } = await loadMe(user.id);
   const pendingReviews = completed.filter((e) => !e.rated).map((e) => ({ id: e.id, title: e.title }));
 
+  // An open room outranks everything: live first, else doors, across all
+  // active experiences (already computed on the shared clock in loadMe).
+  const joinableMoments = active
+    .map((e) => e.nextSession)
+    .filter((s): s is NonNullable<typeof s> => !!s && s.liveState !== null);
+  const liveMoment =
+    joinableMoments.find((s) => s.liveState === "live") ?? joinableMoments[0] ?? null;
+
   return (
     <ProfileModalHost>
     <OverlayHost>
@@ -343,6 +352,17 @@ export default async function MeHomePage() {
 
       <div className="pt-20 px-6">
         <div className="max-w-7xl mx-auto py-8">
+          {/* THE live banner — same dark interrupt as the expert dashboard's
+              TopAlert, at the very top: an open room outranks everything. */}
+          {liveMoment && (
+            <LiveSessionBanner
+              href={`/sessions/${liveMoment.id}/live`}
+              pulseColor={liveMoment.liveState === "live" ? "#ef4444" : "#FF6130"}
+              label={liveMoment.liveState === "live" ? "Live now" : "Doors open"}
+              title={liveMoment.title}
+              cta="Join the room →"
+            />
+          )}
           {/* Console — "you" left, your experiences right. Equal height when
               there's a single active experience (mirrors the creator card);
               top-aligned when there are several. */}

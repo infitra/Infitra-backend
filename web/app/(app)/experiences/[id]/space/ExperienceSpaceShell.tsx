@@ -16,6 +16,8 @@ import { createPortal } from "react-dom";
 import { useRouter, usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useBackdropClose } from "@/app/components/useBackdropClose";
+import { sessionLiveState } from "@/lib/liveWindow";
+import { LiveSessionBanner } from "@/app/components/LiveSessionBanner";
 import { ExperienceSpaceStoreProvider, useExperienceSpaceStore } from "@/lib/experienceSpace/StoreProvider";
 import { useExperienceSpaceRealtime } from "./useExperienceSpaceRealtime";
 import { initFromSeed } from "./initState";
@@ -238,6 +240,18 @@ function SpaceBody({ reviewState, continuation }: { reviewState?: ReviewState; c
         )
       : [];
   const degraded = channelStatus === "reconnecting" || channelStatus === "error";
+
+  // The live banner's clock: fixed per mount — realtime session updates
+  // (doors→live via started_at) re-render this anyway, and the sweep +
+  // room expiry close the window server-side.
+  const bannerNow = useMemo(() => Date.now(), []);
+  const liveBanner = useMemo(() => {
+    for (const state of ["live", "doors"] as const) {
+      const session = sessions.find((s) => sessionLiveState(s, bannerNow) === state);
+      if (session) return { session, state };
+    }
+    return null;
+  }, [sessions, bannerNow]);
   // Threshold viewers don't get the normal room. UPCOMING → a focused antechamber
   // (nothing of the current cohort). ENDED → the live room strongly frosted +
   // inert behind a centered re-activate card. ACTIVE member with a future run →
@@ -285,6 +299,30 @@ function SpaceBody({ reviewState, continuation }: { reviewState?: ReviewState; c
           <span className="inline-block w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: "#FFB020" }} />
           Reconnecting…
         </div>
+      )}
+
+      {/* ── THE live banner — same dark interrupt as the dashboard and /me:
+             an open room outranks everything, on every surface. ── */}
+      {liveBanner && (
+        <LiveSessionBanner
+          href={
+            isCreator
+              ? `/dashboard/sessions/${liveBanner.session.id}/live`
+              : `/sessions/${liveBanner.session.id}/live`
+          }
+          pulseColor={liveBanner.state === "live" ? "#ef4444" : "#FF6130"}
+          label={liveBanner.state === "live" ? "Live now" : "Doors open"}
+          title={liveBanner.session.title}
+          cta={
+            liveBanner.state === "live"
+              ? isCreator
+                ? "Enter session →"
+                : "Join the room →"
+              : isCreator
+                ? "Go live →"
+                : "Join the room →"
+          }
+        />
       )}
 
       {/* ── HEADER — slim, expandable ── */}
