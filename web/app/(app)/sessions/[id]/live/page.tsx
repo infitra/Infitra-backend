@@ -42,13 +42,20 @@ export default async function ParticipantLivePage({
   // Entitlement guard (edge function does authoritative check, this is UX guard)
   const isHost = user.id === session.host_id;
   if (!isHost) {
-    const { data: attendance } = await supabase
+    // app_attendance has NO id column (composite key session_id+user_id).
+    // Selecting "id" here made PostgREST error, data came back null, and
+    // EVERY participant on EVERY device was silently bounced back to the
+    // space — the "mobile join failure" that was never mobile at all.
+    // Hosts skipped this branch, which is why demos always worked.
+    const { data: attendance, error: attErr } = await supabase
       .from("app_attendance")
-      .select("id")
+      .select("session_id")
       .eq("session_id", id)
       .eq("user_id", user.id)
       .maybeSingle();
-    if (!attendance) redirect(backHref);
+    // A QUERY failure must not read as "not entitled": issue_join_token is
+    // the authoritative check; let the room page make the call visible.
+    if (!attendance && !attErr) redirect(backHref);
   }
 
   return (
