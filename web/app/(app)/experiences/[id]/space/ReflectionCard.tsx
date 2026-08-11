@@ -6,6 +6,11 @@
  * text. Submits via submit_session_reflection, which posts a kind='reflection'
  * post to the Tribe feed (it streams in via the feed's realtime). Clears itself
  * from the action items on submit/skip.
+ *
+ * The FORM is its own export: the leave→reflection loop shows the identical
+ * slider + text + buttons inside the standard overlay panel, where the card's
+ * translucent rail treatment (a gradient meant to sit ON the canvas) would
+ * just bleed the page through.
  */
 
 import { useState } from "react";
@@ -15,15 +20,13 @@ import { Slider } from "@/app/components/Slider";
 
 const CYAN = "#0891b2";
 
-export function ReflectionCard({
+export function ReflectionForm({
   sessionId,
-  sessionTitle,
   onDone,
 }: {
   sessionId: string;
-  sessionTitle: string;
-  /** Leave→reflection loop: the modal host closes itself after submit or
-   *  skip. The rail usage omits this — clearing the action item is enough. */
+  /** Called after submit or skip — the modal closes itself; the rail card
+   *  just disappears with its action item. */
   onDone?: () => void;
 }) {
   const clearActionItem = useExperienceSpaceStore((s) => s.clearActionItem);
@@ -47,6 +50,55 @@ export function ReflectionCard({
   }
 
   return (
+    <div>
+      <div className="max-w-sm">
+        <Slider value={energy} onChange={setEnergy} accent={CYAN} labelLow="Wiped out" labelHigh="Energized" />
+      </div>
+
+      <textarea
+        value={body}
+        onChange={(e) => setBody(e.target.value)}
+        placeholder="Anything to share with your Tribe? (optional)"
+        rows={2}
+        maxLength={5000}
+        className="w-full rounded-xl p-3 text-sm resize-none focus:outline-none mt-4"
+        style={{ backgroundColor: "rgba(255,255,255,0.82)", border: "1px solid rgba(15,34,41,0.12)", color: "#0F2229" }}
+      />
+
+      {error && <p className="text-xs mt-1.5" style={{ color: "#FF6130" }}>{error}</p>}
+
+      <div className="flex items-center justify-end gap-3 mt-3">
+        <button
+          onClick={() => {
+            clearActionItem("reflection", sessionId);
+            onDone?.();
+          }}
+          className="px-4 py-2.5 rounded-full text-sm font-bold font-headline transition-colors hover:opacity-80"
+          style={{ color: "#64748b" }}
+        >
+          Skip
+        </button>
+        <button
+          onClick={submit}
+          disabled={busy}
+          className="px-6 py-2.5 rounded-full text-white text-sm font-black font-headline transition-transform hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
+          style={{ backgroundColor: CYAN, boxShadow: "0 4px 14px rgba(8,145,178,0.35)" }}
+        >
+          {busy ? "Posting…" : "Post reflection →"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export function ReflectionCard({
+  sessionId,
+  sessionTitle,
+}: {
+  sessionId: string;
+  sessionTitle: string;
+}) {
+  return (
     <div
       className="rounded-2xl relative overflow-hidden"
       style={{
@@ -64,48 +116,12 @@ export function ReflectionCard({
           Reflect
         </span>
         <p
-          className="font-black font-headline mt-2.5 leading-snug"
+          className="font-black font-headline mt-2.5 mb-4 leading-snug"
           style={{ color: "#0F2229", fontSize: "clamp(1.15rem, 3.6vw, 1.5rem)", letterSpacing: "-0.015em" }}
         >
           How was {sessionTitle}?
         </p>
-
-        <div className="mt-4 max-w-sm">
-          <Slider value={energy} onChange={setEnergy} accent={CYAN} labelLow="Wiped out" labelHigh="Energized" />
-        </div>
-
-        <textarea
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          placeholder="Anything to share with your Tribe? (optional)"
-          rows={2}
-          maxLength={5000}
-          className="w-full rounded-xl p-3 text-sm resize-none focus:outline-none mt-4"
-          style={{ backgroundColor: "rgba(255,255,255,0.82)", border: "1px solid rgba(15,34,41,0.12)", color: "#0F2229" }}
-        />
-
-        {error && <p className="text-xs mt-1.5" style={{ color: "#FF6130" }}>{error}</p>}
-
-        <div className="flex items-center justify-end gap-3 mt-3">
-          <button
-            onClick={() => {
-              clearActionItem("reflection", sessionId);
-              onDone?.();
-            }}
-            className="px-4 py-2.5 rounded-full text-sm font-bold font-headline transition-colors hover:opacity-80"
-            style={{ color: "#64748b" }}
-          >
-            Skip
-          </button>
-          <button
-            onClick={submit}
-            disabled={busy}
-            className="px-6 py-2.5 rounded-full text-white text-sm font-black font-headline transition-transform hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
-            style={{ backgroundColor: CYAN, boxShadow: "0 4px 14px rgba(8,145,178,0.35)" }}
-          >
-            {busy ? "Posting…" : "Post reflection →"}
-          </button>
-        </div>
+        <ReflectionForm sessionId={sessionId} />
       </div>
     </div>
   );

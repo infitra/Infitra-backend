@@ -11,7 +11,8 @@
  * the header's expandables, so there's no separate People card to misplace.
  */
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter, usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useBackdropClose } from "@/app/components/useBackdropClose";
@@ -27,7 +28,7 @@ import { ProfileModalHost } from "@/app/components/ProfileModal";
 import { SpaceMaterialsProvider } from "./SpaceMaterials";
 import type { MaterialRow } from "@/app/(app)/dashboard/collaborate/[challengeId]/SessionMaterials";
 import { PrePulseCard } from "./PrePulseCard";
-import { ReflectionCard } from "./ReflectionCard";
+import { ReflectionCard, ReflectionForm } from "./ReflectionCard";
 import { WeekJourney } from "./WeekJourney";
 import { YouPanel, type CreatorContinuation } from "./YouPanel";
 import { ProgressCard } from "./ProgressCard";
@@ -78,28 +79,78 @@ export function ExperienceSpaceShell({
  * without killing it — the same lesson every other modal here learned.
  * Dismissal strips the param via router.replace, so back/refresh don't
  * re-ask. Creators never see it (they END sessions, they don't reflect).
+ *
+ * Visuals: the ONE overlay grammar (DashboardOverlay's panel) — portal to
+ * body, solid #FAF9F6 panel, white header with the orange tick + close.
+ * The rail card's translucent gradient is canvas treatment; floated raw it
+ * just bled the page through (founder screenshot, 11 Aug).
  */
 function ReflectionLoopModal({ reflectSessionId }: { reflectSessionId: string | null }) {
   const router = useRouter();
   const pathname = usePathname();
   const isCreator = useExperienceSpaceStore((s) => s.isCreator);
   const sessions = useExperienceSpaceStore((s) => s.sessions);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const close = () => router.replace(pathname, { scroll: false });
   const backdrop = useBackdropClose(close);
 
   const session = reflectSessionId ? sessions.find((s) => s.id === reflectSessionId) : undefined;
-  if (!session || isCreator) return null;
+  if (!session || isCreator || !mounted) return null;
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-[90] flex items-end sm:items-center justify-center p-0 sm:p-6"
-      style={{ backgroundColor: "rgba(15,34,41,0.45)", backdropFilter: "blur(3px)" }}
+      className="fixed inset-0 z-[90] flex items-center justify-center p-4"
+      style={{ backgroundColor: "rgba(15,34,41,0.45)" }}
       {...backdrop}
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Reflect on ${session.title}`}
     >
-      <div className="w-full sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl">
-        <ReflectionCard sessionId={session.id} sessionTitle={session.title} onDone={close} />
+      <div
+        className="w-full max-w-xl rounded-2xl overflow-hidden flex flex-col"
+        style={{
+          backgroundColor: "#FAF9F6",
+          maxHeight: "min(86vh, 760px)",
+          boxShadow: "0 24px 60px rgba(15,34,41,0.28)",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div
+          className="flex items-start justify-between gap-4 px-6 pt-5 pb-4 shrink-0"
+          style={{ borderBottom: "1px solid rgba(15,34,41,0.08)", backgroundColor: "#FFFFFF" }}
+        >
+          <div className="min-w-0">
+            <div className="flex items-center gap-2.5">
+              <span className="w-1 h-5 rounded-full shrink-0" style={{ backgroundColor: "#FF6130" }} />
+              <h2
+                className="text-lg font-headline font-black tracking-tight truncate"
+                style={{ color: "#0F2229", letterSpacing: "-0.02em" }}
+              >
+                How was it?
+              </h2>
+            </div>
+            <p className="text-[12px] mt-1 ml-[14px]" style={{ color: "#64748b" }}>
+              {session.title}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={close}
+            className="w-8 h-8 rounded-full flex items-center justify-center transition-colors hover:bg-[rgba(15,34,41,0.06)] shrink-0"
+            aria-label="Close"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth={2.5} strokeLinecap="round">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div className="overflow-y-auto px-6 py-5">
+          <ReflectionForm sessionId={session.id} onDone={close} />
+        </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
