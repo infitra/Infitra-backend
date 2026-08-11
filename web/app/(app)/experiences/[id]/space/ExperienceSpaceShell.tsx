@@ -12,7 +12,9 @@
  */
 
 import { useEffect, useMemo } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { useBackdropClose } from "@/app/components/useBackdropClose";
 import { ExperienceSpaceStoreProvider, useExperienceSpaceStore } from "@/lib/experienceSpace/StoreProvider";
 import { useExperienceSpaceRealtime } from "./useExperienceSpaceRealtime";
 import { initFromSeed } from "./initState";
@@ -46,21 +48,58 @@ export function ExperienceSpaceShell({
   materials,
   reviewState,
   continuation,
+  reflectSessionId,
 }: {
   seed: ExperienceSpaceSeed;
   initialCreatorStats?: CreatorStats | null;
   reviewState?: ReviewState;
   continuation?: CreatorContinuation | null;
   materials?: MaterialRow[];
+  /** Leave→reflection loop: the live room's Leave button lands here with
+   *  ?reflect=<sessionId>, and the reflection opens as a MODAL — one motion
+   *  from leaving the room to "how was it?", not a card to be discovered. */
+  reflectSessionId?: string | null;
 }) {
   return (
     <ExperienceSpaceStoreProvider initialState={initFromSeed(seed, initialCreatorStats ?? null)}>
       <ProfileModalHost>
         <SpaceMaterialsProvider materials={materials ?? []}>
           <SpaceBody reviewState={reviewState} continuation={continuation} />
+          <ReflectionLoopModal reflectSessionId={reflectSessionId ?? null} />
         </SpaceMaterialsProvider>
       </ProfileModalHost>
     </ExperienceSpaceStoreProvider>
+  );
+}
+
+/**
+ * The reflection asked IN the moment of leaving. State lives in the URL
+ * (?reflect=), so realtime snapshot reconciles can remount anything below
+ * without killing it — the same lesson every other modal here learned.
+ * Dismissal strips the param via router.replace, so back/refresh don't
+ * re-ask. Creators never see it (they END sessions, they don't reflect).
+ */
+function ReflectionLoopModal({ reflectSessionId }: { reflectSessionId: string | null }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const isCreator = useExperienceSpaceStore((s) => s.isCreator);
+  const sessions = useExperienceSpaceStore((s) => s.sessions);
+  const close = () => router.replace(pathname, { scroll: false });
+  const backdrop = useBackdropClose(close);
+
+  const session = reflectSessionId ? sessions.find((s) => s.id === reflectSessionId) : undefined;
+  if (!session || isCreator) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-[90] flex items-end sm:items-center justify-center p-0 sm:p-6"
+      style={{ backgroundColor: "rgba(15,34,41,0.45)", backdropFilter: "blur(3px)" }}
+      {...backdrop}
+    >
+      <div className="w-full sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl">
+        <ReflectionCard sessionId={session.id} sessionTitle={session.title} onDone={close} />
+      </div>
+    </div>
   );
 }
 

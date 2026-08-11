@@ -9,10 +9,16 @@ export const dynamic = "force-dynamic";
 
 export default async function ExperienceSpacePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ reflect?: string | string[] }>;
 }) {
   const { id } = await params;
+  // Leave→reflection loop: the live room's Leave button appends
+  // ?reflect=<sessionId>; the shell opens the reflection as a modal.
+  const { reflect } = await searchParams;
+  const reflectSessionId = typeof reflect === "string" && reflect.length > 0 ? reflect : null;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
@@ -120,7 +126,7 @@ export default async function ExperienceSpacePage({
     <div className="min-h-screen">
       <ParticipantNav displayName={prof?.display_name ?? null} role={prof?.role} />
       <div className="pt-20">
-        <ExperienceSpaceShell seed={seed} initialCreatorStats={initialCreatorStats} reviewState={reviewState} continuation={continuation} materials={Array.isArray(materialRows) ? materialRows : []} />
+        <ExperienceSpaceShell seed={seed} initialCreatorStats={initialCreatorStats} reviewState={reviewState} continuation={continuation} materials={Array.isArray(materialRows) ? materialRows : []} reflectSessionId={reflectSessionId} />
       </div>
     </div>
   );

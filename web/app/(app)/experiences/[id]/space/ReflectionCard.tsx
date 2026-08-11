@@ -18,9 +18,13 @@ const CYAN = "#0891b2";
 export function ReflectionCard({
   sessionId,
   sessionTitle,
+  onDone,
 }: {
   sessionId: string;
   sessionTitle: string;
+  /** Leave→reflection loop: the modal host closes itself after submit or
+   *  skip. The rail usage omits this — clearing the action item is enough. */
+  onDone?: () => void;
 }) {
   const clearActionItem = useExperienceSpaceStore((s) => s.clearActionItem);
   const [energy, setEnergy] = useState(5);
@@ -39,6 +43,7 @@ export function ReflectionCard({
       return;
     }
     clearActionItem("reflection", sessionId);
+    onDone?.();
   }
 
   return (
@@ -83,7 +88,10 @@ export function ReflectionCard({
 
         <div className="flex items-center justify-end gap-3 mt-3">
           <button
-            onClick={() => clearActionItem("reflection", sessionId)}
+            onClick={() => {
+              clearActionItem("reflection", sessionId);
+              onDone?.();
+            }}
             className="px-4 py-2.5 rounded-full text-sm font-bold font-headline transition-colors hover:opacity-80"
             style={{ color: "#64748b" }}
           >

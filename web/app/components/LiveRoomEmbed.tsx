@@ -253,7 +253,7 @@ export function LiveRoomEmbed({
             </div>
           )}
           <Link
-            href={backHref}
+            href={isHost ? backHref : `${backHref}?reflect=${sessionId}`}
             className="inline-block px-6 py-3 rounded-full text-white text-sm font-black font-headline hover:scale-[1.02] transition-transform"
             style={{
               backgroundColor: "#FF6130",
@@ -334,8 +334,11 @@ export function LiveRoomEmbed({
               {status === "ending" ? "Ending..." : "End Session"}
             </button>
           ) : (
+            // The loop, not a render: leaving the room lands on the space
+            // with the reflection already open (?reflect= → modal). Asking
+            // "how was it?" belongs to the moment of walking out.
             <Link
-              href={backHref}
+              href={`${backHref}?reflect=${sessionId}`}
               className="px-4 py-2 rounded-full text-xs font-bold font-headline transition-colors hover:opacity-80"
               style={{
                 color: "#475569",
