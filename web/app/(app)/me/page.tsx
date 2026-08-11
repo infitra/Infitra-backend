@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { sessionLiveState } from "@/lib/liveWindow";
 import Link from "next/link";
 import { ParticipantNav } from "@/app/components/ParticipantNav";
 import { ParticipantPanel } from "./ParticipantPanel";
@@ -124,35 +125,70 @@ async function loadMe(userId: string) {
   }
 
   // ── Next session per experience ──
+  // A live/doors session OWNS the slot: the surface a participant checks on
+  // their phone at 14:02 must show the open room, not tomorrow's session.
+  // Same shared clock as every other live badge (lib/liveWindow.ts).
   const nextByChallenge = new Map<string, MeExperience["nextSession"]>();
   if (challengeIds.length) {
     const { data: links } = await supabase
       .from("app_challenge_session")
-      .select("challenge_id, app_session(id, title, start_time, status, image_url)")
+      .select(
+        "challenge_id, app_session(id, title, start_time, duration_minutes, status, image_url, live_room_id, started_at)",
+      )
       .in("challenge_id", challengeIds);
     const nowMs = Date.now();
-    const byChallenge = new Map<
-      string,
-      Array<{ title: string; start_time: string; status: string; image_url: string | null }>
-    >();
+    type SessRow = {
+      id: string;
+      title: string;
+      start_time: string;
+      duration_minutes: number | null;
+      status: string;
+      image_url: string | null;
+      live_room_id: string | null;
+      started_at: string | null;
+    };
+    const byChallenge = new Map<string, SessRow[]>();
     for (const l of (links ?? []) as Array<{ challenge_id: string; app_session: unknown }>) {
-      const s = (Array.isArray(l.app_session) ? l.app_session[0] : l.app_session) as
-        | { title: string; start_time: string; status: string; image_url: string | null }
-        | null;
+      const s = (Array.isArray(l.app_session) ? l.app_session[0] : l.app_session) as SessRow | null;
       if (!s) continue;
       const arr = byChallenge.get(l.challenge_id) ?? [];
       arr.push(s);
       byChallenge.set(l.challenge_id, arr);
     }
     for (const [cid, sess] of byChallenge) {
+      const stateOf = (s: SessRow) =>
+        sessionLiveState(
+          {
+            startTime: s.start_time,
+            durationMinutes: s.duration_minutes,
+            status: s.status,
+            liveRoomId: s.live_room_id,
+            startedAt: s.started_at,
+          },
+          nowMs,
+        );
+      const joinable =
+        sess.find((s) => stateOf(s) === "live") ?? sess.find((s) => stateOf(s) === "doors");
+      if (joinable) {
+        nextByChallenge.set(cid, {
+          id: joinable.id,
+          title: joinable.title,
+          startTime: joinable.start_time,
+          imageUrl: joinable.image_url ?? null,
+          liveState: stateOf(joinable) as "live" | "doors",
+        });
+        continue;
+      }
       const upcoming = sess
         .filter((s) => s.status === "published" && new Date(s.start_time).getTime() > nowMs)
         .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
       if (upcoming[0]) {
         nextByChallenge.set(cid, {
+          id: upcoming[0].id,
           title: upcoming[0].title,
           startTime: upcoming[0].start_time,
           imageUrl: upcoming[0].image_url ?? null,
+          liveState: null,
         });
       }
     }

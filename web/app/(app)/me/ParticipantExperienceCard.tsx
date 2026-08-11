@@ -17,6 +17,7 @@ import { TribeConstellation, TribeCountLine, type TribeFace } from "@/app/compon
 const INK = "#0F2229";
 const CYAN = "#0891b2";
 const ORANGE = "#FF6130";
+const RED = "#ef4444";
 const MUTED = "#94a3b8";
 const SOFT_SHADOW = "0 0 0 1px rgba(15,34,41,0.05), 0 10px 32px rgba(15,34,41,0.10)";
 
@@ -29,7 +30,16 @@ export interface MeExperience {
   spaceId: string | null;
   stage: "pre-launch" | "live" | "completed";
   experts: { id: string; name: string; avatar: string | null; role: "owner" | "cohost" }[];
-  nextSession: { title: string; startTime: string; imageUrl: string | null } | null;
+  nextSession: {
+    id: string;
+    title: string;
+    startTime: string;
+    imageUrl: string | null;
+    /** "live" (expert in the room) | "doors" (room open) | null (upcoming).
+     *  A live session OWNS this slot — the one surface participants check
+     *  on their phone must never show tomorrow while a room is open now. */
+    liveState: "live" | "doors" | null;
+  } | null;
   /** Capped member faces + total for the tribe constellation. */
   tribeFaces?: TribeFace[];
   memberTotal?: number;
@@ -161,8 +171,22 @@ function NextMoment({
   timeZone?: string;
 }) {
   const img = session.imageUrl ?? fallbackImage;
-  return (
-    <div className="flex items-center gap-4 rounded-xl p-3" style={{ backgroundColor: "#F6F2EA", border: "1px solid rgba(15,34,41,0.06)" }}>
+  const live = session.liveState === "live";
+  const joinable = session.liveState !== null;
+  const accent = live ? RED : ORANGE;
+
+  const inner = (
+    <div
+      className="flex items-center gap-4 rounded-xl p-3"
+      style={
+        joinable
+          ? {
+              backgroundColor: live ? "rgba(239,68,68,0.05)" : "rgba(255,97,48,0.05)",
+              boxShadow: `0 0 0 1.5px ${accent}`,
+            }
+          : { backgroundColor: "#F6F2EA", border: "1px solid rgba(15,34,41,0.06)" }
+      }
+    >
       <div className="relative w-28 h-[78px] rounded-lg overflow-hidden shrink-0" style={{ backgroundColor: "#22424a" }}>
         {img ? (
           <Image src={img} alt="" fill sizes="112px" className="object-cover" />
@@ -176,18 +200,22 @@ function NextMoment({
         )}
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-[10px] uppercase tracking-[0.16em] font-headline" style={{ color: CYAN, fontWeight: 800 }}>
-          Next moment
+        <p className="text-[10px] uppercase tracking-[0.16em] font-headline flex items-center gap-1.5" style={{ color: joinable ? accent : CYAN, fontWeight: 800 }}>
+          {joinable && <span className="inline-block w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: accent }} />}
+          {live ? "Live now" : session.liveState === "doors" ? "Doors open" : "Next moment"}
         </p>
         <p className="text-[15px] font-bold font-headline truncate mt-0.5" style={{ color: INK }}>
           {session.title}
         </p>
-        <p className="text-[12px] font-medium mt-1" style={{ color: "#64748b" }} suppressHydrationWarning>
-          {sessionWhen(session.startTime, timeZone)}
+        <p className="text-[12px] font-medium mt-1" style={{ color: joinable ? accent : "#64748b", fontWeight: joinable ? 700 : 500 }} suppressHydrationWarning>
+          {joinable ? "Join the room →" : sessionWhen(session.startTime, timeZone)}
         </p>
       </div>
     </div>
   );
+
+  // A live/doors moment IS a door: the whole row navigates into the room.
+  return joinable ? <Link href={`/sessions/${session.id}/live`}>{inner}</Link> : inner;
 }
 
 // ─── Experts (your coaches) ──────────────────────────────────
