@@ -1,7 +1,7 @@
 // supabase/functions/issue_join_token/index.ts
 // Supabase Edge Function: issue_join_token (using live_provider adapter)
 // - Auth required
-// - Entitlement: host OR session cohost OR attendee
+// - Entitlement: session EXPERT (host / session cohost / challenge owner / challenge cohost) OR attendee
 // - Rate limited via edge_rate_limit_use (per user & per IP)
 // - Issues provider token, marks started_at on the EXPERT's first join, upserts attendance & stream token
 // - Returns a ready-to-open room_url using DAILY_DOMAIN (fallback: infitra.daily.co)
@@ -99,22 +99,20 @@ Deno.serve(async (req) => {
     }
 
     // 5) Entitlement — BEFORE any room work, so an unentitled caller can
-    // never trigger a provider API call. Track the expert path separately:
-    // started_at (below) belongs to hosts/cohosts only.
-    const isHost = s.host_id === callerId;
-    let isCohost = false;
-
-    if (!isHost) {
-      const { data: ch } = await admin
-        .from("app_session_cohost")
-        .select("session_id")
-        .eq("session_id", session_id)
-        .eq("cohost_id", callerId)
-        .maybeSingle();
-      isCohost = !!ch;
+    // never trigger a provider API call. The expert TEAM is entitled, not
+    // just the host: is_session_expert() (host / session cohost / challenge
+    // owner / challenge cohost) is THE shared definition — the same one the
+    // live pages' guards and end_session use. Experts also flip started_at.
+    let isExpert = s.host_id === callerId;
+    if (!isExpert) {
+      const { data: expert } = await admin.rpc("is_session_expert", {
+        p_session_id: session_id,
+        p_user_id: callerId,
+      });
+      isExpert = expert === true;
     }
 
-    let entitled = isHost || isCohost;
+    let entitled = isExpert;
 
     if (!entitled) {
       const { data: att } = await admin
@@ -180,8 +178,10 @@ Deno.serve(async (req) => {
     // 7) Mark started_at on the EXPERT's first join (not any first join:
     // started_at is what flips every surface from "Doors open" to
     // "Live now", and a keen participant entering an empty room at T-14
-    // must not make the card claim an expert is present). Idempotent.
-    if (isHost || isCohost) {
+    // must not make the card claim an expert is present). Any expert of
+    // the experience counts — a sitting-in co-expert IS a present expert.
+    // Idempotent.
+    if (isExpert) {
       await admin
         .from("app_session")
         .update({ started_at: new Date().toISOString() })

@@ -321,18 +321,35 @@ export function LiveRoomEmbed({
             Open in tab
           </a>
           {isHost ? (
-            <button
-              onClick={handleEndSession}
-              disabled={status === "ending"}
-              className="px-4 py-2 rounded-full text-xs font-bold font-headline transition-colors disabled:opacity-50 hover:opacity-80"
-              style={{
-                color: "#be123c",
-                backgroundColor: "rgba(244, 63, 94, 0.08)",
-                border: "1px solid rgba(244, 63, 94, 0.25)",
-              }}
-            >
-              {status === "ending" ? "Ending..." : "End Session"}
-            </button>
+            <>
+              {/* Leaving is not ending: an expert can step out (their own
+                  connection, their own reasons) without closing the room
+                  for everyone. End Session stays the deliberate, confirmed
+                  act; the room survives a departed expert. */}
+              <Link
+                href={backHref}
+                className="px-4 py-2 rounded-full text-xs font-bold font-headline transition-colors hover:opacity-80"
+                style={{
+                  color: "#475569",
+                  backgroundColor: "rgba(255, 255, 255, 0.78)",
+                  border: "1px solid rgba(15, 34, 41, 0.15)",
+                }}
+              >
+                Leave
+              </Link>
+              <button
+                onClick={handleEndSession}
+                disabled={status === "ending"}
+                className="px-4 py-2 rounded-full text-xs font-bold font-headline transition-colors disabled:opacity-50 hover:opacity-80"
+                style={{
+                  color: "#be123c",
+                  backgroundColor: "rgba(244, 63, 94, 0.08)",
+                  border: "1px solid rgba(244, 63, 94, 0.25)",
+                }}
+              >
+                {status === "ending" ? "Ending..." : "End Session"}
+              </button>
+            </>
           ) : (
             // The loop, not a render: leaving the room lands on the space
             // with the reflection already open (?reflect= → modal). Asking

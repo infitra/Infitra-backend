@@ -19,14 +19,27 @@ export default async function HostLivePage({
 
   if (!user) redirect("/login");
 
+  // The expert TEAM enters here, not just the host: filtering on host_id
+  // 404'd a co-expert or challenge owner routed in by their own dashboard
+  // (rehearsal finding, 11 Aug). is_session_expert is the shared
+  // definition every live endpoint enforces.
   const { data: session } = await supabase
     .from("app_session")
     .select("id, title, host_id, live_room_id, status")
     .eq("id", id)
-    .eq("host_id", user.id)
     .single();
 
   if (!session) notFound();
+
+  let isExpert = session.host_id === user.id;
+  if (!isExpert) {
+    const { data: expert } = await supabase.rpc("is_session_expert", {
+      p_session_id: id,
+      p_user_id: user.id,
+    });
+    isExpert = expert === true;
+  }
+  if (!isExpert) notFound();
 
   // Resolve the parent challenge so we can return the host to the collaboration
   // workspace, not the retired dashboard session page.

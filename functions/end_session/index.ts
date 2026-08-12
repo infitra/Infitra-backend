@@ -1,5 +1,5 @@
 // Supabase Edge Function: end_session
-// Ends a session (host-only), sets ended_at, and writes a rich session_ended feed event.
+// Ends a session (any EXPERT of it), sets ended_at, and writes a rich session_ended feed event.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -38,14 +38,26 @@ Deno.serve(async (req) => {
     const { session_id } = await req.json();
     if (!session_id) return json({ code: 400, message: "Missing session_id" }, 400);
 
-    // 3) Verify session + ownership
+    // 3) Verify session + expert-team rights. Any expert of the experience
+    // may end it (host / session cohost / challenge owner / challenge
+    // cohost, via the shared is_session_expert definition): if the host
+    // drops and never returns, the co-expert must not be locked out of
+    // closing the session cleanly.
     const { data: s, error: sErr } = await admin
       .from("app_session")
       .select("id, host_id, status")
       .eq("id", session_id)
       .single();
     if (sErr || !s) return json({ code: 404, message: "Session not found" }, 404);
-    if (s.host_id !== callerId) return json({ code: 403, message: "Forbidden - Not host" }, 403);
+    let isExpert = s.host_id === callerId;
+    if (!isExpert) {
+      const { data: expert } = await admin.rpc("is_session_expert", {
+        p_session_id: session_id,
+        p_user_id: callerId,
+      });
+      isExpert = expert === true;
+    }
+    if (!isExpert) return json({ code: 403, message: "Forbidden - Not an expert of this session" }, 403);
     if (s.status === "ended") {
       return json({ message: "Session already ended" });
     }

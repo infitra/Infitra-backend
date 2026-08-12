@@ -39,9 +39,20 @@ export default async function ParticipantLivePage({
   if (session.status === "ended") redirect(backHref);
   if (!session.live_room_id) redirect(backHref);
 
-  // Entitlement guard (edge function does authoritative check, this is UX guard)
-  const isHost = user.id === session.host_id;
-  if (!isHost) {
+  // Entitlement guard (edge function does authoritative check, this is UX
+  // guard). The expert TEAM counts, not just the host: is_session_expert
+  // (host / session cohost / challenge owner / challenge cohost) is the
+  // same shared definition issue_join_token and end_session enforce. An
+  // expert here gets the expert controls — either expert can End.
+  let isExpert = user.id === session.host_id;
+  if (!isExpert) {
+    const { data: expert } = await supabase.rpc("is_session_expert", {
+      p_session_id: id,
+      p_user_id: user.id,
+    });
+    isExpert = expert === true;
+  }
+  if (!isExpert) {
     // app_attendance has NO id column (composite key session_id+user_id).
     // Selecting "id" here made PostgREST error, data came back null, and
     // EVERY participant on EVERY device was silently bounced back to the
@@ -62,7 +73,7 @@ export default async function ParticipantLivePage({
     <LiveRoomEmbed
       sessionId={id}
       sessionTitle={session.title}
-      isHost={isHost}
+      isHost={isExpert}
       backHref={backHref}
     />
   );
