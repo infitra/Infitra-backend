@@ -171,8 +171,15 @@ Deno.serve(async (req) => {
       liveRoomId = s2?.live_provider === activeProvider ? s2?.live_room_id ?? roomId : roomId;
     }
 
-    // 6) Issue provider token
-    const userName = u.user.email ?? "User";
+    // 6) Issue provider token. The in-room name is the person's INFITRA
+    // display name — "Mira Hart", not "mira@creator.com" (which is what
+    // everyone saw over her video tile before this).
+    const { data: prof } = await admin
+      .from("app_profile")
+      .select("display_name")
+      .eq("id", callerId)
+      .maybeSingle();
+    const userName = prof?.display_name || u.user.email || "Member";
     const { token } = await issueToken(liveRoomId, userName);
 
     // 7) Mark started_at on the EXPERT's first join (not any first join:
