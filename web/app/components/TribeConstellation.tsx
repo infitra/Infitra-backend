@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { ProfileTrigger } from "@/app/components/ProfileModal";
 
 /**
@@ -205,11 +206,19 @@ function Face({
     ? `0 0 0 2.5px ${ring}, 0 6px 18px rgba(15,34,41,0.18)`
     : `0 0 0 2px ${ring}, 0 2px 8px rgba(15,34,41,0.10)`;
   if (src) {
+    // next/image, NOT a raw <img>: members upload phone photos, and this
+    // constellation mounts up to 13 of them above the fold. Unoptimised,
+    // that was ~8 MB of originals (largest single avatar 2.37 MB) decoding
+    // to hundreds of MB of bitmap to paint 44px circles — enough for iOS
+    // Safari to abandon the paint half-rendered and stay that way.
     return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
+      <Image
         src={src}
         alt=""
+        width={size}
+        height={size}
+        sizes={`${size}px`}
+        loading="lazy"
         className="rounded-full object-cover block"
         style={{ width: size, height: size, boxShadow: shadow, backgroundColor: "#FFFFFF" }}
       />

@@ -228,9 +228,12 @@ async function loadDashboard(userId: string) {
         .order("created_at", { ascending: false }),
       supabase
         .from("app_session")
-        .select("id, title, start_time, duration_minutes, status, live_room_id, started_at")
+        .select("id, title, start_time, duration_minutes, status, live_room_id, started_at, host_id")
         .eq("host_id", userId)
         .in("status", ["published", "ended"])
+        // Recent-window bound: without it, a host with >20 lifetime sessions
+        // pushes today's live one past the limit and loses the banner.
+        .gte("start_time", new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString())
         .order("start_time", { ascending: true })
         .limit(20),
     ]);
@@ -254,14 +257,34 @@ async function loadDashboard(userId: string) {
   let spaceIds: Record<string, string | null> = {};
   let cohostMap: Record<string, string[]> = {};
   let pendingPartnerInvites: Record<string, string | null> = {};
+  // Sessions of every experience the viewer runs — not just the ones they
+  // host. A cohost is an expert of the session (is_session_expert), so the
+  // live banner must reach them too; host-scoping it meant Mira saw nothing
+  // on /dashboard while Alex's session was live (rehearsal, 13 Aug).
+  type LiveSignalRow = {
+    id: string;
+    title: string;
+    start_time: string;
+    duration_minutes: number | null;
+    status: string;
+    live_room_id: string | null;
+    started_at: string | null;
+    host_id: string | null;
+  };
+  let teamSessionRows: LiveSignalRow[] = [];
 
   if (challengeIds.length > 0) {
     const contractIds = allChallenges
       .map((c) => c.contract_id)
       .filter((x): x is string => !!x);
 
-    const [contractsResult, spacesResult, cohostsResult, partnerInvitesResult] =
-      await Promise.all([
+    const [
+      contractsResult,
+      spacesResult,
+      cohostsResult,
+      partnerInvitesResult,
+      teamSessionsResult,
+    ] = await Promise.all([
         contractIds.length > 0
           ? supabase
               .from("app_collaboration_contract")
@@ -281,7 +304,20 @@ async function loadDashboard(userId: string) {
           .select("challenge_id, to_id")
           .in("challenge_id", challengeIds)
           .eq("status", "pending"),
+        supabase
+          .from("app_challenge_session")
+          .select(
+            "app_session(id, title, start_time, duration_minutes, status, live_room_id, started_at, host_id)",
+          )
+          .in("challenge_id", challengeIds),
       ]);
+
+    teamSessionRows = ((teamSessionsResult.data ?? []) as any[])
+      .map((r) => (Array.isArray(r.app_session) ? r.app_session[0] : r.app_session))
+      .filter(
+        (s: any): s is LiveSignalRow =>
+          !!s && (s.status === "published" || s.status === "ended"),
+      );
 
     for (const ch of allChallenges) {
       const c = (contractsResult.data ?? []).find((r: any) => r.id === ch.contract_id);
@@ -596,7 +632,14 @@ async function loadDashboard(userId: string) {
 
   // Pulse signals (for TopAlert) — the shared live clock, so this rail can
   // never claim "Live now" for an expired or merely-precreated room.
-  const sessions = (upcomingSessionsResult.data ?? []) as Array<any>;
+  // Union of "sessions I host" and "sessions of experiences I run", deduped.
+  // Both legs keep the published/ended status filter, so drafts stay out.
+  const sessionById = new Map<string, any>();
+  for (const s of (upcomingSessionsResult.data ?? []) as any[]) sessionById.set(s.id, s);
+  for (const s of teamSessionRows) if (!sessionById.has(s.id)) sessionById.set(s.id, s);
+  const sessions = [...sessionById.values()].sort(
+    (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime(),
+  );
   const now = Date.now();
   const liveStateOf = (s: any) =>
     sessionLiveState(
@@ -617,6 +660,10 @@ async function loadDashboard(userId: string) {
       sessions.find((s) => {
         if (s.live_room_id) return false;
         if (s.status !== "published") return false;
+        // No room yet: the live page redirects straight back out, so this
+        // dead end stays the HOST's problem (they can force provisioning by
+        // going live). Never send a co-expert into it.
+        if (s.host_id !== userId) return false;
         const startMs = new Date(s.start_time).getTime();
         return now >= startMs - 15 * 60 * 1000 && now < startMs;
       }))
@@ -678,6 +725,8 @@ async function loadDashboard(userId: string) {
           id: goLiveSoonSession.id,
           title: goLiveSoonSession.title,
           startTime: goLiveSoonSession.start_time,
+          // "Go live" is the host's act. A co-expert is joining.
+          viewerIsHost: goLiveSoonSession.host_id === userId,
         }
       : null,
   };

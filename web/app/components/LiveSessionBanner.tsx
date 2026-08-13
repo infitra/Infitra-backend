@@ -52,13 +52,16 @@ export function LiveSessionBanner({
           {title}
         </h2>
       </div>
+      {/* The CTA carries the SAME accent as the pulse: red when an expert is
+          in the room, orange when the doors are merely open. A red banner
+          with an orange button read as two different urgencies at once. */}
       <Link
         href={href}
         className="shrink-0 px-5 md:px-6 py-2.5 md:py-3 rounded-full text-white text-sm font-headline transition-transform hover:scale-[1.02]"
         style={{
-          backgroundColor: "#FF6130",
+          backgroundColor: pulseColor,
           fontWeight: 700,
-          boxShadow: "0 4px 14px rgba(255,97,48,0.35)",
+          boxShadow: `0 4px 14px ${pulseColor}59`,
         }}
       >
         {cta}

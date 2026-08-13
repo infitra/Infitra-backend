@@ -23,6 +23,11 @@ import Daily, { type DailyCall } from "@daily-co/daily-js";
 
 /** Brand theme for Daily Prebuilt. Dark-teal main stage (the brand's dark
  *  surface), cream/white chrome, orange for every primary action. */
+/** Provider error types that mean "the room is gone", not "you failed to
+ *  connect" — ejected by API, room expiry (our eject_at_room_exp), account
+ *  end-of-life, and no-room (the room was deleted out from under us). */
+const ENDING_TYPES = new Set(["ejected", "exp-room", "end-of-life", "no-room"]);
+
 const INFITRA_THEME = {
   colors: {
     accent: "#FF6130",
@@ -51,8 +56,10 @@ export function DailyRoom({
   /** The room itself closed under us (expert ended the session, or the
    *  room hit its expiry). NOT fired for the user's own Leave. */
   onEnded: () => void;
-  /** Unrecoverable in-room failure; message is human-readable. */
-  onFatalError: (message: string) => void;
+  /** Unrecoverable in-room failure. `providerType` is the provider's own
+   *  error taxonomy passed through verbatim — the shell logs it so we learn
+   *  what Daily actually sends instead of guessing. */
+  onFatalError: (message: string, providerType?: string) => void;
   /** Camera/mic trouble — Daily shows its own recovery UI; we only log. */
   onCameraError: (message: string) => void;
 }) {
@@ -87,15 +94,22 @@ export function DailyRoom({
         .on("joined-meeting", () => onJoined())
         .on("camera-error", (ev) => onCameraError(ev?.errorMsg?.errorMsg ?? "camera error"))
         .on("error", (ev) => {
-          const kind = ev?.error?.type;
-          // The room closing under us is an ENDING, not a failure: an
-          // expert pressed End (end_session deletes the room → everyone
-          // ejected) or the room hit its expiry clock.
-          if (kind === "ejected" || kind === "exp-room" || kind === "end-of-life") {
-            onEnded();
-          } else {
-            onFatalError(ev?.errorMsg ?? "connection failed");
-          }
+          const kind: string | undefined = ev?.error?.type;
+          const msg = ev?.errorMsg ?? "connection failed";
+          // FAST PATH only. `no-room` is the deleted-room case that broke the
+          // 13 Aug rehearsal: end_session deletes the room via REST, and
+          // daily-js's own Sentry filter special-cases no-room + "deleted" as
+          // expected-not-a-bug. It was missing here, so an ended session
+          // reached participants as a red "Connection failed".
+          //
+          // This list can never be the whole answer: DailyEventObjectFatalError
+          // types `error` as OPTIONAL and `any`, and the human text
+          // ("Meeting has ended") is authored by Daily's remote signaling — it
+          // appears nowhere in the shipped package, so it has no contract.
+          // The shell re-checks against OUR database, which is the only
+          // authority on whether a session ended.
+          if (kind && ENDING_TYPES.has(kind)) onEnded();
+          else onFatalError(msg, kind);
         });
 
       frame.join({ url: roomUrl });

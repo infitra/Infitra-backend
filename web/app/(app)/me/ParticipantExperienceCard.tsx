@@ -234,8 +234,15 @@ function PersonBox({ name, avatar, role }: { name: string; avatar: string | null
         style={{ border: `1.5px solid ${color}40`, backgroundColor: avatar ? "transparent" : `${color}20` }}
       >
         {avatar ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={avatar} alt="" className="w-full h-full object-cover" />
+          <Image
+            src={avatar}
+            alt=""
+            width={36}
+            height={36}
+            sizes="36px"
+            loading="lazy"
+            className="w-full h-full object-cover"
+          />
         ) : (
           <span className="text-xs font-headline" style={{ color, fontWeight: 700 }}>
             {initial}

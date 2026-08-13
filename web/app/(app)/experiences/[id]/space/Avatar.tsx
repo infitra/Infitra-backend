@@ -1,10 +1,14 @@
 /**
  * Avatar — shared across the Experience Space (YOU panel, cover, feed).
  *
- * Plain <img> (not next/image) on purpose: avatars are tiny, already-optimized
- * profile URLs and many are null → initial fallback. `ring` tints the border +
- * the initial bubble (owner = orange, cohost = cyan, etc).
+ * next/image, because the old assumption here ("avatars are tiny,
+ * already-optimized profile URLs") was simply false: members upload straight
+ * from their phones, and this experience's avatars totalled ~8 MB with a
+ * 2.37 MB single PNG. A feed renders dozens of these. `ring` tints the border
+ * + the initial bubble (owner = orange, cohost = cyan, etc).
  */
+
+import Image from "next/image";
 
 export function Avatar({
   src,
@@ -25,10 +29,13 @@ export function Avatar({
   const border = ring ? `2px solid ${ring}` : "2px solid #fff";
   if (src) {
     return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
+      <Image
         src={src}
         alt={name}
+        width={size}
+        height={size}
+        sizes={`${size}px`}
+        loading="lazy"
         className="rounded-full object-cover shrink-0"
         style={{ width: size, height: size, border }}
       />

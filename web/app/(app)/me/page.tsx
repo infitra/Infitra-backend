@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { sessionLiveState } from "@/lib/liveWindow";
 import { LiveSessionBanner } from "@/app/components/LiveSessionBanner";
+import { LiveMomentWatcher } from "@/app/components/LiveMomentWatcher";
 import Link from "next/link";
 import { ParticipantNav } from "@/app/components/ParticipantNav";
 import { ParticipantPanel } from "./ParticipantPanel";
@@ -345,6 +346,13 @@ export default async function MeHomePage() {
   const liveMoment =
     joinableMoments.find((s) => s.liveState === "live") ?? joinableMoments[0] ?? null;
 
+  // The rows whose UPDATE can change the banner: each experience's chosen
+  // moment — already either the joinable one or the next upcoming, which is
+  // exactly what precreate and issue_join_token write to.
+  const watchedSessionIds = active
+    .map((e) => e.nextSession?.id)
+    .filter((id): id is string => !!id);
+
   return (
     <ProfileModalHost>
     <OverlayHost>
@@ -353,7 +361,11 @@ export default async function MeHomePage() {
       <div className="pt-20 px-6">
         <div className="max-w-7xl mx-auto py-8">
           {/* THE live banner — same dark interrupt as the expert dashboard's
-              TopAlert, at the very top: an open room outranks everything. */}
+              TopAlert, at the very top: an open room outranks everything.
+              The watcher keeps it truthful without a reload. */}
+          {watchedSessionIds.length > 0 && (
+            <LiveMomentWatcher sessionIds={watchedSessionIds} />
+          )}
           {liveMoment && (
             <LiveSessionBanner
               href={`/sessions/${liveMoment.id}/live`}

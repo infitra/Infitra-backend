@@ -19,7 +19,14 @@ import { LiveSessionBanner } from "@/app/components/LiveSessionBanner";
 
 interface Props {
   liveSession: { id: string; title: string } | null;
-  goLiveSoonSession: { id: string; title: string; startTime: string } | null;
+  goLiveSoonSession: {
+    id: string;
+    title: string;
+    startTime: string;
+    /** "Go live" belongs to the host; a co-expert is joining a room someone
+     *  else opens. Same banner, honest voice. */
+    viewerIsHost?: boolean;
+  } | null;
 }
 
 function minutesUntil(iso: string): number {
@@ -41,13 +48,18 @@ export function TopAlert({ liveSession, goLiveSoonSession }: Props) {
   }
   if (goLiveSoonSession) {
     const m = minutesUntil(goLiveSoonSession.startTime);
+    const isHost = goLiveSoonSession.viewerIsHost !== false;
     return (
       <LiveSessionBanner
         href={`/dashboard/sessions/${goLiveSoonSession.id}/live`}
         pulseColor="#FF6130"
-        label={`Ready to go live${m > 0 ? ` · in ${m}m` : ""}`}
+        label={
+          isHost
+            ? `Ready to go live${m > 0 ? ` · in ${m}m` : ""}`
+            : `Doors open${m > 0 ? ` · starts in ${m}m` : ""}`
+        }
         title={goLiveSoonSession.title}
-        cta="Go live →"
+        cta={isHost ? "Go live →" : "Join the room →"}
       />
     );
   }

@@ -128,6 +128,22 @@ Deno.serve(async (req) => {
       return json({ error: "Forbidden" }, 403);
     }
 
+    // An ENDED session is not joinable, stale room reference or not. This
+    // guard used to live inside the "no room yet" branch below, so a session
+    // that had been ended while live_room_id was still populated kept issuing
+    // tokens to a DELETED room: the participant was walked through camera
+    // permissions again and then dropped on "Meeting has ended" (rehearsal,
+    // 13 Aug — Tim's attendance shows a join 98s AFTER ended_at).
+    // `ended: true` lets the client route into the reflection loop instead of
+    // rendering this as a failure.
+    // Deliberately 200, not 4xx: supabase-js surfaces any non-2xx as an
+    // opaque FunctionsHttpError with the body buried in error.context, so a
+    // status code here would be unreadable at the call site. This is an
+    // app-level STATE, not a transport failure.
+    if (s.status === "ended" || s.ended_at) {
+      return json({ ended: true, error: "This session has ended." }, 200);
+    }
+
     // 5b) Ensure the room exists — LAZY FALLBACK.
     // The precreate-rooms cron is the primary provisioner (15 min ahead);
     // this path self-heals when it misses (cron down, session created inside

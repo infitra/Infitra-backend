@@ -9,6 +9,50 @@ import { DailyRoom } from "@/app/components/DailyRoom";
 
 type Status = "loading" | "ready" | "ending" | "ended" | "error";
 
+/**
+ * Did the room die because the SESSION ended? Only our database knows.
+ *
+ * The provider's error taxonomy is undocumented, server-authored, optional
+ * on the event, and about to be swapped for another provider — so it is a
+ * hint, never the verdict. end_session commits status='ended' BEFORE it
+ * deletes the room, so by the time a client hears the error the write is
+ * long done. Returns true / false / null (null = we could not tell).
+ */
+async function sessionEndedInDb(sessionId: string): Promise<boolean | null> {
+  const read = async (): Promise<boolean | null> => {
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from("app_session")
+        .select("status")
+        .eq("id", sessionId)
+        .maybeSingle();
+      // maybeSingle, not single: an RLS-hidden row must read as "unknown"
+      // (null → fall back to the message), never as "not ended".
+      if (error || !data) return null;
+      return data.status === "ended";
+    } catch {
+      return null;
+    }
+  };
+
+  const withTimeout = (p: Promise<boolean | null>) =>
+    Promise.race([p, new Promise<null>((r) => setTimeout(() => r(null), 2500))]);
+
+  const first = await withTimeout(read());
+  if (first !== false) return first;
+  // One cheap retry only for the pathological case (a concurrent end, or
+  // replica lag if replicas are ever enabled).
+  await new Promise((r) => setTimeout(r, 1200));
+  return withTimeout(read());
+}
+
+/** Last resort when the database is unreachable: the provider's own words.
+ *  Deliberately provider-agnostic so a future provider's phrasing lands here
+ *  too. A fallback, never the primary mechanism. */
+const ENDING_MSG =
+  /meeting has ended|meeting ended|room .*(deleted|no longer exists|not found)|session (has )?ended|room closed|does not exist/i;
+
 interface Summary {
   title?: string | null;
   duration_min?: number | null;
@@ -67,6 +111,15 @@ export function LiveRoomEmbed({
       );
 
       if (fnError) return fail(fnError.message || "Failed to connect.");
+      // The session closed while we were away (or the user hit "Try Again"
+      // after an expert ended it). That is an ENDING, not a failure: send
+      // participants into the same reflection loop a live end produces,
+      // instead of the red "Connection failed" card they saw on 13 Aug.
+      if (data?.ended) {
+        trackEvent("Room Ended Remotely", { session: sessionId });
+        router.replace(isHost ? backHref : `${backHref}?reflect=${sessionId}`);
+        return;
+      }
       if (data?.error) return fail(data.error);
       if (!data?.room_url) return fail("No room URL returned.");
 
@@ -77,7 +130,7 @@ export function LiveRoomEmbed({
     } catch (err: any) {
       fail(err?.message || "Something went wrong.");
     }
-  }, [sessionId]);
+  }, [sessionId, isHost, backHref, router]);
 
   useEffect(() => {
     fetchToken();
@@ -98,12 +151,36 @@ export function LiveRoomEmbed({
   );
 
   const handleRoomFatal = useCallback(
-    (message: string) => {
-      trackEvent("Join Failed", { session: sessionId, reason: message });
+    async (message: string, providerType?: string) => {
+      // Guard FIRST. Pressing End deletes the room while this client is
+      // still mounted ("ending" does not unmount the room), so the expert's
+      // own device hears this error — without the guard the red screen races
+      // and beats their "Session Ended" summary.
+      if (statusRef.current === "ending" || statusRef.current === "ended") return;
+
+      const ended = await sessionEndedInDb(sessionId);
+      if (ended === true || (ended === null && ENDING_MSG.test(message))) {
+        trackEvent("Room Ended Remotely", {
+          session: sessionId,
+          via: ended === true ? "db" : "message",
+          providerType: providerType ?? "none",
+        });
+        if (isHost) router.push(backHref);
+        else router.push(`${backHref}?reflect=${sessionId}`);
+        return;
+      }
+
+      // A genuine failure. Record the raw provider taxonomy so we stop
+      // guessing what this provider actually sends.
+      trackEvent("Join Failed", {
+        session: sessionId,
+        reason: message,
+        providerType: providerType ?? "none",
+      });
       setError(message);
       setStatus("error");
     },
-    [sessionId],
+    [sessionId, isHost, backHref, router],
   );
 
   const handleRoomEnded = useCallback(() => {
