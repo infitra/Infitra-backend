@@ -2,6 +2,7 @@
 // Ends a session (any EXPERT of it), sets ended_at, and writes a rich session_ended feed event.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { provider, deleteRoom } from "../live_provider/index.ts";
 
 // Env
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -45,7 +46,7 @@ Deno.serve(async (req) => {
     // closing the session cleanly.
     const { data: s, error: sErr } = await admin
       .from("app_session")
-      .select("id, host_id, status")
+      .select("id, host_id, status, live_room_id, live_provider")
       .eq("id", session_id)
       .single();
     if (sErr || !s) return json({ code: 404, message: "Session not found" }, 404);
@@ -69,6 +70,19 @@ Deno.serve(async (req) => {
       .update({ status: "ended", ended_at: now })
       .eq("id", session_id);
     if (upErr) return json({ code: 500, message: "Failed to update session", detail: upErr.message }, 500);
+
+    // 4b) Actually close the room. "End this session for all participants?"
+    // must mean it: deleting the provider room ejects every connected
+    // client, and the frontend routes participants into the reflection
+    // loop on that ejection. Best-effort — the DB is already truthful, and
+    // the room's own expiry remains the backstop if the provider call fails.
+    if (s.live_room_id && s.live_provider === provider()) {
+      try {
+        await deleteRoom(s.live_room_id);
+      } catch (e) {
+        console.error("deleteRoom failed (room will die at expiry):", e);
+      }
+    }
 
     // 5) Pull overview to enrich metadata (duration, net, attendees, title)
     const { data: ov } = await admin

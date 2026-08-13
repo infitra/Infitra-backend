@@ -208,9 +208,10 @@ Deno.serve(async (req) => {
       return json({ error: "Failed to save token", detail: tokErr.message }, 500);
     }
 
-    // 9) Return token + ready-to-open URL
+    // 9) Return token + ready-to-open URL. `provider` is the frontend
+    // seam's switch: LiveRoomEmbed mounts the matching room component.
     const room_url = `https://${DAILY_DOMAIN}/${liveRoomId}?t=${encodeURIComponent(token)}`;
-    return json({ token, expires_at: expires, room_url }, 200);
+    return json({ token, expires_at: expires, room_url, provider: activeProvider }, 200);
   } catch (e) {
     return json({ error: "Unhandled exception", detail: String(e) }, 500);
   }

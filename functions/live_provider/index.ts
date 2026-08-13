@@ -5,6 +5,7 @@
  * Exported:
  *  - provider()
  *  - createRoom(title)
+ *  - deleteRoom(roomId)
  *  - issueToken(roomId, userName)
  *  - parseWebhook(req, payload)
  *
@@ -72,6 +73,29 @@ export async function createRoom(title: string, opts?: { expUnix?: number }) {
     const roomId = json?.name;
     if (!roomId) throw new Error("Daily createRoom: missing 'name' in response");
     return { provider: "daily", roomId };
+  }
+
+  throw new Error(`Unsupported LIVE_PROVIDER: ${ACTIVE}`);
+}
+
+/** Tear the room down NOW (end_session): every connected client is ejected
+ *  and hears it as a fatal 'ejected' error, which the frontend routes into
+ *  the reflection loop. Without this, "End this session for all
+ *  participants?" only marked the DB — the call itself kept running until
+ *  room expiry. 404 counts as success: the room being gone IS the goal. */
+export async function deleteRoom(roomId: string) {
+  if (ACTIVE === "daily") {
+    const DAILY_API_BASE = requireEnv("DAILY_API_BASE");
+    const DAILY_API_KEY  = requireEnv("DAILY_API_KEY");
+
+    const res = await fetch(`${DAILY_API_BASE}/rooms/${encodeURIComponent(roomId)}`, {
+      method: "DELETE",
+      headers: { "Authorization": `Bearer ${DAILY_API_KEY}` },
+    });
+    if (!res.ok && res.status !== 404) {
+      throw new Error(`Daily deleteRoom failed: ${await res.text()}`);
+    }
+    return;
   }
 
   throw new Error(`Unsupported LIVE_PROVIDER: ${ACTIVE}`);

@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { trackEvent } from "@/lib/analytics";
+import { DailyRoom } from "@/app/components/DailyRoom";
 
 type Status = "loading" | "ready" | "ending" | "ended" | "error";
 
@@ -27,10 +29,21 @@ export function LiveRoomEmbed({
    *  participant's Experience Space, resolved by the live page. */
   backHref: string;
 }) {
+  const router = useRouter();
   const [status, setStatus] = useState<Status>("loading");
   const [roomUrl, setRoomUrl] = useState<string | null>(null);
+  // The provider seam: the token endpoint names the provider; this shell
+  // mounts the matching room component and stays provider-neutral itself.
+  const [provider, setProvider] = useState<string>("daily");
   const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<Summary | null>(null);
+
+  // Room callbacks fire from inside the call's own lifecycle — they must
+  // read CURRENT status, not the render they were created in.
+  const statusRef = useRef<Status>("loading");
+  useEffect(() => {
+    statusRef.current = status;
+  }, [status]);
 
   const fetchToken = useCallback(async () => {
     setStatus("loading");
@@ -58,6 +71,7 @@ export function LiveRoomEmbed({
       if (!data?.room_url) return fail("No room URL returned.");
 
       setRoomUrl(data.room_url);
+      setProvider(typeof data.provider === "string" ? data.provider : "daily");
       setStatus("ready");
       trackEvent("Join Live", { session: sessionId });
     } catch (err: any) {
@@ -68,6 +82,39 @@ export function LiveRoomEmbed({
   useEffect(() => {
     fetchToken();
   }, [fetchToken]);
+
+  // ── In-room lifecycle (the old iframe was a sealed box: none of this
+  //    was knowable, which is why Tim's failure took nine days) ──
+  const handleRoomJoined = useCallback(() => {
+    trackEvent("Room Joined", { session: sessionId });
+  }, [sessionId]);
+
+  const handleCameraError = useCallback(
+    (message: string) => {
+      // Daily shows its own permission-recovery UI; we just leave a trace.
+      trackEvent("Room Camera Error", { session: sessionId, reason: message });
+    },
+    [sessionId],
+  );
+
+  const handleRoomFatal = useCallback(
+    (message: string) => {
+      trackEvent("Join Failed", { session: sessionId, reason: message });
+      setError(message);
+      setStatus("error");
+    },
+    [sessionId],
+  );
+
+  const handleRoomEnded = useCallback(() => {
+    // If THIS user pressed End, the summary flow owns the transition.
+    if (statusRef.current === "ending" || statusRef.current === "ended") return;
+    trackEvent("Room Ended Remotely", { session: sessionId });
+    // The loop closes for everyone at once: an expert ends the session,
+    // and every participant lands in the reflection — same door as Leave.
+    if (isHost) router.push(backHref);
+    else router.push(`${backHref}?reflect=${sessionId}`);
+  }, [sessionId, isHost, backHref, router]);
 
   async function handleEndSession() {
     if (!window.confirm("End this session for all participants?")) return;
@@ -369,12 +416,25 @@ export function LiveRoomEmbed({
         </div>
       </div>
 
-      {/* Daily.co iframe */}
-      <iframe
-        src={roomUrl!}
-        allow="camera; microphone; fullscreen; display-capture; autoplay"
-        className="flex-1 w-full border-0"
-      />
+      {/* The room itself, behind the provider seam: the token endpoint
+          names the provider, this shell stays neutral. Unknown providers
+          fall back to a plain iframe of the room URL — degraded (no
+          telemetry, no theme) but functional. */}
+      {provider === "daily" ? (
+        <DailyRoom
+          roomUrl={roomUrl!}
+          onJoined={handleRoomJoined}
+          onEnded={handleRoomEnded}
+          onFatalError={handleRoomFatal}
+          onCameraError={handleCameraError}
+        />
+      ) : (
+        <iframe
+          src={roomUrl!}
+          allow="camera; microphone; fullscreen; display-capture; autoplay"
+          className="flex-1 w-full border-0"
+        />
+      )}
     </div>
   );
 }
