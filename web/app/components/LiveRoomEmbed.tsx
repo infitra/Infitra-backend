@@ -331,6 +331,25 @@ export function LiveRoomEmbed({
         }}
       >
         <div className="flex items-center gap-3 min-w-0">
+          {/* The room is an INFITRA room: mark + wordmark carry the brand
+              in the chrome (the call canvas itself is Daily Prebuilt and
+              can only be themed, not logo'd). Wordmark hides on phones —
+              the session title is the scarcer resource there. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo-mark.png"
+            alt="INFITRA"
+            width={28}
+            height={28}
+            className="block rounded-lg shrink-0"
+          />
+          <span
+            className="hidden md:block text-[17px] tracking-tight font-headline leading-none shrink-0"
+            style={{ color: "#FF6130", fontWeight: 700, letterSpacing: "-0.03em" }}
+          >
+            INFITRA
+          </span>
+          <span className="hidden md:block w-px h-5 shrink-0" style={{ backgroundColor: "rgba(15,34,41,0.12)" }} />
           <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse shrink-0" />
           <h1
             className="text-sm font-bold font-headline truncate"
