@@ -33,6 +33,38 @@ const INK = "#0F2229";
 
 /** Smooth-scroll to an in-page section WITHOUT putting a #hash in the URL
  *  (a lingering hash makes reload jump to that section instead of the top). */
+/**
+ * "N reflections to read" must CLEAR once read — in rehearsal it behaved
+ * like "a task that even when seen and clicked never goes away". Reflections
+ * aren't answerable, so there is no natural completion event; instead the
+ * click records the count as seen (per experience, per device) and only the
+ * EXCESS over that mark shows. Ratchets down when old reflections age out
+ * of the stats window, so a later new one still surfaces.
+ */
+function useSeenReflections(experienceId: string, current: number): [number, () => void] {
+  const key = `infitra:reflections-seen:${experienceId}`;
+  const [seen, setSeen] = useState(0);
+  useEffect(() => {
+    try {
+      const stored = Number(window.localStorage.getItem(key) ?? "0");
+      const ratcheted = Math.min(stored, current);
+      if (ratcheted !== stored) window.localStorage.setItem(key, String(ratcheted));
+      setSeen(ratcheted);
+    } catch {
+      /* storage unavailable → tile simply behaves as before */
+    }
+  }, [key, current]);
+  const markSeen = () => {
+    try {
+      window.localStorage.setItem(key, String(current));
+    } catch {
+      /* ignore */
+    }
+    setSeen(current);
+  };
+  return [Math.max(0, current - seen), markSeen];
+}
+
 function scrollToId(id: string) {
   if (typeof document !== "undefined") {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -77,6 +109,10 @@ export function YouPanel({ continuation }: { continuation?: CreatorContinuation 
   // refreshed live by the Shell (off the feed's existing realtime channel).
   // Just read it here; no client fetch in the panel.
   const stats = useExperienceSpaceStore((s) => s.ui.creatorStats);
+  const [unseenReflections, markReflectionsSeen] = useSeenReflections(
+    experience.id,
+    stats?.reflections ?? 0,
+  );
 
   const model = buildWeekJourney(experience, programState, sessions, now);
   const status = programStatus(experience, now);
@@ -208,15 +244,15 @@ export function YouPanel({ continuation }: { continuation?: CreatorContinuation 
               </div>
             )}
 
-            {stats && stats.reflections > 0 && (
+            {unseenReflections > 0 && (
               <a
                 href="#tribe"
-                onClick={(e) => { e.preventDefault(); scrollToId("tribe"); }}
+                onClick={(e) => { e.preventDefault(); markReflectionsSeen(); scrollToId("tribe"); }}
                 className="flex items-center gap-2 rounded-xl px-3.5 py-2.5 mt-2 transition-transform hover:scale-[1.01]"
                 style={{ backgroundColor: "rgba(8,145,178,0.08)", boxShadow: `inset 0 0 0 1.5px ${CYAN}33` }}
               >
                 <span className="text-[12px] font-black font-headline flex-1" style={{ color: CYAN }}>
-                  {stats.reflections} new {stats.reflections === 1 ? "reflection" : "reflections"} to read
+                  {unseenReflections} new {unseenReflections === 1 ? "reflection" : "reflections"} to read
                 </span>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={CYAN} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="9 18 15 12 9 6" />

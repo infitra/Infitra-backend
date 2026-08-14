@@ -129,11 +129,14 @@ function ReflectionLoopModal({ reflectSessionId }: { reflectSessionId: string | 
                 className="text-lg font-headline font-black tracking-tight truncate"
                 style={{ color: "#0F2229", letterSpacing: "-0.02em" }}
               >
-                How was it?
+                How did it feel?
               </h2>
             </div>
+            {/* Second half of the wrap moment — the room said "that's a
+                wrap", this carries the same warmth into the reflection. */}
             <p className="text-[12px] mt-1 ml-[14px]" style={{ color: "#64748b" }}>
-              {session.title}
+              <span className="font-bold" style={{ color: "#FF6130" }}>{session.title}</span>
+              {" "}is a wrap. Well done for showing up.
             </p>
           </div>
           <button
@@ -227,7 +230,12 @@ function SpaceBody({ reviewState, continuation }: { reviewState?: ReviewState; c
   // Engagement check-ins (Bundle 6/7) — server-gated to sessions the viewer
   // attends, so no extra membership check needed here.
   const pulseActions = actionItems.filter((a) => a.kind === "pre_pulse" && a.sessionId);
-  const reflectionActions = actionItems.filter((a) => a.kind === "reflection" && a.sessionId);
+  // Reflections are the PARTICIPANT's closing pulse. Experts hold attendance
+  // rows too (sit-ins), so the RPC offers them the item — but their closing
+  // is the wrap moment + summary, and their voice in the feed is Share.
+  const reflectionActions = isCreator
+    ? []
+    : actionItems.filter((a) => a.kind === "reflection" && a.sessionId);
   // H3c review prompts — gated post-experience (experience_review_open).
   const reviewOpen = !!reviewState?.open;
   const reviewedSubjectIds = reviewState?.reviewedSubjectIds ?? [];

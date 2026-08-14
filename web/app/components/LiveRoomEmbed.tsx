@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { trackEvent } from "@/lib/analytics";
 import { DailyRoom } from "@/app/components/DailyRoom";
 
-type Status = "loading" | "ready" | "ending" | "ended" | "error";
+type Status = "loading" | "ready" | "ending" | "ended" | "closing" | "error";
 
 /**
  * Did the room die because the SESSION ended? Only our database knows.
@@ -89,6 +89,23 @@ export function LiveRoomEmbed({
     statusRef.current = status;
   }, [status]);
 
+  // The session ending is a MOMENT, not a jump cut (rehearsal feedback:
+  // "does not feel like a smooth closing"). Anyone who was actually in the
+  // room gets a beat of "that's a wrap" before being carried onward —
+  // participants into the reflection, experts back to their space.
+  const closingDestRef = useRef<string | null>(null);
+  const beginClosing = useCallback((dest: string) => {
+    closingDestRef.current = dest;
+    setStatus("closing");
+  }, []);
+  useEffect(() => {
+    if (status !== "closing") return;
+    const t = setTimeout(() => {
+      router.push(closingDestRef.current ?? backHref);
+    }, 2200);
+    return () => clearTimeout(t);
+  }, [status, router, backHref]);
+
   const fetchToken = useCallback(async () => {
     setStatus("loading");
     setError(null);
@@ -165,8 +182,7 @@ export function LiveRoomEmbed({
           via: ended === true ? "db" : "message",
           providerType: providerType ?? "none",
         });
-        if (isHost) router.push(backHref);
-        else router.push(`${backHref}?reflect=${sessionId}`);
+        beginClosing(isHost ? backHref : `${backHref}?reflect=${sessionId}`);
         return;
       }
 
@@ -180,7 +196,7 @@ export function LiveRoomEmbed({
       setError(message);
       setStatus("error");
     },
-    [sessionId, isHost, backHref, router],
+    [sessionId, isHost, backHref, beginClosing],
   );
 
   const handleRoomEnded = useCallback(() => {
@@ -189,9 +205,8 @@ export function LiveRoomEmbed({
     trackEvent("Room Ended Remotely", { session: sessionId });
     // The loop closes for everyone at once: an expert ends the session,
     // and every participant lands in the reflection — same door as Leave.
-    if (isHost) router.push(backHref);
-    else router.push(`${backHref}?reflect=${sessionId}`);
-  }, [sessionId, isHost, backHref, router]);
+    beginClosing(isHost ? backHref : `${backHref}?reflect=${sessionId}`);
+  }, [sessionId, isHost, backHref, beginClosing]);
 
   async function handleEndSession() {
     if (!window.confirm("End this session for all participants?")) return;
@@ -314,6 +329,40 @@ export function LiveRoomEmbed({
     );
   }
 
+  // ── Closing (the wrap moment) ──────────────────────────
+  // A held beat between "the room ended" and wherever we carry them next.
+  if (status === "closing") {
+    return (
+      <div
+        className="fixed inset-0 z-[100] flex items-center justify-center px-6"
+        style={{ backgroundColor: "#F2EFE8" }}
+      >
+        <div className="text-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo-mark.png"
+            alt=""
+            width={52}
+            height={52}
+            className="block rounded-xl mx-auto mb-5"
+          />
+          <h2
+            className="text-3xl font-black font-headline tracking-tight"
+            style={{ color: "#0F2229", letterSpacing: "-0.02em" }}
+          >
+            That&apos;s a wrap.
+          </h2>
+          <p className="text-sm mt-2 font-bold font-headline" style={{ color: "#FF6130" }}>
+            {sessionTitle}
+          </p>
+          <p className="text-sm mt-4" style={{ color: "#64748b" }} aria-live="polite">
+            {isHost ? "Taking you back to your space…" : "Your tribe is waiting…"}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   // ── Ended ──────────────────────────────────────────────
   if (status === "ended") {
     return (
@@ -322,18 +371,20 @@ export function LiveRoomEmbed({
         style={{ backgroundColor: "#F2EFE8" }}
       >
         <div className="max-w-md w-full p-8 rounded-2xl infitra-glass text-center">
+          {/* Brand palette, not traffic-light green: the wrap is a warm
+              moment, and this card was called "very cold" in rehearsal. */}
           <div
             className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4"
             style={{
-              backgroundColor: "rgba(16, 185, 129, 0.12)",
-              border: "1px solid rgba(16, 185, 129, 0.30)",
+              backgroundColor: "rgba(255, 97, 48, 0.10)",
+              border: "1px solid rgba(255, 97, 48, 0.30)",
             }}
           >
             <svg
               width="24"
               height="24"
               fill="none"
-              stroke="#047857"
+              stroke="#FF6130"
               strokeWidth={2}
               viewBox="0 0 24 24"
               strokeLinecap="round"
@@ -343,11 +394,14 @@ export function LiveRoomEmbed({
             </svg>
           </div>
           <h2
-            className="text-2xl font-black font-headline mb-4"
-            style={{ color: "#0F2229" }}
+            className="text-2xl font-black font-headline tracking-tight mb-1"
+            style={{ color: "#0F2229", letterSpacing: "-0.02em" }}
           >
-            Session Ended
+            That&apos;s a wrap.
           </h2>
+          <p className="text-sm mb-4" style={{ color: "#64748b" }}>
+            You brought your tribe through another one.
+          </p>
           {summary && (
             <div className="space-y-1 mb-6">
               {summary.title && (
@@ -369,7 +423,7 @@ export function LiveRoomEmbed({
               {summary.net_earned != null && summary.net_earned > 0 && (
                 <p
                   className="text-sm font-bold"
-                  style={{ color: "#047857" }}
+                  style={{ color: "#0891b2" }}
                 >
                   CHF {(summary.net_earned / 100).toFixed(2)} earned
                 </p>
@@ -385,7 +439,7 @@ export function LiveRoomEmbed({
                 "0 4px 14px rgba(255,97,48,0.35), 0 2px 6px rgba(255,97,48,0.20)",
             }}
           >
-            {isHost ? "Back to workspace" : "Back to your Experience"}
+            {isHost ? "Back to your space" : "Back to your Experience"}
           </Link>
         </div>
       </div>
