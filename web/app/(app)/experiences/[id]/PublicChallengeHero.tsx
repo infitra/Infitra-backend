@@ -27,6 +27,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { PurchaseButton } from "@/app/components/PurchaseButton";
+import { cardFeeDisclosure } from "@/lib/pricing";
 import { WeeklyJourneyCarousel } from "./WeeklyJourneyCarousel";
 import { ExpandableDescription } from "./ExpandableDescription";
 
@@ -603,6 +604,7 @@ export function PublicChallengeHero({
               challengeId={challengeId}
               spaceId={spaceId}
               priceLabel={priceLabel}
+              priceCents={priceCents}
               isAuthenticated={isAuthenticated}
               hasPurchased={hasPurchased}
               isCreator={isCreator}
@@ -762,6 +764,7 @@ function PriceCTA({
   challengeId,
   spaceId,
   priceLabel,
+  priceCents,
   isAuthenticated,
   hasPurchased,
   isCreator,
@@ -769,6 +772,7 @@ function PriceCTA({
   challengeId: string;
   spaceId: string | null;
   priceLabel: string;
+  priceCents: number;
   isAuthenticated: boolean;
   hasPurchased: boolean;
   isCreator: boolean;
@@ -866,11 +870,29 @@ function PriceCTA({
   const pillShadow =
     "0 8px 22px rgba(255,97,48,0.36), 0 2px 8px rgba(255,97,48,0.20)";
 
+  // Swiss price display (PBV): the all-in total, incl. the buyer-paid card
+  // fee, must appear WITH the offer, not first at Stripe. Same math as
+  // create_checkout_session (lib/pricing.ts is the mirror). The consent
+  // line makes purchase acceptance + immediate-start explicit at the CTA.
+  const purchaseNotes = (
+    <div className="mt-3 text-center">
+      <p className="text-[11px]" style={{ color: "#94a3b8" }} >
+        {cardFeeDisclosure(priceCents)}
+      </p>
+      <p className="text-[11px] mt-0.5" style={{ color: "#94a3b8" }}>
+        By purchasing you agree to the{" "}
+        <Link href="/terms" className="underline hover:opacity-80">Terms</Link> and{" "}
+        <Link href="/refund-policy" className="underline hover:opacity-80">Refund Policy</Link>,
+        and you request immediate access to your experience space and materials.
+      </p>
+    </div>
+  );
+
   if (isAuthenticated) {
     return (
       <>
         {cta}
-        <div className="mt-7 lg:mt-9 flex justify-center">
+        <div className="mt-7 lg:mt-9 flex flex-col items-center">
           <PurchaseButton
             kind="challenge"
             targetId={challengeId}
@@ -879,6 +901,7 @@ function PriceCTA({
           >
             {buttonLabel}
           </PurchaseButton>
+          {purchaseNotes}
         </div>
       </>
     );
@@ -887,7 +910,7 @@ function PriceCTA({
   return (
     <>
       {cta}
-      <div className="mt-7 lg:mt-9 flex justify-center">
+      <div className="mt-7 lg:mt-9 flex flex-col items-center">
         <Link
           href={`/login?intent=buy:challenge:${challengeId}&returnTo=/experiences/${challengeId}`}
           className={pillClass}
@@ -899,6 +922,7 @@ function PriceCTA({
         >
           {buttonLabel}
         </Link>
+        {purchaseNotes}
       </div>
     </>
   );

@@ -117,6 +117,10 @@ export default function ApplyPage() {
               By applying you agree to the{" "}
               <Link href="/pilot-terms" className="underline hover:text-[#0891b2]">
                 pilot terms
+              </Link>{" "}
+              and the{" "}
+              <Link href="/privacy" className="underline hover:text-[#0891b2]">
+                Privacy Policy
               </Link>
               . We&apos;ll respond within a week.
             </p>

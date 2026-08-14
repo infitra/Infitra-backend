@@ -65,15 +65,18 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} h-full`}>
       <head>
-        {/* General Sans — upright weights only. The INFITRA wordmark's
-            italic look comes from the browser synthesising oblique from
-            the upright bold; that's the characteristic thicker italic
-            production has always rendered. Loading real italic variants
-            replaces that with thinner real-italic glyphs, which loses
-            the brand feel. Keep upright-only. */}
+        {/* General Sans is SELF-HOSTED (globals.css @font-face, files in
+            public/fonts) — the old Fontshare CDN link sent every visitor's
+            IP to a third party and was undisclosed in the privacy policy.
+            Upright weights only: the INFITRA wordmark's italic look comes
+            from the browser synthesising oblique from the upright bold;
+            real italic variants would lose the brand feel. */}
         <link
-          rel="stylesheet"
-          href="https://api.fontshare.com/v2/css?f[]=general-sans@200,300,400,500,600,700&display=swap"
+          rel="preload"
+          href="/fonts/general-sans-700.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
         />
       </head>
       {/* no bg-surface here — the utility would override the #F2EFE8 canvas

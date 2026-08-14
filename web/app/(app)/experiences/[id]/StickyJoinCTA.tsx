@@ -17,6 +17,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { PurchaseButton } from "@/app/components/PurchaseButton";
+import { formatTotalWithCardFee } from "@/lib/pricing";
 
 interface Props {
   challengeId: string;
@@ -118,6 +119,12 @@ export function StickyJoinCTA({
           >
             {price}
           </div>
+          {/* PBV: the all-in total accompanies every price display. */}
+          {!hasPurchased && (
+            <div className="text-[9px] mt-0.5 leading-none" style={{ color: "#94a3b8" }} >
+              {formatTotalWithCardFee(priceCents)} incl. card fee
+            </div>
+          )}
         </div>
         <div className="flex-1">
           {hasPurchased ? (

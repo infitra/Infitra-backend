@@ -66,7 +66,8 @@ export function WaitlistForm() {
         <p className="text-[13px] mt-2.5 text-left" style={{ color: "#dc2626" }}>{state.error}</p>
       )}
       <p className="text-xs mt-3 text-left" style={{ color: FAINT }}>
-        One email when the doors open. <span style={{ color: MUTED }}>Nothing else.</span>
+        One email when the doors open. <span style={{ color: MUTED }}>Nothing else.</span>{" "}
+        <a href="/privacy" className="underline hover:opacity-80" style={{ color: MUTED }}>Privacy</a>
       </p>
     </form>
   );

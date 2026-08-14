@@ -14,6 +14,13 @@ const PUBLIC_ROUTES = [
   "/new",
   "/apply",
   "/pilot-terms",
+  // The legal pack MUST be publicly reachable: the impressum duty (UWG
+  // 3(1)(s)) and the terms/privacy links at signup and checkout are legally
+  // void if the beta gate swallows them.
+  "/imprint",
+  "/privacy",
+  "/terms",
+  "/refund-policy",
   "/beta-access",
   "/auth/callback",
   "/test-wave-light",

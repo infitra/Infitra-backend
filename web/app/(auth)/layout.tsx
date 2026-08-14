@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { WaveFlowingBackground } from "@/app/components/WaveFlowingBackground";
+import { LegalFooter } from "@/app/components/LegalFooter";
 
 /**
  * Auth shell — same cream + wave treatment as the landing page and the
@@ -37,6 +38,10 @@ export default function AuthLayout({
         </Link>
 
         <div className="w-full max-w-md">{children}</div>
+
+        {/* Legal pack, reachable from every auth surface (signup consent
+            lines link into these; the impressum duty wants one-click reach). */}
+        <LegalFooter className="mt-10" />
       </div>
     </div>
   );

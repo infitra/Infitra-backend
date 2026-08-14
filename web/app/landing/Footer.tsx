@@ -13,8 +13,11 @@ export function Footer() {
             INFITRA
           </span>
         </div>
-        <div className="flex gap-6 text-xs" style={{ color: "#94a3b8" }}>
+        <div className="flex flex-wrap justify-center gap-x-6 gap-y-1 text-xs" style={{ color: "#94a3b8" }}>
           <Link href="/pilot-terms" className="hover:opacity-80">Pilot Terms</Link>
+          <Link href="/terms" className="hover:opacity-80">Terms</Link>
+          <Link href="/privacy" className="hover:opacity-80">Privacy</Link>
+          <Link href="/imprint" className="hover:opacity-80">Legal Notice</Link>
           <a href="mailto:hello@infitra.fit" className="hover:opacity-80">Contact</a>
           <span>© 2026 INFITRA</span>
         </div>

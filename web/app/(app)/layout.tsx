@@ -1,5 +1,6 @@
 import { WaveFlowingBackground } from "@/app/components/WaveFlowingBackground";
 import { TimezoneSync } from "@/app/components/TimezoneSync";
+import { LegalFooter } from "@/app/components/LegalFooter";
 
 export default function AppLayout({
   children,
@@ -17,6 +18,12 @@ export default function AppLayout({
       <TimezoneSync />
       <WaveFlowingBackground />
       <div className="relative z-10">{children}</div>
+      {/* Legal pack on every logged-in surface, the buyer page and
+          checkout included. StickyJoinCTA hides itself near the page
+          bottom, so this never collides with it. */}
+      <div className="relative z-10 pb-6 pt-10">
+        <LegalFooter />
+      </div>
     </div>
   );
 }

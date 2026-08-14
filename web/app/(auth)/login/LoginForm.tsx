@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useActionState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { signIn, signUp } from "@/app/actions/auth";
 
@@ -276,6 +277,28 @@ export function LoginForm() {
               />
             </div>
 
+            {/* Explicit consent for health-related data (FADP Art. 6(7) /
+                GDPR Art. 9): a fitness platform processes health-adjacent
+                content (reflections, energy check-ins, health-scoped
+                experiences). Policy text alone is not valid consent; this
+                unticked box is. Recorded with a timestamp in signup
+                metadata. */}
+            <label className="flex items-start gap-2.5 pt-1 cursor-pointer">
+              <input
+                type="checkbox"
+                name="health_consent"
+                value="yes"
+                required
+                className="mt-0.5 shrink-0 accent-[#FF6130]"
+              />
+              <span className="text-[11px] leading-relaxed" style={{ color: "#64748b" }}>
+                I agree that INFITRA processes the health-related information I
+                share (like reflections, energy check-ins and my participation
+                in experiences relating to my physical condition) to run my
+                experience. I can withdraw this at any time.
+              </span>
+            </label>
+
             <button
               type="submit"
               disabled={signUpPending}
@@ -291,7 +314,9 @@ export function LoginForm() {
             </button>
 
             <p className="text-[11px] text-center pt-1" style={{ color: "#94a3b8" }}>
-              By continuing you agree to INFITRA&apos;s terms of use.
+              By continuing you agree to the{" "}
+              <Link href="/terms" className="underline hover:opacity-80">Terms</Link> and the{" "}
+              <Link href="/privacy" className="underline hover:opacity-80">Privacy Policy</Link>.
             </p>
           </form>
         </>
@@ -383,6 +408,28 @@ export function LoginForm() {
               />
             </div>
 
+            {/* Explicit consent for health-related data (FADP Art. 6(7) /
+                GDPR Art. 9): a fitness platform processes health-adjacent
+                content (reflections, energy check-ins, health-scoped
+                experiences). Policy text alone is not valid consent; this
+                unticked box is. Recorded with a timestamp in signup
+                metadata. */}
+            <label className="flex items-start gap-2.5 pt-1 cursor-pointer">
+              <input
+                type="checkbox"
+                name="health_consent"
+                value="yes"
+                required
+                className="mt-0.5 shrink-0 accent-[#FF6130]"
+              />
+              <span className="text-[11px] leading-relaxed" style={{ color: "#64748b" }}>
+                I agree that INFITRA processes the health-related information I
+                share (like reflections, energy check-ins and my participation
+                in experiences relating to my physical condition) to run my
+                experience. I can withdraw this at any time.
+              </span>
+            </label>
+
             <button
               type="submit"
               disabled={signUpPending}
@@ -396,6 +443,12 @@ export function LoginForm() {
             >
               {signUpPending ? "..." : "Create Account"}
             </button>
+
+            <p className="text-[11px] text-center pt-1" style={{ color: "#94a3b8" }}>
+              By creating an account you agree to the{" "}
+              <Link href="/terms" className="underline hover:opacity-80">Terms</Link> and the{" "}
+              <Link href="/privacy" className="underline hover:opacity-80">Privacy Policy</Link>.
+            </p>
           </form>
 
           {/* The expert door, clearly separated: this form is for

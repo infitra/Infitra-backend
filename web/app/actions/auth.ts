@@ -101,6 +101,15 @@ export async function signUp(prevState: unknown, formData: FormData) {
         display_name: displayName,
         full_name: fullName,
         ...(role === "creator" && inviteCode ? { creator_invite_code: inviteCode } : {}),
+        // Consent evidence (auth.users.raw_user_meta_data): WHICH terms
+        // version was accepted and when, plus the explicit health-data
+        // consent participants tick (FADP Art. 6(7) / GDPR Art. 9 — the
+        // checkbox in the signup form is the consent, this is its record).
+        terms_version: "1.0",
+        terms_accepted_at: new Date().toISOString(),
+        ...(formData.get("health_consent") === "yes"
+          ? { health_consent_at: new Date().toISOString() }
+          : {}),
       },
     },
   });

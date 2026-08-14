@@ -146,6 +146,14 @@ export function JoinAsExpertForm({ code }: { code: string }) {
           <Link href="/pilot-terms" className="underline hover:text-[#0891b2]">
             pilot terms
           </Link>
+          , the{" "}
+          <Link href="/terms" className="underline hover:text-[#0891b2]">
+            Terms
+          </Link>{" "}
+          and the{" "}
+          <Link href="/privacy" className="underline hover:text-[#0891b2]">
+            Privacy Policy
+          </Link>
           .
         </p>
       </form>

@@ -209,6 +209,13 @@ Deno.serve(async (req) => {
       success_url: successUrl,
       cancel_url: cancelUrl,
       client_reference_id: `${kind}:${target_id}:${buyerId}`,
+      // Legal pack: the terms/refund reference repeated AT the payment
+      // moment (AGB incorporation wants it per purchase, not only at
+      // signup), plus the express immediate-start request the EU
+      // withdrawal rules key on. custom_text needs no Stripe dashboard
+      // config, unlike consent_collection.
+      "custom_text[submit][message]":
+        "By paying you agree to INFITRA's Terms and Refund Policy (infitra.fit/terms) and request immediate access to your experience.",
       ...Object.fromEntries(Object.entries(md).map(([k,v]) => [`metadata[${k}]`, v])),
     });
 
