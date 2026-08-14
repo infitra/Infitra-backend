@@ -49,81 +49,105 @@ interface ChallengeRow {
 async function loadMe(userId: string) {
   const supabase = await createClient();
 
-  const { data: profile } = await supabase
-    .from("app_profile")
-    .select("display_name, role, avatar_url, created_at, profile_facts, visibility")
-    .eq("id", userId)
-    .maybeSingle();
+  // This function was a 14-round-trip WATERFALL — every query awaited one
+  // by one, ~1.5s of pure serialized latency on a phone before the first
+  // byte (13 Aug rehearsal: "mobile lags in loading"). Same queries, same
+  // derivations, restructured into three Promise.all phases by what each
+  // actually depends on. Depth is now 3 round trips, not 14.
 
-  const { data: memberships } = await supabase
-    .from("app_challenge_member")
-    .select("challenge_id, app_challenge(id, title, image_url, start_date, end_date, status, owner_id)")
-    .eq("user_id", userId)
-    .order("joined_at", { ascending: false });
+  // PHASE 1 — the two roots everything hangs off: who the viewer is, and
+  // which experiences they belong to.
+  const [profileResult, membershipsResult] = await Promise.all([
+    supabase
+      .from("app_profile")
+      .select("display_name, role, avatar_url, created_at, profile_facts, visibility")
+      .eq("id", userId)
+      .maybeSingle(),
+    supabase
+      .from("app_challenge_member")
+      .select("challenge_id, app_challenge(id, title, image_url, start_date, end_date, status, owner_id)")
+      .eq("user_id", userId)
+      .order("joined_at", { ascending: false }),
+  ]);
+  const profile = profileResult.data;
 
-  const rows = ((memberships ?? []) as Array<{ app_challenge: ChallengeRow | ChallengeRow[] | null }>)
+  const rows = ((membershipsResult.data ?? []) as Array<{ app_challenge: ChallengeRow | ChallengeRow[] | null }>)
     .map((m) => (Array.isArray(m.app_challenge) ? m.app_challenge[0] : m.app_challenge))
     .filter((c): c is ChallengeRow => !!c);
 
   const challengeIds = rows.map((r) => r.id);
 
+  const stageById = new Map<string, StageM>();
+  for (const r of rows) stageById.set(r.id, computeStage(r.status, r.start_date, r.end_date));
+  const completedIds = rows.filter((r) => stageById.get(r.id) === "completed").map((r) => r.id);
+
+  // PHASE 2 — everything that needs only the membership list: spaces,
+  // cohost links, session links, reviews, continuation groups, tribe faces.
+  const none = Promise.resolve({ data: [] as any[] });
+  const [spacesResult, cohostsResult, linksResult, reviewsResult, grpResult, facesResult] =
+    await Promise.all([
+      challengeIds.length
+        ? supabase
+            .from("app_challenge_space")
+            .select("id, source_challenge_id")
+            .in("source_challenge_id", challengeIds)
+        : none,
+      challengeIds.length
+        ? supabase
+            .from("app_challenge_cohost")
+            .select("challenge_id, cohost_id")
+            .in("challenge_id", challengeIds)
+        : none,
+      challengeIds.length
+        ? supabase
+            .from("app_challenge_session")
+            .select(
+              "challenge_id, app_session(id, title, start_time, duration_minutes, status, image_url, live_room_id, started_at)",
+            )
+            .in("challenge_id", challengeIds)
+        : none,
+      completedIds.length
+        ? supabase
+            .from("app_review")
+            .select("challenge_id")
+            .eq("reviewer_id", userId)
+            .in("challenge_id", completedIds)
+        : none,
+      completedIds.length
+        ? supabase
+            .from("app_challenge")
+            .select("id, continuation_group_id")
+            .in("id", completedIds)
+        : none,
+      challengeIds.length
+        ? supabase.rpc("load_tribe_faces", { p_challenge_ids: challengeIds, p_limit: 11 })
+        : none,
+    ]);
+
   // ── Spaces (the doorway) ──
-  const { data: spaces } = challengeIds.length
-    ? await supabase
-        .from("app_challenge_space")
-        .select("id, source_challenge_id")
-        .in("source_challenge_id", challengeIds)
-    : { data: [] };
   const spaceByChallenge = new Map<string, string>();
   const challengeBySpace = new Map<string, string>();
-  for (const s of (spaces ?? []) as Array<{ id: string; source_challenge_id: string | null }>) {
+  for (const s of (spacesResult.data ?? []) as Array<{ id: string; source_challenge_id: string | null }>) {
     if (s.source_challenge_id) {
       spaceByChallenge.set(s.source_challenge_id, s.id);
       challengeBySpace.set(s.id, s.source_challenge_id);
     }
   }
 
-  const stageById = new Map<string, StageM>();
-  for (const r of rows) stageById.set(r.id, computeStage(r.status, r.start_date, r.end_date));
-
   // ── Experts (owner + co-hosts) per experience ──
   // Same RLS-safe path the public buyer page uses (app_challenge_cohost.cohost_id
-  // + app_profile), so a member can read who's leading.
+  // + app_profile), so a member can read who's leading. The cohost links
+  // arrived in phase 2; the profile lookup needs their ids, so it rides
+  // phase 3 below, and the assembly happens after it.
   const expertsByChallenge = new Map<string, MeExperience["experts"]>();
-  if (challengeIds.length) {
-    const { data: cohostRows } = await supabase
-      .from("app_challenge_cohost")
-      .select("challenge_id, cohost_id")
-      .in("challenge_id", challengeIds);
-    const cohostsByChallenge = new Map<string, string[]>();
-    const personIds = new Set<string>();
-    for (const r of rows) personIds.add(r.owner_id);
-    for (const c of (cohostRows ?? []) as Array<{ challenge_id: string; cohost_id: string }>) {
-      const arr = cohostsByChallenge.get(c.challenge_id) ?? [];
-      arr.push(c.cohost_id);
-      cohostsByChallenge.set(c.challenge_id, arr);
-      personIds.add(c.cohost_id);
-    }
-    const profById = new Map<string, { name: string; avatar: string | null }>();
-    if (personIds.size) {
-      const { data: profs } = await supabase
-        .from("app_profile")
-        .select("id, display_name, avatar_url")
-        .in("id", [...personIds]);
-      for (const p of (profs ?? []) as Array<{ id: string; display_name: string | null; avatar_url: string | null }>) {
-        profById.set(p.id, { name: p.display_name ?? "Expert", avatar: p.avatar_url });
-      }
-    }
-    for (const r of rows) {
-      const list: MeExperience["experts"] = [];
-      const owner = profById.get(r.owner_id);
-      if (owner) list.push({ id: r.owner_id, name: owner.name, avatar: owner.avatar, role: "owner" });
-      for (const cid of cohostsByChallenge.get(r.id) ?? []) {
-        const p = profById.get(cid);
-        if (p) list.push({ id: cid, name: p.name, avatar: p.avatar, role: "cohost" });
-      }
-      expertsByChallenge.set(r.id, list);
-    }
+  const cohostsByChallenge = new Map<string, string[]>();
+  const personIds = new Set<string>();
+  for (const r of rows) personIds.add(r.owner_id);
+  for (const c of (cohostsResult.data ?? []) as Array<{ challenge_id: string; cohost_id: string }>) {
+    const arr = cohostsByChallenge.get(c.challenge_id) ?? [];
+    arr.push(c.cohost_id);
+    cohostsByChallenge.set(c.challenge_id, arr);
+    personIds.add(c.cohost_id);
   }
 
   // ── Next session per experience ──
@@ -131,13 +155,8 @@ async function loadMe(userId: string) {
   // their phone at 14:02 must show the open room, not tomorrow's session.
   // Same shared clock as every other live badge (lib/liveWindow.ts).
   const nextByChallenge = new Map<string, MeExperience["nextSession"]>();
-  if (challengeIds.length) {
-    const { data: links } = await supabase
-      .from("app_challenge_session")
-      .select(
-        "challenge_id, app_session(id, title, start_time, duration_minutes, status, image_url, live_room_id, started_at)",
-      )
-      .in("challenge_id", challengeIds);
+  {
+    const links = (linksResult.data ?? []) as Array<{ challenge_id: string; app_session: unknown }>;
     const nowMs = Date.now();
     type SessRow = {
       id: string;
@@ -150,7 +169,7 @@ async function loadMe(userId: string) {
       started_at: string | null;
     };
     const byChallenge = new Map<string, SessRow[]>();
-    for (const l of (links ?? []) as Array<{ challenge_id: string; app_session: unknown }>) {
+    for (const l of links) {
       const s = (Array.isArray(l.app_session) ? l.app_session[0] : l.app_session) as SessRow | null;
       if (!s) continue;
       const arr = byChallenge.get(l.challenge_id) ?? [];
@@ -196,79 +215,97 @@ async function loadMe(userId: string) {
     }
   }
 
-  // ── New posts (last 7d) across the active experiences' spaces ──
+  // ── New posts: space ids resolve in phase 2, the count rides phase 3 ──
   const postsByChallenge = new Map<string, number>();
   const activeSpaceIds = rows
     .filter((r) => stageById.get(r.id) !== "completed")
     .map((r) => spaceByChallenge.get(r.id))
     .filter((x): x is string => !!x);
-  if (activeSpaceIds.length) {
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-    const { data: posts } = await supabase
-      .from("app_challenge_post")
-      .select("space_id")
-      .in("space_id", activeSpaceIds)
-      .neq("author_id", userId)
-      .gte("created_at", sevenDaysAgo);
-    for (const p of (posts ?? []) as Array<{ space_id: string }>) {
-      const cid = challengeBySpace.get(p.space_id);
-      if (cid) postsByChallenge.set(cid, (postsByChallenge.get(cid) ?? 0) + 1);
-    }
-  }
 
   // ── Which completed experiences the viewer has already rated ──
   const ratedSet = new Set<string>();
-  const completedIds = rows.filter((r) => stageById.get(r.id) === "completed").map((r) => r.id);
-  if (completedIds.length) {
-    const { data: reviews } = await supabase
-      .from("app_review")
-      .select("challenge_id")
-      .eq("reviewer_id", userId)
-      .in("challenge_id", completedIds);
-    for (const rv of (reviews ?? []) as Array<{ challenge_id: string }>) ratedSet.add(rv.challenge_id);
-  }
+  for (const rv of (reviewsResult.data ?? []) as Array<{ challenge_id: string }>) ratedSet.add(rv.challenge_id);
 
   // ── Continuation: for a completed run, the lineage's joinable run (live now or
   // the next upcoming) the viewer doesn't already hold — so the completed card
   // can signal "this moved on" and offer the way back in. Mirrors the backend's
   // joinable_runs rule (published · not held · not ended · live-first).
   const continuationByChallenge = new Map<string, { id: string; startDate: string | null; isActive: boolean }>();
-  if (completedIds.length) {
-    const { data: grpRows } = await supabase
-      .from("app_challenge")
-      .select("id, continuation_group_id")
-      .in("id", completedIds);
-    const groupByCompleted = new Map<string, string>();
-    const groupIds = new Set<string>();
-    for (const g of (grpRows ?? []) as Array<{ id: string; continuation_group_id: string | null }>) {
-      if (g.continuation_group_id) {
-        groupByCompleted.set(g.id, g.continuation_group_id);
-        groupIds.add(g.continuation_group_id);
-      }
+  const groupByCompleted = new Map<string, string>();
+  const groupIds = new Set<string>();
+  for (const g of (grpResult.data ?? []) as Array<{ id: string; continuation_group_id: string | null }>) {
+    if (g.continuation_group_id) {
+      groupByCompleted.set(g.id, g.continuation_group_id);
+      groupIds.add(g.continuation_group_id);
     }
-    if (groupIds.size) {
-      const today = new Date().toISOString().slice(0, 10);
-      const { data: runs } = await supabase
-        .from("app_challenge")
-        .select("id, continuation_group_id, start_date, end_date")
-        .in("continuation_group_id", [...groupIds])
-        .eq("status", "published");
-      const held = new Set(challengeIds);
-      const byGroup = new Map<string, Array<{ id: string; start_date: string | null; end_date: string | null }>>();
-      for (const run of (runs ?? []) as Array<{ id: string; continuation_group_id: string | null; start_date: string | null; end_date: string | null }>) {
-        if (!run.continuation_group_id || held.has(run.id)) continue; // already a member
-        if (run.end_date && run.end_date < today) continue; // already ended
-        const arr = byGroup.get(run.continuation_group_id) ?? [];
-        arr.push(run);
-        byGroup.set(run.continuation_group_id, arr);
-      }
-      for (const [cid, group] of groupByCompleted) {
-        const cands = byGroup.get(group) ?? [];
-        if (!cands.length) continue;
-        const live = cands.find((r) => r.start_date && r.start_date <= today && (!r.end_date || r.end_date >= today));
-        const chosen = live ?? [...cands].sort((a, b) => (a.start_date ?? "").localeCompare(b.start_date ?? ""))[0];
-        continuationByChallenge.set(cid, { id: chosen.id, startDate: chosen.start_date, isActive: !!live });
-      }
+  }
+
+  // PHASE 3 — the second-order reads: expert profiles (need cohost ids),
+  // recent posts (need space ids), continuation runs (need group ids).
+  const [profsResult, postsResult, runsResult] = await Promise.all([
+    personIds.size
+      ? supabase
+          .from("app_profile")
+          .select("id, display_name, avatar_url")
+          .in("id", [...personIds])
+      : none,
+    activeSpaceIds.length
+      ? supabase
+          .from("app_challenge_post")
+          .select("space_id")
+          .in("space_id", activeSpaceIds)
+          .neq("author_id", userId)
+          .gte("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+      : none,
+    groupIds.size
+      ? supabase
+          .from("app_challenge")
+          .select("id, continuation_group_id, start_date, end_date")
+          .in("continuation_group_id", [...groupIds])
+          .eq("status", "published")
+      : none,
+  ]);
+
+  // Experts assembly (owner first, then cohosts).
+  const profById = new Map<string, { name: string; avatar: string | null }>();
+  for (const p of (profsResult.data ?? []) as Array<{ id: string; display_name: string | null; avatar_url: string | null }>) {
+    profById.set(p.id, { name: p.display_name ?? "Expert", avatar: p.avatar_url });
+  }
+  for (const r of rows) {
+    const list: MeExperience["experts"] = [];
+    const owner = profById.get(r.owner_id);
+    if (owner) list.push({ id: r.owner_id, name: owner.name, avatar: owner.avatar, role: "owner" });
+    for (const cid of cohostsByChallenge.get(r.id) ?? []) {
+      const p = profById.get(cid);
+      if (p) list.push({ id: cid, name: p.name, avatar: p.avatar, role: "cohost" });
+    }
+    expertsByChallenge.set(r.id, list);
+  }
+
+  // Recent-posts assembly.
+  for (const p of (postsResult.data ?? []) as Array<{ space_id: string }>) {
+    const cid = challengeBySpace.get(p.space_id);
+    if (cid) postsByChallenge.set(cid, (postsByChallenge.get(cid) ?? 0) + 1);
+  }
+
+  // Continuation assembly (published · not held · not ended · live-first).
+  if (groupIds.size) {
+    const today = new Date().toISOString().slice(0, 10);
+    const held = new Set(challengeIds);
+    const byGroup = new Map<string, Array<{ id: string; start_date: string | null; end_date: string | null }>>();
+    for (const run of (runsResult.data ?? []) as Array<{ id: string; continuation_group_id: string | null; start_date: string | null; end_date: string | null }>) {
+      if (!run.continuation_group_id || held.has(run.id)) continue; // already a member
+      if (run.end_date && run.end_date < today) continue; // already ended
+      const arr = byGroup.get(run.continuation_group_id) ?? [];
+      arr.push(run);
+      byGroup.set(run.continuation_group_id, arr);
+    }
+    for (const [cid, group] of groupByCompleted) {
+      const cands = byGroup.get(group) ?? [];
+      if (!cands.length) continue;
+      const live = cands.find((r) => r.start_date && r.start_date <= today && (!r.end_date || r.end_date >= today));
+      const chosen = live ?? [...cands].sort((a, b) => (a.start_date ?? "").localeCompare(b.start_date ?? ""))[0];
+      continuationByChallenge.set(cid, { id: chosen.id, startDate: chosen.start_date, isActive: !!live });
     }
   }
 
@@ -276,20 +313,14 @@ async function loadMe(userId: string) {
   // dashboard, gated on the caller belonging to the experience.
   const facesByChallenge = new Map<string, Array<{ profileId: string; name: string; avatar: string | null }>>();
   const totalsByChallenge = new Map<string, number>();
-  if (challengeIds.length) {
-    const { data: faceRows } = await supabase.rpc("load_tribe_faces", {
-      p_challenge_ids: challengeIds,
-      p_limit: 11,
-    });
-    for (const f of (faceRows ?? []) as Array<{
-      challenge_id: string; profile_id: string; display_name: string | null;
-      avatar_url: string | null; member_total: number;
-    }>) {
-      const arr = facesByChallenge.get(f.challenge_id) ?? [];
-      arr.push({ profileId: f.profile_id, name: f.display_name ?? "Member", avatar: f.avatar_url });
-      facesByChallenge.set(f.challenge_id, arr);
-      totalsByChallenge.set(f.challenge_id, f.member_total ?? 0);
-    }
+  for (const f of (facesResult.data ?? []) as Array<{
+    challenge_id: string; profile_id: string; display_name: string | null;
+    avatar_url: string | null; member_total: number;
+  }>) {
+    const arr = facesByChallenge.get(f.challenge_id) ?? [];
+    arr.push({ profileId: f.profile_id, name: f.display_name ?? "Member", avatar: f.avatar_url });
+    facesByChallenge.set(f.challenge_id, arr);
+    totalsByChallenge.set(f.challenge_id, f.member_total ?? 0);
   }
 
   const experiences: MeExperience[] = rows.map((r) => ({
@@ -322,20 +353,21 @@ export default async function MeHomePage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login?returnTo=/me");
 
-  const viewerTimeZone = await resolveViewerTimeZone();
-
-  // Social layer: the caller's derived connection graph (one definer RPC),
-  // plus real turnout for MY JOURNEY (joined_at set = actually showed up).
-  const [{ data: connectionRows }, { count: sessionsAttended }] = await Promise.all([
-    supabase.rpc("load_my_connections"),
-    supabase
-      .from("app_attendance")
-      .select("session_id", { count: "exact", head: true })
-      .eq("user_id", user.id)
-      .not("joined_at", "is", null),
-  ]);
+  // The console (loadMe), the social layer, and the timezone cookie are
+  // mutually independent — one departure, not a queue.
+  const [viewerTimeZone, { data: connectionRows }, { count: sessionsAttended }, me] =
+    await Promise.all([
+      resolveViewerTimeZone(),
+      supabase.rpc("load_my_connections"),
+      supabase
+        .from("app_attendance")
+        .select("session_id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .not("joined_at", "is", null),
+      loadMe(user.id),
+    ]);
   const connections = (connectionRows ?? []) as import("@/app/components/ConnectionsGrid").ConnectionRow[];
-  const { profile, active, completed } = await loadMe(user.id);
+  const { profile, active, completed } = me;
   const pendingReviews = completed.filter((e) => !e.rated).map((e) => ({ id: e.id, title: e.title }));
 
   // An open room outranks everything: live first, else doors, across all
