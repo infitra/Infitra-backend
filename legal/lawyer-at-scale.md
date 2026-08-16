@@ -34,22 +34,35 @@ experts as the providers, partly for VAT reasons. Analysis (15 Aug 2026):
 ## Decisions taken deliberately (confirm, do not silently reverse)
 
 1. **INFITRA is the merchant of record during the pilot** (see headline
-   item above for the planned flip). Participants contract with INFITRA
-   for purchase + access; experts deliver content as independents and
-   hold INFITRA harmless for claims arising from their content (Terms
-   §11, pilot-terms). The collaboration agreement is between the
-   experts; INFITRA records it and pays out per its terms but is not a
-   party and does not arbitrate; disputed splits are held until
-   resolved.
+   item above for the planned flip). Participants contract with INFITRA,
+   but the OBJECT of that contract is deliberately scoped (Terms §1,
+   v1.2): infrastructure and access (space, rooms, materials delivery,
+   payment/refund handling), NOT the experience, which is the experts'
+   own service on their own responsibility. Experts hold INFITRA
+   harmless for claims arising from their content (Terms §11,
+   pilot-terms). The collaboration agreement is between the experts;
+   INFITRA records it and pays out per its terms but is not a party and
+   does not arbitrate; disputed splits are held until resolved. Note for
+   the flip: the wording alone does not change VAT/merchant status; the
+   money flow does. Re-paper §1 with Connect.
 2. **EU withdrawal position**: primary basis CRD Art. 16(l) (leisure
-   services with fixed dates), belt-and-braces via a refund scheme at
-   least as good as the CRD. Tightened 15 Aug 2026 (v1.1, founder call):
-   full refund within 14 days of purchase at latest until the first
-   session (late buyers: until the first session); pro rata after start
-   within the window; nothing after; provider-cancellation cases always
-   refunded. Express immediate-start request at purchase, acknowledgment
-   in the read-first box. The Art. 16(l) classification of a multi-week
-   experience with community + materials is genuinely unsettled: CONFIRM.
+   services with fixed dates). Tightened again 16 Aug 2026 (v1.2,
+   founder call): full refund within 14 days of purchase AND before the
+   first session (late buyers: until the first session); once the
+   experience has started, NO refund for change of mind; pro rata
+   survives only for provider-side failures (session finally cancelled
+   and not replaced), with reschedule as the stated first remedy. The
+   express request at purchase was narrowed to what is true: the SPACE
+   opens right away; the experience begins with its first session. The
+   former "at least as good as the CRD" claim was removed accordingly.
+   ACCEPTED RESIDUAL EDGE: a buyer who purchases <14 days before the
+   start, attends a session, then withdraws inside the CRD window would
+   be owed a pro-rata refund under the CRD if Art. 16(l) were held not
+   to apply; the policy gives zero. Accepted at pilot scale (near-zero
+   enforcement against a Swiss micro seller). Lawyer: CONFIRM 16(l) for
+   a multi-week experience with community + materials (genuinely
+   unsettled); if rejected, reinstate pro rata within the CRD window for
+   EU buyers only.
 3. **No EU Art. 27 representative during the pilot.** Strictly required
    from the first EU sale (the "occasional" exemption does not fit a
    commerce platform); accepted as a known gap on near-zero enforcement

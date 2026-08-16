@@ -147,8 +147,8 @@ export function PublicCommitBlock({
         </div>
 
         {/* Swiss price display (PBV): the all-in total belongs WITH the
-            offer. The consent line makes acceptance + immediate start
-            explicit at the commit moment. */}
+            offer. The consent line makes acceptance + the express
+            space-opens-now request explicit at the commit moment. */}
         {!hasPurchased && !isCreator && (
           <div className="text-center mb-7">
             <p className="text-[11px]" style={{ color: "#94a3b8" }}>
@@ -158,7 +158,7 @@ export function PublicCommitBlock({
               By purchasing you agree to the{" "}
               <Link href="/terms" className="underline hover:opacity-80">Terms</Link> and{" "}
               <Link href="/refund-policy" className="underline hover:opacity-80">Refund Policy</Link>,
-              and you request immediate access to your experience space and materials.
+              and you request that your experience space open right away.
             </p>
           </div>
         )}

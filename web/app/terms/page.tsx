@@ -76,17 +76,18 @@ export default function TermsPage() {
           <Link href="/refund-policy" className="underline hover:text-[#0891b2]">
             Refund Policy
           </Link>{" "}
-          says, and we think it is fair: full refund in the first 14 days (at the
-          latest until the first session starts), pro rata after the start, and
-          always a refund if the experts cancel. Section 5 and the Refund Policy.
+          says, and we think it is fair: full refund in the first 14 days after
+          purchase and before the first session; once the experience has
+          started, no refund for change of mind; and always a refund if the
+          experience or a session does not happen as promised. Section 5 and the
+          Refund Policy.
         </p>
         <p>
-          <H>4. Your access starts immediately.</H> When you buy, you expressly
-          ask us to open your experience space (your sessions, tribe space and
-          materials) right away. For EU residents: cancel within the statutory 14
-          days and completed sessions are deducted pro rata; once the experience
-          is fully delivered, the withdrawal right lapses. Details in the Refund
-          Policy.
+          <H>4. Experiences are live and time-bound.</H> Your experience space
+          opens with your purchase, at your express request; the experience
+          itself runs live, on its scheduled dates. For EU residents: scheduled
+          live experiences are leisure services with fixed dates, for which EU
+          law provides no withdrawal right. Details in the Refund Policy.
         </p>
       </LegalCallout>
 
@@ -106,12 +107,15 @@ export default function TermsPage() {
           its delivery.
         </p>
         <p>
-          When you buy access to an experience, your contract for the purchase and
-          for access to the platform is with INFITRA. The experts design and
-          deliver the content of the experience as independent professionals. They
-          are not employees, agents or partners of INFITRA, and INFITRA itself
-          does not provide fitness, nutrition, medical or health advice of any
-          kind.
+          When you buy access to an experience, INFITRA is your contract partner
+          for the purchase, and what INFITRA owes you under that contract is the
+          infrastructure and the access: the experience space, the live rooms,
+          the materials as the experts release them, and the handling of payment
+          and refunds. The experience itself is the experts&apos; work. They
+          design and deliver it as independent professionals, on their own
+          responsibility; they are not employees, agents or partners of INFITRA,
+          and INFITRA itself does not provide fitness, nutrition, medical or
+          health advice of any kind.
         </p>
       </LegalSection>
 
@@ -155,10 +159,10 @@ export default function TermsPage() {
             Refund Policy
           </Link>{" "}
           is part of these terms. In short: full refund within 14 days of
-          purchase (at the latest until the first session starts); after the
-          start, a pro-rata refund within that window; always a full refund if
-          the experience is cancelled; pro-rata refunds for sessions that are
-          cancelled and not replaced.
+          purchase and before the first session starts; once the experience has
+          started, no refund for change of mind; always a full refund if the
+          experience is cancelled; and a cancelled session is rescheduled first,
+          refunded pro rata only if it is not replaced.
         </p>
       </LegalSection>
 
@@ -173,8 +177,8 @@ export default function TermsPage() {
         <p>
           We work to keep the platform and the live rooms running reliably, but we
           cannot promise uninterrupted availability. If a session cannot take
-          place because of a failure on our side, it will be rescheduled or
-          refunded pro rata.
+          place because of a failure on our side, it will be rescheduled; if it
+          cannot be, its share is refunded pro rata.
         </p>
       </LegalSection>
 
@@ -370,7 +374,7 @@ export default function TermsPage() {
         </p>
       </LegalSection>
 
-      <LegalVersion>Version 1.1 · Effective 15 August 2026</LegalVersion>
+      <LegalVersion>Version 1.2 · Effective 16 August 2026</LegalVersion>
     </LegalPage>
   );
 }
