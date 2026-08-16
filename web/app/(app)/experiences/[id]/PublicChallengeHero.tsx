@@ -872,19 +872,18 @@ function PriceCTA({
 
   // Swiss price display (PBV): the all-in total, incl. the buyer-paid card
   // fee, must appear WITH the offer, not first at Stripe. Same math as
-  // create_checkout_session (lib/pricing.ts is the mirror). The consent
-  // line makes acceptance + the express space-opens-now request explicit
-  // at the CTA; the experience itself begins with its first session.
+  // create_checkout_session (lib/pricing.ts is the mirror). The express
+  // space-opens-now request lives at the Stripe pay moment only
+  // (create_checkout_session custom_text), not here (founder call, 16 Aug).
   const purchaseNotes = (
-    <div className="mt-3 text-center">
+    <div className="mt-6 text-center">
       <p className="text-[11px]" style={{ color: "#94a3b8" }} >
         {cardFeeDisclosure(priceCents)}
       </p>
       <p className="text-[11px] mt-0.5" style={{ color: "#94a3b8" }}>
         By purchasing you agree to the{" "}
         <Link href="/terms" className="underline hover:opacity-80">Terms</Link> and{" "}
-        <Link href="/refund-policy" className="underline hover:opacity-80">Refund Policy</Link>,
-        and you request that your experience space open right away.
+        <Link href="/refund-policy" className="underline hover:opacity-80">Refund Policy</Link>.
       </p>
     </div>
   );

@@ -53,8 +53,11 @@ experts as the providers, partly for VAT reasons. Analysis (15 Aug 2026):
    survives only for provider-side failures (session finally cancelled
    and not replaced), with reschedule as the stated first remedy. The
    express request at purchase was narrowed to what is true: the SPACE
-   opens right away; the experience begins with its first session. The
-   former "at least as good as the CRD" claim was removed accordingly.
+   opens right away; the experience begins with its first session. It is
+   carried at the Stripe pay moment only (create_checkout_session
+   custom_text, v25); the buyer page shows just the terms/refund
+   agreement line (founder call, 16 Aug). The former "at least as good
+   as the CRD" claim was removed accordingly.
    ACCEPTED RESIDUAL EDGE: a buyer who purchases <14 days before the
    start, attends a session, then withdraws inside the CRD window would
    be owed a pro-rata refund under the CRD if Art. 16(l) were held not

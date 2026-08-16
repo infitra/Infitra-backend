@@ -147,18 +147,18 @@ export function PublicCommitBlock({
         </div>
 
         {/* Swiss price display (PBV): the all-in total belongs WITH the
-            offer. The consent line makes acceptance + the express
-            space-opens-now request explicit at the commit moment. */}
+            offer. The express space-opens-now request lives at the Stripe
+            pay moment only (create_checkout_session custom_text), not
+            here (founder call, 16 Aug). */}
         {!hasPurchased && !isCreator && (
-          <div className="text-center mb-7">
+          <div className="text-center mt-4 mb-7">
             <p className="text-[11px]" style={{ color: "#94a3b8" }}>
               {cardFeeDisclosure(priceCents)}
             </p>
             <p className="text-[11px] mt-0.5" style={{ color: "#94a3b8" }}>
               By purchasing you agree to the{" "}
               <Link href="/terms" className="underline hover:opacity-80">Terms</Link> and{" "}
-              <Link href="/refund-policy" className="underline hover:opacity-80">Refund Policy</Link>,
-              and you request that your experience space open right away.
+              <Link href="/refund-policy" className="underline hover:opacity-80">Refund Policy</Link>.
             </p>
           </div>
         )}
