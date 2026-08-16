@@ -105,9 +105,9 @@ export default function RefundPolicyPage() {
 
       <LegalSection title="A note for EU residents">
         <p>
-          When you buy, your experience space opens right away, at your express
-          request: the tribe space, and the materials as the experts release
-          them. The experience itself begins with its first scheduled session.
+          When you buy, your experience space opens right away: the tribe
+          space, and the materials as the experts release them. The experience
+          itself begins with its first scheduled session.
           EU law provides no withdrawal right for leisure services with a
           specific date or period of performance (Art. 16(l) of the Consumer
           Rights Directive), and live experiences with scheduled sessions are

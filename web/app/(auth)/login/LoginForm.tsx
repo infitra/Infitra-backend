@@ -278,11 +278,14 @@ export function LoginForm() {
             </div>
 
             {/* Explicit consent for health-related data (FADP Art. 6(7) /
-                GDPR Art. 9): a fitness platform processes health-adjacent
-                content (reflections, energy check-ins, health-scoped
-                experiences). Policy text alone is not valid consent; this
-                unticked box is. Recorded with a timestamp in signup
-                metadata. */}
+                GDPR Art. 9): policy text alone is not valid consent; this
+                unticked box is, recorded with a timestamp in signup
+                metadata. It CANNOT be merged into the generic terms line
+                below — health-data consent must be specific and unbundled
+                from T&C acceptance (that bundling is exactly what Art. 9
+                forbids). Kept to one short sentence (founder call,
+                16 Aug); the withdrawal right is in the linked Privacy
+                Policy. */}
             <label className="flex items-start gap-2.5 pt-1 cursor-pointer">
               <input
                 type="checkbox"
@@ -292,10 +295,8 @@ export function LoginForm() {
                 className="mt-0.5 shrink-0 accent-[#FF6130]"
               />
               <span className="text-[11px] leading-relaxed" style={{ color: "#64748b" }}>
-                I agree that INFITRA processes the health-related information I
-                share (like reflections, energy check-ins and my participation
-                in experiences relating to my physical condition) to run my
-                experience. I can withdraw this at any time.
+                I agree that INFITRA processes the health details I share,
+                like reflections and check-ins, to run my experience.
               </span>
             </label>
 
@@ -409,11 +410,14 @@ export function LoginForm() {
             </div>
 
             {/* Explicit consent for health-related data (FADP Art. 6(7) /
-                GDPR Art. 9): a fitness platform processes health-adjacent
-                content (reflections, energy check-ins, health-scoped
-                experiences). Policy text alone is not valid consent; this
-                unticked box is. Recorded with a timestamp in signup
-                metadata. */}
+                GDPR Art. 9): policy text alone is not valid consent; this
+                unticked box is, recorded with a timestamp in signup
+                metadata. It CANNOT be merged into the generic terms line
+                below — health-data consent must be specific and unbundled
+                from T&C acceptance (that bundling is exactly what Art. 9
+                forbids). Kept to one short sentence (founder call,
+                16 Aug); the withdrawal right is in the linked Privacy
+                Policy. */}
             <label className="flex items-start gap-2.5 pt-1 cursor-pointer">
               <input
                 type="checkbox"
@@ -423,10 +427,8 @@ export function LoginForm() {
                 className="mt-0.5 shrink-0 accent-[#FF6130]"
               />
               <span className="text-[11px] leading-relaxed" style={{ color: "#64748b" }}>
-                I agree that INFITRA processes the health-related information I
-                share (like reflections, energy check-ins and my participation
-                in experiences relating to my physical condition) to run my
-                experience. I can withdraw this at any time.
+                I agree that INFITRA processes the health details I share,
+                like reflections and check-ins, to run my experience.
               </span>
             </label>
 

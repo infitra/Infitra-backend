@@ -84,8 +84,8 @@ export default function TermsPage() {
         </p>
         <p>
           <H>4. Experiences are live and time-bound.</H> Your experience space
-          opens with your purchase, at your express request; the experience
-          itself runs live, on its scheduled dates. For EU residents: scheduled
+          opens with your purchase; the experience itself runs live, on its
+          scheduled dates. For EU residents: scheduled
           live experiences are leisure services with fixed dates, for which EU
           law provides no withdrawal right. Details in the Refund Policy.
         </p>

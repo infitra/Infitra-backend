@@ -52,12 +52,17 @@ experts as the providers, partly for VAT reasons. Analysis (15 Aug 2026):
    experience has started, NO refund for change of mind; pro rata
    survives only for provider-side failures (session finally cancelled
    and not replaced), with reschedule as the stated first remedy. The
-   express request at purchase was narrowed to what is true: the SPACE
-   opens right away; the experience begins with its first session. It is
-   carried at the Stripe pay moment only (create_checkout_session
-   custom_text, v25); the buyer page shows just the terms/refund
-   agreement line (founder call, 16 Aug). The former "at least as good
-   as the CRD" claim was removed accordingly.
+   express-request-to-begin capture was REMOVED entirely (founder call,
+   16 Aug, UX: "nobody buys anything like that"): not on the buyer page,
+   not in the Stripe custom_text (v26 says only "By paying you agree to
+   INFITRA's Terms and Refund Policy"). The EU position therefore rests
+   on Art. 16(l) alone, plus the policy's own unconditional window
+   before the start. The documents still state factually that the space
+   opens at purchase and the experience begins with its first session.
+   The former "at least as good as the CRD" claim was removed
+   accordingly. If the lawyer rejects 16(l): reinstate an express
+   immediate-start consent at checkout AND pro rata within the CRD
+   window for EU buyers.
    ACCEPTED RESIDUAL EDGE: a buyer who purchases <14 days before the
    start, attends a session, then withdraws inside the CRD window would
    be owed a pro-rata refund under the CRD if Art. 16(l) were held not
