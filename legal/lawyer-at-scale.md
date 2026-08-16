@@ -6,17 +6,49 @@ mandatory items, honest about the product, plain language. These are the
 documented open decisions and known gaps a lawyer should revisit at
 incorporation or when EU revenue becomes material. Keep this file current.
 
+## THE headline structural decision: B2B2C / agency flip (founder priority)
+
+The founder wants INFITRA positioned as infrastructure (B2B2C), with the
+experts as the providers, partly for VAT reasons. Analysis (15 Aug 2026):
+- TODAY the money flow makes INFITRA the merchant of record (own Stripe
+  account, own receipts, sets refund policy, pays out). A paper "we are
+  just infrastructure" contradicted by that flow would be ignored by
+  courts and looks evasive. The pilot therefore RUNS as merchant of
+  record, with the liability delta closed contractually (expert
+  indemnity, agreement-not-enforced-by-INFITRA, infrastructure framing
+  in Terms §1 and §11, force majeure).
+- The REAL flip = agency/commissionaire model: participant contracts
+  with the experts, INFITRA collects as agent, revenue = 10% commission
+  only. Genuine advantages at scale: VAT-relevant turnover shrinks to
+  the commission (stays under CHF 100k longer; EU exposure smaller
+  anyway since live real-time classes are generally NOT "electronically
+  supplied services"), and consumer duties shift to the experts.
+- Costs of the flip: experts become sellers of record with consumer
+  duties (tension with "INFITRA takes care of everything"); Stripe
+  requires Connect for collecting on behalf of others; per-experience
+  impressum/consumer-information duties multiply.
+- EXECUTE the flip together with Stripe Connect activation, papered by
+  the lawyer. Do not claim agency in documents before the money flow
+  matches.
+
 ## Decisions taken deliberately (confirm, do not silently reverse)
 
-1. **INFITRA is the merchant of record.** Participants contract with
-   INFITRA for purchase + access; experts deliver content as independents.
-   Matches the money flow (INFITRA's Stripe account, INFITRA pays out).
-   Consequence accepted: INFITRA answers contractually for delivery.
+1. **INFITRA is the merchant of record during the pilot** (see headline
+   item above for the planned flip). Participants contract with INFITRA
+   for purchase + access; experts deliver content as independents and
+   hold INFITRA harmless for claims arising from their content (Terms
+   §11, pilot-terms). The collaboration agreement is between the
+   experts; INFITRA records it and pays out per its terms but is not a
+   party and does not arbitrate; disputed splits are held until
+   resolved.
 2. **EU withdrawal position**: primary basis CRD Art. 16(l) (leisure
-   services with fixed dates), belt-and-braces via a voluntary refund
-   scheme at least as good as the CRD (pro-rata in the 14-day window,
-   express immediate-start request at purchase, acknowledgment in the
-   read-first box). The Art. 16(l) classification of a multi-week
+   services with fixed dates), belt-and-braces via a refund scheme at
+   least as good as the CRD. Tightened 15 Aug 2026 (v1.1, founder call):
+   full refund within 14 days of purchase at latest until the first
+   session (late buyers: until the first session); pro rata after start
+   within the window; nothing after; provider-cancellation cases always
+   refunded. Express immediate-start request at purchase, acknowledgment
+   in the read-first box. The Art. 16(l) classification of a multi-week
    experience with community + materials is genuinely unsettled: CONFIRM.
 3. **No EU Art. 27 representative during the pilot.** Strictly required
    from the first EU sale (the "occasional" exemption does not fit a

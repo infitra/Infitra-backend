@@ -120,6 +120,16 @@ export default function PilotTermsPage() {
                   </Link>{" "}
                   reduce the experience&apos;s revenue before the split is calculated.
                 </p>
+                <p>
+                  One thing to be clear about: the agreement you sign is between you
+                  and your partner. INFITRA gives you the process, records the result
+                  and pays out exactly what it says, but we are not a party to it and
+                  we do not arbitrate it. If you two disagree about the split, we hold
+                  the disputed amount until you have sorted it out. And your content
+                  and guidance stay yours in every sense: you are responsible for
+                  them, and you hold INFITRA harmless from claims that arise from
+                  them.
+                </p>
               </Section>
 
               <Section title="After the pilot">

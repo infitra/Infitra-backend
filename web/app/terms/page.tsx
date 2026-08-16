@@ -76,9 +76,9 @@ export default function TermsPage() {
           <Link href="/refund-policy" className="underline hover:text-[#0891b2]">
             Refund Policy
           </Link>{" "}
-          says, and we think it is fair: full refund before the first session, pro
-          rata in the early window, always a refund if the experts cancel.
-          Section 5 and the Refund Policy.
+          says, and we think it is fair: full refund in the first 14 days (at the
+          latest until the first session starts), pro rata after the start, and
+          always a refund if the experts cancel. Section 5 and the Refund Policy.
         </p>
         <p>
           <H>4. Your access starts immediately.</H> When you buy, you expressly
@@ -97,6 +97,13 @@ export default function TermsPage() {
           a nutritionist). An experience typically runs four to six weeks and
           includes live video sessions, a private space for its participants (the
           tribe space), and supporting materials.
+        </p>
+        <p>
+          INFITRA provides the infrastructure: the experience pages and checkout,
+          the live rooms, the tribe spaces, the delivery of materials, and the
+          agreement process experts use to record how they collaborate. The
+          experts provide the experience itself: its content, its guidance and
+          its delivery.
         </p>
         <p>
           When you buy access to an experience, your contract for the purchase and
@@ -147,10 +154,11 @@ export default function TermsPage() {
           <Link href="/refund-policy" className="underline hover:text-[#0891b2]">
             Refund Policy
           </Link>{" "}
-          is part of these terms. In short: full refund any time before the first
-          live session; after the start, a pro-rata refund within 14 days of
-          purchase; always a full refund if the experience is cancelled; pro-rata
-          refunds for sessions that are cancelled and not replaced.
+          is part of these terms. In short: full refund within 14 days of
+          purchase (at the latest until the first session starts); after the
+          start, a pro-rata refund within that window; always a full refund if
+          the experience is cancelled; pro-rata refunds for sessions that are
+          cancelled and not replaced.
         </p>
       </LegalSection>
 
@@ -290,6 +298,12 @@ export default function TermsPage() {
           Liability that cannot be excluded or limited under the law that applies
           to you remains unaffected.
         </p>
+        <p>
+          We are not liable for events outside our reasonable control: failures
+          of third-party providers, internet or power outages, or an expert being
+          unable to host. Sessions affected by such events are rescheduled or
+          refunded under the Refund Policy, and that is the remedy.
+        </p>
       </LegalSection>
 
       <LegalSection title="11. For experts">
@@ -303,9 +317,21 @@ export default function TermsPage() {
           the same point, they prevail for the expert relationship: the revenue
           split, the platform fee and the payout schedule live there. Refunds
           issued under the Refund Policy reduce the revenue of the experience
-          before any split is calculated. Experts are responsible for the
-          professional quality and lawfulness of their content and guidance, and
-          confirm they hold the qualifications they present.
+          before any split is calculated.
+        </p>
+        <p>
+          The collaboration agreement is a contract between the experts. INFITRA
+          provides the agreement process, records the result and pays out
+          according to it, but is not a party to it and does not enforce or
+          arbitrate it; disputes about it are between the experts. If experts
+          dispute their split, INFITRA may hold the disputed amount until they
+          resolve it.
+        </p>
+        <p>
+          Experts are responsible for the professional quality and lawfulness of
+          their content and guidance, confirm they hold the qualifications they
+          present, and hold INFITRA harmless from third-party claims that arise
+          from their content, guidance or conduct.
         </p>
       </LegalSection>
 
@@ -344,7 +370,7 @@ export default function TermsPage() {
         </p>
       </LegalSection>
 
-      <LegalVersion>Version 1.0 · Effective 14 August 2026</LegalVersion>
+      <LegalVersion>Version 1.1 · Effective 15 August 2026</LegalVersion>
     </LegalPage>
   );
 }

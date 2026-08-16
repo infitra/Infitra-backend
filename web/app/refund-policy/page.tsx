@@ -34,9 +34,12 @@ export default function RefundPolicyPage() {
     >
       <LegalSection title="If you cancel">
         <p>
-          <strong style={{ color: "#0F2229" }}>Before the first live session:</strong>{" "}
-          full refund, any time between purchase and the start of the first
-          session, no questions asked. The card processing fee is refunded too.
+          <strong style={{ color: "#0F2229" }}>
+            Within 14 days of purchase, before the first live session:
+          </strong>{" "}
+          full refund, no questions asked. The card processing fee is refunded
+          too. If you bought fewer than 14 days before the start, you can cancel
+          any time until the first session starts.
         </p>
         <p>
           <strong style={{ color: "#0F2229" }}>
@@ -49,7 +52,7 @@ export default function RefundPolicyPage() {
         </p>
         <p>
           <strong style={{ color: "#0F2229" }}>
-            After 14 days from purchase and after the start:
+            Later than 14 days after purchase:
           </strong>{" "}
           no refund for change of mind. The cases below still apply in full.
         </p>
@@ -116,7 +119,7 @@ export default function RefundPolicyPage() {
         </p>
       </LegalSection>
 
-      <LegalVersion>Version 1.0 · Effective 14 August 2026</LegalVersion>
+      <LegalVersion>Version 1.1 · Effective 15 August 2026</LegalVersion>
     </LegalPage>
   );
 }

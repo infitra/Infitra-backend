@@ -25,7 +25,10 @@ export function formatTotalWithCardFee(baseCents: number): string {
   return `CHF ${(totalWithCardFeeCents(baseCents) / 100).toFixed(2)}`;
 }
 
-/** The standard one-line disclosure used wherever the base price shows. */
+/** The standard one-line disclosure used wherever the base price shows.
+ *  Deliberately quiet (founder call, 15 Aug): the TOTAL is the legally
+ *  required part (PBV); the 3% + CHF 0.30 breakdown is itemized at
+ *  checkout and stated in the Terms. */
 export function cardFeeDisclosure(baseCents: number): string {
-  return `Total incl. card processing (3% + CHF 0.30): ${formatTotalWithCardFee(baseCents)}`;
+  return `${formatTotalWithCardFee(baseCents)} total incl. card processing`;
 }
