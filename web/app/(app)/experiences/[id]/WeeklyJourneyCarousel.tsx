@@ -39,7 +39,7 @@
  *    render a small facepile + role-tinted names ("Alex & Mira").
  *    Modal shows "Led by" / "Co-led by" + facepile.
  *
- *  - Times pinned to Asia/Phnom_Penh (DISPLAY_TZ) for deterministic
+ *  - Times formatted in the viewer's timezone (viewer_tz cookie) for deterministic
  *    SSR/CSR rendering — mirror of the flat carousel's TZ fix.
  *
  * Bundle 4.2.13 carryover:
@@ -58,7 +58,7 @@ import Image from "next/image";
 // Bundle 4.2.37: mirror of the cohost-aware shape used by the flat
 // SessionsCarousel (added there in 4.2.35) so the A/B comparison
 // between flat and weekly stays apples-to-apples — both variants
-// surface co-led sessions, both pin formatting to Asia/Phnom_Penh.
+// surface co-led sessions, both format in the viewer's timezone.
 
 interface HostLite {
   id: string;

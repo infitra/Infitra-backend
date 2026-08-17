@@ -28,10 +28,11 @@ export { VIEWER_TZ_COOKIE, isValidTimeZone };
  */
 
 // Fallback only hit when neither the cookie nor the Vercel IP header is
-// present (e.g. local dev). Asia/Phnom_Penh matches where the pilot is
-// being run from, so dev renders a sensible wall-clock until the cookie
-// round-trips.
-const DEFAULT_TIME_ZONE = "Asia/Phnom_Penh";
+// present (e.g. local dev). Europe/Zurich = the pilot's market (Swiss
+// experts, CHF); it only shapes the very first paint until the cookie
+// round-trips with the real device zone. (Was Asia/Phnom_Penh from the
+// founder's testing era — legacy ended in the 2026-08-17 timezone sweep.)
+const DEFAULT_TIME_ZONE = "Europe/Zurich";
 
 export async function resolveViewerTimeZone(): Promise<string> {
   const cookieStore = await cookies();
