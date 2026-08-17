@@ -210,6 +210,7 @@ export function WeekJourney() {
           durationMinutes: detail.durationMinutes, hostId: detail.hostId,
           hostName: detail.hostName, hostAvatar: detail.hostAvatar,
           imageUrl: detail.imageUrl, description: detail.description, cohosts: detail.cohosts,
+          changeReason: detail.changeReason ?? null,
         } : null}
         onReschedule={
           isCreator && detail && !detail.startedAt &&

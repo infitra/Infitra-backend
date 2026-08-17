@@ -63,6 +63,10 @@ export interface SpaceSession {
   /** Set by issue_join_token on the EXPERT's first join — separates
    *  "Doors open" (room exists, empty) from "Live now" (expert inside). */
   startedAt?: string | null;
+  /** The expert's reason from the last emergency reschedule (null if the
+   *  session was never moved). Rendered in the session detail popup so the
+   *  story lives with the session, not only in a notification. */
+  changeReason?: string | null;
   imageUrl: string | null;
   description: string | null;
   hostId: string;

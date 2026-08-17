@@ -127,6 +127,10 @@ interface NotificationContent {
   title: string;
   detail: string | null;
   href: string | null;
+  /** When false, the detail renders WITHOUT the 2-line clamp. Reschedule
+   *  rows carry the expert's reason verbatim — truncating it defeats the
+   *  point of requiring a reason at all (founder feedback, 17 Aug). */
+  clamp?: boolean;
 }
 
 function describeNotification(n: EnrichedNotification): NotificationContent {
@@ -212,6 +216,7 @@ function describeNotification(n: EnrichedNotification): NotificationContent {
             typeof p.challenge_id === "string"
               ? `/experiences/${p.challenge_id}/space`
               : null,
+          clamp: false,
         };
       }
       // A collaborator left a review (delivered as a 'system' notification,
@@ -551,7 +556,7 @@ export function NotificationBell() {
                         </div>
                         {d.detail && (
                           <p
-                            className="text-xs mt-0.5 line-clamp-2"
+                            className={`text-xs mt-0.5 ${d.clamp === false ? "" : "line-clamp-2"}`}
                             style={{ color: "#64748b" }}
                           >
                             {d.detail}

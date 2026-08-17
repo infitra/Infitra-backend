@@ -13,6 +13,10 @@ interface SessionDetail {
   imageUrl?: string | null;
   description?: string | null;
   cohosts: { id: string; name: string; avatar: string | null }[];
+  /** Reason from the last emergency reschedule — when present, the modal
+   *  shows a "this session was moved" note so the full story is readable
+   *  here, not only in a truncated notification row. */
+  changeReason?: string | null;
 }
 
 interface Props {
@@ -67,16 +71,26 @@ export function SessionDetailModal({ open, session, onClose, onEdit, onDelete, o
         style={{ backgroundColor: "#FFFFFF" }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Cover */}
-        {session.imageUrl ? (
-          <div className="aspect-[16/9] w-full overflow-hidden">
-            <img src={session.imageUrl} alt="" className="w-full h-full object-cover" />
-          </div>
-        ) : (
-          <div className="aspect-[16/9] w-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, #0F2229, #1a3340, #2a1508)" }}>
+        {/* Cover — a shorter strip than the old 16:9 block: covers load in
+            progressively and a half-height banner reads smoother (and keeps
+            the text above the fold on small screens). The dark placeholder
+            sits BEHIND the image so there is never a white flash. */}
+        <div
+          className="h-36 sm:h-44 w-full overflow-hidden flex items-center justify-center"
+          style={{ background: "linear-gradient(135deg, #0F2229, #1a3340, #2a1508)" }}
+        >
+          {session.imageUrl ? (
+            <img
+              src={session.imageUrl}
+              alt=""
+              className="w-full h-full object-cover"
+              loading="lazy"
+              decoding="async"
+            />
+          ) : (
             <img src="/logo-mark.png" alt="" width={48} height={48} style={{ opacity: 0.15 }} />
-          </div>
-        )}
+          )}
+        </div>
 
         <div className="p-6">
           <h2 className="text-2xl font-black font-headline text-[#0F2229] tracking-tight mb-3">
@@ -91,6 +105,28 @@ export function SessionDetailModal({ open, session, onClose, onEdit, onDelete, o
             <span>·</span>
             <span>{session.durationMinutes} min</span>
           </div>
+
+          {/* Reschedule note — the full story, readable in place. The time
+              shown above is already the NEW time; this explains why it moved. */}
+          {session.changeReason && session.changeReason.trim() && (
+            <div
+              className="mb-4 px-4 py-3 rounded-xl"
+              style={{
+                backgroundColor: "rgba(8,145,178,0.06)",
+                border: "1px solid rgba(8,145,178,0.18)",
+              }}
+            >
+              <p
+                className="text-[10px] font-bold font-headline uppercase tracking-wider mb-1"
+                style={{ color: "#0891b2" }}
+              >
+                This session was moved
+              </p>
+              <p className="text-sm leading-relaxed" style={{ color: "#334155" }}>
+                &ldquo;{session.changeReason.trim()}&rdquo;
+              </p>
+            </div>
+          )}
 
           {/* Description (optional) — polish v12 */}
           {session.description && session.description.trim() && (
