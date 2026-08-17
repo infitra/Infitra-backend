@@ -189,33 +189,70 @@ function ActionBtn({ label, onClick, danger }: { label: string; onClick: () => v
 
 /* ---------- Pulse ---------- */
 
+const DOMAINS: { key: string; label: string }[] = [
+  { key: "money", label: "Money" },
+  { key: "live", label: "Live" },
+  { key: "comms", label: "Email" },
+  { key: "jobs", label: "Jobs" },
+  { key: "accounts", label: "Accounts" },
+];
+
+function HealthTile({ label, failing }: { label: string; failing: number }) {
+  const ok = failing === 0;
+  return (
+    <div
+      className="rounded-xl px-4 py-3"
+      style={{
+        backgroundColor: ok ? "rgba(10,122,75,0.08)" : "rgba(180,35,24,0.10)",
+        border: `1px solid ${ok ? "rgba(10,122,75,0.30)" : "rgba(180,35,24,0.45)"}`,
+      }}
+    >
+      <div className="text-[11px] uppercase tracking-wider" style={{ color: ok ? OK : BAD, fontWeight: 600 }}>
+        {label}
+      </div>
+      <div className="text-xl font-headline" style={{ fontWeight: 700, color: ok ? OK : BAD }}>
+        {ok ? "OK" : `${failing} issue${failing === 1 ? "" : "s"}`}
+      </div>
+    </div>
+  );
+}
+
 function Pulse({ pulse }: { pulse: J }) {
-  const o = pulse?.outbox ?? {};
-  const gap = pulse?.money_gap?.missing_entitlements ?? 0;
-  const receiptsMissing = pulse?.receipts_missing ?? 0;
-  const receiptsHistorical = pulse?.receipts_missing_historical ?? 0;
+  const checks: J[] = pulse?.checks ?? [];
   const counts = pulse?.counts ?? {};
   const cron: J[] = pulse?.cron ?? [];
   const edge: J[] = pulse?.edge_calls_24h ?? [];
-  // Staleness is computed in the RPC against each job's OWN schedule; a flat
-  // threshold here would flag every daily job every day.
-  const staleCron = cron.filter((c) => c.is_stale);
+  const failedEmails: J[] = pulse?.outbox_failed_rows ?? [];
+  const receiptsHistorical = pulse?.receipts_missing_historical ?? 0;
+
+  const red = checks.filter((c) => !c.ok);
+  const failingByDomain = (d: string) => checks.filter((c) => c.domain === d && !c.ok).length;
 
   return (
     <>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-        <Tile label="Emails failing" value={o.failing ?? 0} alarm={(o.failing ?? 0) > 0} />
-        <Tile label="Emails queued" value={o.queued ?? 0} alarm={(o.queued ?? 0) > 5} />
-        <Tile label="Paid, no entitlement" value={gap} alarm={gap > 0} />
-        <Tile label="Receipts missing" value={receiptsMissing} alarm={receiptsMissing > 0} />
+      {/* Health tiles: green = the checks below were verified just now. */}
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mb-4">
+        <HealthTile label="Overall system" failing={red.length} />
+        {DOMAINS.map((d) => (
+          <HealthTile key={d.key} label={d.label} failing={failingByDomain(d.key)} />
+        ))}
       </div>
-      {receiptsHistorical > 0 && (
-        <p className="text-xs mb-4" style={{ color: MUT }}>
-          Context, not an alarm: {receiptsHistorical} older purchase
-          {receiptsHistorical === 1 ? "" : "s"} predate the receipt pipeline
-          (first receipt {dt(pulse?.receipt_era_started)}) and never had one.
-        </p>
+
+      {/* Red checks first, loudly, with what-to-do. */}
+      {red.length > 0 && (
+        <Card title="NEEDS YOU — failing checks">
+          <Table
+            head={["Domain", "Check", "Count", "What it means"]}
+            rows={red.map((c) => [
+              c.domain,
+              <strong key="l" style={{ color: BAD }}>{c.label}</strong>,
+              <strong key="n" style={{ color: BAD }}>{c.count}</strong>,
+              <span key="h" className="text-xs whitespace-normal">{c.hint}</span>,
+            ])}
+          />
+        </Card>
       )}
+
       <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mb-4">
         <Tile label="Participants" value={counts.participants ?? 0} />
         <Tile label="Experts" value={counts.experts ?? 0} />
@@ -225,7 +262,22 @@ function Pulse({ pulse }: { pulse: J }) {
         <Tile label="Published experiences" value={counts.experiences_published ?? 0} />
       </div>
 
-      <Card title={`Cron heartbeat${staleCron.length ? " · STALE JOBS" : ""}`}>
+      {failedEmails.length > 0 && (
+        <Card title="Failing emails">
+          <Table
+            head={["Kind", "To", "Attempts", "Last error", "Enqueued"]}
+            rows={failedEmails.map((r) => [
+              r.kind,
+              r.to_email,
+              r.attempts,
+              <span key="e" className="text-xs" style={{ color: BAD }}>{r.last_error}</span>,
+              dt(r.enqueued_at),
+            ])}
+          />
+        </Card>
+      )}
+
+      <Card title="Cron heartbeat">
         <Table
           head={["Job", "Schedule", "Runs every", "Last status", "Last run", "Minutes ago"]}
           rows={cron.map((c) => [
@@ -247,20 +299,30 @@ function Pulse({ pulse }: { pulse: J }) {
         />
       </Card>
 
-      {(o.failed_rows ?? []).length > 0 && (
-        <Card title="Failing emails">
-          <Table
-            head={["Kind", "To", "Attempts", "Last error", "Enqueued"]}
-            rows={(o.failed_rows as J[]).map((r) => [
-              r.kind,
-              r.to_email,
-              r.attempts,
-              <span key="e" className="text-xs" style={{ color: BAD }}>{r.last_error}</span>,
-              dt(r.enqueued_at),
-            ])}
-          />
-        </Card>
-      )}
+      {/* Full check list: green rows prove WHAT was verified, not just that
+          nothing screamed. This is the anti-dead-spot view. */}
+      <Card title={`All checks (${checks.length}) — verified on this page load`}>
+        <Table
+          head={["", "Domain", "Check", "What it watches"]}
+          rows={checks.map((c) => [
+            c.ok
+              ? <span key="s" style={{ color: OK, fontWeight: 700 }}>✓</span>
+              : <strong key="s" style={{ color: BAD }}>{c.count}</strong>,
+            c.domain,
+            <span key="l" style={!c.ok ? { color: BAD, fontWeight: 600 } : undefined}>{c.label}</span>,
+            <span key="h" className="text-xs whitespace-normal" style={{ color: MUT }}>{c.hint}</span>,
+          ])}
+        />
+        <p className="text-xs mt-3" style={{ color: MUT }}>
+          Known limit: edge-function runtime errors live in the Supabase logs,
+          not the database. Their consequences are what these checks catch
+          (a dead webhook shows as &quot;webhook stuck&quot; or &quot;paid but no
+          entitlement&quot;; a dead room-precreate shows as &quot;session imminent,
+          no room&quot;).
+          {receiptsHistorical > 0 &&
+            ` · ${receiptsHistorical} pre-pipeline purchases without receipts are history, not an alarm.`}
+        </p>
+      </Card>
 
       <Card title="Edge calls · last 24h">
         <Table head={["Function", "Calls"]} rows={edge.map((e) => [e.fn, e.calls])} />
