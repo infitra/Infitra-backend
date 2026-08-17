@@ -32,6 +32,7 @@ import type { SpaceSession } from "@/lib/experienceSpace/store";
 import { sessionTeamLabel } from "@/lib/experienceSpace/store";
 import { SessionDetailModal } from "@/app/components/SessionDetailModal";
 import { RescheduleDialog } from "./RescheduleDialog";
+import { useHasMounted } from "@/lib/time/useHasMounted";
 
 const ORANGE = "#FF6130";
 const CYAN = "#0891b2";
@@ -384,6 +385,10 @@ function HeroSessionCard({
   const live = state === "live";
   const joinable = state !== "next";
   const accent = live ? RED : ORANGE;
+  // Device-tz times must not render at hydration: with
+  // suppressHydrationWarning, React would freeze the server's UTC string
+  // forever (see lib/time/useHasMounted).
+  const mounted = useHasMounted();
   return (
     <div
       onClick={onOpen}
@@ -423,7 +428,7 @@ function HeroSessionCard({
           {session.title}
         </h3>
         <p className="text-xs mt-1.5" style={{ color: "#64748b" }} suppressHydrationWarning>
-          {fmtDay(session.startTime)} · {fmtTime(session.startTime)} · {fmtDur(session.durationMinutes)} · {sessionTeamLabel(session)}
+          {mounted ? `${fmtDay(session.startTime)} · ${fmtTime(session.startTime)} · ` : ""}{fmtDur(session.durationMinutes)} · {sessionTeamLabel(session)}
         </p>
         {session.prePulse?.canShow && (
           <span
@@ -484,6 +489,8 @@ function HeroSessionCard({
 }
 
 function AgendaSessionRow({ session, done, onOpen }: { session: SpaceSession; done: boolean; onOpen: () => void }) {
+  // Same freeze guard as the hero card (see lib/time/useHasMounted).
+  const mounted = useHasMounted();
   return (
     <div
       onClick={onOpen}
@@ -522,7 +529,7 @@ function AgendaSessionRow({ session, done, onOpen }: { session: SpaceSession; do
           style={{ color: done ? "#94a3b8" : CYAN, fontWeight: 700 }}
           suppressHydrationWarning
         >
-          {fmtDay(session.startTime)} · {fmtTime(session.startTime)}
+          {mounted ? `${fmtDay(session.startTime)} · ${fmtTime(session.startTime)}` : " "}
         </p>
         <h4
           className="font-black font-headline tracking-tight mt-0.5 truncate"
