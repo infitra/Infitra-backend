@@ -434,7 +434,9 @@ function SignalStrip({ program }: { program: Program }) {
   }
 
   return (
-    <div className="flex rounded-xl overflow-hidden" style={{ border: "1px solid rgba(15,34,41,0.10)" }}>
+    // Softened (founder call, 17 Aug): no hard box around live numbers —
+    // a faint tint and the thin dividers between cells carry the structure.
+    <div className="flex rounded-xl overflow-hidden" style={{ backgroundColor: "rgba(15,34,41,0.03)" }}>
       {cells}
     </div>
   );
@@ -653,11 +655,17 @@ export function ActiveProgramCard({ program, partner, user, density = "hero", ti
     enrolled === 0 && (program.newPosts ?? 0) === 0 && (program.pendingQuestions ?? 0) === 0;
 
   return (
+    // The constellation hero is UNCAGED (founder call, 17 Aug): a living
+    // tribe on a rigid white card read as art in bureaucratic chrome. With
+    // the tribe showing, the article sheds its box — the orbit floats on the
+    // page canvas with a soft glow, and the DATA column beside it becomes
+    // its own card: the structured door next to the life, not wrapping it.
+    // Drafts and compact cards keep the classic card.
     <article
-      className={`relative transition-shadow flex flex-col overflow-hidden ${
+      className={`relative transition-shadow flex flex-col ${
         isHero ? "rounded-3xl xl:flex-row" : "rounded-2xl"
-      }`}
-      style={{ backgroundColor: "#FFFFFF", boxShadow: SOFT_SHADOW }}
+      } ${showTribe ? "xl:items-center xl:gap-2" : "overflow-hidden"}`}
+      style={showTribe ? undefined : { backgroundColor: "#FFFFFF", boxShadow: SOFT_SHADOW }}
     >
       {/* Share the card — copies the public buyer-page link. Top-right corner. */}
       {showShare && !isHero && <ShareButton challengeId={program.id} />}
@@ -673,11 +681,16 @@ export function ActiveProgramCard({ program, partner, user, density = "hero", ti
           className={`relative flex flex-col items-center justify-center px-6 py-7 ${
             isHero ? "xl:w-[46%] xl:shrink-0" : ""
           }`}
-          style={{
-            backgroundImage:
-              "linear-gradient(140deg, rgba(8,145,178,0.07) 0%, rgba(242,239,232,0.55) 45%, rgba(255,97,48,0.07) 100%)",
-          }}
         >
+          {/* Soft radial glow behind the orbit — life, not a container. */}
+          <div
+            aria-hidden
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background:
+                "radial-gradient(ellipse 62% 58% at 50% 46%, rgba(8,145,178,0.12) 0%, rgba(255,97,48,0.06) 55%, transparent 78%)",
+            }}
+          />
           <div className="absolute top-4 left-4">
             <StatusPill program={program} />
           </div>
@@ -696,7 +709,12 @@ export function ActiveProgramCard({ program, partner, user, density = "hero", ti
         <Cover program={program} density={density} />
       )}
 
-      <div className={`${isHero ? "p-7 md:p-8 xl:flex-1 xl:justify-center" : "p-5"} flex flex-col min-w-0`}>
+      <div
+        className={`${isHero ? "p-7 md:p-8 xl:flex-1 xl:justify-center" : "p-5"} flex flex-col min-w-0 ${
+          showTribe ? "rounded-3xl" : ""
+        }`}
+        style={showTribe ? { backgroundColor: "#FFFFFF", boxShadow: SOFT_SHADOW } : undefined}
+      >
         <h2
           className={`${isHero ? "text-2xl md:text-3xl xl:pr-12" : "text-lg md:text-xl pr-12"} font-headline tracking-tight`}
           style={{ color: INK, fontWeight: 700, letterSpacing: "-0.02em" }}

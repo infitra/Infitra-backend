@@ -13,7 +13,7 @@ import {
   type AgreementRow,
   type ExpertReview,
 } from "@/app/components/AccountPanels";
-import { StatCard, StatCardGrid, STAT_ICONS, BRAND_ACCENT } from "@/app/components/StatCards";
+import { STAT_ICONS, BRAND_ACCENT } from "@/app/components/StatCards";
 import type { ProfileFacts } from "@/app/components/ProfileEditForm";
 import type { ConnectionRow } from "@/app/components/ConnectionsGrid";
 
@@ -67,7 +67,10 @@ interface Props {
   earningsWeekCents: number;
   needsYou: {
     invitations: number;
-    openQuestions: number;
+    /** One row PER experience with open questions: each deep-links into that
+     *  space with the feed pre-filtered to "Open for you" (?focus=questions).
+     *  An alert that doesn't land on its action is worse than no alert. */
+    openQuestions: Array<{ id: string; title: string; count: number }>;
     awaitingSignatures: number;
     /** Completed experiences the caller OWNS whose lineage has no next run
      *  yet. Each is a concrete opportunity, so each gets its own row with a
@@ -111,6 +114,53 @@ const PLUS_ICON = (
     <path d="M12 5v14M5 12h14" />
   </svg>
 );
+
+/** One micro-stat in the glance card: value on top, 9px caps label under.
+ *  Cyan value = a door (overlay or link); ink value = a plain reading. */
+function GlanceCell({
+  value,
+  label,
+  onClick,
+  href,
+}: {
+  value: string;
+  label: string;
+  onClick?: () => void;
+  href?: string;
+}) {
+  const interactive = !!onClick || !!href;
+  const inner = (
+    <>
+      <span
+        className="block text-[15px] font-black font-headline leading-tight tabular-nums"
+        style={{ color: interactive ? CYAN : INK }}
+      >
+        {value}
+      </span>
+      <span
+        className="block text-[9px] uppercase tracking-[0.12em] font-headline mt-0.5 truncate"
+        style={{ color: "#94a3b8", fontWeight: 700 }}
+      >
+        {label}
+      </span>
+    </>
+  );
+  if (href) {
+    return (
+      <Link href={href} className="min-w-0 rounded-lg py-1 transition-colors hover:bg-[rgba(8,145,178,0.06)]">
+        {inner}
+      </Link>
+    );
+  }
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} className="min-w-0 rounded-lg py-1 transition-colors hover:bg-[rgba(8,145,178,0.06)]">
+        {inner}
+      </button>
+    );
+  }
+  return <span className="min-w-0 py-1">{inner}</span>;
+}
 
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -211,13 +261,14 @@ export function ProfilePanel({
       />,
     );
   }
-  if (needsYou.openQuestions > 0) {
+  for (const q of needsYou.openQuestions) {
     attention.push(
       <AttentionRow
-        key="q"
-        count={needsYou.openQuestions}
-        label={needsYou.openQuestions === 1 ? "question waiting on you" : "questions waiting on you"}
-        href="#active"
+        key={`q-${q.id}`}
+        count={q.count}
+        label={q.count === 1 ? "question waiting on you" : "questions waiting on you"}
+        detail={q.title}
+        href={`/experiences/${q.id}/space?focus=questions`}
         accent={CYAN}
       />,
     );
@@ -233,9 +284,9 @@ export function ProfilePanel({
       />,
     );
   }
-  // One row PER opportunity, named, linking straight to the action (the
-  // space's Next chapter console). A fast track that dead-ends is worse
-  // than no fast track.
+  // One row PER opportunity, named, linking straight to the action: the
+  // completed run's space, where the Next chapter console (Prepare next
+  // run) lives. A fast track that dead-ends is worse than no fast track.
   for (const nc of needsYou.nextChapters) {
     attention.push(
       <AttentionRow
@@ -243,19 +294,19 @@ export function ProfilePanel({
         icon={<span className="scale-[0.8] flex">{STAT_ICONS.flame}</span>}
         label="Ready to run again"
         detail={nc.title}
-        href="#completed"
+        href={`/experiences/${nc.id}/space`}
         accent={ORANGE}
       />,
     );
   }
 
-  const railBtn =
-    "flex w-full items-center justify-center gap-1.5 rounded-xl py-3 px-4 text-[13px] font-black font-headline transition-colors hover:bg-[rgba(15,34,41,0.03)]";
+  const actionChip =
+    "inline-flex items-center gap-1.5 rounded-full py-2 px-3.5 text-[12px] font-black font-headline transition-colors hover:bg-[rgba(15,34,41,0.03)]";
 
   return (
     <>
       <div
-        className="rounded-2xl overflow-hidden h-full"
+        className="rounded-2xl overflow-hidden"
         style={{
           backgroundColor: "#FFFFFF",
           boxShadow: "0 0 0 1px rgba(15,34,41,0.05), 0 8px 26px rgba(15,34,41,0.08)",
@@ -326,81 +377,70 @@ export function ProfilePanel({
           </Section>
         )}
 
-        {/* ── YOUR ACCOUNT ── the account, growing and moving. */}
-        <Section label="Your account">
-          <StatCardGrid>
-            <StatCard
-              icon={STAT_ICONS.flame}
-              value={`${activeExperiences}`}
-              label={activeExperiences === 1 ? "active experience" : "active experiences"}
-              accent={ORANGE}
-            />
-            <StatCard
-              icon={STAT_ICONS.people}
-              value={`${tribeConnections}`}
-              label="tribe connections"
-              sub="meet your people"
-              accent={CYAN}
-              onClick={() => openOverlay("people")}
-            />
-            <StatCard
-              icon={STAT_ICONS.people}
-              value={`${activeMembers}`}
-              label="active tribe members"
-              accent={ORANGE}
-            />
-            {totalReviews > 0 ? (
-              <StatCard
-                icon={STAT_ICONS.star}
-                value={`★ ${avgRating.toFixed(1)}`}
-                label={`${totalReviews} ${totalReviews === 1 ? "review" : "reviews"}`}
-                sub="read them all"
-                accent={CYAN}
-                onClick={() => openOverlay("reviews")}
+        {/* ── AT A GLANCE ── the six tiles compressed into one card (founder
+            call, 17 Aug: the console lost its power to density — big tiles
+            are for dashboards that need to look busy). Four numbers in a
+            row, doors where doors exist, one quiet context line below. */}
+        <Section label="At a glance">
+          <div className="rounded-xl px-3.5 py-3" style={{ backgroundColor: "rgba(8,145,178,0.05)" }}>
+            <div className="grid grid-cols-4 gap-1.5 text-center">
+              <GlanceCell value={`${activeMembers}`} label="members" />
+              <GlanceCell value={`${sessionsLed}`} label="sessions" />
+              <GlanceCell
+                value={totalReviews > 0 ? `★ ${avgRating.toFixed(1)}` : "—"}
+                label={totalReviews > 0 ? `${totalReviews} ${totalReviews === 1 ? "review" : "reviews"}` : "no reviews"}
+                onClick={totalReviews > 0 ? () => openOverlay("reviews") : undefined}
               />
-            ) : (
-              <StatCard icon={STAT_ICONS.star} value="—" label="no reviews yet" accent={CYAN} />
-            )}
-            <StatCard
-              icon={STAT_ICONS.bolt}
-              value={`${sessionsLed}`}
-              label="sessions led"
-              accent={ORANGE}
-            />
-            <StatCard
-              icon={STAT_ICONS.coins}
-              value={`CHF ${(earningsWeekCents / 100).toFixed(0)}`}
-              label="earned this week"
-              sub="see earnings"
-              accent={CYAN}
-              href="/dashboard/earnings"
-            />
-          </StatCardGrid>
+              <GlanceCell
+                value={`CHF ${(earningsWeekCents / 100).toFixed(0)}`}
+                label="this week"
+                href="/dashboard/earnings"
+              />
+            </div>
+            <div
+              className="flex items-center justify-between gap-2 mt-2.5 pt-2.5"
+              style={{ borderTop: "1px solid rgba(15,34,41,0.06)" }}
+            >
+              <span className="text-[11px] font-bold font-headline" style={{ color: "#94a3b8" }}>
+                {activeExperiences} active {activeExperiences === 1 ? "experience" : "experiences"}
+              </span>
+              <button
+                type="button"
+                onClick={() => openOverlay("people")}
+                className="text-[11px] font-black font-headline hover:opacity-80"
+                style={{ color: CYAN }}
+              >
+                {tribeConnections} connections →
+              </button>
+            </div>
+          </div>
         </Section>
 
-        {/* ── QUICK ACTIONS ── */}
+        {/* ── QUICK ACTIONS ── one quiet row, not four full-width buttons:
+            these are once-a-month surfaces and were most of the console's
+            length. Mobile keeps its primary New-experience CTA. */}
         <Section label="Quick actions">
           <Link
             href="/dashboard/create"
-            className="lg:hidden flex w-full items-center justify-center gap-1.5 rounded-xl py-3 px-4 text-[13px] font-black font-headline text-white transition-transform hover:scale-[1.01] mb-2"
+            className="lg:hidden flex w-full items-center justify-center gap-1.5 rounded-xl py-3 px-4 text-[13px] font-black font-headline text-white transition-transform hover:scale-[1.01] mb-2.5"
             style={{ backgroundColor: ORANGE, boxShadow: "0 4px 14px rgba(255,97,48,0.30)" }}
           >
             {PLUS_ICON}
             New experience
           </Link>
-          <button type="button" onClick={() => openOverlay("edit-profile")} className={`${railBtn} mb-2`} style={railActionStyle}>
-            {EDIT_ICON}
-            Edit profile
-          </button>
-          <ProfileTrigger profileId={viewerId} className="w-full mb-2">
-            <span className={railBtn} style={railActionStyle}>
-              View my profile
-            </span>
-          </ProfileTrigger>
-          <button type="button" onClick={() => openOverlay("settings")} className={`${railBtn} mb-2`} style={railActionStyle}>
-            My recorded agreements
-          </button>
-          <CalendarButton href="/dashboard/calendar" label="Export calendar" block />
+          <div className="flex flex-wrap gap-1.5">
+            <button type="button" onClick={() => openOverlay("edit-profile")} className={actionChip} style={railActionStyle}>
+              {EDIT_ICON}
+              Edit profile
+            </button>
+            <ProfileTrigger profileId={viewerId}>
+              <span className={actionChip} style={railActionStyle}>My profile</span>
+            </ProfileTrigger>
+            <button type="button" onClick={() => openOverlay("settings")} className={actionChip} style={railActionStyle}>
+              Agreements
+            </button>
+            <CalendarButton href="/dashboard/calendar" label="Calendar" variant="subtle" />
+          </div>
         </Section>
       </div>
 

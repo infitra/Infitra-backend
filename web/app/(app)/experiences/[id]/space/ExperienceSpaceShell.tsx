@@ -180,6 +180,23 @@ function SpaceBody({ reviewState, continuation }: { reviewState?: ReviewState; c
     knownSessionIds: useMemo(() => sessions.map((s) => s.id), [sessions]),
   });
 
+  // Deep link from the dashboard console: /space?focus=questions lands with
+  // the feed filtered to what waits on you and scrolled to the Tribe. An
+  // alert that doesn't land on its action is worse than no alert (founder
+  // call, 17 Aug). Read from window.location, not useSearchParams — no
+  // framework coupling, runs once on mount.
+  const setFeedFilterOnce = useExperienceSpaceStore((s) => s.setFeedFilter);
+  useEffect(() => {
+    const focus = new URLSearchParams(window.location.search).get("focus");
+    if (focus === "questions") {
+      setFeedFilterOnce("open_for_me");
+      const t = setTimeout(() => {
+        document.getElementById("tribe")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 200);
+      return () => clearTimeout(t);
+    }
+  }, [setFeedFilterOnce]);
+
   // Creator console numbers: server-seeded on first paint (ui.creatorStats),
   // then refreshed whenever the feed's EXISTING realtime channel ticks
   // feedActivity (a new question / comment). No second subscription — just one
