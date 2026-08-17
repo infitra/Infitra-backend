@@ -25,9 +25,11 @@ interface Props {
   /** Optional — when provided, a "Delete" button appears (with confirm)
    *  that removes the session and closes the modal. */
   onDelete?: () => void;
-  /** Optional — expert-only, published sessions. Renders a deliberately
-   *  QUIET text link (emergency rescheduling is not a forefront feature;
-   *  founder call, 17 Aug) that opens the reschedule flow. */
+  /** Optional — expert-only, published upcoming sessions. Renders a calm
+   *  tertiary "Reschedule" button in the actions row: findable when you are
+   *  looking at the session, but never on the cards and never loud
+   *  (emergency rescheduling is not a forefront feature; founder calls,
+   *  17 Aug ×2 — first too loud was wrong, then too hidden was wrong). */
   onReschedule?: () => void;
 }
 
@@ -144,6 +146,21 @@ export function SessionDetailModal({ open, session, onClose, onEdit, onDelete, o
                   Edit
                 </button>
               )}
+              {onReschedule && (
+                <button
+                  onClick={() => { onClose(); onReschedule(); }}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold font-headline transition-colors hover:bg-[#0F2229]/[0.04]"
+                  style={{ color: "#64748b", border: "1px solid rgba(15,34,41,0.15)" }}
+                >
+                  <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth={1.9} viewBox="0 0 24 24">
+                    <rect x="3" y="4" width="18" height="18" rx="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                  </svg>
+                  Reschedule
+                </button>
+              )}
               {onDelete && (
                 <button
                   onClick={() => {
@@ -174,20 +191,6 @@ export function SessionDetailModal({ open, session, onClose, onEdit, onDelete, o
               Close
             </button>
           </div>
-
-          {/* Quiet, expert-only escape hatch — bottom of the modal, plain
-              text. Emergencies only; the dialog it opens says so. */}
-          {onReschedule && (
-            <p className="mt-4 text-center">
-              <button
-                onClick={() => { onClose(); onReschedule(); }}
-                className="text-[11px] underline hover:opacity-80"
-                style={{ color: "#94a3b8" }}
-              >
-                Can&apos;t hold this session?
-              </button>
-            </p>
-          )}
         </div>
       </div>
     </div>

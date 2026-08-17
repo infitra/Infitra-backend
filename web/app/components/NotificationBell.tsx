@@ -187,15 +187,31 @@ function describeNotification(n: EnrichedNotification): NotificationContent {
     }
     case "system":
       if (p.kind === "session_time_changed") {
+        // Enriched payload since 17 Aug: session_title, challenge_id,
+        // actor_id (the bell resolves actor names/avatars generically) and
+        // the expert's reason, quoted verbatim. Older rows lack these
+        // fields and fall back to the previous neutral copy.
         const when = formatSessionTime(p.new_start_time);
+        const sessionTitle =
+          typeof p.session_title === "string" && p.session_title.trim()
+            ? p.session_title.trim()
+            : null;
+        const reason =
+          typeof p.reason === "string" && p.reason.trim() ? p.reason.trim() : null;
         return {
-          title: "Session rescheduled",
-          // The new time is in the payload — surface it instead of a generic
-          // line. No challenge_id is carried and the standalone session pages
-          // are retired, so this row stays non-clickable (the value is the
-          // time itself, shown here).
-          detail: when ? `New time — ${when}` : "A session time was updated",
-          href: null,
+          title: sender
+            ? `${sender} moved ${sessionTitle ?? "a session"}`
+            : sessionTitle
+              ? `New time · ${sessionTitle}`
+              : "Session rescheduled",
+          detail:
+            [when ? `Now ${when}` : null, reason ? `“${reason}”` : null]
+              .filter(Boolean)
+              .join(" — ") || "A session time was updated",
+          href:
+            typeof p.challenge_id === "string"
+              ? `/experiences/${p.challenge_id}/space`
+              : null,
         };
       }
       // A collaborator left a review (delivered as a 'system' notification,
