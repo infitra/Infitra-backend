@@ -25,6 +25,10 @@ interface Props {
   /** Optional — when provided, a "Delete" button appears (with confirm)
    *  that removes the session and closes the modal. */
   onDelete?: () => void;
+  /** Optional — expert-only, published sessions. Renders a deliberately
+   *  QUIET text link (emergency rescheduling is not a forefront feature;
+   *  founder call, 17 Aug) that opens the reschedule flow. */
+  onReschedule?: () => void;
 }
 
 /**
@@ -33,7 +37,7 @@ interface Props {
  * Keeps the user in-context — no navigation out to /dashboard/sessions/[id]
  * and no nesting through the generic preview page.
  */
-export function SessionDetailModal({ open, session, onClose, onEdit, onDelete }: Props) {
+export function SessionDetailModal({ open, session, onClose, onEdit, onDelete, onReschedule }: Props) {
   // Close on Escape
   useEffect(() => {
     if (!open) return;
@@ -170,6 +174,20 @@ export function SessionDetailModal({ open, session, onClose, onEdit, onDelete }:
               Close
             </button>
           </div>
+
+          {/* Quiet, expert-only escape hatch — bottom of the modal, plain
+              text. Emergencies only; the dialog it opens says so. */}
+          {onReschedule && (
+            <p className="mt-4 text-center">
+              <button
+                onClick={() => { onClose(); onReschedule(); }}
+                className="text-[11px] underline hover:opacity-80"
+                style={{ color: "#94a3b8" }}
+              >
+                Can&apos;t hold this session?
+              </button>
+            </p>
+          )}
         </div>
       </div>
     </div>

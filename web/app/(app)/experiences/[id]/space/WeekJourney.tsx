@@ -31,6 +31,7 @@ import {
 import type { SpaceSession } from "@/lib/experienceSpace/store";
 import { sessionTeamLabel } from "@/lib/experienceSpace/store";
 import { SessionDetailModal } from "@/app/components/SessionDetailModal";
+import { RescheduleDialog } from "./RescheduleDialog";
 
 const ORANGE = "#FF6130";
 const CYAN = "#0891b2";
@@ -64,10 +65,14 @@ export function WeekJourney() {
   const experience = useExperienceSpaceStore((s) => s.experience);
   const programState = useExperienceSpaceStore((s) => s.programState);
   const sessions = useExperienceSpaceStore((s) => s.sessions);
+  const isCreator = useExperienceSpaceStore((s) => s.isCreator);
 
   // Tapping any session card opens the read-only detail popup (same modal the
   // buyer carousel + Tribe posts use) — no navigation out to a session page.
   const [detail, setDetail] = useState<SpaceSession | null>(null);
+  // Emergency reschedule (expert-only, upcoming sessions): opened from the
+  // quiet link inside the detail modal, never from the cards themselves.
+  const [reschedule, setReschedule] = useState<SpaceSession | null>(null);
 
   // A slow tick keeps countdowns + live/next states fresh without a re-render storm.
   const [now, setNow] = useState(() => Date.now());
@@ -206,7 +211,23 @@ export function WeekJourney() {
           hostName: detail.hostName, hostAvatar: detail.hostAvatar,
           imageUrl: detail.imageUrl, description: detail.description, cohosts: detail.cohosts,
         } : null}
+        onReschedule={
+          isCreator && detail && !detail.startedAt &&
+          new Date(detail.startTime).getTime() > Date.now()
+            ? () => setReschedule(detail)
+            : undefined
+        }
       />
+
+      {reschedule && (
+        <RescheduleDialog
+          open
+          sessionId={reschedule.id}
+          sessionTitle={reschedule.title}
+          currentStart={reschedule.startTime}
+          onClose={() => setReschedule(null)}
+        />
+      )}
     </section>
   );
 }
