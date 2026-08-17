@@ -38,9 +38,15 @@ interface FeedPost {
   /** Materials the author attached — always a subset of contextId's own
    *  session (DB-enforced), so they nest inside the session card. */
   materialIds: string[];
-  /** Reflection posts: the 0–10 post-session energy rating. A moved slider
-   *  with no text is a COMPLETE reflection — this is its content. */
+  /** Reflection posts: the 0–10 post-session pulse. A moved slider with no
+   *  text is a COMPLETE reflection — this is its content. Two-axis since
+   *  2026-08-17: mood carries the verdict (colored delta), energy is a state
+   *  (neutral delta). The *_before values come stamped from the author's own
+   *  pre-pulse; older posts have energyAfter only. */
   energyAfter: number | null;
+  moodAfter: number | null;
+  energyBefore: number | null;
+  moodBefore: number | null;
   directedTo: string[];
   mediaUrl: string | null;
   likeCount: number;
@@ -55,7 +61,11 @@ interface FeedPost {
 interface RawRow {
   id: string; author_id: string; body: string; kind?: string;
   context_type?: string | null;
-  metadata?: { material_ids?: string[]; energy_after?: number } | null;
+  metadata?: {
+    material_ids?: string[];
+    energy_after?: number; mood_after?: number;
+    energy_before?: number; mood_before?: number;
+  } | null;
   context_id?: string | null; directed_to?: string[] | null; media_url?: string | null;
   like_count?: number; comment_count?: number; liked_by_me?: boolean;
   coach_answer?: { author_id: string; body: string; created_at: string } | null;
@@ -195,6 +205,9 @@ export function TribeFeed({
     contextType: r.context_type ?? null, contextId: r.context_id ?? null,
     materialIds: Array.isArray(r.metadata?.material_ids) ? r.metadata!.material_ids! : [],
     energyAfter: typeof r.metadata?.energy_after === "number" ? r.metadata.energy_after : null,
+    moodAfter: typeof r.metadata?.mood_after === "number" ? r.metadata.mood_after : null,
+    energyBefore: typeof r.metadata?.energy_before === "number" ? r.metadata.energy_before : null,
+    moodBefore: typeof r.metadata?.mood_before === "number" ? r.metadata.mood_before : null,
     directedTo: r.directed_to ?? [], mediaUrl: r.media_url ?? null,
     likeCount: r.like_count ?? 0, commentCount: r.comment_count ?? 0, likedByMe: r.liked_by_me ?? false,
     coachAnswer: r.coach_answer ? { authorId: r.coach_answer.author_id, body: r.coach_answer.body, createdAt: r.coach_answer.created_at } : null,
@@ -332,7 +345,8 @@ export function TribeFeed({
       const optimistic: FeedPost = {
         id: postId, author_id: viewer.id, body: text, kind: isQuestion ? "question" : "talk",
         contextType: ctxSession ? "session" : null, contextId: ctxSession,
-        materialIds: ctxMaterials, energyAfter: null, directedTo: isQuestion ? [askId!] : [], mediaUrl: media,
+        materialIds: ctxMaterials, energyAfter: null, moodAfter: null, energyBefore: null, moodBefore: null,
+        directedTo: isQuestion ? [askId!] : [], mediaUrl: media,
         likeCount: 0, commentCount: 0, likedByMe: false, coachAnswer: null,
         created_at: new Date().toISOString(), authorName: viewer.name, authorAvatar: viewer.avatar,
       };
@@ -784,7 +798,15 @@ function PostCard({
           )}
           {/* The slider IS the reflection: a rating-only post must read as
               content, not as an empty card. Wiped out → energized, 0–10. */}
-          {post.kind === "reflection" && post.energyAfter != null && (
+          {post.kind === "reflection" && post.moodAfter != null && (
+            <PulsePairChips
+              moodAfter={post.moodAfter}
+              moodBefore={post.moodBefore}
+              energyAfter={post.energyAfter}
+              energyBefore={post.energyBefore}
+            />
+          )}
+          {post.kind === "reflection" && post.moodAfter == null && post.energyAfter != null && (
             <span
               className="inline-flex items-center gap-1.5 mt-3 px-2.5 py-1 rounded-full text-[12px] font-bold font-headline"
               style={{ backgroundColor: "rgba(8,145,178,0.10)", color: CYAN }}
@@ -907,6 +929,57 @@ function PostCard({
         </div>
       </div>
     </article>
+  );
+}
+
+/**
+ * The two-axis pulse pair on a reflection post: "Mood 8 (+3) · Energy 4 (−3)".
+ * Mood's delta is COLORED (up = cyan, down = amber) because up genuinely
+ * means better. Energy's delta stays neutral ink always: energy down after a
+ * hard session is a state, not a bad score — coloring it red would rebuild
+ * the exact misreading the two-axis design removed.
+ */
+function PulsePairChips({
+  moodAfter,
+  moodBefore,
+  energyAfter,
+  energyBefore,
+}: {
+  moodAfter: number;
+  moodBefore: number | null;
+  energyAfter: number | null;
+  energyBefore: number | null;
+}) {
+  const moodDelta = moodBefore != null ? moodAfter - moodBefore : null;
+  const energyDelta =
+    energyAfter != null && energyBefore != null ? energyAfter - energyBefore : null;
+  const signed = (d: number) => (d > 0 ? `+${d}` : `${d}`);
+  const moodColor = moodDelta == null || moodDelta === 0 ? CYAN : moodDelta > 0 ? CYAN : "#b45309";
+  const moodBg =
+    moodDelta != null && moodDelta < 0 ? "rgba(180,83,9,0.10)" : "rgba(8,145,178,0.10)";
+
+  return (
+    <span className="inline-flex items-center gap-1.5 mt-3 flex-wrap">
+      <span
+        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-bold font-headline"
+        style={{ backgroundColor: moodBg, color: moodColor }}
+      >
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={moodColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+        </svg>
+        Mood {moodAfter}
+        {moodDelta != null && moodDelta !== 0 && <> ({signed(moodDelta)})</>}
+      </span>
+      {energyAfter != null && (
+        <span
+          className="inline-flex items-center px-2.5 py-1 rounded-full text-[12px] font-bold font-headline"
+          style={{ backgroundColor: "rgba(15,34,41,0.06)", color: "#64748b" }}
+        >
+          Energy {energyAfter}
+          {energyDelta != null && energyDelta !== 0 && <> ({signed(energyDelta)})</>}
+        </span>
+      )}
+    </span>
   );
 }
 

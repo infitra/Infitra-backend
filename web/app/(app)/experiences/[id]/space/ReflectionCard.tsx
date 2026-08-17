@@ -1,20 +1,22 @@
 "use client";
 
 /**
- * ReflectionCard — Bundle 7. Action-zone card shown after a session the
- * participant attended ends: an energy-after slider (prominent) + optional free
- * text. Submits via submit_session_reflection, which posts a kind='reflection'
- * post to the Tribe feed (it streams in via the feed's realtime). Clears itself
- * from the action items on submit/skip.
+ * ReflectionCard — Bundle 7, two-axis since 2026-08-17. Action-zone card shown
+ * after a session the participant attended ends: the SAME mood + energy pair
+ * the pre-pulse asked (so the post can show the change) + optional free text.
+ * Submits via submit_session_reflection, which stamps the author's own
+ * before-values into the post metadata and posts kind='reflection' to the
+ * Tribe feed. Clears itself from the action items on submit/skip.
  *
  * The FORM is its own export: the leave→reflection loop shows the identical
- * slider + text + buttons inside the standard overlay panel, where the card's
+ * sliders + text + buttons inside the standard overlay panel, where the card's
  * translucent rail treatment (a gradient meant to sit ON the canvas) would
  * just bleed the page through.
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { submitSessionReflection } from "@/app/actions/reflection";
+import { getMyPrePulse } from "@/app/actions/pulse";
 import { useExperienceSpaceStore } from "@/lib/experienceSpace/StoreProvider";
 import { Slider } from "@/app/components/Slider";
 
@@ -30,16 +32,30 @@ export function ReflectionForm({
   onDone?: () => void;
 }) {
   const clearActionItem = useExperienceSpaceStore((s) => s.clearActionItem);
+  const [mood, setMood] = useState(5);
   const [energy, setEnergy] = useState(5);
   const [body, setBody] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // The author's own arrival pulse, shown so they know their post will carry
+  // the change (their disclosure — see the privacy shape in the pulse RPC).
+  const [before, setBefore] = useState<{ mood: number | null; energy: number | null } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    getMyPrePulse(sessionId).then((r) => {
+      if (!cancelled) setBefore(r);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionId]);
 
   async function submit() {
     if (busy) return;
     setBusy(true);
     setError(null);
-    const res = await submitSessionReflection(sessionId, body.trim(), energy);
+    const res = await submitSessionReflection(sessionId, body.trim(), energy, mood);
     if (res?.error) {
       setError(res.error);
       setBusy(false);
@@ -51,8 +67,28 @@ export function ReflectionForm({
 
   return (
     <div>
-      <div className="max-w-sm">
-        <Slider value={energy} onChange={setEnergy} accent={CYAN} labelLow="Wiped out" labelHigh="Energized" />
+      <div className="max-w-sm space-y-4">
+        <div>
+          <p className="text-[11px] font-bold font-headline uppercase tracking-wider mb-1.5" style={{ color: "#64748b" }}>
+            Mood now
+          </p>
+          <Slider value={mood} onChange={setMood} accent={CYAN} labelLow="Heavy" labelHigh="Great" />
+        </div>
+        <div>
+          <p className="text-[11px] font-bold font-headline uppercase tracking-wider mb-1.5" style={{ color: "#64748b" }}>
+            Energy now
+          </p>
+          <Slider value={energy} onChange={setEnergy} accent={CYAN} labelLow="Running on empty" labelHigh="Fully charged" />
+        </div>
+        {before && (before.mood != null || before.energy != null) && (
+          <p className="text-[12px]" style={{ color: "#64748b" }}>
+            You arrived at{" "}
+            {before.mood != null && <>mood <strong>{before.mood}</strong></>}
+            {before.mood != null && before.energy != null && " · "}
+            {before.energy != null && <>energy <strong>{before.energy}</strong></>}
+            {" "}— your post will show the change.
+          </p>
+        )}
       </div>
 
       <textarea

@@ -73,8 +73,10 @@ export interface SpaceSession {
   hostName: string;
   hostAvatar: string | null;
   cohosts: { id: string; name: string; avatar: string | null }[];
-  /** Cohort pre-session pulse aggregate (count/avg, shown past a small floor). */
-  prePulse?: { count: number; avg: number; canShow: boolean };
+  /** Cohort pre-session pulse aggregate (count/avg, shown past a small floor).
+   *  avg = ENERGY axis (historic name); avgMood joined 2026-08-17 with the
+   *  two-axis pulse (0 = no mood data yet, e.g. pre-two-axis sessions). */
+  prePulse?: { count: number; avg: number; avgMood?: number; canShow: boolean };
 }
 
 /** "Host & Co-host" label for a session — host first, then co-hosts. */

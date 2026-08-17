@@ -436,7 +436,9 @@ function HeroSessionCard({
             style={{ backgroundColor: "rgba(8,145,178,0.10)", color: CYAN }}
           >
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={CYAN} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2" /></svg>
-            Cohort energy {session.prePulse.avg}/10
+            {(session.prePulse.avgMood ?? 0) > 0
+              ? `Tribe arriving · mood ${session.prePulse.avgMood} · energy ${session.prePulse.avg}`
+              : `Cohort energy ${session.prePulse.avg}/10`}
           </span>
         )}
 

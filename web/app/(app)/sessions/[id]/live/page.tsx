@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
 import { LiveRoomEmbed } from "@/app/components/LiveRoomEmbed";
+import { PulseDoor } from "./PulseDoor";
 
 export const metadata = {
   title: "Live Session — INFITRA",
@@ -21,7 +22,7 @@ export default async function ParticipantLivePage({
 
   const { data: session } = await supabase
     .from("app_session")
-    .select("id, title, host_id, live_room_id, status")
+    .select("id, title, host_id, live_room_id, status, started_at")
     .eq("id", id)
     .single();
 
@@ -67,6 +68,35 @@ export default async function ParticipantLivePage({
     // A QUERY failure must not read as "not entitled": issue_join_token is
     // the authoritative check; let the room page make the call visible.
     if (!attendance && !attErr) redirect(backHref);
+  }
+
+  // Arrival pulse at the door (participants only) — completes the loop:
+  // pulse at the door in, reflection at the door out. One ask per session:
+  // skipped when they already pulsed via the space card. Late joiners
+  // (session live for > 10 min) go straight in — asking someone who is
+  // already late to rate their mood teaches them to hate the feature.
+  // Experts always go straight in. Any failure here falls through to the
+  // room: the pulse can fail silently; the join cannot.
+  let needsPulse = false;
+  if (!isExpert) {
+    const lateMs = session.started_at
+      ? Date.now() - new Date(session.started_at).getTime()
+      : 0;
+    if (lateMs <= 10 * 60_000) {
+      const { data: pulsed } = await supabase
+        .from("app_session_pre_pulse_response")
+        .select("session_id")
+        .eq("session_id", id)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      needsPulse = !pulsed;
+    }
+  }
+
+  if (needsPulse) {
+    return (
+      <PulseDoor sessionId={id} sessionTitle={session.title} backHref={backHref} />
+    );
   }
 
   return (

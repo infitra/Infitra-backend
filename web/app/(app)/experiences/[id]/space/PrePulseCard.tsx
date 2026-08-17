@@ -1,10 +1,12 @@
 "use client";
 
 /**
- * PrePulseCard — Bundle 6. Action-zone card that appears in the ~4h before a
- * session the participant is attending: a single 0–10 readiness slider. Writes
- * via submit_pre_pulse (individual stays private; only the cohort aggregate is
- * surfaced on the session). Clears itself from the action items on submit/skip.
+ * PrePulseCard — Bundle 6, two-axis since 2026-08-17. Action-zone card in the
+ * ~4h before a session the participant is attending: MOOD ("how do you feel",
+ * up = good) + ENERGY ("how's your tank", a state, not a score) — the same
+ * two questions the reflection asks after, so the pair is subtractable.
+ * Writes via submit_pre_pulse (individual stays private; only the cohort
+ * aggregate is surfaced). Clears itself from the action items on submit/skip.
  */
 
 import { useEffect, useState } from "react";
@@ -24,7 +26,8 @@ export function PrePulseCard({
   startTime?: string;
 }) {
   const clearActionItem = useExperienceSpaceStore((s) => s.clearActionItem);
-  const [value, setValue] = useState(5);
+  const [mood, setMood] = useState(5);
+  const [energy, setEnergy] = useState(5);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,7 +49,7 @@ export function PrePulseCard({
     if (busy) return;
     setBusy(true);
     setError(null);
-    const res = await submitPrePulse(sessionId, value);
+    const res = await submitPrePulse(sessionId, mood, energy);
     if (res?.error) {
       setError(res.error);
       setBusy(false);
@@ -108,12 +111,23 @@ export function PrePulseCard({
           className="font-black font-headline mt-2.5 leading-snug"
           style={{ color: "#0F2229", fontSize: "clamp(1.15rem, 3.6vw, 1.5rem)", letterSpacing: "-0.015em" }}
         >
-          How ready do you feel for {sessionTitle}?
+          How are you arriving for {sessionTitle}?
         </p>
         <p className="text-[13px] mt-1" style={{ color: "#64748b" }}>Just for your Experts — only the group average is shown.</p>
 
-        <div className="mt-4 max-w-sm">
-          <Slider value={value} onChange={setValue} accent={CYAN} labelLow="Drained" labelHigh="Fired up" />
+        <div className="mt-4 max-w-sm space-y-4">
+          <div>
+            <p className="text-[11px] font-bold font-headline uppercase tracking-wider mb-1.5" style={{ color: "#64748b" }}>
+              Mood
+            </p>
+            <Slider value={mood} onChange={setMood} accent={CYAN} labelLow="Heavy" labelHigh="Great" />
+          </div>
+          <div>
+            <p className="text-[11px] font-bold font-headline uppercase tracking-wider mb-1.5" style={{ color: "#64748b" }}>
+              Energy
+            </p>
+            <Slider value={energy} onChange={setEnergy} accent={CYAN} labelLow="Running on empty" labelHigh="Fully charged" />
+          </div>
         </div>
 
         {error && <p className="text-xs mt-2" style={{ color: "#FF6130" }}>{error}</p>}
