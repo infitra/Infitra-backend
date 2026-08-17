@@ -71,12 +71,13 @@ export function SessionDetailModal({ open, session, onClose, onEdit, onDelete, o
         style={{ backgroundColor: "#FFFFFF" }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Cover — a shorter strip than the old 16:9 block: covers load in
-            progressively and a half-height banner reads smoother (and keeps
-            the text above the fold on small screens). The dark placeholder
-            sits BEHIND the image so there is never a white flash. */}
+        {/* Cover — 16:9, the SAME format covers render in everywhere else
+            (cards, chips, buyer page), so the crop matches what the image
+            was chosen for. (A half-height strip was tried and regressed:
+            it cropped subjects' heads.) The dark placeholder sits BEHIND
+            the image so there is never a white flash while it loads. */}
         <div
-          className="h-36 sm:h-44 w-full overflow-hidden flex items-center justify-center"
+          className="aspect-[16/9] w-full overflow-hidden flex items-center justify-center"
           style={{ background: "linear-gradient(135deg, #0F2229, #1a3340, #2a1508)" }}
         >
           {session.imageUrl ? (
