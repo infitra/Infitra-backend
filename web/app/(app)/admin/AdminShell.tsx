@@ -192,12 +192,13 @@ function Pulse({ pulse }: { pulse: J }) {
   const o = pulse?.outbox ?? {};
   const gap = pulse?.money_gap?.missing_entitlements ?? 0;
   const receiptsMissing = pulse?.receipts_missing ?? 0;
+  const receiptsHistorical = pulse?.receipts_missing_historical ?? 0;
   const counts = pulse?.counts ?? {};
   const cron: J[] = pulse?.cron ?? [];
   const edge: J[] = pulse?.edge_calls_24h ?? [];
-  const staleCron = cron.filter(
-    (c) => c.active && c.minutes_since_run != null && c.minutes_since_run > 120
-  );
+  // Staleness is computed in the RPC against each job's OWN schedule; a flat
+  // threshold here would flag every daily job every day.
+  const staleCron = cron.filter((c) => c.is_stale);
 
   return (
     <>
@@ -207,6 +208,13 @@ function Pulse({ pulse }: { pulse: J }) {
         <Tile label="Paid, no entitlement" value={gap} alarm={gap > 0} />
         <Tile label="Receipts missing" value={receiptsMissing} alarm={receiptsMissing > 0} />
       </div>
+      {receiptsHistorical > 0 && (
+        <p className="text-xs mb-4" style={{ color: MUT }}>
+          Context, not an alarm: {receiptsHistorical} older purchase
+          {receiptsHistorical === 1 ? "" : "s"} predate the receipt pipeline
+          (first receipt {dt(pulse?.receipt_era_started)}) and never had one.
+        </p>
+      )}
       <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mb-4">
         <Tile label="Participants" value={counts.participants ?? 0} />
         <Tile label="Experts" value={counts.experts ?? 0} />
@@ -218,15 +226,22 @@ function Pulse({ pulse }: { pulse: J }) {
 
       <Card title={`Cron heartbeat${staleCron.length ? " · STALE JOBS" : ""}`}>
         <Table
-          head={["Job", "Schedule", "Last status", "Last run", "Minutes ago"]}
+          head={["Job", "Schedule", "Runs every", "Last status", "Last run", "Minutes ago"]}
           rows={cron.map((c) => [
-            c.job,
+            <span key="j" style={c.is_stale ? { color: BAD, fontWeight: 700 } : undefined}>
+              {c.job}{c.is_stale ? " · STALE" : ""}
+            </span>,
             <code key="s" className="text-xs">{c.schedule}</code>,
+            c.expected_every_minutes >= 1440
+              ? "day"
+              : `${c.expected_every_minutes} min`,
             <span key="st" style={{ color: c.last_status === "succeeded" ? OK : BAD, fontWeight: 600 }}>
               {c.last_status ?? "never ran"}
             </span>,
             dt(c.last_run_at),
-            c.minutes_since_run ?? "–",
+            <span key="m" style={c.is_stale ? { color: BAD, fontWeight: 700 } : undefined}>
+              {c.minutes_since_run ?? "–"}
+            </span>,
           ])}
         />
       </Card>
