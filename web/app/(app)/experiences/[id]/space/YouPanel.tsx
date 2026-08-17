@@ -196,19 +196,41 @@ export function YouPanel({ continuation }: { continuation?: CreatorContinuation 
 
       {isCreator ? (
         <>
-          {/* ── TRIBE ── members in a card (matching the other blocks), program
-              timing as quiet context, then the session you host. */}
+          {/* ── TRIBE ── same card grammar as the rest of the console rail
+              (eyebrow + value row, cyan informational tint), with the week
+              status right-aligned and the participant rail's week-segment
+              bar underneath so both rails speak one design language. */}
           <Section label="Tribe">
-            <div className="rounded-xl px-3.5 py-3" style={{ backgroundColor: "#FAF7F1" }}>
-              <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-black font-headline leading-none" style={{ color: INK }}>{memberCount}</span>
-                <span className="text-[12px] uppercase tracking-wider font-headline" style={{ color: "#94a3b8", fontWeight: 800 }}>
-                  {memberCount === 1 ? "Member" : "Members"}
+            <div className="rounded-xl px-3.5 py-3" style={{ backgroundColor: "rgba(8,145,178,0.07)" }}>
+              <div className="flex items-center gap-2">
+                <div className="min-w-0 flex-1">
+                  <p className="text-[9px] uppercase tracking-[0.16em] font-headline" style={{ color: CYAN, fontWeight: 800 }}>
+                    Your tribe
+                  </p>
+                  <p className="text-[15px] font-black font-headline" style={{ color: INK }}>
+                    {memberCount} {memberCount === 1 ? "member" : "members"}
+                  </p>
+                </div>
+                <span
+                  className="text-[10px] font-bold font-headline uppercase tracking-wider shrink-0"
+                  style={{ color: "#94a3b8" }}
+                >
+                  {statusLine}
                 </span>
               </div>
-              <p className="text-[11px] uppercase tracking-[0.14em] font-headline mt-1.5" style={{ color: "#94a3b8", fontWeight: 700 }}>
-                {statusLine}
-              </p>
+              <div className="flex gap-1 mt-2.5">
+                {Array.from({ length: totalWeeks }).map((_, i) => {
+                  const done = i < weeksCompleted;
+                  const current = status.phase === "active" && i === currentWeek - 1;
+                  return (
+                    <span
+                      key={i}
+                      className="flex-1 rounded-full"
+                      style={{ height: 4, backgroundColor: done ? CYAN : current ? ORANGE : "rgba(15,34,41,0.08)" }}
+                    />
+                  );
+                })}
+              </div>
             </div>
             {HeroMoment}
           </Section>
