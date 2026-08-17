@@ -27,10 +27,11 @@ const BAD = "#b42318";
 const chf = (cents: number | null | undefined) =>
   cents == null ? "–" : `CHF ${(Number(cents) / 100).toFixed(2)}`;
 
+// Device timezone on purpose (founder call): the board is read wherever
+// the founder happens to be, unlike session times which pin a zone.
 const dt = (iso: string | null | undefined) =>
   iso
     ? new Date(iso).toLocaleString("en-CH", {
-        timeZone: "Asia/Phnom_Penh",
         day: "2-digit",
         month: "short",
         hour: "2-digit",
@@ -76,7 +77,7 @@ export function AdminShell(props: {
             INFITRA · Admin
           </h1>
           <span className="text-xs" style={{ color: MUT }}>
-            All actions are audited. Times in Asia/Phnom_Penh.
+            All actions are audited. Times in your local timezone.
           </span>
         </div>
 
@@ -406,7 +407,8 @@ function People({ people, run }: { people: J; run: (l: string, fn: () => Promise
 
 /* ---------- Applications ---------- */
 
-const APP_STATUSES = ["new", "contacted", "onboarded", "passed"];
+// Must match app_pilot_application_status_check in the DB exactly.
+const APP_STATUSES = ["new", "contacted", "accepted", "declined"];
 
 function Applications({ data, run }: { data: J; run: (l: string, fn: () => Promise<J>) => void }) {
   const apps: J[] = data?.applications ?? [];
