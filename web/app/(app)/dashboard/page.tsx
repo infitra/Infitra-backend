@@ -903,12 +903,13 @@ export default async function DashboardPage() {
           feed right), so the dashboard and the Experience Space feel like
           one building. items-stretch keeps the console and the active card the
           same height; on mobile it's simply the top card of the stack. */}
-      {/* items-start (not stretch) + sticky: the compressed console pins as
-          a fixed command surface on desktop while the page scrolls; on
-          mobile it simply stacks as before. max-height + overflow guard
-          short viewports. */}
+      {/* items-start, and deliberately NOT sticky (founder call, 17 Aug):
+          the compressed console and the vertical tribe hero now stand at
+          roughly the same height, so both scroll away together and the
+          drafts / invitations / archive read cleanly underneath. Pinning
+          one of two matched columns just breaks that symmetry. */}
       <div className="lg:grid lg:grid-cols-[340px_minmax(0,1fr)] lg:gap-8 lg:items-start">
-        <aside className="mb-8 lg:mb-0 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto">
+        <aside className="mb-8 lg:mb-0">
           <ProfilePanel
             displayName={data.profile.displayName}
             avatarUrl={data.profile.avatarUrl}
@@ -1009,8 +1010,11 @@ export default async function DashboardPage() {
                   label="Collaboration invitations"
                   count={data.pendingReceivedInvites.length}
                 >
-                  <div id="invitations">
-                    <div id="invitations" className="scroll-mt-24"><CollabInvitations invites={data.pendingReceivedInvites} /></div>
+                  {/* One id only: a nested duplicate meant the browser could
+                      target the outer div, which carries no scroll-mt and
+                      lands the Needs-You invitation link under the nav. */}
+                  <div id="invitations" className="scroll-mt-24">
+                    <CollabInvitations invites={data.pendingReceivedInvites} />
                   </div>
                 </Section>
               )}
@@ -1070,8 +1074,8 @@ export default async function DashboardPage() {
               label="Collaboration invitations"
               count={data.pendingReceivedInvites.length}
             >
-              <div id="invitations">
-                <div id="invitations" className="scroll-mt-24"><CollabInvitations invites={data.pendingReceivedInvites} /></div>
+              <div id="invitations" className="scroll-mt-24">
+                <CollabInvitations invites={data.pendingReceivedInvites} />
               </div>
             </Section>
           )}

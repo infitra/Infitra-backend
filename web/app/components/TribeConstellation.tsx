@@ -50,6 +50,7 @@ export function TribeConstellation({
   memberTotal,
   viewerId,
   className,
+  maxWidth = 420,
 }: {
   experts: ConstellationExpert[];
   members: TribeFace[];
@@ -57,6 +58,11 @@ export function TribeConstellation({
   /** Highlights the viewer's own face ("you are in this circle"). */
   viewerId?: string | null;
   className?: string;
+  /** Cap on the circle's diameter. The dashboard's single-column hero gives
+   *  the orbit the full width, so it breathes larger there; side-by-side and
+   *  compact placements keep the original 420. Everything inside is
+   *  percentage-positioned, so the whole constellation scales with this. */
+  maxWidth?: number;
 }) {
   // Reserve one slot for the overflow bubble when the tribe outgrows the ring.
   const hasOverflow = memberTotal > SLOTS;
@@ -83,11 +89,19 @@ export function TribeConstellation({
     return { left: `${50 + r * Math.cos(angle)}%`, top: `${50 + r * Math.sin(angle)}%` };
   };
 
+  // Faces are fixed pixel sizes but the ring is positioned in percentages, so
+  // a larger maxWidth would otherwise spread the SAME small faces over more
+  // emptiness — a bigger circle that reads as a sparser one. Scale them with
+  // the circle (420 is the reference design) so the constellation only ever
+  // changes size, never proportion.
+  const k = maxWidth / 420;
+  const px = (n: number) => Math.round(n * k);
+
 
   return (
     <div
       className={`relative w-full aspect-square ${className ?? ""}`}
-      style={{ maxWidth: 420 }}
+      style={{ maxWidth }}
     >
       {/* Ground: brand wash, same language as the experience header. */}
       <div
@@ -110,7 +124,7 @@ export function TribeConstellation({
         <div className="flex -space-x-3">
           {experts.slice(0, 3).map((e) => (
             <ProfileTrigger key={e.id} profileId={e.id} className="cursor-pointer">
-              <Face src={e.avatar} name={e.name} size={64} ring={ORANGE} lift />
+              <Face src={e.avatar} name={e.name} size={px(64)} ring={ORANGE} lift />
             </ProfileTrigger>
           ))}
         </div>
@@ -129,7 +143,7 @@ export function TribeConstellation({
         return (
           <div key={m.profileId} className="absolute -translate-x-1/2 -translate-y-1/2" style={p}>
             <ProfileTrigger profileId={m.profileId} className="cursor-pointer block">
-              <Face src={m.avatar} name={m.name} size={44} ring={isYou ? ORANGE : CYAN} lift={isYou} />
+              <Face src={m.avatar} name={m.name} size={px(44)} ring={isYou ? ORANGE : CYAN} lift={isYou} />
             </ProfileTrigger>
             {isYou && (
               <span
@@ -151,8 +165,8 @@ export function TribeConstellation({
               <span
                 className="flex items-center justify-center rounded-full text-[12px] font-black font-headline"
                 style={{
-                  width: 44,
-                  height: 44,
+                  width: px(44),
+                  height: px(44),
                   backgroundColor: "#FFFFFF",
                   color: CYAN,
                   boxShadow: `0 0 0 2px ${CYAN_BRIGHT}, 0 2px 8px rgba(15,34,41,0.10)`,
@@ -172,8 +186,8 @@ export function TribeConstellation({
             className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full flex items-center justify-center"
             style={{
               ...p,
-              width: 40,
-              height: 40,
+              width: px(40),
+              height: px(40),
               border: "1.5px dashed rgba(8,145,178,0.35)",
               backgroundColor: "rgba(255,255,255,0.5)",
             }}

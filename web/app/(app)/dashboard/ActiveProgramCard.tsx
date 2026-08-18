@@ -6,21 +6,24 @@ import { ReviewsDisclosure, type CardReview } from "./ReviewsDisclosure";
 import { TribeConstellation, TribeCountLine, type TribeFace } from "@/app/components/TribeConstellation";
 
 /**
- * ActiveProgramCard — a live experience, side-by-side.
+ * ActiveProgramCard — a live experience. Two shapes, one component:
  *
- * Hero density: the cover fills the LEFT column (no dead space — the content is
- * taller than a fixed-ratio cover would be, so it fills like the Space header
- * does); the content reads down the RIGHT:
+ * THE TRIBE HERO (hero density, published) — a single vertical composition
+ * that reads as a sentence: TITLE + status → the ORBIT of the tribe → the
+ * DOOR at its threshold → a BAND with what is happening (next session
+ * beside the live signals and reviews). Life floats on the page canvas
+ * with a glow; only the band is carded. Same arrangement at every width,
+ * which is what mobile already did.
+ *
+ * THE CLASSIC CARD (drafts at hero density, and every compact card) —
+ * cover + content:
  *   PEOPLE    — the experts.
- *   SIGNALS   — live stats: tribe (+ growth), new posts, open questions. Colour
- *               + dots + deltas so it reads as movement, not a static table.
+ *   SIGNALS   — live stats: tribe (+ growth), new posts, open questions.
  *   SESSION   — a cream, editorial card for the next session, with its image.
  *   DOOR      — one way in; share is the quiet secondary. The recorded
  *               agreement lives in Account settings, not on the card.
- * Stage lives only on the cover chip. Soft shadow matches the Experience Space.
- *
- * Side-by-side engages at xl; below xl the card stacks (cover on top at the
- * buyer ratio). Compact density (tier-2 when 2+ are live) always stacks.
+ * Side-by-side engages at xl; below xl it stacks (cover on top at the buyer
+ * ratio). Compact density (tier-2 when 2+ are live) always stacks.
  */
 
 export type ProgramStage =
@@ -654,67 +657,135 @@ export function ActiveProgramCard({ program, partner, user, density = "hero", ti
   const warmingUp =
     enrolled === 0 && (program.newPosts ?? 0) === 0 && (program.pendingQuestions ?? 0) === 0;
 
+  // ── THE TRIBE HERO ─────────────────────────────────────────────────
+  // ONE composition, not two objects sharing a border (founder call,
+  // 17 Aug). It reads top to bottom as a sentence: the experience NAMES
+  // itself → you see WHO is in it → you step inside → then what is
+  // happening. Life floats on the page canvas with a glow instead of a
+  // container; only the data band is carded.
+  //
+  // The door sits at the circle's THRESHOLD, not in its centre: the inner
+  // ring is 26% of the orbit, so a CTA fits at desktop size but not at
+  // mobile (~166px inner circle vs a ~200px pill) — centring it would
+  // force two behaviours, and the centre is the experts' semantic seat.
+  //
+  // This is also the order mobile already stacked in, so both widths now
+  // run ONE arrangement instead of two that drift apart.
+  if (showTribe) {
+    return (
+      <article className="relative flex flex-col">
+        {/* THE STAGE — bounded and centred. The glow's radii are relative to
+            this box, so on a wide dashboard column it stays a halo around the
+            orbit instead of smearing into a full-width wash. */}
+        <div className="mx-auto w-full max-w-[620px]">
+          <header className="relative z-10 text-center px-4">
+            <StatusPill program={program} />
+            <h2
+              className="mt-3 text-3xl md:text-4xl font-headline tracking-tight"
+              style={{ color: INK, fontWeight: 700, letterSpacing: "-0.02em" }}
+            >
+              {program.title || "Untitled"}
+            </h2>
+          </header>
+
+          <div className="relative flex flex-col items-center px-4 pt-5 pb-2">
+            {/* Soft radial glow — life, not a box. */}
+            <div
+              aria-hidden
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background:
+                  "radial-gradient(ellipse 60% 56% at 50% 44%, rgba(8,145,178,0.13) 0%, rgba(255,97,48,0.07) 55%, transparent 78%)",
+              }}
+            />
+            <TribeConstellation
+              experts={experts}
+              members={program.tribeFaces ?? []}
+              memberTotal={enrolled}
+              viewerId={user.id ?? null}
+              maxWidth={520}
+              className="z-10"
+            />
+            <div className="relative z-10 mt-4">
+              <TribeCountLine memberTotal={enrolled} forming={program.stage === "published-pre-launch"} />
+            </div>
+            <div className="relative z-10 mt-4 flex flex-wrap items-center justify-center gap-3">
+              <PrimaryActionPill label={doorLabel} kind="navigate" href={doorHref} variant="filled" />
+              {showShare && <ShareButton challengeId={program.id} inline />}
+            </div>
+          </div>
+        </div>
+
+        {/* THE BAND — the one card. Session and signals sit SIDE BY SIDE so
+            the whole composition stays about one viewport tall. */}
+        <div
+          className="mt-7 rounded-3xl p-5 md:p-6"
+          style={{ backgroundColor: "#FFFFFF", boxShadow: SOFT_SHADOW }}
+        >
+          {/* Two columns only at xl. At lg the console takes 340px of the
+              row, leaving this band ~590px — split there and the session
+              title truncates to nothing and the signal cells crush. */}
+          <div
+            className={`grid gap-4 xl:items-center ${program.nextSession ? "xl:grid-cols-2" : ""}`}
+          >
+            {program.nextSession && (
+              <SessionCard
+                session={program.nextSession}
+                fallbackImage={program.imageUrl}
+                timeZone={timeZone}
+              />
+            )}
+            <div className="min-w-0 space-y-2.5">
+              {warmingUp ? (
+                <div
+                  className="rounded-xl p-3.5 text-[12px] font-bold font-headline"
+                  style={{ border: "1px solid rgba(15,34,41,0.10)", color: MUTED }}
+                >
+                  Your tribe is forming — share to fill it
+                </div>
+              ) : (
+                <>
+                  <SignalStrip program={program} />
+                  {(program.reviewCount ?? 0) > 0 && (
+                    <ReviewsDisclosure
+                      avg={Number(program.reviewAvg ?? 0)}
+                      count={program.reviewCount ?? 0}
+                      thisWeek={program.reviewsThisWeek ?? 0}
+                      reviews={program.reviews ?? []}
+                      experienceTitle={program.title}
+                    />
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+
+          {program.nextRun && (
+            <div className="mt-4">
+              <NextRunChip nextRun={program.nextRun} />
+            </div>
+          )}
+        </div>
+      </article>
+    );
+  }
+
+  // ── DRAFTS (hero density) + every COMPACT card ─────────────────────
+  // A draft has no tribe yet, and compact is a tier-2 treatment, so both
+  // keep the classic cover + content card.
   return (
-    // The constellation hero is UNCAGED (founder call, 17 Aug): a living
-    // tribe on a rigid white card read as art in bureaucratic chrome. With
-    // the tribe showing, the article sheds its box — the orbit floats on the
-    // page canvas with a soft glow, and the DATA column beside it becomes
-    // its own card: the structured door next to the life, not wrapping it.
-    // Drafts and compact cards keep the classic card.
     <article
-      className={`relative transition-shadow flex flex-col ${
+      className={`relative transition-shadow flex flex-col overflow-hidden ${
         isHero ? "rounded-3xl xl:flex-row" : "rounded-2xl"
-      } ${showTribe ? "xl:items-center xl:gap-2" : "overflow-hidden"}`}
-      style={showTribe ? undefined : { backgroundColor: "#FFFFFF", boxShadow: SOFT_SHADOW }}
+      }`}
+      style={{ backgroundColor: "#FFFFFF", boxShadow: SOFT_SHADOW }}
     >
       {/* Share the card — copies the public buyer-page link. Top-right corner. */}
       {showShare && !isHero && <ShareButton challengeId={program.id} />}
 
-      {/* THE FACE OF THE CARD.
-          A published experience leads with its TRIBE: experts at the centre,
-          members around them, open slots for seats still to fill. The card
-          stops being a catalogue entry and becomes the place where the group
-          lives. Drafts and compact cards keep the cover, because a draft has
-          no tribe yet and the constellation is a hero treatment. */}
-      {showTribe ? (
-        <div
-          className={`relative flex flex-col items-center justify-center px-6 py-7 ${
-            isHero ? "xl:w-[46%] xl:shrink-0" : ""
-          }`}
-        >
-          {/* Soft radial glow behind the orbit — life, not a container. */}
-          <div
-            aria-hidden
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              background:
-                "radial-gradient(ellipse 62% 58% at 50% 46%, rgba(8,145,178,0.12) 0%, rgba(255,97,48,0.06) 55%, transparent 78%)",
-            }}
-          />
-          <div className="absolute top-4 left-4">
-            <StatusPill program={program} />
-          </div>
-          <TribeConstellation
-            experts={experts}
-            members={program.tribeFaces ?? []}
-            memberTotal={enrolled}
-            viewerId={user.id ?? null}
-            className="mt-6"
-          />
-          <div className="mt-3">
-            <TribeCountLine memberTotal={enrolled} forming={program.stage === "published-pre-launch"} />
-          </div>
-        </div>
-      ) : (
-        <Cover program={program} density={density} />
-      )}
+      <Cover program={program} density={density} />
 
-      <div
-        className={`${isHero ? "p-7 md:p-8 xl:flex-1 xl:justify-center" : "p-5"} flex flex-col min-w-0 ${
-          showTribe ? "rounded-3xl" : ""
-        }`}
-        style={showTribe ? { backgroundColor: "#FFFFFF", boxShadow: SOFT_SHADOW } : undefined}
-      >
+      <div className={`${isHero ? "p-7 md:p-8 xl:flex-1 xl:justify-center" : "p-5"} flex flex-col min-w-0`}>
         <h2
           className={`${isHero ? "text-2xl md:text-3xl xl:pr-12" : "text-lg md:text-xl pr-12"} font-headline tracking-tight`}
           style={{ color: INK, fontWeight: 700, letterSpacing: "-0.02em" }}
@@ -722,12 +793,9 @@ export function ActiveProgramCard({ program, partner, user, density = "hero", ti
           {program.title || "Untitled"}
         </h2>
 
-        {/* PEOPLE — only when the constellation is not already showing them. */}
-        {!showTribe && (
-          <div className="mt-5">
-            <PartiesRow user={user} partner={partner} isOwner={program.isOwner} />
-          </div>
-        )}
+        <div className="mt-5">
+          <PartiesRow user={user} partner={partner} isOwner={program.isOwner} />
+        </div>
 
         {/* SIGNALS — live stats, or the warming-up line. */}
         <div className="mt-5">
