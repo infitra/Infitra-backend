@@ -3,7 +3,7 @@ import Image from "next/image";
 import { PrimaryActionPill } from "./PrimaryActionPill";
 import { ShareButton } from "./ShareButton";
 import { ReviewsDisclosure, type CardReview } from "./ReviewsDisclosure";
-import { TribeConstellation, TribeCountLine, type TribeFace } from "@/app/components/TribeConstellation";
+import { TribeConstellation, type TribeFace } from "@/app/components/TribeConstellation";
 
 /**
  * ActiveProgramCard — a live experience. Two shapes, one component:
@@ -467,6 +467,29 @@ function LegendNote({ label, children }: { label: string; children: React.ReactN
   );
 }
 
+/** The legend's headline: the headcount as a real numeral. It leads the
+ *  notes because it is the reading of the picture beside it — and under the
+ *  orbit it was competing with the CTA for the same centred axis. */
+function TribeHeadcount({ memberTotal }: { memberTotal: number }) {
+  if (memberTotal === 0) {
+    return (
+      <p className="text-[15px] font-bold font-headline" style={{ color: MUTED }}>
+        Still forming
+      </p>
+    );
+  }
+  return (
+    <p className="flex items-baseline gap-1.5">
+      <span className="text-[28px] font-black font-headline leading-none tabular-nums" style={{ color: INK }}>
+        {memberTotal}
+      </span>
+      <span className="text-[13px]" style={{ color: "#64748b", fontWeight: 600 }}>
+        {memberTotal === 1 ? "person has joined" : "people have joined"}
+      </span>
+    </p>
+  );
+}
+
 /** One "· 2 new posts" activity line. Renders nothing at zero — a legend of
  *  zeroes is noise, and the caller shows a quiet line when all are zero. */
 function ActivityLine({
@@ -724,8 +747,19 @@ export function ActiveProgramCard({ program, partner, user, density = "hero", ti
   // run ONE arrangement instead of two that drift apart.
   if (showTribe) {
     return (
-      <article className="relative flex flex-col">
-        <header className="relative z-10 text-center px-4">
+      // ONE surface (founder call, 18 Aug). The uncaged version floated:
+      // the legend stranded at the page edge, the count fighting the CTA,
+      // and no boundary telling you where the door was. A single card is
+      // NOT a walk-back to the caged original — that failure was TWO boxes
+      // with a seam down the middle. Here the card is the stage floor: the
+      // glow lives inside it, the legend belongs to it, and it makes the
+      // hero and the console read as siblings (same radius, same shadow,
+      // one row).
+      <article
+        className="relative rounded-3xl p-6 md:p-8 overflow-hidden"
+        style={{ backgroundColor: "#FFFFFF", boxShadow: SOFT_SHADOW }}
+      >
+        <header className="relative z-10 text-center px-2">
           <StatusPill program={program} />
           <h2
             className="mt-2.5 text-2xl md:text-3xl font-headline tracking-tight"
@@ -735,23 +769,24 @@ export function ActiveProgramCard({ program, partner, user, density = "hero", ti
           </h2>
         </header>
 
-        {/* ORBIT + LEGEND. The activity does NOT get its own card (founder
-            call, 17 Aug: a boxed panel next to the orbit read as two
-            unrelated objects). It sits beside the circle as margin notes —
-            hairline-separated, on the canvas — so the numbers read as
-            annotations OF the tribe rather than a table about it. Two
-            columns only at xl; at lg the console already takes 340px of the
-            row and the notes would crush. */}
-        <div className="mt-5 grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] xl:items-center">
-          <div className="relative flex flex-col items-center">
-            {/* Soft radial glow — life, not a box. Its radii are relative to
-                this column, so it stays a halo around the orbit. */}
+        {/* ORBIT + LEGEND. The activity has no box of its own — hairline
+            notes on the card's own surface, so the numbers read as
+            annotations OF the tribe. The split is 1.4fr/1fr, not 2fr/1fr:
+            at a third of the row the legend was too narrow to hold any
+            presence, which is what made it read as marginalia. Two columns
+            at xl only; at lg the console already takes 340px of the row. */}
+        <div className="relative z-10 mt-5 grid gap-7 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] xl:items-center">
+          <div className="relative flex justify-center">
+            {/* The glow bleeds past this column and is clipped by the card's
+                own rounded edge, so the orbit sits in light rather than in a
+                box — the card is a stage floor, not a cage. */}
             <div
               aria-hidden
-              className="absolute inset-0 pointer-events-none"
+              className="absolute pointer-events-none"
               style={{
+                inset: "-18%",
                 background:
-                  "radial-gradient(ellipse 58% 58% at 50% 46%, rgba(8,145,178,0.13) 0%, rgba(255,97,48,0.07) 55%, transparent 78%)",
+                  "radial-gradient(ellipse 50% 50% at 50% 50%, rgba(8,145,178,0.14) 0%, rgba(255,97,48,0.07) 55%, transparent 76%)",
               }}
             />
             <TribeConstellation
@@ -759,27 +794,38 @@ export function ActiveProgramCard({ program, partner, user, density = "hero", ti
               members={program.tribeFaces ?? []}
               memberTotal={enrolled}
               viewerId={user.id ?? null}
-              maxWidth={440}
+              maxWidth={400}
               className="z-10"
             />
-            <div className="relative z-10 mt-3">
-              <TribeCountLine memberTotal={enrolled} forming={program.stage === "published-pre-launch"} />
-            </div>
           </div>
 
-          <div className="px-4 xl:px-0 xl:pr-2">
+          <div className="px-1">
             {warmingUp ? (
-              <p className="text-[12.5px] font-bold font-headline" style={{ color: MUTED }}>
-                Your tribe is forming — share to fill it
-              </p>
+              <>
+                <LegendNote label="Your tribe">
+                  <TribeHeadcount memberTotal={enrolled} />
+                </LegendNote>
+                <LegendNote label="Getting started">
+                  <p className="text-[13px]" style={{ color: MUTED, fontWeight: 600 }}>
+                    Share your page to fill the circle
+                  </p>
+                </LegendNote>
+              </>
             ) : (
               <div className="flex flex-col">
+                {/* The headcount leads the legend: it is the reading of the
+                    picture, and under the orbit it was competing with the
+                    CTA for the same centred axis. */}
+                <LegendNote label="Your tribe">
+                  <TribeHeadcount memberTotal={enrolled} />
+                </LegendNote>
+
                 {program.nextSession && (
                   <LegendNote label="Next moment">
-                    <p className="text-[15px] font-bold font-headline leading-snug" style={{ color: INK }}>
+                    <p className="text-[16px] font-bold font-headline leading-snug" style={{ color: INK }}>
                       {program.nextSession.title}
                     </p>
-                    <p className="text-[12px] font-medium mt-0.5" style={{ color: "#64748b" }} suppressHydrationWarning>
+                    <p className="text-[13px] font-medium mt-1" style={{ color: "#64748b" }} suppressHydrationWarning>
                       {sessionWhen(program.nextSession.startTime, timeZone)}
                     </p>
                   </LegendNote>
@@ -825,6 +871,7 @@ export function ActiveProgramCard({ program, partner, user, density = "hero", ti
                       thisWeek={program.reviewsThisWeek ?? 0}
                       reviews={program.reviews ?? []}
                       experienceTitle={program.title}
+                      flush
                     />
                   </LegendNote>
                 )}
@@ -833,14 +880,14 @@ export function ActiveProgramCard({ program, partner, user, density = "hero", ti
           </div>
         </div>
 
-        {/* THE DOOR — centred under the whole composition. */}
-        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+        {/* THE DOOR — the card's footer, centred and alone on its axis. */}
+        <div className="relative z-10 mt-7 flex flex-wrap items-center justify-center gap-3">
           <PrimaryActionPill label={doorLabel} kind="navigate" href={doorHref} variant="filled" />
           {showShare && <ShareButton challengeId={program.id} inline />}
         </div>
 
         {program.nextRun && (
-          <div className="mt-4 flex justify-center">
+          <div className="relative z-10 mt-4 flex justify-center">
             <NextRunChip nextRun={program.nextRun} />
           </div>
         )}

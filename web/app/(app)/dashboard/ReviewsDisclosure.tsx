@@ -45,12 +45,18 @@ export function ReviewsDisclosure({
   thisWeek,
   reviews,
   experienceTitle,
+  flush = false,
 }: {
   avg: number;
   count: number;
   thisWeek: number;
   reviews: CardReview[];
   experienceTitle?: string;
+  /** Drops the border and side padding so the trigger sits inline with
+   *  surrounding text. Used in the tribe hero's legend, where a bordered
+   *  box inside the card would rebuild the fragmentation the legend
+   *  exists to avoid. */
+  flush?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const backdrop = useBackdropClose(() => setOpen(false));
@@ -79,8 +85,10 @@ export function ReviewsDisclosure({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="w-full flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-left transition-colors hover:bg-[rgba(15,34,41,0.03)]"
-        style={{ border: "1px solid rgba(15,34,41,0.10)" }}
+        className={`w-full flex items-center gap-2 rounded-xl text-left transition-colors hover:bg-[rgba(15,34,41,0.03)] ${
+          flush ? "py-0.5" : "px-3.5 py-2.5"
+        }`}
+        style={flush ? undefined : { border: "1px solid rgba(15,34,41,0.10)" }}
         aria-haspopup="dialog"
       >
         <span className="text-sm font-black font-headline" style={{ color: GOLD }}>★</span>
