@@ -383,8 +383,8 @@ export function ProfilePanel({
               <p className="text-[13px] font-black font-headline" style={{ color: INK }}>
                 You&apos;re all caught up
               </p>
-              <p className="text-[11px] mt-1 max-w-[210px]" style={{ color: "#94a3b8", fontWeight: 600 }}>
-                No invitations, questions or signatures waiting.
+              <p className="text-[11px] mt-1 max-w-[215px]" style={{ color: "#94a3b8", fontWeight: 600 }}>
+                Invitations, questions, signatures and next runs land here.
               </p>
             </div>
           )}
