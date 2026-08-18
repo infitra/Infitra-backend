@@ -4,6 +4,7 @@ import { PrimaryActionPill } from "./PrimaryActionPill";
 import { ShareButton } from "./ShareButton";
 import { ReviewsDisclosure, type CardReview } from "./ReviewsDisclosure";
 import { TribeConstellation, type TribeFace } from "@/app/components/TribeConstellation";
+import { LegendNote, TribeHeadcount, ActivityLine } from "@/app/components/ExperienceLegend";
 
 /**
  * ActiveProgramCard — a live experience. Two shapes, one component:
@@ -442,80 +443,6 @@ function SignalStrip({ program }: { program: Program }) {
     <div className="flex rounded-xl overflow-hidden" style={{ backgroundColor: "rgba(15,34,41,0.03)" }}>
       {cells}
     </div>
-  );
-}
-
-// ─── LEGEND — margin notes beside the orbit (tribe hero) ─────
-// Deliberately NOT a card: hairline-separated notes on the canvas, so the
-// activity reads as annotations OF the constellation rather than a
-// separate panel sitting next to it.
-
-function LegendNote({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div
-      className="border-t first:border-t-0 py-3.5 first:pt-0 last:pb-0"
-      style={{ borderColor: "rgba(15,34,41,0.08)" }}
-    >
-      <p
-        className="text-[10px] uppercase tracking-[0.16em] font-headline mb-1"
-        style={{ color: CYAN, fontWeight: 800 }}
-      >
-        {label}
-      </p>
-      {children}
-    </div>
-  );
-}
-
-/** The legend's headline: the headcount as a real numeral. It leads the
- *  notes because it is the reading of the picture beside it — and under the
- *  orbit it was competing with the CTA for the same centred axis. */
-function TribeHeadcount({ memberTotal }: { memberTotal: number }) {
-  if (memberTotal === 0) {
-    return (
-      <p className="text-[15px] font-bold font-headline" style={{ color: MUTED }}>
-        Still forming
-      </p>
-    );
-  }
-  return (
-    <p className="flex items-baseline gap-1.5">
-      <span className="text-[28px] font-black font-headline leading-none tabular-nums" style={{ color: INK }}>
-        {memberTotal}
-      </span>
-      <span className="text-[13px]" style={{ color: "#64748b", fontWeight: 600 }}>
-        {memberTotal === 1 ? "person has joined" : "people have joined"}
-      </span>
-    </p>
-  );
-}
-
-/** One "· 2 new posts" activity line. Renders nothing at zero — a legend of
- *  zeroes is noise, and the caller shows a quiet line when all are zero. */
-function ActivityLine({
-  value,
-  singular,
-  plural,
-  color,
-  emphasise,
-}: {
-  value: number;
-  singular: string;
-  plural: string;
-  color: string;
-  emphasise?: boolean;
-}) {
-  if (!value) return null;
-  return (
-    <p className="flex items-center gap-1.5 text-[13px] leading-relaxed">
-      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
-      <span className="font-black font-headline tabular-nums" style={{ color: emphasise ? color : INK }}>
-        {value}
-      </span>
-      <span style={{ color: emphasise ? color : "#64748b", fontWeight: 600 }}>
-        {value === 1 ? singular : plural}
-      </span>
-    </p>
   );
 }
 

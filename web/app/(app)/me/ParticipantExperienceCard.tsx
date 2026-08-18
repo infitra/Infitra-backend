@@ -1,7 +1,7 @@
 import Link from "next/link";
-import Image from "next/image";
 import { RateExperienceButton } from "./RateExperienceButton";
-import { TribeConstellation, TribeCountLine, type TribeFace } from "@/app/components/TribeConstellation";
+import { TribeConstellation, type TribeFace } from "@/app/components/TribeConstellation";
+import { LegendNote, TribeHeadcount, ActivityLine } from "@/app/components/ExperienceLegend";
 
 /**
  * The participant's view of an experience they've joined — the symmetric
@@ -133,201 +133,17 @@ function StatusChip({ exp }: { exp: MeExperience }) {
   );
 }
 
-function Cover({ exp }: { exp: MeExperience }) {
-  return (
-    <div
-      className="relative w-full overflow-hidden aspect-[5/4] lg:aspect-[3/2] xl:aspect-auto xl:w-[46%] xl:shrink-0 xl:min-h-[300px]"
-      style={{ backgroundColor: INK }}
-    >
-      {exp.imageUrl ? (
-        <Image src={exp.imageUrl} alt="" fill sizes="(max-width: 1280px) 100vw, 40vw" className="object-cover" />
-      ) : (
-        <div
-          className="absolute inset-0"
-          style={{ background: "linear-gradient(135deg, rgba(255,97,48,0.40), rgba(8,145,178,0.40)), #0F2229" }}
-        />
-      )}
-      <div
-        className="absolute inset-x-0 top-0 h-16"
-        style={{ background: "linear-gradient(180deg, rgba(15,34,41,0.30), rgba(15,34,41,0))" }}
-        aria-hidden
-      />
-      <div className="absolute top-3 left-3">
-        <StatusChip exp={exp} />
-      </div>
-    </div>
-  );
-}
-
-// ─── NEXT moment (cream editorial card) ──────────────────────
-
-function NextMoment({
-  session,
-  fallbackImage,
-  timeZone,
-}: {
-  session: NonNullable<MeExperience["nextSession"]>;
-  fallbackImage: string | null;
-  timeZone?: string;
-}) {
-  const img = session.imageUrl ?? fallbackImage;
-  const live = session.liveState === "live";
-  const joinable = session.liveState !== null;
-  const accent = live ? RED : ORANGE;
-
-  const inner = (
-    <div
-      className="flex items-center gap-4 rounded-xl p-3"
-      style={
-        joinable
-          ? {
-              backgroundColor: live ? "rgba(239,68,68,0.05)" : "rgba(255,97,48,0.05)",
-              boxShadow: `0 0 0 1.5px ${accent}`,
-            }
-          : { backgroundColor: "#F6F2EA", border: "1px solid rgba(15,34,41,0.06)" }
-      }
-    >
-      <div className="relative w-28 h-[78px] rounded-lg overflow-hidden shrink-0" style={{ backgroundColor: "#22424a" }}>
-        {img ? (
-          <Image src={img} alt="" fill sizes="112px" className="object-cover" />
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9CF0FF" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="4" width="18" height="18" rx="2" />
-              <path d="M16 2v4M8 2v4M3 10h18" />
-            </svg>
-          </div>
-        )}
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-[10px] uppercase tracking-[0.16em] font-headline flex items-center gap-1.5" style={{ color: joinable ? accent : CYAN, fontWeight: 800 }}>
-          {joinable && <span className="inline-block w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: accent }} />}
-          {live ? "Live now" : session.liveState === "doors" ? "Doors open" : "Next moment"}
-        </p>
-        <p className="text-[15px] font-bold font-headline truncate mt-0.5" style={{ color: INK }}>
-          {session.title}
-        </p>
-        <p className="text-[12px] font-medium mt-1" style={{ color: joinable ? accent : "#64748b", fontWeight: joinable ? 700 : 500 }} suppressHydrationWarning>
-          {joinable ? "Join the room →" : sessionWhen(session.startTime, timeZone)}
-        </p>
-      </div>
-    </div>
-  );
-
-  // A live/doors moment IS a door: the whole row navigates into the room.
-  return joinable ? <Link href={`/sessions/${session.id}/live`}>{inner}</Link> : inner;
-}
-
-// ─── Experts (your coaches) ──────────────────────────────────
-
-function PersonBox({ name, avatar, role }: { name: string; avatar: string | null; role: "owner" | "cohost" }) {
-  const isOwner = role === "owner";
-  const color = isOwner ? ORANGE : CYAN;
-  const bg = isOwner ? "rgba(255,97,48,0.04)" : "rgba(8,145,178,0.04)";
-  const border = isOwner ? "rgba(255,97,48,0.12)" : "rgba(8,145,178,0.12)";
-  const initial = (name?.[0] ?? "?").toUpperCase();
-  const first = name?.split(" ")[0] || name || "Expert";
-  return (
-    <div className="flex items-center gap-2.5 p-2 rounded-xl min-w-0" style={{ backgroundColor: bg, border: `1px solid ${border}` }}>
-      <span
-        className="shrink-0 w-9 h-9 rounded-full overflow-hidden inline-flex items-center justify-center"
-        style={{ border: `1.5px solid ${color}40`, backgroundColor: avatar ? "transparent" : `${color}20` }}
-      >
-        {avatar ? (
-          <Image
-            src={avatar}
-            alt=""
-            width={36}
-            height={36}
-            sizes="36px"
-            loading="lazy"
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <span className="text-xs font-headline" style={{ color, fontWeight: 700 }}>
-            {initial}
-          </span>
-        )}
-      </span>
-      <div className="min-w-0">
-        <p className="text-sm font-headline truncate" style={{ color: INK, fontWeight: 700 }}>
-          {first}
-        </p>
-        <p className="text-[10px] uppercase tracking-widest font-headline" style={{ color, fontWeight: 700 }}>
-          {isOwner ? "OWNER" : "COHOST"}
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function ExpertsRow({ experts }: { experts: MeExperience["experts"] }) {
-  const shown = experts.slice(0, 2);
-  if (!shown.length) return null;
-  return (
-    <div className={`grid gap-2.5 ${shown.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
-      {shown.map((e) => (
-        <PersonBox key={e.id} name={e.name} avatar={e.avatar} role={e.role} />
-      ))}
-    </div>
-  );
-}
-
-// ─── Momentum — where you are + what's moving ────────────────
-
-function Momentum({ exp }: { exp: MeExperience }) {
-  const isLive = exp.stage === "live";
-  const tw = totalWeeks(exp.startDate, exp.endDate);
-  const cw = Math.min(currentWeek(exp.startDate), tw || 1);
-
-  if (isLive && tw > 0) {
-    return (
-      <div className="rounded-xl p-4" style={{ backgroundColor: "#F8F6F0", border: "1px solid rgba(15,34,41,0.06)" }}>
-        <div className="flex items-center justify-between">
-          <span className="text-[13px] font-bold font-headline" style={{ color: INK }}>
-            Week {cw} of {tw}
-          </span>
-          {exp.newPosts > 0 && (
-            <span
-              className="inline-flex items-center gap-1.5 text-[11px] font-bold font-headline px-2.5 py-1 rounded-full"
-              style={{ backgroundColor: "rgba(8,145,178,0.10)", color: CYAN }}
-            >
-              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: CYAN }} />
-              {exp.newPosts} new {exp.newPosts === 1 ? "post" : "posts"}
-            </span>
-          )}
-        </div>
-        <div className="h-1.5 rounded-full overflow-hidden mt-3" style={{ backgroundColor: "rgba(15,34,41,0.08)" }}>
-          <div className="h-full rounded-full" style={{ width: `${Math.round((cw / tw) * 100)}%`, backgroundColor: CYAN }} />
-        </div>
-      </div>
-    );
-  }
-
-  // Pre-launch — lead with the tribe activity (positive), not the long countdown
-  // (the cover chip already carries the "starts in N days").
-  return (
-    <div className="rounded-xl p-4" style={{ backgroundColor: "rgba(8,145,178,0.05)", border: "1px solid rgba(8,145,178,0.12)" }}>
-      {exp.newPosts > 0 ? (
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: CYAN }} />
-          <span className="text-[14px] font-black font-headline" style={{ color: CYAN }}>
-            {exp.newPosts} new {exp.newPosts === 1 ? "post" : "posts"}
-          </span>
-          <span className="text-[12px]" style={{ color: "#64748b" }}>
-            · your tribe is already active
-          </span>
-        </div>
-      ) : (
-        <p className="text-[12px] font-bold font-headline" style={{ color: "#0e7490" }}>
-          Your tribe is forming — be one of the first in.
-        </p>
-      )}
-    </div>
-  );
-}
-
-// ─── Active card (side-by-side, like the creator hero) ───────
+// ─── Active card — ONE composition (mirrors the expert hero) ─
+//
+// Title and status crown it, the tribe orbits in the middle with the legend
+// reading it beside, and the door sits centred at the foot. Same grammar as
+// the expert dashboard so the product reads as one building from either
+// side; the CONTENT is the participant's: where you are in the journey, what
+// is next, what your tribe has been doing.
+//
+// The live moment is promoted to the PRIMARY door rather than living inside
+// a note. When a room is open, "Join the room" is the biggest thing on the
+// card, which is what it should be.
 
 export function ParticipantExperienceCard({
   exp,
@@ -341,61 +157,139 @@ export function ParticipantExperienceCard({
   // Always /space — load_experience_space resolves the space across the lineage
   // (a continuation run shares the source's space, so it has no own spaceId).
   const spaceHref = `/experiences/${exp.id}/space`;
+  const live = exp.nextSession?.liveState === "live";
+  const joinable = !!exp.nextSession && exp.nextSession.liveState !== null;
+  const joinAccent = live ? RED : ORANGE;
+
+  const tw = totalWeeks(exp.startDate, exp.endDate);
+  const cw = Math.min(currentWeek(exp.startDate), tw || 1);
+  const showProgress = exp.stage === "live" && tw > 0;
 
   return (
     <article
-      className="relative transition-shadow flex flex-col overflow-hidden rounded-3xl xl:flex-row"
+      className="relative rounded-3xl p-6 md:p-8 overflow-hidden flex flex-col lg:flex-1"
       style={{ backgroundColor: "#FFFFFF", boxShadow: SOFT_SHADOW }}
     >
-      {/* THE FACE OF THE CARD — your tribe, with you in it. */}
-      <div
-        className="relative flex flex-col items-center justify-center px-6 py-7 xl:w-[46%] xl:shrink-0"
-        style={{
-          backgroundImage:
-            "linear-gradient(140deg, rgba(8,145,178,0.07) 0%, rgba(242,239,232,0.55) 45%, rgba(255,97,48,0.07) 100%)",
-        }}
-      >
-        <TribeConstellation
-          experts={exp.experts.map((e) => ({ id: e.id, name: e.name, avatar: e.avatar }))}
-          members={exp.tribeFaces ?? []}
-          memberTotal={exp.memberTotal ?? 0}
-          viewerId={viewerId ?? null}
-        />
-        <div className="mt-3">
-          <TribeCountLine memberTotal={exp.memberTotal ?? 0} forming={exp.stage === "pre-launch"} />
-        </div>
-      </div>
-
-      <div className="p-7 md:p-8 xl:flex-1 xl:justify-center flex flex-col min-w-0">
+      <header className="relative z-10 text-center px-2">
+        <StatusChip exp={exp} />
         <h2
-          className="text-2xl md:text-3xl font-headline tracking-tight"
+          className="mt-2.5 text-2xl md:text-3xl font-headline tracking-tight"
           style={{ color: INK, fontWeight: 700, letterSpacing: "-0.02em" }}
         >
           {exp.title || "Untitled experience"}
         </h2>
+      </header>
 
-        {/* MOMENTUM — where you are + what's moving. */}
-        <div className="mt-4">
-          <Momentum exp={exp} />
+      <div className="relative z-10 mt-5 grid gap-7 lg:flex-1 lg:content-center xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] xl:items-center">
+        <div className="relative flex justify-center">
+          {/* The glow bleeds past this column and is clipped by the card's
+              own rounded edge, so the orbit sits in light, not in a box. */}
+          <div
+            aria-hidden
+            className="absolute pointer-events-none"
+            style={{
+              inset: "-18%",
+              background:
+                "radial-gradient(ellipse 50% 50% at 50% 50%, rgba(8,145,178,0.14) 0%, rgba(255,97,48,0.07) 55%, transparent 76%)",
+            }}
+          />
+          <TribeConstellation
+            experts={exp.experts.map((e) => ({ id: e.id, name: e.name, avatar: e.avatar }))}
+            members={exp.tribeFaces ?? []}
+            memberTotal={exp.memberTotal ?? 0}
+            viewerId={viewerId ?? null}
+            maxWidth={400}
+            className="z-10"
+          />
         </div>
 
-        {/* NEXT moment. */}
-        {exp.nextSession && (
-          <div className="mt-4">
-            <NextMoment session={exp.nextSession} fallbackImage={exp.imageUrl} timeZone={timeZone} />
-          </div>
-        )}
+        <div className="px-1">
+          <LegendNote label="Your tribe">
+            <TribeHeadcount memberTotal={exp.memberTotal ?? 0} />
+          </LegendNote>
 
-        {/* DOOR — enter your space. */}
-        <div className="mt-7">
+          {showProgress && (
+            <LegendNote label="Where you are">
+              <p className="text-[16px] font-bold font-headline leading-snug" style={{ color: INK }}>
+                Week {cw} of {tw}
+              </p>
+              <div
+                className="h-1.5 rounded-full overflow-hidden mt-2"
+                style={{ backgroundColor: "rgba(15,34,41,0.08)" }}
+              >
+                <div
+                  className="h-full rounded-full"
+                  style={{ width: `${Math.round((cw / tw) * 100)}%`, backgroundColor: CYAN }}
+                />
+              </div>
+            </LegendNote>
+          )}
+
+          {exp.nextSession && (
+            <LegendNote label={live ? "Live now" : exp.nextSession.liveState === "doors" ? "Doors open" : "Next moment"}>
+              <p className="text-[16px] font-bold font-headline leading-snug" style={{ color: INK }}>
+                {exp.nextSession.title}
+              </p>
+              <p
+                className="text-[13px] font-medium mt-1"
+                style={{ color: joinable ? joinAccent : "#64748b", fontWeight: joinable ? 700 : 500 }}
+                suppressHydrationWarning
+              >
+                {joinable ? "Your experts are waiting" : sessionWhen(exp.nextSession.startTime, timeZone)}
+              </p>
+            </LegendNote>
+          )}
+
+          <LegendNote label="Your tribe this week">
+            {exp.newPosts > 0 ? (
+              <ActivityLine
+                value={exp.newPosts}
+                singular="new post"
+                plural="new posts"
+                color={CYAN}
+              />
+            ) : (
+              <p className="text-[13px]" style={{ color: MUTED, fontWeight: 600 }}>
+                {exp.stage === "pre-launch" ? "Your tribe is forming" : "Quiet so far"}
+              </p>
+            )}
+          </LegendNote>
+        </div>
+      </div>
+
+      {/* THE DOOR — an open room outranks everything else on this card. */}
+      <div className="relative z-10 mt-7 flex flex-wrap items-center justify-center gap-3">
+        {joinable && exp.nextSession ? (
+          <>
+            <Link
+              href={`/sessions/${exp.nextSession.id}/live`}
+              className="inline-flex items-center justify-center px-7 py-3 rounded-full text-white text-sm font-black font-headline transition-transform hover:scale-[1.02]"
+              style={{
+                backgroundColor: joinAccent,
+                boxShadow: live
+                  ? "0 6px 18px rgba(239,68,68,0.35)"
+                  : "0 6px 18px rgba(255,97,48,0.32)",
+              }}
+            >
+              Join the room →
+            </Link>
+            <Link
+              href={spaceHref}
+              className="inline-flex items-center justify-center px-5 py-3 rounded-full text-sm font-black font-headline transition-colors hover:bg-[rgba(15,34,41,0.04)]"
+              style={{ color: CYAN, boxShadow: `inset 0 0 0 1.5px ${CYAN}40` }}
+            >
+              Your experience
+            </Link>
+          </>
+        ) : (
           <Link
             href={spaceHref}
-            className="inline-flex items-center justify-center px-6 py-3 rounded-full text-white text-sm font-black font-headline transition-transform hover:scale-[1.02]"
+            className="inline-flex items-center justify-center px-7 py-3 rounded-full text-white text-sm font-black font-headline transition-transform hover:scale-[1.02]"
             style={{ backgroundColor: ORANGE, boxShadow: "0 6px 18px rgba(255,97,48,0.32), 0 2px 6px rgba(255,97,48,0.20)" }}
           >
             Enter your experience →
           </Link>
-        </div>
+        )}
       </div>
     </article>
   );

@@ -7,7 +7,7 @@ import { uploadImage } from "@/lib/uploadImage";
 import { ProfileTrigger } from "@/app/components/ProfileModal";
 import { useOverlay, railActionStyle, OverlayPanel, OverlaySection } from "@/app/components/DashboardOverlay";
 import { AccountSettingsPanel, PeoplePanel } from "@/app/components/AccountPanels";
-import { StatCard, StatCardGrid, STAT_ICONS } from "@/app/components/StatCards";
+import { STAT_ICONS } from "@/app/components/StatCards";
 import type { ConnectionRow } from "@/app/components/ConnectionsGrid";
 import { RateExperienceButton } from "./RateExperienceButton";
 
@@ -81,9 +81,17 @@ const EDIT_ICON = (
   </svg>
 );
 
-function Section({ label, children }: { label: string; children: React.ReactNode }) {
+function Section({
+  label,
+  children,
+  className,
+}: {
+  label: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
-    <div className="px-5 py-4" style={{ borderTop: "1px solid rgba(15,34,41,0.06)" }}>
+    <div className={`px-5 py-4 ${className ?? ""}`} style={{ borderTop: "1px solid rgba(15,34,41,0.06)" }}>
       <p className="text-[11px] uppercase tracking-[0.18em] font-headline mb-3" style={{ color: "#94a3b8", fontWeight: 800 }}>
         {label}
       </p>
@@ -238,7 +246,7 @@ export function ParticipantPanel({
   return (
     <>
       <div
-        className="rounded-2xl overflow-hidden h-full"
+        className="rounded-2xl overflow-hidden h-full flex flex-col"
         style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.05), 0 8px 26px rgba(15,34,41,0.08)" }}
       >
         {/* ── PROFILE ── */}
@@ -276,77 +284,112 @@ export function ParticipantPanel({
               <PioneerBadge joinedAt={joinedAt} />
             </div>
           </div>
-        </div>
 
-        {/* ── MY JOURNEY ── what you built here: the Pioneer crown, then
-            accented cards. The connections card is a door into Your people. */}
-        <Section label="My journey">
-          <StatCardGrid>
-            <StatCard
-              icon={STAT_ICONS.flame}
-              value={`${journey.experiences}`}
-              label={journey.experiences === 1 ? "experience joined" : "experiences joined"}
-              accent={ORANGE}
-            />
-            <StatCard
-              icon={STAT_ICONS.check}
-              value={`${journey.completed}`}
-              label="completed"
-              accent={CYAN}
-            />
-            <StatCard
-              icon={STAT_ICONS.live}
-              value={`${journey.sessionsAttended}`}
-              label="live sessions attended"
-              accent={ORANGE}
-            />
-            <StatCard
-              icon={STAT_ICONS.people}
-              value={`${journey.connections}`}
-              label="tribe connections"
-              sub="meet your people"
-              accent={CYAN}
-              onClick={() => openOverlay("people")}
-            />
-          </StatCardGrid>
-        </Section>
-
-        {/* ── QUICK ACTIONS ── everything opens inside the page. */}
-        <Section label="Quick actions">
-          <button type="button" onClick={() => openOverlay("edit-profile")} className={`${railBtn} mb-2`} style={railActionStyle}>
-            {EDIT_ICON}
-            Edit profile
-          </button>
-          <ProfileTrigger profileId={viewerId} className="w-full mb-2">
-            <span className={railBtn} style={railActionStyle}>
-              View my profile
+          {/* The profile is where the numbers live now (same call as the
+              expert console, 18 Aug): "My journey" duplicated the profile
+              modal's own proof band, so the block carries ONE clear door
+              into it instead. */}
+          <ProfileTrigger profileId={viewerId} className="w-full mt-3">
+            <span
+              className="flex w-full items-center justify-center gap-1.5 rounded-xl py-2.5 px-4 text-[13px] font-black font-headline transition-transform hover:-translate-y-0.5"
+              style={{
+                color: CYAN,
+                backgroundColor: "rgba(255,255,255,0.75)",
+                boxShadow: `inset 0 0 0 1.5px ${CYAN}33`,
+              }}
+            >
+              Show full profile
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={CYAN} strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
             </span>
           </ProfileTrigger>
-          <button type="button" onClick={() => openOverlay("settings")} className={railBtn} style={railActionStyle}>
-            Account settings
-          </button>
-          {!hasFacts && (
-            <button
-              type="button"
-              onClick={() => openOverlay("edit-profile")}
-              className="mt-2 w-full rounded-xl py-2 text-[11px] font-bold font-headline transition-colors"
-              style={{ color: CYAN, backgroundColor: "rgba(8,145,178,0.07)" }}
-            >
-              Add a little about yourself →
-            </button>
-          )}
-        </Section>
 
-        {/* ── TO DO ── */}
-        {pendingReviews.length > 0 && (
-          <Section label="To do">
+          {/* CONNECTIONS — the participant's accumulating value, the way
+              earnings are the expert's: the people you have trained with and
+              can find again. A card, and a door. */}
+          <button
+            type="button"
+            onClick={() => openOverlay("people")}
+            className="w-full mt-2 flex flex-col items-center rounded-xl px-4 py-2.5 transition-transform hover:-translate-y-0.5"
+            style={{ backgroundColor: "rgba(8,145,178,0.12)", boxShadow: `inset 0 0 0 1.5px ${CYAN}4D` }}
+          >
+            <span className="flex items-center gap-1.5">
+              <span className="shrink-0" style={{ color: CYAN }}>{STAT_ICONS.people}</span>
+              <span className="text-[20px] font-black font-headline leading-none tabular-nums" style={{ color: INK }}>
+                {journey.connections}
+              </span>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={CYAN} strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </span>
+            <span className="text-[10.5px] mt-1" style={{ color: "#64748b", fontWeight: 600 }}>
+              people you have trained with
+            </span>
+          </button>
+        </div>
+
+        {/* ── NEEDS YOU ── same promise as the expert console: you cannot
+            miss anything that waits on you. Always rendered and flex-1, so
+            the console stands level with the experience card beside it even
+            on a quiet day. */}
+        <Section label="Needs you" className="flex-1 flex flex-col">
+          {pendingReviews.length > 0 ? (
             <div className="space-y-2">
               {pendingReviews.map((r) => (
                 <RateExperienceButton key={r.id} challengeId={r.id} experienceTitle={r.title} variant="console" />
               ))}
             </div>
-          </Section>
-        )}
+          ) : !hasFacts ? (
+            <button
+              type="button"
+              onClick={() => openOverlay("edit-profile")}
+              className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-left transition-transform hover:-translate-y-0.5"
+              style={{ backgroundColor: "rgba(8,145,178,0.08)", boxShadow: `inset 3px 0 0 ${CYAN}` }}
+            >
+              <span className="min-w-0 flex-1">
+                <span className="block text-[12.5px] font-bold font-headline leading-tight" style={{ color: INK }}>
+                  Add a little about yourself
+                </span>
+                <span className="block text-[10.5px] leading-tight mt-0.5" style={{ color: "#64748b" }}>
+                  Your tribe sees who they are training with
+                </span>
+              </span>
+              <span className="text-[11px] font-black shrink-0" style={{ color: CYAN }}>→</span>
+            </button>
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center text-center py-4">
+              <span
+                className="w-9 h-9 rounded-full flex items-center justify-center mb-2.5"
+                style={{ backgroundColor: "rgba(8,145,178,0.10)" }}
+              >
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={CYAN} strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 6 9 17l-5-5" />
+                </svg>
+              </span>
+              <p className="text-[13px] font-black font-headline" style={{ color: INK }}>
+                You&apos;re all caught up
+              </p>
+              <p className="text-[11px] mt-1 max-w-[215px]" style={{ color: "#94a3b8", fontWeight: 600 }}>
+                Reflections and reviews land here when a session or an experience wraps.
+              </p>
+            </div>
+          )}
+        </Section>
+
+        {/* ── QUICK ACTIONS ── half-width pairs, like the expert console.
+            "View my profile" is gone: its door is the profile block above. */}
+        <Section label="Quick actions">
+          <div className="grid grid-cols-2 gap-1.5">
+            <button type="button" onClick={() => openOverlay("edit-profile")} className={railBtn} style={railActionStyle}>
+              {EDIT_ICON}
+              Edit profile
+            </button>
+            <button type="button" onClick={() => openOverlay("settings")} className={railBtn} style={railActionStyle}>
+              Settings
+            </button>
+          </div>
+        </Section>
 
       </div>
 

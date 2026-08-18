@@ -434,7 +434,12 @@ export default async function MeHomePage() {
               />
             </aside>
 
-            <div className="min-w-0 space-y-5">
+            {/* Flex column so the card can absorb the row's slack: the
+                console fills its grid item via h-full, so without this the
+                experience card sat short whenever the console was taller
+                (same fix as the expert dashboard). Only meaningful in the
+                single-active case, which is where items-stretch applies. */}
+            <div className="min-w-0 space-y-5 lg:flex lg:flex-col">
               {active.length > 0 ? (
                 active.map((e) => (
                   <ParticipantExperienceCard key={e.id} exp={e} timeZone={viewerTimeZone} viewerId={user.id} />
