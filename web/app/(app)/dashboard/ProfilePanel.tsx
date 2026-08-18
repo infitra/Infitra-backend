@@ -330,23 +330,26 @@ export function ProfilePanel({
           </ProfileTrigger>
 
           {/* EARNINGS — a real card, because this is the number an expert
-              opens the dashboard for. Month-to-date (a founder reads income
-              by month) and a door to the earnings page. */}
+              opens the dashboard for. Centred and chevroned to match the
+              profile door directly above it; carries more weight than that
+              door through the filled tint and the 20px figure. */}
           <Link
             href="/dashboard/earnings"
-            className="mt-2.5 flex items-center gap-2.5 rounded-xl px-3 py-2.5 transition-transform hover:-translate-y-0.5"
-            style={{ backgroundColor: "rgba(8,145,178,0.10)", boxShadow: `inset 0 0 0 1.5px ${CYAN}33` }}
+            className="mt-2 flex flex-col items-center rounded-xl px-4 py-2.5 transition-transform hover:-translate-y-0.5"
+            style={{ backgroundColor: "rgba(8,145,178,0.12)", boxShadow: `inset 0 0 0 1.5px ${CYAN}4D` }}
           >
-            <span className="shrink-0" style={{ color: CYAN }}>{STAT_ICONS.coins}</span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-[19px] font-black font-headline leading-none tabular-nums" style={{ color: INK }}>
+            <span className="flex items-center gap-1.5">
+              <span className="shrink-0" style={{ color: CYAN }}>{STAT_ICONS.coins}</span>
+              <span className="text-[20px] font-black font-headline leading-none tabular-nums" style={{ color: INK }}>
                 CHF {(earningsMonthCents / 100).toFixed(0)}
               </span>
-              <span className="block text-[10.5px] leading-tight mt-1" style={{ color: "#64748b", fontWeight: 600 }}>
-                earned this month
-              </span>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={CYAN} strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
             </span>
-            <span className="text-[11px] font-black shrink-0" style={{ color: CYAN }}>→</span>
+            <span className="text-[10.5px] mt-1" style={{ color: "#64748b", fontWeight: 600 }}>
+              earned this month
+            </span>
           </Link>
         </div>
 
