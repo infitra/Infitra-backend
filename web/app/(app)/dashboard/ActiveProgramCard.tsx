@@ -445,6 +445,57 @@ function SignalStrip({ program }: { program: Program }) {
   );
 }
 
+// ─── LEGEND — margin notes beside the orbit (tribe hero) ─────
+// Deliberately NOT a card: hairline-separated notes on the canvas, so the
+// activity reads as annotations OF the constellation rather than a
+// separate panel sitting next to it.
+
+function LegendNote({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div
+      className="border-t first:border-t-0 py-3.5 first:pt-0 last:pb-0"
+      style={{ borderColor: "rgba(15,34,41,0.08)" }}
+    >
+      <p
+        className="text-[10px] uppercase tracking-[0.16em] font-headline mb-1"
+        style={{ color: CYAN, fontWeight: 800 }}
+      >
+        {label}
+      </p>
+      {children}
+    </div>
+  );
+}
+
+/** One "· 2 new posts" activity line. Renders nothing at zero — a legend of
+ *  zeroes is noise, and the caller shows a quiet line when all are zero. */
+function ActivityLine({
+  value,
+  singular,
+  plural,
+  color,
+  emphasise,
+}: {
+  value: number;
+  singular: string;
+  plural: string;
+  color: string;
+  emphasise?: boolean;
+}) {
+  if (!value) return null;
+  return (
+    <p className="flex items-center gap-1.5 text-[13px] leading-relaxed">
+      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+      <span className="font-black font-headline tabular-nums" style={{ color: emphasise ? color : INK }}>
+        {value}
+      </span>
+      <span style={{ color: emphasise ? color : "#64748b", fontWeight: 600 }}>
+        {value === 1 ? singular : plural}
+      </span>
+    </p>
+  );
+}
+
 // ─── SESSION — cream editorial card, image-forward ───────────
 
 function SessionCard({
@@ -674,34 +725,33 @@ export function ActiveProgramCard({ program, partner, user, density = "hero", ti
   if (showTribe) {
     return (
       <article className="relative flex flex-col">
-        {/* THE STAGE — bounded and centred. The glow's radii are relative to
-            this box, so on a wide dashboard column it stays a halo around the
-            orbit instead of smearing into a full-width wash.
-            SIZED AGAINST THE CONSOLE (founder call): the console runs ~640px,
-            so the whole hero has to land near it or the left column
-            dead-ends while the right keeps going. At maxWidth 520 the stage
-            alone overshot by ~230px, so the orbit sits at 400 and every gap
-            is tightened. Title matches the dashboard's other card headings
-            (text-2xl/3xl) rather than landing-page scale. */}
-        <div className="mx-auto w-full max-w-[540px]">
-          <header className="relative z-10 text-center px-4">
-            <StatusPill program={program} />
-            <h2
-              className="mt-2.5 text-2xl md:text-3xl font-headline tracking-tight"
-              style={{ color: INK, fontWeight: 700, letterSpacing: "-0.02em" }}
-            >
-              {program.title || "Untitled"}
-            </h2>
-          </header>
+        <header className="relative z-10 text-center px-4">
+          <StatusPill program={program} />
+          <h2
+            className="mt-2.5 text-2xl md:text-3xl font-headline tracking-tight"
+            style={{ color: INK, fontWeight: 700, letterSpacing: "-0.02em" }}
+          >
+            {program.title || "Untitled"}
+          </h2>
+        </header>
 
-          <div className="relative flex flex-col items-center px-4 pt-4">
-            {/* Soft radial glow — life, not a box. */}
+        {/* ORBIT + LEGEND. The activity does NOT get its own card (founder
+            call, 17 Aug: a boxed panel next to the orbit read as two
+            unrelated objects). It sits beside the circle as margin notes —
+            hairline-separated, on the canvas — so the numbers read as
+            annotations OF the tribe rather than a table about it. Two
+            columns only at xl; at lg the console already takes 340px of the
+            row and the notes would crush. */}
+        <div className="mt-5 grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] xl:items-center">
+          <div className="relative flex flex-col items-center">
+            {/* Soft radial glow — life, not a box. Its radii are relative to
+                this column, so it stays a halo around the orbit. */}
             <div
               aria-hidden
               className="absolute inset-0 pointer-events-none"
               style={{
                 background:
-                  "radial-gradient(ellipse 60% 56% at 50% 44%, rgba(8,145,178,0.13) 0%, rgba(255,97,48,0.07) 55%, transparent 78%)",
+                  "radial-gradient(ellipse 58% 58% at 50% 46%, rgba(8,145,178,0.13) 0%, rgba(255,97,48,0.07) 55%, transparent 78%)",
               }}
             />
             <TribeConstellation
@@ -709,50 +759,66 @@ export function ActiveProgramCard({ program, partner, user, density = "hero", ti
               members={program.tribeFaces ?? []}
               memberTotal={enrolled}
               viewerId={user.id ?? null}
-              maxWidth={400}
+              maxWidth={440}
               className="z-10"
             />
             <div className="relative z-10 mt-3">
               <TribeCountLine memberTotal={enrolled} forming={program.stage === "published-pre-launch"} />
             </div>
-            <div className="relative z-10 mt-3 flex flex-wrap items-center justify-center gap-3">
-              <PrimaryActionPill label={doorLabel} kind="navigate" href={doorHref} variant="filled" />
-              {showShare && <ShareButton challengeId={program.id} inline />}
-            </div>
           </div>
-        </div>
 
-        {/* THE BAND — the one card. Session and signals sit SIDE BY SIDE so
-            the whole composition stays about one viewport tall. */}
-        <div
-          className="mt-6 rounded-3xl p-5"
-          style={{ backgroundColor: "#FFFFFF", boxShadow: SOFT_SHADOW }}
-        >
-          {/* Two columns only at xl. At lg the console takes 340px of the
-              row, leaving this band ~590px — split there and the session
-              title truncates to nothing and the signal cells crush. */}
-          <div
-            className={`grid gap-4 xl:items-center ${program.nextSession ? "xl:grid-cols-2" : ""}`}
-          >
-            {program.nextSession && (
-              <SessionCard
-                session={program.nextSession}
-                fallbackImage={program.imageUrl}
-                timeZone={timeZone}
-              />
-            )}
-            <div className="min-w-0 space-y-2.5">
-              {warmingUp ? (
-                <div
-                  className="rounded-xl p-3.5 text-[12px] font-bold font-headline"
-                  style={{ border: "1px solid rgba(15,34,41,0.10)", color: MUTED }}
-                >
-                  Your tribe is forming — share to fill it
-                </div>
-              ) : (
-                <>
-                  <SignalStrip program={program} />
-                  {(program.reviewCount ?? 0) > 0 && (
+          <div className="px-4 xl:px-0 xl:pr-2">
+            {warmingUp ? (
+              <p className="text-[12.5px] font-bold font-headline" style={{ color: MUTED }}>
+                Your tribe is forming — share to fill it
+              </p>
+            ) : (
+              <div className="flex flex-col">
+                {program.nextSession && (
+                  <LegendNote label="Next moment">
+                    <p className="text-[15px] font-bold font-headline leading-snug" style={{ color: INK }}>
+                      {program.nextSession.title}
+                    </p>
+                    <p className="text-[12px] font-medium mt-0.5" style={{ color: "#64748b" }} suppressHydrationWarning>
+                      {sessionWhen(program.nextSession.startTime, timeZone)}
+                    </p>
+                  </LegendNote>
+                )}
+
+                <LegendNote label="This week">
+                  {(program.newPosts ?? 0) === 0 &&
+                  (program.pendingQuestions ?? 0) === 0 &&
+                  (program.newMembersThisWeek ?? 0) === 0 ? (
+                    <p className="text-[13px]" style={{ color: MUTED, fontWeight: 600 }}>
+                      Quiet so far
+                    </p>
+                  ) : (
+                    <>
+                      <ActivityLine
+                        value={program.newMembersThisWeek ?? 0}
+                        singular="new member"
+                        plural="new members"
+                        color={GROWTH}
+                      />
+                      <ActivityLine
+                        value={program.newPosts ?? 0}
+                        singular="new post"
+                        plural="new posts"
+                        color={CYAN}
+                      />
+                      <ActivityLine
+                        value={program.pendingQuestions ?? 0}
+                        singular="open question"
+                        plural="open questions"
+                        color={ORANGE_TXT}
+                        emphasise
+                      />
+                    </>
+                  )}
+                </LegendNote>
+
+                {(program.reviewCount ?? 0) > 0 && (
+                  <LegendNote label="Reviews">
                     <ReviewsDisclosure
                       avg={Number(program.reviewAvg ?? 0)}
                       count={program.reviewCount ?? 0}
@@ -760,18 +826,24 @@ export function ActiveProgramCard({ program, partner, user, density = "hero", ti
                       reviews={program.reviews ?? []}
                       experienceTitle={program.title}
                     />
-                  )}
-                </>
-              )}
-            </div>
+                  </LegendNote>
+                )}
+              </div>
+            )}
           </div>
-
-          {program.nextRun && (
-            <div className="mt-4">
-              <NextRunChip nextRun={program.nextRun} />
-            </div>
-          )}
         </div>
+
+        {/* THE DOOR — centred under the whole composition. */}
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+          <PrimaryActionPill label={doorLabel} kind="navigate" href={doorHref} variant="filled" />
+          {showShare && <ShareButton challengeId={program.id} inline />}
+        </div>
+
+        {program.nextRun && (
+          <div className="mt-4 flex justify-center">
+            <NextRunChip nextRun={program.nextRun} />
+          </div>
+        )}
       </article>
     );
   }
