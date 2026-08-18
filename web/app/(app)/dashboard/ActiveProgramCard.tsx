@@ -676,19 +676,25 @@ export function ActiveProgramCard({ program, partner, user, density = "hero", ti
       <article className="relative flex flex-col">
         {/* THE STAGE — bounded and centred. The glow's radii are relative to
             this box, so on a wide dashboard column it stays a halo around the
-            orbit instead of smearing into a full-width wash. */}
-        <div className="mx-auto w-full max-w-[620px]">
+            orbit instead of smearing into a full-width wash.
+            SIZED AGAINST THE CONSOLE (founder call): the console runs ~640px,
+            so the whole hero has to land near it or the left column
+            dead-ends while the right keeps going. At maxWidth 520 the stage
+            alone overshot by ~230px, so the orbit sits at 400 and every gap
+            is tightened. Title matches the dashboard's other card headings
+            (text-2xl/3xl) rather than landing-page scale. */}
+        <div className="mx-auto w-full max-w-[540px]">
           <header className="relative z-10 text-center px-4">
             <StatusPill program={program} />
             <h2
-              className="mt-3 text-3xl md:text-4xl font-headline tracking-tight"
+              className="mt-2.5 text-2xl md:text-3xl font-headline tracking-tight"
               style={{ color: INK, fontWeight: 700, letterSpacing: "-0.02em" }}
             >
               {program.title || "Untitled"}
             </h2>
           </header>
 
-          <div className="relative flex flex-col items-center px-4 pt-5 pb-2">
+          <div className="relative flex flex-col items-center px-4 pt-4">
             {/* Soft radial glow — life, not a box. */}
             <div
               aria-hidden
@@ -703,13 +709,13 @@ export function ActiveProgramCard({ program, partner, user, density = "hero", ti
               members={program.tribeFaces ?? []}
               memberTotal={enrolled}
               viewerId={user.id ?? null}
-              maxWidth={520}
+              maxWidth={400}
               className="z-10"
             />
-            <div className="relative z-10 mt-4">
+            <div className="relative z-10 mt-3">
               <TribeCountLine memberTotal={enrolled} forming={program.stage === "published-pre-launch"} />
             </div>
-            <div className="relative z-10 mt-4 flex flex-wrap items-center justify-center gap-3">
+            <div className="relative z-10 mt-3 flex flex-wrap items-center justify-center gap-3">
               <PrimaryActionPill label={doorLabel} kind="navigate" href={doorHref} variant="filled" />
               {showShare && <ShareButton challengeId={program.id} inline />}
             </div>
@@ -719,7 +725,7 @@ export function ActiveProgramCard({ program, partner, user, density = "hero", ti
         {/* THE BAND — the one card. Session and signals sit SIDE BY SIDE so
             the whole composition stays about one viewport tall. */}
         <div
-          className="mt-7 rounded-3xl p-5 md:p-6"
+          className="mt-6 rounded-3xl p-5"
           style={{ backgroundColor: "#FFFFFF", boxShadow: SOFT_SHADOW }}
         >
           {/* Two columns only at xl. At lg the console takes 340px of the
