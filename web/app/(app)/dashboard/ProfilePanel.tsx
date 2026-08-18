@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { formatMoney } from "@/lib/money";
 import { CalendarButton } from "@/app/components/CalendarButton";
 import { FoundingExpertBadge } from "@/app/(app)/experiences/[id]/PublicChallengeHero";
 import { ProfileTrigger } from "@/app/components/ProfileModal";
@@ -107,9 +108,17 @@ const PLUS_ICON = (
   </svg>
 );
 
-function Section({ label, children }: { label: string; children: React.ReactNode }) {
+function Section({
+  label,
+  children,
+  className,
+}: {
+  label: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
-    <div className="px-5 py-4" style={{ borderTop: "1px solid rgba(15,34,41,0.06)" }}>
+    <div className={`px-5 py-4 ${className ?? ""}`} style={{ borderTop: "1px solid rgba(15,34,41,0.06)" }}>
       <p
         className="text-[11px] uppercase tracking-[0.18em] font-headline mb-3"
         style={{ color: "#94a3b8", fontWeight: 800 }}
@@ -245,7 +254,7 @@ export function ProfilePanel({
   return (
     <>
       <div
-        className="rounded-2xl overflow-hidden"
+        className="rounded-2xl overflow-hidden h-full flex flex-col"
         style={{
           backgroundColor: "#FFFFFF",
           boxShadow: "0 0 0 1px rgba(15,34,41,0.05), 0 8px 26px rgba(15,34,41,0.08)",
@@ -341,7 +350,7 @@ export function ProfilePanel({
             <span className="flex items-center gap-1.5">
               <span className="shrink-0" style={{ color: CYAN }}>{STAT_ICONS.coins}</span>
               <span className="text-[20px] font-black font-headline leading-none tabular-nums" style={{ color: INK }}>
-                CHF {(earningsMonthCents / 100).toFixed(0)}
+                {formatMoney(earningsMonthCents, undefined, { decimals: 0 })}
               </span>
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={CYAN} strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="9 18 15 12 9 6" />
@@ -353,12 +362,33 @@ export function ProfilePanel({
           </Link>
         </div>
 
-        {/* ── NEEDS YOU ── the focus stack; only when something does. */}
-        {attention.length > 0 && (
-          <Section label="Needs you">
+        {/* ── NEEDS YOU ── always present, and flex-1 so it absorbs whatever
+            height the experience card has that the console does not. That is
+            what keeps the two columns level even on a quiet day: an empty
+            focus stack used to collapse the console by ~200px and leave the
+            row lopsided. */}
+        <Section label="Needs you" className="flex-1 flex flex-col">
+          {attention.length > 0 ? (
             <div className="space-y-2">{attention}</div>
-          </Section>
-        )}
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center text-center py-4">
+              <span
+                className="w-9 h-9 rounded-full flex items-center justify-center mb-2.5"
+                style={{ backgroundColor: "rgba(8,145,178,0.10)" }}
+              >
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={CYAN} strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 6 9 17l-5-5" />
+                </svg>
+              </span>
+              <p className="text-[13px] font-black font-headline" style={{ color: INK }}>
+                Nothing needs you
+              </p>
+              <p className="text-[11px] mt-1 max-w-[210px]" style={{ color: "#94a3b8", fontWeight: 600 }}>
+                No invitations, no open questions, nothing waiting on a signature.
+              </p>
+            </div>
+          )}
+        </Section>
 
         {/* ── QUICK ACTIONS ── the console is now purely who-you-are +
             what-needs-you + what-you-can-do (founder call, 18 Aug). The

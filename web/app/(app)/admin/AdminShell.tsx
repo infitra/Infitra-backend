@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { formatMoney, formatMajor } from "@/lib/money";
 import { useRouter } from "next/navigation";
 import {
   anonymizeUser,
@@ -25,7 +26,7 @@ const OK = "#0a7a4b";
 const BAD = "#b42318";
 
 const chf = (cents: number | null | undefined) =>
-  cents == null ? "–" : `CHF ${(Number(cents) / 100).toFixed(2)}`;
+  cents == null ? "–" : formatMoney(Number(cents));
 
 // Device timezone on purpose (founder call): the board is read wherever
 // the founder happens to be, unlike session times which pin a zone.
@@ -413,7 +414,7 @@ function Payouts({ payouts }: { payouts: J }) {
       <Card title="Payout history (recorded)">
         <Table
           head={["When", "Expert", "Amount", "Note"]}
-          rows={hist.map((h) => [dt(h.created_at), h.creator, `${h.currency ?? "CHF"} ${h.amount}`, h.note ?? "–"])}
+          rows={hist.map((h) => [dt(h.created_at), h.creator, formatMajor(h.amount, h.currency), h.note ?? "–"])}
         />
       </Card>
     </>

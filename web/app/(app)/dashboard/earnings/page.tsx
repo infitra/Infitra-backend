@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { formatMoney } from "@/lib/money";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata = {
@@ -19,8 +20,11 @@ function formatDate(dateStr: string) {
   });
 }
 
-function chf(cents: number) {
-  return `CHF ${(cents / 100).toFixed(2)}`;
+/** Money on this page. Currency is a parameter so a per-transaction code
+ *  (tx.currency) can be threaded through when a second currency exists;
+ *  today every row is CHF, which is the helper's default. */
+function chf(cents: number, currency?: string) {
+  return formatMoney(cents, currency);
 }
 
 function pct(n: number) {

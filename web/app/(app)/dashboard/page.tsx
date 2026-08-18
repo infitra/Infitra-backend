@@ -922,12 +922,14 @@ export default async function DashboardPage() {
           feed right), so the dashboard and the Experience Space feel like
           one building. items-stretch keeps the console and the active card the
           same height; on mobile it's simply the top card of the stack. */}
-      {/* items-start, and deliberately NOT sticky (founder call, 17 Aug):
-          the compressed console and the vertical tribe hero now stand at
-          roughly the same height, so both scroll away together and the
-          drafts / invitations / archive read cleanly underneath. Pinning
-          one of two matched columns just breaks that symmetry. */}
-      <div className="lg:grid lg:grid-cols-[340px_minmax(0,1fr)] lg:gap-8 lg:items-start">
+      {/* items-stretch, and deliberately NOT sticky: the console card grows
+          to whatever height the experience card sets (its "Needs you"
+          section is flex-1 and absorbs the slack), so the two columns are
+          always level — including on a quiet day, when an empty focus stack
+          used to collapse the console and leave the row lopsided. Both
+          scroll away together, and drafts / invitations / archive read
+          cleanly underneath. */}
+      <div className="lg:grid lg:grid-cols-[340px_minmax(0,1fr)] lg:gap-8 lg:items-stretch">
         <aside className="mb-8 lg:mb-0">
           <ProfilePanel
             displayName={data.profile.displayName}

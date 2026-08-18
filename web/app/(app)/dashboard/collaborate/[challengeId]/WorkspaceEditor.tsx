@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { formatMoney } from "@/lib/money";
 import { useRouter } from "next/navigation";
 import { ImageSelector } from "@/app/components/ImageSelector";
 import { Dialog } from "@/app/components/Dialog";
@@ -1112,7 +1113,7 @@ export function WorkspaceEditor({
                 </div>
                 <div>
                   <p className="text-[10px] font-bold font-headline text-[#94a3b8] uppercase tracking-wider">Price</p>
-                  <p className="font-bold font-headline text-[#0F2229]">CHF {(challenge.priceCents / 100).toFixed(0)}</p>
+                  <p className="font-bold font-headline text-[#0F2229]">{formatMoney(challenge.priceCents, undefined, { decimals: 0 })}</p>
                 </div>
                 <div>
                   <p className="text-[10px] font-bold font-headline text-[#94a3b8] uppercase tracking-wider">Capacity</p>
