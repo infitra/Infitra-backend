@@ -756,7 +756,7 @@ export function ActiveProgramCard({ program, partner, user, density = "hero", ti
       // hero and the console read as siblings (same radius, same shadow,
       // one row).
       <article
-        className="relative rounded-3xl p-6 md:p-8 overflow-hidden"
+        className="relative rounded-3xl p-6 md:p-8 overflow-hidden flex flex-col lg:flex-1"
         style={{ backgroundColor: "#FFFFFF", boxShadow: SOFT_SHADOW }}
       >
         <header className="relative z-10 text-center px-2">
@@ -775,7 +775,7 @@ export function ActiveProgramCard({ program, partner, user, density = "hero", ti
             at a third of the row the legend was too narrow to hold any
             presence, which is what made it read as marginalia. Two columns
             at xl only; at lg the console already takes 340px of the row. */}
-        <div className="relative z-10 mt-5 grid gap-7 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] xl:items-center">
+        <div className="relative z-10 mt-5 grid gap-7 lg:flex-1 lg:content-center xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] xl:items-center">
           <div className="relative flex justify-center">
             {/* The glow bleeds past this column and is clipped by the card's
                 own rounded edge, so the orbit sits in light rather than in a

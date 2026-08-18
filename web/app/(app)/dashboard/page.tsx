@@ -952,7 +952,11 @@ export default async function DashboardPage() {
             the active card; the rest (drafts/archive/invites) flows in
             full-width bands BELOW. When nothing is live, the work stream
             (drafts/archive/invites) carries this column instead. */}
-        <div className="space-y-12 min-w-0">
+        {/* flex column so the active section can absorb the row's slack: the
+            console fills its grid item via h-full, so without this the
+            experience card sat short of it whenever the console was the
+            taller of the two. */}
+        <div className="space-y-12 min-w-0 lg:flex lg:flex-col">
           {/* Empty "start your first" hero — only when there's genuinely
               nothing at all. */}
           {activeCount === 0 &&
@@ -966,7 +970,7 @@ export default async function DashboardPage() {
               the state, and a heading here pushed the card out of alignment
               with the profile console. */}
           {activeCount > 0 && (
-            <div className="space-y-5 scroll-mt-24" id="active">
+            <div className="space-y-5 scroll-mt-24 lg:flex-1 lg:flex lg:flex-col" id="active">
               {hero && (
                   <ActiveProgramCard
                     program={hero}
