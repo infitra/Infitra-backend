@@ -308,19 +308,11 @@ export function ProfilePanel({
             </p>
           )}
 
-          {/* The profile is where the numbers live now (founder call, 18 Aug:
-              the console is action-only; "At a glance" duplicated the
-              profile's own proof band). So the block says how long you have
-              been here and carries ONE clear door into the full profile —
-              instead of that door hiding in Quick actions. */}
-          <p
-            className="text-[11px] uppercase tracking-widest font-headline mt-2"
-            style={{ color: "#94a3b8", fontWeight: 700 }}
-            suppressHydrationWarning
-          >
-            {pilotLine(joinedAt)}
-          </p>
-
+          {/* The profile block carries ONE door into the full profile (where
+              the numbers live) — instead of that door hiding in Quick
+              actions. The "on the pilot · N weeks in" line is gone (founder
+              call, 18 Aug): pilot tenure is not something you act on, and it
+              was spending the height that money deserves. */}
           <ProfileTrigger profileId={viewerId} className="w-full mt-3">
             <span
               className="flex w-full items-center justify-center gap-1.5 rounded-xl py-2.5 px-4 text-[13px] font-black font-headline transition-transform hover:-translate-y-0.5"
@@ -336,21 +328,25 @@ export function ProfilePanel({
               </svg>
             </span>
           </ProfileTrigger>
-          {/* Earnings sits on the line the profile sub-caption used to hold,
-              so the console keeps the height that matches the experience
-              card exactly. Month-to-date, because a founder reads income by
-              month; the per-experience weekly figure lives on its own card. */}
+
+          {/* EARNINGS — a real card, because this is the number an expert
+              opens the dashboard for. Month-to-date (a founder reads income
+              by month) and a door to the earnings page. */}
           <Link
             href="/dashboard/earnings"
-            className="mt-2 flex items-center justify-center gap-1.5 rounded-lg py-1 transition-colors hover:bg-[rgba(8,145,178,0.06)]"
+            className="mt-2.5 flex items-center gap-2.5 rounded-xl px-3 py-2.5 transition-transform hover:-translate-y-0.5"
+            style={{ backgroundColor: "rgba(8,145,178,0.10)", boxShadow: `inset 0 0 0 1.5px ${CYAN}33` }}
           >
-            <span className="text-[13px] font-black font-headline tabular-nums" style={{ color: INK }}>
-              CHF {(earningsMonthCents / 100).toFixed(0)}
+            <span className="shrink-0" style={{ color: CYAN }}>{STAT_ICONS.coins}</span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[19px] font-black font-headline leading-none tabular-nums" style={{ color: INK }}>
+                CHF {(earningsMonthCents / 100).toFixed(0)}
+              </span>
+              <span className="block text-[10.5px] leading-tight mt-1" style={{ color: "#64748b", fontWeight: 600 }}>
+                earned this month
+              </span>
             </span>
-            <span className="text-[10.5px]" style={{ color: "#94a3b8", fontWeight: 600 }}>
-              earned this month
-            </span>
-            <span className="text-[10px] font-black" style={{ color: CYAN }}>→</span>
+            <span className="text-[11px] font-black shrink-0" style={{ color: CYAN }}>→</span>
           </Link>
         </div>
 
