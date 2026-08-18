@@ -705,7 +705,23 @@ async function loadDashboard(userId: string) {
     }
   }
 
+  // Earnings THIS MONTH (calendar month to date). Deliberately NOT scoped to
+  // active experiences the way the weekly per-card figure is: money earned by
+  // an experience that has since finished is still this month's income.
+  const monthStart = new Date();
+  monthStart.setDate(1);
+  monthStart.setHours(0, 0, 0, 0);
+  const { data: monthTxRows } = await supabase
+    .from("vw_my_transactions")
+    .select("creator_cut_cents")
+    .gte("created_at", monthStart.toISOString());
+  const earningsMonthCents = (monthTxRows ?? []).reduce(
+    (n, r) => n + Number((r as any).creator_cut_cents ?? 0),
+    0,
+  );
+
   return {
+    earningsMonthCents,
     profile: {
       displayName: profile?.display_name ?? "",
       avatarUrl: profile?.avatar_url ?? null,
@@ -925,6 +941,7 @@ export default async function DashboardPage() {
             connections={connections}
             reviews={expertReviews}
             isFoundingExpert={data.profile.isFoundingExpert}
+            earningsMonthCents={data.earningsMonthCents}
             needsYou={needsYou}
           />
         </aside>

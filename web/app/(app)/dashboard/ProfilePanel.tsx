@@ -55,6 +55,8 @@ interface Props {
   connections: ConnectionRow[];
   reviews: ExpertReview[];
   isFoundingExpert: boolean;
+  /** Creator cut for the calendar month to date. */
+  earningsMonthCents: number;
   needsYou: {
     invitations: number;
     /** One row PER experience with open questions: each deep-links into that
@@ -178,6 +180,7 @@ export function ProfilePanel({
   connections,
   reviews,
   isFoundingExpert,
+  earningsMonthCents,
   needsYou,
 }: Props) {
   const openOverlay = useOverlay();
@@ -333,9 +336,22 @@ export function ProfilePanel({
               </svg>
             </span>
           </ProfileTrigger>
-          <p className="text-[10.5px] text-center mt-1.5" style={{ color: "#94a3b8" }}>
-            Your tribe, sessions, reviews and connections
-          </p>
+          {/* Earnings sits on the line the profile sub-caption used to hold,
+              so the console keeps the height that matches the experience
+              card exactly. Month-to-date, because a founder reads income by
+              month; the per-experience weekly figure lives on its own card. */}
+          <Link
+            href="/dashboard/earnings"
+            className="mt-2 flex items-center justify-center gap-1.5 rounded-lg py-1 transition-colors hover:bg-[rgba(8,145,178,0.06)]"
+          >
+            <span className="text-[13px] font-black font-headline tabular-nums" style={{ color: INK }}>
+              CHF {(earningsMonthCents / 100).toFixed(0)}
+            </span>
+            <span className="text-[10.5px]" style={{ color: "#94a3b8", fontWeight: 600 }}>
+              earned this month
+            </span>
+            <span className="text-[10px] font-black" style={{ color: CYAN }}>→</span>
+          </Link>
         </div>
 
         {/* ── NEEDS YOU ── the focus stack; only when something does. */}
