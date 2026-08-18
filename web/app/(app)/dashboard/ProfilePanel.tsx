@@ -381,10 +381,10 @@ export function ProfilePanel({
                 </svg>
               </span>
               <p className="text-[13px] font-black font-headline" style={{ color: INK }}>
-                Nothing needs you
+                You&apos;re all caught up
               </p>
               <p className="text-[11px] mt-1 max-w-[210px]" style={{ color: "#94a3b8", fontWeight: 600 }}>
-                No invitations, no open questions, nothing waiting on a signature.
+                No invitations, questions or signatures waiting.
               </p>
             </div>
           )}
