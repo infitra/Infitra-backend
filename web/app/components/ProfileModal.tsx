@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useBackdropClose } from "@/app/components/useBackdropClose";
 import { CredentialIcon, credentialPeriod } from "@/app/components/CredentialIcon";
 import { StatCard, STAT_ICONS, BRAND_ACCENT } from "@/app/components/StatCards";
+import { useOverlay } from "@/app/components/DashboardOverlay";
 
 /**
  * ProfileModal + ProfileTrigger — THE profile surface (social layer).
@@ -110,7 +111,17 @@ export function ProfileTrigger({
   );
 }
 
-export function ProfileModalHost({ children }: { children: React.ReactNode }) {
+export function ProfileModalHost({
+  children,
+  selfStatLinks = false,
+}: {
+  children: React.ReactNode;
+  /** Opt-in: makes YOUR OWN proof cards open the People / Reviews overlays.
+   *  Only true where those panels are actually mounted (the dashboard
+   *  console) — elsewhere the click would be a dead end, which is exactly
+   *  the failure mode we removed from "Needs you". */
+  selfStatLinks?: boolean;
+}) {
   const [profileId, setProfileId] = useState<string | null>(null);
   const [payload, setPayload] = useState<ProfilePayload | null>(null);
   const [viewerId, setViewerId] = useState<string | null>(null);
@@ -176,7 +187,7 @@ export function ProfileModalHost({ children }: { children: React.ReactNode }) {
               }}
               onClick={(e) => e.stopPropagation()}
             >
-              <ModalBody payload={payload} viewerId={viewerId} onClose={close} />
+              <ModalBody payload={payload} viewerId={viewerId} onClose={close} selfStatLinks={selfStatLinks} />
             </div>
           </div>,
           document.body,
@@ -191,11 +202,17 @@ function ModalBody({
   payload,
   viewerId,
   onClose,
+  selfStatLinks = false,
 }: {
   payload: ProfilePayload | null;
   viewerId: string | null;
   onClose: () => void;
+  selfStatLinks?: boolean;
 }) {
+  // Safe outside an OverlayHost (returns a no-op); selfStatLinks is what
+  // actually gates whether we render these as clickable at all.
+  const openOverlay = useOverlay();
+
   if (!payload) {
     return (
       <div className="px-6 py-12 text-center">
@@ -229,10 +246,25 @@ function ModalBody({
   // orange = what they run, cyan = their people/answers, gold = stars only.
   // Proof cards, ordered so the two people-numbers sit together, then what
   // they run, then reputation. Orange = active, cyan = accumulated.
-  const proofCards: Array<{ icon: React.ReactNode; value: string; label: string; accent: string }> = isExpert
+  // On YOUR OWN profile (and only where the panels are mounted), the two
+  // cards that have somewhere to go become doors: connections opens your
+  // people, reviews opens your reviews. This is what lets the console drop
+  // its "At a glance" block — the numbers live here, with context.
+  const selfDoors = selfStatLinks && isSelf;
+  const proofCards: Array<{
+    icon: React.ReactNode; value: string; label: string; accent: string;
+    sub?: string; onClick?: () => void;
+  }> = isExpert
     ? [
-        { icon: STAT_ICONS.people, value: `${proof.active_tribe_members ?? 0}`, label: "active tribe members", accent: BRAND_ACCENT.orange },
-        { icon: STAT_ICONS.people, value: `${proof.tribe_count ?? 0}`, label: "tribe connections", accent: BRAND_ACCENT.cyan },
+        { icon: STAT_ICONS.people, value: `${proof.active_tribe_members ?? 0}`, label: "active tribe members", accent: BRAND_ACCENT.orange, sub: selfDoors ? "in your live experiences" : undefined },
+        {
+          icon: STAT_ICONS.people,
+          value: `${proof.tribe_count ?? 0}`,
+          label: "tribe connections",
+          accent: BRAND_ACCENT.cyan,
+          sub: selfDoors ? "everyone you have run with" : undefined,
+          onClick: selfDoors ? () => { onClose(); openOverlay("people"); } : undefined,
+        },
         { icon: STAT_ICONS.flame, value: `${proof.hosting_count ?? 0}`, label: proof.hosting_count === 1 ? "experience led" : "experiences led", accent: BRAND_ACCENT.orange },
         { icon: STAT_ICONS.bolt, value: `${proof.sessions_led ?? 0}`, label: "sessions led", accent: BRAND_ACCENT.orange },
         { icon: STAT_ICONS.check, value: `${proof.questions_answered ?? 0}`, label: "questions answered", accent: BRAND_ACCENT.orange },
@@ -242,6 +274,8 @@ function ModalBody({
               value: `★ ${Number(proof.avg_rating ?? 0).toFixed(1)}`,
               label: `${proof.total_reviews} ${proof.total_reviews === 1 ? "review" : "reviews"}`,
               accent: BRAND_ACCENT.cyan,
+              sub: selfDoors ? "read them all" : undefined,
+              onClick: selfDoors ? () => { onClose(); openOverlay("reviews"); } : undefined,
             }]
           : []),
       ]
@@ -412,7 +446,7 @@ function ModalBody({
                   </p>
                   <div className="grid grid-cols-2 gap-2">
                     {proofCards.map((c, i) => (
-                      <StatCard key={i} icon={c.icon} value={c.value} label={c.label} accent={c.accent} compact />
+                      <StatCard key={i} icon={c.icon} value={c.value} label={c.label} accent={c.accent} sub={c.sub} onClick={c.onClick} compact />
                     ))}
                   </div>
                 </div>

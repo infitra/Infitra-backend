@@ -883,7 +883,10 @@ export default async function DashboardPage() {
     // Horizontal overflow is already guarded by the (app) layout root
     // (overflow-x-clip there) — adding it again here created a nested clip
     // context that broke the wave background on iOS scroll-up.
-    <ProfileModalHost>
+    // selfStatLinks: the console dropped its "At a glance" block, so YOUR OWN
+    // proof cards in the profile modal become the doors to People and Reviews.
+    // Enabled here only — this is where those panels are mounted.
+    <ProfileModalHost selfStatLinks>
     <OverlayHost>
     <div className="py-8">
       {/* TopAlert sits above everything else — global urgency signal,
@@ -922,14 +925,7 @@ export default async function DashboardPage() {
             connections={connections}
             reviews={expertReviews}
             isFoundingExpert={data.profile.isFoundingExpert}
-            activeExperiences={activeCount}
-            activeMembers={accountProof.activeTribeMembers}
-            tribeConnections={accountProof.tribeCount}
-            avgRating={accountProof.avgRating}
-            totalReviews={accountProof.totalReviews}
-            sessionsLed={accountProof.sessionsLed}
             needsYou={needsYou}
-            earningsWeekCents={earningsWeekCents}
           />
         </aside>
 

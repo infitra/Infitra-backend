@@ -55,16 +55,6 @@ interface Props {
   connections: ConnectionRow[];
   reviews: ExpertReview[];
   isFoundingExpert: boolean;
-  /** Experiences running or about to run. */
-  activeExperiences: number;
-  /** Members across currently ACTIVE experiences — "moving now". */
-  activeMembers: number;
-  /** Everyone who has EVER joined one of their experiences. */
-  tribeConnections: number;
-  avgRating: number;
-  totalReviews: number;
-  sessionsLed: number;
-  earningsWeekCents: number;
   needsYou: {
     invitations: number;
     /** One row PER experience with open questions: each deep-links into that
@@ -114,53 +104,6 @@ const PLUS_ICON = (
     <path d="M12 5v14M5 12h14" />
   </svg>
 );
-
-/** One micro-stat in the glance card: value on top, 9px caps label under.
- *  Cyan value = a door (overlay or link); ink value = a plain reading. */
-function GlanceCell({
-  value,
-  label,
-  onClick,
-  href,
-}: {
-  value: string;
-  label: string;
-  onClick?: () => void;
-  href?: string;
-}) {
-  const interactive = !!onClick || !!href;
-  const inner = (
-    <>
-      <span
-        className="block text-[15px] font-black font-headline leading-tight tabular-nums"
-        style={{ color: interactive ? CYAN : INK }}
-      >
-        {value}
-      </span>
-      <span
-        className="block text-[9px] uppercase tracking-[0.12em] font-headline mt-0.5 truncate"
-        style={{ color: "#94a3b8", fontWeight: 700 }}
-      >
-        {label}
-      </span>
-    </>
-  );
-  if (href) {
-    return (
-      <Link href={href} className="min-w-0 rounded-lg py-1 transition-colors hover:bg-[rgba(8,145,178,0.06)]">
-        {inner}
-      </Link>
-    );
-  }
-  if (onClick) {
-    return (
-      <button type="button" onClick={onClick} className="min-w-0 rounded-lg py-1 transition-colors hover:bg-[rgba(8,145,178,0.06)]">
-        {inner}
-      </button>
-    );
-  }
-  return <span className="min-w-0 py-1">{inner}</span>;
-}
 
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -235,13 +178,6 @@ export function ProfilePanel({
   connections,
   reviews,
   isFoundingExpert,
-  activeExperiences,
-  activeMembers,
-  tribeConnections,
-  avgRating,
-  totalReviews,
-  sessionsLed,
-  earningsWeekCents,
   needsYou,
 }: Props) {
   const openOverlay = useOverlay();
@@ -368,6 +304,38 @@ export function ProfilePanel({
               {tagline}
             </p>
           )}
+
+          {/* The profile is where the numbers live now (founder call, 18 Aug:
+              the console is action-only; "At a glance" duplicated the
+              profile's own proof band). So the block says how long you have
+              been here and carries ONE clear door into the full profile —
+              instead of that door hiding in Quick actions. */}
+          <p
+            className="text-[11px] uppercase tracking-widest font-headline mt-2"
+            style={{ color: "#94a3b8", fontWeight: 700 }}
+            suppressHydrationWarning
+          >
+            {pilotLine(joinedAt)}
+          </p>
+
+          <ProfileTrigger profileId={viewerId} className="w-full mt-3">
+            <span
+              className="flex w-full items-center justify-center gap-1.5 rounded-xl py-2.5 px-4 text-[13px] font-black font-headline transition-transform hover:-translate-y-0.5"
+              style={{
+                color: CYAN,
+                backgroundColor: "rgba(255,255,255,0.75)",
+                boxShadow: `inset 0 0 0 1.5px ${CYAN}33`,
+              }}
+            >
+              Show full profile
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={CYAN} strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </span>
+          </ProfileTrigger>
+          <p className="text-[10.5px] text-center mt-1.5" style={{ color: "#94a3b8" }}>
+            Your tribe, sessions, reviews and connections
+          </p>
         </div>
 
         {/* ── NEEDS YOU ── the focus stack; only when something does. */}
@@ -377,57 +345,12 @@ export function ProfilePanel({
           </Section>
         )}
 
-        {/* ── AT A GLANCE ── compressed from six tiles, but every label now
-            says WHICH population and WHICH period it counts (founder call,
-            17 Aug: "members" and "sessions" alone were ambiguous — active
-            vs lifetime). 2x2 so the labels fit on one line at 340px. */}
-        <Section label="At a glance">
-          <div className="rounded-xl px-3.5 py-3" style={{ backgroundColor: "rgba(8,145,178,0.05)" }}>
-            <div className="grid grid-cols-2 gap-x-3 gap-y-2.5">
-              <GlanceCell value={`${activeMembers}`} label="active members" />
-              <GlanceCell value={`${sessionsLed}`} label="sessions led" />
-              <GlanceCell
-                value={totalReviews > 0 ? `★ ${avgRating.toFixed(1)}` : "—"}
-                label={totalReviews > 0 ? `${totalReviews} ${totalReviews === 1 ? "review" : "reviews"}` : "no reviews yet"}
-                onClick={totalReviews > 0 ? () => openOverlay("reviews") : undefined}
-              />
-              <GlanceCell
-                value={`CHF ${(earningsWeekCents / 100).toFixed(0)}`}
-                label="earned this week"
-                href="/dashboard/earnings"
-              />
-            </div>
-
-            {/* CONNECTIONS gets its own weighted row (founder call): everyone
-                who has ever been in one of your experiences is the platform's
-                glue — the people you can invite into the next one. */}
-            <button
-              type="button"
-              onClick={() => openOverlay("people")}
-              className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2.5 mt-3 text-left transition-transform hover:-translate-y-0.5"
-              style={{ backgroundColor: "rgba(8,145,178,0.10)", boxShadow: `inset 0 0 0 1.5px ${CYAN}33` }}
-            >
-              <span className="shrink-0" style={{ color: CYAN }}>{STAT_ICONS.people}</span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-[15px] font-black font-headline leading-tight" style={{ color: CYAN }}>
-                  {tribeConnections} tribe connections
-                </span>
-                <span className="block text-[10.5px] leading-tight mt-0.5" style={{ color: "#64748b" }}>
-                  everyone you have run with · meet your people
-                </span>
-              </span>
-              <span className="text-[11px] font-black shrink-0" style={{ color: CYAN }}>→</span>
-            </button>
-
-            <p className="text-[11px] font-bold font-headline mt-2.5" style={{ color: "#94a3b8" }}>
-              {activeExperiences} active {activeExperiences === 1 ? "experience" : "experiences"}
-            </p>
-          </div>
-        </Section>
-
-        {/* ── QUICK ACTIONS ── back to the full-width stack (founder call,
-            17 Aug: the chip row was too quiet — worth the extra height),
-            just tighter than the original. */}
+        {/* ── QUICK ACTIONS ── the console is now purely who-you-are +
+            what-needs-you + what-you-can-do (founder call, 18 Aug). The
+            numbers moved to the profile, which already carried the same
+            proof band. Same button design as before, half-width in pairs so
+            the block costs a third of the height it did. "View my profile"
+            is gone from here: its door is the profile block above. */}
         <Section label="Quick actions">
           <Link
             href="/dashboard/create"
@@ -437,19 +360,18 @@ export function ProfilePanel({
             {PLUS_ICON}
             New experience
           </Link>
-          <button type="button" onClick={() => openOverlay("edit-profile")} className={`${railBtn} mb-1.5`} style={railActionStyle}>
-            {EDIT_ICON}
-            Edit profile
-          </button>
-          <ProfileTrigger profileId={viewerId} className="w-full mb-1.5">
-            <span className={railBtn} style={railActionStyle}>
-              View my profile
-            </span>
-          </ProfileTrigger>
-          <button type="button" onClick={() => openOverlay("settings")} className={`${railBtn} mb-1.5`} style={railActionStyle}>
-            My recorded agreements
-          </button>
-          <CalendarButton href="/dashboard/calendar" label="Export calendar" block />
+          <div className="grid grid-cols-2 gap-1.5">
+            <button type="button" onClick={() => openOverlay("edit-profile")} className={railBtn} style={railActionStyle}>
+              {EDIT_ICON}
+              Edit profile
+            </button>
+            <button type="button" onClick={() => openOverlay("settings")} className={railBtn} style={railActionStyle}>
+              Agreements
+            </button>
+          </div>
+          <div className="mt-1.5">
+            <CalendarButton href="/dashboard/calendar" label="Export calendar" block />
+          </div>
         </Section>
       </div>
 
