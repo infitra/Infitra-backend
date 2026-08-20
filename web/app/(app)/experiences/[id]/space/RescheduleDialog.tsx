@@ -66,7 +66,7 @@ export function RescheduleDialog({ open, sessionId, sessionTitle, currentStart, 
       role="dialog"
     >
       <div
-        className="max-w-md w-full rounded-2xl p-6"
+        className="max-w-md w-full max-h-[85vh] overflow-y-auto rounded-2xl p-6"
         style={{ backgroundColor: "#FFFFFF" }}
         onClick={(e) => e.stopPropagation()}
       >
