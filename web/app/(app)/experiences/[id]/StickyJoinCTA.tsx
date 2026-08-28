@@ -142,7 +142,7 @@ export function StickyJoinCTA({
             <PurchaseButton
               kind="challenge"
               targetId={challengeId}
-              label="Join program"
+              label="Join the experience"
               className="block w-full text-center py-3 rounded-full text-white text-sm font-black font-headline bg-[#FF6130] shadow-[0_4px_14px_rgba(255,97,48,0.35)] transition-transform hover:scale-[1.01] disabled:opacity-70"
             />
           ) : (
@@ -156,7 +156,7 @@ export function StickyJoinCTA({
                 boxShadow: "0 4px 14px rgba(255,97,48,0.35)",
               }}
             >
-              Join program
+              Join the experience
             </Link>
           )}
         </div>

@@ -344,9 +344,9 @@ export default async function ChallengePage({
               </p>
               <p className="text-sm" style={{ color: "#0F2229" }}>
                 {checkoutError === "ALREADY_PURCHASED"
-                  ? "You're already enrolled in this program — open your tribe space below."
+                  ? "You're already part of this experience: open your tribe space below."
                   : checkoutError === "CHALLENGE_FULL"
-                    ? "This program is at capacity right now. Check back soon or message the Experts."
+                    ? "This experience is at capacity right now. Check back soon or message the Experts."
                     : "We couldn't open Stripe checkout. Try the Commit button below, or reload the page."}
               </p>
             </div>
