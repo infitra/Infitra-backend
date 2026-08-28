@@ -25,9 +25,20 @@ interface Props {
   onClose: () => void;
 }
 
+// datetime-local wants "YYYY-MM-DDTHH:mm" in the DEVICE's zone. Prefill with
+// the session's current time: an empty picker defaulted to "now", which on
+// the emergency surface invited accidental near-past times — most reschedules
+// are "same time, different day" edits of the existing slot.
+function toLocalInputValue(iso: string): string {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
 export function RescheduleDialog({ open, sessionId, sessionTitle, currentStart, onClose }: Props) {
   const router = useRouter();
-  const [newStart, setNewStart] = useState("");
+  const [newStart, setNewStart] = useState(() => toLocalInputValue(currentStart));
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
