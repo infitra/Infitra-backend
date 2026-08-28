@@ -240,6 +240,7 @@ export default async function ChallengePage({
     buyerView.end_date,
     weeklyArc,
     sessions,
+    viewerTimeZone,
   );
   const weeks = rawWeeks.map((week) => ({
     ...week,

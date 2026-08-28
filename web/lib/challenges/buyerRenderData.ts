@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { resolveViewerTimeZone } from "@/lib/time/viewerTimeZone";
 import { buildWeeks } from "./buildWeeks";
 import { loadSessionCohosts } from "./sessionCohosts";
 
@@ -132,7 +133,8 @@ export async function loadBuyerRenderData(
     challenge.start_date,
     challenge.end_date,
     weeklyArc,
-    sessions
+    sessions,
+    await resolveViewerTimeZone()
   );
   const creatorsById = new Map(creators.map((c) => [c.id, c]));
   const cohostsBySession = await loadSessionCohosts(supabase, id, creatorsById);

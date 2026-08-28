@@ -60,19 +60,44 @@ const RHYTHM_ATTRIBUTION_FIELDS = [
 
 const MAX_THEME_LENGTH = 80;
 
+// Weeks are a CALENDAR concept in the viewer's timezone. A bare "YYYY-MM-DD"
+// passed to new Date() parses as UTC midnight, and the session cards render
+// their dates in device time — so bucketing by raw UTC ms sheared the grid by
+// a day for any viewer east or west of UTC (a Sunday-22:55-UTC session showed
+// as Monday on the card but slotted into the week before). Everything below
+// therefore works on LOCAL calendar dates, and day arithmetic goes through
+// the Date constructor (not fixed 86400000 steps) so DST weeks stay aligned.
+function localDate(dateStr: string): Date {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return new Date(y, (m || 1) - 1, d || 1);
+}
+
+function localDayOf(instant: Date): Date {
+  return new Date(instant.getFullYear(), instant.getMonth(), instant.getDate());
+}
+
+function addDays(base: Date, days: number): Date {
+  return new Date(base.getFullYear(), base.getMonth(), base.getDate() + days);
+}
+
+function daysBetween(a: Date, b: Date): number {
+  // Round: local midnights can sit 23h/25h apart across a DST change.
+  return Math.round((b.getTime() - a.getTime()) / 86400000);
+}
+
 function computeTotalWeeks(startDate: string, endDate: string): number {
   if (!startDate || !endDate) return 0;
-  const start = new Date(startDate);
-  const end = new Date(endDate);
+  const start = localDate(startDate);
+  const end = localDate(endDate);
   if (isNaN(start.getTime()) || isNaN(end.getTime()) || end <= start) return 0;
-  const days = Math.floor((end.getTime() - start.getTime()) / 86400000);
+  const days = daysBetween(start, end);
   return Math.max(1, Math.floor(days / 7) + 1);
 }
 
 function weekRange(startDate: string, weekNumber: number): { start: Date; end: Date } {
-  const programStart = new Date(startDate);
-  const start = new Date(programStart.getTime() + (weekNumber - 1) * 7 * 86400000);
-  const end = new Date(start.getTime() + 6 * 86400000);
+  const programStart = localDate(startDate);
+  const start = addDays(programStart, (weekNumber - 1) * 7);
+  const end = addDays(start, 6);
   return { start, end };
 }
 
@@ -87,12 +112,10 @@ function getWeekForSession(
   totalWeeks: number,
   sessionStart: string,
 ): number {
-  const programStart = new Date(startDate);
+  const programStart = localDate(startDate);
   const sStart = new Date(sessionStart);
   if (isNaN(programStart.getTime()) || isNaN(sStart.getTime())) return 1;
-  const days = Math.floor(
-    (sStart.getTime() - programStart.getTime()) / 86400000,
-  );
+  const days = daysBetween(programStart, localDayOf(sStart));
   if (days < 0) return 1;
   return Math.max(1, Math.min(totalWeeks, Math.floor(days / 7) + 1));
 }

@@ -39,13 +39,18 @@ export function buildWeeks(
   endDate: string,
   weeklyArc: Array<{ week: number; theme: string }>,
   sessions: SessionLite[],
+  /** Viewer's IANA zone. This runs at SSR, where "local" is the server's
+   *  UTC — pass the viewer_tz so a session near the viewer's midnight slots
+   *  into the week its DISPLAYED date belongs to (a Swiss 19:00 CEST session
+   *  is already "tomorrow 00:00" for a viewer in Asia). */
+  timeZone?: string,
 ): WeekEntry[] {
   const totalWeeks = computeTotalWeeks(startDate, endDate);
   if (totalWeeks === 0) return [];
 
   const sessionsByWeek = new Map<number, SessionLite[]>();
   for (const s of sessions) {
-    const w = sessionWeekNumber(startDate, totalWeeks, s.start_time);
+    const w = sessionWeekNumber(startDate, totalWeeks, s.start_time, timeZone);
     if (!sessionsByWeek.has(w)) sessionsByWeek.set(w, []);
     sessionsByWeek.get(w)!.push(s);
   }
@@ -67,12 +72,46 @@ export function buildWeeks(
   });
 }
 
+// Weeks are a calendar concept in the VIEWER's timezone: the session rows
+// render their dates in device time, so the bucket must be derived from the
+// same local calendar date or the two disagree near midnight (a late-Sunday
+// UTC instant that displays as Monday must also SLOT as Monday). Day
+// arithmetic goes through the Date constructor rather than fixed 86400000
+// steps so DST weeks stay aligned, and differences are rounded because two
+// local midnights can sit 23h or 25h apart across a DST change.
+function localDayOf(instant: Date, timeZone?: string): Date {
+  if (timeZone) {
+    try {
+      // en-CA formats as YYYY-MM-DD.
+      const key = new Intl.DateTimeFormat("en-CA", {
+        timeZone,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      }).format(instant);
+      const [y, m, d] = key.split("-").map(Number);
+      return new Date(y, m - 1, d);
+    } catch {
+      // Unknown zone string: fall through to runtime-local.
+    }
+  }
+  return new Date(instant.getFullYear(), instant.getMonth(), instant.getDate());
+}
+
+function addDays(base: Date, days: number): Date {
+  return new Date(base.getFullYear(), base.getMonth(), base.getDate() + days);
+}
+
+function daysBetween(a: Date, b: Date): number {
+  return Math.round((b.getTime() - a.getTime()) / 86400000);
+}
+
 export function computeTotalWeeks(startDate: string, endDate: string): number {
   if (!startDate || !endDate) return 0;
   const s = new Date(startDate + "T00:00:00");
   const e = new Date(endDate + "T00:00:00");
   if (isNaN(s.getTime()) || isNaN(e.getTime()) || e <= s) return 0;
-  const days = Math.floor((e.getTime() - s.getTime()) / 86400000);
+  const days = daysBetween(s, e);
   return Math.max(1, Math.floor(days / 7) + 1);
 }
 
@@ -80,23 +119,20 @@ export function sessionWeekNumber(
   startDate: string,
   totalWeeks: number,
   sessionIso: string,
+  timeZone?: string,
 ): number {
   const programStart = new Date(startDate + "T00:00:00");
   const sStart = new Date(sessionIso);
   if (isNaN(programStart.getTime()) || isNaN(sStart.getTime())) return 1;
-  const days = Math.floor(
-    (sStart.getTime() - programStart.getTime()) / 86400000,
-  );
+  const days = daysBetween(programStart, localDayOf(sStart, timeZone));
   if (days < 0) return 1;
   return Math.max(1, Math.min(totalWeeks, Math.floor(days / 7) + 1));
 }
 
 export function weekRange(startDate: string, weekNumber: number) {
   const programStart = new Date(startDate + "T00:00:00");
-  const start = new Date(
-    programStart.getTime() + (weekNumber - 1) * 7 * 86400000,
-  );
-  const end = new Date(start.getTime() + 6 * 86400000);
+  const start = addDays(programStart, (weekNumber - 1) * 7);
+  const end = addDays(start, 6);
   return { start, end };
 }
 
