@@ -437,7 +437,7 @@ function NextChapterSection({
     return (
       <Section label="Next chapter" id="next-chapter">
         <p className="text-[12px] font-bold font-headline mb-2.5" style={{ color: "#64748b" }}>
-          Bring your group into the next run — we&apos;ll copy your sessions and team into a draft you can adjust.
+          Bring your group into the next run: your sessions and design are copied into a draft, and your co-experts get a fresh invitation.
         </p>
         <StartNextRunButton sourceId={sourceId} />
       </Section>

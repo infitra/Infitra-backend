@@ -221,7 +221,7 @@ async function loadDashboard(userId: string) {
       supabase
         .from("app_collaboration_invite")
         .select(
-          "id, from_id, message, initial_split_percent, created_at, challenge_id, app_challenge(title, image_url)",
+          "id, from_id, message, initial_split_percent, created_at, challenge_id, app_challenge(title, image_url, continued_from_challenge_id)",
         )
         .eq("to_id", userId)
         .eq("status", "pending")
@@ -701,6 +701,9 @@ async function loadDashboard(userId: string) {
         createdAt: i.created_at,
         challengeTitle: isMeaningful ? rawTitle : null,
         challengeImageUrl: ch?.image_url ?? null,
+        // A continuation invitation is structurally derivable (SR-I10): the
+        // bound draft descends from a completed run. The card says so.
+        isContinuation: !!ch?.continued_from_challenge_id,
       });
     }
   }

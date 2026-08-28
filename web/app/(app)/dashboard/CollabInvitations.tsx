@@ -27,6 +27,8 @@ interface Invite {
   createdAt: string;
   challengeTitle: string | null;
   challengeImageUrl: string | null;
+  /** The bound draft is the next run of an experience you built together. */
+  isContinuation?: boolean;
 }
 
 const INK = "#0F2229";
@@ -110,7 +112,7 @@ export function CollabInvitations({ invites }: { invites: Invite[] }) {
                 )}
                 <div className="min-w-0 flex-1">
                   <p className="text-[10px] uppercase tracking-[0.18em] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>
-                    Wants to collaborate with you
+                    {invite.isContinuation ? "Invites you back for the next run" : "Wants to collaborate with you"}
                   </p>
                   <p className="text-lg font-black font-headline truncate leading-tight" style={{ color: INK }}>
                     {invite.fromName}
@@ -149,9 +151,16 @@ export function CollabInvitations({ invites }: { invites: Invite[] }) {
                     </span>
                   </div>
                 )}
-                <p className="text-[13px] font-bold font-headline min-w-0 truncate" style={{ color: CYAN }}>
-                  {invite.challengeTitle ?? <span className="italic" style={{ color: "#94a3b8" }}>A new experience, built together</span>}
-                </p>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[13px] font-bold font-headline min-w-0 truncate" style={{ color: CYAN }}>
+                    {invite.challengeTitle ?? <span className="italic" style={{ color: "#94a3b8" }}>A new experience, built together</span>}
+                  </p>
+                  {invite.isContinuation && (
+                    <p className="text-[10.5px] mt-0.5" style={{ color: "#64748b", fontWeight: 600 }}>
+                      Continuation · a new run of an experience you built together
+                    </p>
+                  )}
+                </div>
               </div>
 
               {/* RESPOND — accept leads, warm; declining is a whisper. */}

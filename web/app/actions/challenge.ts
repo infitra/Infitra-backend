@@ -111,11 +111,21 @@ export async function createContinuationDraft(sourceChallengeId: string) {
     .single();
   if (srcErr || !src) throw new Error(srcErr?.message ?? "Experience not found");
 
+  // Default start: the SAME WEEKDAY the source started on, at least a week
+  // out. The RPC shifts every session by whole days from the start date, so
+  // the copied week pattern stays aligned only if the anchor weekday is
+  // preserved — and "day after the old run ended" (the old default) is in
+  // the past for any run revived later than the morning after.
   const dayMs = 24 * 60 * 60 * 1000;
-  const srcStart = new Date(src.start_date as string);
-  const srcEnd = new Date(src.end_date as string);
+  const srcStart = new Date(`${src.start_date as string}T00:00:00Z`);
+  const srcEnd = new Date(`${src.end_date as string}T00:00:00Z`);
   const durationDays = Math.max(0, Math.round((srcEnd.getTime() - srcStart.getTime()) / dayMs));
-  const start = new Date(srcEnd.getTime() + dayMs);
+  const todayUtc = new Date();
+  todayUtc.setUTCHours(0, 0, 0, 0);
+  const start = new Date(todayUtc.getTime() + 7 * dayMs);
+  while (start.getUTCDay() !== srcStart.getUTCDay()) {
+    start.setTime(start.getTime() + dayMs);
+  }
   const end = new Date(start.getTime() + durationDays * dayMs);
   const fmt = (d: Date) => d.toISOString().split("T")[0];
 

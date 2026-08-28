@@ -74,8 +74,8 @@ export function CreateNextRunButton({ sourceId, title }: { sourceId: string; tit
                 </p>
 
                 <ul className="space-y-2.5 mb-5">
-                  <Point text="Your collaborators are invited again, on the same terms. They confirm before it can publish." />
-                  <Point text="Every session comes across with its structure intact. You set the new dates." />
+                  <Point text="Your collaborators get a fresh invitation for this run. They accept, then you set the terms together and they sign before it can publish." />
+                  <Point text="Everything comes across: sessions, covers, weekly focus and prompts. You set the new dates and the sessions move with them." />
                   <Point text="Nothing is published yet. It is a draft you can change freely, or keep exactly as it was." />
                   <Point text="Your completed run stays untouched, with its space and its people." />
                 </ul>

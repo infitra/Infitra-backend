@@ -138,6 +138,13 @@ function describeNotification(n: EnrichedNotification): NotificationContent {
   const sender = n.senderName ?? null;
   switch (n.type) {
     case "collab_invite":
+      if (p.continuation) {
+        return {
+          title: sender ? `${sender} invites you back for the next run` : "Continuation invitation",
+          detail: p.title ? `The next run of "${p.title}"` : "A new run of an experience you built together",
+          href: "/dashboard#invitations",
+        };
+      }
       return {
         title: sender ? `${sender} invited you to collaborate` : "New collaboration invitation",
         detail: "Open the workspace together to talk it through",
