@@ -75,7 +75,7 @@ export default function PilotTermsPage() {
             <div className="space-y-10">
               <Section title="What it is">
                 <p>
-                  Five founding pairs, each running one live experience: typically four
+                  A small group of founding experts, each collaboration running one live experience: typically four
                   to six weeks, co-hosted. It&apos;s a closed pilot, so your participants
                   come from your own audience, not from INFITRA.
                 </p>

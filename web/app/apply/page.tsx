@@ -138,7 +138,7 @@ export default function ApplyPage() {
  */
 const DEAL: string[] = [
   "You and your partner keep 90% of revenue, split as you agree. INFITRA’s founding platform fee is 10%.",
-  "Five founding pairs, one 4 to 6 week live experience, co-hosted.",
+  "A small founding group, one 4 to 6 week live experience, co-created.",
   "You host live and bring your audience. We run the platform, priced in CHF.",
   "No lock-in. Keep your experiences, archive them, or leave anytime after the pilot.",
   "Early positioning: you keep your pilot reviews and early access. Once we go live, you’re in pole position.",

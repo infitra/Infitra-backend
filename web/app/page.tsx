@@ -30,7 +30,7 @@ import { JoinWaitlistLink } from "./landing/JoinWaitlistLink";
 export const metadata = {
   title: "INFITRA · Live, co-created fitness experiences",
   description:
-    "Build an experience beyond what you can offer alone. Two experts, one live experience: page, checkout, contract, revenue split, live rooms and tribe, handled.",
+    "Build an experience beyond what you can offer alone. Complementary experts, one live experience: page, checkout, contract, revenue split, live rooms and tribe, handled.",
 };
 
 export default function LandingPage() {
