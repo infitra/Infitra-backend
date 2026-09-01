@@ -11,13 +11,19 @@ every Claude Code session via `@BRAND.md` in CLAUDE.md.
 A platform where complementary health and fitness experts create and run one
 live experience together, instead of each building everything alone.
 
-Two experts (say a strength coach and a nutritionist) design a single live
-experience, usually four to six weeks. INFITRA provides everything around it:
+Complementary experts, usually two (say a strength coach and a nutritionist),
+design a single live experience, usually four to six weeks. INFITRA provides everything around it:
 the workspace where they build it, the marketing page with checkout, the live
 rooms, the tribe space where participants stay connected between sessions, and
 the revenue split based on a recorded agreement.
 
 **Founder:** Yves Imhasly. Swiss, CHF, Zurich-based operation.
+
+**Place framing:** INFITRA is not bound to any location and is never described
+as "a Zurich platform" or "a Swiss platform". It will be incorporated in
+Switzerland; the pilot recruits Swiss experts because it sells in CHF; Zurich
+is a hub, not an identity. The founder being Zurich-based is biography, not
+product.
 
 ---
 
@@ -76,6 +82,28 @@ buy. Don't build participant-facing demand before there is supply.
 
 ---
 
+## The cold-reader test (run this before anything ships)
+
+Before any outreach message, landing copy, post or deck goes out, read it as
+someone who has never heard of INFITRA and answer four questions. If any
+answer is missing, it is not ready:
+
+1. **What is it?** Online, over video, over several weeks. Say it plainly.
+2. **What does a participant actually buy and do?** They pay once, meet the
+   experts live on video across the weeks, stay connected in a group space
+   in between.
+3. **What would I have to do?** Design the content with one complementary
+   expert. INFITRA provides everything around it.
+4. **What do I get?** 90%, no upfront cost, audience stays mine.
+
+Order matters: **the thing, then the collaboration, then the terms.** Never
+terms first. Brand vocabulary ("live experience", "tribe space") is internal
+shorthand with no meaning to a cold reader: gloss it on first use.
+
+Learned the hard way on 1 Sep 2026. The first candidate to reply booked a
+call and wrote "Checke es ehrlich gesagt noch nicht ganz". The message had
+led with the model and the terms and never said what a participant buys.
+
 ## Vocabulary
 
 | Use | Never |
@@ -85,6 +113,8 @@ buy. Don't build participant-facing demand before there is supply.
 | marketing page | sales page, landing page (for the buyer page) |
 | complementary experts | partners, co-hosts (in marketing copy) |
 | founding pilot, pilot experts | beta testers |
+| the founding pilot is open | five founding pairs, N spots (public counts) |
+| complementary experts (duo as example) | "two experts" as the definition |
 | participants | customers, users |
 | workspace | dashboard (for the co-creation surface) |
 | Pioneers (early participants) | early adopters, beta users |
@@ -96,7 +126,10 @@ revenue," never "we take 10%." The fee is disclosed second.
 
 ## Pilot terms (current, public)
 
-- Five founding pairs, one live experience each, typically four to six weeks
+- A small founding group of complementary experts, one live experience per
+  collaboration, typically four to six weeks. Internal cap: five
+  collaborations. **Never state the count in public copy**: a public number
+  is a countable failure state pre-traction and blocks a sixth great pair
 - Runs on the experts' own audiences, not INFITRA's
 - Experts keep **90%** of every sale, split as they agree in a recorded
   agreement. INFITRA's founding fee is the remaining 10%, **locked in for the

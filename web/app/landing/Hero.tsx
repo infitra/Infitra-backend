@@ -25,7 +25,7 @@ export function Hero() {
         >
           <span className="w-1.5 h-1.5 rounded-full bg-[#0891b2] animate-pulse" />
           <span className="text-[#0891b2] text-[10px] tracking-widest uppercase font-headline" style={{ fontWeight: 700 }}>
-            Founding pilot · only 5 pairs
+            Founding pilot · open now
           </span>
         </div>
 

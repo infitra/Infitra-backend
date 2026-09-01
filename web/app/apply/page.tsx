@@ -71,7 +71,7 @@ export default function ApplyPage() {
                   className="text-[#0891b2] text-[10px] tracking-widest uppercase font-headline"
                   style={{ fontWeight: 700 }}
                 >
-                  Pilot · first 5 pairs
+                  Pilot · founding group
                 </span>
               </div>
               <h1
