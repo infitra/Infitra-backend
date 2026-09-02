@@ -95,7 +95,7 @@ Ran the security advisor: **5 ERROR, 71 WARN.** Most are expected (our SECURITY 
 
 ## 8. The "100% safe" checklist (confirmed, prioritized)
 
-- ✅ **DB schema → git (DONE).** `db/schema.sql` committed — full `supabase db dump --linked` (15.7k lines, schema-only, no data/secrets). DB is now rebuildable from the repo. **Refresh after each migration:** `supabase db dump --linked -f /Users/yvesimhasly/supabase/db/schema.sql`.
+- ✅ **DB schema → git (DONE).** `db/schema.sql` committed — full `supabase db dump --linked` (15.7k lines, schema-only, no data/secrets). DB is now rebuildable from the repo. **Refresh after each migration:** `db/dump.sh` (refreshed 2 Sep 2026: 15.9k lines, 55 tables, 209 functions, 150 policies).
 - ✅ **Security hygiene migration (DONE)** — `20260605160000`: `app_profile_stats` SELECT locked down, `profile-images` de-listed, 4 collab functions `search_path`-pinned. (CLI `.temp/` also untracked + gitignored.)
 - 🔴 **Supabase → Pro + PITR before real payments** (you — tier is FREE: daily backup, no PITR).
 - 🔴 **Secrets → a password manager** (you — off-laptop copy of every env value; started with the DB password).

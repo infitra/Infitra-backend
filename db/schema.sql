@@ -20,6 +20,13 @@ CREATE EXTENSION IF NOT EXISTS "pg_cron" WITH SCHEMA "pg_catalog";
 
 
 
+CREATE EXTENSION IF NOT EXISTS "pg_net" WITH SCHEMA "extensions";
+
+
+
+
+
+
 COMMENT ON SCHEMA "public" IS 'standard public schema';
 
 
@@ -215,83 +222,391 @@ $$;
 ALTER FUNCTION "public"."accept_collab_invite"("p_invite_id" "uuid", "p_actor" "uuid") OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."admin_email_enqueue_receipt"("p_tx_id" "uuid") RETURNS bigint
+CREATE OR REPLACE FUNCTION "public"."admin_action_log"("p_limit" integer DEFAULT 100) RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
     AS $$
 declare
-  v_tx    record;
-  v_email text;
-  v_subj  text;
-  v_html  text;
-  v_text  text;
-  v_id    bigint;
+    v jsonb;
 begin
-  -- Load tx & buyer email/username
-  select t.*,
-         coalesce(ap.username, 'User') as buyer_username,
-         au.email                      as buyer_email
-  into v_tx
-  from public.app_transaction t
-  left join public.app_profile ap on ap.id = t.buyer_id
-  left join auth.users au on au.id = t.buyer_id
-  where t.id = p_tx_id;
-
-  if not found then
-    raise exception 'tx_not_found';
-  end if;
-
-  if v_tx.status <> 'succeeded' then
-    raise exception 'only_succeeded_supported';
-  end if;
-
-  v_email := nullif(v_tx.buyer_email, '');
-  if v_email is null then
-    raise exception 'buyer_has_no_email';
-  end if;
-
-  v_subj := format(
-    'Your receipt · %s %s',
-    v_tx.type::text,
-    case when v_tx.session_id is not null then 'session' else 'challenge' end
-  );
-
-  -- Use to_char for money formatting (no %.2f in PostgreSQL format)
-  v_text := format(
-'Hi %s,
-
-Thanks for your purchase.
-
-Amount: %s %s
-Item:   %s
-Date:   %s
-Tx Id:  %s
-
-— Team',
-    v_tx.buyer_username,
-    to_char((v_tx.amount_gross_cents)::numeric/100.0, 'FM999999990.00'),
-    v_tx.currency,
-    case
-      when v_tx.session_id   is not null then 'Session'
-      when v_tx.challenge_id is not null then 'Challenge'
-      else 'Purchase'
-    end,
-    to_char(v_tx.created_at at time zone 'UTC', 'YYYY-MM-DD HH24:MI:SS "UTC"'),
-    v_tx.id
-  );
-
-  v_html := replace(v_text, E'\n', '<br/>');
-
-  insert into public.app_email_outbox(kind, tx_id, to_email, subject, html_body, text_body)
-  values ('receipt', p_tx_id, v_email, v_subj, v_html, v_text)
-  returning id into v_id;
-
-  return v_id;
+    perform app_admin_assert();
+    select coalesce(jsonb_agg(row_to_json(r)::jsonb order by r.created_at desc), '[]'::jsonb) into v
+    from (
+        select l.id, l.action, l.target, l.detail, l.created_at, p.display_name as admin_name
+        from app_admin_action_log l
+        join app_profile p on p.id = l.admin_id
+        order by l.created_at desc
+        limit least(greatest(coalesce(p_limit, 100), 1), 500)
+    ) r;
+    return v;
 end;
 $$;
 
 
+ALTER FUNCTION "public"."admin_action_log"("p_limit" integer) OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."admin_anonymize_user"("p_user" "uuid", "p_reason" "text" DEFAULT NULL::"text") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+declare
+    v_admin uuid;
+    v_target app_profile%rowtype;
+    v_counts jsonb;
+    n_posts int; n_comments int; n_chat int; n_dm int; n_outbox int; n_reviews int;
+    n_storage int;
+begin
+    v_admin := app_admin_assert();
+
+    select * into v_target from app_profile where id = p_user;
+    if not found then raise exception 'profile not found'; end if;
+    if v_target.is_admin then raise exception 'refusing to anonymize an admin account'; end if;
+
+    -- 1) Profile scrub (row stays: financial FKs reference it).
+    --    Creators must remain visibility='public' (table CHECK) — the name
+    --    and every identifying field are scrubbed either way.
+    update app_profile set
+        display_name    = 'Former member',
+        full_name       = null,
+        username        = null,
+        avatar_url      = null,
+        cover_image_url = null,
+        bio             = null,
+        tagline         = null,
+        visibility      = case when role = 'creator' then 'public' else 'private' end,
+        profile_facts   = '{}'::jsonb
+    where id = p_user;
+
+    -- 2) Community content: keep structure, remove voice
+    update app_challenge_post   set body = '[removed]', media_url = null where author_id = p_user;
+    get diagnostics n_posts = row_count;
+    update app_creator_post     set body = '[removed]', media_url = null where author_id = p_user;
+    update app_challenge_comment set body = '[removed]' where author_id = p_user;
+    get diagnostics n_comments = row_count;
+    update app_creator_comment  set body = '[removed]' where author_id = p_user;
+    update app_chat_message     set body = '[removed]' where author_id = p_user;
+    get diagnostics n_chat = row_count;
+    update app_dm_message       set body = '[removed]', metadata = '{}'::jsonb,
+        deleted_at = coalesce(deleted_at, now()) where author_id = p_user;
+    get diagnostics n_dm = row_count;
+    update app_review           set comment = null where reviewer_id = p_user;
+    get diagnostics n_reviews = row_count;
+    update app_collab_review    set comment = null where reviewer_id = p_user;
+
+    -- 3) Unsent emails die; sent receipts stay (financial record)
+    delete from app_email_outbox where user_id = p_user and sent_at is null;
+    get diagnostics n_outbox = row_count;
+
+    -- 4) Storage: rows cannot be deleted via SQL (protect_objects_delete).
+    --    The scrub above unlinks every file; count the orphans for the log.
+    select count(*) into n_storage from storage.objects
+    where owner = p_user or owner_id = p_user::text;
+
+    -- 5) Lock the login: scramble identity, ban forever, kill sessions.
+    --    (Never DELETE auth.users: cascade would take app_profile with it.)
+    update auth.users set
+        email = 'deleted+' || left(p_user::text, 8) || '@anonymized.infitra.fit',
+        raw_user_meta_data = jsonb_build_object('anonymized_at', now()),
+        encrypted_password = null,
+        phone = null,
+        banned_until = '3000-01-01'::timestamptz
+    where id = p_user;
+    delete from auth.identities where user_id = p_user;
+    delete from auth.sessions where user_id = p_user;
+    delete from auth.refresh_tokens where user_id = p_user::text;
+
+    v_counts := jsonb_build_object(
+        'posts', n_posts, 'comments', n_comments, 'chat_messages', n_chat,
+        'dm_messages', n_dm, 'queued_emails_deleted', n_outbox, 'reviews_scrubbed', n_reviews,
+        'storage_objects_orphaned', n_storage,
+        'reason', p_reason
+    );
+
+    insert into app_admin_action_log (admin_id, action, target, detail)
+    values (v_admin, 'anonymize_user', p_user::text, v_counts);
+
+    return v_counts;
+end;
+$$;
+
+
+ALTER FUNCTION "public"."admin_anonymize_user"("p_user" "uuid", "p_reason" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."admin_applications"() RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+declare
+    v jsonb;
+begin
+    perform app_admin_assert();
+
+    select jsonb_build_object(
+        'applications', (
+            select coalesce(jsonb_agg(row_to_json(a)::jsonb order by a.created_at desc), '[]'::jsonb)
+            from (select * from app_pilot_application order by created_at desc limit 200) a
+        ),
+        'waitlist', (
+            select coalesce(jsonb_agg(jsonb_build_object(
+                'id', w.id, 'email', w.email, 'source', w.source, 'created_at', w.created_at
+            ) order by w.created_at desc), '[]'::jsonb)
+            from (select * from app_participant_waitlist order by created_at desc limit 200) w
+        )
+    ) into v;
+
+    return v;
+end;
+$$;
+
+
+ALTER FUNCTION "public"."admin_applications"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."admin_email_enqueue_receipt"("p_tx_id" "uuid") RETURNS bigint
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $_$
+declare
+  v_tx        record;
+  v_first     text;
+  v_title     text;
+  v_noun      text;
+  v_around    text;
+  v_fee_cents bigint;
+  v_price     text;
+  v_fee       text;
+  v_total     text;
+  v_date      text;
+  v_subj      text;
+  v_html      text;
+  v_text      text;
+  v_id        bigint;
+  h_first     text;
+  h_title     text;
+begin
+  -- Idempotent: one receipt per transaction, enforced by ux_email_outbox_kind_tx.
+  -- Both the trigger and the webhook's explicit RPC call this; whichever runs
+  -- second gets the existing row instead of a unique violation.
+  select id into v_id from public.app_email_outbox
+   where kind = 'receipt' and tx_id = p_tx_id;
+  if found then
+    return v_id;
+  end if;
+
+  select t.*,
+         ap.display_name, ap.full_name, ap.username,
+         au.email                     as buyer_email,
+         coalesce(ch.title, s.title)  as item_title
+    into v_tx
+    from public.app_transaction t
+    left join public.app_profile   ap on ap.id = t.buyer_id
+    left join auth.users           au on au.id = t.buyer_id
+    left join public.app_challenge ch on ch.id = t.challenge_id
+    left join public.app_session   s  on s.id  = t.session_id
+   where t.id = p_tx_id;
+
+  if not found then raise exception 'tx_not_found'; end if;
+  if v_tx.status <> 'succeeded' then raise exception 'only_succeeded_supported'; end if;
+  if nullif(v_tx.buyer_email, '') is null then raise exception 'buyer_has_no_email'; end if;
+
+  v_noun   := case when v_tx.session_id is not null then 'session' else 'experience' end;
+  v_around := case when v_tx.session_id is not null
+                   then 'the live room, your host and the tribe'
+                   else 'the live sessions, your tribe space and your experts' end;
+  v_title  := coalesce(v_tx.item_title, 'your purchase');
+
+  v_first := app_receipt_greeting(
+    v_tx.buyer_name, v_tx.display_name, v_tx.full_name, v_tx.username, v_tx.buyer_email);
+
+  v_fee_cents := coalesce(
+    nullif(v_tx.buyer_processing_fee_cents, 0),
+    ceil((v_tx.amount_gross_cents + 30)::numeric / 0.97)::bigint - v_tx.amount_gross_cents
+  );
+
+  v_price := v_tx.currency || ' ' || to_char(v_tx.amount_gross_cents::numeric / 100, 'FM999999990.00');
+  v_fee   := v_tx.currency || ' ' || to_char(v_fee_cents::numeric / 100, 'FM999999990.00');
+  v_total := v_tx.currency || ' ' || to_char((v_tx.amount_gross_cents + v_fee_cents)::numeric / 100, 'FM999999990.00');
+  v_date  := to_char(v_tx.created_at at time zone 'Europe/Zurich', 'FMDD FMMonth YYYY');
+
+  v_subj  := 'Your receipt · ' || v_title;
+  h_first := replace(replace(replace(v_first, '&', '&amp;'), '<', '&lt;'), '>', '&gt;');
+  h_title := replace(replace(replace(v_title, '&', '&amp;'), '<', '&lt;'), '>', '&gt;');
+
+  v_html := $html$<div style="background:#F2EFE8;padding:32px 12px;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
+    <table role="presentation" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#FFFFFF;border-radius:14px;">
+      <tr><td style="padding:36px 32px;font-family:Inter,-apple-system,'Segoe UI',Arial,sans-serif;color:#0F2229;">
+
+        <img src="https://www.infitra.fit/email-logo.png" width="150" alt="INFITRA" style="display:block;height:auto;border:0;margin-bottom:28px;">
+
+        <p style="margin:0 0 16px;font-size:15px;line-height:1.6;">Hi {FIRST},</p>
+        <p style="margin:0 0 24px;font-size:15px;line-height:1.6;">Your spot in <strong>{TITLE}</strong> is confirmed. This email is your receipt.</p>
+
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F7F4ED;border-radius:10px;">
+          <tr><td style="padding:20px 24px;font-family:Inter,-apple-system,'Segoe UI',Arial,sans-serif;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;color:#0F2229;">
+              <tr>
+                <td style="padding:3px 0;color:#475569;">{NOUNCAP} price</td>
+                <td style="padding:3px 0;text-align:right;font-weight:600;">{PRICE}</td>
+              </tr>
+              <tr>
+                <td style="padding:3px 0 12px;color:#475569;">Card processing</td>
+                <td style="padding:3px 0 12px;text-align:right;font-weight:600;">{FEE}</td>
+              </tr>
+              <tr>
+                <td style="padding:12px 0 0;border-top:1px solid #E5E0D5;font-weight:700;font-size:15px;">Total paid</td>
+                <td style="padding:12px 0 0;border-top:1px solid #E5E0D5;text-align:right;font-weight:700;font-size:15px;">{TOTAL}</td>
+              </tr>
+            </table>
+          </td></tr>
+        </table>
+
+        <p style="margin:12px 0 0;font-size:12px;line-height:1.6;color:#475569;">Paid on {DATE}<br>Reference {REF}</p>
+
+        <p style="margin:32px 0 8px;font-size:12px;letter-spacing:2px;text-transform:uppercase;font-weight:700;color:#0891b2;">What happens next</p>
+        <p style="margin:0 0 8px;font-size:15px;line-height:1.6;">Everything around your {NOUN} happens in one place on INFITRA: {AROUND}. Log in to see where things stand, add a photo and introduce yourself.</p>
+
+        <table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0 12px;">
+          <tr><td style="background:#FF6130;border-radius:10px;">
+            <a href="https://www.infitra.fit/login" style="display:inline-block;padding:13px 28px;font-family:Inter,-apple-system,'Segoe UI',Arial,sans-serif;font-weight:700;font-size:15px;color:#FFFFFF;text-decoration:none;">Log in to INFITRA</a>
+          </td></tr>
+        </table>
+
+        <p style="margin:16px 0 0;font-size:14px;line-height:1.6;color:#475569;">Questions? Just reply to this email.</p>
+
+      </td></tr>
+    </table>
+    <p style="margin:20px 0 0;font-family:Inter,-apple-system,'Segoe UI',Arial,sans-serif;font-size:12px;line-height:1.7;color:#475569;">INFITRA · Live experiences by complementary experts<br>Yves Oliver Imhasly · Flühstrasse 40 · 4114 Hofstetten SO · Switzerland<br>
+    <a href="https://www.infitra.fit" style="color:#0891b2;text-decoration:none;">www.infitra.fit</a> · <a href="https://www.infitra.fit/imprint" style="color:#0891b2;text-decoration:none;">Legal Notice</a></p>
+  </td></tr></table>
+</div>$html$;
+
+  v_html := replace(v_html, '{FIRST}',   h_first);
+  v_html := replace(v_html, '{TITLE}',   h_title);
+  v_html := replace(v_html, '{NOUNCAP}', initcap(v_noun));
+  v_html := replace(v_html, '{NOUN}',    v_noun);
+  v_html := replace(v_html, '{AROUND}',  v_around);
+  v_html := replace(v_html, '{PRICE}',   v_price);
+  v_html := replace(v_html, '{FEE}',     v_fee);
+  v_html := replace(v_html, '{TOTAL}',   v_total);
+  v_html := replace(v_html, '{DATE}',    v_date);
+  v_html := replace(v_html, '{REF}',     v_tx.id::text);
+
+  v_text := $txt$Hi {FIRST},
+
+Your spot in {TITLE} is confirmed. This email is your receipt.
+
+  {ROW1}
+  {ROW2}
+  {ROW3}
+
+  Paid on {DATE}
+  Reference {REF}
+
+What happens next
+Everything around your {NOUN} happens in one place on INFITRA:
+{AROUND}. Log in to see where things
+stand, add a photo and introduce yourself.
+
+Log in: https://www.infitra.fit/login
+
+Questions? Just reply to this email.
+
+INFITRA · Live experiences by complementary experts
+Yves Oliver Imhasly · Flühstrasse 40 · 4114 Hofstetten SO · Switzerland
+www.infitra.fit · Legal notice: www.infitra.fit/imprint$txt$;
+
+  v_text := replace(v_text, '{FIRST}',   v_first);
+  v_text := replace(v_text, '{TITLE}',   v_title);
+  v_text := replace(v_text, '{ROW1}',    rpad(initcap(v_noun) || ' price', 18) || v_price);
+  v_text := replace(v_text, '{ROW2}',    rpad('Card processing', 18) || v_fee);
+  v_text := replace(v_text, '{ROW3}',    rpad('Total paid', 18) || v_total);
+  v_text := replace(v_text, '{NOUN}',    v_noun);
+  v_text := replace(v_text, '{AROUND}',  v_around);
+  v_text := replace(v_text, '{DATE}',    v_date);
+  v_text := replace(v_text, '{REF}',     v_tx.id::text);
+
+  insert into public.app_email_outbox (kind, tx_id, to_email, subject, html_body, text_body)
+  values ('receipt', p_tx_id, v_tx.buyer_email, v_subj, v_html, v_text)
+  on conflict (kind, tx_id) do nothing
+  returning id into v_id;
+
+  -- Lost a race with a concurrent enqueue: hand back the winner's row.
+  if v_id is null then
+    select id into v_id from public.app_email_outbox
+     where kind = 'receipt' and tx_id = p_tx_id;
+  end if;
+
+  return v_id;
+end;
+$_$;
+
+
 ALTER FUNCTION "public"."admin_email_enqueue_receipt"("p_tx_id" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."admin_experiences"() RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+declare
+    v jsonb;
+begin
+    perform app_admin_assert();
+
+    select coalesce(jsonb_agg(row_to_json(x)::jsonb order by x.created_at desc), '[]'::jsonb) into v
+    from (
+        select
+            c.id, c.title, c.status::text, c.start_date, c.end_date, c.created_at,
+            op.display_name as owner_name,
+            (select count(*) from app_challenge_member m where m.challenge_id = c.id) as members,
+            coalesce((select sum(t.amount_gross_cents) from app_transaction t
+                where t.challenge_id = c.id and t.status = 'succeeded'), 0) as gross_cents,
+            (
+                select coalesce(jsonb_agg(jsonb_build_object(
+                    'id', s.id, 'title', s.title, 'start_time', s.start_time,
+                    'duration_minutes', s.duration_minutes, 'status', s.status::text,
+                    'has_room', s.live_room_id is not null,
+                    'started_at', s.started_at, 'ended_at', s.ended_at
+                ) order by s.start_time), '[]'::jsonb)
+                from app_session s
+                join app_challenge_session cs on cs.session_id = s.id
+                where cs.challenge_id = c.id
+            ) as sessions
+        from app_challenge c
+        join app_profile op on op.id = c.owner_id
+        where c.status <> 'draft'
+    ) x;
+
+    return v;
+end;
+$$;
+
+
+ALTER FUNCTION "public"."admin_experiences"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."admin_force_end_session"("p_session" "uuid") RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+declare
+    v_admin uuid;
+begin
+    v_admin := app_admin_assert();
+    update app_session
+       set ended_at = now(), status = 'ended'
+     where id = p_session and ended_at is null;
+    if not found then raise exception 'session not found or already ended'; end if;
+    insert into app_admin_action_log (admin_id, action, target)
+    values (v_admin, 'force_end_session', p_session::text);
+end;
+$$;
+
+
+ALTER FUNCTION "public"."admin_force_end_session"("p_session" "uuid") OWNER TO "postgres";
 
 SET default_tablespace = '';
 
@@ -341,6 +656,7 @@ CREATE TABLE IF NOT EXISTS "public"."app_transaction" (
     "amount_after_stripe_cents" bigint NOT NULL,
     "currency" "text" NOT NULL,
     "platform_fee_percent" numeric(5,2),
+    "buyer_name" "text",
     CONSTRAINT "app_transaction_currency_check" CHECK (("currency" ~ '^[A-Z]{3}$'::"text")),
     CONSTRAINT "app_transaction_quantity_check" CHECK (("quantity" >= 1))
 );
@@ -370,6 +686,10 @@ COMMENT ON COLUMN "public"."app_transaction"."creator_cut_cents" IS 'Creators 80
 
 
 COMMENT ON COLUMN "public"."app_transaction"."amount_after_stripe_cents" IS 'Gross minus Stripe fees (for reporting). NOT what creators split.';
+
+
+
+COMMENT ON COLUMN "public"."app_transaction"."buyer_name" IS 'Cardholder name from Stripe checkout.session.completed customer_details.name. Written by stripe_webhook. Used for receipt greetings, because the profile holds only an email-derived handle at receipt time.';
 
 
 
@@ -559,6 +879,343 @@ $$;
 ALTER FUNCTION "public"."admin_health_tx"() OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."admin_money"() RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+declare
+    v jsonb;
+begin
+    perform app_admin_assert();
+
+    select jsonb_build_object(
+        'totals', (
+            select jsonb_build_object(
+                'gross_all',      coalesce(sum(amount_gross_cents) filter (where status = 'succeeded'), 0),
+                'gross_30d',      coalesce(sum(amount_gross_cents) filter (where status = 'succeeded' and created_at > now() - interval '30 days'), 0),
+                'gross_7d',       coalesce(sum(amount_gross_cents) filter (where status = 'succeeded' and created_at > now() - interval '7 days'), 0),
+                'platform_cut_all', coalesce(sum(platform_cut_cents) filter (where status = 'succeeded'), 0),
+                'creator_cut_all',  coalesce(sum(creator_cut_cents) filter (where status = 'succeeded'), 0),
+                'refunded_all',   coalesce(sum(amount_gross_cents) filter (where status = 'refunded'), 0),
+                'refunded_count', count(*) filter (where status = 'refunded'),
+                'succeeded_count', count(*) filter (where status = 'succeeded')
+            )
+            from app_transaction
+        ),
+        'recent', (
+            select coalesce(jsonb_agg(row_to_json(r)::jsonb order by r.created_at desc), '[]'::jsonb)
+            from (
+                select
+                    t.id, t.created_at, t.status::text, t.amount_gross_cents,
+                    t.platform_cut_cents, t.creator_cut_cents, t.currency,
+                    t.provider_payment_id,
+                    coalesce(t.buyer_name, p.display_name) as buyer_name,
+                    u.email as buyer_email,
+                    coalesce(c.title, s.title) as target_title,
+                    case when t.challenge_id is not null then 'experience' else 'session' end as target_kind,
+                    case
+                        when t.status <> 'succeeded' then null
+                        when t.session_id is not null then exists (
+                            select 1 from app_attendance a where a.session_id = t.session_id and a.user_id = t.buyer_id)
+                        when t.challenge_id is not null then exists (
+                            select 1 from app_challenge_member m where m.challenge_id = t.challenge_id and m.user_id = t.buyer_id)
+                        else null
+                    end as entitled,
+                    exists (select 1 from app_email_outbox o where o.tx_id = t.id and o.kind = 'receipt' and o.sent_at is not null) as receipt_sent
+                from app_transaction t
+                left join app_profile p on p.id = t.buyer_id
+                left join auth.users u on u.id = t.buyer_id
+                left join app_challenge c on c.id = t.challenge_id
+                left join app_session s on s.id = t.session_id
+                order by t.created_at desc
+                limit 100
+            ) r
+        )
+    ) into v;
+
+    return v;
+end;
+$$;
+
+
+ALTER FUNCTION "public"."admin_money"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."admin_payouts"() RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+declare
+    v jsonb;
+begin
+    perform app_admin_assert();
+
+    select jsonb_build_object(
+        'experiences', (
+            select coalesce(jsonb_agg(row_to_json(x)::jsonb order by x.end_date desc nulls last), '[]'::jsonb)
+            from (
+                select
+                    c.id, c.title, c.status::text, c.start_date, c.end_date,
+                    (select count(*) from app_challenge_member m where m.challenge_id = c.id) as members,
+                    coalesce((select sum(t.amount_gross_cents) from app_transaction t
+                        where t.challenge_id = c.id and t.status = 'succeeded'), 0) as gross_cents,
+                    coalesce((select sum(t.creator_cut_cents) from app_transaction t
+                        where t.challenge_id = c.id and t.status = 'succeeded'), 0) as creator_cut_cents,
+                    coalesce((select sum(t.platform_cut_cents) from app_transaction t
+                        where t.challenge_id = c.id and t.status = 'succeeded'), 0) as platform_cut_cents,
+                    (select count(*) from app_transaction t
+                        where t.challenge_id = c.id and t.status = 'refunded') as refunded_count,
+                    op.display_name as owner_name,
+                    (100 - coalesce((select sum(ch.split_percent) from app_challenge_cohost ch
+                        where ch.challenge_id = c.id), 0)) as owner_percent,
+                    (
+                        select coalesce(jsonb_agg(jsonb_build_object(
+                            'name', cp.display_name, 'percent', ch.split_percent)), '[]'::jsonb)
+                        from app_challenge_cohost ch
+                        join app_profile cp on cp.id = ch.cohost_id
+                        where ch.challenge_id = c.id
+                    ) as cohosts
+                from app_challenge c
+                join app_profile op on op.id = c.owner_id
+                where exists (select 1 from app_transaction t where t.challenge_id = c.id)
+            ) x
+        ),
+        'payout_history', (
+            select coalesce(jsonb_agg(jsonb_build_object(
+                'id', po.id, 'creator', pp.display_name, 'amount', po.amount,
+                'currency', po.currency, 'note', po.note, 'created_at', po.created_at
+            ) order by po.created_at desc), '[]'::jsonb)
+            from app_payout po
+            join app_profile pp on pp.id = po.creator_id
+        )
+    ) into v;
+
+    return v;
+end;
+$$;
+
+
+ALTER FUNCTION "public"."admin_payouts"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."admin_people"("p_query" "text" DEFAULT NULL::"text", "p_limit" integer DEFAULT 200) RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+declare
+    v jsonb;
+begin
+    perform app_admin_assert();
+
+    select coalesce(jsonb_agg(row_to_json(r)::jsonb order by r.created_at desc), '[]'::jsonb) into v
+    from (
+        select
+            p.id, p.display_name, p.username, p.role, p.is_admin, p.visibility,
+            p.created_at, p.is_founding_expert,
+            u.email,
+            u.banned_until,
+            u.raw_user_meta_data ->> 'terms_version' as terms_version,
+            u.raw_user_meta_data ->> 'terms_accepted_at' as terms_accepted_at,
+            u.raw_user_meta_data ->> 'health_consent_at' as health_consent_at,
+            (select count(*) from app_transaction t where t.buyer_id = p.id and t.status = 'succeeded') as purchases,
+            (select count(*) from app_challenge_member m where m.user_id = p.id) as memberships
+        from app_profile p
+        left join auth.users u on u.id = p.id
+        where p_query is null or p_query = ''
+           or p.display_name ilike '%' || p_query || '%'
+           or p.username ilike '%' || p_query || '%'
+           or u.email ilike '%' || p_query || '%'
+        order by p.created_at desc
+        limit least(greatest(coalesce(p_limit, 200), 1), 500)
+    ) r;
+
+    return v;
+end;
+$$;
+
+
+ALTER FUNCTION "public"."admin_people"("p_query" "text", "p_limit" integer) OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."admin_pulse"() RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $_$
+declare
+    v jsonb;
+    v_receipt_era timestamptz;
+    v_cron jsonb;
+begin
+    perform app_admin_assert();
+
+    select coalesce(min(enqueued_at), now()) into v_receipt_era
+    from app_email_outbox where kind = 'receipt';
+
+    select coalesce(jsonb_agg(jsonb_build_object(
+        'job', c.jobname,
+        'schedule', c.schedule,
+        'active', c.active,
+        'last_status', c.status,
+        'last_run_at', c.end_time,
+        'minutes_since_run', c.mins,
+        'expected_every_minutes', c.period,
+        'is_stale', c.active and (c.mins is null or c.mins > c.period * 2 + 10)
+    ) order by c.jobname), '[]'::jsonb) into v_cron
+    from (
+        select
+            j.jobname, j.schedule, j.active, d.status, d.end_time,
+            case when d.end_time is null then null
+                 else (extract(epoch from (now() - d.end_time)) / 60)::int end as mins,
+            case
+                when j.schedule = '* * * * *' then 1
+                when j.schedule ~ '^\*/[0-9]+ \* \* \* \*$' then substring(j.schedule from '^\*/([0-9]+)')::int
+                when j.schedule ~ '^[0-9]+ \* \* \* \*$' then 60
+                when j.schedule ~ '^[0-9]+ [0-9]+ \* \* \*$' then 1440
+                else 1440
+            end as period
+        from cron.job j
+        left join lateral (
+            select status, end_time from cron.job_run_details
+            where jobid = j.jobid order by start_time desc limit 1
+        ) d on true
+    ) c;
+
+    select jsonb_build_object(
+        'checks', (
+            select jsonb_agg(jsonb_build_object(
+                'key', c.key, 'domain', c.domain, 'label', c.label,
+                'count', c.cnt, 'ok', c.cnt = 0, 'hint', c.hint
+            ) order by c.domain, c.key)
+            from (values
+                ('paid_no_entitlement', 'money', 'Paid but no entitlement',
+                    (select count(*) from app_transaction t
+                     where t.status = 'succeeded' and (
+                       (t.session_id is not null and not exists (select 1 from app_attendance a where a.session_id = t.session_id and a.user_id = t.buyer_id))
+                       or
+                       (t.challenge_id is not null and not exists (select 1 from app_challenge_member m where m.challenge_id = t.challenge_id and m.user_id = t.buyer_id)))),
+                    'Webhook succeeded but the buyer got nothing. Repair: Money tab, Re-grant.'),
+                ('receipts_missing', 'money', 'Receipt not enqueued',
+                    (select count(*) from app_transaction t
+                     where t.status = 'succeeded' and t.created_at > v_receipt_era
+                       and not exists (select 1 from app_email_outbox o where o.tx_id = t.id and o.kind = 'receipt')),
+                    'Receipt is the statutory order confirmation. Repair: Money tab, Re-send.'),
+                ('webhook_stuck', 'money', 'Webhook arrived, processing died',
+                    (select count(*) from webhook_event_lock
+                     where processed_at is null and created_at < now() - interval '10 minutes'),
+                    'Idempotency lock taken, never released: the handler crashed midway.'),
+                ('tx_pending_stuck', 'money', 'Payment pending > 1h',
+                    (select count(*) from app_transaction where status = 'pending' and created_at < now() - interval '1 hour'),
+                    'Checkout started, never resolved by a webhook.'),
+                ('tx_disputed', 'money', 'Disputed payments',
+                    (select count(*) from app_transaction where status = 'disputed'),
+                    'A chargeback is running. React within Stripe''s deadline.'),
+                ('split_math', 'money', 'Split math broken',
+                    (select count(*) from app_transaction where status = 'succeeded'
+                       and platform_cut_cents + creator_cut_cents <> amount_gross_cents),
+                    'platform + creator must equal gross on every sale (SR-I6).'),
+                ('refunded_still_member', 'money', 'Refunded but still member',
+                    (select count(*) from app_transaction t
+                     where t.status = 'refunded' and t.challenge_id is not null
+                       and exists (select 1 from app_challenge_member m where m.challenge_id = t.challenge_id and m.user_id = t.buyer_id)),
+                    'Money went back but access remained.'),
+                ('splits_over_100', 'money', 'Cohost splits over 100%',
+                    (select count(*) from (select challenge_id from app_challenge_cohost group by challenge_id having sum(split_percent) > 100) x),
+                    'Should be impossible (SR-I4 trigger). Red here = the trigger broke.'),
+                ('member_no_purchase', 'money', 'Membership without payment',
+                    (select count(*) from app_challenge_member m
+                     join app_challenge c2 on c2.id = m.challenge_id
+                     where m.user_id <> c2.owner_id
+                       and not exists (select 1 from app_challenge_cohost ch where ch.challenge_id = m.challenge_id and ch.cohost_id = m.user_id)
+                       and not exists (select 1 from app_transaction t where t.challenge_id = m.challenge_id and t.buyer_id = m.user_id and t.status = 'succeeded')),
+                    'Someone is inside who never paid and is not on the expert team.'),
+                ('overdue_unswept', 'live', 'Overdue session not swept',
+                    (select count(*) from app_session
+                     where status in ('published','scheduled') and ended_at is null
+                       and start_time + (coalesce(duration_minutes,60) || ' minutes')::interval + interval '75 minutes' < now()),
+                    'sweep-overdue-sessions should have ended this long ago.'),
+                ('imminent_no_room', 'live', 'Session imminent, no room',
+                    (select count(*) from app_session
+                     where status in ('published','scheduled') and ended_at is null and live_room_id is null
+                       and start_time between now() and now() + interval '10 minutes'),
+                    'precreate-rooms (15min lead) has not delivered. People are about to hit a wall.'),
+                ('experience_uncompleted', 'live', 'Ended experience not completed',
+                    (select count(*) from app_challenge
+                     where status = 'published' and end_date < current_date - 1),
+                    'complete-ended-experiences should have closed this.'),
+                ('outbox_failing', 'comms', 'Emails failing (3+ attempts)',
+                    (select count(*) from app_email_outbox where sent_at is null and attempt_count >= 3),
+                    'The drain is retrying and losing. Details below.'),
+                ('outbox_stalled', 'comms', 'Outbox stalled > 10min',
+                    (select count(*) from app_email_outbox
+                     where sent_at is null and enqueued_at < now() - interval '10 minutes'),
+                    'Drain runs every minute; anything this old means it is not draining.'),
+                ('cron_stale', 'jobs', 'Cron job silent',
+                    (select count(*) from jsonb_array_elements(v_cron) c where (c ->> 'is_stale')::bool),
+                    'A job missed its own schedule by 2x + 10min.'),
+                ('cron_failed', 'jobs', 'Cron job errored',
+                    (select count(*) from jsonb_array_elements(v_cron) c
+                     where (c ->> 'active')::bool and c ->> 'last_status' is not null and c ->> 'last_status' <> 'succeeded'),
+                    'The latest run of an active job did not succeed.'),
+                ('auth_no_profile', 'accounts', 'Auth user without profile',
+                    (select count(*) from auth.users u
+                     where not exists (select 1 from app_profile p where p.id = u.id)
+                       and u.created_at < now() - interval '5 minutes'),
+                    'Signup trigger failed: the person can log in but has no account.'),
+                ('consent_missing', 'accounts', 'Signup without consent stamp',
+                    (select count(*) from app_profile p join auth.users u on u.id = p.id
+                     where p.created_at > '2026-08-15' and (u.raw_user_meta_data ->> 'terms_version') is null
+                       and u.email not like 'deleted+%'),
+                    'Every signup since the consent machinery must carry terms_version.')
+            ) as c(key, domain, label, cnt, hint)
+        ),
+        'outbox_failed_rows', (
+            select coalesce(jsonb_agg(jsonb_build_object(
+                'id', o.id, 'kind', o.kind, 'to_email', o.to_email,
+                'attempts', o.attempt_count, 'last_error', left(coalesce(o.last_error,''), 300),
+                'enqueued_at', o.enqueued_at
+            ) order by o.enqueued_at), '[]'::jsonb)
+            from (
+                select * from app_email_outbox
+                where sent_at is null and attempt_count >= 3
+                order by enqueued_at limit 20
+            ) o
+        ),
+        'receipts_missing_historical', (
+            select count(*) from app_transaction t
+            where t.status = 'succeeded' and t.created_at <= v_receipt_era
+              and not exists (select 1 from app_email_outbox o where o.tx_id = t.id and o.kind = 'receipt')
+        ),
+        'receipt_era_started', v_receipt_era,
+        'cron', v_cron,
+        'edge_calls_24h', (
+            select coalesce(jsonb_agg(jsonb_build_object('fn', fn, 'calls', calls) order by calls desc), '[]'::jsonb)
+            from (
+                select fn, count(*) as calls from app_edge_call_log
+                where created_at > now() - interval '24 hours'
+                group by fn
+            ) e
+        ),
+        'counts', jsonb_build_object(
+            'participants',   (select count(*) from app_profile where role = 'participant'),
+            'experts',        (select count(*) from app_profile where role = 'creator'),
+            'experiences_published', (select count(*) from app_challenge where status = 'published'),
+            'sessions_upcoming_7d', (
+                select count(*) from app_session
+                where status in ('published','scheduled') and ended_at is null
+                  and start_time between now() and now() + interval '7 days'),
+            'live_now', (select count(*) from app_session where started_at is not null and ended_at is null),
+            'signups_7d', (select count(*) from app_profile where created_at > now() - interval '7 days')
+        )
+    ) into v;
+
+    return v;
+end;
+$_$;
+
+
+ALTER FUNCTION "public"."admin_pulse"() OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."admin_regrant_entitlements_for"("p_buyer_id" "uuid", "p_session_id" "uuid" DEFAULT NULL::"uuid", "p_challenge_id" "uuid" DEFAULT NULL::"uuid") RETURNS TABLE("session_id" "uuid", "user_id" "uuid", "status" "text")
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -710,48 +1367,960 @@ $$;
 ALTER FUNCTION "public"."admin_regrant_entitlements_tx"("p_tx_id" "uuid") OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."admin_regrant_tx"("p_tx" "uuid") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+declare
+    v_admin uuid;
+    v_result jsonb;
+begin
+    v_admin := app_admin_assert();
+    select coalesce(jsonb_agg(row_to_json(r)::jsonb), '[]'::jsonb) into v_result
+    from admin_regrant_entitlements_tx(p_tx) r;
+    insert into app_admin_action_log (admin_id, action, target, detail)
+    values (v_admin, 'regrant_entitlements', p_tx::text, v_result);
+    return v_result;
+end;
+$$;
+
+
+ALTER FUNCTION "public"."admin_regrant_tx"("p_tx" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."admin_resend_receipt"("p_tx" "uuid") RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+declare
+    v_admin uuid;
+begin
+    v_admin := app_admin_assert();
+    perform admin_email_enqueue_receipt(p_tx);
+    insert into app_admin_action_log (admin_id, action, target)
+    values (v_admin, 'resend_receipt', p_tx::text);
+end;
+$$;
+
+
+ALTER FUNCTION "public"."admin_resend_receipt"("p_tx" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."admin_set_application_status"("p_id" "uuid", "p_status" "text") RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+declare
+    v_admin uuid;
+begin
+    v_admin := app_admin_assert();
+    -- Must match app_pilot_application_status_check exactly.
+    if p_status not in ('new', 'contacted', 'accepted', 'declined') then
+        raise exception 'invalid status %', p_status;
+    end if;
+    update app_pilot_application set status = p_status where id = p_id;
+    if not found then raise exception 'application not found'; end if;
+    insert into app_admin_action_log (admin_id, action, target, detail)
+    values (v_admin, 'set_application_status', p_id::text, jsonb_build_object('status', p_status));
+end;
+$$;
+
+
+ALTER FUNCTION "public"."admin_set_application_status"("p_id" "uuid", "p_status" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."app_admin_assert"() RETURNS "uuid"
+    LANGUAGE "plpgsql" STABLE
+    SET "search_path" TO 'public'
+    AS $$
+declare
+    v_uid uuid := auth.uid();
+begin
+    if v_uid is null or not is_admin(v_uid) then
+        raise exception 'not_admin' using errcode = '42501';
+    end if;
+    return v_uid;
+end;
+$$;
+
+
+ALTER FUNCTION "public"."app_admin_assert"() OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."app_email_outbox" (
+    "id" bigint NOT NULL,
+    "kind" "text" NOT NULL,
+    "tx_id" "uuid",
+    "to_email" "text" NOT NULL,
+    "subject" "text" NOT NULL,
+    "html_body" "text" NOT NULL,
+    "text_body" "text" NOT NULL,
+    "attempt_count" integer DEFAULT 0 NOT NULL,
+    "last_error" "text",
+    "enqueued_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "sent_at" timestamp with time zone,
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "user_id" "uuid",
+    "target_id" "uuid",
+    CONSTRAINT "app_email_outbox_kind_check" CHECK (("kind" = ANY (ARRAY['receipt'::"text", 'session_reminder'::"text", 'session_reschedule'::"text", 'welcome'::"text", 'pilot_application_founder'::"text", 'pilot_application_confirm'::"text"])))
+);
+
+
+ALTER TABLE "public"."app_email_outbox" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."app_email_outbox" IS 'Append-only outbox for transactional emails (receipts, etc). service_role inserts; sender marks sent_at.';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."app_claim_email"("p_kind" "text") RETURNS SETOF "public"."app_email_outbox"
+    LANGUAGE "sql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+  update app_email_outbox
+     set attempt_count = attempt_count + 1
+   where id = (
+     select id
+       from app_email_outbox
+      where kind = coalesce(p_kind, kind)
+        and sent_at is null
+        and attempt_count < 5
+      order by enqueued_at
+        for update skip locked
+      limit 1
+   )
+  returning *;
+$$;
+
+
+ALTER FUNCTION "public"."app_claim_email"("p_kind" "text") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."app_claim_email"("p_kind" "text") IS 'Claims one pending app_email_outbox row (of the given kind, or any kind when null), bumping attempt_count. Race-safe via FOR UPDATE SKIP LOCKED. Skips rows past 5 attempts; zero rows when nothing claimable. service_role only.';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."app_enqueue_pilot_application_emails"("p_application_id" "uuid") RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+declare
+  a           record;
+  v_first     text;
+  v_audience  text;
+  v_rows_html text := '';
+  v_rows_text text := '';
+  v_html      text;
+  v_text      text;
+begin
+  select * into a from app_pilot_application where id = p_application_id;
+  if not found then
+    return;
+  end if;
+
+  v_audience := case a.audience_size_range
+    when 'under_500'  then 'Under 500'
+    when '500_to_2k'  then '500 to 2,000'
+    when '2k_to_10k'  then '2,000 to 10,000'
+    when '10k_to_50k' then '10,000 to 50,000'
+    when 'over_50k'   then 'Over 50,000'
+    else a.audience_size_range
+  end;
+
+  -- ── Founder notification ────────────────────────────────────────────
+  -- Label/value rows, built only for fields the applicant filled.
+  v_rows_html :=
+       '<tr><td style="padding:6px 16px 6px 0;color:#475569;font-size:13px;white-space:nowrap;vertical-align:top;">Name</td>'
+    || '<td style="padding:6px 0;font-size:14px;color:#0F2229;">' || app_html_escape(a.name) || '</td></tr>'
+    || '<tr><td style="padding:6px 16px 6px 0;color:#475569;font-size:13px;vertical-align:top;">Email</td>'
+    || '<td style="padding:6px 0;font-size:14px;"><a href="mailto:' || app_html_escape(a.email) || '" style="color:#0891b2;text-decoration:none;">' || app_html_escape(a.email) || '</a></td></tr>'
+    || '<tr><td style="padding:6px 16px 6px 0;color:#475569;font-size:13px;vertical-align:top;">Expertise</td>'
+    || '<td style="padding:6px 0;font-size:14px;color:#0F2229;">' || app_html_escape(a.expertise) || '</td></tr>';
+
+  v_rows_text := 'Name:      ' || a.name || E'\n'
+              || 'Email:     ' || a.email || E'\n'
+              || 'Expertise: ' || a.expertise || E'\n';
+
+  if a.channel_url is not null then
+    v_rows_html := v_rows_html
+      || '<tr><td style="padding:6px 16px 6px 0;color:#475569;font-size:13px;vertical-align:top;">Channel</td>'
+      || '<td style="padding:6px 0;font-size:14px;">'
+      || case when a.channel_url ~* '^https?://'
+              then '<a href="' || app_html_escape(a.channel_url) || '" style="color:#0891b2;text-decoration:none;">' || app_html_escape(a.channel_url) || '</a>'
+              else '<span style="color:#0F2229;">' || app_html_escape(a.channel_url) || '</span>'
+         end
+      || '</td></tr>';
+    v_rows_text := v_rows_text || 'Channel:   ' || a.channel_url || E'\n';
+  end if;
+
+  if v_audience is not null then
+    v_rows_html := v_rows_html
+      || '<tr><td style="padding:6px 16px 6px 0;color:#475569;font-size:13px;vertical-align:top;">Audience</td>'
+      || '<td style="padding:6px 0;font-size:14px;color:#0F2229;">' || app_html_escape(v_audience) || '</td></tr>';
+    v_rows_text := v_rows_text || 'Audience:  ' || v_audience || E'\n';
+  end if;
+
+  if a.location is not null then
+    v_rows_html := v_rows_html
+      || '<tr><td style="padding:6px 16px 6px 0;color:#475569;font-size:13px;vertical-align:top;">Location</td>'
+      || '<td style="padding:6px 0;font-size:14px;color:#0F2229;">' || app_html_escape(a.location) || '</td></tr>';
+    v_rows_text := v_rows_text || 'Location:  ' || a.location || E'\n';
+  end if;
+
+  v_rows_html := v_rows_html
+    || '<tr><td style="padding:6px 16px 6px 0;color:#475569;font-size:13px;vertical-align:top;">Partner</td>'
+    || '<td style="padding:6px 0;font-size:14px;color:#0F2229;">'
+    || case when a.has_partner
+            then 'Has someone in mind' || case when a.partner_info is not null then ': ' || app_html_escape(a.partner_info) else '' end
+            else 'Looking for a complement' || case when a.complement_interest is not null then ': ' || app_html_escape(a.complement_interest) else '' end
+       end
+    || '</td></tr>';
+  v_rows_text := v_rows_text
+    || 'Partner:   '
+    || case when a.has_partner
+            then 'has someone in mind' || coalesce(': ' || a.partner_info, '')
+            else 'looking for a complement' || coalesce(': ' || a.complement_interest, '')
+       end || E'\n';
+
+  if a.success_description is not null then
+    v_rows_html := v_rows_html
+      || '<tr><td style="padding:6px 16px 6px 0;color:#475569;font-size:13px;vertical-align:top;">Success</td>'
+      || '<td style="padding:6px 0;font-size:14px;color:#0F2229;">' || app_html_escape(a.success_description) || '</td></tr>';
+    v_rows_text := v_rows_text || 'Success:   ' || a.success_description || E'\n';
+  end if;
+
+  v_html := '<div style="background:#F2EFE8;padding:32px 12px;">'
+    || '<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">'
+    || '<table role="presentation" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#FFFFFF;border-radius:14px;">'
+    || '<tr><td style="padding:36px 32px;font-family:Inter,-apple-system,''Segoe UI'',Arial,sans-serif;color:#0F2229;">'
+    || '<img src="https://www.infitra.fit/email-logo.png" width="150" alt="INFITRA" style="display:block;height:auto;border:0;margin-bottom:28px;">'
+    || '<p style="margin:0 0 20px;font-size:16px;font-weight:700;">New pilot application</p>'
+    || '<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;">' || v_rows_html || '</table>'
+    || '</td></tr></table></td></tr></table></div>';
+
+  v_text := 'New pilot application' || E'\n\n' || v_rows_text;
+
+  insert into public.app_email_outbox (kind, to_email, subject, html_body, text_body, target_id)
+  values ('pilot_application_founder', 'yves@infitra.fit',
+          'Pilot application: ' || a.name, v_html, v_text, a.id);
+
+  -- ── Applicant confirmation ──────────────────────────────────────────
+  if nullif(a.email, '') is null then
+    return;
+  end if;
+
+  v_first := coalesce(nullif(split_part(a.name, ' ', 1), ''), a.name);
+
+  v_html := '<div style="background:#F2EFE8;padding:32px 12px;">'
+    || '<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">'
+    || '<table role="presentation" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#FFFFFF;border-radius:14px;">'
+    || '<tr><td style="padding:36px 32px;font-family:Inter,-apple-system,''Segoe UI'',Arial,sans-serif;color:#0F2229;">'
+    || '<img src="https://www.infitra.fit/email-logo.png" width="150" alt="INFITRA" style="display:block;height:auto;border:0;margin-bottom:28px;">'
+    || '<p style="margin:0 0 16px;font-size:15px;line-height:1.7;">Hi ' || app_html_escape(v_first) || ',</p>'
+    || '<p style="margin:0 0 16px;font-size:15px;line-height:1.7;">Your application for the founding pilot has arrived. Thank you for taking the time.</p>'
+    || '<p style="margin:0 0 16px;font-size:15px;line-height:1.7;">I read every application myself and reply personally, usually within a few days.</p>'
+    || '<p style="margin:0 0 16px;font-size:15px;line-height:1.7;">In the meantime, the pilot terms are public: <a href="https://www.infitra.fit/pilot-terms" style="color:#0891b2;text-decoration:none;">www.infitra.fit/pilot-terms</a>. And if anything comes to mind, just reply to this email.</p>'
+    || '<p style="margin:24px 0 0;font-size:15px;line-height:1.6;">Speak soon,</p>'
+    || '<p style="margin:12px 0 0;font-size:15px;line-height:1.6;">Yves<br>'
+    || '<span style="color:#475569;font-size:13px;">Founder, INFITRA</span></p>'
+    || '</td></tr></table>'
+    || '<p style="margin:20px 0 0;font-family:Inter,-apple-system,''Segoe UI'',Arial,sans-serif;font-size:12px;line-height:1.7;color:#475569;">INFITRA · Live experiences by complementary experts<br>Yves Oliver Imhasly · Flühstrasse 40 · 4114 Hofstetten SO · Switzerland<br>'
+    || '<a href="https://www.infitra.fit" style="color:#0891b2;text-decoration:none;">www.infitra.fit</a> · <a href="https://www.infitra.fit/imprint" style="color:#0891b2;text-decoration:none;">Legal Notice</a></p>'
+    || '</td></tr></table></div>';
+
+  v_text := 'Hi ' || v_first || ',' || E'\n\n'
+    || 'Your application for the founding pilot has arrived. Thank you' || E'\n'
+    || 'for taking the time.' || E'\n\n'
+    || 'I read every application myself and reply personally, usually' || E'\n'
+    || 'within a few days.' || E'\n\n'
+    || 'In the meantime, the pilot terms are public:' || E'\n'
+    || 'https://www.infitra.fit/pilot-terms' || E'\n'
+    || 'And if anything comes to mind, just reply to this email.' || E'\n\n'
+    || 'Speak soon,' || E'\n\n'
+    || 'Yves' || E'\n'
+    || 'Founder, INFITRA' || E'\n\n'
+    || 'INFITRA · Live experiences by complementary experts' || E'\n'
+    || 'Yves Oliver Imhasly · Flühstrasse 40 · 4114 Hofstetten SO · Switzerland' || E'\n'
+    || 'www.infitra.fit · Legal notice: www.infitra.fit/imprint';
+
+  insert into public.app_email_outbox (kind, to_email, subject, html_body, text_body, target_id)
+  values ('pilot_application_confirm', a.email,
+          'Your INFITRA pilot application', v_html, v_text, a.id);
+end;
+$$;
+
+
+ALTER FUNCTION "public"."app_enqueue_pilot_application_emails"("p_application_id" "uuid") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."app_enqueue_pilot_application_emails"("p_application_id" "uuid") IS 'Enqueues the founder notification + applicant confirmation for one pilot application. Trigger/service_role only; content rides the outbox drain.';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."app_enqueue_session_reminders"() RETURNS integer
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $_$
+declare
+  r         record;
+  v_first   text;
+  v_part_of text;
+  v_url     text;
+  v_subj    text;
+  v_html    text;
+  v_text    text;
+  h_first   text;
+  h_title   text;
+  h_exp     text;
+  v_count   integer := 0;
+begin
+  for r in
+    select s.id          as session_id,
+           s.title       as session_title,
+           cs.challenge_id,
+           ch.title      as experience_title,
+           a.user_id,
+           au.email      as to_email,
+           ap.display_name, ap.full_name, ap.username
+      from app_session s
+      join app_attendance a          on a.session_id = s.id
+      join auth.users au             on au.id = a.user_id
+      left join app_profile ap       on ap.id = a.user_id
+      left join app_challenge_session cs on cs.session_id = s.id
+      left join app_challenge ch     on ch.id = cs.challenge_id
+     where s.status in ('published', 'scheduled')
+       and s.started_at is null
+       and s.start_time >  now()
+       and s.start_time <= now() + interval '60 minutes'
+       and nullif(au.email, '') is not null
+       and not exists (
+         select 1 from app_email_outbox o
+          where o.kind = 'session_reminder'
+            and o.user_id = a.user_id
+            and o.target_id = s.id
+       )
+  loop
+    v_first := app_receipt_greeting(
+      null, r.display_name, r.full_name, r.username, r.to_email);
+
+    v_url := case when r.challenge_id is not null
+                  then 'https://www.infitra.fit/experiences/' || r.challenge_id || '/space'
+                  else 'https://www.infitra.fit/me' end;
+
+    h_first := replace(replace(replace(v_first, '&','&amp;'), '<','&lt;'), '>','&gt;');
+    h_title := replace(replace(replace(coalesce(r.session_title,'Your live session'), '&','&amp;'), '<','&lt;'), '>','&gt;');
+    h_exp   := replace(replace(replace(coalesce(r.experience_title,''), '&','&amp;'), '<','&lt;'), '>','&gt;');
+
+    v_part_of := case when r.experience_title is not null
+                      then ', part of <strong>' || h_exp || '</strong>,'
+                      else '' end;
+
+    v_subj := 'Starts in about an hour · ' || coalesce(r.session_title, 'your live session');
+
+    v_html := $html$<div style="background:#F2EFE8;padding:32px 12px;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
+    <table role="presentation" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#FFFFFF;border-radius:14px;">
+      <tr><td style="padding:36px 32px;font-family:Inter,-apple-system,'Segoe UI',Arial,sans-serif;color:#0F2229;">
+
+        <img src="https://www.infitra.fit/email-logo.png" width="150" alt="INFITRA" style="display:block;height:auto;border:0;margin-bottom:28px;">
+
+        <p style="margin:0 0 16px;font-size:15px;line-height:1.6;">Hi {FIRST},</p>
+        <p style="margin:0 0 8px;font-size:15px;line-height:1.6;"><strong>{TITLE}</strong>{PARTOF} starts in about an hour.</p>
+        <p style="margin:0 0 8px;font-size:15px;line-height:1.6;">Your experts and your tribe will be in the live room. Jump in a few minutes early so you start settled.</p>
+
+        <table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0 12px;">
+          <tr><td style="background:#FF6130;border-radius:10px;">
+            <a href="{URL}" style="display:inline-block;padding:13px 28px;font-family:Inter,-apple-system,'Segoe UI',Arial,sans-serif;font-weight:700;font-size:15px;color:#FFFFFF;text-decoration:none;">Go to your session</a>
+          </td></tr>
+        </table>
+
+        <p style="margin:16px 0 0;font-size:14px;line-height:1.6;color:#475569;">Questions? Just reply to this email.</p>
+
+      </td></tr>
+    </table>
+    <p style="margin:20px 0 0;font-family:Inter,-apple-system,'Segoe UI',Arial,sans-serif;font-size:12px;line-height:1.7;color:#475569;">INFITRA · Live experiences by complementary experts<br>Yves Oliver Imhasly · Flühstrasse 40 · 4114 Hofstetten SO · Switzerland<br>
+    <a href="https://www.infitra.fit" style="color:#0891b2;text-decoration:none;">www.infitra.fit</a> · <a href="https://www.infitra.fit/imprint" style="color:#0891b2;text-decoration:none;">Legal Notice</a></p>
+  </td></tr></table>
+</div>$html$;
+
+    v_html := replace(v_html, '{FIRST}',  h_first);
+    v_html := replace(v_html, '{TITLE}',  h_title);
+    v_html := replace(v_html, '{PARTOF}', v_part_of);
+    v_html := replace(v_html, '{URL}',    v_url);
+
+    v_text := $txt$Hi {FIRST},
+
+{TITLE}{PARTOF} starts in about an hour.
+
+Your experts and your tribe will be in the live room. Jump in a
+few minutes early so you start settled.
+
+Go to your session: {URL}
+
+Questions? Just reply to this email.
+
+INFITRA · Live experiences by complementary experts
+Yves Oliver Imhasly · Flühstrasse 40 · 4114 Hofstetten SO · Switzerland
+www.infitra.fit · Legal notice: www.infitra.fit/imprint$txt$;
+
+    v_text := replace(v_text, '{FIRST}',  v_first);
+    v_text := replace(v_text, '{TITLE}',  coalesce(r.session_title, 'Your live session'));
+    v_text := replace(v_text, '{PARTOF}', case when r.experience_title is not null
+                                               then ', part of ' || r.experience_title || ','
+                                               else '' end);
+    v_text := replace(v_text, '{URL}',    v_url);
+
+    insert into public.app_email_outbox
+      (kind, to_email, subject, html_body, text_body, user_id, target_id)
+    values
+      ('session_reminder', r.to_email, v_subj, v_html, v_text, r.user_id, r.session_id)
+    on conflict (user_id, kind, target_id)
+      where user_id is not null and target_id is not null
+      do nothing;
+
+    if found then
+      v_count := v_count + 1;
+    end if;
+  end loop;
+
+  return v_count;
+end;
+$_$;
+
+
+ALTER FUNCTION "public"."app_enqueue_session_reminders"() OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."app_enqueue_session_reminders"() IS 'Enqueues one session_reminder outbox row per entitled participant for sessions entering the 60-minute pre-start window. Idempotent via uniq_email_outbox_user_kind_target; scheduled every minute by pg_cron.';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."app_enqueue_session_reschedule_emails"("p_session" "uuid", "p_old_start" timestamp with time zone, "p_new_start" timestamp with time zone, "p_reason" "text", "p_actor" "uuid") RETURNS integer
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $_$
+declare
+    r         record;
+    v_s       record;
+    v_url     text;
+    v_subj    text;
+    v_first   text;
+    v_part_of text;
+    v_html    text;
+    v_text    text;
+    h_first   text;
+    h_title   text;
+    h_exp     text;
+    h_reason  text;
+    v_count   integer := 0;
+begin
+    select s.id, s.title, cs.challenge_id, ch.title as experience_title
+      into v_s
+      from app_session s
+      left join app_challenge_session cs on cs.session_id = s.id
+      left join app_challenge ch on ch.id = cs.challenge_id
+     where s.id = p_session;
+    if not found then return 0; end if;
+
+    v_url := case when v_s.challenge_id is not null
+                  then 'https://www.infitra.fit/experiences/' || v_s.challenge_id || '/space'
+                  else 'https://www.infitra.fit/me' end;
+    v_subj := 'New time · ' || coalesce(v_s.title, 'your live session');
+
+    h_title  := replace(replace(replace(coalesce(v_s.title,'Your live session'), '&','&amp;'), '<','&lt;'), '>','&gt;');
+    h_exp    := replace(replace(replace(coalesce(v_s.experience_title,''), '&','&amp;'), '<','&lt;'), '>','&gt;');
+    h_reason := replace(replace(replace(coalesce(p_reason,''), '&','&amp;'), '<','&lt;'), '>','&gt;');
+
+    for r in
+        select distinct ids.user_id,
+               au.email as to_email,
+               ap.display_name, ap.full_name, ap.username
+          from (
+            select a.user_id from app_attendance a where a.session_id = p_session
+            union
+            select m.user_id
+              from app_challenge_member m
+              join app_challenge_session cs on cs.challenge_id = m.challenge_id
+             where cs.session_id = p_session
+            union
+            select s.host_id from app_session s where s.id = p_session
+            union
+            select sc.cohost_id from app_session_cohost sc where sc.session_id = p_session
+            union
+            select ch.owner_id
+              from app_challenge ch
+              join app_challenge_session cs2 on cs2.challenge_id = ch.id
+             where cs2.session_id = p_session
+            union
+            select cc.cohost_id
+              from app_challenge_cohost cc
+              join app_challenge_session cs3 on cs3.challenge_id = cc.challenge_id
+             where cs3.session_id = p_session
+          ) ids
+          join auth.users au on au.id = ids.user_id
+          left join app_profile ap on ap.id = ids.user_id
+         where ids.user_id <> p_actor
+           and nullif(au.email, '') is not null
+           and au.email not like 'deleted+%'
+    loop
+        v_first := app_receipt_greeting(null, r.display_name, r.full_name, r.username, r.to_email);
+        h_first := replace(replace(replace(v_first, '&','&amp;'), '<','&lt;'), '>','&gt;');
+        v_part_of := case when v_s.experience_title is not null
+                          then ', part of <strong>' || h_exp || '</strong>,'
+                          else '' end;
+
+        v_html := $html$<div style="background:#F2EFE8;padding:32px 12px;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
+    <table role="presentation" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#FFFFFF;border-radius:14px;">
+      <tr><td style="padding:36px 32px;font-family:Inter,-apple-system,'Segoe UI',Arial,sans-serif;color:#0F2229;">
+
+        <img src="https://www.infitra.fit/email-logo.png" width="150" alt="INFITRA" style="display:block;height:auto;border:0;margin-bottom:28px;">
+
+        <p style="margin:0 0 16px;font-size:15px;line-height:1.6;">Hi {FIRST},</p>
+        <p style="margin:0 0 8px;font-size:15px;line-height:1.6;"><strong>{TITLE}</strong>{PARTOF} has a new time. A word from your experts:</p>
+        <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#475569;font-style:italic;">&ldquo;{REASON}&rdquo;</p>
+        <p style="margin:0 0 8px;font-size:15px;line-height:1.6;">The new time is in your space, shown in your timezone:</p>
+
+        <table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0 12px;">
+          <tr><td style="background:#FF6130;border-radius:10px;">
+            <a href="{URL}" style="display:inline-block;padding:13px 28px;font-family:Inter,-apple-system,'Segoe UI',Arial,sans-serif;font-weight:700;font-size:15px;color:#FFFFFF;text-decoration:none;">See the new time</a>
+          </td></tr>
+        </table>
+
+        <p style="margin:16px 0 0;font-size:14px;line-height:1.6;color:#475569;">Questions? Just reply to this email.</p>
+
+      </td></tr>
+    </table>
+    <p style="margin:20px 0 0;font-family:Inter,-apple-system,'Segoe UI',Arial,sans-serif;font-size:12px;line-height:1.7;color:#475569;">INFITRA · Live experiences by complementary experts<br>Yves Oliver Imhasly · Flühstrasse 40 · 4114 Hofstetten SO · Switzerland<br>
+    <a href="https://www.infitra.fit" style="color:#0891b2;text-decoration:none;">www.infitra.fit</a> · <a href="https://www.infitra.fit/imprint" style="color:#0891b2;text-decoration:none;">Legal Notice</a></p>
+  </td></tr></table>
+</div>$html$;
+
+        v_html := replace(v_html, '{FIRST}',  h_first);
+        v_html := replace(v_html, '{TITLE}',  h_title);
+        v_html := replace(v_html, '{PARTOF}', v_part_of);
+        v_html := replace(v_html, '{REASON}', h_reason);
+        v_html := replace(v_html, '{URL}',    v_url);
+
+        v_text := $txt$Hi {FIRST},
+
+{TITLE}{PARTOF} has a new time. A word from your experts:
+"{REASON}"
+
+The new time is in your space, shown in your timezone:
+{URL}
+
+Questions? Just reply to this email.
+
+INFITRA · Live experiences by complementary experts
+Yves Oliver Imhasly · Flühstrasse 40 · 4114 Hofstetten SO · Switzerland
+www.infitra.fit · Legal notice: www.infitra.fit/imprint$txt$;
+
+        v_text := replace(v_text, '{FIRST}',  v_first);
+        v_text := replace(v_text, '{TITLE}',  coalesce(v_s.title, 'Your live session'));
+        v_text := replace(v_text, '{PARTOF}', case when v_s.experience_title is not null
+                                                   then ', part of ' || v_s.experience_title || ','
+                                                   else '' end);
+        v_text := replace(v_text, '{REASON}', coalesce(p_reason,''));
+        v_text := replace(v_text, '{URL}',    v_url);
+
+        -- target_id NULL on purpose: repeat reschedules must still notify
+        -- (partial unique index on user_id/kind/target_id would swallow them).
+        insert into public.app_email_outbox
+            (kind, to_email, subject, html_body, text_body, user_id, target_id)
+        values
+            ('session_reschedule', r.to_email, v_subj, v_html, v_text, r.user_id, null);
+
+        v_count := v_count + 1;
+    end loop;
+
+    return v_count;
+end;
+$_$;
+
+
+ALTER FUNCTION "public"."app_enqueue_session_reschedule_emails"("p_session" "uuid", "p_old_start" timestamp with time zone, "p_new_start" timestamp with time zone, "p_reason" "text", "p_actor" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."app_enqueue_welcome_email"("p_user_id" "uuid") RETURNS bigint
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $_$
+declare
+  v_email text;
+  v_first text;
+  v_html  text;
+  v_text  text;
+  v_id    bigint;
+  h_first text;
+  r       record;
+begin
+  select ap.display_name, ap.full_name, ap.username, au.email
+    into r
+    from app_profile ap
+    join auth.users au on au.id = ap.id
+   where ap.id = p_user_id;
+
+  if not found or nullif(r.email, '') is null then
+    return null;
+  end if;
+
+  v_email := r.email;
+  v_first := app_receipt_greeting(null, r.display_name, r.full_name, r.username, v_email);
+  h_first := replace(replace(replace(v_first, '&','&amp;'), '<','&lt;'), '>','&gt;');
+
+  v_html := $html$<div style="background:#F2EFE8;padding:32px 12px;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
+    <table role="presentation" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#FFFFFF;border-radius:14px;">
+      <tr><td style="padding:36px 32px;font-family:Inter,-apple-system,'Segoe UI',Arial,sans-serif;color:#0F2229;">
+
+        <img src="https://www.infitra.fit/email-logo.png" width="150" alt="INFITRA" style="display:block;height:auto;border:0;margin-bottom:28px;">
+
+        <p style="margin:0 0 16px;font-size:15px;line-height:1.7;">Hi {FIRST},</p>
+        <p style="margin:0 0 16px;font-size:15px;line-height:1.7;">I'm Yves, founder of INFITRA. Welcome, and thank you for being one of our Pioneers.</p>
+        <p style="margin:0 0 16px;font-size:15px;line-height:1.7;">Here is what you'll find. Experts team up instead of trying to do everything alone, so each session is led by people who truly know their craft. Live sessions you show up to rather than watch. And between sessions, your tribe and your experts stay in one space with you, where you can share how it's going and ask them anything.</p>
+        <p style="margin:0 0 16px;font-size:15px;line-height:1.7;">If you've already joined an experience, everything is waiting in your experience space. If you're still deciding, take your time. The next ones are being built right now.</p>
+        <p style="margin:0 0 16px;font-size:15px;line-height:1.7;">One thing I'd genuinely like to know: what brought you here? Just reply, I read every answer myself.</p>
+        <p style="margin:24px 0 0;font-size:15px;line-height:1.6;">See you inside,</p>
+        <p style="margin:12px 0 0;font-size:15px;line-height:1.6;">Yves<br>
+        <span style="color:#475569;font-size:13px;">Founder, INFITRA</span></p>
+
+      </td></tr>
+    </table>
+    <p style="margin:20px 0 0;font-family:Inter,-apple-system,'Segoe UI',Arial,sans-serif;font-size:12px;line-height:1.7;color:#475569;">INFITRA · Live experiences by complementary experts<br>Yves Oliver Imhasly · Flühstrasse 40 · 4114 Hofstetten SO · Switzerland<br>
+    <a href="https://www.infitra.fit" style="color:#0891b2;text-decoration:none;">www.infitra.fit</a> · <a href="https://www.infitra.fit/imprint" style="color:#0891b2;text-decoration:none;">Legal Notice</a></p>
+  </td></tr></table>
+</div>$html$;
+
+  v_html := replace(v_html, '{FIRST}', h_first);
+
+  v_text := $txt$Hi {FIRST},
+
+I'm Yves, founder of INFITRA. Welcome, and thank you for being one of
+our Pioneers.
+
+Here is what you'll find. Experts team up instead of trying to do
+everything alone, so each session is led by people who truly know
+their craft. Live sessions you show up to rather than watch. And
+between sessions, your tribe and your experts stay in one space with
+you, where you can share how it's going and ask them anything.
+
+If you've already joined an experience, everything is waiting in your
+experience space. If you're still deciding, take your time. The next
+ones are being built right now.
+
+One thing I'd genuinely like to know: what brought you here? Just
+reply, I read every answer myself.
+
+See you inside,
+
+Yves
+Founder, INFITRA
+
+INFITRA · Live experiences by complementary experts
+Yves Oliver Imhasly · Flühstrasse 40 · 4114 Hofstetten SO · Switzerland
+www.infitra.fit · Legal notice: www.infitra.fit/imprint$txt$;
+
+  v_text := replace(v_text, '{FIRST}', v_first);
+
+  insert into public.app_email_outbox
+    (kind, to_email, subject, html_body, text_body, user_id, target_id)
+  values
+    ('welcome', v_email, 'Welcome to INFITRA', v_html, v_text, p_user_id, p_user_id)
+  on conflict (user_id, kind, target_id)
+    where user_id is not null and target_id is not null
+    do nothing
+  returning id into v_id;
+
+  return v_id;
+end;
+$_$;
+
+
+ALTER FUNCTION "public"."app_enqueue_welcome_email"("p_user_id" "uuid") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."app_enqueue_welcome_email"("p_user_id" "uuid") IS 'Enqueues the one-time founder welcome email for a participant account. Idempotent via uniq_email_outbox_user_kind_target (target = the user themself). service_role/trigger only.';
+
+
+
 CREATE OR REPLACE FUNCTION "public"."app_handle_new_user"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
     AS $$
-DECLARE
+declare
   _role text;
   _display_name text;
   _username text;
-BEGIN
-  -- Read role from metadata, validate it, default to participant
+  _invite text;
+  _redeemed text;
+begin
   _role := coalesce(
     nullif(trim(new.raw_user_meta_data->>'role'), ''),
     'participant'
   );
-  IF _role NOT IN ('participant', 'creator') THEN
+  if _role not in ('participant', 'creator') then
     _role := 'participant';
-  END IF;
+  end if;
 
-  -- Read display_name from metadata if provided
+  -- Supply-side gate: creator only with a valid, unredeemed invite.
+  if _role = 'creator' then
+    _invite := nullif(trim(new.raw_user_meta_data->>'creator_invite_code'), '');
+    _redeemed := null;
+    if _invite is not null then
+      update public.app_creator_invite
+         set redeemed_by = new.id, redeemed_at = now()
+       where code = _invite
+         and not revoked
+         and redeemed_at is null
+         and expires_at > now()
+       returning code into _redeemed;
+    end if;
+    if _redeemed is null then
+      raise exception 'creator signup requires a valid invite code';
+    end if;
+  end if;
+
   _display_name := nullif(trim(coalesce(new.raw_user_meta_data->>'display_name', '')), '');
 
-  -- Generate unique username from email local-part + 4 random chars
   _username := regexp_replace(split_part(new.email, '@', 1), '[^a-zA-Z0-9_]', '', 'g')
                || substring(replace(gen_random_uuid()::text, '-', '') for 4);
 
-  INSERT INTO public.app_profile (id, full_name, username, display_name, role, creator_verified)
-  VALUES (
+  insert into public.app_profile (id, full_name, username, display_name, role, creator_verified, is_founding_expert)
+  values (
     new.id,
     coalesce(new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1)),
     _username,
     _display_name,
     _role,
-    false
+    false,
+    (_role = 'creator')   -- invited creator == founding pilot expert
   )
-  ON CONFLICT (id) DO NOTHING;
+  on conflict (id) do nothing;
 
-  RETURN new;
-END;
+  return new;
+end;
 $$;
 
 
 ALTER FUNCTION "public"."app_handle_new_user"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."app_html_escape"("t" "text") RETURNS "text"
+    LANGUAGE "sql" IMMUTABLE
+    SET "search_path" TO 'public'
+    AS $$
+  select replace(replace(replace(coalesce(t, ''), '&', '&amp;'), '<', '&lt;'), '>', '&gt;');
+$$;
+
+
+ALTER FUNCTION "public"."app_html_escape"("t" "text") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."app_html_escape"("t" "text") IS 'HTML-escapes &, <, > for embedding user text in outbox email bodies. Null-safe (null → empty string).';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."app_purge_technical_logs"() RETURNS integer
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+declare
+  v_total integer := 0;
+  v_n integer;
+begin
+  delete from app_edge_call_log where created_at < now() - interval '12 months';
+  get diagnostics v_n = row_count; v_total := v_total + v_n;
+
+  delete from app_stream_event where created_at < now() - interval '12 months';
+  get diagnostics v_n = row_count; v_total := v_total + v_n;
+
+  delete from app_stream_token where expires_at < now() - interval '30 days';
+  get diagnostics v_n = row_count; v_total := v_total + v_n;
+
+  delete from app_email_outbox
+   where sent_at is not null
+     and sent_at < now() - interval '12 months'
+     and kind <> 'receipt';
+  get diagnostics v_n = row_count; v_total := v_total + v_n;
+
+  return v_total;
+end;
+$$;
+
+
+ALTER FUNCTION "public"."app_purge_technical_logs"() OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."app_purge_technical_logs"() IS 'Enforces the privacy policy''s stated log retention: 12 months for technical logs, 30 days past expiry for stream tokens, receipts exempt (10-year bookkeeping). Cron/service only.';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."app_receipt_greeting"("p_buyer_name" "text", "p_display_name" "text", "p_full_name" "text", "p_username" "text", "p_email" "text") RETURNS "text"
+    LANGUAGE "plpgsql" IMMUTABLE
+    SET "search_path" TO 'public'
+    AS $$
+declare
+  v_local text;
+  v_cand  text;
+  v_first text;
+begin
+  -- Stripe's cardholder name is typed by a human into the card form, so it is
+  -- a real name by construction and gets NO handle test. Applying one would
+  -- reject legitimate names that happen to match the address: "Yves Imhasly"
+  -- from yves.imhasly@outlook.com reduces to identical letters.
+  --
+  -- The profile fields DO need the test, because buy-intent signup copies the
+  -- email local part into display_name and full_name, so their presence
+  -- proves nothing about whether a human chose them.
+  v_local := lower(regexp_replace(split_part(coalesce(p_email,''), '@', 1), '[^a-zA-Z]', '', 'g'));
+  v_first := null;
+
+  if nullif(trim(coalesce(p_buyer_name, '')), '') is not null then
+    v_first := split_part(trim(p_buyer_name), ' ', 1);
+  else
+    foreach v_cand in array array[p_display_name, p_full_name, p_username] loop
+      v_cand := nullif(trim(coalesce(v_cand, '')), '');
+      continue when v_cand is null;
+      continue when lower(regexp_replace(v_cand, '[^a-zA-Z]', '', 'g')) = v_local;
+      v_first := split_part(v_cand, ' ', 1);
+      exit;
+    end loop;
+  end if;
+
+  if v_first is null or v_first = '' then
+    return 'there';
+  end if;
+
+  -- Cards often carry all-caps names ("YVES"); normalise those. Otherwise
+  -- only lift the first letter, so "McKenna" and "d'Angelo" survive intact.
+  if v_first = upper(v_first) then
+    return upper(left(v_first, 1)) || lower(substr(v_first, 2));
+  end if;
+  return upper(left(v_first, 1)) || substr(v_first, 2);
+end;
+$$;
+
+
+ALTER FUNCTION "public"."app_receipt_greeting"("p_buyer_name" "text", "p_display_name" "text", "p_full_name" "text", "p_username" "text", "p_email" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."app_reschedule_session"("p_session" "uuid", "p_new_start" timestamp with time zone, "p_reason" "text") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+declare
+    v_uid uuid := auth.uid();
+    v_s app_session%rowtype;
+    v_reason text := btrim(coalesce(p_reason, ''));
+    v_notified integer;
+    v_challenge app_challenge%rowtype;
+    v_space_id uuid;
+    v_posted boolean := false;
+begin
+    if v_uid is null then
+        raise exception 'not_authenticated' using errcode = '42501';
+    end if;
+
+    select * into v_s from app_session where id = p_session for update;
+    if not found then
+        raise exception 'session not found';
+    end if;
+
+    if not is_session_expert(p_session, v_uid) then
+        raise exception 'only the experts of this session can reschedule it'
+            using errcode = '42501';
+    end if;
+
+    if v_s.status not in ('published', 'scheduled') then
+        raise exception 'only published sessions can be rescheduled (drafts are edited directly)';
+    end if;
+    if v_s.started_at is not null or v_s.ended_at is not null then
+        raise exception 'this session already ran or is running; it cannot be rescheduled';
+    end if;
+
+    if p_new_start is null or p_new_start <= now() + interval '5 minutes' then
+        raise exception 'the new time must be in the future';
+    end if;
+    if p_new_start > now() + interval '365 days' then
+        raise exception 'the new time is too far out';
+    end if;
+    if p_new_start = v_s.start_time then
+        raise exception 'that is the current time of the session';
+    end if;
+
+    if length(v_reason) < 10 then
+        raise exception 'please give participants a real reason (a short sentence)';
+    end if;
+    if length(v_reason) > 300 then
+        raise exception 'please keep the reason under 300 characters';
+    end if;
+
+    update app_session
+       set start_time         = p_new_start,
+           change_reason      = v_reason,
+           live_room_id       = null,
+           stream_url         = null,
+           pre_pulse_fired_at = null,
+           updated_at         = now()
+     where id = p_session;
+
+    delete from app_email_outbox
+     where kind = 'session_reminder' and target_id = p_session;
+
+    v_notified := app_enqueue_session_reschedule_emails(
+        p_session, v_s.start_time, p_new_start, v_reason, v_uid);
+
+    -- Tribe post: no absolute time in the body — the session chip below the
+    -- post renders the new time in each reader's device timezone.
+    select c.* into v_challenge
+    from app_challenge c
+    join app_challenge_session cs on cs.challenge_id = c.id
+    where cs.session_id = p_session
+    limit 1;
+
+    if found then
+        select s.id into v_space_id
+        from app_challenge_space s
+        where s.source_challenge_id = v_challenge.id
+           or (v_challenge.continuation_group_id is not null
+               and s.continuation_group_id = v_challenge.continuation_group_id)
+        order by (s.source_challenge_id = v_challenge.id) desc, s.created_at asc
+        limit 1;
+
+        if v_space_id is not null then
+            insert into app_challenge_post
+                (space_id, author_id, kind, body, context_type, context_id, metadata)
+            values (
+                v_space_id,
+                v_uid,
+                'talk',
+                'Rescheduled: ' || coalesce(v_s.title, 'our session') || e'\n\n'
+                    || chr(8220) || v_reason || chr(8221),
+                'session',
+                p_session,
+                jsonb_build_object(
+                    'reschedule', true,
+                    'old_start', v_s.start_time,
+                    'new_start', p_new_start
+                )
+            );
+            v_posted := true;
+        end if;
+    end if;
+
+    return jsonb_build_object(
+        'ok', true,
+        'old_start', v_s.start_time,
+        'new_start', p_new_start,
+        'notified', v_notified,
+        'posted', v_posted
+    );
+end;
+$$;
+
+
+ALTER FUNCTION "public"."app_reschedule_session"("p_session" "uuid", "p_new_start" timestamp with time zone, "p_reason" "text") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."app_session_assert_within_challenge_window"() RETURNS "trigger"
@@ -788,6 +2357,50 @@ $$;
 
 
 ALTER FUNCTION "public"."app_session_assert_within_challenge_window"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."app_sweep_overdue_sessions"() RETURNS integer
+    LANGUAGE "sql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+  with swept as (
+    update app_session s
+       set status = 'ended',
+           ended_at = s.start_time
+                      + make_interval(mins => greatest(coalesce(s.duration_minutes, 60), 15))
+     where s.status = 'published'
+       and s.start_time is not null
+       and now() > s.start_time
+                   + make_interval(mins => greatest(coalesce(s.duration_minutes, 60), 15))
+                   + interval '60 minutes'
+    returning s.id
+  )
+  select count(*)::int from swept;
+$$;
+
+
+ALTER FUNCTION "public"."app_sweep_overdue_sessions"() OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."app_sweep_overdue_sessions"() IS 'Ends published sessions past start + duration + 1h (the Daily room expiry clock). Backstop for hosts who never press End Session; keeps every live-state surface truthful. Cron/service only.';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."app_validate_creator_invite"("p_code" "text") RETURNS boolean
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+  select exists (
+    select 1 from public.app_creator_invite
+    where code = trim(p_code)
+      and not revoked
+      and redeemed_at is null
+      and expires_at > now()
+  );
+$$;
+
+
+ALTER FUNCTION "public"."app_validate_creator_invite"("p_code" "text") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."build_transaction_row"("p_buyer_id" "uuid", "p_creator_id" "uuid", "p_session_id" "uuid", "p_challenge_id" "uuid", "p_type" "public"."payment_type", "p_currency" "text", "p_amount_gross_cents" bigint, "p_processing_fee_fixed_cents" bigint, "p_processing_fee_percent_cents" bigint) RETURNS "jsonb"
@@ -1626,7 +3239,10 @@ CREATE OR REPLACE FUNCTION "public"."complete_ended_experiences"() RETURNS integ
     update public.app_challenge c
        set status = 'completed', updated_at = now()
      where c.status = 'published'
-       and c.end_date < (now() at time zone 'Asia/Phnom_Penh')::date
+       -- UTC day boundary on purpose (no pinned foreign zone); the
+       -- future-session guard below is what actually protects a cohort
+       -- with sessions still to run.
+       and c.end_date < current_date
        and not exists (
          select 1 from public.app_challenge_session cs
          join public.app_session s on s.id = cs.session_id
@@ -1641,6 +3257,32 @@ $$;
 
 
 ALTER FUNCTION "public"."complete_ended_experiences"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."count_challenge_materials"("p_challenge_id" "uuid") RETURNS integer
+    LANGUAGE "sql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+  select count(*)::integer
+  from app_challenge_material m
+  join app_challenge c on c.id = m.challenge_id
+  where m.challenge_id = p_challenge_id
+    and (
+      c.status = 'published'
+      or (auth.uid() is not null and (
+        c.owner_id = auth.uid()
+        or exists (select 1 from app_challenge_cohost ch
+                    where ch.challenge_id = c.id and ch.cohost_id = auth.uid())
+      ))
+    );
+$$;
+
+
+ALTER FUNCTION "public"."count_challenge_materials"("p_challenge_id" "uuid") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."count_challenge_materials"("p_challenge_id" "uuid") IS 'Material count for the buyer page. Count only; anon gets published experiences, experts also their own drafts (preview).';
+
 
 
 CREATE OR REPLACE FUNCTION "public"."create_challenge_comment"("p_post" "uuid", "p_body" "text") RETURNS "uuid"
@@ -1729,6 +3371,11 @@ declare
     v_new_session_id uuid;
     v_shift_days integer;
     v_new_start_time timestamptz;
+
+    v_cohost record;
+    v_convo_id uuid;
+    v_invite_id uuid;
+    v_invite_message text;
 begin
     if v_actor is null then
         raise exception 'Unauthorized';
@@ -1777,6 +3424,11 @@ begin
         status,
         capacity,
         config,
+        image_url,
+        promise_text,
+        weekly_arc,
+        topic_ownership,
+        intro_prompt,
         continuation_group_id,
         continued_from_challenge_id
     )
@@ -1791,10 +3443,18 @@ begin
         'draft',
         v_source.capacity,
         v_source.config,
+        v_source.image_url,
+        v_source.promise_text,
+        v_source.weekly_arc,
+        v_source.topic_ownership,
+        v_source.intro_prompt,
         v_group_id,
         v_source.id
     )
     returning id into v_new_challenge_id;
+
+    -- No app_challenge_cohost copy: membership of the new run is consent,
+    -- created by accept_collab_invite when the invited expert says yes.
 
     for v_item in
         select
@@ -1829,6 +3489,7 @@ begin
             status,
             live_provider,
             config,
+            image_url,
             continuation_group_id,
             continued_from_session_id
         )
@@ -1840,14 +3501,20 @@ begin
             v_item.capacity,
             v_item.price_cents,
             v_item.currency,
-            v_actor,
+            v_item.host_id,
             'draft',
             v_item.live_provider,
             v_item.config,
+            v_item.image_url,
             coalesce(v_item.continuation_group_id, gen_random_uuid()),
             v_item.id
         )
         returning id into v_new_session_id;
+
+        insert into public.app_session_cohost (session_id, cohost_id, split_percent)
+        select v_new_session_id, cohost_id, split_percent
+        from public.app_session_cohost
+        where session_id = v_item.id;
 
         update public.app_session
         set continuation_group_id = (
@@ -1862,6 +3529,55 @@ begin
 
         insert into public.app_challenge_session (challenge_id, session_id)
         values (v_new_challenge_id, v_new_session_id);
+    end loop;
+
+    v_invite_message := 'I am running "' || v_source.title || '" again. Join me for the next run?';
+
+    for v_cohost in
+        select ch.cohost_id
+        from public.app_challenge_cohost ch
+        where ch.challenge_id = v_source.id
+          and ch.cohost_id <> v_actor
+    loop
+        select i.dm_conversation_id
+        into v_convo_id
+        from public.app_collaboration_invite i
+        where i.challenge_id = v_source.id
+          and i.dm_conversation_id is not null
+        limit 1;
+
+        if v_convo_id is null then
+            insert into public.app_dm_conversation (created_by)
+            values (v_actor)
+            returning id into v_convo_id;
+
+            insert into public.app_dm_member (conversation_id, user_id)
+            values (v_convo_id, v_actor)
+            on conflict do nothing;
+        end if;
+
+        insert into public.app_collaboration_invite (
+            from_id, to_id, message, initial_split_percent,
+            challenge_id, dm_conversation_id
+        )
+        values (
+            v_actor, v_cohost.cohost_id, v_invite_message, 0,
+            v_new_challenge_id, v_convo_id
+        )
+        returning id into v_invite_id;
+
+        insert into public.app_notification (recipient_id, type, payload)
+        values (
+            v_cohost.cohost_id,
+            'collab_invite',
+            jsonb_build_object(
+                'invite_id', v_invite_id,
+                'from_id', v_actor,
+                'challenge_id', v_new_challenge_id,
+                'continuation', true,
+                'title', v_source.title
+            )
+        );
     end loop;
 
     return v_new_challenge_id;
@@ -1881,6 +3597,9 @@ declare
   v_post_id uuid;
   v_challenge_id uuid;
   v_recipient uuid;
+  v_actor_is_expert boolean;
+  v_material_ids uuid[];
+  v_bad_count int;
 begin
   if v_actor is null then
     raise exception 'Unauthorized';
@@ -1926,6 +3645,70 @@ begin
     end if;
   elsif p_directed_to is not null and array_length(p_directed_to, 1) > 0 then
     raise exception 'directed_to is only valid for question posts';
+  end if;
+
+  -- Is the actor an expert on this experience? (Needed for context rules.)
+  select (
+    exists (select 1 from public.app_challenge c
+            where c.id = v_challenge_id and c.owner_id = v_actor)
+    or exists (select 1 from public.app_challenge_cohost ch
+               where ch.challenge_id = v_challenge_id and ch.cohost_id = v_actor)
+  ) into v_actor_is_expert;
+
+  -- ── Context: ONE session, belonging to this experience. ──
+  if p_context_type is not null or p_context_id is not null then
+    if p_context_type is null or p_context_id is null then
+      raise exception 'context requires both context_type and context_id';
+    end if;
+    if p_context_type <> 'session' then
+      raise exception 'invalid context_type';
+    end if;
+    if not exists (
+      select 1 from public.app_challenge_session cs
+      where cs.challenge_id = v_challenge_id and cs.session_id = p_context_id
+    ) then
+      raise exception 'context session does not belong to this experience';
+    end if;
+    -- The deliberate "Add context" on a Share is expert-only; reflections
+    -- (participants tagging the session they reflect on) keep their flow.
+    if p_kind = 'talk' and not v_actor_is_expert then
+      raise exception 'only experts can attach context to a share';
+    end if;
+  end if;
+
+  -- ── Material subset: must belong to the CONTEXT SESSION. ──
+  if p_metadata ? 'material_ids' then
+    if jsonb_typeof(p_metadata -> 'material_ids') <> 'array' then
+      raise exception 'material_ids must be an array';
+    end if;
+
+    select array_agg(value::uuid) into v_material_ids
+    from jsonb_array_elements_text(p_metadata -> 'material_ids');
+
+    if v_material_ids is not null and array_length(v_material_ids, 1) > 0 then
+      if p_context_type is distinct from 'session' or p_context_id is null then
+        raise exception 'material_ids require a session context';
+      end if;
+      if not v_actor_is_expert then
+        raise exception 'only experts can attach materials to a post';
+      end if;
+      if array_length(v_material_ids, 1) > 10 then
+        raise exception 'too many materials on one post';
+      end if;
+      -- Every id must be a material OF THAT SESSION (which transitively
+      -- guarantees the experience). No cross-session mixing.
+      select count(*) into v_bad_count
+      from unnest(v_material_ids) as mid
+      where not exists (
+        select 1 from public.app_challenge_material m
+        where m.id = mid
+          and m.session_id = p_context_id
+          and m.challenge_id = v_challenge_id
+      );
+      if v_bad_count > 0 then
+        raise exception 'materials must belong to the referenced session';
+      end if;
+    end if;
   end if;
 
   if p_kind = 'reflection' then
@@ -2404,6 +4187,14 @@ CREATE OR REPLACE FUNCTION "public"."current_active_challenge_in_group"("p_conti
         where c.continuation_group_id = p_continuation_group
           and c.status = 'published'
     ),
+    in_progress as (
+        select id
+        from candidates
+        where start_date <= current_date
+          and end_date >= current_date
+        order by start_date desc, published_at desc nulls last, id desc
+        limit 1
+    ),
     preferred as (
         select id
         from candidates
@@ -2418,6 +4209,7 @@ CREATE OR REPLACE FUNCTION "public"."current_active_challenge_in_group"("p_conti
         limit 1
     )
     select coalesce(
+        (select id from in_progress),
         (select id from preferred),
         (select id from fallback)
     );
@@ -2738,10 +4530,27 @@ CREATE OR REPLACE FUNCTION "public"."enforce_profile_role_immutable"() RETURNS "
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
     AS $$
+declare
+    v_jwt_role text;
 begin
     if new.role is distinct from old.role then
         raise exception 'profile role is immutable once the account exists: %', new.id
             using errcode = '23514';
+    end if;
+
+    -- is_admin can only be changed by the infrastructure owner: dashboard
+    -- SQL (no request.jwt claims) or the service role. Any request that
+    -- arrives through PostgREST with a user-level JWT is rejected, even if
+    -- a future migration accidentally re-grants the column.
+    if new.is_admin is distinct from old.is_admin then
+        v_jwt_role := coalesce(
+            nullif(current_setting('request.jwt.claim.role', true), ''),
+            nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'role'
+        );
+        if v_jwt_role is not null and v_jwt_role <> 'service_role' then
+            raise exception 'is_admin can only be changed by the infrastructure owner'
+                using errcode = '42501';
+        end if;
     end if;
 
     return new;
@@ -3114,8 +4923,9 @@ CREATE OR REPLACE FUNCTION "public"."experience_review_open"("p_challenge" "uuid
           and s.status in ('draft','published','scheduled')
       ) )
     or
+    -- UTC day boundary on purpose (no pinned foreign zone).
     ( coalesce((select c.end_date from app_challenge c where c.id = p_challenge), 'infinity'::date)
-        < (now() at time zone 'Asia/Phnom_Penh')::date );
+        < current_date );
 $$;
 
 
@@ -3641,6 +5451,41 @@ $$;
 ALTER FUNCTION "public"."is_in_challenge"("p_challenge" "uuid", "p_user" "uuid") OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."is_session_expert"("p_session_id" "uuid", "p_user_id" "uuid") RETURNS boolean
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+  select exists (
+    select 1 from app_session s
+    where s.id = p_session_id and s.host_id = p_user_id
+  )
+  or exists (
+    select 1 from app_session_cohost sc
+    where sc.session_id = p_session_id and sc.cohost_id = p_user_id
+  )
+  or exists (
+    select 1
+    from app_challenge_session cs
+    join app_challenge c on c.id = cs.challenge_id
+    where cs.session_id = p_session_id
+      and (
+        c.owner_id = p_user_id
+        or exists (
+          select 1 from app_challenge_cohost cc
+          where cc.challenge_id = c.id and cc.cohost_id = p_user_id
+        )
+      )
+  );
+$$;
+
+
+ALTER FUNCTION "public"."is_session_expert"("p_session_id" "uuid", "p_user_id" "uuid") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."is_session_expert"("p_session_id" "uuid", "p_user_id" "uuid") IS 'True when the user is the session host, a session cohost, or owner/cohost of any challenge containing the session. THE definition of "expert of this session" — join entitlement, the started_at Live-now flip, End Session rights, and the live pages'' guards all derive from it.';
+
+
+
 CREATE OR REPLACE FUNCTION "public"."is_session_host"("p_session_id" "uuid", "p_user_id" "uuid") RETURNS boolean
     LANGUAGE "sql" STABLE
     SET "search_path" TO 'public'
@@ -3863,6 +5708,77 @@ $$;
 ALTER FUNCTION "public"."list_dm_messages"("p_conversation_id" "uuid", "p_limit" integer) OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."load_challenge_materials"("p_challenge_id" "uuid") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+declare
+  v_user uuid := auth.uid();
+  v_is_expert boolean;
+  v_is_member boolean;
+  v_result jsonb;
+begin
+  if v_user is null then
+    return '[]'::jsonb;
+  end if;
+
+  select exists (
+    select 1 from app_challenge c
+    where c.id = p_challenge_id
+      and (c.owner_id = v_user
+           or exists (select 1 from app_challenge_cohost ch
+                       where ch.challenge_id = c.id and ch.cohost_id = v_user))
+  ) into v_is_expert;
+
+  select exists (
+    select 1 from app_challenge_member m
+    where m.challenge_id = p_challenge_id and m.user_id = v_user
+  ) into v_is_member;
+
+  if not v_is_expert and not v_is_member then
+    return '[]'::jsonb;
+  end if;
+
+  select coalesce(jsonb_agg(jsonb_build_object(
+           'id', x.id,
+           'session_id', x.session_id,
+           'session_title', x.session_title,
+           'timing', x.timing,
+           'title', x.title,
+           'note', x.note,
+           'file_name', x.file_name,
+           'file_size_bytes', x.file_size_bytes,
+           'mime_type', x.mime_type,
+           'released', x.released,
+           'released_at', x.released_at,
+           'storage_path', case when v_is_expert or x.released then x.storage_path end,
+           'uploaded_by', x.uploaded_by,
+           'sort_order', x.sort_order
+         ) order by x.session_start, x.sort_order, x.created_at), '[]'::jsonb)
+    into v_result
+  from (
+    select m.*,
+           s.title as session_title,
+           s.start_time as session_start,
+           material_released_at(m.timing, s.start_time, s.ended_at, s.duration_minutes) as released_at,
+           now() >= material_released_at(m.timing, s.start_time, s.ended_at, s.duration_minutes) as released
+    from app_challenge_material m
+    join app_session s on s.id = m.session_id
+    where m.challenge_id = p_challenge_id
+  ) x;
+
+  return v_result;
+end;
+$$;
+
+
+ALTER FUNCTION "public"."load_challenge_materials"("p_challenge_id" "uuid") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."load_challenge_materials"("p_challenge_id" "uuid") IS 'Materials for an experience with computed release state. Experts see all incl. paths; members see all metadata but paths only once released; outsiders get [].';
+
+
+
 CREATE OR REPLACE FUNCTION "public"."load_experience_creator_stats"("p_challenge_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -3870,32 +5786,53 @@ CREATE OR REPLACE FUNCTION "public"."load_experience_creator_stats"("p_challenge
 declare
   v_user uuid := auth.uid();
   v_space_id uuid;
+  v_group uuid;
 begin
   if v_user is null then
     return jsonb_build_object('authorized', false);
   end if;
 
+  select continuation_group_id into v_group
+  from public.app_challenge
+  where id = p_challenge_id;
+
   select id into v_space_id
   from public.app_challenge_space
   where source_challenge_id = p_challenge_id;
+
+  if v_space_id is null and v_group is not null then
+    select s.id into v_space_id
+    from public.app_challenge_space s
+    join public.app_challenge c on c.id = s.source_challenge_id
+    where c.continuation_group_id = v_group
+    limit 1;
+  end if;
 
   if v_space_id is null or not public.is_challenge_space_admin(v_space_id, v_user) then
     return jsonb_build_object('authorized', false);
   end if;
 
-  return jsonb_build_object(
-    'authorized', true,
-    'member_count', (
-      select count(*)::int from public.app_challenge_member
-      where challenge_id = p_challenge_id
-    ),
-    'pending_questions', (
-      select count(*)::int from public.vw_pending_questions_for_creator
-      where challenge_id = p_challenge_id
-    ),
-    'recent_reflections', (
-      select count(*)::int from public.vw_recent_reflections_for_creator
-      where challenge_id = p_challenge_id
+  return (
+    with lineage as (
+      select id from public.app_challenge
+      where id = p_challenge_id
+         or (v_group is not null and continuation_group_id = v_group)
+    )
+    select jsonb_build_object(
+      'authorized', true,
+      'member_count', (
+        select count(distinct m.user_id)::int
+        from public.app_challenge_member m
+        where m.challenge_id in (select id from lineage)
+      ),
+      'pending_questions', (
+        select count(*)::int from public.vw_pending_questions_for_creator q
+        where q.challenge_id in (select id from lineage)
+      ),
+      'recent_reflections', (
+        select count(*)::int from public.vw_recent_reflections_for_creator r
+        where r.challenge_id in (select id from lineage)
+      )
     )
   );
 end $$;
@@ -3912,18 +5849,18 @@ DECLARE
   v_user      uuid := (SELECT auth.uid());
   v_space     app_challenge_space;
   v_challenge app_challenge;
+  v_room_id   uuid;
   v_is_owner  boolean;
   v_is_cohost boolean;
   v_is_member boolean;
+  v_active_challenge uuid;
+  v_can_post  boolean;
+  v_viewer_state text;
+  v_viewer_run_start date;
+  v_joinable_runs jsonb;
   v_result    jsonb;
 BEGIN
   IF v_user IS NULL THEN
-    RETURN jsonb_build_object('authorized', false);
-  END IF;
-
-  SELECT * INTO v_space
-  FROM app_challenge_space WHERE source_challenge_id = p_challenge_id;
-  IF NOT FOUND THEN
     RETURN jsonb_build_object('authorized', false);
   END IF;
 
@@ -3932,25 +5869,104 @@ BEGIN
     RETURN jsonb_build_object('authorized', false);
   END IF;
 
+  -- Resolve the space across the lineage (any run's id → the one shared tribe).
+  SELECT s.* INTO v_space
+  FROM app_challenge_space s
+  WHERE s.source_challenge_id = p_challenge_id
+     OR (v_challenge.continuation_group_id IS NOT NULL
+         AND s.continuation_group_id = v_challenge.continuation_group_id)
+  ORDER BY (s.source_challenge_id = p_challenge_id) DESC, s.created_at ASC
+  LIMIT 1;
+  IF v_space.id IS NULL THEN
+    RETURN jsonb_build_object('authorized', false);
+  END IF;
+
   IF NOT can_access_challenge_space(v_space.id, v_user) THEN
     RETURN jsonb_build_object('authorized', false);
   END IF;
 
+  -- THE ROOM = the run live in this space right now; re-key v_challenge to it.
+  v_active_challenge := CASE
+    WHEN v_space.continuation_group_id IS NOT NULL
+      THEN current_active_challenge_in_group(v_space.continuation_group_id)
+    ELSE v_space.source_challenge_id
+  END;
+  v_room_id := COALESCE(v_active_challenge, v_space.source_challenge_id, p_challenge_id);
+  SELECT * INTO v_challenge FROM app_challenge WHERE id = v_room_id;
+
   v_is_owner := (v_challenge.owner_id = v_user);
   v_is_cohost := EXISTS (
     SELECT 1 FROM app_challenge_cohost
-    WHERE challenge_id = p_challenge_id AND cohost_id = v_user
+    WHERE challenge_id = v_room_id AND cohost_id = v_user
   );
   v_is_member := EXISTS (
     SELECT 1 FROM app_challenge_member
-    WHERE challenge_id = p_challenge_id AND user_id = v_user
+    WHERE challenge_id = v_room_id AND user_id = v_user
   );
+
+  v_can_post := can_post_in_challenge_space(v_space.id, v_user);
+
+  -- Earliest future-dated run in this lineage the viewer already holds (upcoming).
+  SELECT min(c.start_date) INTO v_viewer_run_start
+  FROM app_transaction tx
+  JOIN app_challenge c ON c.id = tx.challenge_id
+  WHERE tx.buyer_id = v_user
+    AND tx.status = 'succeeded'
+    AND tx.type = 'bundle'
+    AND (
+      (v_space.continuation_group_id IS NOT NULL AND c.continuation_group_id = v_space.continuation_group_id)
+      OR (v_space.continuation_group_id IS NULL AND c.id = v_space.source_challenge_id)
+    )
+    AND c.start_date > current_date;
+
+  v_viewer_state := CASE
+    WHEN (v_is_owner OR v_is_cohost) THEN 'creator'
+    WHEN v_can_post THEN 'active'
+    WHEN v_viewer_run_start IS NOT NULL THEN 'upcoming'
+    ELSE 'ended'
+  END;
+
+  IF v_viewer_state <> 'upcoming' THEN
+    v_viewer_run_start := NULL;
+  END IF;
+
+  -- Every published run in this lineage the viewer does NOT yet hold and that
+  -- hasn't concluded (active first, then upcoming). Empty for creators.
+  IF (v_is_owner OR v_is_cohost) THEN
+    v_joinable_runs := '[]'::jsonb;
+  ELSE
+    SELECT COALESCE(jsonb_agg(jsonb_build_object(
+      'id', c.id,
+      'title', c.title,
+      'startDate', c.start_date,
+      'endDate', c.end_date,
+      'priceCents', c.price_cents,
+      'currency', c.currency,
+      'isActive', (c.start_date <= current_date AND c.end_date >= current_date)
+    ) ORDER BY c.start_date ASC), '[]'::jsonb)
+    INTO v_joinable_runs
+    FROM app_challenge c
+    WHERE c.status = 'published'
+      AND c.end_date >= current_date
+      AND (
+        (v_space.continuation_group_id IS NOT NULL AND c.continuation_group_id = v_space.continuation_group_id)
+        OR (v_space.continuation_group_id IS NULL AND c.id = v_space.source_challenge_id)
+      )
+      AND c.id <> ALL (
+        SELECT tx.challenge_id FROM app_transaction tx
+        WHERE tx.buyer_id = v_user AND tx.status = 'succeeded' AND tx.type = 'bundle'
+      );
+  END IF;
 
   SELECT jsonb_build_object(
     'authorized', true,
     'is_creator', (v_is_owner OR v_is_cohost),
     'is_owner', v_is_owner,
     'is_member', v_is_member,
+    'can_post', v_can_post,
+    'viewer_state', v_viewer_state,
+    'viewer_run_start', v_viewer_run_start,
+    'joinable_runs', v_joinable_runs,
     'space_id', v_space.id,
     'viewer', jsonb_build_object(
       'id', v_user,
@@ -3958,7 +5974,7 @@ BEGIN
       'avatar', (SELECT avatar_url FROM app_profile WHERE id = v_user),
       'joinedAt', (
         SELECT joined_at FROM app_challenge_member
-        WHERE challenge_id = p_challenge_id AND user_id = v_user
+        WHERE challenge_id = v_room_id AND user_id = v_user
       ),
       'postCount', (
         SELECT COUNT(*) FROM app_challenge_post
@@ -3977,7 +5993,7 @@ BEGIN
         'completionPercent', cp.completion_percent,
         'progressPercent', cp.challenge_progress_percent
       )
-      FROM vw_my_challenges_progress cp WHERE cp.challenge_id = p_challenge_id
+      FROM vw_my_challenges_progress cp WHERE cp.challenge_id = v_room_id
     ),
     'experience', jsonb_build_object(
       'id', v_challenge.id,
@@ -4002,21 +6018,21 @@ BEGIN
         'weeksCompleted', ps.weeks_completed,
         'weeksRemaining', ps.weeks_remaining
       )
-      FROM vw_challenge_program_state ps WHERE ps.challenge_id = p_challenge_id
+      FROM vw_challenge_program_state ps WHERE ps.challenge_id = v_room_id
     ),
     'creators', COALESCE((
       SELECT jsonb_agg(obj ORDER BY sort_order, nm)
       FROM (
         SELECT 0 AS sort_order, COALESCE(p.display_name, 'Creator') AS nm,
           jsonb_build_object('id', p.id, 'name', COALESCE(p.display_name, 'Creator'),
-            'avatar', p.avatar_url, 'role', 'owner', 'tagline', p.tagline, 'bio', p.bio) AS obj
+            'avatar', p.avatar_url, 'role', 'owner', 'tagline', p.tagline, 'bio', p.bio, 'isFoundingExpert', p.is_founding_expert) AS obj
         FROM app_profile p WHERE p.id = v_challenge.owner_id
         UNION ALL
         SELECT 1, COALESCE(p.display_name, 'Creator'),
           jsonb_build_object('id', p.id, 'name', COALESCE(p.display_name, 'Creator'),
-            'avatar', p.avatar_url, 'role', 'cohost', 'tagline', p.tagline, 'bio', p.bio)
+            'avatar', p.avatar_url, 'role', 'cohost', 'tagline', p.tagline, 'bio', p.bio, 'isFoundingExpert', p.is_founding_expert)
         FROM app_challenge_cohost cc JOIN app_profile p ON p.id = cc.cohost_id
-        WHERE cc.challenge_id = p_challenge_id
+        WHERE cc.challenge_id = v_room_id
       ) q
     ), '[]'::jsonb),
     'sessions', COALESCE((
@@ -4024,7 +6040,7 @@ BEGIN
       FROM (
         SELECT s.start_time AS sort_time, s.id AS sort_id, jsonb_build_object(
           'id', s.id, 'title', s.title, 'startTime', s.start_time,
-          'durationMinutes', s.duration_minutes, 'status', s.status,
+          'durationMinutes', s.duration_minutes, 'status', s.status, 'startedAt', s.started_at, 'changeReason', s.change_reason,
           'liveRoomId', s.live_room_id, 'imageUrl', s.image_url, 'description', s.description,
           'hostId', s.host_id, 'hostName', COALESCE(hp.display_name, 'Host'), 'hostAvatar', hp.avatar_url,
           'cohosts', COALESCE((
@@ -4037,7 +6053,7 @@ BEGIN
           'prePulse', (
             SELECT jsonb_build_object(
               'count', COUNT(*)::int,
-              'avg', COALESCE(ROUND(AVG(r.value)::numeric, 1), 0),
+              'avg', COALESCE(ROUND(AVG(r.value)::numeric, 1), 0), 'avgMood', COALESCE(ROUND(AVG(r.mood)::numeric, 1), 0),
               'canShow', COUNT(*) >= 3
             )
             FROM app_session_pre_pulse_response r WHERE r.session_id = s.id
@@ -4046,7 +6062,7 @@ BEGIN
         FROM app_challenge_session cs
         JOIN app_session s ON s.id = cs.session_id
         LEFT JOIN app_profile hp ON hp.id = s.host_id
-        WHERE cs.challenge_id = p_challenge_id
+        WHERE cs.challenge_id = v_room_id
       ) q
     ), '[]'::jsonb),
     'members', COALESCE((
@@ -4054,11 +6070,11 @@ BEGIN
         'id', p.id, 'name', COALESCE(p.display_name, 'Member'), 'avatar', p.avatar_url
       ) ORDER BY p.display_name)
       FROM app_challenge_member m JOIN app_profile p ON p.id = m.user_id
-      WHERE m.challenge_id = p_challenge_id
+      WHERE m.challenge_id = v_room_id
     ), '[]'::jsonb),
-    'member_count', (SELECT COUNT(*) FROM app_challenge_member WHERE challenge_id = p_challenge_id),
+    'member_count', (SELECT COUNT(*) FROM app_challenge_member WHERE challenge_id = v_room_id),
     'action_items', (
-      (CASE WHEN v_is_member AND NOT EXISTS (
+      (CASE WHEN v_can_post AND NOT (v_is_owner OR v_is_cohost) AND NOT EXISTS (
         SELECT 1 FROM app_challenge_post pp
         WHERE pp.space_id = v_space.id AND pp.author_id = v_user
           AND pp.kind IN ('intro', 'intro_private')
@@ -4074,7 +6090,7 @@ BEGIN
           'kind', 'pre_pulse', 'sessionId', s.id, 'sessionTitle', s.title, 'startTime', s.start_time
         ) ORDER BY s.start_time)
         FROM app_session s
-        JOIN app_challenge_session cs2 ON cs2.session_id = s.id AND cs2.challenge_id = p_challenge_id
+        JOIN app_challenge_session cs2 ON cs2.session_id = s.id AND cs2.challenge_id = v_room_id
         JOIN app_attendance a ON a.session_id = s.id AND a.user_id = v_user
         WHERE s.start_time BETWEEN now() AND now() + interval '4 hours'
           AND s.status <> 'ended'
@@ -4086,18 +6102,23 @@ BEGIN
       ||
       COALESCE((
         SELECT jsonb_agg(jsonb_build_object(
-          'kind', 'reflection', 'sessionId', s.id, 'sessionTitle', s.title
-        ) ORDER BY s.ended_at DESC)
-        FROM app_session s
-        JOIN app_challenge_session cs3 ON cs3.session_id = s.id AND cs3.challenge_id = p_challenge_id
-        JOIN app_attendance a ON a.session_id = s.id AND a.user_id = v_user AND a.joined_at IS NOT NULL
-        WHERE s.ended_at IS NOT NULL
-          AND s.ended_at > now() - interval '48 hours'
-          AND NOT EXISTS (
-            SELECT 1 FROM app_challenge_post p
-            WHERE p.author_id = v_user AND p.kind = 'reflection'
-              AND p.context_type = 'session' AND p.context_id = s.id
-          )
+          'kind', 'reflection', 'sessionId', latest.id, 'sessionTitle', latest.title
+        ))
+        FROM (
+          SELECT s.id, s.title
+          FROM app_session s
+          JOIN app_challenge_session cs3 ON cs3.session_id = s.id AND cs3.challenge_id = v_room_id
+          JOIN app_attendance a ON a.session_id = s.id AND a.user_id = v_user AND a.joined_at IS NOT NULL
+          WHERE s.ended_at IS NOT NULL
+            AND s.ended_at > now() - interval '48 hours'
+            AND NOT EXISTS (
+              SELECT 1 FROM app_challenge_post p
+              WHERE p.author_id = v_user AND p.kind = 'reflection'
+                AND p.context_type = 'session' AND p.context_id = s.id
+            )
+          ORDER BY s.ended_at DESC
+          LIMIT 1
+        ) latest
       ), '[]'::jsonb)
     )
   ) INTO v_result;
@@ -4108,6 +6129,266 @@ $$;
 
 
 ALTER FUNCTION "public"."load_experience_space"("p_challenge_id" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."load_my_connections"() RETURNS TABLE("profile_id" "uuid", "display_name" "text", "avatar_url" "text", "role" "text", "kind" "text", "shared_count" integer, "shared_titles" "text"[], "any_active" boolean)
+    LANGUAGE "sql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+  with my_member as (
+    select challenge_id from app_challenge_member where user_id = auth.uid()
+  ), my_creator as (
+    select id as challenge_id from app_challenge where owner_id = auth.uid() and status <> 'draft'
+    union
+    select ch.challenge_id from app_challenge_cohost ch
+      join app_challenge c on c.id = ch.challenge_id
+     where ch.cohost_id = auth.uid() and c.status <> 'draft'
+  ), edges as (
+    select m.user_id as other_id, m.challenge_id, 1 as kind_rank
+    from app_challenge_member m join my_member mm on mm.challenge_id = m.challenge_id
+    where m.user_id <> auth.uid()
+    union all
+    select c.owner_id, c.id, 2
+    from app_challenge c join my_member mm on mm.challenge_id = c.id
+    where c.owner_id <> auth.uid()
+    union all
+    select ch.cohost_id, ch.challenge_id, 2
+    from app_challenge_cohost ch join my_member mm on mm.challenge_id = ch.challenge_id
+    where ch.cohost_id <> auth.uid()
+    union all
+    select m.user_id, m.challenge_id, 1
+    from app_challenge_member m join my_creator mc on mc.challenge_id = m.challenge_id
+    where m.user_id <> auth.uid()
+    union all
+    select c.owner_id, c.id, 3
+    from app_challenge c join my_creator mc on mc.challenge_id = c.id
+    where c.owner_id <> auth.uid()
+    union all
+    select ch.cohost_id, ch.challenge_id, 3
+    from app_challenge_cohost ch join my_creator mc on mc.challenge_id = ch.challenge_id
+    where ch.cohost_id <> auth.uid()
+  )
+  select e.other_id as profile_id,
+         p.display_name,
+         p.avatar_url,
+         p.role,
+         case max(e.kind_rank) when 3 then 'collaborator' when 2 then 'expert' else 'member' end as kind,
+         count(distinct e.challenge_id)::integer as shared_count,
+         (array_agg(distinct c.title))[1:3] as shared_titles,
+         bool_or(c.status = 'published' and c.end_date >= current_date) as any_active
+  from edges e
+  join app_profile p on p.id = e.other_id
+  join app_challenge c on c.id = e.challenge_id
+  where c.status <> 'draft'
+  group by e.other_id, p.display_name, p.avatar_url, p.role
+  order by bool_or(c.status = 'published' and c.end_date >= current_date) desc,
+           count(distinct e.challenge_id) desc,
+           p.display_name;
+$$;
+
+
+ALTER FUNCTION "public"."load_my_connections"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."load_public_profile"("p_profile_id" "uuid") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+declare
+  v_user uuid := auth.uid();
+  v_prof app_profile;
+  v_can_view boolean;
+  v_is_creator boolean;
+  v_base jsonb;
+  v_credentials jsonb := '[]'::jsonb;
+  v_proof jsonb := '{}'::jsonb;
+  v_shared jsonb;
+  v_stats record;
+begin
+  if v_user is null then
+    return jsonb_build_object('exists', false);
+  end if;
+
+  select * into v_prof from app_profile where id = p_profile_id;
+  if not found then
+    return jsonb_build_object('exists', false);
+  end if;
+
+  v_can_view := can_view_profile(p_profile_id);
+  v_is_creator := v_prof.role = 'creator';
+
+  with roles as (
+    select challenge_id, user_id from app_challenge_member
+    union
+    select id, owner_id from app_challenge
+    union
+    select challenge_id, cohost_id from app_challenge_cohost
+  ), shared_ch as (
+    select c.id, c.title, c.status,
+           (c.status = 'published' and c.end_date >= current_date) as is_active
+    from app_challenge c
+    where exists (select 1 from roles r where r.challenge_id = c.id and r.user_id = v_user)
+      and exists (select 1 from roles r where r.challenge_id = c.id and r.user_id = p_profile_id)
+      and c.status <> 'draft'
+  )
+  select jsonb_build_object(
+    'count', count(*),
+    'active_titles', coalesce(jsonb_agg(title order by title) filter (where is_active), '[]'::jsonb),
+    'completed_titles', coalesce(jsonb_agg(title order by title) filter (where not is_active), '[]'::jsonb)
+  ) into v_shared
+  from (select * from shared_ch limit 12) s;
+
+  if not v_can_view then
+    return jsonb_build_object(
+      'exists', true,
+      'limited', true,
+      'profile_id', v_prof.id,
+      'display_name', v_prof.display_name,
+      'avatar_url', v_prof.avatar_url,
+      'role', v_prof.role,
+      'shared', v_shared
+    );
+  end if;
+
+  select * into v_stats from app_profile_stats where profile_id = p_profile_id;
+
+  v_base := jsonb_build_object(
+    'exists', true,
+    'limited', false,
+    'profile_id', v_prof.id,
+    'display_name', v_prof.display_name,
+    'avatar_url', v_prof.avatar_url,
+    'role', v_prof.role,
+    'bio', v_prof.bio,
+    'tagline', v_prof.tagline,
+    'visibility', v_prof.visibility,
+    'is_founding_expert', coalesce(v_prof.is_founding_expert, false),
+    'facts', coalesce(v_prof.profile_facts, '{}'::jsonb),
+    'shared', v_shared
+  );
+
+  if v_is_creator then
+    select coalesce(jsonb_agg(jsonb_build_object(
+             'id', id, 'kind', kind, 'title', title, 'org', org,
+             'year', year, 'year_end', year_end)
+             order by sort_order, year desc nulls last), '[]'::jsonb)
+      into v_credentials
+      from app_expert_credential where profile_id = p_profile_id;
+
+    v_proof := jsonb_build_object(
+      'avg_rating', coalesce(v_stats.avg_rating, 0),
+      'total_reviews', coalesce(v_stats.total_reviews, 0),
+      'tribe_count', coalesce(v_stats.creator_tribe_members_count, 0),
+      'active_tribe_members', (
+        select count(distinct m.user_id)
+        from app_challenge_member m
+        join app_challenge c on c.id = m.challenge_id
+        where c.status = 'published'
+          and c.end_date >= current_date
+          and (
+            c.owner_id = p_profile_id
+            or exists (
+              select 1 from app_challenge_cohost ch
+              where ch.challenge_id = c.id and ch.cohost_id = p_profile_id
+            )
+          )
+      ),
+      'hosting_count', (
+        select count(*) from (
+          select c.id from app_challenge c where c.owner_id = p_profile_id and c.status <> 'draft'
+          union
+          select ch.challenge_id from app_challenge_cohost ch
+            join app_challenge c2 on c2.id = ch.challenge_id
+           where ch.cohost_id = p_profile_id and c2.status <> 'draft'
+        ) h
+      ),
+      'sessions_led', (
+        select count(distinct s.id) from app_session s
+        left join app_session_cohost sc on sc.session_id = s.id and sc.cohost_id = p_profile_id
+        where (s.host_id = p_profile_id or sc.cohost_id = p_profile_id)
+          and (s.started_at is not null or s.status in ('ended', 'completed'))
+      ),
+      'questions_answered', (
+        select count(*) from app_challenge_comment
+        where author_id = p_profile_id and is_coach_answer = true
+      )
+    );
+  else
+    if v_prof.visibility = 'public' then
+      v_proof := jsonb_build_object(
+        'tribes_count', (select count(*) from app_challenge_member where user_id = p_profile_id),
+        'completed_count', (
+          select count(*) from app_challenge_member m
+          join app_challenge c on c.id = m.challenge_id
+          where m.user_id = p_profile_id
+            and (c.status = 'completed' or (c.status = 'published' and c.end_date < current_date))
+        ),
+        'sessions_attended', (
+          select count(*) from app_attendance
+          where user_id = p_profile_id and joined_at is not null
+        )
+      );
+    end if;
+  end if;
+
+  return v_base || jsonb_build_object('credentials', v_credentials, 'proof', v_proof);
+end;
+$$;
+
+
+ALTER FUNCTION "public"."load_public_profile"("p_profile_id" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."load_tribe_faces"("p_challenge_ids" "uuid"[], "p_limit" integer DEFAULT 11) RETURNS TABLE("challenge_id" "uuid", "profile_id" "uuid", "display_name" "text", "avatar_url" "text", "kind" "text", "member_total" integer)
+    LANGUAGE "sql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+  with allowed as (
+    select c.id
+    from app_challenge c
+    where c.id = any(p_challenge_ids)
+      and (
+        c.owner_id = auth.uid()
+        or exists (select 1 from app_challenge_cohost ch
+                    where ch.challenge_id = c.id and ch.cohost_id = auth.uid())
+        or exists (select 1 from app_challenge_member m
+                    where m.challenge_id = c.id and m.user_id = auth.uid())
+      )
+  ), totals as (
+    select m.challenge_id, count(*)::integer as member_total
+    from app_challenge_member m
+    join allowed a on a.id = m.challenge_id
+    group by m.challenge_id
+  ), ranked as (
+    select m.challenge_id,
+           m.user_id,
+           row_number() over (
+             partition by m.challenge_id
+             -- The viewer first, always. Then newest joiners.
+             order by (m.user_id = auth.uid()) desc, m.joined_at desc nulls last
+           ) as rn
+    from app_challenge_member m
+    join allowed a on a.id = m.challenge_id
+  )
+  select r.challenge_id,
+         p.id as profile_id,
+         p.display_name,
+         p.avatar_url,
+         'member'::text as kind,
+         coalesce(t.member_total, 0) as member_total
+  from ranked r
+  join app_profile p on p.id = r.user_id
+  left join totals t on t.challenge_id = r.challenge_id
+  where r.rn <= greatest(p_limit, 1)
+  order by r.challenge_id, r.rn;
+$$;
+
+
+ALTER FUNCTION "public"."load_tribe_faces"("p_challenge_ids" "uuid"[], "p_limit" integer) OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."load_tribe_faces"("p_challenge_ids" "uuid"[], "p_limit" integer) IS 'Capped member faces (name + avatar only) for experiences the caller belongs to. Powers the tribe constellation on the dashboard cards.';
+
 
 
 CREATE OR REPLACE FUNCTION "public"."load_workspace"("p_challenge_id" "uuid") RETURNS "jsonb"
@@ -4153,10 +6434,24 @@ BEGIN
     'status', v_challenge.status,
     'space_id', v_space_id,
     'owner_split', v_owner_split,
+    'min_start_date', (
+      CASE WHEN v_challenge.continued_from_challenge_id IS NOT NULL THEN
+        (SELECT (src.end_date + 1) FROM app_challenge src
+         WHERE src.id = v_challenge.continued_from_challenge_id)
+      ELSE NULL END
+    ),
     'dm_conversation_id', (
-      SELECT i.dm_conversation_id FROM app_collaboration_invite i
-      WHERE i.challenge_id = p_challenge_id AND i.dm_conversation_id IS NOT NULL
-      ORDER BY i.created_at ASC LIMIT 1
+      SELECT i.dm_conversation_id
+      FROM app_collaboration_invite i
+      JOIN app_challenge c ON c.id = i.challenge_id
+      WHERE i.dm_conversation_id IS NOT NULL
+        AND (
+          i.challenge_id = p_challenge_id
+          OR (v_challenge.continuation_group_id IS NOT NULL
+              AND c.continuation_group_id = v_challenge.continuation_group_id)
+        )
+      ORDER BY (i.challenge_id = p_challenge_id) DESC, i.created_at ASC
+      LIMIT 1
     ),
     'challenge', jsonb_build_object(
       'id', v_challenge.id,
@@ -4701,6 +6996,26 @@ $$;
 ALTER FUNCTION "public"."mark_notification_read"("p_id" "uuid") OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."material_released_at"("p_timing" "text", "p_start_time" timestamp with time zone, "p_ended_at" timestamp with time zone, "p_duration_minutes" integer) RETURNS timestamp with time zone
+    LANGUAGE "sql" IMMUTABLE
+    SET "search_path" TO 'public'
+    AS $$
+  select case p_timing
+    when 'before_24h' then p_start_time - interval '24 hours'
+    when 'before_1w'  then p_start_time - interval '7 days'
+    else coalesce(p_ended_at,
+           p_start_time + make_interval(mins => coalesce(p_duration_minutes, 60)))
+  end;
+$$;
+
+
+ALTER FUNCTION "public"."material_released_at"("p_timing" "text", "p_start_time" timestamp with time zone, "p_ended_at" timestamp with time zone, "p_duration_minutes" integer) OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."material_released_at"("p_timing" "text", "p_start_time" timestamp with time zone, "p_ended_at" timestamp with time zone, "p_duration_minutes" integer) IS 'The release moment of a material, computed from its session clock. Shared by load_challenge_materials and the storage read policy so they can never drift.';
+
+
+
 CREATE OR REPLACE FUNCTION "public"."my_collab_reputation"("limit_recent" integer DEFAULT 3) RETURNS TABLE("subject_id" "uuid", "reviews_count" integer, "avg_rating" numeric, "last_reviewed_at" timestamp with time zone, "recent" "jsonb")
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -4961,6 +7276,13 @@ begin
       jsonb_build_object(
         'kind', 'session_time_changed',
         'session_id', new.id,
+        'session_title', new.title,
+        'challenge_id', (select cs.challenge_id from public.app_challenge_session cs
+                         where cs.session_id = new.id limit 1),
+        'experience_title', (select ch.title from public.app_challenge_session cs
+                             join public.app_challenge ch on ch.id = cs.challenge_id
+                             where cs.session_id = new.id limit 1),
+        'actor_id', auth.uid(),
         'old_start_time', old.start_time,
         'new_start_time', new.start_time,
         'reason', new.change_reason
@@ -6052,13 +8374,6 @@ begin
   if v_body is null then raise exception 'body is required'; end if;
   if length(v_body) > 2000 then raise exception 'intro is too long'; end if;
 
-  if not exists (
-    select 1 from public.app_challenge_member
-    where challenge_id = p_challenge_id and user_id = v_actor
-  ) then
-    raise exception 'not enrolled in this challenge';
-  end if;
-
   select id into v_space_id
   from public.app_challenge_space
   where source_challenge_id = p_challenge_id
@@ -6066,6 +8381,14 @@ begin
 
   if v_space_id is null then
     raise exception 'no challenge space for this challenge';
+  end if;
+
+  -- Lineage-aware gate: you may intro once you can post in the space's ACTIVE run.
+  -- This holds a future-run buyer until their run goes live (case 3) and lets a
+  -- continuation buyer intro at their kickoff even though their membership row is
+  -- on a non-source run.
+  if not can_post_in_challenge_space(v_space_id, v_actor) then
+    raise exception 'not active in this experience yet';
   end if;
 
   if exists (
@@ -6115,7 +8438,45 @@ $$;
 ALTER FUNCTION "public"."submit_pre_pulse"("p_session_id" "uuid", "p_value" smallint) OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."submit_session_reflection"("p_session_id" "uuid", "p_body" "text", "p_energy_after" smallint DEFAULT NULL::smallint) RETURNS "uuid"
+CREATE OR REPLACE FUNCTION "public"."submit_pre_pulse"("p_session_id" "uuid", "p_mood" smallint, "p_energy" smallint) RETURNS "void"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
+    AS $$
+declare
+  v_actor uuid := auth.uid();
+begin
+  if v_actor is null then raise exception 'Unauthorized'; end if;
+  if p_session_id is null then raise exception 'session_id is required'; end if;
+  if p_mood is null and p_energy is null then
+    raise exception 'at least one of mood/energy is required';
+  end if;
+  if p_mood is not null and (p_mood < 0 or p_mood > 10) then
+    raise exception 'mood must be between 0 and 10';
+  end if;
+  if p_energy is not null and (p_energy < 0 or p_energy > 10) then
+    raise exception 'energy must be between 0 and 10';
+  end if;
+
+  -- The cohort metric is about participants; expert taps are silently
+  -- ignored rather than rejected (no error toast on the expert path).
+  if is_session_expert(p_session_id, v_actor) then
+    return;
+  end if;
+
+  insert into public.app_session_pre_pulse_response (session_id, user_id, value, mood)
+  values (p_session_id, v_actor, p_energy, p_mood)
+  on conflict (session_id, user_id)
+  do update set value = coalesce(excluded.value, app_session_pre_pulse_response.value),
+                mood  = coalesce(excluded.mood,  app_session_pre_pulse_response.mood),
+                created_at = now();
+end;
+$$;
+
+
+ALTER FUNCTION "public"."submit_pre_pulse"("p_session_id" "uuid", "p_mood" smallint, "p_energy" smallint) OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."submit_session_reflection"("p_session_id" "uuid", "p_body" "text", "p_energy_after" smallint DEFAULT NULL::smallint, "p_mood_after" smallint DEFAULT NULL::smallint) RETURNS "uuid"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
     AS $$
@@ -6125,23 +8486,29 @@ declare
   v_post_id uuid;
   v_metadata jsonb := '{}'::jsonb;
   v_body text := nullif(btrim(coalesce(p_body, '')), '');
+  v_before record;
 begin
   if v_actor is null then raise exception 'Unauthorized'; end if;
   if p_session_id is null then raise exception 'session_id is required'; end if;
-  if v_body is null and p_energy_after is null then
-    raise exception 'reflection requires body or energy value';
+  if v_body is null and p_energy_after is null and p_mood_after is null then
+    raise exception 'reflection requires body or a pulse value';
   end if;
   if p_energy_after is not null and (p_energy_after < 0 or p_energy_after > 10) then
     raise exception 'energy_after must be between 0 and 10';
   end if;
+  if p_mood_after is not null and (p_mood_after < 0 or p_mood_after > 10) then
+    raise exception 'mood_after must be between 0 and 10';
+  end if;
 
+  -- You reflect on YOUR attendance: having been in the room (joined_at is
+  -- written by issue_join_token on entry) is the whole eligibility. The
+  -- session does not need to be ended — leaving early is still leaving.
   if not exists (
     select 1
     from public.app_attendance a
-    join public.app_session s on s.id = a.session_id
     where a.session_id = p_session_id
       and a.user_id = v_actor
-      and s.ended_at is not null
+      and a.joined_at is not null
   ) then
     raise exception 'not eligible to reflect on this session';
   end if;
@@ -6157,7 +8524,24 @@ begin
   end if;
 
   if p_energy_after is not null then
-    v_metadata := jsonb_build_object('energy_after', p_energy_after);
+    v_metadata := v_metadata || jsonb_build_object('energy_after', p_energy_after);
+  end if;
+  if p_mood_after is not null then
+    v_metadata := v_metadata || jsonb_build_object('mood_after', p_mood_after);
+  end if;
+
+  -- Stamp the author's OWN before-values so the feed renders the pair with
+  -- zero joins. Posting the pair on your own reflection is your disclosure.
+  select r.value as energy, r.mood into v_before
+  from public.app_session_pre_pulse_response r
+  where r.session_id = p_session_id and r.user_id = v_actor;
+  if found then
+    if v_before.energy is not null and p_energy_after is not null then
+      v_metadata := v_metadata || jsonb_build_object('energy_before', v_before.energy);
+    end if;
+    if v_before.mood is not null and p_mood_after is not null then
+      v_metadata := v_metadata || jsonb_build_object('mood_before', v_before.mood);
+    end if;
   end if;
 
   insert into public.app_challenge_post (
@@ -6177,7 +8561,7 @@ end;
 $$;
 
 
-ALTER FUNCTION "public"."submit_session_reflection"("p_session_id" "uuid", "p_body" "text", "p_energy_after" smallint) OWNER TO "postgres";
+ALTER FUNCTION "public"."submit_session_reflection"("p_session_id" "uuid", "p_body" "text", "p_energy_after" smallint, "p_mood_after" smallint) OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."trg_dm_message_notify"() RETURNS "trigger"
@@ -6214,6 +8598,72 @@ $$;
 
 
 ALTER FUNCTION "public"."trg_dm_message_notify"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."trg_material_session_in_challenge"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
+    AS $$
+begin
+  if not exists (
+    select 1 from public.app_challenge_session cs
+    where cs.challenge_id = new.challenge_id and cs.session_id = new.session_id
+  ) then
+    raise exception 'Material session must belong to the material''s experience.'
+      using errcode = '23514';
+  end if;
+  -- Soft ceiling: a guard against library-shaped behaviour as much as abuse.
+  if (select count(*) from public.app_challenge_material
+       where challenge_id = new.challenge_id) >= 30 then
+    raise exception 'An experience carries at most 30 materials.'
+      using errcode = '23514';
+  end if;
+  return new;
+end;
+$$;
+
+
+ALTER FUNCTION "public"."trg_material_session_in_challenge"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."trg_pilot_application_enqueue_emails"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+begin
+  -- Contained: this runs inside the applicant's submit transaction. If
+  -- enqueueing fails for any reason, the application itself must survive.
+  begin
+    perform public.app_enqueue_pilot_application_emails(NEW.id);
+  exception when others then
+    raise warning 'pilot application email enqueue failed for %: %', NEW.id, sqlerrm;
+  end;
+  return NEW;
+end;
+$$;
+
+
+ALTER FUNCTION "public"."trg_pilot_application_enqueue_emails"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."trg_profile_enqueue_welcome"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+begin
+  if NEW.role = 'participant' then
+    begin
+      perform public.app_enqueue_welcome_email(NEW.id);
+    exception when others then
+      raise warning 'welcome enqueue failed for profile %: %', NEW.id, sqlerrm;
+    end;
+  end if;
+  return NEW;
+end;
+$$;
+
+
+ALTER FUNCTION "public"."trg_profile_enqueue_welcome"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."trg_tx_auto_join_creator_space"() RETURNS "trigger"
@@ -6287,19 +8737,24 @@ CREATE OR REPLACE FUNCTION "public"."trg_tx_enqueue_receipt"() RETURNS "trigger"
 declare
   v_exists boolean;
 begin
-  -- Fire only when status is 'succeeded' and it wasn't succeeded before
   if (TG_OP = 'INSERT' and NEW.status = 'succeeded')
      or (TG_OP = 'UPDATE' and NEW.status = 'succeeded' and (OLD.status is distinct from 'succeeded'))
   then
-    -- Skip if an outbox row already exists
     select exists (
       select 1 from public.app_email_outbox
       where kind='receipt' and tx_id = NEW.id
     ) into v_exists;
 
     if not v_exists then
-      -- Enqueue. Let the function validate email & status and raise if something is off.
-      perform public.admin_email_enqueue_receipt(NEW.id);
+      -- Contained: this runs inside the transaction that records the payment.
+      -- If enqueueing raises (no buyer email, template bug, anything), the
+      -- payment record must survive; the receipt can be enqueued by the
+      -- webhook's explicit call or by hand later.
+      begin
+        perform public.admin_email_enqueue_receipt(NEW.id);
+      exception when others then
+        raise warning 'receipt enqueue failed for tx %: %', NEW.id, sqlerrm;
+      end;
     end if;
   end if;
 
@@ -6425,13 +8880,14 @@ declare
   v_owner_id uuid;
   v_status challenge_status;
   v_contract_id uuid;
+  v_old_start date;
   v_is_party boolean;
   v_promise_changed boolean := false;
 begin
   if v_actor is null then raise exception 'not_authenticated'; end if;
 
-  select owner_id, status, contract_id
-  into v_owner_id, v_status, v_contract_id
+  select owner_id, status, contract_id, start_date
+  into v_owner_id, v_status, v_contract_id, v_old_start
   from public.app_challenge
   where id = p_challenge_id;
 
@@ -6488,6 +8944,20 @@ begin
     promise_edited_by = case when v_promise_changed then v_actor
       else promise_edited_by end
   where id = p_challenge_id;
+
+  -- Moving a DRAFT's start date moves its whole plan: every linked draft
+  -- session shifts by the same day-delta. Published sessions move one at a
+  -- time through app_reschedule_session, which notifies the tribe.
+  if v_old_start is not null and p_start_date <> v_old_start then
+    update public.app_session s
+    set start_time = s.start_time + make_interval(days => (p_start_date - v_old_start))
+    where s.status = 'draft'
+      and s.id in (
+        select cs.session_id
+        from public.app_challenge_session cs
+        where cs.challenge_id = p_challenge_id
+      );
+  end if;
 end;
 $$;
 
@@ -6713,6 +9183,34 @@ $_$;
 ALTER FUNCTION "public"."upsert_transaction_from_checkout"("buyer_id" "uuid", "creator_id" "uuid", "session_id" "uuid", "challenge_id" "uuid", "tx_type" "text", "status" "text", "quantity" integer, "currency" "text", "amount_gross_cents" bigint, "processing_fee_fixed_cents" bigint, "processing_fee_percent_cents" bigint, "amount_after_stripe_cents" bigint, "creator_cut_cents" bigint, "platform_cut_cents" bigint, "provider" "text", "provider_payment_id" "text", "metadata" "jsonb") OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."app_admin_action_log" (
+    "id" bigint NOT NULL,
+    "admin_id" "uuid" NOT NULL,
+    "action" "text" NOT NULL,
+    "target" "text",
+    "detail" "jsonb",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."app_admin_action_log" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."app_admin_action_log" IS 'Admin audit trail. RLS deny-all is DELIBERATE: written and read only by admin_* SECURITY DEFINER RPCs.';
+
+
+
+ALTER TABLE "public"."app_admin_action_log" ALTER COLUMN "id" ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME "public"."app_admin_action_log_id_seq"
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+
 CREATE TABLE IF NOT EXISTS "public"."app_challenge" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "title" "text" NOT NULL,
@@ -6782,6 +9280,30 @@ ALTER TABLE ONLY "public"."app_challenge_comment" REPLICA IDENTITY FULL;
 ALTER TABLE "public"."app_challenge_comment" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."app_challenge_material" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "challenge_id" "uuid" NOT NULL,
+    "session_id" "uuid" NOT NULL,
+    "timing" "text" DEFAULT 'after'::"text" NOT NULL,
+    "title" "text" NOT NULL,
+    "note" "text",
+    "storage_path" "text" NOT NULL,
+    "file_name" "text" NOT NULL,
+    "file_size_bytes" integer NOT NULL,
+    "mime_type" "text" NOT NULL,
+    "uploaded_by" "uuid" NOT NULL,
+    "sort_order" integer DEFAULT 0 NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "app_challenge_material_file_size_bytes_check" CHECK (("file_size_bytes" > 0)),
+    CONSTRAINT "app_challenge_material_note_check" CHECK (("char_length"("note") <= 280)),
+    CONSTRAINT "app_challenge_material_timing_check" CHECK (("timing" = ANY (ARRAY['before_24h'::"text", 'before_1w'::"text", 'after'::"text"]))),
+    CONSTRAINT "app_challenge_material_title_check" CHECK ((("char_length"("title") >= 2) AND ("char_length"("title") <= 120)))
+);
+
+
+ALTER TABLE "public"."app_challenge_material" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."app_challenge_member" (
     "challenge_id" "uuid" NOT NULL,
     "user_id" "uuid" NOT NULL,
@@ -6809,7 +9331,7 @@ CREATE TABLE IF NOT EXISTS "public"."app_challenge_post" (
     "context_id" "uuid",
     "directed_to" "uuid"[],
     "metadata" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
-    CONSTRAINT "app_challenge_post_body_check" CHECK ((("length"("body") >= 1) AND ("length"("body") <= 5000))),
+    CONSTRAINT "app_challenge_post_body_check" CHECK (((("length"("body") >= 1) AND ("length"("body") <= 5000)) OR (("kind" = 'reflection'::"text") AND ("body" = ''::"text")))),
     CONSTRAINT "app_challenge_post_kind_valid" CHECK (("kind" = ANY (ARRAY['talk'::"text", 'intro'::"text", 'intro_private'::"text", 'reflection'::"text", 'question'::"text"])))
 );
 
@@ -6973,6 +9495,24 @@ CREATE OR REPLACE VIEW "public"."app_creator_earnings" WITH ("security_invoker"=
 ALTER VIEW "public"."app_creator_earnings" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."app_creator_invite" (
+    "code" "text" DEFAULT "encode"("extensions"."gen_random_bytes"(6), 'hex'::"text") NOT NULL,
+    "note" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "expires_at" timestamp with time zone DEFAULT ("now"() + '60 days'::interval) NOT NULL,
+    "redeemed_by" "uuid",
+    "redeemed_at" timestamp with time zone,
+    "revoked" boolean DEFAULT false NOT NULL
+);
+
+
+ALTER TABLE "public"."app_creator_invite" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."app_creator_invite" IS 'Expert invite codes. RLS deny-all is DELIBERATE: validated via app_validate_creator_invite, managed service-side.';
+
+
+
 CREATE TABLE IF NOT EXISTS "public"."app_creator_post" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "space_id" "uuid" NOT NULL,
@@ -7118,32 +9658,6 @@ ALTER SEQUENCE "public"."app_edge_call_log_id_seq" OWNED BY "public"."app_edge_c
 
 
 
-CREATE TABLE IF NOT EXISTS "public"."app_email_outbox" (
-    "id" bigint NOT NULL,
-    "kind" "text" NOT NULL,
-    "tx_id" "uuid",
-    "to_email" "text" NOT NULL,
-    "subject" "text" NOT NULL,
-    "html_body" "text" NOT NULL,
-    "text_body" "text" NOT NULL,
-    "attempt_count" integer DEFAULT 0 NOT NULL,
-    "last_error" "text",
-    "enqueued_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    "sent_at" timestamp with time zone,
-    "created_at" timestamp with time zone DEFAULT "now"(),
-    "user_id" "uuid",
-    "target_id" "uuid",
-    CONSTRAINT "app_email_outbox_kind_check" CHECK (("kind" = 'receipt'::"text"))
-);
-
-
-ALTER TABLE "public"."app_email_outbox" OWNER TO "postgres";
-
-
-COMMENT ON TABLE "public"."app_email_outbox" IS 'Append-only outbox for transactional emails (receipts, etc). service_role inserts; sender marks sent_at.';
-
-
-
 CREATE SEQUENCE IF NOT EXISTS "public"."app_email_outbox_id_seq"
     START WITH 1
     INCREMENT BY 1
@@ -7156,6 +9670,32 @@ ALTER SEQUENCE "public"."app_email_outbox_id_seq" OWNER TO "postgres";
 
 
 ALTER SEQUENCE "public"."app_email_outbox_id_seq" OWNED BY "public"."app_email_outbox"."id";
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."app_expert_credential" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "profile_id" "uuid" DEFAULT "auth"."uid"() NOT NULL,
+    "kind" "text" NOT NULL,
+    "title" "text" NOT NULL,
+    "org" "text",
+    "year" integer,
+    "sort_order" integer DEFAULT 0 NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "year_end" integer,
+    CONSTRAINT "app_expert_credential_kind_check" CHECK (("kind" = ANY (ARRAY['certification'::"text", 'education'::"text", 'experience'::"text"]))),
+    CONSTRAINT "app_expert_credential_org_check" CHECK ((("org" IS NULL) OR ("char_length"("org") <= 120))),
+    CONSTRAINT "app_expert_credential_title_check" CHECK ((("char_length"("btrim"("title")) >= 2) AND ("char_length"("btrim"("title")) <= 120))),
+    CONSTRAINT "app_expert_credential_year_check" CHECK ((("year" IS NULL) OR (("year" >= 1950) AND ("year" <= 2100)))),
+    CONSTRAINT "app_expert_credential_year_end_check" CHECK ((("year_end" IS NULL) OR (("year_end" >= 1950) AND ("year_end" <= 2100)))),
+    CONSTRAINT "app_expert_credential_year_range_ok" CHECK ((("year_end" IS NULL) OR ("year" IS NULL) OR ("year_end" >= "year")))
+);
+
+
+ALTER TABLE "public"."app_expert_credential" OWNER TO "postgres";
+
+
+COMMENT ON COLUMN "public"."app_expert_credential"."year_end" IS 'Optional end year for multi-year credentials; renders as "2018-2020". NULL = single year (or no year at all).';
 
 
 
@@ -7186,6 +9726,18 @@ CREATE TABLE IF NOT EXISTS "public"."app_notification" (
 
 
 ALTER TABLE "public"."app_notification" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."app_participant_waitlist" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "email" "text" NOT NULL,
+    "source" "text" DEFAULT 'landing'::"text" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "app_participant_waitlist_email_shape" CHECK (((POSITION(('@'::"text") IN ("email")) > 1) AND ("char_length"("email") <= 320)))
+);
+
+
+ALTER TABLE "public"."app_participant_waitlist" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."app_payment_event" (
@@ -7255,6 +9807,8 @@ CREATE TABLE IF NOT EXISTS "public"."app_profile" (
     "is_admin" boolean DEFAULT false,
     "cover_image_url" "text",
     "platform_fee_percent" numeric(5,2),
+    "is_founding_expert" boolean DEFAULT false NOT NULL,
+    "profile_facts" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
     CONSTRAINT "app_profile_creator_visibility_check" CHECK ((("role" <> 'creator'::"text") OR ("visibility" = 'public'::"text"))),
     CONSTRAINT "app_profile_role_check" CHECK (("role" = ANY (ARRAY['participant'::"text", 'creator'::"text", 'admin'::"text"]))),
     CONSTRAINT "app_profile_visibility_check" CHECK (("visibility" = ANY (ARRAY['public'::"text", 'private'::"text"])))
@@ -7262,6 +9816,14 @@ CREATE TABLE IF NOT EXISTS "public"."app_profile" (
 
 
 ALTER TABLE "public"."app_profile" OWNER TO "postgres";
+
+
+COMMENT ON COLUMN "public"."app_profile"."is_founding_expert" IS 'Founding pilot expert marker — auto-set on creator-invite redemption (app_handle_new_user). Public-safe: shown as a chip on the buyer page.';
+
+
+
+COMMENT ON COLUMN "public"."app_profile"."profile_facts" IS 'Optional self-shared facts {age, city, training_since, disciplines[], focus}. Fill = share: only present keys render. Rankings/visibility machinery deliberately NOT here (Round 2).';
+
 
 
 CREATE TABLE IF NOT EXISTS "public"."app_session_cohost" (
@@ -7315,11 +9877,17 @@ ALTER VIEW "public"."vw_expert_review_stats" OWNER TO "postgres";
 
 CREATE OR REPLACE VIEW "public"."app_profile_stats" AS
  WITH "creator_tribe_members" AS (
-         SELECT "s_1"."creator_id" AS "profile_id",
-            ("count"("m"."user_id"))::integer AS "creator_tribe_members_count"
-           FROM ("public"."app_creator_space" "s_1"
-             LEFT JOIN "public"."app_creator_space_member" "m" ON (("m"."space_id" = "s_1"."id")))
-          GROUP BY "s_1"."creator_id"
+         SELECT "cc"."creator_id" AS "profile_id",
+            ("count"(DISTINCT "m"."user_id"))::integer AS "creator_tribe_members_count"
+           FROM (( SELECT "c"."owner_id" AS "creator_id",
+                    "c"."id" AS "challenge_id"
+                   FROM "public"."app_challenge" "c"
+                UNION
+                 SELECT "ch"."cohost_id",
+                    "ch"."challenge_id"
+                   FROM "public"."app_challenge_cohost" "ch") "cc"
+             JOIN "public"."app_challenge_member" "m" ON (("m"."challenge_id" = "cc"."challenge_id")))
+          GROUP BY "cc"."creator_id"
         ), "sessions" AS (
          SELECT "app_session"."host_id" AS "profile_id",
             ("count"(*) FILTER (WHERE ("app_session"."status" = 'published'::"public"."session_status")))::integer AS "upcoming_sessions"
@@ -7351,18 +9919,20 @@ ALTER VIEW "public"."app_profile_stats" OWNER TO "postgres";
 
 
 CREATE OR REPLACE VIEW "public"."app_profile_public" AS
- SELECT "profile_id",
-    "display_name",
-    "role",
-    "bio",
-    "avatar_url",
-    "visibility",
-    "creator_tribe_members_count",
-    "upcoming_sessions",
-    "avg_rating",
-    "total_reviews"
-   FROM "public"."app_profile_stats" "ps"
-  WHERE "public"."can_view_profile"("profile_id");
+ SELECT "ps"."profile_id",
+    "ps"."display_name",
+    "ps"."role",
+    "ps"."bio",
+    "ps"."avatar_url",
+    "ps"."visibility",
+    "ps"."creator_tribe_members_count",
+    "ps"."upcoming_sessions",
+    "ps"."avg_rating",
+    "ps"."total_reviews",
+    "ap"."profile_facts"
+   FROM ("public"."app_profile_stats" "ps"
+     JOIN "public"."app_profile" "ap" ON (("ap"."id" = "ps"."profile_id")))
+  WHERE "public"."can_view_profile"("ps"."profile_id");
 
 
 ALTER VIEW "public"."app_profile_public" OWNER TO "postgres";
@@ -7408,11 +9978,17 @@ CREATE TABLE IF NOT EXISTS "public"."app_session_pre_pulse_response" (
     "user_id" "uuid" NOT NULL,
     "value" smallint NOT NULL,
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "mood" smallint,
+    CONSTRAINT "app_session_pre_pulse_response_mood_check" CHECK ((("mood" IS NULL) OR (("mood" >= 0) AND ("mood" <= 10)))),
     CONSTRAINT "app_session_pre_pulse_response_value_check" CHECK ((("value" >= 0) AND ("value" <= 10)))
 );
 
 
 ALTER TABLE "public"."app_session_pre_pulse_response" OWNER TO "postgres";
+
+
+COMMENT ON COLUMN "public"."app_session_pre_pulse_response"."value" IS 'ENERGY axis (0-10). Kept as "value" for historic continuity; mood is the second axis.';
+
 
 
 CREATE TABLE IF NOT EXISTS "public"."app_setting" (
@@ -7423,6 +9999,10 @@ CREATE TABLE IF NOT EXISTS "public"."app_setting" (
 
 
 ALTER TABLE "public"."app_setting" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."app_setting" IS 'System settings (platform fee etc.). RLS deny-all is DELIBERATE: read by internal functions only.';
+
 
 
 CREATE TABLE IF NOT EXISTS "public"."app_staff" (
@@ -7823,6 +10403,29 @@ CREATE OR REPLACE VIEW "public"."vw_experience_review_stats" AS
 
 
 ALTER VIEW "public"."vw_experience_review_stats" OWNER TO "postgres";
+
+
+CREATE OR REPLACE VIEW "public"."vw_experience_reviews_public" AS
+ SELECT "c"."id" AS "challenge_id",
+    COALESCE("c"."continuation_group_id", "c"."id") AS "group_key",
+    "r"."id" AS "review_id",
+    "r"."rating",
+    NULLIF(TRIM(BOTH FROM "r"."comment"), ''::"text") AS "comment",
+    "r"."created_at",
+    COALESCE(NULLIF(TRIM(BOTH FROM "p"."display_name"), ''::"text"), 'Member'::"text") AS "reviewer_name",
+    "p"."avatar_url" AS "reviewer_avatar_url"
+   FROM ((("public"."app_challenge" "c"
+     JOIN "public"."app_challenge" "rc" ON ((COALESCE("rc"."continuation_group_id", "rc"."id") = COALESCE("c"."continuation_group_id", "c"."id"))))
+     JOIN "public"."app_review" "r" ON (("r"."challenge_id" = "rc"."id")))
+     LEFT JOIN "public"."app_profile" "p" ON (("p"."id" = "r"."reviewer_id")))
+  WHERE ("c"."status" = ANY (ARRAY['published'::"public"."challenge_status", 'completed'::"public"."challenge_status"]));
+
+
+ALTER VIEW "public"."vw_experience_reviews_public" OWNER TO "postgres";
+
+
+COMMENT ON VIEW "public"."vw_experience_reviews_public" IS 'Buyer-page review list, lineage-wide per challenge_id. Definer view: safe fields only (no reviewer ids), published/completed experiences only.';
+
 
 
 CREATE OR REPLACE VIEW "public"."vw_my_challenges_overview" WITH ("security_invoker"='true') AS
@@ -8295,6 +10898,101 @@ COMMENT ON VIEW "public"."vw_my_creator_summary" IS 'KPI header for the signed-i
 
 
 
+CREATE OR REPLACE VIEW "public"."vw_my_earnings_lines" AS
+ WITH "me" AS (
+         SELECT "auth"."uid"() AS "uid"
+        ), "tx" AS (
+         SELECT "t"."id",
+            "t"."type",
+            "t"."created_at",
+            "t"."amount_gross_cents",
+            "t"."platform_cut_cents",
+            "t"."creator_cut_cents",
+            "t"."platform_fee_percent",
+            "t"."challenge_id",
+            "t"."session_id",
+            "t"."buyer_id",
+            "t"."creator_id" AS "owner_id",
+            COALESCE("c"."title", "s"."title") AS "product_title",
+            "bp"."display_name" AS "buyer_name"
+           FROM ((("public"."app_transaction" "t"
+             LEFT JOIN "public"."app_challenge" "c" ON (("c"."id" = "t"."challenge_id")))
+             LEFT JOIN "public"."app_session" "s" ON (("s"."id" = "t"."session_id")))
+             LEFT JOIN "public"."app_profile" "bp" ON (("bp"."id" = "t"."buyer_id")))
+          WHERE ("t"."status" = 'succeeded'::"public"."payment_status")
+        ), "cohosts" AS (
+         SELECT "t"."id" AS "tx_id",
+            "ch"."cohost_id",
+            "ch"."split_percent"
+           FROM ("tx" "t"
+             JOIN "public"."app_challenge_cohost" "ch" ON (("ch"."challenge_id" = "t"."challenge_id")))
+          WHERE ("t"."type" = 'bundle'::"public"."payment_type")
+        UNION ALL
+         SELECT "t"."id" AS "tx_id",
+            "sc"."cohost_id",
+            "sc"."split_percent"
+           FROM ("tx" "t"
+             JOIN "public"."app_session_cohost" "sc" ON (("sc"."session_id" = "t"."session_id")))
+          WHERE ("t"."type" = 'ticket'::"public"."payment_type")
+        ), "cohost_agg" AS (
+         SELECT "ch"."tx_id",
+            ("sum"("floor"(((("t"."creator_cut_cents")::numeric * ("ch"."split_percent")::numeric) / (100)::numeric))))::bigint AS "cohost_cut_cents",
+            ("count"(*))::integer AS "cohost_count",
+            "min"("p"."display_name") AS "single_cohost_name"
+           FROM (("cohosts" "ch"
+             JOIN "tx" "t" ON (("t"."id" = "ch"."tx_id")))
+             LEFT JOIN "public"."app_profile" "p" ON (("p"."id" = "ch"."cohost_id")))
+          GROUP BY "ch"."tx_id"
+        )
+ SELECT "t"."id",
+    "t"."type",
+    "t"."created_at",
+    "t"."product_title",
+    "t"."buyer_id",
+    "t"."buyer_name",
+    "t"."amount_gross_cents",
+    "t"."platform_cut_cents",
+    "t"."creator_cut_cents",
+    COALESCE("t"."platform_fee_percent", "round"(((("t"."platform_cut_cents")::numeric * 100.0) / (NULLIF("t"."amount_gross_cents", 0))::numeric))) AS "effective_fee_percent",
+    'owner'::"text" AS "my_role",
+    NULL::integer AS "my_split_percent",
+    COALESCE("ca"."cohost_cut_cents", (0)::bigint) AS "cohost_cut_cents",
+    COALESCE("ca"."cohost_count", 0) AS "cohost_count",
+        CASE
+            WHEN ("ca"."cohost_count" = 1) THEN "ca"."single_cohost_name"
+            ELSE NULL::"text"
+        END AS "cohost_name",
+    ("t"."creator_cut_cents" - COALESCE("ca"."cohost_cut_cents", (0)::bigint)) AS "your_cut_cents"
+   FROM (("tx" "t"
+     CROSS JOIN "me")
+     LEFT JOIN "cohost_agg" "ca" ON (("ca"."tx_id" = "t"."id")))
+  WHERE (("me"."uid" IS NOT NULL) AND ("t"."owner_id" = "me"."uid"))
+UNION ALL
+ SELECT "t"."id",
+    "t"."type",
+    "t"."created_at",
+    "t"."product_title",
+    "t"."buyer_id",
+    "t"."buyer_name",
+    "t"."amount_gross_cents",
+    "t"."platform_cut_cents",
+    "t"."creator_cut_cents",
+    COALESCE("t"."platform_fee_percent", "round"(((("t"."platform_cut_cents")::numeric * 100.0) / (NULLIF("t"."amount_gross_cents", 0))::numeric))) AS "effective_fee_percent",
+    'cohost'::"text" AS "my_role",
+    "ch"."split_percent" AS "my_split_percent",
+    NULL::bigint AS "cohost_cut_cents",
+    NULL::integer AS "cohost_count",
+    NULL::"text" AS "cohost_name",
+    ("floor"(((("t"."creator_cut_cents")::numeric * ("ch"."split_percent")::numeric) / (100)::numeric)))::bigint AS "your_cut_cents"
+   FROM (("tx" "t"
+     CROSS JOIN "me")
+     JOIN "cohosts" "ch" ON ((("ch"."tx_id" = "t"."id") AND ("ch"."cohost_id" = "me"."uid"))))
+  WHERE (("me"."uid" IS NOT NULL) AND ("t"."owner_id" <> "me"."uid"));
+
+
+ALTER VIEW "public"."vw_my_earnings_lines" OWNER TO "postgres";
+
+
 CREATE OR REPLACE VIEW "public"."vw_my_lifetime_summary" AS
  WITH "me" AS (
          SELECT "auth"."uid"() AS "uid"
@@ -8718,13 +11416,17 @@ COMMENT ON VIEW "public"."vw_session_overview" IS 'Operational snapshot per sess
 
 
 
-CREATE OR REPLACE VIEW "public"."vw_session_pre_pulse_aggregate" WITH ("security_invoker"='true') AS
+CREATE OR REPLACE VIEW "public"."vw_session_pre_pulse_aggregate" AS
  SELECT "s"."id" AS "session_id",
     ("count"("p"."id"))::integer AS "response_count",
         CASE
-            WHEN ("count"("p"."id") > 0) THEN "round"("avg"("p"."value"), 1)
+            WHEN ("count"("p"."value") > 0) THEN "round"("avg"("p"."value"), 1)
             ELSE NULL::numeric
         END AS "avg_value",
+        CASE
+            WHEN ("count"("p"."mood") > 0) THEN "round"("avg"("p"."mood"), 1)
+            ELSE NULL::numeric
+        END AS "avg_mood",
     (( SELECT "count"(*) AS "count"
            FROM "public"."app_attendance" "a"
           WHERE ("a"."session_id" = "s"."id")))::integer AS "eligible_count",
@@ -8766,11 +11468,16 @@ ALTER VIEW "public"."vw_stream_tokens_expired" OWNER TO "postgres";
 CREATE TABLE IF NOT EXISTS "public"."webhook_event_lock" (
     "provider" "text" NOT NULL,
     "provider_event_id" "text" NOT NULL,
-    "created_at" timestamp with time zone DEFAULT "now"()
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "processed_at" timestamp with time zone
 );
 
 
 ALTER TABLE "public"."webhook_event_lock" OWNER TO "postgres";
+
+
+COMMENT ON COLUMN "public"."webhook_event_lock"."processed_at" IS 'When processing COMPLETED. A lock row with processed_at NULL means a prior attempt died mid-flight; retries of such events must reprocess, not dedupe.';
+
 
 
 ALTER TABLE ONLY "public"."app_edge_call_log" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."app_edge_call_log_id_seq"'::"regclass");
@@ -8782,6 +11489,11 @@ ALTER TABLE ONLY "public"."app_email_outbox" ALTER COLUMN "id" SET DEFAULT "next
 
 
 ALTER TABLE ONLY "public"."app_transaction_audit" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."app_transaction_audit_id_seq"'::"regclass");
+
+
+
+ALTER TABLE ONLY "public"."app_admin_action_log"
+    ADD CONSTRAINT "app_admin_action_log_pkey" PRIMARY KEY ("id");
 
 
 
@@ -8797,6 +11509,11 @@ ALTER TABLE ONLY "public"."app_challenge_cohost"
 
 ALTER TABLE ONLY "public"."app_challenge_comment"
     ADD CONSTRAINT "app_challenge_comment_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."app_challenge_material"
+    ADD CONSTRAINT "app_challenge_material_pkey" PRIMARY KEY ("id");
 
 
 
@@ -8880,6 +11597,11 @@ ALTER TABLE ONLY "public"."app_creator_contract_identity"
 
 
 
+ALTER TABLE ONLY "public"."app_creator_invite"
+    ADD CONSTRAINT "app_creator_invite_pkey" PRIMARY KEY ("code");
+
+
+
 ALTER TABLE ONLY "public"."app_creator_post_like"
     ADD CONSTRAINT "app_creator_post_like_pkey" PRIMARY KEY ("post_id", "user_id");
 
@@ -8935,6 +11657,11 @@ ALTER TABLE ONLY "public"."app_email_outbox"
 
 
 
+ALTER TABLE ONLY "public"."app_expert_credential"
+    ADD CONSTRAINT "app_expert_credential_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."app_feed_event"
     ADD CONSTRAINT "app_feed_event_pkey" PRIMARY KEY ("id");
 
@@ -8942,6 +11669,16 @@ ALTER TABLE ONLY "public"."app_feed_event"
 
 ALTER TABLE ONLY "public"."app_notification"
     ADD CONSTRAINT "app_notification_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."app_participant_waitlist"
+    ADD CONSTRAINT "app_participant_waitlist_email_key" UNIQUE ("email");
+
+
+
+ALTER TABLE ONLY "public"."app_participant_waitlist"
+    ADD CONSTRAINT "app_participant_waitlist_pkey" PRIMARY KEY ("id");
 
 
 
@@ -9078,6 +11815,10 @@ CREATE UNIQUE INDEX "app_review_uniq_session" ON "public"."app_review" USING "bt
 
 
 
+CREATE INDEX "idx_admin_action_log_admin_id" ON "public"."app_admin_action_log" USING "btree" ("admin_id");
+
+
+
 CREATE INDEX "idx_app_challenge_contract_id" ON "public"."app_challenge" USING "btree" ("contract_id");
 
 
@@ -9106,6 +11847,10 @@ CREATE INDEX "idx_challenge_comment_created_at" ON "public"."app_challenge_comme
 
 
 
+CREATE INDEX "idx_challenge_comment_edited_by" ON "public"."app_challenge_comment" USING "btree" ("edited_by");
+
+
+
 CREATE INDEX "idx_challenge_comment_post_id" ON "public"."app_challenge_comment" USING "btree" ("post_id");
 
 
@@ -9119,6 +11864,18 @@ CREATE INDEX "idx_challenge_continued_from_challenge_id" ON "public"."app_challe
 
 
 CREATE INDEX "idx_challenge_dates" ON "public"."app_challenge" USING "btree" ("start_date", "end_date");
+
+
+
+CREATE INDEX "idx_challenge_material_challenge" ON "public"."app_challenge_material" USING "btree" ("challenge_id");
+
+
+
+CREATE INDEX "idx_challenge_material_session" ON "public"."app_challenge_material" USING "btree" ("session_id");
+
+
+
+CREATE INDEX "idx_challenge_material_uploaded_by" ON "public"."app_challenge_material" USING "btree" ("uploaded_by");
 
 
 
@@ -9154,6 +11911,10 @@ CREATE INDEX "idx_challenge_post_space_id" ON "public"."app_challenge_post" USIN
 
 
 
+CREATE INDEX "idx_challenge_promise_edited_by" ON "public"."app_challenge" USING "btree" ("promise_edited_by");
+
+
+
 CREATE INDEX "idx_challenge_space_created_by" ON "public"."app_challenge_space" USING "btree" ("created_by");
 
 
@@ -9179,6 +11940,14 @@ CREATE INDEX "idx_chat_session" ON "public"."app_chat_message" USING "btree" ("s
 
 
 CREATE INDEX "idx_chat_session_time" ON "public"."app_chat_message" USING "btree" ("session_id", "created_at" DESC);
+
+
+
+CREATE INDEX "idx_collab_invite_challenge_id" ON "public"."app_collaboration_invite" USING "btree" ("challenge_id");
+
+
+
+CREATE INDEX "idx_collab_invite_dm_conversation_id" ON "public"."app_collaboration_invite" USING "btree" ("dm_conversation_id");
 
 
 
@@ -9266,6 +12035,10 @@ CREATE INDEX "idx_email_outbox_tx" ON "public"."app_email_outbox" USING "btree" 
 
 
 
+CREATE INDEX "idx_expert_credential_profile" ON "public"."app_expert_credential" USING "btree" ("profile_id", "sort_order", "year" DESC);
+
+
+
 CREATE INDEX "idx_feed_actor" ON "public"."app_feed_event" USING "btree" ("actor_id");
 
 
@@ -9303,6 +12076,10 @@ CREATE INDEX "idx_payout_creator" ON "public"."app_payout" USING "btree" ("creat
 
 
 CREATE INDEX "idx_pilot_application_status_created" ON "public"."app_pilot_application" USING "btree" ("status", "created_at" DESC);
+
+
+
+CREATE INDEX "idx_pre_pulse_response_user_id" ON "public"."app_session_pre_pulse_response" USING "btree" ("user_id");
 
 
 
@@ -9419,6 +12196,10 @@ CREATE INDEX "idx_usersub_user_creator" ON "public"."app_user_subscription" USIN
 
 
 CREATE INDEX "idx_usersub_user_status" ON "public"."app_user_subscription" USING "btree" ("user_id", "status");
+
+
+
+CREATE INDEX "idx_workspace_activity_actor_id" ON "public"."app_workspace_activity" USING "btree" ("actor_id");
 
 
 
@@ -9583,6 +12364,14 @@ CREATE OR REPLACE TRIGGER "app_session_assert_within_challenge_window" BEFORE IN
 
 
 
+CREATE OR REPLACE TRIGGER "trg_app_pilot_application_emails" AFTER INSERT ON "public"."app_pilot_application" FOR EACH ROW EXECUTE FUNCTION "public"."trg_pilot_application_enqueue_emails"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_app_profile_enqueue_welcome" AFTER INSERT ON "public"."app_profile" FOR EACH ROW EXECUTE FUNCTION "public"."trg_profile_enqueue_welcome"();
+
+
+
 CREATE OR REPLACE TRIGGER "trg_app_transaction_audit" AFTER INSERT OR DELETE OR UPDATE ON "public"."app_transaction" FOR EACH ROW EXECUTE FUNCTION "public"."on_app_transaction_audit"();
 
 
@@ -9648,6 +12437,10 @@ CREATE OR REPLACE TRIGGER "trg_enforce_session_cohost_creator_role" BEFORE INSER
 
 
 CREATE OR REPLACE TRIGGER "trg_guard_link_via_rpc" BEFORE INSERT OR DELETE OR UPDATE ON "public"."app_challenge_session" FOR EACH ROW EXECUTE FUNCTION "public"."guard_link_via_rpc"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_material_session_in_challenge" BEFORE INSERT ON "public"."app_challenge_material" FOR EACH ROW EXECUTE FUNCTION "public"."trg_material_session_in_challenge"();
 
 
 
@@ -9719,6 +12512,11 @@ CREATE OR REPLACE TRIGGER "trg_tx_currency_consistency" BEFORE INSERT OR UPDATE 
 
 
 
+ALTER TABLE ONLY "public"."app_admin_action_log"
+    ADD CONSTRAINT "app_admin_action_log_admin_id_fkey" FOREIGN KEY ("admin_id") REFERENCES "public"."app_profile"("id");
+
+
+
 ALTER TABLE ONLY "public"."app_attendance"
     ADD CONSTRAINT "app_attendance_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."app_profile"("id") ON DELETE CASCADE;
 
@@ -9756,6 +12554,21 @@ ALTER TABLE ONLY "public"."app_challenge"
 
 ALTER TABLE ONLY "public"."app_challenge"
     ADD CONSTRAINT "app_challenge_contract_id_fkey" FOREIGN KEY ("contract_id") REFERENCES "public"."app_collaboration_contract"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."app_challenge_material"
+    ADD CONSTRAINT "app_challenge_material_challenge_id_fkey" FOREIGN KEY ("challenge_id") REFERENCES "public"."app_challenge"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."app_challenge_material"
+    ADD CONSTRAINT "app_challenge_material_session_id_fkey" FOREIGN KEY ("session_id") REFERENCES "public"."app_session"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."app_challenge_material"
+    ADD CONSTRAINT "app_challenge_material_uploaded_by_fkey" FOREIGN KEY ("uploaded_by") REFERENCES "public"."app_profile"("id");
 
 
 
@@ -9965,7 +12778,12 @@ ALTER TABLE ONLY "public"."app_email_outbox"
 
 
 ALTER TABLE ONLY "public"."app_email_outbox"
-    ADD CONSTRAINT "app_email_outbox_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."app_profile"("id");
+    ADD CONSTRAINT "app_email_outbox_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."app_profile"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."app_expert_credential"
+    ADD CONSTRAINT "app_expert_credential_profile_id_fkey" FOREIGN KEY ("profile_id") REFERENCES "public"."app_profile"("id") ON DELETE CASCADE;
 
 
 
@@ -10174,6 +12992,9 @@ CREATE POLICY "Users can update their own period_seen rows" ON "public"."app_use
 
 
 
+ALTER TABLE "public"."app_admin_action_log" ENABLE ROW LEVEL SECURITY;
+
+
 ALTER TABLE "public"."app_attendance" ENABLE ROW LEVEL SECURITY;
 
 
@@ -10192,6 +13013,9 @@ ALTER TABLE "public"."app_challenge_cohost" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."app_challenge_comment" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."app_challenge_material" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."app_challenge_member" ENABLE ROW LEVEL SECURITY;
@@ -10327,6 +13151,9 @@ CREATE POLICY "app_creator_contract_identity_update_own" ON "public"."app_creato
 
 
 
+ALTER TABLE "public"."app_creator_invite" ENABLE ROW LEVEL SECURITY;
+
+
 ALTER TABLE "public"."app_creator_post" ENABLE ROW LEVEL SECURITY;
 
 
@@ -10381,6 +13208,9 @@ CREATE POLICY "app_email_outbox_service_only" ON "public"."app_email_outbox" TO 
 
 
 
+ALTER TABLE "public"."app_expert_credential" ENABLE ROW LEVEL SECURITY;
+
+
 ALTER TABLE "public"."app_feed_event" ENABLE ROW LEVEL SECURITY;
 
 
@@ -10393,6 +13223,19 @@ CREATE POLICY "app_feed_event_select_merged" ON "public"."app_feed_event" FOR SE
 
 
 ALTER TABLE "public"."app_notification" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."app_participant_waitlist" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "app_participant_waitlist_insert_any" ON "public"."app_participant_waitlist" FOR INSERT WITH CHECK (true);
+
+
+
+CREATE POLICY "app_participant_waitlist_select_admin" ON "public"."app_participant_waitlist" FOR SELECT USING ((EXISTS ( SELECT 1
+   FROM "public"."app_profile"
+  WHERE (("app_profile"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("app_profile"."role" = 'admin'::"text")))));
+
 
 
 ALTER TABLE "public"."app_payment_event" ENABLE ROW LEVEL SECURITY;
@@ -10611,10 +13454,6 @@ CREATE POLICY "challenge_post_update_author" ON "public"."app_challenge_post" FO
 
 
 
-CREATE POLICY "challenge_session_insert_block" ON "public"."app_challenge_session" FOR INSERT TO "authenticated", "anon" WITH CHECK (false);
-
-
-
 CREATE POLICY "challenge_session_select_flat" ON "public"."app_challenge_session" FOR SELECT USING ((EXISTS ( SELECT 1
    FROM "public"."app_challenge" "c"
   WHERE (("c"."id" = "app_challenge_session"."challenge_id") AND (("c"."status" = ANY (ARRAY['published'::"public"."challenge_status", 'completed'::"public"."challenge_status"])) OR ("c"."owner_id" = ( SELECT "auth"."uid"() AS "uid")) OR (EXISTS ( SELECT 1
@@ -10740,15 +13579,11 @@ CREATE POLICY "creator_space_member_no_client_update" ON "public"."app_creator_s
 
 
 
-CREATE POLICY "creator_space_member_select_creator" ON "public"."app_creator_space_member" FOR SELECT USING (((EXISTS ( SELECT 1
+CREATE POLICY "creator_space_member_select" ON "public"."app_creator_space_member" FOR SELECT USING ((("user_id" = ( SELECT "auth"."uid"() AS "uid")) OR ((EXISTS ( SELECT 1
    FROM "public"."app_profile" "p"
   WHERE (("p"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("p"."role" = 'creator'::"text")))) AND ("space_id" IN ( SELECT "s"."id"
    FROM "public"."app_creator_space" "s"
-  WHERE ("s"."creator_id" = ( SELECT "auth"."uid"() AS "uid"))))));
-
-
-
-CREATE POLICY "creator_space_member_select_self" ON "public"."app_creator_space_member" FOR SELECT USING (("user_id" = ( SELECT "auth"."uid"() AS "uid")));
+  WHERE ("s"."creator_id" = ( SELECT "auth"."uid"() AS "uid")))))));
 
 
 
@@ -10808,6 +13643,26 @@ CREATE POLICY "dm_msg_update_author" ON "public"."app_dm_message" FOR UPDATE TO 
 
 
 
+CREATE POLICY "expert_credential_delete" ON "public"."app_expert_credential" FOR DELETE USING (("profile_id" = ( SELECT "auth"."uid"() AS "uid")));
+
+
+
+CREATE POLICY "expert_credential_insert" ON "public"."app_expert_credential" FOR INSERT WITH CHECK ((("profile_id" = ( SELECT "auth"."uid"() AS "uid")) AND (EXISTS ( SELECT 1
+   FROM "public"."app_profile" "p"
+  WHERE (("p"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("p"."role" = 'creator'::"text"))))));
+
+
+
+CREATE POLICY "expert_credential_select" ON "public"."app_expert_credential" FOR SELECT USING ((EXISTS ( SELECT 1
+   FROM "public"."app_profile" "p"
+  WHERE (("p"."id" = "app_expert_credential"."profile_id") AND ("p"."role" = 'creator'::"text")))));
+
+
+
+CREATE POLICY "expert_credential_update" ON "public"."app_expert_credential" FOR UPDATE USING (("profile_id" = ( SELECT "auth"."uid"() AS "uid")));
+
+
+
 CREATE POLICY "invite_insert" ON "public"."app_collaboration_invite" FOR INSERT WITH CHECK (("from_id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
@@ -10817,6 +13672,40 @@ CREATE POLICY "invite_select" ON "public"."app_collaboration_invite" FOR SELECT 
 
 
 CREATE POLICY "invite_update" ON "public"."app_collaboration_invite" FOR UPDATE USING ((("to_id" = ( SELECT "auth"."uid"() AS "uid")) OR ("from_id" = ( SELECT "auth"."uid"() AS "uid"))));
+
+
+
+CREATE POLICY "material experts delete" ON "public"."app_challenge_material" FOR DELETE TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."app_challenge" "c"
+  WHERE (("c"."id" = "app_challenge_material"."challenge_id") AND (("c"."owner_id" = ( SELECT "auth"."uid"() AS "uid")) OR (EXISTS ( SELECT 1
+           FROM "public"."app_challenge_cohost" "ch"
+          WHERE (("ch"."challenge_id" = "c"."id") AND ("ch"."cohost_id" = ( SELECT "auth"."uid"() AS "uid"))))))))));
+
+
+
+CREATE POLICY "material experts insert" ON "public"."app_challenge_material" FOR INSERT TO "authenticated" WITH CHECK ((("uploaded_by" = ( SELECT "auth"."uid"() AS "uid")) AND (EXISTS ( SELECT 1
+   FROM "public"."app_challenge" "c"
+  WHERE (("c"."id" = "app_challenge_material"."challenge_id") AND (("c"."owner_id" = ( SELECT "auth"."uid"() AS "uid")) OR (EXISTS ( SELECT 1
+           FROM "public"."app_challenge_cohost" "ch"
+          WHERE (("ch"."challenge_id" = "c"."id") AND ("ch"."cohost_id" = ( SELECT "auth"."uid"() AS "uid")))))))))));
+
+
+
+CREATE POLICY "material experts update" ON "public"."app_challenge_material" FOR UPDATE TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."app_challenge" "c"
+  WHERE (("c"."id" = "app_challenge_material"."challenge_id") AND (("c"."owner_id" = ( SELECT "auth"."uid"() AS "uid")) OR (EXISTS ( SELECT 1
+           FROM "public"."app_challenge_cohost" "ch"
+          WHERE (("ch"."challenge_id" = "c"."id") AND ("ch"."cohost_id" = ( SELECT "auth"."uid"() AS "uid"))))))))));
+
+
+
+CREATE POLICY "material tribe select" ON "public"."app_challenge_material" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."app_challenge" "c"
+  WHERE (("c"."id" = "app_challenge_material"."challenge_id") AND (("c"."owner_id" = ( SELECT "auth"."uid"() AS "uid")) OR (EXISTS ( SELECT 1
+           FROM "public"."app_challenge_cohost" "ch"
+          WHERE (("ch"."challenge_id" = "c"."id") AND ("ch"."cohost_id" = ( SELECT "auth"."uid"() AS "uid"))))) OR (EXISTS ( SELECT 1
+           FROM "public"."app_challenge_member" "m"
+          WHERE (("m"."challenge_id" = "c"."id") AND ("m"."user_id" = ( SELECT "auth"."uid"() AS "uid"))))))))));
 
 
 
@@ -11097,6 +13986,9 @@ ALTER PUBLICATION "supabase_realtime" ADD TABLE ONLY "public"."app_session_cohos
 
 
 ALTER PUBLICATION "supabase_realtime" ADD TABLE ONLY "public"."app_workspace_activity";
+
+
+
 
 
 
@@ -11412,14 +14304,44 @@ GRANT ALL ON FUNCTION "public"."_debug_list_collab_reviews"("p_challenge" "uuid"
 
 
 
-GRANT ALL ON FUNCTION "public"."accept_collab_invite"("p_invite_id" "uuid", "p_actor" "uuid") TO "anon";
+REVOKE ALL ON FUNCTION "public"."accept_collab_invite"("p_invite_id" "uuid", "p_actor" "uuid") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."accept_collab_invite"("p_invite_id" "uuid", "p_actor" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."accept_collab_invite"("p_invite_id" "uuid", "p_actor" "uuid") TO "service_role";
 
 
 
+REVOKE ALL ON FUNCTION "public"."admin_action_log"("p_limit" integer) FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_action_log"("p_limit" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."admin_action_log"("p_limit" integer) TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."admin_anonymize_user"("p_user" "uuid", "p_reason" "text") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_anonymize_user"("p_user" "uuid", "p_reason" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."admin_anonymize_user"("p_user" "uuid", "p_reason" "text") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."admin_applications"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_applications"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."admin_applications"() TO "service_role";
+
+
+
 REVOKE ALL ON FUNCTION "public"."admin_email_enqueue_receipt"("p_tx_id" "uuid") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."admin_email_enqueue_receipt"("p_tx_id" "uuid") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."admin_experiences"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_experiences"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."admin_experiences"() TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."admin_force_end_session"("p_session" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_force_end_session"("p_session" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."admin_force_end_session"("p_session" "uuid") TO "service_role";
 
 
 
@@ -11479,6 +14401,30 @@ GRANT ALL ON FUNCTION "public"."admin_health_tx"() TO "service_role";
 
 
 
+REVOKE ALL ON FUNCTION "public"."admin_money"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_money"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."admin_money"() TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."admin_payouts"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_payouts"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."admin_payouts"() TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."admin_people"("p_query" "text", "p_limit" integer) FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_people"("p_query" "text", "p_limit" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."admin_people"("p_query" "text", "p_limit" integer) TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."admin_pulse"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_pulse"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."admin_pulse"() TO "service_role";
+
+
+
 REVOKE ALL ON FUNCTION "public"."admin_regrant_entitlements_for"("p_buyer_id" "uuid", "p_session_id" "uuid", "p_challenge_id" "uuid") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."admin_regrant_entitlements_for"("p_buyer_id" "uuid", "p_session_id" "uuid", "p_challenge_id" "uuid") TO "service_role";
 
@@ -11489,14 +14435,104 @@ GRANT ALL ON FUNCTION "public"."admin_regrant_entitlements_tx"("p_tx_id" "uuid")
 
 
 
-GRANT ALL ON FUNCTION "public"."app_handle_new_user"() TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."admin_regrant_tx"("p_tx" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_regrant_tx"("p_tx" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."admin_regrant_tx"("p_tx" "uuid") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."admin_resend_receipt"("p_tx" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_resend_receipt"("p_tx" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."admin_resend_receipt"("p_tx" "uuid") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."admin_set_application_status"("p_id" "uuid", "p_status" "text") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_set_application_status"("p_id" "uuid", "p_status" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."admin_set_application_status"("p_id" "uuid", "p_status" "text") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."app_admin_assert"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."app_admin_assert"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."app_admin_assert"() TO "service_role";
+
+
+
+GRANT MAINTAIN ON TABLE "public"."app_email_outbox" TO "anon";
+GRANT ALL ON TABLE "public"."app_email_outbox" TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."app_claim_email"("p_kind" "text") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."app_claim_email"("p_kind" "text") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."app_enqueue_pilot_application_emails"("p_application_id" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."app_enqueue_pilot_application_emails"("p_application_id" "uuid") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."app_enqueue_session_reminders"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."app_enqueue_session_reminders"() TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."app_enqueue_session_reschedule_emails"("p_session" "uuid", "p_old_start" timestamp with time zone, "p_new_start" timestamp with time zone, "p_reason" "text", "p_actor" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."app_enqueue_session_reschedule_emails"("p_session" "uuid", "p_old_start" timestamp with time zone, "p_new_start" timestamp with time zone, "p_reason" "text", "p_actor" "uuid") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."app_enqueue_welcome_email"("p_user_id" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."app_enqueue_welcome_email"("p_user_id" "uuid") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."app_handle_new_user"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."app_handle_new_user"() TO "service_role";
+GRANT ALL ON FUNCTION "public"."app_handle_new_user"() TO "supabase_auth_admin";
+
+
+
+GRANT ALL ON FUNCTION "public"."app_html_escape"("t" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."app_html_escape"("t" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."app_html_escape"("t" "text") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."app_purge_technical_logs"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."app_purge_technical_logs"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."app_receipt_greeting"("p_buyer_name" "text", "p_display_name" "text", "p_full_name" "text", "p_username" "text", "p_email" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."app_receipt_greeting"("p_buyer_name" "text", "p_display_name" "text", "p_full_name" "text", "p_username" "text", "p_email" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."app_receipt_greeting"("p_buyer_name" "text", "p_display_name" "text", "p_full_name" "text", "p_username" "text", "p_email" "text") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."app_reschedule_session"("p_session" "uuid", "p_new_start" timestamp with time zone, "p_reason" "text") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."app_reschedule_session"("p_session" "uuid", "p_new_start" timestamp with time zone, "p_reason" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."app_reschedule_session"("p_session" "uuid", "p_new_start" timestamp with time zone, "p_reason" "text") TO "service_role";
 
 
 
 GRANT ALL ON FUNCTION "public"."app_session_assert_within_challenge_window"() TO "anon";
 GRANT ALL ON FUNCTION "public"."app_session_assert_within_challenge_window"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."app_session_assert_within_challenge_window"() TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."app_sweep_overdue_sessions"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."app_sweep_overdue_sessions"() TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."app_validate_creator_invite"("p_code" "text") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."app_validate_creator_invite"("p_code" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."app_validate_creator_invite"("p_code" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."app_validate_creator_invite"("p_code" "text") TO "service_role";
 
 
 
@@ -11573,16 +14609,16 @@ GRANT ALL ON FUNCTION "public"."challenge_remove_session"("p_challenge" "uuid", 
 
 
 
-GRANT ALL ON FUNCTION "public"."challenge_remove_session_and_delete"("p_challenge" "uuid", "p_session" "uuid") TO "anon";
+REVOKE ALL ON FUNCTION "public"."challenge_remove_session_and_delete"("p_challenge" "uuid", "p_session" "uuid") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."challenge_remove_session_and_delete"("p_challenge" "uuid", "p_session" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."challenge_remove_session_and_delete"("p_challenge" "uuid", "p_session" "uuid") TO "service_role";
 
 
 
 REVOKE ALL ON FUNCTION "public"."challenge_spots_left"("p_challenge" "uuid") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."challenge_spots_left"("p_challenge" "uuid") TO "anon";
 GRANT ALL ON FUNCTION "public"."challenge_spots_left"("p_challenge" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."challenge_spots_left"("p_challenge" "uuid") TO "service_role";
+GRANT ALL ON FUNCTION "public"."challenge_spots_left"("p_challenge" "uuid") TO "anon";
 
 
 
@@ -11622,13 +14658,18 @@ GRANT ALL ON FUNCTION "public"."collab_reviews_for_creator"("p_subject" "uuid", 
 
 
 
-GRANT ALL ON FUNCTION "public"."complete_ended_experiences"() TO "anon";
-GRANT ALL ON FUNCTION "public"."complete_ended_experiences"() TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."complete_ended_experiences"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."complete_ended_experiences"() TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."create_challenge_comment"("p_post" "uuid", "p_body" "text") TO "anon";
+REVOKE ALL ON FUNCTION "public"."count_challenge_materials"("p_challenge_id" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."count_challenge_materials"("p_challenge_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."count_challenge_materials"("p_challenge_id" "uuid") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."create_challenge_comment"("p_post" "uuid", "p_body" "text") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."create_challenge_comment"("p_post" "uuid", "p_body" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."create_challenge_comment"("p_post" "uuid", "p_body" "text") TO "service_role";
 
@@ -11640,7 +14681,7 @@ GRANT ALL ON FUNCTION "public"."create_challenge_continuation_draft"("p_source_c
 
 
 
-GRANT ALL ON FUNCTION "public"."create_challenge_post"("p_space" "uuid", "p_body" "text", "p_media_url" "text", "p_kind" "text", "p_context_type" "text", "p_context_id" "uuid", "p_directed_to" "uuid"[], "p_metadata" "jsonb") TO "anon";
+REVOKE ALL ON FUNCTION "public"."create_challenge_post"("p_space" "uuid", "p_body" "text", "p_media_url" "text", "p_kind" "text", "p_context_type" "text", "p_context_id" "uuid", "p_directed_to" "uuid"[], "p_metadata" "jsonb") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."create_challenge_post"("p_space" "uuid", "p_body" "text", "p_media_url" "text", "p_kind" "text", "p_context_type" "text", "p_context_id" "uuid", "p_directed_to" "uuid"[], "p_metadata" "jsonb") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."create_challenge_post"("p_space" "uuid", "p_body" "text", "p_media_url" "text", "p_kind" "text", "p_context_type" "text", "p_context_id" "uuid", "p_directed_to" "uuid"[], "p_metadata" "jsonb") TO "service_role";
 
@@ -11782,7 +14823,7 @@ GRANT ALL ON FUNCTION "public"."ensure_creator_space"("p_creator" "uuid", "p_tit
 
 
 
-GRANT ALL ON FUNCTION "public"."experience_review_open"("p_challenge" "uuid") TO "anon";
+REVOKE ALL ON FUNCTION "public"."experience_review_open"("p_challenge" "uuid") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."experience_review_open"("p_challenge" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."experience_review_open"("p_challenge" "uuid") TO "service_role";
 
@@ -11849,9 +14890,10 @@ GRANT ALL ON FUNCTION "public"."is_admin"("p_user" "uuid") TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."is_challenge_cohost"("p_challenge" "uuid", "p_user" "uuid") TO "anon";
+REVOKE ALL ON FUNCTION "public"."is_challenge_cohost"("p_challenge" "uuid", "p_user" "uuid") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."is_challenge_cohost"("p_challenge" "uuid", "p_user" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."is_challenge_cohost"("p_challenge" "uuid", "p_user" "uuid") TO "service_role";
+GRANT ALL ON FUNCTION "public"."is_challenge_cohost"("p_challenge" "uuid", "p_user" "uuid") TO "anon";
 
 
 
@@ -11915,6 +14957,12 @@ GRANT ALL ON FUNCTION "public"."is_in_challenge"("p_challenge" "uuid", "p_user" 
 
 
 
+REVOKE ALL ON FUNCTION "public"."is_session_expert"("p_session_id" "uuid", "p_user_id" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."is_session_expert"("p_session_id" "uuid", "p_user_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."is_session_expert"("p_session_id" "uuid", "p_user_id" "uuid") TO "service_role";
+
+
+
 REVOKE ALL ON FUNCTION "public"."is_session_host"("p_session_id" "uuid", "p_user_id" "uuid") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."is_session_host"("p_session_id" "uuid", "p_user_id" "uuid") TO "service_role";
 GRANT ALL ON FUNCTION "public"."is_session_host"("p_session_id" "uuid", "p_user_id" "uuid") TO "authenticated";
@@ -11940,7 +14988,7 @@ GRANT ALL ON FUNCTION "public"."list_challenge_comments"("p_post" "uuid", "p_lim
 
 
 
-GRANT ALL ON FUNCTION "public"."list_challenge_posts"("p_space" "uuid", "p_limit" integer, "p_before_created_at" timestamp with time zone, "p_before_id" "uuid") TO "anon";
+REVOKE ALL ON FUNCTION "public"."list_challenge_posts"("p_space" "uuid", "p_limit" integer, "p_before_created_at" timestamp with time zone, "p_before_id" "uuid") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."list_challenge_posts"("p_space" "uuid", "p_limit" integer, "p_before_created_at" timestamp with time zone, "p_before_id" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."list_challenge_posts"("p_space" "uuid", "p_limit" integer, "p_before_created_at" timestamp with time zone, "p_before_id" "uuid") TO "service_role";
 
@@ -11958,31 +15006,55 @@ GRANT ALL ON FUNCTION "public"."list_creator_posts"("p_space" "uuid", "p_limit" 
 
 
 
-GRANT ALL ON FUNCTION "public"."list_dm_messages"("p_conversation_id" "uuid", "p_limit" integer) TO "anon";
+REVOKE ALL ON FUNCTION "public"."list_dm_messages"("p_conversation_id" "uuid", "p_limit" integer) FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."list_dm_messages"("p_conversation_id" "uuid", "p_limit" integer) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."list_dm_messages"("p_conversation_id" "uuid", "p_limit" integer) TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."load_experience_creator_stats"("p_challenge_id" "uuid") TO "anon";
+REVOKE ALL ON FUNCTION "public"."load_challenge_materials"("p_challenge_id" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."load_challenge_materials"("p_challenge_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."load_challenge_materials"("p_challenge_id" "uuid") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."load_experience_creator_stats"("p_challenge_id" "uuid") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."load_experience_creator_stats"("p_challenge_id" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."load_experience_creator_stats"("p_challenge_id" "uuid") TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."load_experience_space"("p_challenge_id" "uuid") TO "anon";
+REVOKE ALL ON FUNCTION "public"."load_experience_space"("p_challenge_id" "uuid") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."load_experience_space"("p_challenge_id" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."load_experience_space"("p_challenge_id" "uuid") TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."load_workspace"("p_challenge_id" "uuid") TO "anon";
+REVOKE ALL ON FUNCTION "public"."load_my_connections"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."load_my_connections"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."load_my_connections"() TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."load_public_profile"("p_profile_id" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."load_public_profile"("p_profile_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."load_public_profile"("p_profile_id" "uuid") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."load_tribe_faces"("p_challenge_ids" "uuid"[], "p_limit" integer) FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."load_tribe_faces"("p_challenge_ids" "uuid"[], "p_limit" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."load_tribe_faces"("p_challenge_ids" "uuid"[], "p_limit" integer) TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."load_workspace"("p_challenge_id" "uuid") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."load_workspace"("p_challenge_id" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."load_workspace"("p_challenge_id" "uuid") TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."lock_challenge_contract"("p_challenge_id" "uuid", "p_actor" "uuid") TO "anon";
+REVOKE ALL ON FUNCTION "public"."lock_challenge_contract"("p_challenge_id" "uuid", "p_actor" "uuid") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."lock_challenge_contract"("p_challenge_id" "uuid", "p_actor" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."lock_challenge_contract"("p_challenge_id" "uuid", "p_actor" "uuid") TO "service_role";
 
@@ -11994,7 +15066,7 @@ GRANT ALL ON FUNCTION "public"."lock_contract"("p_target_type" "text", "p_target
 
 
 
-GRANT ALL ON FUNCTION "public"."log_workspace_field_edit"("p_challenge_id" "uuid", "p_field" "text", "p_old" "jsonb", "p_new" "jsonb") TO "anon";
+REVOKE ALL ON FUNCTION "public"."log_workspace_field_edit"("p_challenge_id" "uuid", "p_field" "text", "p_old" "jsonb", "p_new" "jsonb") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."log_workspace_field_edit"("p_challenge_id" "uuid", "p_field" "text", "p_old" "jsonb", "p_new" "jsonb") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."log_workspace_field_edit"("p_challenge_id" "uuid", "p_field" "text", "p_old" "jsonb", "p_new" "jsonb") TO "service_role";
 
@@ -12009,6 +15081,12 @@ GRANT ALL ON FUNCTION "public"."mark_all_notifications_read"() TO "service_role"
 REVOKE ALL ON FUNCTION "public"."mark_notification_read"("p_id" "uuid") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."mark_notification_read"("p_id" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."mark_notification_read"("p_id" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."material_released_at"("p_timing" "text", "p_start_time" timestamp with time zone, "p_ended_at" timestamp with time zone, "p_duration_minutes" integer) TO "anon";
+GRANT ALL ON FUNCTION "public"."material_released_at"("p_timing" "text", "p_start_time" timestamp with time zone, "p_ended_at" timestamp with time zone, "p_duration_minutes" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."material_released_at"("p_timing" "text", "p_start_time" timestamp with time zone, "p_ended_at" timestamp with time zone, "p_duration_minutes" integer) TO "service_role";
 
 
 
@@ -12052,7 +15130,7 @@ GRANT ALL ON FUNCTION "public"."on_review_new"() TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."post_workspace_log"("p_challenge_id" "uuid", "p_body" "text", "p_metadata" "jsonb") TO "anon";
+REVOKE ALL ON FUNCTION "public"."post_workspace_log"("p_challenge_id" "uuid", "p_body" "text", "p_metadata" "jsonb") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."post_workspace_log"("p_challenge_id" "uuid", "p_body" "text", "p_metadata" "jsonb") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."post_workspace_log"("p_challenge_id" "uuid", "p_body" "text", "p_metadata" "jsonb") TO "service_role";
 
@@ -12095,8 +15173,6 @@ GRANT ALL ON FUNCTION "public"."reschedule_published_session"("p_session" "uuid"
 
 
 REVOKE ALL ON FUNCTION "public"."resolve_platform_fee_percent"("p_creator" "uuid") FROM PUBLIC;
-GRANT ALL ON FUNCTION "public"."resolve_platform_fee_percent"("p_creator" "uuid") TO "anon";
-GRANT ALL ON FUNCTION "public"."resolve_platform_fee_percent"("p_creator" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."resolve_platform_fee_percent"("p_creator" "uuid") TO "service_role";
 
 
@@ -12107,19 +15183,19 @@ GRANT ALL ON FUNCTION "public"."respond_to_contract"("p_contract_id" "uuid", "p_
 
 
 
-GRANT ALL ON FUNCTION "public"."send_additional_collab_invite"("p_challenge_id" "uuid", "p_from" "uuid", "p_to" "uuid", "p_message" "text", "p_split_percent" integer) TO "anon";
+REVOKE ALL ON FUNCTION "public"."send_additional_collab_invite"("p_challenge_id" "uuid", "p_from" "uuid", "p_to" "uuid", "p_message" "text", "p_split_percent" integer) FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."send_additional_collab_invite"("p_challenge_id" "uuid", "p_from" "uuid", "p_to" "uuid", "p_message" "text", "p_split_percent" integer) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."send_additional_collab_invite"("p_challenge_id" "uuid", "p_from" "uuid", "p_to" "uuid", "p_message" "text", "p_split_percent" integer) TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."send_collab_invite"("p_from" "uuid", "p_to" "uuid", "p_message" "text", "p_split" integer) TO "anon";
+REVOKE ALL ON FUNCTION "public"."send_collab_invite"("p_from" "uuid", "p_to" "uuid", "p_message" "text", "p_split" integer) FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."send_collab_invite"("p_from" "uuid", "p_to" "uuid", "p_message" "text", "p_split" integer) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."send_collab_invite"("p_from" "uuid", "p_to" "uuid", "p_message" "text", "p_split" integer) TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."send_collab_invites_with_draft"("p_from" "uuid", "p_title" "text", "p_message" "text", "p_invitees" "jsonb") TO "anon";
+REVOKE ALL ON FUNCTION "public"."send_collab_invites_with_draft"("p_from" "uuid", "p_title" "text", "p_message" "text", "p_invitees" "jsonb") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."send_collab_invites_with_draft"("p_from" "uuid", "p_title" "text", "p_message" "text", "p_invitees" "jsonb") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."send_collab_invites_with_draft"("p_from" "uuid", "p_title" "text", "p_message" "text", "p_invitees" "jsonb") TO "service_role";
 
@@ -12158,7 +15234,7 @@ GRANT ALL ON FUNCTION "public"."stream_tokens_purge_expired"("limit_rows" intege
 
 
 
-GRANT ALL ON FUNCTION "public"."submit_intro_post"("p_challenge_id" "uuid", "p_body" "text", "p_share_with_cohort" boolean) TO "anon";
+REVOKE ALL ON FUNCTION "public"."submit_intro_post"("p_challenge_id" "uuid", "p_body" "text", "p_share_with_cohort" boolean) FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."submit_intro_post"("p_challenge_id" "uuid", "p_body" "text", "p_share_with_cohort" boolean) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."submit_intro_post"("p_challenge_id" "uuid", "p_body" "text", "p_share_with_cohort" boolean) TO "service_role";
 
@@ -12170,15 +15246,36 @@ GRANT ALL ON FUNCTION "public"."submit_pre_pulse"("p_session_id" "uuid", "p_valu
 
 
 
-GRANT ALL ON FUNCTION "public"."submit_session_reflection"("p_session_id" "uuid", "p_body" "text", "p_energy_after" smallint) TO "anon";
-GRANT ALL ON FUNCTION "public"."submit_session_reflection"("p_session_id" "uuid", "p_body" "text", "p_energy_after" smallint) TO "authenticated";
-GRANT ALL ON FUNCTION "public"."submit_session_reflection"("p_session_id" "uuid", "p_body" "text", "p_energy_after" smallint) TO "service_role";
+REVOKE ALL ON FUNCTION "public"."submit_pre_pulse"("p_session_id" "uuid", "p_mood" smallint, "p_energy" smallint) FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."submit_pre_pulse"("p_session_id" "uuid", "p_mood" smallint, "p_energy" smallint) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."submit_pre_pulse"("p_session_id" "uuid", "p_mood" smallint, "p_energy" smallint) TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."trg_dm_message_notify"() TO "anon";
-GRANT ALL ON FUNCTION "public"."trg_dm_message_notify"() TO "authenticated";
+REVOKE ALL ON FUNCTION "public"."submit_session_reflection"("p_session_id" "uuid", "p_body" "text", "p_energy_after" smallint, "p_mood_after" smallint) FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."submit_session_reflection"("p_session_id" "uuid", "p_body" "text", "p_energy_after" smallint, "p_mood_after" smallint) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."submit_session_reflection"("p_session_id" "uuid", "p_body" "text", "p_energy_after" smallint, "p_mood_after" smallint) TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."trg_dm_message_notify"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."trg_dm_message_notify"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."trg_material_session_in_challenge"() TO "anon";
+GRANT ALL ON FUNCTION "public"."trg_material_session_in_challenge"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."trg_material_session_in_challenge"() TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."trg_pilot_application_enqueue_emails"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."trg_pilot_application_enqueue_emails"() TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."trg_profile_enqueue_welcome"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."trg_profile_enqueue_welcome"() TO "service_role";
 
 
 
@@ -12209,13 +15306,13 @@ GRANT ALL ON FUNCTION "public"."update_challenge_comment"("p_id" "uuid", "p_body
 
 
 
-GRANT ALL ON FUNCTION "public"."update_challenge_workspace"("p_challenge_id" "uuid", "p_title" "text", "p_description" "text", "p_image_url" "text", "p_start_date" "date", "p_end_date" "date", "p_capacity" integer, "p_price_cents" integer, "p_promise_text" "text", "p_weekly_arc" "jsonb", "p_topic_ownership" "jsonb", "p_intro_prompt" "text") TO "anon";
+REVOKE ALL ON FUNCTION "public"."update_challenge_workspace"("p_challenge_id" "uuid", "p_title" "text", "p_description" "text", "p_image_url" "text", "p_start_date" "date", "p_end_date" "date", "p_capacity" integer, "p_price_cents" integer, "p_promise_text" "text", "p_weekly_arc" "jsonb", "p_topic_ownership" "jsonb", "p_intro_prompt" "text") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."update_challenge_workspace"("p_challenge_id" "uuid", "p_title" "text", "p_description" "text", "p_image_url" "text", "p_start_date" "date", "p_end_date" "date", "p_capacity" integer, "p_price_cents" integer, "p_promise_text" "text", "p_weekly_arc" "jsonb", "p_topic_ownership" "jsonb", "p_intro_prompt" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."update_challenge_workspace"("p_challenge_id" "uuid", "p_title" "text", "p_description" "text", "p_image_url" "text", "p_start_date" "date", "p_end_date" "date", "p_capacity" integer, "p_price_cents" integer, "p_promise_text" "text", "p_weekly_arc" "jsonb", "p_topic_ownership" "jsonb", "p_intro_prompt" "text") TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."update_weekly_arc_themes"("p_challenge_id" "uuid", "p_weekly_arc" "jsonb") TO "anon";
+REVOKE ALL ON FUNCTION "public"."update_weekly_arc_themes"("p_challenge_id" "uuid", "p_weekly_arc" "jsonb") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."update_weekly_arc_themes"("p_challenge_id" "uuid", "p_weekly_arc" "jsonb") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."update_weekly_arc_themes"("p_challenge_id" "uuid", "p_weekly_arc" "jsonb") TO "service_role";
 
@@ -12273,6 +15370,16 @@ GRANT ALL ON FUNCTION "public"."upsert_transaction_from_checkout"("buyer_id" "uu
 
 
 
+GRANT ALL ON TABLE "public"."app_admin_action_log" TO "service_role";
+
+
+
+GRANT ALL ON SEQUENCE "public"."app_admin_action_log_id_seq" TO "anon";
+GRANT ALL ON SEQUENCE "public"."app_admin_action_log_id_seq" TO "authenticated";
+GRANT ALL ON SEQUENCE "public"."app_admin_action_log_id_seq" TO "service_role";
+
+
+
 GRANT SELECT,MAINTAIN ON TABLE "public"."app_challenge" TO "anon";
 GRANT SELECT,INSERT,DELETE,MAINTAIN,UPDATE ON TABLE "public"."app_challenge" TO "authenticated";
 GRANT ALL ON TABLE "public"."app_challenge" TO "service_role";
@@ -12288,6 +15395,12 @@ GRANT ALL ON TABLE "public"."app_challenge_cohost" TO "service_role";
 GRANT SELECT,MAINTAIN ON TABLE "public"."app_challenge_comment" TO "anon";
 GRANT ALL ON TABLE "public"."app_challenge_comment" TO "authenticated";
 GRANT ALL ON TABLE "public"."app_challenge_comment" TO "service_role";
+
+
+
+GRANT SELECT,MAINTAIN ON TABLE "public"."app_challenge_material" TO "anon";
+GRANT ALL ON TABLE "public"."app_challenge_material" TO "authenticated";
+GRANT ALL ON TABLE "public"."app_challenge_material" TO "service_role";
 
 
 
@@ -12357,6 +15470,10 @@ GRANT ALL ON TABLE "public"."app_creator_earnings" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."app_creator_invite" TO "service_role";
+
+
+
 GRANT SELECT,MAINTAIN ON TABLE "public"."app_creator_post" TO "anon";
 GRANT ALL ON TABLE "public"."app_creator_post" TO "authenticated";
 GRANT ALL ON TABLE "public"."app_creator_post" TO "service_role";
@@ -12414,13 +15531,14 @@ GRANT ALL ON SEQUENCE "public"."app_edge_call_log_id_seq" TO "service_role";
 
 
 
-GRANT MAINTAIN ON TABLE "public"."app_email_outbox" TO "anon";
-GRANT ALL ON TABLE "public"."app_email_outbox" TO "service_role";
-
-
-
 GRANT ALL ON SEQUENCE "public"."app_email_outbox_id_seq" TO "authenticated";
 GRANT ALL ON SEQUENCE "public"."app_email_outbox_id_seq" TO "service_role";
+
+
+
+GRANT SELECT,MAINTAIN ON TABLE "public"."app_expert_credential" TO "anon";
+GRANT ALL ON TABLE "public"."app_expert_credential" TO "authenticated";
+GRANT ALL ON TABLE "public"."app_expert_credential" TO "service_role";
 
 
 
@@ -12436,6 +15554,12 @@ GRANT ALL ON TABLE "public"."app_notification" TO "service_role";
 
 
 
+GRANT SELECT,INSERT,MAINTAIN ON TABLE "public"."app_participant_waitlist" TO "anon";
+GRANT ALL ON TABLE "public"."app_participant_waitlist" TO "authenticated";
+GRANT ALL ON TABLE "public"."app_participant_waitlist" TO "service_role";
+
+
+
 GRANT MAINTAIN ON TABLE "public"."app_payment_event" TO "authenticated";
 GRANT ALL ON TABLE "public"."app_payment_event" TO "service_role";
 
@@ -12446,7 +15570,7 @@ GRANT ALL ON TABLE "public"."app_payout" TO "service_role";
 
 
 
-GRANT SELECT,MAINTAIN ON TABLE "public"."app_pilot_application" TO "anon";
+GRANT SELECT,INSERT,MAINTAIN ON TABLE "public"."app_pilot_application" TO "anon";
 GRANT ALL ON TABLE "public"."app_pilot_application" TO "authenticated";
 GRANT ALL ON TABLE "public"."app_pilot_application" TO "service_role";
 
@@ -12614,6 +15738,12 @@ GRANT ALL ON TABLE "public"."vw_experience_review_stats" TO "service_role";
 
 
 
+GRANT SELECT,MAINTAIN ON TABLE "public"."vw_experience_reviews_public" TO "anon";
+GRANT ALL ON TABLE "public"."vw_experience_reviews_public" TO "authenticated";
+GRANT ALL ON TABLE "public"."vw_experience_reviews_public" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."vw_my_challenges_overview" TO "service_role";
 GRANT SELECT ON TABLE "public"."vw_my_challenges_overview" TO "authenticated";
 
@@ -12631,6 +15761,12 @@ GRANT SELECT ON TABLE "public"."vw_my_creator_earnings" TO "authenticated";
 
 GRANT ALL ON TABLE "public"."vw_my_creator_summary" TO "service_role";
 GRANT SELECT ON TABLE "public"."vw_my_creator_summary" TO "authenticated";
+
+
+
+GRANT SELECT,MAINTAIN ON TABLE "public"."vw_my_earnings_lines" TO "anon";
+GRANT ALL ON TABLE "public"."vw_my_earnings_lines" TO "authenticated";
+GRANT ALL ON TABLE "public"."vw_my_earnings_lines" TO "service_role";
 
 
 
@@ -12681,8 +15817,8 @@ GRANT ALL ON TABLE "public"."vw_session_overview" TO "service_role";
 
 
 
-GRANT SELECT,MAINTAIN ON TABLE "public"."vw_session_pre_pulse_aggregate" TO "anon";
-GRANT ALL ON TABLE "public"."vw_session_pre_pulse_aggregate" TO "authenticated";
+GRANT MAINTAIN ON TABLE "public"."vw_session_pre_pulse_aggregate" TO "anon";
+GRANT INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,MAINTAIN,UPDATE ON TABLE "public"."vw_session_pre_pulse_aggregate" TO "authenticated";
 GRANT ALL ON TABLE "public"."vw_session_pre_pulse_aggregate" TO "service_role";
 
 
