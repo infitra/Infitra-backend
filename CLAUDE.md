@@ -13,7 +13,7 @@ Full architecture reference: `~/Desktop/Architecture & Security Model + Business
 
 ## Stack
 - **Backend**: Supabase Postgres (canonical state engine) + Row Level Security
-- **Edge Functions**: Deno/TypeScript in `./functions/` — privileged orchestration layer
+- **Edge Functions**: Deno/TypeScript in `./supabase/functions/` — privileged orchestration layer
 - **Payments**: Stripe Checkout + Webhooks (CHF only, currently)
 - **Live Video**: Daily.co (modular provider interface — replaceable without DB changes)
 - **Frontend**: Not yet built — to be a thin layer calling RLS + RPC + Edge Functions
@@ -54,7 +54,7 @@ Full architecture reference: `~/Desktop/Architecture & Security Model + Business
 
 ---
 
-## Edge Functions (all in `./functions/`)
+## Edge Functions (all in `./supabase/functions/`)
 
 | Function | Purpose |
 |---|---|

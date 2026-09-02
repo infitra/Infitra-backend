@@ -1405,7 +1405,7 @@ async function commitX(value) {
 **Only attempted after Phases 1-4 validated in production for at least one full dogfood cycle.**
 
 **Files to CREATE:**
-- `migrations/YYYYMMDD_v3_b3_5_lock_rpc_async_snapshot.sql`
+- `supabase/migrations/YYYYMMDD_v3_b3_5_lock_rpc_async_snapshot.sql`
 
 **Migration content:**
 - Add `snapshot_status text` column to `app_collaboration_contract` (default `'pending'`, becomes `'ready'` when snapshot computed)
@@ -2161,7 +2161,7 @@ Discovered mid-Phase-2 during a notifications pass; cleanup + a review-model cor
 
 ### Economics
 
-**Current (verified):** 20%/80% is a hardcoded `0.8` in `functions/stripe_webhook/index.ts` (computeEconomics). `app_transaction` holds `amount_gross_cents` / `platform_cut_cents` / `creator_cut_cents`; buyer absorbs Stripe fees so the split is on the base price. Earnings views (`vw_my_creator_summary`, `vw_my_transactions`) + `app_payout` **exist live**; the earnings page computes platform cut as `gross − creator_cut` (works at any fee). **No** payout-destination columns on `app_profile`; **no** Stripe Connect. Cohost split distribution is **unimplemented** (webhook records the owner's full 80%).
+**Current (verified):** 20%/80% is a hardcoded `0.8` in `supabase/functions/stripe_webhook/index.ts` (computeEconomics). `app_transaction` holds `amount_gross_cents` / `platform_cut_cents` / `creator_cut_cents`; buyer absorbs Stripe fees so the split is on the base price. Earnings views (`vw_my_creator_summary`, `vw_my_transactions`) + `app_payout` **exist live**; the earnings page computes platform cut as `gross − creator_cut` (works at any fee). **No** payout-destination columns on `app_profile`; **no** Stripe Connect. Cohost split distribution is **unimplemented** (webhook records the owner's full 80%).
 
 **Build (H2) — ✅ DONE (leaned, 2026-06-10):**
 - ✅ Configurable fee resolved at checkout → Stripe metadata → webhook applies it → records `platform_fee_percent` on `app_transaction`. Pilot = global founding **10%** via `app_setting` (+ per-creator `app_profile.platform_fee_percent` override). Verified on a live purchase.

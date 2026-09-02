@@ -10,9 +10,7 @@ plans. Map:
 | Path | What it is |
 |---|---|
 | `web/` | The website and app (Next.js). Deployed to Vercel from `main`. |
-| `functions/` | Supabase Edge Functions: payments, live rooms, tokens, emails. |
-| `migrations/` | Database schema, RLS and triggers (Supabase Postgres). |
-| `config.toml` | Supabase CLI project config. Keep at the root; the CLI expects it here. |
+| `supabase/` | The backend, in the Supabase CLI's standard layout: `config.toml`, `functions/` (Edge Functions: payments, live rooms, tokens, emails), `migrations/` (schema, RLS, triggers). Run `supabase` commands from the repo root. |
 | `content/` | Marketing content system: social posts and carousel decks rendered from HTML. |
 | `db/` | `schema.sql`, a full dump of the live database schema (the second copy of the schema, off Supabase). Refresh after each migration: `db/dump.sh` (needs Docker Desktop running). |
 | `docs/` | Plans and reference: `PILOT_PLAN.md`, `LANDING_V2_PLAN.md`, `ARCHITECTURE_AND_SAFETY.md`. |
@@ -38,10 +36,6 @@ Open the exports in Finder: `open content/out`
 ## Why the folder used to be called "supabase"
 
 It started life as the Supabase CLI directory and the rest of the company
-moved in around it. Renamed to `infitra` on 2 Sep 2026. Nothing in `web/`,
-`functions/` or `migrations/` moved, because Vercel and the Supabase CLI
-depend on those paths. One consequence: the Supabase CLI wants its files
-under `<workdir>/supabase/`, which the old folder name satisfied by accident.
-`db/dump.sh` handles that; for other CLI commands, run them with
-`--workdir` pointing at a directory that contains a `supabase` symlink to
-this repo.
+moved in around it. Renamed to `infitra` on 2 Sep 2026, and the Supabase
+files moved into `supabase/` the same day, which is the layout the CLI
+expects. Nothing in `web/` moved, because Vercel deploys from there.
