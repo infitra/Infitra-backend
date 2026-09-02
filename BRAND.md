@@ -159,6 +159,7 @@ led with the model and the terms and never said what a participant buys.
 | founding pilot, pilot experts | beta testers |
 | the founding pilot is open | five founding pairs, N spots (public counts) |
 | complementary experts (duo as example) | "two experts" as the definition |
+| expert, true expert | specialist |
 | participants | customers, users |
 | workspace | dashboard (for the co-creation surface) |
 | Pioneers (early participants) | early adopters, beta users |
@@ -184,6 +185,14 @@ revenue," never "we take 10%." The fee is disclosed second.
 - Audiences and clients stay entirely the experts'
 - Payout within 14 days of the experience ending
 - Pricing in CHF
+- **Founding perks (public since 1 Sep 2026):** the founding expert badge
+  persists after the pilot; reviews earned in the pilot carry over when
+  INFITRA opens publicly; founding experts hold the top spot in discovery at
+  public launch. The top spot is a product commitment: build the ranking
+  boost before public launch, never promise it without shipping it
+- **"No lock-in" guardrail:** no exclusivity, no subscription, leave any
+  time, audience relationship stays theirs. Never imply data export or a
+  CRM handover we do not offer
 
 ---
 

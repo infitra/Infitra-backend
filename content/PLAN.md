@@ -39,10 +39,10 @@ deck reads as one ribbon; orange accents only. Rebuild:
 
 | Deck | Slides | Job |
 |---|---|---|
-| `carousel-offer-more.pdf` | 6 | THE LEAD. Offer more without becoming everything → don't become the nutritionist → concrete duos → what it is → messy part disappears |
-| `carousel-why-now.pdf` | 6 | The AI shift: why the human part is where value moved |
-| `carousel-handled.pdf` | 7 | The infrastructure as objection killer: split once, design together, one page sells it, one-click live, group stays warm |
-| `carousel-deal.pdf` | 6 | What it costs, what you keep: 90%, CHF 0 to start, no lock-in, 14 days |
+| `carousel-offer-more.pdf` | 7 | THE LEAD. Offer more without becoming everything → stay a true expert → together, what neither could alone → one experience, higher value → what it is → messy part disappears → apply |
+| `carousel-why-now.pdf` | 6 | Stop competing with AI where it's strongest → customization became cheap → the 6am list + the memory → not the plan, the person → side by side → apply |
+| `carousel-collaborating.pdf` | 7 | "Collaborating on INFITRA": split once, design together, one page sells it, one-click live, group stays warm → you bring expertise and audience, we make the collaboration work |
+| `carousel-deal.pdf` | 6 | 90%, ZERO to start, no lock-in, 14 days → position yourself early: fixed 10%, founding badge, reviews carry over, top spot at public launch |
 
 Every deck passes the depth principle: no slide reads as "here is what you
 lack". The 9 grid squares stay as Instagram story reservoir and single posts.
@@ -55,7 +55,7 @@ lack". The 9 grid squares stay as Instagram story reservoir and single posts.
 | 2 | OFFER MORE carousel (PDF) | Single 03 "Not the plan, the person" |
 | 3 | WHY NOW carousel | WHY NOW carousel |
 | 4 | Single 06 "90%" as text+image post | Single 06 "90%" |
-| 5 | HANDLED carousel | HANDLED carousel |
+| 5 | COLLABORATING carousel | COLLABORATING carousel |
 | 6 | THE DEAL carousel | THE DEAL carousel |
 | 7 | Founder post: what recruiting founding experts is teaching me | Single 09 "The founding pilot. Open now." |
 
@@ -110,10 +110,10 @@ outreach wave sends.
 ## Carousel captions
 
 **OFFER MORE**
-> Your clients want complete guidance, and you are one specialist. That is
-> not a problem to fix. Don't become the nutritionist: partner with one, and
-> go all in on your own craft. Six slides on what you could offer with the
-> right expert beside you. infitra.fit
+> Your clients ask for complete guidance, and you have deep expertise in one
+> field. That is an opportunity, not a problem. Stay a true expert, go
+> deeper into your craft, and offer more with the right complement beside
+> you. Seven slides. infitra.fit/apply
 
 **WHY NOW**
 > The personalised plan, the tracking, the answer at 6am: AI does that part
@@ -121,16 +121,17 @@ outreach wave sends.
 > information and customization are basically free? Six slides on why we're
 > building INFITRA. More at infitra.fit
 
-**HANDLED**
+**COLLABORATING ON INFITRA**
 > Building something with another expert usually gets messy: who owns what,
-> who gets paid, who sends the links. Seven slides on how INFITRA makes that
-> part disappear, so both of you stay on the content. infitra.fit
+> who gets paid, who sends the links. Seven slides on how a collaboration
+> works on INFITRA, so both of you stay on the content. infitra.fit/apply
 
 **THE DEAL**
 > Stated plainly: experts keep 90% of every sale, split as they agree in a
 > recorded agreement. CHF 0 to start, no subscription, no lock-in, your
 > audience stays yours, payout within 14 days of the experience ending.
-> Founding terms, locked for the duration of the pilot: infitra.fit
+> Position yourself early: founding badge that stays, reviews carry over,
+> top spot when INFITRA opens publicly. infitra.fit/apply
 
 ---
 

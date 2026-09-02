@@ -194,7 +194,7 @@ print(f"\n{len(POSTS)} templates written to {out}")
 # Four decks following the BRAND.md messaging architecture, in posting order:
 #   offer-more  the lead: tension -> opportunity -> what it is -> handled
 #   why-now     the AI shift, the context that makes it urgent
-#   handled     the infrastructure as objection killer, never as headline
+#   collaborating  the infrastructure as objection killer, never as headline
 #   deal        what it costs, what you keep
 # All light theme; every second slide mirrors the waves so the deck reads as
 # one ribbon. Counter top-right, series as eyebrow. Orange accents only.
@@ -205,33 +205,35 @@ print(f"\n{len(POSTS)} templates written to {out}")
 CAROUSELS = {
     "offer-more": dict(series="Offer more", slides=[
         dict(head='Offer more.<br>Without becoming<br><span class="accent">everything.</span>',
-             sub="Your clients want complete guidance. You are one specialist. That is not a problem to fix.", fs=96),
-        dict(head='Don\'t become<br>the <span class="accent">nutritionist.</span>',
-             sub="Partner with one. The strength coach stays a strength coach, the nutrition half gets a real expert, and the client gets both at full depth.", fs=104),
-        dict(head='Strength + nutrition.<br>Yoga + women\'s health.<br>Physio + <span class="accent">performance.</span>',
-             sub="Two specialists, one experience. Each goes deeper into their own craft because the other half is in good hands.", fs=76),
+             sub="Your clients ask for complete guidance. You have deep expertise in your field. There is an opportunity here, not a problem.", fs=96),
+        dict(head='Stay a<br>true <span class="accent">expert.</span>',
+             sub="Go deeper into your craft instead of wider into someone else's. Collaborate with a complement who does the same. The result is greater than its single parts.", fs=116),
+        dict(head='Together, offer what<br>neither could <span class="accent">alone.</span>',
+             sub="A strength coach with a nutritionist. A yoga teacher with a women's health expert. A sleep coach with a performance coach. Any expert, with the right complement.", fs=88),
+        dict(head='One experience.<br>Higher perceived<br><span class="accent">value.</span>',
+             sub="A complete offer justifies what a single one can't. Every collaboration grows your offer and your audience, while you stay independent and in full control.", fs=92),
         dict(head='Several weeks.<br>Live. <span class="accent">Together.</span>',
              sub="It runs online. Participants buy once, meet the experts live on video across the weeks, and stay connected in a shared space in between.", fs=100),
         dict(head='The messy part<br><span class="accent">disappears.</span>',
              sub="Agreement, revenue split, checkout, live rooms, group space: INFITRA handles everything around the experience. You bring the expertise.", fs=104),
-        dict(head='The founding pilot.<br><span class="accent">Open now.</span>',
-             sub="Experts keep 90% of every sale. More at infitra.fit", fs=96),
+        dict(head='The founding pilot.<br><span class="accent">Apply now.</span>',
+             sub="Experts keep 90% of every sale. Apply at infitra.fit/apply", fs=96),
     ]),
     "why-now": dict(series="Why INFITRA", slides=[
-        dict(head='The plan<br>just became <span class="accent">free.</span>',
-             sub="AI changed what a fitness product is worth. Here is what that means for everyone who coaches for a living.", fs=104),
-        dict(head='More apps.<br>More programs.<br><span class="accent">More noise.</span>',
-             sub="Fitness moved online and we ended up with more of everything. Information was never the missing piece.", fs=100),
-        dict(head='The plan. The tracking.<br><span class="accent">The answer at 6am.</span>',
+        dict(head='Stop competing with AI<br>where it\'s <span class="accent">strongest.</span>',
+             sub="It changed what a fitness product is worth. Here is what that means for everyone who coaches for a living.", fs=84),
+        dict(head='Customization and<br>availability just<br>became <span class="accent">cheap.</span>',
+             sub="Full focus, personalised, always on. What used to be a coach's edge is now a commodity.", fs=88),
+        dict(head='The plan. The tracking.<br>The answer at 6am.<br><span class="accent">The memory.</span>',
              sub="AI does this part well now. It's genuinely useful and it's here to stay. And it's not where your value is.", fs=80),
         dict(head='Not the plan,<br><span class="accent">the person.</span>',
              sub="Real guidance, accountability, and a group worth belonging to. The things a model can't hand you.", fs=116),
         dict(head='Real experts,<br><span class="accent">side by side.</span>',
              sub="Complementary experts run one live experience together, online, over several weeks. Real people, live, with a group that keeps showing up.", fs=104),
-        dict(head='The founding pilot.<br><span class="accent">Open now.</span>',
-             sub="Experts keep 90% of every sale. More at infitra.fit", fs=96),
+        dict(head='The founding pilot.<br><span class="accent">Apply now.</span>',
+             sub="Experts keep 90% of every sale. Apply at infitra.fit/apply", fs=96),
     ]),
-    "handled": dict(series="The messy part, handled", slides=[
+    "collaborating": dict(series="Collaborating on INFITRA", slides=[
         dict(head='Building together<br>usually gets<br><span class="accent">messy.</span>',
              sub="Who owns what, who gets paid, who sends the links. Here is how INFITRA makes that part disappear.", fs=92),
         dict(head='Agree the split.<br><span class="accent">Once.</span>',
@@ -241,25 +243,25 @@ CAROUSELS = {
         dict(head='One page<br><span class="accent">sells it.</span>',
              sub="Your experience gets its own marketing page with checkout. No funnel to build, no website project.", fs=116),
         dict(head='Go live in<br><span class="accent">one click.</span>',
-             sub="Participants purchase once and join every live session in one click. You show up and coach, the room is handled.", fs=116),
+             sub="The room is created for you, participants join with one click, and the engagement runs before and after each session. You can fully focus on delivering the experience.", fs=116),
         dict(head='The group<br>stays <span class="accent">warm.</span>',
              sub="Between sessions, participants check in, ask you questions directly and reflect after each session. Built in, not bolted on.", fs=116),
-        dict(head='You bring the expertise.<br>We bring the <span class="accent">rest.</span>',
-             sub="Nothing to build, nothing to pay upfront. The founding pilot is open: infitra.fit", fs=90),
+        dict(head='You bring the expertise<br>and the audience.<br>We make the<br>collaboration <span class="accent">work.</span>',
+             sub="Everything that usually makes working together hard: agreements, money, delivery, ownership, shared space and the coordination in between sessions. Apply at infitra.fit/apply", fs=72),
     ]),
     "deal": dict(series="The deal", slides=[
         dict(head='The deal,<br>stated <span class="accent">plainly.</span>',
              sub="What it costs to run a live experience on INFITRA, and what you keep.", fs=104),
         dict(head='Keep <span class="accent">90%</span><br>of every sale.',
              sub="Split between collaborators as you agree, in a recorded agreement. INFITRA's founding fee is the remaining 10%, locked for the duration of the pilot.", fs=110),
-        dict(head='CHF <span class="accent">0</span> to start.',
+        dict(head='<span class="accent">ZERO</span> to start.',
              sub="No upfront cost, no subscription, no minimum. You pay nothing to build and publish an experience.", fs=124),
         dict(head='No <span class="accent">lock-in.</span>',
-             sub="Your audience and your clients stay entirely yours, during and after. No exclusivity, no tie-in, leave any time.", fs=124),
+             sub="No exclusivity, no subscription, leave any time. Your audience relationship stays yours, during and after.", fs=124),
         dict(head='Paid within<br><span class="accent">14 days.</span>',
              sub="Payout lands within 14 days of your experience ending, per the recorded split.", fs=110),
-        dict(head='Good terms,<br>on <span class="accent">purpose.</span>',
-             sub="Founding terms, locked for the duration of the pilot. The pilot is open: infitra.fit", fs=104),
+        dict(head='Position yourself<br><span class="accent">early.</span>',
+             sub="10% founding fee, fixed for the pilot. A founding expert badge that stays. Your reviews carry over. And the top spot when INFITRA opens publicly. Apply at infitra.fit/apply", fs=104),
     ]),
 }
 

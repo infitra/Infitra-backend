@@ -41,7 +41,7 @@ What holds value is the person, the accountability, and a room full of people go
 
 ### 04 — `04-two-build.png`
 
-Your clients want complete guidance, and you are one specialist. That is not a problem to fix.
+Your clients ask for complete guidance. You have deep expertise in your field. There is an opportunity here, not a problem.
 
 Complementary experts can build something neither could alone, each going all in on their own craft, and share the work as well as the revenue.
 
