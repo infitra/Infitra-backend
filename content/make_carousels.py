@@ -12,5 +12,8 @@ for f in slides:
 for key, files in decks.items():
     imgs = [Image.open(f).convert("RGB") for f in sorted(files)]
     out = f"content/out/carousel-{key}.pdf"
-    imgs[0].save(out, save_all=True, append_images=imgs[1:], resolution=96)
+    # resolution=72 makes 1 image pixel = 1 PDF point, so page boxes are whole
+    # numbers (1080x1350). At 96 the 4:5 height came out as 1012.5, and a
+    # fractional MediaBox can be rejected by strict parsers (LinkedIn).
+    imgs[0].save(out, save_all=True, append_images=imgs[1:], resolution=72)
     print(out, f"{os.path.getsize(out)/1e6:.1f} MB", len(imgs), "slides")
