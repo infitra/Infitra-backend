@@ -51,8 +51,8 @@ lack". The 9 grid squares stay as Instagram story reservoir and single posts.
 
 | Beat | LinkedIn | Instagram |
 |---|---|---|
-| 1 | Founder post (below) | Profile setup + OFFER MORE carousel |
-| 2 | OFFER MORE carousel (PDF) | Single 03 "Not the plan, the person" |
+| 1 | Founder post · POSTED 1 Sep | Profile setup + OFFER MORE carousel · first feed post |
+| 2 | OFFER MORE carousel (PDF) · NEXT, ends on "which complement would make your offer complete?" | Single 03 "Not the plan, the person" |
 | 3 | WHY NOW carousel | WHY NOW carousel |
 | 4 | Single 06 "90%" as text+image post | Single 06 "90%" |
 | 5 | COLLABORATING carousel | COLLABORATING carousel |
@@ -76,44 +76,83 @@ outreach wave sends.
 
 ---
 
-## Founder post (Beat 1, LinkedIn)
+## Founder post (Beat 1, LinkedIn) · posted 1 Sep 2026, final text
 
-> Something I keep coming back to: AI has quietly become very good at the
-> part that used to sit at the centre of a fitness product. The
-> personalised plan, the tracking, the answer at 6am. It's genuinely useful
-> and it's here to stay.
+> I spent the past year looking closely at digital fitness. This is what
+> came out of it:
 >
-> So the honest question for anyone selling coaching online is what still
-> holds value once information and customization are basically free.
+> Fitness moved online and we ended up with more of everything. More apps,
+> more programs, more videos, more information than anyone can realistically
+> use. The fight for attention just produces another quick hack, another
+> secret, another missing piece.
 >
-> I think it's the part a model can't hand you. Real guidance from someone
-> who has seen your situation before, complementary expertise in the same
-> room, and a group that notices when you stop showing up.
+> Real results came from more complete guidance, so the trainer handed out
+> nutrition plans and the nutritionist handed out workout plans. It made
+> sense, and it also turned every offer into a bit of everything.
 >
-> And it opens something for every expert who has been pulled into being
-> everything for their clients: offer more without becoming everything.
-> Don't become the nutritionist, partner with one.
+> That broad layer is exactly where AI is now strongest. It switches roles,
+> builds the plan, personalises it, remembers the numbers and answers the
+> question at 6am, fully coordinated and for almost nothing.
 >
-> That's what I'm building INFITRA for. Complementary experts, say a
-> strength coach and a nutritionist, design and run one live experience
-> together over four to six weeks, online, each going all in on their own
-> craft. They keep 90% of every sale, split as they agree in a recorded
-> agreement, and their audiences stay entirely their own.
+> So what still holds value once information and customization are
+> basically free?
 >
-> The founding pilot is open now. Pricing in CHF, no upfront cost and
-> no subscription.
+> What is left is depth and human connection. Not one person covering four
+> disciplines, but experts who each go all the way in their own craft, on
+> the same experience, for the same group.
 >
-> If you're a coach, nutritionist, physio or movement teacher and this
-> sounds like your kind of thing, send me a message. And if you know
-> someone it fits better than you, I'd happily take that introduction.
+> That's what I'm building with INFITRA. Complementary experts, say a
+> strength coach and a nutritionist, build and run a live experience
+> together. INFITRA takes care of everything that usually makes
+> collaboration hard, from the recorded agreement and the revenue split to
+> the joint marketing page, the live sessions and the group engagement in
+> between, so each expert can stay fully in their craft and their audiences
+> meet instead of compete.
+>
+> I'm putting together the founding pilot now with the first experts.
+>
+> If you work in fitness or health, I'd be glad to hear from you. Whether
+> you already have someone in mind to build with, or you are just curious
+> what it could look like.
 
 ## Carousel captions
 
-**OFFER MORE**
-> Your clients ask for complete guidance, and you have deep expertise in one
-> field. That is an opportunity, not a problem. Stay a true expert, go
-> deeper into your craft, and offer more with the right complement beside
-> you. Seven slides. infitra.fit/apply
+**OFFER MORE** (LinkedIn document post · link in first comment)
+> Yesterday I wrote about why the human part is where value moved. Today,
+> what that opens up for every expert who has been pulled into being
+> everything for their clients.
+>
+> Your clients ask for complete guidance. You have deep expertise in one
+> field. That was never a problem. It's an opportunity: stay a true expert,
+> go deeper into your craft, and bring in someone who does the same in
+> theirs.
+>
+> A strength coach with a nutritionist. A yoga teacher with a women's health
+> expert. A sleep coach with a performance coach. One live experience, over
+> several weeks, for both audiences.
+>
+> Seven slides on what you could offer with the right expert beside you.
+>
+> One question for the experts reading this: which complement would make
+> your offer complete? Name it in the comments. I'm building the founding
+> pilot on exactly these combinations.
+
+**OFFER MORE** (Instagram first post · 7 PNGs · link in bio = infitra.fit/apply)
+> Offer more. Without becoming everything.
+>
+> Your clients ask for complete guidance. You have deep expertise in one
+> field. That's not a problem, it's an opportunity: stay a true expert, and
+> bring in someone who does the same in theirs.
+>
+> Strength + nutrition. Yoga + women's health. Sleep + performance. One live
+> experience, several weeks, both audiences.
+>
+> INFITRA is where complementary experts build it together. Founding pilot
+> open, link in bio.
+>
+> Which complement would make your offer complete?
+>
+> #fitnesscoach #nutritioncoach #yogateacher #personaltrainer #physiotherapy #infitra
 
 **WHY NOW**
 > The personalised plan, the tracking, the answer at 6am: AI does that part
