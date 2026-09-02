@@ -28,7 +28,7 @@ plans. Map:
 
     python3 content/build_posts.py
     for f in content/templates/carousel/*.html; do s=$(basename "$f" .html); \
-      ./content/render.sh "carousel/$s" 1080 1080 "content/out/carousel/$s.png"; done
+      ./content/render.sh "carousel/$s" 1080 1350 "content/out/carousel/$s.png"; done
     python3 content/make_carousels.py
 
 Open the exports in Finder: `open content/out`

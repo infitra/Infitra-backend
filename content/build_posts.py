@@ -198,6 +198,7 @@ print(f"\n{len(POSTS)} templates written to {out}")
 #   deal        what it costs, what you keep
 # All light theme; every second slide mirrors the waves so the deck reads as
 # one ribbon. Counter top-right, series as eyebrow. Orange accents only.
+# Slides are 1080x1350 (4:5 portrait): render with `render.sh carousel/<slug> 1080 1350`.
 # Depth principle: the complement releases you deeper into your craft; no
 # slide may read as "here is what you lack".
 # Render slides, then assemble PDFs: python3 content/make_carousels.py
@@ -272,7 +273,7 @@ CTPL = """<!doctype html>
 <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=general-sans@500,700&display=swap">
 <link rel="stylesheet" href="../_brand.css">
 <style>
-  :root {{ --w: 1080px; --h: 1080px; --pad: 88px; --mark: 62px; }}
+  :root {{ --w: 1080px; --h: 1350px; --pad: 96px; --mark: 62px; }}
   .stage {{ background: var(--cream); }}
   h1 {{ font-size: {fs}px; }}
   .eyebrow {{ font-size: calc(var(--w) * 0.0225); }}
