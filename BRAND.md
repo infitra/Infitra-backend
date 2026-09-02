@@ -8,14 +8,55 @@ every Claude Code session via `@BRAND.md` in CLAUDE.md.
 
 ## What INFITRA is
 
-A platform where complementary health and fitness experts create and run one
-live experience together, instead of each building everything alone.
+INFITRA helps health and fitness experts combine their expertise to create
+live experiences they could not create alone. Find the right complementary
+expert, build the experience together, and INFITRA handles everything around
+it.
 
 Complementary experts, usually two (say a strength coach and a nutritionist),
-design a single live experience, usually four to six weeks. INFITRA provides everything around it:
-the workspace where they build it, the marketing page with checkout, the live
-rooms, the tribe space where participants stay connected between sessions, and
-the revenue split based on a recorded agreement.
+design a single live experience, usually four to six weeks. It runs online:
+participants buy once, meet the experts live on video across the weeks, and
+stay connected in a shared space in between. INFITRA provides the workspace
+where the experts build it, the marketing page with checkout, the live rooms,
+the group space, and the revenue split based on a recorded agreement.
+
+---
+
+## Messaging architecture (1 Sep 2026)
+
+The system is valuable, but the system is not what people emotionally want.
+Never open with "look at the infrastructure we built." Open with what an
+expert could create if working with the right person were suddenly easy.
+The order is fixed:
+
+1. **Tension.** Clients want complete guidance; every expert is one
+   specialist. Experts get pulled into pretending to be everything.
+   The line: **offer more without becoming everything.**
+2. **Opportunity.** Bring in someone whose expertise completes yours.
+   "Don't become the nutritionist. Partner with one." Both sides at full
+   depth. Name concrete duos: strength + nutrition, yoga + women's health,
+   physio + performance, breathwork + endurance.
+3. **What it actually is.** Non-negotiable and early, never later than the
+   third beat: online, several weeks, participants buy once, live on video,
+   group connected in between. Abstraction is what broke on 1 Sep.
+4. **The messy part, handled.** Agreement, revenue split, checkout, live
+   rooms, group space. Infrastructure is the objection killer for "that
+   sounds complicated," never the headline.
+5. **Terms.** Keep 90%, nothing upfront, no lock-in, audience stays yours.
+
+**The depth principle (the test every sentence must pass):** the complement
+releases an expert *deeper into their own craft*; it never covers for what
+they lack. Michael covers nutrition, Tommy covers nutrition, Sarah Lisa
+covers movement: none of that is a gap to fill, it is depth to protect. If a
+sentence can be read as "here is what you lack" or "you built this because
+you had no better option," it is wrong even when factually about coverage.
+Say "you go all in on the training," never "you focus on what you're
+actually good at."
+
+**Collaboration is the mechanism, not the pitch.** Externally lead with
+creating, combining, offering more. "Collaboration" stays the honest word
+for how it works and the internal product concept; it is abstract and
+slightly corporate as a headline.
 
 **Founder:** Yves Imhasly. Swiss, CHF, Zurich-based operation.
 
@@ -96,8 +137,9 @@ answer is missing, it is not ready:
    expert. INFITRA provides everything around it.
 4. **What do I get?** 90%, no upfront cost, audience stays mine.
 
-Order matters: **the thing, then the collaboration, then the terms.** Never
-terms first. Brand vocabulary ("live experience", "tribe space") is internal
+Order matters and follows the messaging architecture above: **tension and
+opportunity, then the thing, then the mechanism, then the terms.** Never
+terms first, never infrastructure first. Brand vocabulary ("live experience", "tribe space") is internal
 shorthand with no meaning to a cold reader: gloss it on first use.
 
 Learned the hard way on 1 Sep 2026. The first candidate to reply booked a
@@ -112,6 +154,8 @@ led with the model and the terms and never said what a participant buys.
 | tribe space | community feed, forum |
 | marketing page | sales page, landing page (for the buyer page) |
 | complementary experts | partners, co-hosts (in marketing copy) |
+| create together, combine expertise, offer more | "collaborate" as the headline verb |
+| go all in on your craft, both sides at full depth | focus on what you're good at, fill the gap |
 | founding pilot, pilot experts | beta testers |
 | the founding pilot is open | five founding pairs, N spots (public counts) |
 | complementary experts (duo as example) | "two experts" as the definition |

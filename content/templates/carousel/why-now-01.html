@@ -7,7 +7,15 @@
 <style>
   :root { --w: 1080px; --h: 1080px; --pad: 88px; --mark: 62px; }
   .stage { background: var(--cream); }
-  h1 { font-size: 96px; }
+  h1 { font-size: 104px; }
+  .eyebrow { font-size: calc(var(--w) * 0.0225); }
+  .sub { font-size: calc(var(--w) * 0.035); color: #3D4E5C; }
+  .flip .wv { transform: scaleX(-1); }
+  .count {
+    position: absolute; top: var(--pad); right: var(--pad); z-index: 2;
+    font-weight: 700; letter-spacing: 0.12em;
+    font-size: calc(var(--w) * 0.019); color: var(--muted);
+  }
 </style>
 </head>
 <body>
@@ -48,13 +56,12 @@
         <path d="M -200 1300 C 150 1020, 480 1180, 820 880 C 1160 580, 1480 740, 1800 -100 L 1800 -550 C 1480 250, 1160 80, 820 380 C 480 680, 150 520, -200 880 Z" fill="url(#f3)"/>
       </svg>
     </div>
-
+    <span class="count">1 / 6</span>
     <div class="body">
-      <p class="eyebrow">Founding pilot</p>
-      <h1>The founding pilot.<br><span class="accent">Open now.</span></h1>
-      <p class="sub">Complementary experts running the first live experiences on INFITRA. More at infitra.fit</p>
+      <p class="eyebrow">Why INFITRA</p>
+      <h1>The plan<br>just became <span class="accent">free.</span></h1>
+      <p class="sub">AI changed what a fitness product is worth. Here is what that means for everyone who coaches for a living.</p>
     </div>
-
     <div class="brand">
       <img src="../../../web/public/logo-mark.png" alt="">
       <span>INFITRA</span>

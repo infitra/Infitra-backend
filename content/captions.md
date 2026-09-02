@@ -41,9 +41,9 @@ What holds value is the person, the accountability, and a room full of people go
 
 ### 04 — `04-two-build.png`
 
-Most coaches build everything alone: the content, the marketing, the payments, the community. It's a lot of work that isn't coaching.
+Your clients want complete guidance, and you are one specialist. That is not a problem to fix.
 
-Two complementary experts can build something neither could alone, and share the work as well as the revenue.
+Complementary experts can build something neither could alone, each going all in on their own craft, and share the work as well as the revenue.
 
 That's what INFITRA is for.
 
@@ -71,13 +71,13 @@ The tribe space is where participants stay connected between live sessions: ques
 
 ### 08 — `08-one-click.png`
 
-Once two experts agree how they'll work together, INFITRA handles the rest: the marketing page with checkout, the live rooms, the tribe space, and the revenue split.
+Once experts agree how they'll work together, INFITRA handles the rest: the marketing page with checkout, the live rooms, the tribe space, and the revenue split.
 
 So you can focus on your audience instead of your admin.
 
 ### 09 — `09-founding.png`
 
-We're opening the founding pilot: five pairs of complementary experts running the first live experiences on INFITRA.
+We're opening the founding pilot: the first complementary experts running live experiences together on INFITRA.
 
 Founder-level support the whole way, and you keep 90%.
 

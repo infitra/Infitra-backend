@@ -58,7 +58,7 @@ POSTS = [
          sub="Marketing page, checkout, live rooms, tribe space, revenue split. INFITRA handles everything around your experience.",
          fs=104),
     dict(slug="09-founding", pillar=3, theme="light", eyebrow="Founding pilot",
-         head='Five founding pairs.<br><span class="accent">Starting now.</span>',
+         head='The founding pilot.<br><span class="accent">Open now.</span>',
          sub="Complementary experts running the first live experiences on INFITRA. More at infitra.fit",
          fs=96),
 ]
@@ -189,3 +189,125 @@ for p in POSTS:
     print(f"pillar {p['pillar']}  {p['slug']}.html")
 
 print(f"\n{len(POSTS)} templates written to {out}")
+
+# ── Carousels ────────────────────────────────────────────────────────────
+# Four decks following the BRAND.md messaging architecture, in posting order:
+#   offer-more  the lead: tension -> opportunity -> what it is -> handled
+#   why-now     the AI shift, the context that makes it urgent
+#   handled     the infrastructure as objection killer, never as headline
+#   deal        what it costs, what you keep
+# All light theme; every second slide mirrors the waves so the deck reads as
+# one ribbon. Counter top-right, series as eyebrow. Orange accents only.
+# Depth principle: the complement releases you deeper into your craft; no
+# slide may read as "here is what you lack".
+# Render slides, then assemble PDFs: python3 content/make_carousels.py
+
+CAROUSELS = {
+    "offer-more": dict(series="Offer more", slides=[
+        dict(head='Offer more.<br>Without becoming<br><span class="accent">everything.</span>',
+             sub="Your clients want complete guidance. You are one specialist. That is not a problem to fix.", fs=96),
+        dict(head='Don\'t become<br>the <span class="accent">nutritionist.</span>',
+             sub="Partner with one. The strength coach stays a strength coach, the nutrition half gets a real expert, and the client gets both at full depth.", fs=104),
+        dict(head='Strength + nutrition.<br>Yoga + women\'s health.<br>Physio + <span class="accent">performance.</span>',
+             sub="Two specialists, one experience. Each goes deeper into their own craft because the other half is in good hands.", fs=76),
+        dict(head='Several weeks.<br>Live. <span class="accent">Together.</span>',
+             sub="It runs online. Participants buy once, meet the experts live on video across the weeks, and stay connected in a shared space in between.", fs=100),
+        dict(head='The messy part<br><span class="accent">disappears.</span>',
+             sub="Agreement, revenue split, checkout, live rooms, group space: INFITRA handles everything around the experience. You bring the expertise.", fs=104),
+        dict(head='The founding pilot.<br><span class="accent">Open now.</span>',
+             sub="Experts keep 90% of every sale. More at infitra.fit", fs=96),
+    ]),
+    "why-now": dict(series="Why INFITRA", slides=[
+        dict(head='The plan<br>just became <span class="accent">free.</span>',
+             sub="AI changed what a fitness product is worth. Here is what that means for everyone who coaches for a living.", fs=104),
+        dict(head='More apps.<br>More programs.<br><span class="accent">More noise.</span>',
+             sub="Fitness moved online and we ended up with more of everything. Information was never the missing piece.", fs=100),
+        dict(head='The plan. The tracking.<br><span class="accent">The answer at 6am.</span>',
+             sub="AI does this part well now. It's genuinely useful and it's here to stay. And it's not where your value is.", fs=80),
+        dict(head='Not the plan,<br><span class="accent">the person.</span>',
+             sub="Real guidance, accountability, and a group worth belonging to. The things a model can't hand you.", fs=116),
+        dict(head='Real experts,<br><span class="accent">side by side.</span>',
+             sub="Complementary experts run one live experience together, online, over several weeks. Real people, live, with a group that keeps showing up.", fs=104),
+        dict(head='The founding pilot.<br><span class="accent">Open now.</span>',
+             sub="Experts keep 90% of every sale. More at infitra.fit", fs=96),
+    ]),
+    "handled": dict(series="The messy part, handled", slides=[
+        dict(head='Building together<br>usually gets<br><span class="accent">messy.</span>',
+             sub="Who owns what, who gets paid, who sends the links. Here is how INFITRA makes that part disappear.", fs=92),
+        dict(head='Agree the split.<br><span class="accent">Once.</span>',
+             sub="The revenue split is recorded before anything sells. Experts keep 90% of every sale, divided as you agree. No awkward money talk later.", fs=104),
+        dict(head='Design it<br><span class="accent">together.</span>',
+             sub="One shared workspace for the whole experience: the weeks, the sessions, the materials. You build together, nothing gets lost in chat threads.", fs=116),
+        dict(head='One page<br><span class="accent">sells it.</span>',
+             sub="Your experience gets its own marketing page with checkout. No funnel to build, no website project.", fs=116),
+        dict(head='Go live in<br><span class="accent">one click.</span>',
+             sub="Participants purchase once and join every live session in one click. You show up and coach, the room is handled.", fs=116),
+        dict(head='The group<br>stays <span class="accent">warm.</span>',
+             sub="Between sessions, participants check in, ask you questions directly and reflect after each session. Built in, not bolted on.", fs=116),
+        dict(head='You bring the expertise.<br>We bring the <span class="accent">rest.</span>',
+             sub="Nothing to build, nothing to pay upfront. The founding pilot is open: infitra.fit", fs=90),
+    ]),
+    "deal": dict(series="The deal", slides=[
+        dict(head='The deal,<br>stated <span class="accent">plainly.</span>',
+             sub="What it costs to run a live experience on INFITRA, and what you keep.", fs=104),
+        dict(head='Keep <span class="accent">90%</span><br>of every sale.',
+             sub="Split between collaborators as you agree, in a recorded agreement. INFITRA's founding fee is the remaining 10%, locked for the duration of the pilot.", fs=110),
+        dict(head='CHF <span class="accent">0</span> to start.',
+             sub="No upfront cost, no subscription, no minimum. You pay nothing to build and publish an experience.", fs=124),
+        dict(head='No <span class="accent">lock-in.</span>',
+             sub="Your audience and your clients stay entirely yours, during and after. No exclusivity, no tie-in, leave any time.", fs=124),
+        dict(head='Paid within<br><span class="accent">14 days.</span>',
+             sub="Payout lands within 14 days of your experience ending, per the recorded split.", fs=110),
+        dict(head='Good terms,<br>on <span class="accent">purpose.</span>',
+             sub="Founding terms, locked for the duration of the pilot. The pilot is open: infitra.fit", fs=104),
+    ]),
+}
+
+CTPL = """<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=general-sans@500,700&display=swap">
+<link rel="stylesheet" href="../_brand.css">
+<style>
+  :root {{ --w: 1080px; --h: 1080px; --pad: 88px; --mark: 62px; }}
+  .stage {{ background: var(--cream); }}
+  h1 {{ font-size: {fs}px; }}
+  .eyebrow {{ font-size: calc(var(--w) * 0.0225); }}
+  .sub {{ font-size: calc(var(--w) * 0.035); color: #3D4E5C; }}
+  .flip .wv {{ transform: scaleX(-1); }}
+  .count {{
+    position: absolute; top: var(--pad); right: var(--pad); z-index: 2;
+    font-weight: 700; letter-spacing: 0.12em;
+    font-size: calc(var(--w) * 0.019); color: var(--muted);
+  }}
+</style>
+</head>
+<body>
+  <div class="stage {flip}">
+    {waves}
+    <span class="count">{idx} / {total}</span>
+    <div class="body">
+      <p class="eyebrow">{eyebrow}</p>
+      <h1>{head}</h1>
+      <p class="sub">{sub}</p>
+    </div>
+    <div class="brand">
+      <img src="../../../web/public/logo-mark.png" alt="">
+      <span>INFITRA</span>
+    </div>
+  </div>
+</body>
+</html>
+"""
+
+cout = pathlib.Path(__file__).parent / "templates" / "carousel"
+cout.mkdir(parents=True, exist_ok=True)
+for key, c in CAROUSELS.items():
+    total = len(c["slides"])
+    for i, sl in enumerate(c["slides"], 1):
+        html = CTPL.format(fs=sl["fs"], flip="flip" if i % 2 == 0 else "",
+                           waves=WAVES_LIGHT, idx=i, total=total,
+                           eyebrow=c["series"], head=sl["head"], sub=sl["sub"])
+        (cout / f"{key}-{i:02d}.html").write_text(html)
+    print(f"carousel {key}: {total} slides")
