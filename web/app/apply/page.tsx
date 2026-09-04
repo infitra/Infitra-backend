@@ -12,7 +12,7 @@ import { PilotApplicationForm } from "./PilotApplicationForm";
 export const metadata = {
   title: "Apply for the pilot · INFITRA",
   description:
-    "Apply to be one of the first five expert pairs running a joint live experience on INFITRA.",
+    "Join INFITRA’s founding group: experts and studios building live experiences together.",
 };
 
 export default function ApplyPage() {
@@ -86,10 +86,10 @@ export default function ApplyPage() {
                 className="mt-5 text-base md:text-lg leading-relaxed"
                 style={{ color: "#475569" }}
               >
-                We&apos;re looking for five expert pairs to run a pilot. Apply solo or with
-                a partner: if your expertise could complement another expert&apos;s and you
-                are open to collaborate, we want to hear from you. No partner yet? We&apos;ll
-                help you find your match!
+                The founding pilot is open. Apply solo or with a partner: if your
+                expertise could complement another expert&apos;s and you are open to
+                building something together, we want to hear from you. No partner yet?
+                You will see who else is in the group, and we help you pair up.
               </p>
             </div>
 
