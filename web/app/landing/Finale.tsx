@@ -47,7 +47,7 @@ export function Finale() {
                 For fitness and wellness experts
               </p>
               <h3 className="text-2xl md:text-[2rem] font-headline tracking-tight mt-3 leading-tight" style={{ color: INK, fontWeight: 800, letterSpacing: "-0.02em" }}>
-                Build one of the first five.
+                Build one of the first.
               </h3>
               <p className="text-[15px] md:text-base mt-3 leading-relaxed" style={{ color: MUTED }}>
                 Pair with a complementary expert, or let us help you find one, and
@@ -56,7 +56,7 @@ export function Finale() {
               </p>
 
               <div className="mt-auto pt-8 flex justify-center">
-                <ApplyCTA xl micro="5 founding pairs · reviewed individually · starting now" />
+                <ApplyCTA xl micro="Founding community · reviewed individually · forming now" />
               </div>
             </div>
 

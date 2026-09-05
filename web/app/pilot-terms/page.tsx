@@ -76,16 +76,15 @@ export default function PilotTermsPage() {
               <Section title="What it is">
                 <p>
                   A small group of founding experts, each collaboration running one live experience: typically four
-                  to six weeks, co-hosted. It&apos;s a closed pilot, so your participants
-                  come from your own audience, not from INFITRA.
+                  to six weeks, co-hosted. It&apos;s a closed pilot, reviewed individually.
                 </p>
               </Section>
 
               <Section title="What you do">
                 <p>
                   Design and publish one experience, host every live session, show up in
-                  the tribe space, and answer questions. Promote it to your audience. And
-                  tell us what&apos;s working and what isn&apos;t after each session.
+                  the tribe space, and answer questions. And tell us what&apos;s working
+                  and what isn&apos;t after each session.
                 </p>
               </Section>
 
