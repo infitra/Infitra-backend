@@ -255,51 +255,51 @@ export function OnboardingForm() {
                 </p>
               </div>
 
-              {/* Legal name + attestation — creators only. Captures the signing
-                  identity once, up front. Every contract from this creator
-                  onward renders automatically with no further prompts. */}
+              {/* Expert or studio (6 Sep 2026). The legal name and the signing
+                  attestation moved to the first workspace visit: joining the
+                  founding community asks for nothing binding. */}
               {role === "creator" && (
-                <>
-                  <div>
-                    <label
-                      htmlFor="legal_name"
-                      className="block text-xs font-bold uppercase tracking-wider mb-2 font-headline"
-                      style={{ color: "rgba(15, 34, 41, 0.55)" }}
-                    >
-                      Legal Name
-                    </label>
-                    <input
-                      id="legal_name"
-                      name="legal_name"
-                      type="text"
-                      required
-                      minLength={2}
-                      maxLength={100}
-                      placeholder="Your full legal name"
-                      className="w-full px-4 py-3 rounded-xl focus:outline-none transition-colors text-sm"
-                      style={{
-                        backgroundColor: "rgba(255, 255, 255, 0.78)",
-                        border: "1px solid rgba(15, 34, 41, 0.15)",
-                        color: "#0F2229",
-                      }}
-                    />
-                    <p className="text-[11px] mt-1.5" style={{ color: "#94a3b8" }}>
-                      Appears on collaboration contracts.
-                    </p>
+                <div>
+                  <span
+                    className="block text-xs font-bold uppercase tracking-wider mb-2 font-headline"
+                    style={{ color: "rgba(15, 34, 41, 0.55)" }}
+                  >
+                    You are
+                  </span>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(
+                      [
+                        { value: "expert", label: "An expert", hint: "Coach, nutritionist, physio, teacher" },
+                        { value: "studio", label: "A studio or gym", hint: "A place with members" },
+                      ] as const
+                    ).map((opt) => (
+                      <label
+                        key={opt.value}
+                        className="flex flex-col gap-0.5 rounded-xl px-3.5 py-3 cursor-pointer select-none has-[:checked]:border-[#FF6130]"
+                        style={{
+                          backgroundColor: "rgba(255, 255, 255, 0.78)",
+                          border: "1px solid rgba(15, 34, 41, 0.15)",
+                        }}
+                      >
+                        <span className="flex items-center gap-2">
+                          <input
+                            type="radio"
+                            name="entity_type"
+                            value={opt.value}
+                            defaultChecked={opt.value === "expert"}
+                            className="accent-[#FF6130]"
+                          />
+                          <span className="text-sm font-headline font-bold" style={{ color: "#0F2229" }}>
+                            {opt.label}
+                          </span>
+                        </span>
+                        <span className="text-[11px] pl-5" style={{ color: "#94a3b8" }}>
+                          {opt.hint}
+                        </span>
+                      </label>
+                    ))}
                   </div>
-
-                  <label className="flex items-start gap-3 cursor-pointer select-none pt-1">
-                    <input
-                      type="checkbox"
-                      name="attested"
-                      required
-                      className="mt-0.5 w-4 h-4 shrink-0 cursor-pointer accent-[#FF6130]"
-                    />
-                    <span className="text-xs text-[#0F2229] leading-relaxed">
-                      I confirm this is my legal name and I can sign collaboration contracts under it.
-                    </span>
-                  </label>
-                </>
+                </div>
               )}
 
               <button

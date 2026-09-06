@@ -38,3 +38,21 @@ export async function resendReceipt(txId: string): Promise<ActionResult> {
 export async function forceEndSession(sessionId: string): Promise<ActionResult> {
   return callRpc("admin_force_end_session", { p_session: sessionId });
 }
+
+/** Accounts-lite (6 Sep 2026): open or close a creator's workspace. */
+export async function setWorkspaceEnabled(
+  userId: string,
+  enabled: boolean,
+  note: string,
+): Promise<ActionResult> {
+  return callRpc("admin_set_workspace_enabled", {
+    p_user: userId,
+    p_enabled: enabled,
+    p_note: note || null,
+  });
+}
+
+/** Mint a founding-expert invite; the result carries the code and the URL. */
+export async function mintCreatorInvite(note: string, days = 60): Promise<ActionResult> {
+  return callRpc("admin_mint_creator_invite", { p_note: note || null, p_days: days });
+}

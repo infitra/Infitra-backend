@@ -22,28 +22,40 @@ import { NotificationBell } from "@/app/components/NotificationBell";
 export function ParticipantNav({
   displayName,
   role,
+  workspaceEnabled = true,
 }: {
   displayName: string | null;
   role?: string;
+  /** Accounts-lite (6 Sep 2026): a founding-community creator without the
+   *  workspace gets Community as home and no Create pill. Callers that do not
+   *  know the flag keep the full creator nav. */
+  workspaceEnabled?: boolean;
 }) {
   const isCreator = role === "creator" || role === "admin";
-  const homeHref = isCreator ? "/dashboard" : "/me";
+  const hasWorkspace = isCreator && workspaceEnabled;
+  const homeHref = isCreator ? (hasWorkspace ? "/dashboard" : "/community") : "/me";
 
   // Desktop links (the Create pill is rendered separately for creators).
   const links = isCreator
-    ? [
-        { label: "Home", href: "/dashboard" },
-        { label: "Earnings", href: "/dashboard/earnings" },
-      ]
+    ? hasWorkspace
+      ? [
+          { label: "Home", href: "/dashboard" },
+          { label: "Community", href: "/community" },
+          { label: "Earnings", href: "/dashboard/earnings" },
+        ]
+      : [{ label: "Community", href: "/community" }]
     : [{ label: "Home", href: "/me" }];
 
   // Mobile menu mirrors desktop, folding Create back in for creators.
   const mobileLinks = isCreator
-    ? [
-        { label: "Home", href: "/dashboard" },
-        { label: "Create", href: "/dashboard/create" },
-        { label: "Earnings", href: "/dashboard/earnings" },
-      ]
+    ? hasWorkspace
+      ? [
+          { label: "Home", href: "/dashboard" },
+          { label: "Community", href: "/community" },
+          { label: "Create", href: "/dashboard/create" },
+          { label: "Earnings", href: "/dashboard/earnings" },
+        ]
+      : [{ label: "Community", href: "/community" }]
     : [{ label: "Home", href: "/me" }];
 
   return (
@@ -87,7 +99,7 @@ export function ParticipantNav({
               {label}
             </Link>
           ))}
-          {isCreator && (
+          {hasWorkspace && (
             <Link
               href="/dashboard/create"
               className="inline-flex px-4 py-2 rounded-full text-xs font-black font-headline text-white uppercase tracking-widest"

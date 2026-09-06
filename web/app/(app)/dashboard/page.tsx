@@ -458,7 +458,8 @@ async function loadDashboard(userId: string) {
         .from("app_challenge_member")
         .select("challenge_id")
         .in("challenge_id", activeIds)
-        .gte("created_at", sevenDaysAgo),
+        // The member row's timestamp is joined_at (fixed 6 Sep 2026).
+        .gte("joined_at", sevenDaysAgo),
       supabase
         .from("vw_my_transactions")
         .select("challenge_id, creator_cut_cents, created_at")

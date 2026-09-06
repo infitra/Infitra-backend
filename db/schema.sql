@@ -364,6 +364,28 @@ $$;
 ALTER FUNCTION "public"."admin_applications"() OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."admin_creator_invites"() RETURNS "jsonb"
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+  select case when app_admin_assert() is not null then
+    coalesce((
+      select jsonb_agg(jsonb_build_object(
+        'code', i.code, 'note', i.note, 'created_at', i.created_at,
+        'expires_at', i.expires_at, 'redeemed_by', i.redeemed_by,
+        'redeemed_at', i.redeemed_at, 'revoked', i.revoked,
+        'redeemed_name', p.display_name
+      ) order by i.created_at desc)
+      from app_creator_invite i
+      left join app_profile p on p.id = i.redeemed_by
+    ), '[]'::jsonb)
+  end;
+$$;
+
+
+ALTER FUNCTION "public"."admin_creator_invites"() OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."admin_email_enqueue_receipt"("p_tx_id" "uuid") RETURNS bigint
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -879,6 +901,35 @@ $$;
 ALTER FUNCTION "public"."admin_health_tx"() OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."admin_mint_creator_invite"("p_note" "text" DEFAULT NULL::"text", "p_days" integer DEFAULT 60) RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+declare
+  v_admin uuid;
+  v_code text;
+  v_exp timestamptz;
+begin
+  v_admin := app_admin_assert();
+  insert into app_creator_invite (note, expires_at)
+  values (nullif(btrim(coalesce(p_note, '')), ''),
+          now() + make_interval(days => least(greatest(coalesce(p_days, 60), 1), 180)))
+  returning code, expires_at into v_code, v_exp;
+  insert into app_admin_action_log (admin_id, action, target, detail)
+  values (v_admin, 'mint_creator_invite', v_code,
+          jsonb_build_object('note', p_note, 'expires_at', v_exp));
+  return jsonb_build_object(
+    'code', v_code,
+    'url', 'https://www.infitra.fit/join-as-expert?code=' || v_code,
+    'expires_at', v_exp
+  );
+end;
+$$;
+
+
+ALTER FUNCTION "public"."admin_mint_creator_invite"("p_note" "text", "p_days" integer) OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."admin_money"() RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -1012,6 +1063,7 @@ begin
         select
             p.id, p.display_name, p.username, p.role, p.is_admin, p.visibility,
             p.created_at, p.is_founding_expert,
+            p.workspace_enabled, p.entity_type, p.community_visibility, p.collab_wish,
             u.email,
             u.banned_until,
             u.raw_user_meta_data ->> 'terms_version' as terms_version,
@@ -1427,6 +1479,28 @@ $$;
 
 
 ALTER FUNCTION "public"."admin_set_application_status"("p_id" "uuid", "p_status" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."admin_set_workspace_enabled"("p_user" "uuid", "p_enabled" boolean, "p_note" "text" DEFAULT NULL::"text") RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+declare
+  v_admin uuid;
+begin
+  v_admin := app_admin_assert();
+  update app_profile
+     set workspace_enabled = p_enabled, updated_at = now()
+   where id = p_user and role in ('creator', 'admin');
+  if not found then raise exception 'creator not found'; end if;
+  insert into app_admin_action_log (admin_id, action, target, detail)
+  values (v_admin, 'set_workspace_enabled', p_user::text,
+          jsonb_build_object('enabled', p_enabled, 'note', nullif(btrim(coalesce(p_note, '')), '')));
+end;
+$$;
+
+
+ALTER FUNCTION "public"."admin_set_workspace_enabled"("p_user" "uuid", "p_enabled" boolean, "p_note" "text") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."app_admin_assert"() RETURNS "uuid"
@@ -4424,6 +4498,28 @@ $$;
 ALTER FUNCTION "public"."enforce_challenge_cohost_creator_role"() OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."enforce_challenge_owner_workspace"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
+    AS $$
+begin
+  if new.status = 'published'
+     and (tg_op = 'INSERT' or old.status is distinct from 'published') then
+    if not exists (
+      select 1 from public.app_profile p
+       where p.id = new.owner_id and p.workspace_enabled
+    ) then
+      raise exception 'workspace_disabled' using errcode = '42501';
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+
+ALTER FUNCTION "public"."enforce_challenge_owner_workspace"() OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."enforce_challenge_split"() RETURNS "trigger"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -4559,6 +4655,27 @@ $$;
 
 
 ALTER FUNCTION "public"."enforce_profile_role_immutable"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."enforce_profile_workspace_flag_admin_only"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
+    AS $$
+begin
+  if new.workspace_enabled is distinct from old.workspace_enabled then
+    if current_setting('role', true) = 'service_role' then
+      return new;
+    end if;
+    if auth.uid() is null or not is_admin(auth.uid()) then
+      raise exception 'workspace_enabled is admin-only' using errcode = '42501';
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+
+ALTER FUNCTION "public"."enforce_profile_workspace_flag_admin_only"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."enforce_session_cohost_creator_role"() RETURNS "trigger"
@@ -6129,6 +6246,92 @@ $$;
 
 
 ALTER FUNCTION "public"."load_experience_space"("p_challenge_id" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."load_founding_community"("p_public_only" boolean DEFAULT true) RETURNS "jsonb"
+    LANGUAGE "plpgsql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+declare
+  v_uid uuid := auth.uid();
+  v_min_vis text;
+  v_count integer;
+  v_self_vis text;
+  v_self_admin boolean := false;
+  v_members jsonb;
+begin
+  if p_public_only then
+    v_min_vis := 'public';
+  else
+    if v_uid is null then
+      return jsonb_build_object('authorized', false, 'reason', 'not_authenticated',
+                                'count', 0, 'members', '[]'::jsonb);
+    end if;
+    select community_visibility, coalesce(is_admin, false)
+      into v_self_vis, v_self_admin
+      from app_profile where id = v_uid;
+    if not v_self_admin and coalesce(v_self_vis, 'none') = 'none' then
+      select count(*) into v_count
+        from app_profile
+       where role in ('creator', 'admin') and community_visibility in ('members', 'public');
+      return jsonb_build_object('authorized', false, 'reason', 'card_not_visible',
+                                'count', v_count, 'members', '[]'::jsonb);
+    end if;
+    v_min_vis := 'members';
+  end if;
+
+  select count(*) into v_count
+    from app_profile p
+   where p.role in ('creator', 'admin')
+     and (p.community_visibility = 'public'
+          or (v_min_vis = 'members' and p.community_visibility = 'members'));
+
+  if p_public_only and v_count < 3 then
+    return jsonb_build_object('authorized', true, 'count', v_count, 'members', '[]'::jsonb);
+  end if;
+
+  select coalesce(jsonb_agg(card order by consent_at asc nulls last), '[]'::jsonb)
+    into v_members
+    from (
+      select p.community_consent_at as consent_at,
+             jsonb_build_object(
+               'id', p.id,
+               'display_name', p.display_name,
+               'avatar_url', p.avatar_url,
+               'tagline', p.tagline,
+               'bio', p.bio,
+               'username', p.username,
+               'entity_type', p.entity_type,
+               'is_founding_expert', p.is_founding_expert,
+               'visibility', p.community_visibility,
+               'collab_wish', p.collab_wish,
+               'facts', jsonb_build_object(
+                 'city', p.profile_facts->>'city',
+                 'disciplines', coalesce(p.profile_facts->'disciplines', '[]'::jsonb),
+                 'focus', p.profile_facts->>'focus'
+               ),
+               'credentials', coalesce((
+                 select jsonb_agg(jsonb_build_object(
+                          'kind', c.kind, 'title', c.title, 'org', c.org,
+                          'year', c.year, 'year_end', c.year_end)
+                        order by c.sort_order, c.created_at)
+                   from app_expert_credential c
+                  where c.profile_id = p.id
+               ), '[]'::jsonb)
+             ) as card
+        from app_profile p
+       where p.role in ('creator', 'admin')
+         and p.display_name is not null
+         and (p.community_visibility = 'public'
+              or (v_min_vis = 'members' and p.community_visibility = 'members'))
+    ) cards;
+
+  return jsonb_build_object('authorized', true, 'count', v_count, 'members', v_members);
+end;
+$$;
+
+
+ALTER FUNCTION "public"."load_founding_community"("p_public_only" boolean) OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."load_my_connections"() RETURNS TABLE("profile_id" "uuid", "display_name" "text", "avatar_url" "text", "role" "text", "kind" "text", "shared_count" integer, "shared_titles" "text"[], "any_active" boolean)
@@ -8646,6 +8849,26 @@ $$;
 ALTER FUNCTION "public"."trg_pilot_application_enqueue_emails"() OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."trg_profile_community_consent"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
+    AS $$
+begin
+  if new.community_visibility = 'none' then
+    new.community_consent_at := null;
+  elsif tg_op = 'INSERT'
+     or old.community_visibility = 'none'
+     or new.community_consent_at is null then
+    new.community_consent_at := now();
+  end if;
+  return new;
+end;
+$$;
+
+
+ALTER FUNCTION "public"."trg_profile_community_consent"() OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."trg_profile_enqueue_welcome"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -9809,7 +10032,15 @@ CREATE TABLE IF NOT EXISTS "public"."app_profile" (
     "platform_fee_percent" numeric(5,2),
     "is_founding_expert" boolean DEFAULT false NOT NULL,
     "profile_facts" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
+    "workspace_enabled" boolean DEFAULT false NOT NULL,
+    "entity_type" "text" DEFAULT 'expert'::"text" NOT NULL,
+    "collab_wish" "text",
+    "community_visibility" "text" DEFAULT 'none'::"text" NOT NULL,
+    "community_consent_at" timestamp with time zone,
+    CONSTRAINT "app_profile_collab_wish_len" CHECK ((("collab_wish" IS NULL) OR ("char_length"("collab_wish") <= 200))),
+    CONSTRAINT "app_profile_community_visibility_check" CHECK (("community_visibility" = ANY (ARRAY['none'::"text", 'members'::"text", 'public'::"text"]))),
     CONSTRAINT "app_profile_creator_visibility_check" CHECK ((("role" <> 'creator'::"text") OR ("visibility" = 'public'::"text"))),
+    CONSTRAINT "app_profile_entity_type_check" CHECK (("entity_type" = ANY (ARRAY['expert'::"text", 'studio'::"text"]))),
     CONSTRAINT "app_profile_role_check" CHECK (("role" = ANY (ARRAY['participant'::"text", 'creator'::"text", 'admin'::"text"]))),
     CONSTRAINT "app_profile_visibility_check" CHECK (("visibility" = ANY (ARRAY['public'::"text", 'private'::"text"])))
 );
@@ -9823,6 +10054,14 @@ COMMENT ON COLUMN "public"."app_profile"."is_founding_expert" IS 'Founding pilot
 
 
 COMMENT ON COLUMN "public"."app_profile"."profile_facts" IS 'Optional self-shared facts {age, city, training_since, disciplines[], focus}. Fill = share: only present keys render. Rankings/visibility machinery deliberately NOT here (Round 2).';
+
+
+
+COMMENT ON COLUMN "public"."app_profile"."workspace_enabled" IS 'Admin-only. False = founding-community account (card + directory only); true = full workspace (create, publish). Backfilled true for every creator that existed before 6 Sep 2026.';
+
+
+
+COMMENT ON COLUMN "public"."app_profile"."community_visibility" IS 'Founding community card: none (default, nothing shown), members (directory only), public (directory + infitra.fit). Consent is stamped in community_consent_at.';
 
 
 
@@ -12368,6 +12607,10 @@ CREATE OR REPLACE TRIGGER "trg_app_pilot_application_emails" AFTER INSERT ON "pu
 
 
 
+CREATE OR REPLACE TRIGGER "trg_app_profile_community_consent" BEFORE INSERT OR UPDATE OF "community_visibility" ON "public"."app_profile" FOR EACH ROW EXECUTE FUNCTION "public"."trg_profile_community_consent"();
+
+
+
 CREATE OR REPLACE TRIGGER "trg_app_profile_enqueue_welcome" AFTER INSERT ON "public"."app_profile" FOR EACH ROW EXECUTE FUNCTION "public"."trg_profile_enqueue_welcome"();
 
 
@@ -12424,11 +12667,19 @@ CREATE OR REPLACE TRIGGER "trg_enforce_challenge_cohost_creator_role" BEFORE INS
 
 
 
+CREATE OR REPLACE TRIGGER "trg_enforce_challenge_owner_workspace" BEFORE INSERT OR UPDATE OF "status" ON "public"."app_challenge" FOR EACH ROW EXECUTE FUNCTION "public"."enforce_challenge_owner_workspace"();
+
+
+
 CREATE OR REPLACE TRIGGER "trg_enforce_creator_contract_identity_creator_role" BEFORE INSERT OR UPDATE ON "public"."app_creator_contract_identity" FOR EACH ROW EXECUTE FUNCTION "public"."enforce_creator_contract_identity_creator_role"();
 
 
 
 CREATE OR REPLACE TRIGGER "trg_enforce_profile_role_immutable" BEFORE UPDATE ON "public"."app_profile" FOR EACH ROW EXECUTE FUNCTION "public"."enforce_profile_role_immutable"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_enforce_profile_workspace_flag" BEFORE UPDATE OF "workspace_enabled" ON "public"."app_profile" FOR EACH ROW EXECUTE FUNCTION "public"."enforce_profile_workspace_flag_admin_only"();
 
 
 
@@ -14328,6 +14579,12 @@ GRANT ALL ON FUNCTION "public"."admin_applications"() TO "service_role";
 
 
 
+REVOKE ALL ON FUNCTION "public"."admin_creator_invites"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_creator_invites"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."admin_creator_invites"() TO "service_role";
+
+
+
 REVOKE ALL ON FUNCTION "public"."admin_email_enqueue_receipt"("p_tx_id" "uuid") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."admin_email_enqueue_receipt"("p_tx_id" "uuid") TO "service_role";
 
@@ -14401,6 +14658,12 @@ GRANT ALL ON FUNCTION "public"."admin_health_tx"() TO "service_role";
 
 
 
+REVOKE ALL ON FUNCTION "public"."admin_mint_creator_invite"("p_note" "text", "p_days" integer) FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_mint_creator_invite"("p_note" "text", "p_days" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."admin_mint_creator_invite"("p_note" "text", "p_days" integer) TO "service_role";
+
+
+
 REVOKE ALL ON FUNCTION "public"."admin_money"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."admin_money"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."admin_money"() TO "service_role";
@@ -14450,6 +14713,12 @@ GRANT ALL ON FUNCTION "public"."admin_resend_receipt"("p_tx" "uuid") TO "service
 REVOKE ALL ON FUNCTION "public"."admin_set_application_status"("p_id" "uuid", "p_status" "text") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."admin_set_application_status"("p_id" "uuid", "p_status" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."admin_set_application_status"("p_id" "uuid", "p_status" "text") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."admin_set_workspace_enabled"("p_user" "uuid", "p_enabled" boolean, "p_note" "text") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_set_workspace_enabled"("p_user" "uuid", "p_enabled" boolean, "p_note" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."admin_set_workspace_enabled"("p_user" "uuid", "p_enabled" boolean, "p_note" "text") TO "service_role";
 
 
 
@@ -14758,6 +15027,12 @@ GRANT ALL ON FUNCTION "public"."enforce_challenge_cohost_creator_role"() TO "ser
 
 
 
+GRANT ALL ON FUNCTION "public"."enforce_challenge_owner_workspace"() TO "anon";
+GRANT ALL ON FUNCTION "public"."enforce_challenge_owner_workspace"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."enforce_challenge_owner_workspace"() TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."enforce_challenge_split"() TO "anon";
 GRANT ALL ON FUNCTION "public"."enforce_challenge_split"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."enforce_challenge_split"() TO "service_role";
@@ -14785,6 +15060,12 @@ GRANT ALL ON FUNCTION "public"."enforce_profile_role_collaboration_integrity"() 
 GRANT ALL ON FUNCTION "public"."enforce_profile_role_immutable"() TO "anon";
 GRANT ALL ON FUNCTION "public"."enforce_profile_role_immutable"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."enforce_profile_role_immutable"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."enforce_profile_workspace_flag_admin_only"() TO "anon";
+GRANT ALL ON FUNCTION "public"."enforce_profile_workspace_flag_admin_only"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."enforce_profile_workspace_flag_admin_only"() TO "service_role";
 
 
 
@@ -15030,6 +15311,13 @@ GRANT ALL ON FUNCTION "public"."load_experience_space"("p_challenge_id" "uuid") 
 
 
 
+REVOKE ALL ON FUNCTION "public"."load_founding_community"("p_public_only" boolean) FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."load_founding_community"("p_public_only" boolean) TO "anon";
+GRANT ALL ON FUNCTION "public"."load_founding_community"("p_public_only" boolean) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."load_founding_community"("p_public_only" boolean) TO "service_role";
+
+
+
 REVOKE ALL ON FUNCTION "public"."load_my_connections"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."load_my_connections"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."load_my_connections"() TO "service_role";
@@ -15271,6 +15559,12 @@ GRANT ALL ON FUNCTION "public"."trg_material_session_in_challenge"() TO "service
 
 REVOKE ALL ON FUNCTION "public"."trg_pilot_application_enqueue_emails"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."trg_pilot_application_enqueue_emails"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."trg_profile_community_consent"() TO "anon";
+GRANT ALL ON FUNCTION "public"."trg_profile_community_consent"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."trg_profile_community_consent"() TO "service_role";
 
 
 

@@ -16,14 +16,18 @@ export default async function OnboardingPage() {
 
   const { data: profile } = await supabase
     .from("app_profile")
-    .select("display_name, role")
+    .select("display_name, role, workspace_enabled")
     .eq("id", user.id)
     .single();
 
   // Already onboarded
   if (profile?.display_name) {
+    const isCreator = profile.role === "creator" || profile.role === "admin";
     // Pilot: participants arrive via challenge URLs, no dedicated home yet.
-    redirect(profile.role === "creator" ? "/dashboard" : "/");
+    // Founding-community accounts live on /community until the founder
+    // enables the workspace (6 Sep 2026).
+    if (!isCreator) redirect("/");
+    redirect(profile.workspace_enabled ? "/dashboard" : "/community");
   }
 
   return <OnboardingForm />;

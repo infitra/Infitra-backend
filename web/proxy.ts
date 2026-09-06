@@ -31,6 +31,9 @@ const PUBLIC_ROUTES = [
   // signup trigger enforces it); invitees arrive while the wall is up, and
   // successful redemption plants the wall cookie for them.
   "/join-as-expert",
+  // The founding community's public list (6 Sep 2026). Anonymous readers get
+  // an empty list until three public cards exist; the RPC enforces that.
+  "/founding-group",
 ];
 
 // Public prefixes — any path starting with one of these is treated
@@ -72,12 +75,19 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // ── AUTH REFRESH ──────────────────────────────────────────────
+  // Resolved BEFORE the beta gate (6 Sep 2026): a signed-in member logging in
+  // from a new device must never meet the code wall. The wall is for
+  // strangers, not for people who already hold an account.
+  const { supabaseResponse, user, supabase } = await updateSession(request);
+
   // ── BETA GATE ─────────────────────────────────────────────────
-  // Every route except public ones requires the beta access cookie.
+  // Every route except public ones requires the beta access cookie, unless
+  // the request already carries a session.
   const betaCookie = request.cookies.get("x-beta-access")?.value;
   const validCode = process.env.BETA_ACCESS_CODE;
 
-  if (!betaCookie || betaCookie !== validCode) {
+  if (!user && (!betaCookie || betaCookie !== validCode)) {
     // Preserve the FULL original destination (path + query) so intent-carrying
     // links survive the gate — notably the buyer page's anonymous Join link
     // /login?intent=buy:challenge:<id>&returnTo=... Setting next to `pathname`
@@ -90,13 +100,13 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // ── AUTH REFRESH + ROUTE PROTECTION ───────────────────────────
-  const { supabaseResponse, user, supabase } = await updateSession(request);
-
+  // ── ROUTE PROTECTION ──────────────────────────────────────────
   // Unauthenticated users trying to access protected app routes
   if (
     !user &&
     (pathname.startsWith("/dashboard") ||
+      // The founding community's directory and card editor (6 Sep 2026).
+      pathname.startsWith("/community") ||
       pathname.startsWith("/onboarding") ||
       pathname.startsWith("/discover") ||
       pathname.startsWith("/sessions") ||
@@ -118,7 +128,7 @@ export async function proxy(request: NextRequest) {
   if (user && pathname.startsWith("/login")) {
     const { data: profile } = await supabase
       .from("app_profile")
-      .select("role, display_name")
+      .select("role, display_name, workspace_enabled")
       .eq("id", user.id)
       .single();
 
@@ -126,7 +136,9 @@ export async function proxy(request: NextRequest) {
     if (!profile?.display_name) {
       url.pathname = "/onboarding";
     } else if (profile.role === "creator" || profile.role === "admin") {
-      url.pathname = "/dashboard";
+      // Founding-community accounts (workspace not yet enabled) live on the
+      // community page; the workspace opens when the founder flips the flag.
+      url.pathname = profile.workspace_enabled ? "/dashboard" : "/community";
     } else {
       // Participant home (Bundle 4.1). /discover doesn't exist yet —
       // /me is the actual landing for participants.

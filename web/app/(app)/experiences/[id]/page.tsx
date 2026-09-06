@@ -142,7 +142,10 @@ export default async function ChallengePage({
       user
         ? supabase
             .from("app_challenge_member")
-            .select("id")
+            // Composite key (challenge_id, user_id): the table has no id
+            // column, so selecting "id" errored and hasPurchased was always
+            // false for members (fixed 6 Sep 2026).
+            .select("challenge_id")
             .eq("challenge_id", id)
             .eq("user_id", user.id)
             .maybeSingle()
@@ -196,7 +199,7 @@ export default async function ChallengePage({
   }
 
   // Viewer state (page is public; these are only meaningful when signed in).
-  const hasPurchased = !!(membershipRes.data as { id: string } | null);
+  const hasPurchased = !!(membershipRes.data as { challenge_id: string } | null);
   const isCreator =
     !!user && (user.id === buyerView.owner_id || cohostIds.includes(user.id));
   const viewerProfile = viewerProfileRes.data as {

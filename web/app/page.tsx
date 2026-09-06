@@ -6,6 +6,7 @@ import { HowItWorks } from "./landing/HowItWorks";
 import { LiveWeek } from "./landing/LiveWeek";
 import { Summary } from "./landing/Summary";
 import { Finale } from "./landing/Finale";
+import { FoundingRow } from "./landing/FoundingRow";
 import { Footer } from "./landing/Footer";
 import { JoinWaitlistLink } from "./landing/JoinWaitlistLink";
 
@@ -26,6 +27,10 @@ import { JoinWaitlistLink } from "./landing/JoinWaitlistLink";
  * INFITRA surface. Vocabulary: experiences, never "program"; the public
  * page is the marketing page.
  */
+
+/** The founding row reads public cards; the page stays static and refreshes
+ *  every five minutes instead of rendering per request (6 Sep 2026). */
+export const revalidate = 300;
 
 export const metadata = {
   title: "INFITRA · Live, co-created fitness experiences",
@@ -82,6 +87,7 @@ export default function LandingPage() {
           <HowItWorks />
           <LiveWeek />
           <Summary />
+          <FoundingRow />
           <Finale />
         </main>
 

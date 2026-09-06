@@ -9,6 +9,8 @@ import {
   regrantTx,
   resendReceipt,
   forceEndSession,
+  setWorkspaceEnabled,
+  mintCreatorInvite,
 } from "./actions";
 
 /**
@@ -440,28 +442,71 @@ function People({ people, run }: { people: J; run: (l: string, fn: () => Promise
     run("Anonymize", () => anonymizeUser(p.id, reason));
   };
 
+  // Accounts-lite (6 Sep 2026): the workspace opens in the anchor
+  // conversation, never by itself. One click here, one line in the log.
+  const doWorkspace = (p: J) => {
+    const enabling = !p.workspace_enabled;
+    const note =
+      prompt(
+        enabling
+          ? `Open the workspace for "${p.display_name}"? They will be asked for their legal name on the first visit. Note for the log:`
+          : `Close the workspace for "${p.display_name}"? Their card and account stay. Note for the log:`
+      ) ?? null;
+    if (note === null) return;
+    run(enabling ? "Open workspace" : "Close workspace", () => setWorkspaceEnabled(p.id, enabling, note));
+  };
+
+  const doMint = () => {
+    const note = prompt("Who is this invite for? (goes to the log; the code is single-use, 60 days)");
+    if (note === null) return;
+    run("Mint invite", () => mintCreatorInvite(note));
+  };
+
+  const isCreator = (p: J) => p.role === "creator" || p.role === "admin";
+  const vis = (p: J) =>
+    p.community_visibility === "public" ? "public" : p.community_visibility === "members" ? "members" : "–";
+
   return (
     <Card title={`People (${list.length})`}>
-      <input
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
-        placeholder="Filter by name, username, email…"
-        className="mb-3 w-full md:w-96 px-3 py-1.5 rounded-lg text-sm"
-        style={{ border: "1px solid rgba(15,34,41,0.15)", backgroundColor: "#fff" }}
-      />
+      <div className="flex flex-wrap items-center gap-2 mb-3">
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Filter by name, username, email…"
+          className="w-full md:w-96 px-3 py-1.5 rounded-lg text-sm"
+          style={{ border: "1px solid rgba(15,34,41,0.15)", backgroundColor: "#fff" }}
+        />
+        <ActionBtn label="Mint expert invite" onClick={doMint} />
+        <span className="text-xs" style={{ color: MUT }}>
+          The notice above shows the code and the join URL; paste it into the You&apos;re-in message.
+        </span>
+      </div>
       <Table
-        head={["Joined", "Name", "Email", "Role", "Purchases", "Memberships", "Terms", "Health consent", "Banned", ""]}
+        head={["Joined", "Name", "Email", "Role", "Type", "Workspace", "Card", "Purchases", "Memberships", "Terms", "Banned", ""]}
         rows={list.map((p) => [
           dt(p.created_at),
-          <span key="n">{p.display_name ?? "–"}{p.is_admin ? " ★" : ""}{p.is_founding_expert ? " ⚑" : ""}</span>,
+          <span key="n" title={p.collab_wish ?? ""}>{p.display_name ?? "–"}{p.is_admin ? " ★" : ""}{p.is_founding_expert ? " ⚑" : ""}</span>,
           p.email ?? "–",
           p.role,
+          isCreator(p) ? p.entity_type ?? "expert" : "–",
+          isCreator(p) ? (
+            <span key="w" style={{ color: p.workspace_enabled ? OK : MUT }}>
+              {p.workspace_enabled ? "open" : "closed"}
+            </span>
+          ) : (
+            "–"
+          ),
+          isCreator(p) ? vis(p) : "–",
           p.purchases,
           p.memberships,
           p.terms_version ? `v${p.terms_version}` : "–",
-          p.health_consent_at ? "✓" : "–",
           p.banned_until ? <span key="b" style={{ color: BAD }}>yes</span> : "–",
-          p.is_admin ? null : <ActionBtn key="a" label="Anonymize" danger onClick={() => doAnonymize(p)} />,
+          <span key="acts" className="inline-flex gap-1.5">
+            {isCreator(p) && !p.is_admin && (
+              <ActionBtn label={p.workspace_enabled ? "Close workspace" : "Open workspace"} onClick={() => doWorkspace(p)} />
+            )}
+            {p.is_admin ? null : <ActionBtn label="Anonymize" danger onClick={() => doAnonymize(p)} />}
+          </span>,
         ])}
       />
     </Card>

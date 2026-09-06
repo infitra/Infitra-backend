@@ -13,8 +13,8 @@ export async function completeOnboarding(prevState: unknown, formData: FormData)
   if (!user) return { error: "Not authenticated." };
 
   const displayName = (formData.get("display_name") as string)?.trim();
-  const legalName = (formData.get("legal_name") as string)?.trim();
-  const attested = formData.get("attested") === "on";
+  const entityRaw = (formData.get("entity_type") as string)?.trim();
+  const entityType = entityRaw === "studio" ? "studio" : "expert";
 
   if (!displayName || displayName.length < 2) {
     return { error: "Display name must be at least 2 characters." };
@@ -23,54 +23,27 @@ export async function completeOnboarding(prevState: unknown, formData: FormData)
     return { error: "Display name must be under 50 characters." };
   }
 
-  // Read role up front so we know whether to collect legal name + attestation.
-  // Role is immutable after signup (trigger sets it from auth metadata), so
-  // this is the source of truth even if the client's UI state was mis-set.
+  // Read role up front. Role is immutable after signup (trigger sets it from
+  // auth metadata), so this is the source of truth even if the client's UI
+  // state was mis-set.
   const { data: profile } = await supabase
     .from("app_profile")
-    .select("role")
+    .select("role, workspace_enabled")
     .eq("id", user.id)
     .single();
-  const isCreator = profile?.role === "creator";
+  const isCreator = profile?.role === "creator" || profile?.role === "admin";
 
-  if (isCreator) {
-    if (!legalName || legalName.length < 2) {
-      return { error: "Legal name must be at least 2 characters." };
-    }
-    if (legalName.length > 100) {
-      return { error: "Legal name must be under 100 characters." };
-    }
-    if (!attested) {
-      return { error: "Please confirm this is your legal name." };
-    }
+  // Accounts-lite (6 Sep 2026): a creator no longer attests a legal name at
+  // onboarding. The signing identity is collected on the first workspace
+  // visit (attestSigningIdentity), so joining the founding community costs
+  // nothing binding. Nothing is entered twice: the same account grows.
+  const updates: Record<string, unknown> = {
+    display_name: displayName,
+    updated_at: new Date().toISOString(),
+  };
+  if (isCreator) updates.entity_type = entityType;
 
-    // Write the signing identity BEFORE the profile update so the contract
-    // engine has everything it needs the moment onboarding finishes. If this
-    // fails, we haven't touched the profile yet — user can retry cleanly.
-    const { error: identityError } = await supabase
-      .from("app_creator_contract_identity")
-      .upsert(
-        {
-          creator_id: user.id,
-          party_type: "individual",
-          contract_name: legalName,
-          authority_attested: true,
-        },
-        { onConflict: "creator_id" },
-      );
-
-    if (identityError) {
-      return { error: `Could not save signing identity: ${identityError.message}` };
-    }
-  }
-
-  const { error } = await supabase
-    .from("app_profile")
-    .update({
-      display_name: displayName,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", user.id);
+  const { error } = await supabase.from("app_profile").update(updates).eq("id", user.id);
 
   if (error) return { error: error.message };
 
@@ -82,7 +55,90 @@ export async function completeOnboarding(prevState: unknown, formData: FormData)
     maxAge: 60 * 60 * 24 * 30,
   });
 
-  redirect(isCreator ? "/dashboard" : "/");
+  if (!isCreator) redirect("/");
+  redirect(profile?.workspace_enabled ? "/dashboard" : "/community");
+}
+
+/**
+ * The signing identity, collected once on the first workspace visit (6 Sep
+ * 2026; it used to be part of creator onboarding). Every collaboration
+ * contract from this creator onward renders with it. Only reachable when the
+ * founder has enabled the workspace; the dashboard layout gates on the row.
+ */
+export async function attestSigningIdentity(prevState: unknown, formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated." };
+
+  const legalName = (formData.get("legal_name") as string)?.trim();
+  const attested = formData.get("attested") === "on";
+
+  if (!legalName || legalName.length < 2) {
+    return { error: "Legal name must be at least 2 characters." };
+  }
+  if (legalName.length > 100) {
+    return { error: "Legal name must be under 100 characters." };
+  }
+  if (!attested) {
+    return { error: "Please confirm this is your legal name." };
+  }
+
+  const { data: profile } = await supabase
+    .from("app_profile")
+    .select("role, workspace_enabled")
+    .eq("id", user.id)
+    .single();
+  const isCreator = profile?.role === "creator" || profile?.role === "admin";
+  if (!isCreator || !profile?.workspace_enabled) {
+    return { error: "The workspace is not open for this account yet." };
+  }
+
+  const { error } = await supabase.from("app_creator_contract_identity").upsert(
+    {
+      creator_id: user.id,
+      party_type: "individual",
+      contract_name: legalName,
+      authority_attested: true,
+    },
+    { onConflict: "creator_id" },
+  );
+  if (error) return { error: `Could not save signing identity: ${error.message}` };
+
+  redirect("/dashboard");
+}
+
+/**
+ * The founding-community card: the one sentence, the entity type and the
+ * visibility choice (6 Sep 2026). The profile itself (name, photo, bio,
+ * facts, credentials) is edited by ProfileEditForm; this saves only the
+ * community-specific fields. Visibility is never pre-ticked: the member
+ * chooses, and the DB stamps community_consent_at when it leaves 'none'.
+ */
+export async function saveCommunityCard(prevState: unknown, formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated." };
+
+  const wish = ((formData.get("collab_wish") as string) ?? "").trim().slice(0, 200);
+  const entityRaw = (formData.get("entity_type") as string)?.trim();
+  const visRaw = (formData.get("community_visibility") as string)?.trim();
+
+  const updates: Record<string, unknown> = {
+    collab_wish: wish || null,
+    updated_at: new Date().toISOString(),
+  };
+  if (entityRaw === "expert" || entityRaw === "studio") updates.entity_type = entityRaw;
+  if (visRaw === "none" || visRaw === "members" || visRaw === "public") {
+    updates.community_visibility = visRaw;
+  }
+
+  const { error } = await supabase.from("app_profile").update(updates).eq("id", user.id);
+  if (error) return { error: error.message };
+  return { success: true as const };
 }
 
 /**
