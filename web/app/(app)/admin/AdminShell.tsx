@@ -57,17 +57,24 @@ export function AdminShell(props: {
 }) {
   const [tab, setTab] = useState<Tab>("Pulse");
   const [busy, startTransition] = useTransition();
-  const [notice, setNotice] = useState<string | null>(null);
+  // A notice is one line of text plus, for the invite mint, the join link
+  // on its own with a copy button. It stays until dismissed.
+  const [notice, setNotice] = useState<{ text: string; link?: string } | null>(null);
+  const [copied, setCopied] = useState(false);
   const router = useRouter();
 
   const run = (label: string, fn: () => Promise<{ ok: boolean; error?: string; detail?: unknown }>) => {
     setNotice(null);
     startTransition(async () => {
       const res = await fn();
+      const d = res.detail as Record<string, unknown> | undefined;
+      const link = d && typeof d.url === "string" ? d.url : undefined;
+      const rest = d && !link ? " · " + JSON.stringify(d).slice(0, 200) : "";
+      setCopied(false);
       setNotice(
         res.ok
-          ? `${label}: done${res.detail ? " · " + JSON.stringify(res.detail).slice(0, 200) : ""}`
-          : `${label} FAILED: ${res.error}`
+          ? { text: `${label}: done${rest}`, link }
+          : { text: `${label} FAILED: ${res.error}` }
       );
       router.refresh();
     });
@@ -107,11 +114,41 @@ export function AdminShell(props: {
           <div
             className="mb-4 px-3 py-2 rounded-lg text-sm"
             style={{
-              backgroundColor: notice.includes("FAILED") ? "rgba(180,35,24,0.08)" : "rgba(10,122,75,0.08)",
-              color: notice.includes("FAILED") ? BAD : OK,
+              backgroundColor: notice.text.includes("FAILED") ? "rgba(180,35,24,0.08)" : "rgba(10,122,75,0.08)",
+              color: notice.text.includes("FAILED") ? BAD : OK,
             }}
           >
-            {notice}
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div>{notice.text}</div>
+                {notice.link && (
+                  <div className="mt-1.5 flex items-center gap-2 flex-wrap">
+                    <code className="text-xs break-all select-all" style={{ color: INK }}>
+                      {notice.link}
+                    </code>
+                    <button
+                      type="button"
+                      className="text-xs px-2 py-0.5 rounded border cursor-pointer"
+                      style={{ borderColor: "rgba(15,34,41,0.2)", color: INK, backgroundColor: "white" }}
+                      onClick={() => {
+                        navigator.clipboard.writeText(notice.link!).then(() => setCopied(true));
+                      }}
+                    >
+                      {copied ? "Copied" : "Copy link"}
+                    </button>
+                  </div>
+                )}
+              </div>
+              <button
+                type="button"
+                aria-label="Dismiss"
+                className="text-base leading-none cursor-pointer"
+                style={{ color: MUT }}
+                onClick={() => setNotice(null)}
+              >
+                ×
+              </button>
+            </div>
           </div>
         )}
         {busy && <div className="mb-4 text-sm" style={{ color: MUT }}>Working…</div>}
