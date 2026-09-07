@@ -10,9 +10,9 @@ import { PilotApplicationForm } from "./PilotApplicationForm";
  */
 
 export const metadata = {
-  title: "Apply for the pilot · INFITRA",
+  title: "Join the founding network · INFITRA",
   description:
-    "Join INFITRA’s founding group: experts and studios building live experiences together.",
+    "Join INFITRA’s founding network: experts and studios open to creating live experiences together.",
 };
 
 export default function ApplyPage() {
@@ -71,7 +71,7 @@ export default function ApplyPage() {
                   className="text-[#0891b2] text-[10px] tracking-widest uppercase font-headline"
                   style={{ fontWeight: 700 }}
                 >
-                  Pilot · founding group
+                  Founding network
                 </span>
               </div>
               <h1
@@ -86,10 +86,10 @@ export default function ApplyPage() {
                 className="mt-5 text-base md:text-lg leading-relaxed"
                 style={{ color: "#475569" }}
               >
-                The founding pilot is open. Apply solo or with a partner: if your
-                expertise could complement another expert&apos;s and you are open to
-                building something together, we want to hear from you. No partner yet?
-                You will see who else is in the group, and we help you pair up.
+                The founding network is forming: experts and studios open to creating
+                live experiences together. Joining asks for nothing binding. You get a
+                card, one sentence on what you would love to run, and when another card
+                fits yours, Yves introduces you. Apply as an expert or as a studio.
               </p>
             </div>
 
@@ -138,7 +138,7 @@ export default function ApplyPage() {
  */
 const DEAL: string[] = [
   "You and your partner keep 90% of revenue, split as you agree. INFITRA’s founding platform fee is 10%.",
-  "A small founding group, one 4 to 6 week live experience, co-created.",
+  "A founding network of experts and studios. When a fit appears, one 4 to 6 week live experience, co-created.",
   "You host live and bring your audience. We run the platform, priced in CHF.",
   "No lock-in. Keep your experiences, archive them, or leave anytime after the pilot.",
   "Early positioning: you keep your pilot reviews and early access. Once we go live, you’re in pole position.",

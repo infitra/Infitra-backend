@@ -3,15 +3,15 @@ import { createClient } from "@/lib/supabase/server";
 import { ParticipantNav } from "@/app/components/ParticipantNav";
 import { ProfileEditForm, type ProfileFacts } from "@/app/components/ProfileEditForm";
 import { FoundingCard, type FoundingMember } from "@/app/components/FoundingCard";
-import { CommunityCardForm } from "./CommunityCardForm";
+import { NetworkCardForm } from "./NetworkCardForm";
 
 export const metadata = {
-  title: "Founding community · INFITRA",
+  title: "Founding network · INFITRA",
   robots: { index: false },
 };
 
 /**
- * /community — the founding community's home (6 Sep 2026).
+ * /network — the founding network's home (6 Sep 2026).
  *
  * Not a room: a card and a directory. Top: your card, the real profile
  * (ProfileEditForm, reused wholesale) plus the one sentence and the
@@ -19,12 +19,12 @@ export const metadata = {
  * The directory reads through load_founding_community(false), which
  * requires the caller's own card to be visible (reciprocity) or admin.
  */
-export default async function CommunityPage() {
+export default async function NetworkPage() {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect("/login?next=/community");
+  if (!user) redirect("/login?next=/network");
 
   const { data: profile } = await supabase
     .from("app_profile")
@@ -64,7 +64,7 @@ export default async function CommunityPage() {
               className="text-[11px] font-bold font-headline uppercase tracking-[0.25em] mb-3"
               style={{ color: "#0891b2" }}
             >
-              Founding community
+              Founding network
             </p>
             <h1
               className="text-3xl lg:text-4xl font-black font-headline tracking-tight mb-3"
@@ -108,7 +108,7 @@ export default async function CommunityPage() {
             </div>
 
             <div className="flex flex-col gap-6">
-              <CommunityCardForm
+              <NetworkCardForm
                 collabWish={profile.collab_wish ?? ""}
                 entityType={(profile.entity_type ?? "expert") as "expert" | "studio"}
                 visibility={visibility}
@@ -155,8 +155,8 @@ export default async function CommunityPage() {
                 }}
               >
                 {count > 0
-                  ? `${count} ${count === 1 ? "member has" : "members have"} a visible card. Make yours visible to the community above and you see them here.`
-                  : "The directory fills as cards come in. Make yours visible to the community above and you will see every new card here."}
+                  ? `${count} ${count === 1 ? "member has" : "members have"} a visible card. Make yours visible to the network above and you see them here.`
+                  : "The directory fills as cards come in. Make yours visible to the network above and you will see every new card here."}
               </div>
             ) : others.length === 0 ? (
               <p className="text-sm" style={{ color: "#64748b" }}>

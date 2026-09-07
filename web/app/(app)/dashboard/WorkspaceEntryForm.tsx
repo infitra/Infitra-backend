@@ -6,7 +6,7 @@ import { attestSigningIdentity } from "@/app/actions/profile";
 /**
  * The one binding step, shown once, on the first workspace visit (6 Sep 2026).
  * It used to sit inside creator onboarding; moving it here means joining the
- * founding community asks for nothing legal, and the workspace asks for it
+ * founding network asks for nothing legal, and the workspace asks for it
  * exactly when a contract could exist.
  */
 export function WorkspaceEntryForm() {

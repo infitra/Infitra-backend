@@ -35,7 +35,7 @@ export async function completeOnboarding(prevState: unknown, formData: FormData)
 
   // Accounts-lite (6 Sep 2026): a creator no longer attests a legal name at
   // onboarding. The signing identity is collected on the first workspace
-  // visit (attestSigningIdentity), so joining the founding community costs
+  // visit (attestSigningIdentity), so joining the founding network costs
   // nothing binding. Nothing is entered twice: the same account grows.
   const updates: Record<string, unknown> = {
     display_name: displayName,
@@ -56,7 +56,7 @@ export async function completeOnboarding(prevState: unknown, formData: FormData)
   });
 
   if (!isCreator) redirect("/");
-  redirect(profile?.workspace_enabled ? "/dashboard" : "/community");
+  redirect(profile?.workspace_enabled ? "/dashboard" : "/network");
 }
 
 /**
@@ -110,7 +110,7 @@ export async function attestSigningIdentity(prevState: unknown, formData: FormDa
 }
 
 /**
- * The founding-community card: the one sentence, the entity type and the
+ * The founding-network card: the one sentence, the entity type and the
  * visibility choice (6 Sep 2026). The profile itself (name, photo, bio,
  * facts, credentials) is edited by ProfileEditForm; this saves only the
  * community-specific fields. Visibility is never pre-ticked: the member

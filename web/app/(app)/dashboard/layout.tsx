@@ -26,10 +26,10 @@ export default async function DashboardLayout({
     redirect("/");
   }
 
-  // Accounts-lite (6 Sep 2026): a founding-community account has no
+  // Accounts-lite (6 Sep 2026): a founding-network account has no
   // workspace until the founder flips the flag in the anchor conversation.
-  // Its home is the community page.
-  if (!profile.workspace_enabled) redirect("/community");
+  // Its home is the network page.
+  if (!profile.workspace_enabled) redirect("/network");
 
   // The signing identity used to be collected at onboarding. It now arrives
   // on the first workspace visit, once, so nothing binding is asked before

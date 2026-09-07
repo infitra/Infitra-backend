@@ -31,9 +31,9 @@ const PUBLIC_ROUTES = [
   // signup trigger enforces it); invitees arrive while the wall is up, and
   // successful redemption plants the wall cookie for them.
   "/join-as-expert",
-  // The founding community's public list (6 Sep 2026). Anonymous readers get
+  // The founding network's public list (6 Sep 2026). Anonymous readers get
   // an empty list until three public cards exist; the RPC enforces that.
-  "/founding-group",
+  "/founding-network",
 ];
 
 // Public prefixes — any path starting with one of these is treated
@@ -105,8 +105,8 @@ export async function proxy(request: NextRequest) {
   if (
     !user &&
     (pathname.startsWith("/dashboard") ||
-      // The founding community's directory and card editor (6 Sep 2026).
-      pathname.startsWith("/community") ||
+      // The founding network's directory and card editor (6 Sep 2026).
+      pathname.startsWith("/network") ||
       pathname.startsWith("/onboarding") ||
       pathname.startsWith("/discover") ||
       pathname.startsWith("/sessions") ||
@@ -137,8 +137,8 @@ export async function proxy(request: NextRequest) {
       url.pathname = "/onboarding";
     } else if (profile.role === "creator" || profile.role === "admin") {
       // Founding-community accounts (workspace not yet enabled) live on the
-      // community page; the workspace opens when the founder flips the flag.
-      url.pathname = profile.workspace_enabled ? "/dashboard" : "/community";
+      // network page; the workspace opens when the founder flips the flag.
+      url.pathname = profile.workspace_enabled ? "/dashboard" : "/network";
     } else {
       // Participant home (Bundle 4.1). /discover doesn't exist yet —
       // /me is the actual landing for participants.

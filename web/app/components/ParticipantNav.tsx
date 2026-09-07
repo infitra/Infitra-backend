@@ -26,24 +26,24 @@ export function ParticipantNav({
 }: {
   displayName: string | null;
   role?: string;
-  /** Accounts-lite (6 Sep 2026): a founding-community creator without the
+  /** Accounts-lite (6 Sep 2026): a founding-network creator without the
    *  workspace gets Community as home and no Create pill. Callers that do not
    *  know the flag keep the full creator nav. */
   workspaceEnabled?: boolean;
 }) {
   const isCreator = role === "creator" || role === "admin";
   const hasWorkspace = isCreator && workspaceEnabled;
-  const homeHref = isCreator ? (hasWorkspace ? "/dashboard" : "/community") : "/me";
+  const homeHref = isCreator ? (hasWorkspace ? "/dashboard" : "/network") : "/me";
 
   // Desktop links (the Create pill is rendered separately for creators).
   const links = isCreator
     ? hasWorkspace
       ? [
           { label: "Home", href: "/dashboard" },
-          { label: "Community", href: "/community" },
+          { label: "Network", href: "/network" },
           { label: "Earnings", href: "/dashboard/earnings" },
         ]
-      : [{ label: "Community", href: "/community" }]
+      : [{ label: "Network", href: "/network" }]
     : [{ label: "Home", href: "/me" }];
 
   // Mobile menu mirrors desktop, folding Create back in for creators.
@@ -51,11 +51,11 @@ export function ParticipantNav({
     ? hasWorkspace
       ? [
           { label: "Home", href: "/dashboard" },
-          { label: "Community", href: "/community" },
+          { label: "Network", href: "/network" },
           { label: "Create", href: "/dashboard/create" },
           { label: "Earnings", href: "/dashboard/earnings" },
         ]
-      : [{ label: "Community", href: "/community" }]
+      : [{ label: "Network", href: "/network" }]
     : [{ label: "Home", href: "/me" }];
 
   return (

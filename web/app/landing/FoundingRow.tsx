@@ -4,12 +4,12 @@ import { FoundingCard, type FoundingMember } from "@/app/components/FoundingCard
 import { INK, ORANGE, MUTED } from "./ui";
 
 /**
- * The founding community on the homepage (6 Sep 2026).
+ * The founding network on the homepage (6 Sep 2026).
  *
  * Real cards, real names, only with public consent, and only once three
  * public cards exist: load_founding_community(true) returns [] below that,
  * so this section renders nothing until the row is a row. Shows up to six;
- * /founding-group is the full list. Server component, anonymous read.
+ * /founding-network is the full list. Server component, anonymous read.
  */
 export async function FoundingRow() {
   const supabase = createAnonClient();
@@ -26,7 +26,7 @@ export async function FoundingRow() {
             className="text-[11px] font-bold font-headline uppercase tracking-[0.25em] mb-3"
             style={{ color: ORANGE }}
           >
-            The founding community
+            The founding network
           </p>
           <h2
             className="text-3xl md:text-5xl font-headline tracking-tight leading-[1.08] mb-4"
@@ -56,7 +56,7 @@ export async function FoundingRow() {
           <div className="flex items-center justify-center gap-3 flex-wrap">
             {total > members.length && (
               <Link
-                href="/founding-group"
+                href="/founding-network"
                 className="px-5 py-2.5 rounded-full text-xs font-headline font-bold uppercase tracking-widest"
                 style={{ color: INK, border: "1px solid rgba(15,34,41,0.18)", backgroundColor: "rgba(255,255,255,0.5)" }}
               >

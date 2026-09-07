@@ -2,8 +2,8 @@ import { CredentialIcon, credentialPeriod } from "@/app/components/CredentialIco
 import { FoundingExpertBadge } from "@/app/(app)/experiences/[id]/PublicChallengeHero";
 
 /**
- * One founding-community card (6 Sep 2026). Rendered on the landing row,
- * on /founding-group and in the logged-in directory; the same shape in all
+ * One founding-network card (6 Sep 2026). Rendered on the landing row,
+ * on /founding-network and in the logged-in directory; the same shape in all
  * three places, so a member sees on the homepage exactly what they set up.
  *
  * Fed by load_founding_community(): explicit public-safe columns, never an

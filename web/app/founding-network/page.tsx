@@ -4,7 +4,7 @@ import { createAnonClient } from "@/lib/supabase/anon";
 import { FoundingCard, type FoundingMember } from "@/app/components/FoundingCard";
 
 /**
- * /founding-group — the public list of the founding community (6 Sep 2026).
+ * /founding-network — the public list of the founding network (6 Sep 2026).
  * Standalone marketing surface like /apply (no beta gate, in the sitemap).
  * Reads load_founding_community(true): explicit public-safe columns, and an
  * empty list until three public cards exist, enforced in the database so an
@@ -12,7 +12,7 @@ import { FoundingCard, type FoundingMember } from "@/app/components/FoundingCard
  */
 
 export const metadata = {
-  title: "The founding community · INFITRA",
+  title: "The founding network · INFITRA",
   description:
     "Experts and studios open to creating live experiences together. Each card is one sentence: what they would love to run, and who they would want next to them.",
 };
@@ -58,7 +58,7 @@ export default async function FoundingGroupPage() {
                 className="text-[11px] font-bold font-headline uppercase tracking-[0.25em] mb-3"
                 style={{ color: "#0891b2" }}
               >
-                The founding community
+                The founding network
               </p>
               <h1
                 className="text-4xl md:text-5xl font-headline tracking-tight leading-[1.08] mb-4"
@@ -80,7 +80,7 @@ export default async function FoundingGroupPage() {
                 style={{ backgroundColor: "rgba(255,255,255,0.62)", border: "1px solid rgba(15,34,41,0.08)" }}
               >
                 <p className="text-lg font-headline font-bold mb-2" style={{ color: "#0F2229" }}>
-                  The founding community is forming.
+                  The founding network is forming.
                 </p>
                 <p className="text-sm" style={{ color: "#475569" }}>
                   Cards go public here as their owners choose to be seen. If you would want to be

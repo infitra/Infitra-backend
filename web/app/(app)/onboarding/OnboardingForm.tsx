@@ -257,7 +257,7 @@ export function OnboardingForm() {
 
               {/* Expert or studio (6 Sep 2026). The legal name and the signing
                   attestation moved to the first workspace visit: joining the
-                  founding community asks for nothing binding. */}
+                  founding network asks for nothing binding. */}
               {role === "creator" && (
                 <div>
                   <span

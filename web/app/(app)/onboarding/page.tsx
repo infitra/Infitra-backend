@@ -24,10 +24,10 @@ export default async function OnboardingPage() {
   if (profile?.display_name) {
     const isCreator = profile.role === "creator" || profile.role === "admin";
     // Pilot: participants arrive via challenge URLs, no dedicated home yet.
-    // Founding-community accounts live on /community until the founder
+    // Founding-network accounts live on /network until the founder
     // enables the workspace (6 Sep 2026).
     if (!isCreator) redirect("/");
-    redirect(profile.workspace_enabled ? "/dashboard" : "/community");
+    redirect(profile.workspace_enabled ? "/dashboard" : "/network");
   }
 
   return <OnboardingForm />;

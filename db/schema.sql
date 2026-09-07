@@ -1582,6 +1582,7 @@ declare
   a           record;
   v_first     text;
   v_audience  text;
+  v_type      text;
   v_rows_html text := '';
   v_rows_text text := '';
   v_html      text;
@@ -1600,18 +1601,20 @@ begin
     when 'over_50k'   then 'Over 50,000'
     else a.audience_size_range
   end;
+  v_type := case when a.applicant_type = 'studio' then 'Studio or gym' else 'Expert' end;
 
-  -- ── Founder notification ────────────────────────────────────────────
-  -- Label/value rows, built only for fields the applicant filled.
   v_rows_html :=
        '<tr><td style="padding:6px 16px 6px 0;color:#475569;font-size:13px;white-space:nowrap;vertical-align:top;">Name</td>'
     || '<td style="padding:6px 0;font-size:14px;color:#0F2229;">' || app_html_escape(a.name) || '</td></tr>'
+    || '<tr><td style="padding:6px 16px 6px 0;color:#475569;font-size:13px;vertical-align:top;">Type</td>'
+    || '<td style="padding:6px 0;font-size:14px;color:#0F2229;">' || v_type || '</td></tr>'
     || '<tr><td style="padding:6px 16px 6px 0;color:#475569;font-size:13px;vertical-align:top;">Email</td>'
     || '<td style="padding:6px 0;font-size:14px;"><a href="mailto:' || app_html_escape(a.email) || '" style="color:#0891b2;text-decoration:none;">' || app_html_escape(a.email) || '</a></td></tr>'
     || '<tr><td style="padding:6px 16px 6px 0;color:#475569;font-size:13px;vertical-align:top;">Expertise</td>'
     || '<td style="padding:6px 0;font-size:14px;color:#0F2229;">' || app_html_escape(a.expertise) || '</td></tr>';
 
   v_rows_text := 'Name:      ' || a.name || E'\n'
+              || 'Type:      ' || v_type || E'\n'
               || 'Email:     ' || a.email || E'\n'
               || 'Expertise: ' || a.expertise || E'\n';
 
@@ -1641,6 +1644,20 @@ begin
     v_rows_text := v_rows_text || 'Location:  ' || a.location || E'\n';
   end if;
 
+  if a.last_upsell is not null then
+    v_rows_html := v_rows_html
+      || '<tr><td style="padding:6px 16px 6px 0;color:#475569;font-size:13px;vertical-align:top;">Last upsell</td>'
+      || '<td style="padding:6px 0;font-size:14px;color:#0F2229;">' || app_html_escape(a.last_upsell) || '</td></tr>';
+    v_rows_text := v_rows_text || 'Last upsell: ' || a.last_upsell || E'\n';
+  end if;
+
+  if a.dream_offer is not null then
+    v_rows_html := v_rows_html
+      || '<tr><td style="padding:6px 16px 6px 0;color:#475569;font-size:13px;vertical-align:top;">Would love to offer</td>'
+      || '<td style="padding:6px 0;font-size:14px;color:#0F2229;">' || app_html_escape(a.dream_offer) || '</td></tr>';
+    v_rows_text := v_rows_text || 'Would love to offer: ' || a.dream_offer || E'\n';
+  end if;
+
   v_rows_html := v_rows_html
     || '<tr><td style="padding:6px 16px 6px 0;color:#475569;font-size:13px;vertical-align:top;">Partner</td>'
     || '<td style="padding:6px 0;font-size:14px;color:#0F2229;">'
@@ -1663,22 +1680,29 @@ begin
     v_rows_text := v_rows_text || 'Success:   ' || a.success_description || E'\n';
   end if;
 
+  v_rows_html := v_rows_html
+    || '<tr><td style="padding:6px 16px 6px 0;color:#475569;font-size:13px;vertical-align:top;">Card consent</td>'
+    || '<td style="padding:6px 0;font-size:14px;color:#0F2229;">'
+    || case when a.announce_consent then 'Yes, may be shown and announced' else 'Not given' end
+    || '</td></tr>';
+  v_rows_text := v_rows_text || 'Card consent: '
+    || case when a.announce_consent then 'yes' else 'not given' end || E'\n';
+
   v_html := '<div style="background:#F2EFE8;padding:32px 12px;">'
     || '<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">'
     || '<table role="presentation" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#FFFFFF;border-radius:14px;">'
     || '<tr><td style="padding:36px 32px;font-family:Inter,-apple-system,''Segoe UI'',Arial,sans-serif;color:#0F2229;">'
     || '<img src="https://www.infitra.fit/email-logo.png" width="150" alt="INFITRA" style="display:block;height:auto;border:0;margin-bottom:28px;">'
-    || '<p style="margin:0 0 20px;font-size:16px;font-weight:700;">New pilot application</p>'
+    || '<p style="margin:0 0 20px;font-size:16px;font-weight:700;">New founding network application</p>'
     || '<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;">' || v_rows_html || '</table>'
     || '</td></tr></table></td></tr></table></div>';
 
-  v_text := 'New pilot application' || E'\n\n' || v_rows_text;
+  v_text := 'New founding network application' || E'\n\n' || v_rows_text;
 
   insert into public.app_email_outbox (kind, to_email, subject, html_body, text_body, target_id)
   values ('pilot_application_founder', 'yves@infitra.fit',
-          'Pilot application: ' || a.name, v_html, v_text, a.id);
+          'Founding network (' || lower(v_type) || '): ' || a.name, v_html, v_text, a.id);
 
-  -- ── Applicant confirmation ──────────────────────────────────────────
   if nullif(a.email, '') is null then
     return;
   end if;
@@ -1691,7 +1715,7 @@ begin
     || '<tr><td style="padding:36px 32px;font-family:Inter,-apple-system,''Segoe UI'',Arial,sans-serif;color:#0F2229;">'
     || '<img src="https://www.infitra.fit/email-logo.png" width="150" alt="INFITRA" style="display:block;height:auto;border:0;margin-bottom:28px;">'
     || '<p style="margin:0 0 16px;font-size:15px;line-height:1.7;">Hi ' || app_html_escape(v_first) || ',</p>'
-    || '<p style="margin:0 0 16px;font-size:15px;line-height:1.7;">Your application for the founding pilot has arrived. Thank you for taking the time.</p>'
+    || '<p style="margin:0 0 16px;font-size:15px;line-height:1.7;">Your application for the founding network has arrived. Thank you for taking the time.</p>'
     || '<p style="margin:0 0 16px;font-size:15px;line-height:1.7;">I read every application myself and reply personally, usually within a few days.</p>'
     || '<p style="margin:0 0 16px;font-size:15px;line-height:1.7;">In the meantime, the pilot terms are public: <a href="https://www.infitra.fit/pilot-terms" style="color:#0891b2;text-decoration:none;">www.infitra.fit/pilot-terms</a>. And if anything comes to mind, just reply to this email.</p>'
     || '<p style="margin:24px 0 0;font-size:15px;line-height:1.6;">Speak soon,</p>'
@@ -1703,7 +1727,7 @@ begin
     || '</td></tr></table></div>';
 
   v_text := 'Hi ' || v_first || ',' || E'\n\n'
-    || 'Your application for the founding pilot has arrived. Thank you' || E'\n'
+    || 'Your application for the founding network has arrived. Thank you' || E'\n'
     || 'for taking the time.' || E'\n\n'
     || 'I read every application myself and reply personally, usually' || E'\n'
     || 'within a few days.' || E'\n\n'
@@ -1719,7 +1743,7 @@ begin
 
   insert into public.app_email_outbox (kind, to_email, subject, html_body, text_body, target_id)
   values ('pilot_application_confirm', a.email,
-          'Your INFITRA pilot application', v_html, v_text, a.id);
+          'Your INFITRA founding network application', v_html, v_text, a.id);
 end;
 $$;
 
@@ -8829,6 +8853,26 @@ $$;
 ALTER FUNCTION "public"."trg_material_session_in_challenge"() OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."trg_pilot_application_consent_stamp"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
+    AS $$
+begin
+  if new.announce_consent then
+    if tg_op = 'INSERT' or not coalesce(old.announce_consent, false) or new.announce_consent_at is null then
+      new.announce_consent_at := now();
+    end if;
+  else
+    new.announce_consent_at := null;
+  end if;
+  return new;
+end;
+$$;
+
+
+ALTER FUNCTION "public"."trg_pilot_application_consent_stamp"() OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."trg_pilot_application_enqueue_emails"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -10007,7 +10051,15 @@ CREATE TABLE IF NOT EXISTS "public"."app_pilot_application" (
     "success_description" "text",
     "status" "text" DEFAULT 'new'::"text" NOT NULL,
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    CONSTRAINT "app_pilot_application_status_check" CHECK (("status" = ANY (ARRAY['new'::"text", 'contacted'::"text", 'accepted'::"text", 'declined'::"text"])))
+    "applicant_type" "text" DEFAULT 'expert'::"text" NOT NULL,
+    "last_upsell" "text",
+    "dream_offer" "text",
+    "announce_consent" boolean DEFAULT false NOT NULL,
+    "announce_consent_at" timestamp with time zone,
+    CONSTRAINT "app_pilot_application_dream_offer_len" CHECK ((("dream_offer" IS NULL) OR ("char_length"("dream_offer") <= 300))),
+    CONSTRAINT "app_pilot_application_last_upsell_studio_only" CHECK ((("last_upsell" IS NULL) OR ("applicant_type" = 'studio'::"text"))),
+    CONSTRAINT "app_pilot_application_status_check" CHECK (("status" = ANY (ARRAY['new'::"text", 'contacted'::"text", 'accepted'::"text", 'declined'::"text"]))),
+    CONSTRAINT "app_pilot_application_type_check" CHECK (("applicant_type" = ANY (ARRAY['expert'::"text", 'studio'::"text"])))
 );
 
 
@@ -12600,6 +12652,10 @@ CREATE OR REPLACE VIEW "public"."app_session_financials" WITH ("security_invoker
 
 
 CREATE OR REPLACE TRIGGER "app_session_assert_within_challenge_window" BEFORE INSERT OR UPDATE OF "start_time" ON "public"."app_session" FOR EACH ROW EXECUTE FUNCTION "public"."app_session_assert_within_challenge_window"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_app_pilot_application_consent" BEFORE INSERT OR UPDATE OF "announce_consent" ON "public"."app_pilot_application" FOR EACH ROW EXECUTE FUNCTION "public"."trg_pilot_application_consent_stamp"();
 
 
 
@@ -15554,6 +15610,12 @@ GRANT ALL ON FUNCTION "public"."trg_dm_message_notify"() TO "service_role";
 GRANT ALL ON FUNCTION "public"."trg_material_session_in_challenge"() TO "anon";
 GRANT ALL ON FUNCTION "public"."trg_material_session_in_challenge"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."trg_material_session_in_challenge"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."trg_pilot_application_consent_stamp"() TO "anon";
+GRANT ALL ON FUNCTION "public"."trg_pilot_application_consent_stamp"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."trg_pilot_application_consent_stamp"() TO "service_role";
 
 
 

@@ -525,12 +525,15 @@ function Applications({ data, run }: { data: J; run: (l: string, fn: () => Promi
     <>
       <Card title={`Pilot applications (${apps.length})`}>
         <Table
-          head={["When", "Name", "Email", "Expertise", "Audience", "Location", "Partner", "Status", "Set status"]}
+          head={["When", "Name", "Type", "Email", "Expertise", "Would love to offer", "Consent", "Audience", "Location", "Partner", "Status", "Set status"]}
           rows={apps.map((a) => [
             dt(a.created_at),
             a.name,
+            a.applicant_type ?? "expert",
             a.email,
-            <span key="x" className="max-w-[14rem] truncate inline-block" title={a.expertise}>{a.expertise}</span>,
+            <span key="x" className="max-w-[14rem] truncate inline-block" title={`${a.expertise ?? ""}${a.last_upsell ? `\n\nLast upsell: ${a.last_upsell}` : ""}`}>{a.expertise}</span>,
+            <span key="d" className="max-w-[14rem] truncate inline-block" title={a.dream_offer ?? ""}>{a.dream_offer ?? "–"}</span>,
+            a.announce_consent ? <span key="c" style={{ color: OK }}>✓</span> : "–",
             a.audience_size_range ?? "–",
             a.location ?? "–",
             a.has_partner ? "yes" : "no",

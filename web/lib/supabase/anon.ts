@@ -6,7 +6,7 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js";
  * The cookie-backed client in ./server opts a page into dynamic rendering.
  * The landing page is static and must stay that way (bandwidth and
  * function-seconds are the meters that matter on the host), so surfaces that
- * only need anon-readable data, like the founding-community list, read
+ * only need anon-readable data, like the founding-network list, read
  * through this client and revalidate on a timer instead.
  */
 export function createAnonClient() {

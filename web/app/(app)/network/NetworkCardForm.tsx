@@ -13,7 +13,7 @@ const CYAN = "#0891b2";
  * or studio, and where the card shows. Visibility is never pre-ticked: the
  * member chooses, and the database stamps the consent time.
  */
-export function CommunityCardForm({
+export function NetworkCardForm({
   collabWish,
   entityType,
   visibility,
@@ -50,7 +50,7 @@ export function CommunityCardForm({
           Your card
         </h2>
         <p className="text-xs" style={{ color: "#64748b" }}>
-          One sentence and one choice. This is what the community, and the homepage if you
+          One sentence and one choice. This is what the network, and the homepage if you
           allow it, see next to your profile.
         </p>
       </div>
@@ -159,7 +159,7 @@ export function CommunityCardForm({
             />
             <span>
               <span className="block text-sm font-headline font-bold" style={{ color: INK }}>
-                On infitra.fit and to the community
+                On infitra.fit and to the network
               </span>
               <span className="block text-xs mt-0.5" style={{ color: "#64748b" }}>
                 Founding experts and studios are shown on the homepage. Studios and experts
@@ -184,7 +184,7 @@ export function CommunityCardForm({
             />
             <span>
               <span className="block text-xs font-headline font-bold" style={{ color: INK }}>
-                Only to the community for now
+                Only to the network for now
               </span>
             </span>
           </label>

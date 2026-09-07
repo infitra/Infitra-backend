@@ -27,6 +27,8 @@ const AUDIENCE_OPTIONS: { value: string; label: string }[] = [
 export function PilotApplicationForm() {
   const [state, action, pending] = useActionState(submitPilotApplication, null);
   const [hasPartner, setHasPartner] = useState<"yes" | "no">("no");
+  // Founding network (6 Sep 2026): expert or studio decides the questions.
+  const [applicantType, setApplicantType] = useState<"expert" | "studio">("expert");
 
   // Fire the conversion once when the submit succeeds (hook must run before
   // the early success return below).
@@ -34,9 +36,9 @@ export function PilotApplicationForm() {
   useEffect(() => {
     if (state && "success" in state && state.success && !tracked.current) {
       tracked.current = true;
-      trackEvent("Application Submitted");
+      trackEvent("Application Submitted", { type: applicantType });
     }
-  }, [state]);
+  }, [state, applicantType]);
 
   // Success state — replace the form entirely.
   if (state && "success" in state && state.success) {
@@ -67,8 +69,42 @@ export function PilotApplicationForm() {
       )}
 
       <form action={action} className="space-y-7">
+        {/* Honeypot: real people never see or fill this. */}
+        <input
+          type="text"
+          name="website"
+          tabIndex={-1}
+          autoComplete="off"
+          aria-hidden="true"
+          className="hidden"
+        />
+
         {/* ── Section: About you ──────────────────────────── */}
         <Section label="About you">
+          <fieldset className="space-y-3">
+            <legend
+              className="text-xs uppercase tracking-[0.18em] font-headline mb-2"
+              style={{ color: "#475569", fontWeight: 700 }}
+            >
+              You are
+            </legend>
+            <div className="flex gap-3">
+              <RadioPill
+                name="applicant_type"
+                value="expert"
+                checked={applicantType === "expert"}
+                onChange={() => setApplicantType("expert")}
+                label="An expert"
+              />
+              <RadioPill
+                name="applicant_type"
+                value="studio"
+                checked={applicantType === "studio"}
+                onChange={() => setApplicantType("studio")}
+                label="A studio or gym"
+              />
+            </div>
+          </fieldset>
           <Field label="Your name" name="name" required>
             <input
               id="name"
@@ -107,8 +143,12 @@ export function PilotApplicationForm() {
         </Section>
 
         {/* ── Section: Your work ──────────────────────────── */}
-        <Section label="Your work">
-          <Field label="Your area of expertise" name="expertise" required>
+        <Section label={applicantType === "studio" ? "Your studio" : "Your work"}>
+          <Field
+            label={applicantType === "studio" ? "What your studio teaches" : "Your area of expertise"}
+            name="expertise"
+            required
+          >
             <textarea
               id="expertise"
               name="expertise"
@@ -116,9 +156,29 @@ export function PilotApplicationForm() {
               maxLength={500}
               rows={3}
               className={textareaCls} style={FIELD_STYLE}
-              placeholder="e.g. strength training for women over 40, with a focus on mobility and injury prevention"
+              placeholder={
+                applicantType === "studio"
+                  ? "e.g. reformer Pilates and barre, two locations in Zurich, about 400 active members"
+                  : "e.g. strength training for women over 40, with a focus on mobility and injury prevention"
+              }
             />
           </Field>
+          {applicantType === "studio" && (
+            <Field
+              label="The last thing you sold members on top of the membership"
+              name="last_upsell"
+              hint="A workshop series, a course, a retreat, a challenge. What it cost and how it went."
+            >
+              <textarea
+                id="last_upsell"
+                name="last_upsell"
+                maxLength={500}
+                rows={2}
+                className={textareaCls} style={FIELD_STYLE}
+                placeholder="e.g. an eight-week postnatal series at CHF 320, sold out twice"
+              />
+            </Field>
+          )}
           <Field
             label="Where people find you"
             name="channel_url"
@@ -221,6 +281,24 @@ export function PilotApplicationForm() {
         {/* ── Section: Your ambition ──────────────────────── */}
         <Section label="Your ambition">
           <Field
+            label="What would you love to offer that you cannot today?"
+            name="dream_offer"
+            hint="One sentence. This becomes your card in the founding network."
+          >
+            <textarea
+              id="dream_offer"
+              name="dream_offer"
+              maxLength={300}
+              rows={2}
+              className={textareaCls} style={FIELD_STYLE}
+              placeholder={
+                applicantType === "studio"
+                  ? "e.g. six weeks on nutrition for our members, led by an outside expert alongside our coaches"
+                  : "e.g. six weeks on strength for women over forty, with a nutritionist taking the food half"
+              }
+            />
+          </Field>
+          <Field
             label="What would a successful pilot look like to you?"
             name="success_description"
             hint="One paragraph is plenty. We read every word."
@@ -235,6 +313,21 @@ export function PilotApplicationForm() {
             />
           </Field>
         </Section>
+
+        {/* ── Consent: never pre-ticked ───────────────────── */}
+        <label className="flex items-start gap-3 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            name="announce_consent"
+            value="yes"
+            className="mt-0.5 w-4 h-4 shrink-0 cursor-pointer accent-[#FF6130]"
+          />
+          <span className="text-xs leading-relaxed" style={{ color: "#0F2229" }}>
+            Once I am in, you may show my card (name, discipline, city, my sentence) on
+            infitra.fit and announce that I joined the founding network. I can withdraw this
+            with one message.
+          </span>
+        </label>
 
         {/* ── Submit ──────────────────────────────────────── */}
         <button
