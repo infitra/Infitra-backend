@@ -80,8 +80,9 @@ export function AdminShell(props: {
           <h1 className="text-2xl font-headline" style={{ fontWeight: 700 }}>
             INFITRA · Admin
           </h1>
-          <span className="text-xs" style={{ color: MUT }}>
+          <span className="text-xs flex items-center gap-3" style={{ color: MUT }}>
             All actions are audited. Times in your local timezone.
+            <a href="/dashboard" className="underline">Back to workspace</a>
           </span>
         </div>
 

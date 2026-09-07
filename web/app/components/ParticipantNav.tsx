@@ -45,6 +45,9 @@ export function ParticipantNav({
         ]
       : [{ label: "Network", href: "/network" }]
     : [{ label: "Home", href: "/me" }];
+  // The admin board is part of the founder's daily surface (7 Sep 2026):
+  // reachable from the nav, not only by typing the URL.
+  if (role === "admin") links.push({ label: "Admin", href: "/admin" });
 
   // Mobile menu mirrors desktop, folding Create back in for creators.
   const mobileLinks = isCreator
@@ -57,6 +60,7 @@ export function ParticipantNav({
         ]
       : [{ label: "Network", href: "/network" }]
     : [{ label: "Home", href: "/me" }];
+  if (role === "admin") mobileLinks.push({ label: "Admin", href: "/admin" });
 
   return (
     <nav className="fixed top-0 w-full z-50">
