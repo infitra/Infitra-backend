@@ -1063,7 +1063,8 @@ begin
         select
             p.id, p.display_name, p.username, p.role, p.is_admin, p.visibility,
             p.created_at, p.is_founding_expert,
-            p.workspace_enabled, p.entity_type, p.community_visibility, p.collab_wish,
+            p.workspace_enabled, p.entity_type, p.community_visibility, p.announce_ok,
+            p.open_to, p.brings, p.seeks,
             u.email,
             u.banned_until,
             u.raw_user_meta_data ->> 'terms_version' as terms_version,
@@ -1644,20 +1645,6 @@ begin
     v_rows_text := v_rows_text || 'Location:  ' || a.location || E'\n';
   end if;
 
-  if a.last_upsell is not null then
-    v_rows_html := v_rows_html
-      || '<tr><td style="padding:6px 16px 6px 0;color:#475569;font-size:13px;vertical-align:top;">Last upsell</td>'
-      || '<td style="padding:6px 0;font-size:14px;color:#0F2229;">' || app_html_escape(a.last_upsell) || '</td></tr>';
-    v_rows_text := v_rows_text || 'Last upsell: ' || a.last_upsell || E'\n';
-  end if;
-
-  if a.dream_offer is not null then
-    v_rows_html := v_rows_html
-      || '<tr><td style="padding:6px 16px 6px 0;color:#475569;font-size:13px;vertical-align:top;">Would love to offer</td>'
-      || '<td style="padding:6px 0;font-size:14px;color:#0F2229;">' || app_html_escape(a.dream_offer) || '</td></tr>';
-    v_rows_text := v_rows_text || 'Would love to offer: ' || a.dream_offer || E'\n';
-  end if;
-
   v_rows_html := v_rows_html
     || '<tr><td style="padding:6px 16px 6px 0;color:#475569;font-size:13px;vertical-align:top;">Partner</td>'
     || '<td style="padding:6px 0;font-size:14px;color:#0F2229;">'
@@ -1675,18 +1662,18 @@ begin
 
   if a.success_description is not null then
     v_rows_html := v_rows_html
-      || '<tr><td style="padding:6px 16px 6px 0;color:#475569;font-size:13px;vertical-align:top;">Success</td>'
+      || '<tr><td style="padding:6px 16px 6px 0;color:#475569;font-size:13px;vertical-align:top;">Successful collaboration</td>'
       || '<td style="padding:6px 0;font-size:14px;color:#0F2229;">' || app_html_escape(a.success_description) || '</td></tr>';
-    v_rows_text := v_rows_text || 'Success:   ' || a.success_description || E'\n';
+    v_rows_text := v_rows_text || 'Successful collaboration: ' || a.success_description || E'\n';
   end if;
 
   v_rows_html := v_rows_html
-    || '<tr><td style="padding:6px 16px 6px 0;color:#475569;font-size:13px;vertical-align:top;">Card consent</td>'
+    || '<tr><td style="padding:6px 16px 6px 0;color:#475569;font-size:13px;vertical-align:top;">Featuring</td>'
     || '<td style="padding:6px 0;font-size:14px;color:#0F2229;">'
-    || case when a.announce_consent then 'Yes, may be shown and announced' else 'Not given' end
+    || case when a.announce_consent then 'Yes: card on infitra.fit and in posts' else 'Switched off' end
     || '</td></tr>';
-  v_rows_text := v_rows_text || 'Card consent: '
-    || case when a.announce_consent then 'yes' else 'not given' end || E'\n';
+  v_rows_text := v_rows_text || 'Featuring: '
+    || case when a.announce_consent then 'yes' else 'switched off' end || E'\n';
 
   v_html := '<div style="background:#F2EFE8;padding:32px 12px;">'
     || '<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">'
@@ -1716,7 +1703,7 @@ begin
     || '<img src="https://www.infitra.fit/email-logo.png" width="150" alt="INFITRA" style="display:block;height:auto;border:0;margin-bottom:28px;">'
     || '<p style="margin:0 0 16px;font-size:15px;line-height:1.7;">Hi ' || app_html_escape(v_first) || ',</p>'
     || '<p style="margin:0 0 16px;font-size:15px;line-height:1.7;">Your application for the founding network has arrived. Thank you for taking the time.</p>'
-    || '<p style="margin:0 0 16px;font-size:15px;line-height:1.7;">I read every application myself and reply personally, usually within a few days.</p>'
+    || '<p style="margin:0 0 16px;font-size:15px;line-height:1.7;">We read every application personally and reply within a few days.</p>'
     || '<p style="margin:0 0 16px;font-size:15px;line-height:1.7;">In the meantime, the pilot terms are public: <a href="https://www.infitra.fit/pilot-terms" style="color:#0891b2;text-decoration:none;">www.infitra.fit/pilot-terms</a>. And if anything comes to mind, just reply to this email.</p>'
     || '<p style="margin:24px 0 0;font-size:15px;line-height:1.6;">Speak soon,</p>'
     || '<p style="margin:12px 0 0;font-size:15px;line-height:1.6;">Yves<br>'
@@ -1729,8 +1716,7 @@ begin
   v_text := 'Hi ' || v_first || ',' || E'\n\n'
     || 'Your application for the founding network has arrived. Thank you' || E'\n'
     || 'for taking the time.' || E'\n\n'
-    || 'I read every application myself and reply personally, usually' || E'\n'
-    || 'within a few days.' || E'\n\n'
+    || 'We read every application personally and reply within a few days.' || E'\n\n'
     || 'In the meantime, the pilot terms are public:' || E'\n'
     || 'https://www.infitra.fit/pilot-terms' || E'\n'
     || 'And if anything comes to mind, just reply to this email.' || E'\n\n'
@@ -6328,7 +6314,9 @@ begin
                'entity_type', p.entity_type,
                'is_founding_expert', p.is_founding_expert,
                'visibility', p.community_visibility,
-               'collab_wish', p.collab_wish,
+               'open_to', to_jsonb(p.open_to),
+               'brings', p.brings,
+               'seeks', p.seeks,
                'facts', jsonb_build_object(
                  'city', p.profile_facts->>'city',
                  'disciplines', coalesce(p.profile_facts->'disciplines', '[]'::jsonb),
@@ -10052,12 +10040,8 @@ CREATE TABLE IF NOT EXISTS "public"."app_pilot_application" (
     "status" "text" DEFAULT 'new'::"text" NOT NULL,
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "applicant_type" "text" DEFAULT 'expert'::"text" NOT NULL,
-    "last_upsell" "text",
-    "dream_offer" "text",
     "announce_consent" boolean DEFAULT false NOT NULL,
     "announce_consent_at" timestamp with time zone,
-    CONSTRAINT "app_pilot_application_dream_offer_len" CHECK ((("dream_offer" IS NULL) OR ("char_length"("dream_offer") <= 300))),
-    CONSTRAINT "app_pilot_application_last_upsell_studio_only" CHECK ((("last_upsell" IS NULL) OR ("applicant_type" = 'studio'::"text"))),
     CONSTRAINT "app_pilot_application_status_check" CHECK (("status" = ANY (ARRAY['new'::"text", 'contacted'::"text", 'accepted'::"text", 'declined'::"text"]))),
     CONSTRAINT "app_pilot_application_type_check" CHECK (("applicant_type" = ANY (ARRAY['expert'::"text", 'studio'::"text"])))
 );
@@ -10086,14 +10070,19 @@ CREATE TABLE IF NOT EXISTS "public"."app_profile" (
     "profile_facts" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
     "workspace_enabled" boolean DEFAULT false NOT NULL,
     "entity_type" "text" DEFAULT 'expert'::"text" NOT NULL,
-    "collab_wish" "text",
     "community_visibility" "text" DEFAULT 'none'::"text" NOT NULL,
     "community_consent_at" timestamp with time zone,
-    CONSTRAINT "app_profile_collab_wish_len" CHECK ((("collab_wish" IS NULL) OR ("char_length"("collab_wish") <= 200))),
+    "open_to" "text"[] DEFAULT '{}'::"text"[] NOT NULL,
+    "brings" "text",
+    "seeks" "text",
+    "announce_ok" boolean DEFAULT true NOT NULL,
+    CONSTRAINT "app_profile_brings_len" CHECK ((("brings" IS NULL) OR ("char_length"("brings") <= 200))),
     CONSTRAINT "app_profile_community_visibility_check" CHECK (("community_visibility" = ANY (ARRAY['none'::"text", 'members'::"text", 'public'::"text"]))),
     CONSTRAINT "app_profile_creator_visibility_check" CHECK ((("role" <> 'creator'::"text") OR ("visibility" = 'public'::"text"))),
     CONSTRAINT "app_profile_entity_type_check" CHECK (("entity_type" = ANY (ARRAY['expert'::"text", 'studio'::"text"]))),
+    CONSTRAINT "app_profile_open_to_check" CHECK (("open_to" <@ ARRAY['experts'::"text", 'studios'::"text"])),
     CONSTRAINT "app_profile_role_check" CHECK (("role" = ANY (ARRAY['participant'::"text", 'creator'::"text", 'admin'::"text"]))),
+    CONSTRAINT "app_profile_seeks_len" CHECK ((("seeks" IS NULL) OR ("char_length"("seeks") <= 200))),
     CONSTRAINT "app_profile_visibility_check" CHECK (("visibility" = ANY (ARRAY['public'::"text", 'private'::"text"])))
 );
 
@@ -10114,6 +10103,10 @@ COMMENT ON COLUMN "public"."app_profile"."workspace_enabled" IS 'Admin-only. Fal
 
 
 COMMENT ON COLUMN "public"."app_profile"."community_visibility" IS 'Founding community card: none (default, nothing shown), members (directory only), public (directory + infitra.fit). Consent is stamped in community_consent_at.';
+
+
+
+COMMENT ON COLUMN "public"."app_profile"."announce_ok" IS 'Founding network: INFITRA may mention this card in external posts (LinkedIn etc.), showing only what the member put in the profile. Default on, member can switch off.';
 
 
 
