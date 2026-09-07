@@ -13,7 +13,14 @@ export function WorkspaceEntryForm() {
   const [state, action, pending] = useActionState(attestSigningIdentity, null);
 
   return (
-    <div className="max-w-lg mx-auto py-10">
+    <div
+      className="max-w-lg mx-auto my-12 rounded-3xl p-8 md:p-10"
+      style={{
+        backgroundColor: "rgba(255,255,255,0.72)",
+        border: "1px solid rgba(15,34,41,0.08)",
+        boxShadow: "0 16px 48px rgba(15,34,41,0.06)",
+      }}
+    >
       <p
         className="text-[10px] uppercase tracking-widest font-bold font-headline mb-3"
         style={{ color: "#0891b2" }}
@@ -92,7 +99,7 @@ export function WorkspaceEntryForm() {
             boxShadow: "0 4px 14px rgba(255,97,48,0.35), 0 2px 6px rgba(255,97,48,0.20)",
           }}
         >
-          {pending ? "..." : "Open the workspace"}
+          {pending ? "..." : "Start building on INFITRA"}
         </button>
       </form>
     </div>

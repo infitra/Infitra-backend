@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 
@@ -102,6 +103,10 @@ export async function attestSigningIdentity(prevState: unknown, formData: FormDa
   );
   if (error) return { error: `Could not save signing identity: ${error.message}` };
 
+  // The gate lives in the dashboard layout. Without this, the redirect to
+  // the same URL is served from the router cache and the form shows again
+  // although the row was written (seen 7 Sep 2026).
+  revalidatePath("/dashboard", "layout");
   redirect("/dashboard");
 }
 
