@@ -56,7 +56,7 @@ export function Finale() {
               </p>
 
               <div className="mt-auto pt-8 flex justify-center">
-                <ApplyCTA xl micro="Founding community · reviewed individually · forming now" />
+                <ApplyCTA xl micro="Founding network · reviewed individually · forming now" />
               </div>
             </div>
 

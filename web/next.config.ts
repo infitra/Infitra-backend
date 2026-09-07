@@ -6,6 +6,9 @@ const nextConfig: NextConfig = {
       // The landing was polished at /new, then promoted to /. Links from the
       // polishing phase (and anyone's open tabs) land home permanently.
       { source: "/new", destination: "/", permanent: true },
+      // Founding network routes were renamed on 6 Sep 2026 before any link went out.
+      { source: "/community", destination: "/network", permanent: true },
+      { source: "/founding-group", destination: "/founding-network", permanent: true },
     ];
   },
   images: {
