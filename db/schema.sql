@@ -4667,6 +4667,32 @@ $$;
 ALTER FUNCTION "public"."enforce_profile_role_immutable"() OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."enforce_profile_side_fields"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
+    AS $$
+begin
+  if new.role = 'participant' then
+    new.entity_type := null;
+    new.workspace_enabled := false;
+    new.community_visibility := 'none';
+    new.open_to := '{}';
+    new.brings := null;
+    new.seeks := null;
+    new.announce_ok := false;
+  else
+    if new.entity_type is null then
+      new.entity_type := 'expert';
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+
+ALTER FUNCTION "public"."enforce_profile_side_fields"() OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."enforce_profile_workspace_flag_admin_only"() RETURNS "trigger"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public'
@@ -10069,7 +10095,7 @@ CREATE TABLE IF NOT EXISTS "public"."app_profile" (
     "is_founding_expert" boolean DEFAULT false NOT NULL,
     "profile_facts" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
     "workspace_enabled" boolean DEFAULT false NOT NULL,
-    "entity_type" "text" DEFAULT 'expert'::"text" NOT NULL,
+    "entity_type" "text",
     "community_visibility" "text" DEFAULT 'none'::"text" NOT NULL,
     "community_consent_at" timestamp with time zone,
     "open_to" "text"[] DEFAULT '{}'::"text"[] NOT NULL,
@@ -10079,8 +10105,9 @@ CREATE TABLE IF NOT EXISTS "public"."app_profile" (
     CONSTRAINT "app_profile_brings_len" CHECK ((("brings" IS NULL) OR ("char_length"("brings") <= 200))),
     CONSTRAINT "app_profile_community_visibility_check" CHECK (("community_visibility" = ANY (ARRAY['none'::"text", 'members'::"text", 'public'::"text"]))),
     CONSTRAINT "app_profile_creator_visibility_check" CHECK ((("role" <> 'creator'::"text") OR ("visibility" = 'public'::"text"))),
-    CONSTRAINT "app_profile_entity_type_check" CHECK (("entity_type" = ANY (ARRAY['expert'::"text", 'studio'::"text"]))),
+    CONSTRAINT "app_profile_entity_type_check" CHECK (((("role" = 'participant'::"text") AND ("entity_type" IS NULL)) OR (("role" = ANY (ARRAY['creator'::"text", 'admin'::"text"])) AND ("entity_type" = ANY (ARRAY['expert'::"text", 'studio'::"text"]))))),
     CONSTRAINT "app_profile_open_to_check" CHECK (("open_to" <@ ARRAY['experts'::"text", 'studios'::"text"])),
+    CONSTRAINT "app_profile_participant_no_supply_fields" CHECK ((("role" <> 'participant'::"text") OR (("workspace_enabled" = false) AND ("community_visibility" = 'none'::"text") AND ("open_to" = '{}'::"text"[]) AND ("brings" IS NULL) AND ("seeks" IS NULL) AND ("announce_ok" = false)))),
     CONSTRAINT "app_profile_role_check" CHECK (("role" = ANY (ARRAY['participant'::"text", 'creator'::"text", 'admin'::"text"]))),
     CONSTRAINT "app_profile_seeks_len" CHECK ((("seeks" IS NULL) OR ("char_length"("seeks") <= 200))),
     CONSTRAINT "app_profile_visibility_check" CHECK (("visibility" = ANY (ARRAY['public'::"text", 'private'::"text"])))
@@ -10099,6 +10126,10 @@ COMMENT ON COLUMN "public"."app_profile"."profile_facts" IS 'Optional self-share
 
 
 COMMENT ON COLUMN "public"."app_profile"."workspace_enabled" IS 'Admin-only. False = founding-community account (card + directory only); true = full workspace (create, publish). Backfilled true for every creator that existed before 6 Sep 2026.';
+
+
+
+COMMENT ON COLUMN "public"."app_profile"."entity_type" IS 'Supply side only: expert or studio for creators and admins, null for participants (trigger-derived, check-enforced).';
 
 
 
@@ -12728,6 +12759,10 @@ CREATE OR REPLACE TRIGGER "trg_enforce_profile_role_immutable" BEFORE UPDATE ON 
 
 
 
+CREATE OR REPLACE TRIGGER "trg_enforce_profile_side_fields" BEFORE INSERT OR UPDATE ON "public"."app_profile" FOR EACH ROW EXECUTE FUNCTION "public"."enforce_profile_side_fields"();
+
+
+
 CREATE OR REPLACE TRIGGER "trg_enforce_profile_workspace_flag" BEFORE UPDATE OF "workspace_enabled" ON "public"."app_profile" FOR EACH ROW EXECUTE FUNCTION "public"."enforce_profile_workspace_flag_admin_only"();
 
 
@@ -15109,6 +15144,12 @@ GRANT ALL ON FUNCTION "public"."enforce_profile_role_collaboration_integrity"() 
 GRANT ALL ON FUNCTION "public"."enforce_profile_role_immutable"() TO "anon";
 GRANT ALL ON FUNCTION "public"."enforce_profile_role_immutable"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."enforce_profile_role_immutable"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."enforce_profile_side_fields"() TO "anon";
+GRANT ALL ON FUNCTION "public"."enforce_profile_side_fields"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."enforce_profile_side_fields"() TO "service_role";
 
 
 
