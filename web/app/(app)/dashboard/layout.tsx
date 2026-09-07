@@ -20,7 +20,7 @@ export default async function DashboardLayout({
 
   const { data: profile } = await supabase
     .from("app_profile")
-    .select("role, display_name, workspace_enabled")
+    .select("role, display_name, workspace_enabled, is_admin")
     .eq("id", user.id)
     .single();
 
@@ -90,6 +90,7 @@ export default async function DashboardLayout({
         displayName={profile?.display_name ?? null}
         role={profile?.role}
         workspaceEnabled={profile.workspace_enabled}
+        isAdmin={profile.is_admin === true}
       />
 
       {/* Content */}

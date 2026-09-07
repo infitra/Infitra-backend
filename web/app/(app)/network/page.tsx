@@ -55,6 +55,7 @@ export default async function NetworkPage() {
         displayName={profile.display_name}
         role={profile.role}
         workspaceEnabled={profile.workspace_enabled}
+        isAdmin={profile.is_admin === true}
       />
 
       <div className="pt-24 px-6 pb-16">
