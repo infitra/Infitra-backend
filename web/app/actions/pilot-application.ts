@@ -65,12 +65,9 @@ export async function submitPilotApplication(
 
   const name = (formData.get("name") as string | null)?.trim() ?? "";
   const email = (formData.get("email") as string | null)?.trim().toLowerCase() ?? "";
-  // Founding network (6 Sep 2026): expert or studio, the studio qualifier,
-  // the one sentence, and consent to be shown and announced.
+  // Founding network (6 Sep 2026): expert or studio, and the featuring
+  // switch (on by default on the form; absent here means switched off).
   const applicant_type = formData.get("applicant_type") === "studio" ? "studio" : "expert";
-  const last_upsell =
-    applicant_type === "studio" ? normalizeOptional(formData.get("last_upsell") as string | null) : null;
-  const dream_offer = normalizeOptional(formData.get("dream_offer") as string | null);
   const announce_consent = formData.get("announce_consent") === "yes";
   const expertise = (formData.get("expertise") as string | null)?.trim() ?? "";
   const channel_url = normalizeChannelUrl(normalizeOptional(formData.get("channel_url") as string | null));
@@ -108,13 +105,6 @@ export async function submitPilotApplication(
   if (success_description && success_description.length > 2000) {
     return { error: "Success description is too long." };
   }
-  if (last_upsell && last_upsell.length > 500) {
-    return { error: "That answer is too long." };
-  }
-  if (dream_offer && dream_offer.length > 300) {
-    return { error: "Keep the sentence under 300 characters." };
-  }
-
   const supabase = await createClient();
 
   const { error } = await supabase.from("app_pilot_application").insert({
@@ -129,8 +119,6 @@ export async function submitPilotApplication(
     complement_interest: has_partner ? null : complement_interest,
     success_description,
     applicant_type,
-    last_upsell,
-    dream_offer,
     announce_consent,
   });
 

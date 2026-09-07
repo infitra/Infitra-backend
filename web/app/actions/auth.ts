@@ -137,7 +137,8 @@ export async function signUp(prevState: unknown, formData: FormData) {
   // without a session. The "check your email" UX should be handled by a
   // surface render when no session is present; for now we just go home.
   if (!data.session) {
-    redirect(role === "creator" ? "/dashboard" : "/me");
+    // New creators are founding-network accounts: their home is the card.
+    redirect(role === "creator" ? "/network" : "/me");
   }
 
   // Auto-confirm ON (the pilot configuration) → we have a session, so

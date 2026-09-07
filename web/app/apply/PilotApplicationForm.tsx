@@ -163,22 +163,6 @@ export function PilotApplicationForm() {
               }
             />
           </Field>
-          {applicantType === "studio" && (
-            <Field
-              label="The last thing you sold members on top of the membership"
-              name="last_upsell"
-              hint="A workshop series, a course, a retreat, a challenge. What it cost and how it went."
-            >
-              <textarea
-                id="last_upsell"
-                name="last_upsell"
-                maxLength={500}
-                rows={2}
-                className={textareaCls} style={FIELD_STYLE}
-                placeholder="e.g. an eight-week postnatal series at CHF 320, sold out twice"
-              />
-            </Field>
-          )}
           <Field
             label="Where people find you"
             name="channel_url"
@@ -281,25 +265,7 @@ export function PilotApplicationForm() {
         {/* ── Section: Your ambition ──────────────────────── */}
         <Section label="Your ambition">
           <Field
-            label="What would you love to offer that you cannot today?"
-            name="dream_offer"
-            hint="One sentence. This becomes your card in the founding network."
-          >
-            <textarea
-              id="dream_offer"
-              name="dream_offer"
-              maxLength={300}
-              rows={2}
-              className={textareaCls} style={FIELD_STYLE}
-              placeholder={
-                applicantType === "studio"
-                  ? "e.g. six weeks on nutrition for our members, led by an outside expert alongside our coaches"
-                  : "e.g. six weeks on strength for women over forty, with a nutritionist taking the food half"
-              }
-            />
-          </Field>
-          <Field
-            label="What would a successful pilot look like to you?"
+            label="What would a successful collaboration look like for you?"
             name="success_description"
             hint="One paragraph is plenty. We read every word."
           >
@@ -314,18 +280,19 @@ export function PilotApplicationForm() {
           </Field>
         </Section>
 
-        {/* ── Consent: never pre-ticked ───────────────────── */}
+        {/* ── Featuring: the deal, on by default, one click to switch off ── */}
         <label className="flex items-start gap-3 cursor-pointer select-none">
           <input
             type="checkbox"
             name="announce_consent"
             value="yes"
+            defaultChecked
             className="mt-0.5 w-4 h-4 shrink-0 cursor-pointer accent-[#FF6130]"
           />
           <span className="text-xs leading-relaxed" style={{ color: "#0F2229" }}>
-            Once I am in, you may show my card (name, discipline, city, my sentence) on
-            infitra.fit and announce that I joined the founding network. I can withdraw this
-            with one message.
+            <span className="font-headline font-bold">Feature me.</span> Once I am in, INFITRA may show my
+            card on infitra.fit and mention it in posts. A post shows only what I put in my profile,
+            nothing more. I can switch this off any time.
           </span>
         </label>
 

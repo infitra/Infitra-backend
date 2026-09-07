@@ -255,52 +255,9 @@ export function OnboardingForm() {
                 </p>
               </div>
 
-              {/* Expert or studio (6 Sep 2026). The legal name and the signing
-                  attestation moved to the first workspace visit: joining the
-                  founding network asks for nothing binding. */}
-              {role === "creator" && (
-                <div>
-                  <span
-                    className="block text-xs font-bold uppercase tracking-wider mb-2 font-headline"
-                    style={{ color: "rgba(15, 34, 41, 0.55)" }}
-                  >
-                    You are
-                  </span>
-                  <div className="grid grid-cols-2 gap-2">
-                    {(
-                      [
-                        { value: "expert", label: "An expert", hint: "Coach, nutritionist, physio, teacher" },
-                        { value: "studio", label: "A studio or gym", hint: "A place with members" },
-                      ] as const
-                    ).map((opt) => (
-                      <label
-                        key={opt.value}
-                        className="flex flex-col gap-0.5 rounded-xl px-3.5 py-3 cursor-pointer select-none has-[:checked]:border-[#FF6130]"
-                        style={{
-                          backgroundColor: "rgba(255, 255, 255, 0.78)",
-                          border: "1px solid rgba(15, 34, 41, 0.15)",
-                        }}
-                      >
-                        <span className="flex items-center gap-2">
-                          <input
-                            type="radio"
-                            name="entity_type"
-                            value={opt.value}
-                            defaultChecked={opt.value === "expert"}
-                            className="accent-[#FF6130]"
-                          />
-                          <span className="text-sm font-headline font-bold" style={{ color: "#0F2229" }}>
-                            {opt.label}
-                          </span>
-                        </span>
-                        <span className="text-[11px] pl-5" style={{ color: "#94a3b8" }}>
-                          {opt.hint}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
+              {/* The legal name and the signing attestation moved to the first
+                  workspace visit (6 Sep 2026): joining the founding network asks
+                  for nothing binding. Expert or studio is chosen on the card. */}
 
               <button
                 type="submit"

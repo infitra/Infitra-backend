@@ -28,7 +28,7 @@ export default async function AdminPage() {
     .maybeSingle();
   if (!me?.is_admin) notFound();
 
-  const [pulse, money, payouts, people, applications, experiences, log] =
+  const [pulse, money, payouts, people, applications, experiences, log, invites] =
     await Promise.all([
       supabase.rpc("admin_pulse"),
       supabase.rpc("admin_money"),
@@ -37,11 +37,12 @@ export default async function AdminPage() {
       supabase.rpc("admin_applications"),
       supabase.rpc("admin_experiences"),
       supabase.rpc("admin_action_log", { p_limit: 100 }),
+      supabase.rpc("admin_creator_invites"),
     ]);
 
   const firstError =
     pulse.error || money.error || payouts.error || people.error ||
-    applications.error || experiences.error || log.error;
+    applications.error || experiences.error || log.error || invites.error;
   if (firstError) {
     // The RPCs raise not_admin (42501) if the flag was pulled mid-session.
     if (String(firstError.message || "").includes("not_admin")) notFound();
@@ -57,6 +58,7 @@ export default async function AdminPage() {
       applications={applications.data}
       experiences={experiences.data}
       log={log.data}
+      invites={invites.data}
     />
   );
 }

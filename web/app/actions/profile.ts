@@ -13,8 +13,6 @@ export async function completeOnboarding(prevState: unknown, formData: FormData)
   if (!user) return { error: "Not authenticated." };
 
   const displayName = (formData.get("display_name") as string)?.trim();
-  const entityRaw = (formData.get("entity_type") as string)?.trim();
-  const entityType = entityRaw === "studio" ? "studio" : "expert";
 
   if (!displayName || displayName.length < 2) {
     return { error: "Display name must be at least 2 characters." };
@@ -36,14 +34,12 @@ export async function completeOnboarding(prevState: unknown, formData: FormData)
   // Accounts-lite (6 Sep 2026): a creator no longer attests a legal name at
   // onboarding. The signing identity is collected on the first workspace
   // visit (attestSigningIdentity), so joining the founding network costs
-  // nothing binding. Nothing is entered twice: the same account grows.
-  const updates: Record<string, unknown> = {
-    display_name: displayName,
-    updated_at: new Date().toISOString(),
-  };
-  if (isCreator) updates.entity_type = entityType;
-
-  const { error } = await supabase.from("app_profile").update(updates).eq("id", user.id);
+  // nothing binding. Invited creators already carry a display name from the
+  // invite form and skip this page; expert or studio is chosen on the card.
+  const { error } = await supabase
+    .from("app_profile")
+    .update({ display_name: displayName, updated_at: new Date().toISOString() })
+    .eq("id", user.id);
 
   if (error) return { error: error.message };
 
@@ -123,12 +119,20 @@ export async function saveCommunityCard(prevState: unknown, formData: FormData) 
   } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated." };
 
-  const wish = ((formData.get("collab_wish") as string) ?? "").trim().slice(0, 200);
+  const brings = ((formData.get("brings") as string) ?? "").trim().slice(0, 200);
+  const seeks = ((formData.get("seeks") as string) ?? "").trim().slice(0, 200);
+  const openTo = formData
+    .getAll("open_to")
+    .filter((v): v is string => v === "experts" || v === "studios");
   const entityRaw = (formData.get("entity_type") as string)?.trim();
   const visRaw = (formData.get("community_visibility") as string)?.trim();
 
   const updates: Record<string, unknown> = {
-    collab_wish: wish || null,
+    brings: brings || null,
+    seeks: seeks || null,
+    open_to: openTo,
+    // Posts permission: a checkbox, so absent means switched off.
+    announce_ok: formData.get("announce_ok") === "yes",
     updated_at: new Date().toISOString(),
   };
   if (entityRaw === "expert" || entityRaw === "studio") updates.entity_type = entityRaw;

@@ -29,7 +29,7 @@ export default async function NetworkPage() {
   const { data: profile } = await supabase
     .from("app_profile")
     .select(
-      "role, display_name, tagline, bio, avatar_url, profile_facts, entity_type, collab_wish, community_visibility, workspace_enabled, is_admin",
+      "role, display_name, tagline, bio, avatar_url, profile_facts, entity_type, open_to, brings, seeks, announce_ok, community_visibility, workspace_enabled, is_admin",
     )
     .eq("id", user.id)
     .single();
@@ -73,9 +73,9 @@ export default async function NetworkPage() {
               Your card, and who else is in.
             </h1>
             <p className="text-sm max-w-2xl" style={{ color: "#475569" }}>
-              Experts and studios open to creating together. Your card is your profile plus one
-              sentence: what you would love to run, and who you would want next to you. When two
-              cards fit, Yves introduces you. Nothing binding, nothing to run.
+              Experts and studios open to creating together. Your card is your profile plus who you
+              are open to, what you bring and what would complement you. When two cards fit, we
+              introduce you. Nothing binding, nothing to run.
             </p>
           </header>
 
@@ -109,9 +109,12 @@ export default async function NetworkPage() {
 
             <div className="flex flex-col gap-6">
               <NetworkCardForm
-                collabWish={profile.collab_wish ?? ""}
+                openTo={(profile.open_to ?? []) as string[]}
+                brings={profile.brings ?? ""}
+                seeks={profile.seeks ?? ""}
                 entityType={(profile.entity_type ?? "expert") as "expert" | "studio"}
                 visibility={visibility}
+                announceOk={profile.announce_ok !== false}
               />
               {!profile.workspace_enabled && (
                 <div
@@ -123,9 +126,8 @@ export default async function NetworkPage() {
                 >
                   <p className="text-sm leading-relaxed" style={{ color: "#0F2229" }}>
                     <span className="font-bold font-headline">Building an experience starts with a conversation.</span>{" "}
-                    When a card fits yours, Yves introduces you both, and if it clicks the
-                    workspace opens for you: outline, page, live rooms and the split, set up
-                    together.
+                    When a card fits yours, we introduce you both, and if it clicks we open the
+                    workspace for you: outline, page, live rooms and the split, set up together.
                   </p>
                 </div>
               )}
@@ -168,11 +170,11 @@ export default async function NetworkPage() {
                   <div key={m.id} className="flex flex-col gap-2">
                     <FoundingCard m={m} />
                     <a
-                      href={`mailto:yves@infitra.fit?subject=${encodeURIComponent(`Introduce me to ${m.display_name ?? "a founding member"}`)}`}
+                      href={`mailto:hello@infitra.fit?subject=${encodeURIComponent(`Intro request: ${m.display_name ?? "a founding member"}`)}`}
                       className="self-end text-[11px] font-bold font-headline uppercase tracking-[0.14em]"
                       style={{ color: "#0891b2" }}
                     >
-                      Ask Yves for an intro
+                      Ask for an intro
                     </a>
                   </div>
                 ))}

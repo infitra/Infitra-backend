@@ -53,6 +53,7 @@ export function AdminShell(props: {
   applications: J;
   experiences: J;
   log: J;
+  invites: J;
 }) {
   const [tab, setTab] = useState<Tab>("Pulse");
   const [busy, startTransition] = useTransition();
@@ -117,7 +118,7 @@ export function AdminShell(props: {
         {tab === "Pulse" && <Pulse pulse={props.pulse} />}
         {tab === "Money" && <Money money={props.money} run={run} />}
         {tab === "Payouts" && <Payouts payouts={props.payouts} />}
-        {tab === "People" && <People people={props.people} run={run} />}
+        {tab === "People" && <People people={props.people} invites={props.invites} run={run} />}
         {tab === "Applications" && <Applications data={props.applications} run={run} />}
         {tab === "Experiences" && <Experiences data={props.experiences} run={run} />}
         {tab === "Log" && <Log log={props.log} />}
@@ -425,8 +426,9 @@ function Payouts({ payouts }: { payouts: J }) {
 
 /* ---------- People ---------- */
 
-function People({ people, run }: { people: J; run: (l: string, fn: () => Promise<J>) => void }) {
+function People({ people, invites, run }: { people: J; invites: J; run: (l: string, fn: () => Promise<J>) => void }) {
   const [q, setQ] = useState("");
+  const inviteRows: J[] = invites ?? [];
   const list: J[] = (people ?? []).filter((p: J) => {
     if (!q) return true;
     const hay = `${p.display_name ?? ""} ${p.username ?? ""} ${p.email ?? ""}`.toLowerCase();
@@ -485,7 +487,7 @@ function People({ people, run }: { people: J; run: (l: string, fn: () => Promise
         head={["Joined", "Name", "Email", "Role", "Type", "Workspace", "Card", "Purchases", "Memberships", "Terms", "Banned", ""]}
         rows={list.map((p) => [
           dt(p.created_at),
-          <span key="n" title={p.collab_wish ?? ""}>{p.display_name ?? "–"}{p.is_admin ? " ★" : ""}{p.is_founding_expert ? " ⚑" : ""}</span>,
+          <span key="n" title={isCreator(p) ? `Open to: ${(p.open_to ?? []).join(", ") || "–"}\nBrings: ${p.brings ?? "–"}\nSeeks: ${p.seeks ?? "–"}\nPosts: ${p.announce_ok ? "ok" : "off"}` : ""}>{p.display_name ?? "–"}{p.is_admin ? " ★" : ""}{p.is_founding_expert ? " ⚑" : ""}</span>,
           p.email ?? "–",
           p.role,
           isCreator(p) ? p.entity_type ?? "expert" : "–",
@@ -509,6 +511,32 @@ function People({ people, run }: { people: J; run: (l: string, fn: () => Promise
           </span>,
         ])}
       />
+      <div className="mt-6">
+        <h3 className="text-sm font-headline mb-2" style={{ fontWeight: 700 }}>
+          Expert invites ({inviteRows.length})
+        </h3>
+        <Table
+          head={["Minted", "For", "Code", "Join link", "Redeemed by", "Expires"]}
+          rows={inviteRows.map((i) => [
+            dt(i.created_at),
+            i.note ?? "–",
+            <code key="c" style={{ fontSize: 12 }}>{i.code}</code>,
+            i.redeemed_at || i.revoked ? (
+              "–"
+            ) : (
+              <code key="u" style={{ fontSize: 11 }}>{`https://www.infitra.fit/join-as-expert?code=${i.code}`}</code>
+            ),
+            i.redeemed_at ? (
+              <span key="r" style={{ color: OK }}>{i.redeemed_name ?? "yes"} · {dt(i.redeemed_at)}</span>
+            ) : i.revoked ? (
+              <span key="r" style={{ color: BAD }}>revoked</span>
+            ) : (
+              <span key="r" style={{ color: MUT }}>open</span>
+            ),
+            dt(i.expires_at),
+          ])}
+        />
+      </div>
     </Card>
   );
 }
@@ -525,15 +553,14 @@ function Applications({ data, run }: { data: J; run: (l: string, fn: () => Promi
     <>
       <Card title={`Pilot applications (${apps.length})`}>
         <Table
-          head={["When", "Name", "Type", "Email", "Expertise", "Would love to offer", "Consent", "Audience", "Location", "Partner", "Status", "Set status"]}
+          head={["When", "Name", "Type", "Email", "Expertise", "Feature", "Audience", "Location", "Partner", "Status", "Set status"]}
           rows={apps.map((a) => [
             dt(a.created_at),
             a.name,
             a.applicant_type ?? "expert",
             a.email,
-            <span key="x" className="max-w-[14rem] truncate inline-block" title={`${a.expertise ?? ""}${a.last_upsell ? `\n\nLast upsell: ${a.last_upsell}` : ""}`}>{a.expertise}</span>,
-            <span key="d" className="max-w-[14rem] truncate inline-block" title={a.dream_offer ?? ""}>{a.dream_offer ?? "–"}</span>,
-            a.announce_consent ? <span key="c" style={{ color: OK }}>✓</span> : "–",
+            <span key="x" className="max-w-[14rem] truncate inline-block" title={`${a.expertise ?? ""}${a.success_description ? `\n\nSuccessful collaboration: ${a.success_description}` : ""}`}>{a.expertise}</span>,
+            a.announce_consent ? <span key="c" style={{ color: OK }}>yes</span> : <span key="c" style={{ color: BAD }}>off</span>,
             a.audience_size_range ?? "–",
             a.location ?? "–",
             a.has_partner ? "yes" : "no",
