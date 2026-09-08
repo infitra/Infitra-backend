@@ -6349,7 +6349,6 @@ begin
                'display_name', p.display_name,
                'avatar_url', p.avatar_url,
                'tagline', p.tagline,
-               'bio', p.bio,
                'username', p.username,
                'entity_type', p.entity_type,
                'is_founding_expert', p.is_founding_expert,
