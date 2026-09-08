@@ -147,38 +147,44 @@ export function FoundingCard({
         </div>
       )}
 
-      {/* Background: a tidy label column on cream */}
+      {/* Background: a tidy label column on cream; the icons carry the weight */}
       {groups.length > 0 && (
         <div
-          className={`${pad} py-4 mt-auto`}
+          className={`${pad} py-3 mt-auto`}
           style={{ backgroundColor: "rgba(242,239,232,0.9)", borderTop: "1px solid rgba(15,34,41,0.08)" }}
         >
           <dl className="flex flex-col">
             {groups.map((g, gi) => (
               <div
                 key={g.kind}
-                className={`grid gap-x-4 gap-y-1 ${compact ? "grid-cols-1" : "sm:grid-cols-[128px_minmax(0,1fr)]"} py-2.5`}
-                style={gi > 0 ? { borderTop: "1px solid rgba(15,34,41,0.07)" } : undefined}
+                className={`grid gap-x-5 gap-y-2 ${compact ? "grid-cols-1" : "sm:grid-cols-[168px_minmax(0,1fr)]"} py-3`}
+                style={gi > 0 ? { borderTop: "1px solid rgba(15,34,41,0.08)" } : undefined}
               >
-                <dt
-                  className="flex items-center gap-1.5 text-[10px] font-black font-headline uppercase tracking-[0.16em] pt-[3px]"
-                  style={{ color: INK }}
-                >
-                  <span style={{ color: ORANGE }}>
-                    <CredentialIcon kind={g.kind} size={13} studio={isStudio} />
+                <dt className="flex items-center gap-2.5">
+                  <span
+                    className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                    style={{ backgroundColor: ORANGE, color: "#fff", boxShadow: "0 4px 10px rgba(255,97,48,0.28)" }}
+                  >
+                    <CredentialIcon kind={g.kind} size={15} studio={isStudio} strokeWidth={2.2} />
                   </span>
-                  {g.label}
+                  <span className="text-[11px] font-black font-headline uppercase tracking-[0.16em]" style={{ color: INK }}>
+                    {g.label}
+                  </span>
                 </dt>
-                <dd className="m-0 flex flex-col gap-1">
+                <dd className="m-0 flex flex-col gap-2">
                   {g.items.map((c, i) => {
                     const detail = [c.org, credentialPeriod(c.year, c.year_end)].filter(Boolean).join(" · ");
                     return (
-                      <p key={i} className="text-[13px] leading-snug" style={{ color: MUTED }}>
-                        <span className="font-bold font-headline" style={{ color: INK }}>
+                      <div key={i} className="leading-snug">
+                        <p className="text-[13px] font-bold font-headline" style={{ color: INK }}>
                           {c.title}
-                        </span>
-                        {detail ? ` · ${detail}` : ""}
-                      </p>
+                        </p>
+                        {detail && (
+                          <p className="text-xs mt-0.5" style={{ color: MUTED }}>
+                            {detail}
+                          </p>
+                        )}
+                      </div>
                     );
                   })}
                 </dd>

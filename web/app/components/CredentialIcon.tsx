@@ -15,10 +15,12 @@ export function CredentialIcon({
   size = 14,
   className,
   studio = false,
+  strokeWidth = 1.6,
 }: {
   kind: string;
   size?: number;
   className?: string;
+  strokeWidth?: number;
   /** A studio's background uses the same three kinds with other meanings
    *  (track record, team, recognition), so two of the glyphs change. */
   studio?: boolean;
@@ -29,7 +31,7 @@ export function CredentialIcon({
     viewBox: "0 0 24 24",
     fill: "none",
     stroke: "currentColor",
-    strokeWidth: 1.6,
+    strokeWidth,
     strokeLinecap: "round" as const,
     strokeLinejoin: "round" as const,
     className,

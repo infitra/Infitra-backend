@@ -6,7 +6,7 @@ import { FoundingCard, type FoundingMember } from "@/app/components/FoundingCard
 import { JoinNetworkForm } from "./JoinNetworkForm";
 
 export const metadata = {
-  title: "Founding network · INFITRA",
+  title: "Your card · INFITRA",
   robots: { index: false },
 };
 
@@ -20,14 +20,13 @@ const PROFILE_COLUMNS =
   "role, display_name, tagline, avatar_url, profile_facts, entity_type, brings, seeks, is_founding_expert, community_visibility, workspace_enabled, is_admin";
 
 /**
- * /network — the founding network's home, two states (8 Sep 2026).
+ * /network — the member's own card, two states (8 Sep 2026).
  *
  * No card yet: one form with the card taking shape next to it, one button,
- * and the card is live. Card exists: the arrival. The card on a dark stage
- * as the network sees it, what happens next, and everyone else who is in.
- * No page titles, like the rest of the app: the content carries its own
- * labels. The directory reads through load_founding_community(false), which
- * requires the caller's own card to be live (reciprocity) or admin.
+ * and the card is live. Card exists: the personal moment, a full-bleed dark
+ * stage under the nav with the card as the network sees it and what happens
+ * next, and one door at its foot to /network/explore, where everyone's
+ * cards live. No page titles, like the rest of the app.
  */
 export default async function NetworkPage({
   searchParams,
@@ -133,133 +132,111 @@ export default async function NetworkPage({
   return (
     <div className="min-h-screen">
       {nav}
-      <div className="pt-20 px-6 pb-20">
-        <div className="max-w-6xl mx-auto">
-          {/* The stage: the card as the network sees it, and what happens next. */}
-          <section
-            className="rounded-[32px] p-6 sm:p-8 lg:p-12 mb-14 relative overflow-hidden"
-            style={{
-              background: "linear-gradient(135deg, #0C262E 0%, #103842 60%, #0C262E 100%)",
-              boxShadow: "0 30px 80px rgba(12,38,46,0.25)",
-            }}
-          >
-            <div
-              className="absolute -top-32 -right-32 w-96 h-96 rounded-full pointer-events-none"
-              style={{ background: "radial-gradient(circle, rgba(156,240,255,0.18) 0%, rgba(156,240,255,0) 70%)" }}
-            />
-            <div
-              className="absolute -bottom-40 -left-24 w-96 h-96 rounded-full pointer-events-none"
-              style={{ background: "radial-gradient(circle, rgba(255,97,48,0.22) 0%, rgba(255,97,48,0) 70%)" }}
-            />
 
-            {justJoined && (
-              <div className="relative mb-8 max-w-2xl">
-                {label("Founding network", CYAN_BRIGHT)}
-                <h2
-                  className="text-3xl lg:text-4xl font-black font-headline tracking-tight mt-2 mb-2"
-                  style={{ color: CREAM, letterSpacing: "-0.03em" }}
-                >
-                  You&apos;re in.
-                </h2>
-                <p className="text-base" style={{ color: "rgba(242,239,232,0.72)" }}>
-                  Welcome to the founding network. This is your card, as the network sees it.
-                </p>
-              </div>
-            )}
+      {/* The stage: full bleed, one screen, the personal moment */}
+      <section
+        className="relative overflow-hidden pt-24 pb-12"
+        style={{ background: "linear-gradient(135deg, #0C262E 0%, #103842 60%, #0C262E 100%)" }}
+      >
+        <div
+          className="absolute -top-32 right-[10%] w-[28rem] h-[28rem] rounded-full pointer-events-none"
+          style={{ background: "radial-gradient(circle, rgba(156,240,255,0.16) 0%, rgba(156,240,255,0) 70%)" }}
+        />
+        <div
+          className="absolute -bottom-48 -left-24 w-[28rem] h-[28rem] rounded-full pointer-events-none"
+          style={{ background: "radial-gradient(circle, rgba(255,97,48,0.22) 0%, rgba(255,97,48,0) 70%)" }}
+        />
 
-            <div className="relative grid gap-10 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] items-start">
-              <div className="min-w-0">
-                <div className="flex items-baseline justify-between gap-4 mb-4">
-                  {label(justJoined ? "Your card" : "Your card, as the network sees it", CYAN_BRIGHT)}
-                  <Link
-                    href="/network/edit"
-                    className="px-4 py-1.5 rounded-full text-[11px] font-bold font-headline uppercase tracking-[0.14em] whitespace-nowrap"
-                    style={{ color: CREAM, border: "1px solid rgba(242,239,232,0.35)" }}
-                  >
-                    Edit your card
-                  </Link>
-                </div>
-                <div style={{ boxShadow: "0 24px 60px rgba(0,0,0,0.35)", borderRadius: 16 }}>
-                  <FoundingCard m={me} solid />
-                </div>
-              </div>
-
-              <div className="min-w-0">
-                <div className="mb-5">{label("What happens next", ORANGE)}</div>
-                <ol className="flex flex-col gap-5">
-                  {steps.map((step, i) => (
-                    <li key={step.t} className="flex gap-4">
-                      <span
-                        className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-black font-headline"
-                        style={{ backgroundColor: ORANGE, color: "#fff" }}
-                      >
-                        {i + 1}
-                      </span>
-                      <div>
-                        <p className="text-base font-black font-headline tracking-tight" style={{ color: CREAM }}>
-                          {step.t}
-                        </p>
-                        <p className="text-sm leading-relaxed mt-1" style={{ color: "rgba(242,239,232,0.72)" }}>
-                          {step.d}
-                        </p>
-                      </div>
-                    </li>
-                  ))}
-                </ol>
-                <div className="mt-7 pt-6" style={{ borderTop: "1px solid rgba(242,239,232,0.15)" }}>
-                  <div className="mb-2">{label("Yours to keep", CYAN_BRIGHT)}</div>
-                  <p className="text-sm leading-relaxed font-bold font-headline" style={{ color: CREAM }}>
-                    The founding member badge stays on your card when INFITRA opens publicly, and
-                    founding cards hold the top spot in discovery.
-                  </p>
-                  <p className="text-sm leading-relaxed mt-1" style={{ color: "rgba(242,239,232,0.72)" }}>
-                    Your audience stays yours, and your card can be withdrawn any time.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <section>
-            <div className="mb-5 flex items-baseline justify-between gap-4 flex-wrap">
-              {label("Who else is in")}
-              <p className="text-sm" style={{ color: "#64748b" }}>
-                Experts and studios in the founding network, with what they bring and what would
-                complement them.
+        <div className="relative max-w-6xl mx-auto px-6">
+          {justJoined && (
+            <div className="mb-8 max-w-2xl">
+              {label("Founding network", CYAN_BRIGHT)}
+              <h2
+                className="text-3xl lg:text-4xl font-black font-headline tracking-tight mt-2 mb-2"
+                style={{ color: CREAM, letterSpacing: "-0.03em" }}
+              >
+                You&apos;re in.
+              </h2>
+              <p className="text-base" style={{ color: "rgba(242,239,232,0.72)" }}>
+                Welcome to the founding network. This is your card, as the network sees it.
               </p>
             </div>
-            {others.length === 0 ? (
-              <div
-                className="rounded-3xl p-6 lg:p-8 max-w-2xl"
-                style={{ backgroundColor: "rgba(8,145,178,0.06)", border: "1px solid rgba(8,145,178,0.18)" }}
-              >
-                <p className="text-lg font-black font-headline tracking-tight mb-2" style={{ color: INK }}>
-                  The founding network is forming.
-                </p>
-                <p className="text-sm leading-relaxed" style={{ color: "#475569" }}>
-                  You are among the first cards. The next ones land here as they come in, and we
-                  introduce you the moment one fits yours.
-                </p>
+          )}
+
+          <div className="grid gap-10 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] items-start">
+            <div className="min-w-0">
+              <div className="flex items-baseline justify-between gap-4 mb-4">
+                {label(justJoined ? "Your card" : "Your card, as the network sees it", CYAN_BRIGHT)}
+                <Link
+                  href="/network/edit"
+                  className="px-4 py-1.5 rounded-full text-[11px] font-bold font-headline uppercase tracking-[0.14em] whitespace-nowrap"
+                  style={{ color: CREAM, border: "1px solid rgba(242,239,232,0.35)" }}
+                >
+                  Edit your card
+                </Link>
               </div>
-            ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {others.map((m) => (
-                  <div key={m.id} className="flex flex-col gap-2">
-                    <FoundingCard m={m} />
-                    <a
-                      href={`mailto:hello@infitra.fit?subject=${encodeURIComponent(`Intro request: ${m.display_name ?? "a founding member"}`)}`}
-                      className="self-end text-[11px] font-bold font-headline uppercase tracking-[0.14em]"
-                      style={{ color: CYAN }}
+              <div style={{ boxShadow: "0 24px 60px rgba(0,0,0,0.35)", borderRadius: 16 }}>
+                <FoundingCard m={me} solid />
+              </div>
+            </div>
+
+            <div className="min-w-0 lg:sticky lg:top-24">
+              <div className="mb-5">{label("What happens next", ORANGE)}</div>
+              <ol className="flex flex-col gap-5">
+                {steps.map((step, i) => (
+                  <li key={step.t} className="flex gap-4">
+                    <span
+                      className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-black font-headline"
+                      style={{ backgroundColor: ORANGE, color: "#fff" }}
                     >
-                      Ask for an intro
-                    </a>
-                  </div>
+                      {i + 1}
+                    </span>
+                    <div>
+                      <p className="text-base font-black font-headline tracking-tight" style={{ color: CREAM }}>
+                        {step.t}
+                      </p>
+                      <p className="text-sm leading-relaxed mt-1" style={{ color: "rgba(242,239,232,0.72)" }}>
+                        {step.d}
+                      </p>
+                    </div>
+                  </li>
                 ))}
+              </ol>
+              <div className="mt-7 pt-6" style={{ borderTop: "1px solid rgba(242,239,232,0.15)" }}>
+                <div className="mb-2">{label("Yours to keep", CYAN_BRIGHT)}</div>
+                <p className="text-sm leading-relaxed font-bold font-headline" style={{ color: CREAM }}>
+                  The founding member badge stays on your card when INFITRA opens publicly, and
+                  founding cards hold the top spot in discovery.
+                </p>
+                <p className="text-sm leading-relaxed mt-1" style={{ color: "rgba(242,239,232,0.72)" }}>
+                  Your audience stays yours, and your card can be withdrawn any time.
+                </p>
               </div>
-            )}
-          </section>
+
+              {/* The door */}
+              <Link
+                href="/network/explore"
+                className="mt-8 flex items-center justify-between gap-4 rounded-2xl px-5 py-4 transition-colors hover:bg-white/10"
+                style={{ border: "1px solid rgba(156,240,255,0.35)", backgroundColor: "rgba(156,240,255,0.06)" }}
+              >
+                <span>
+                  <span className="block text-sm font-black font-headline" style={{ color: CREAM }}>
+                    Explore the network
+                  </span>
+                  <span className="block text-xs mt-0.5" style={{ color: "rgba(242,239,232,0.7)" }}>
+                    {others.length === 0
+                      ? "Forming now. Cards land there as experts and studios come in."
+                      : "Everyone who is in, with what they bring and what would complement them."}
+                  </span>
+                </span>
+                <span className="text-xl font-black" style={{ color: CYAN_BRIGHT }}>
+                  →
+                </span>
+              </Link>
+            </div>
+          </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 }

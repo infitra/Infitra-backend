@@ -39,14 +39,20 @@ export function ParticipantNav({
   const homeHref = isCreator ? (hasWorkspace ? "/dashboard" : "/network") : "/me";
 
   // Desktop links (the Create pill is rendered separately for creators).
+  // Founding network (8 Sep 2026): "Your card" is the personal page, "Network"
+  // is where everyone's cards are explored.
   const links = isCreator
     ? hasWorkspace
       ? [
           { label: "Home", href: "/dashboard" },
-          { label: "Network", href: "/network" },
+          { label: "Your card", href: "/network" },
+          { label: "Network", href: "/network/explore" },
           { label: "Earnings", href: "/dashboard/earnings" },
         ]
-      : [{ label: "Network", href: "/network" }]
+      : [
+          { label: "Your card", href: "/network" },
+          { label: "Network", href: "/network/explore" },
+        ]
     : [{ label: "Home", href: "/me" }];
   // The admin board is part of the founder's daily surface (7 Sep 2026):
   // reachable from the nav, not only by typing the URL. The admin
@@ -58,11 +64,15 @@ export function ParticipantNav({
     ? hasWorkspace
       ? [
           { label: "Home", href: "/dashboard" },
-          { label: "Network", href: "/network" },
+          { label: "Your card", href: "/network" },
+          { label: "Network", href: "/network/explore" },
           { label: "Create", href: "/dashboard/create" },
           { label: "Earnings", href: "/dashboard/earnings" },
         ]
-      : [{ label: "Network", href: "/network" }]
+      : [
+          { label: "Your card", href: "/network" },
+          { label: "Network", href: "/network/explore" },
+        ]
     : [{ label: "Home", href: "/me" }];
   if (isAdmin) mobileLinks.push({ label: "Admin", href: "/admin" });
 
