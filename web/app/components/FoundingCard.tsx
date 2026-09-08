@@ -97,7 +97,7 @@ export function FoundingCard({
   const pad = compact ? "px-5" : "px-5 lg:px-6";
   // The portrait hangs over the top-left corner: the card's anchor. The
   // outer box reserves the overhang so no container has to know.
-  const over = compact ? { top: 20, left: 8, size: 116 } : { top: 28, left: 12, size: 176 };
+  const over = compact ? { top: 22, left: 10, size: 132 } : { top: 30, left: 14, size: 200 };
 
   return (
     <div className="h-full" style={{ paddingTop: over.top, paddingLeft: over.left }}>
@@ -112,7 +112,7 @@ export function FoundingCard({
       {/* Expert or studio: a corner signal */}
       <span
         className="absolute top-4 right-4 text-[10px] font-black font-headline uppercase tracking-[0.16em] px-2.5 py-1 rounded-full"
-        style={{ color: "#fff", backgroundColor: isStudio ? CYAN : ORANGE }}
+        style={{ color: INK, backgroundColor: "rgba(15,34,41,0.07)", border: "1px solid rgba(15,34,41,0.10)" }}
       >
         {isStudio ? "Studio" : "Expert"}
       </span>
@@ -125,7 +125,7 @@ export function FoundingCard({
           left: -over.left,
           width: over.size,
           height: over.size,
-          boxShadow: "0 0 0 4px #FFFFFF, 0 0 0 6px rgba(255,97,48,0.5), 0 18px 40px rgba(15,34,41,0.28)",
+          boxShadow: "0 0 0 3px rgba(255,255,255,0.95), 0 16px 36px rgba(15,34,41,0.26)",
         }}
       >
         {m.avatar_url ? (
@@ -148,10 +148,11 @@ export function FoundingCard({
         )}
       </div>
       <div
-        className="pr-20 pt-5 flex flex-col justify-center"
+        className="pr-20 flex flex-col justify-center"
         style={{
-          paddingLeft: over.size - over.left + (compact ? 16 : 22),
-          minHeight: over.size - over.top + (compact ? 12 : 16),
+          marginTop: -over.top,
+          minHeight: over.size,
+          paddingLeft: over.size - over.left + (compact ? 16 : 24),
         }}
       >
         <div className="min-w-0">
@@ -176,7 +177,7 @@ export function FoundingCard({
       </div>
 
       {/* The two answers */}
-      <div className={`${pad} pt-5 pb-5 flex flex-col gap-3`}>
+      <div className={`${pad} pt-6 pb-5 flex flex-col gap-3`}>
         {m.brings && <Block label={labels.brings} text={m.brings} accent={ORANGE} tint="rgba(255,97,48,0.06)" />}
         {m.seeks && <Block label={labels.seeks} text={m.seeks} accent={CYAN} tint="rgba(8,145,178,0.07)" />}
         {m.link_url && (
@@ -212,7 +213,7 @@ export function FoundingCard({
                 <dt className="flex items-center gap-2.5">
                   <span
                     className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
-                    style={{ backgroundColor: ORANGE, color: "#fff", boxShadow: "0 4px 10px rgba(255,97,48,0.28)" }}
+                    style={{ backgroundColor: INK, color: "#fff" }}
                   >
                     <CredentialIcon kind={g.kind} size={15} studio={isStudio} strokeWidth={2.2} />
                   </span>
