@@ -7,8 +7,9 @@ import { FoundingExpertBadge } from "@/app/(app)/experiences/[id]/PublicChalleng
  * three places, so a member sees on the homepage exactly what they set up.
  *
  * Fed by load_founding_community(): explicit public-safe columns, never an
- * email. Open to, brings and seeks are the matching surface. Every card in
- * the feed is live on infitra.fit; there is no members-only tier (8 Sep 2026).
+ * email. Brings and seeks (who they would want next to them) are the
+ * matching surface. Every card in the feed is live on infitra.fit; there is
+ * no members-only tier and no open-to filter (8 Sep 2026).
  */
 export interface FoundingMember {
   id: string;
@@ -19,7 +20,6 @@ export interface FoundingMember {
   username: string | null;
   entity_type: "expert" | "studio";
   is_founding_expert: boolean;
-  open_to: ("experts" | "studios")[];
   brings: string | null;
   seeks: string | null;
   facts: { city?: string | null; disciplines?: string[]; focus?: string | null };
@@ -96,16 +96,8 @@ export function FoundingCard({ m, compact = false }: { m: FoundingMember; compac
         </div>
       </div>
 
-      {(m.brings || m.seeks || (m.open_to ?? []).length > 0) && (
+      {(m.brings || m.seeks) && (
         <dl className="flex flex-col gap-1.5 text-[14px] leading-snug">
-          {(m.open_to ?? []).length > 0 && (
-            <div className="flex gap-2">
-              <dt className="shrink-0 text-[10px] font-bold font-headline uppercase tracking-[0.14em] pt-[3px]" style={{ color: CYAN }}>Open to</dt>
-              <dd className="m-0 font-headline" style={{ color: INK, fontWeight: 600 }}>
-                {(m.open_to ?? []).map((o) => (o === "studios" ? "studios and gyms" : "experts")).join(" · ")}
-              </dd>
-            </div>
-          )}
           {m.brings && (
             <div className="flex gap-2">
               <dt className="shrink-0 text-[10px] font-bold font-headline uppercase tracking-[0.14em] pt-[3px]" style={{ color: ORANGE }}>Brings</dt>
@@ -114,7 +106,7 @@ export function FoundingCard({ m, compact = false }: { m: FoundingMember; compac
           )}
           {m.seeks && (
             <div className="flex gap-2">
-              <dt className="shrink-0 text-[10px] font-bold font-headline uppercase tracking-[0.14em] pt-[3px]" style={{ color: ORANGE }}>Seeks</dt>
+              <dt className="shrink-0 text-[10px] font-bold font-headline uppercase tracking-[0.14em] pt-[3px]" style={{ color: ORANGE }}>Next to them</dt>
               <dd className="m-0" style={{ color: INK }}>{m.seeks}</dd>
             </div>
           )}

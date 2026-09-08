@@ -10,6 +10,7 @@ import {
   resendReceipt,
   forceEndSession,
   setWorkspaceEnabled,
+  setAnnounceOk,
   mintCreatorInvite,
 } from "./actions";
 
@@ -496,6 +497,19 @@ function People({ people, invites, run }: { people: J; invites: J; run: (l: stri
     run(enabling ? "Open workspace" : "Close workspace", () => setWorkspaceEnabled(p.id, enabling, note));
   };
 
+  // Featuring in posts is part of the deal; this records a withdrawal
+  // ("please stop posting my card") or lifts it again.
+  const doPosts = (p: J) => {
+    const off = p.announce_ok !== false;
+    const note = prompt(
+      off
+        ? `Record that "${p.display_name}" withdrew from posts? Note for the log:`
+        : `Allow posts about "${p.display_name}" again? Note for the log:`,
+    );
+    if (note === null) return;
+    run(off ? "Posts withdrawn" : "Posts allowed", () => setAnnounceOk(p.id, !off, note));
+  };
+
   const doMint = () => {
     const note = prompt("Who is this invite for? (goes to the log; the code is single-use, 60 days)");
     if (note === null) return;
@@ -525,7 +539,7 @@ function People({ people, invites, run }: { people: J; invites: J; run: (l: stri
         head={["Joined", "Name", "Email", "Role", "Type", "Workspace", "Card", "Purchases", "Memberships", "Terms", "Banned", ""]}
         rows={list.map((p) => [
           dt(p.created_at),
-          <span key="n" title={isCreator(p) ? `Open to: ${(p.open_to ?? []).join(", ") || "–"}\nBrings: ${p.brings ?? "–"}\nSeeks: ${p.seeks ?? "–"}\nPosts: ${p.announce_ok ? "ok" : "off"}` : ""}>{p.display_name ?? "–"}{p.is_admin ? " ★" : ""}{p.is_founding_expert ? " ⚑" : ""}</span>,
+          <span key="n" title={isCreator(p) ? `Brings: ${p.brings ?? "–"}\nNext to them: ${p.seeks ?? "–"}\nPosts: ${p.announce_ok ? "ok" : "withdrawn"}` : ""}>{p.display_name ?? "–"}{p.is_admin ? " ★" : ""}{p.is_founding_expert ? " ⚑" : ""}</span>,
           p.email ?? "–",
           p.role,
           isCreator(p) ? p.entity_type ?? "expert" : "–",
@@ -544,6 +558,9 @@ function People({ people, invites, run }: { people: J; invites: J; run: (l: stri
           <span key="acts" className="inline-flex gap-1.5">
             {isCreator(p) && !p.is_admin && (
               <ActionBtn label={p.workspace_enabled ? "Close workspace" : "Open workspace"} onClick={() => doWorkspace(p)} />
+            )}
+            {isCreator(p) && !p.is_admin && p.community_visibility === "public" && (
+              <ActionBtn label={p.announce_ok === false ? "Posts on" : "Posts off"} onClick={() => doPosts(p)} />
             )}
             {p.is_admin ? null : <ActionBtn label="Anonymize" danger onClick={() => doAnonymize(p)} />}
           </span>,

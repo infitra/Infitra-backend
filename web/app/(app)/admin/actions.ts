@@ -53,6 +53,10 @@ export async function setWorkspaceEnabled(
 }
 
 /** Mint a founding-expert invite; the result carries the code and the URL. */
+export async function setAnnounceOk(userId: string, ok: boolean, note: string): Promise<ActionResult> {
+  return callRpc("admin_set_announce_ok", { p_user: userId, p_ok: ok, p_note: note || null });
+}
+
 export async function mintCreatorInvite(note: string, days = 60): Promise<ActionResult> {
   return callRpc("admin_mint_creator_invite", { p_note: note || null, p_days: days });
 }

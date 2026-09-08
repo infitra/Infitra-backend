@@ -163,6 +163,8 @@ led with the model and the terms and never said what a participant buys.
 | participants | customers, users |
 | workspace | dashboard (for the co-creation surface) |
 | Pioneers (early participants) | early adopters, beta users |
+| who you would want next to you (the card's second field) | what would complement you, what you lack, distribution |
+| a studio's members, team, brand | a studio's rooms or space (INFITRA is digital; the live part is video) |
 
 **Money framing:** always lead with what experts *keep*. "Experts keep 90% of
 revenue," never "we take 10%." The fee is disclosed second.

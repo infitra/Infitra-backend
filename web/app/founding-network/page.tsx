@@ -103,7 +103,7 @@ export default async function FoundingGroupPage() {
             )}
 
             <p className="text-xs mt-12" style={{ color: "#94a3b8" }}>
-              Every card is shown with its owner&apos;s consent and can be withdrawn with one message.
+              Every card is shown with its owner&apos;s consent and can be withdrawn any time.
             </p>
           </div>
         </main>

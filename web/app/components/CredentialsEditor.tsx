@@ -32,7 +32,14 @@ const KIND_META: Record<EditableCredential["kind"], { label: string }> = {
  * every creator's credentials (the buyer page is public), so an unscoped
  * read would list other experts' background here.
  */
-export function CredentialsEditor({ intro }: { intro: string }) {
+export function CredentialsEditor({
+  intro,
+  onChange,
+}: {
+  intro: string;
+  /** Fires with the current list whenever it changes (live card preview). */
+  onChange?: (creds: EditableCredential[]) => void;
+}) {
   const [creds, setCreds] = useState<EditableCredential[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [kind, setKind] = useState<EditableCredential["kind"]>("certification");
@@ -41,6 +48,11 @@ export function CredentialsEditor({ intro }: { intro: string }) {
   const [year, setYear] = useState("");
   const [yearEnd, setYearEnd] = useState("");
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    onChange?.(creds);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [creds]);
 
   useEffect(() => {
     let alive = true;
@@ -128,6 +140,14 @@ export function CredentialsEditor({ intro }: { intro: string }) {
     border: "1px solid rgba(0, 0, 0, 0.10)",
   } as const;
 
+  // Inside a larger form, Enter must add the entry, not submit the page.
+  const enterAdds = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (!busy && title.trim().length >= 2) void add();
+    }
+  };
+
   return (
     <div
       className="rounded-2xl p-4"
@@ -199,6 +219,7 @@ export function CredentialsEditor({ intro }: { intro: string }) {
           <input
             value={year}
             onChange={(e) => setYear(e.target.value)}
+            onKeyDown={enterAdds}
             placeholder="Year"
             inputMode="numeric"
             maxLength={4}
@@ -211,6 +232,7 @@ export function CredentialsEditor({ intro }: { intro: string }) {
           <input
             value={yearEnd}
             onChange={(e) => setYearEnd(e.target.value)}
+            onKeyDown={enterAdds}
             placeholder="To"
             inputMode="numeric"
             maxLength={4}
@@ -221,6 +243,7 @@ export function CredentialsEditor({ intro }: { intro: string }) {
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
+          onKeyDown={enterAdds}
           placeholder="Title, e.g. BSc Sport Science"
           maxLength={120}
           className="h-9 rounded-lg px-2.5 text-xs col-span-2"
@@ -229,6 +252,7 @@ export function CredentialsEditor({ intro }: { intro: string }) {
         <input
           value={org}
           onChange={(e) => setOrg(e.target.value)}
+          onKeyDown={enterAdds}
           placeholder="Institution (optional)"
           maxLength={120}
           className="h-9 rounded-lg px-2.5 text-xs col-span-2"

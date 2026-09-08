@@ -112,14 +112,15 @@ export async function attestSigningIdentity(prevState: unknown, formData: FormDa
 
 /**
  * The founding-network card, written in one go (8 Sep 2026): the profile
- * essentials (name, one line, city, a few lines, photo URL) and the card
- * (expert or studio, open to, brings, seeks, posts switch). Joining flips
- * the card live; the database stamps community_consent_at. There is no
- * visibility choice: on infitra.fit and to the network is the deal.
+ * (name, one line, city, a few lines, disciplines, photo URL) and the card
+ * (expert or studio, what you bring, who you would want next to you).
+ * Joining flips the card live; the database stamps community_consent_at.
+ * There is no visibility choice and no posts switch: on infitra.fit, in the
+ * network and in INFITRA's posts is the deal, stated on the form.
  *
  * Client + RLS surface: profile-class writes under the caller's own row
- * policies, the same path the profile editor uses. Landing pages that show
- * cards are revalidated so a new card appears without waiting for ISR.
+ * policies, the same path the profile editor uses. Pages that show cards
+ * are revalidated so a new card appears without waiting for ISR.
  */
 export async function joinFoundingNetwork(prevState: unknown, formData: FormData) {
   const supabase = await createClient();
@@ -133,23 +134,26 @@ export async function joinFoundingNetwork(prevState: unknown, formData: FormData
     ((formData.get(name) as string) ?? "").trim().slice(0, max);
 
   const displayName = text("display_name", 50);
-  if (displayName.length < 2) return { error: "Your name needs at least 2 characters." };
+  if (displayName.length < 2) return { error: "Please enter a name of at least 2 characters." };
   const tagline = text("tagline", 120);
   const bio = text("bio", 2000);
   const city = text("city", 60);
   const brings = text("brings", 200);
   const seeks = text("seeks", 200);
   if (!brings || !seeks) {
-    return { error: "What you bring and what would complement you are the card. Both, please." };
+    return {
+      error: "Please fill in both card fields: what you bring, and who you would want next to you.",
+    };
   }
   const entityRaw = text("entity_type", 10);
   if (entityRaw !== "expert" && entityRaw !== "studio") {
-    return { error: "Tell us whether you are an expert or a studio." };
+    return { error: "Please choose expert or studio." };
   }
-  const openTo = formData
-    .getAll("open_to")
-    .filter((v): v is string => v === "experts" || v === "studios");
-  if (openTo.length === 0) return { error: "Choose who you are open to creating with." };
+  const disciplines = text("disciplines", 200)
+    .split(",")
+    .map((d) => d.trim().slice(0, 40))
+    .filter(Boolean)
+    .slice(0, 8);
 
   const avatarUrl = text("avatar_url", 500);
   if (avatarUrl && !avatarUrl.includes(`/storage/v1/object/public/profile-images/${user.id}/`)) {
@@ -164,10 +168,13 @@ export async function joinFoundingNetwork(prevState: unknown, formData: FormData
   const isCreator = profile?.role === "creator" || profile?.role === "admin";
   if (!isCreator) return { error: "The founding network is for experts and studios." };
 
-  // City lives in profile_facts next to the other optional facts; keep them.
+  // City and disciplines live in profile_facts next to the other optional
+  // facts (age, training since, focus), which the card does not ask for.
   const facts = { ...((profile?.profile_facts as Record<string, unknown> | null) ?? {}) };
   if (city) facts.city = city;
   else delete facts.city;
+  if (disciplines.length > 0) facts.disciplines = disciplines;
+  else delete facts.disciplines;
 
   const updates: Record<string, unknown> = {
     display_name: displayName,
@@ -175,11 +182,8 @@ export async function joinFoundingNetwork(prevState: unknown, formData: FormData
     bio: bio || null,
     profile_facts: facts,
     entity_type: entityRaw,
-    open_to: openTo,
     brings,
     seeks,
-    // Posts permission: a checkbox, so absent means switched off.
-    announce_ok: formData.get("announce_ok") === "yes",
     community_visibility: "public",
     updated_at: new Date().toISOString(),
   };
