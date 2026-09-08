@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { WaveFlowingBackground } from "@/app/components/WaveFlowingBackground";
+import { LegalVersion } from "@/app/components/LegalPage";
 
 /**
  * /pilot-terms — plain-language terms for the pilot. Linked from the
@@ -97,7 +98,7 @@ export default function PilotTermsPage() {
                 </p>
                 <p>
                   And when INFITRA goes public, you&apos;re in pole position: you get a
-                  founding expert badge, you keep your reviews, and your experiences are
+                  founding member badge, you keep your reviews, and your experiences are
                   ready and tested.
                 </p>
               </Section>
@@ -172,6 +173,9 @@ export default function PilotTermsPage() {
               >
                 Apply for the pilot
               </Link>
+            </div>
+            <div className="mt-10">
+              <LegalVersion>Version 1.1 · Effective 8 September 2026</LegalVersion>
             </div>
           </div>
         </main>
