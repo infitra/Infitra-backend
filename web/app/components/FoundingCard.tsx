@@ -36,7 +36,6 @@ const ORANGE = "#FF6130";
 const CYAN = "#0891b2";
 const CYAN_BRIGHT = "#9CF0FF";
 const MUTED = "#475569";
-const FAINT = "#94a3b8";
 const HAIR = "rgba(15,34,41,0.08)";
 
 const KIND_ORDER = ["experience", "education", "certification"] as const;
@@ -122,12 +121,12 @@ function CardWaves({ id }: { id: string }) {
 
 function AnswerIcon({ kind, color }: { kind: "brings" | "seeks"; color: string }) {
   const common = {
-    width: 20,
-    height: 20,
+    width: 24,
+    height: 24,
     viewBox: "0 0 24 24",
     fill: "none",
     stroke: color,
-    strokeWidth: 1.8,
+    strokeWidth: 2.1,
     strokeLinecap: "round" as const,
     strokeLinejoin: "round" as const,
     "aria-hidden": true,
@@ -141,11 +140,11 @@ function AnswerIcon({ kind, color }: { kind: "brings" | "seeks"; color: string }
       </svg>
     );
   }
-  // The complement: two circles meeting
+  // The complement: two circles meeting, the overlap is the point
   return (
     <svg {...common}>
-      <circle cx="9" cy="12" r="5.2" />
-      <circle cx="15" cy="12" r="5.2" />
+      <circle cx="8.5" cy="12" r="6" />
+      <circle cx="15.5" cy="12" r="6" />
     </svg>
   );
 }
@@ -155,14 +154,11 @@ function Answer({
   label,
   text,
   accent,
-  disc,
 }: {
   kind: "brings" | "seeks";
   label: string;
   text: string;
   accent: string;
-  /** Opaque, so nothing shows through from behind the disc. */
-  disc: string;
 }) {
   return (
     <div
@@ -172,10 +168,10 @@ function Answer({
       {/* The icon, and the label coming out of it */}
       <div className="flex items-center">
         <span
-          className="relative z-10 w-11 h-11 rounded-full flex items-center justify-center shrink-0"
-          style={{ backgroundColor: disc, boxShadow: "0 0 0 3px #FFFFFF" }}
+          className="relative z-10 w-12 h-12 rounded-full flex items-center justify-center shrink-0"
+          style={{ backgroundColor: accent, boxShadow: "0 0 0 3px #FFFFFF" }}
         >
-          <AnswerIcon kind={kind} color={accent} />
+          <AnswerIcon kind={kind} color="#FFFFFF" />
         </span>
         <span
           className="-ml-3 pl-5 pr-3 py-1 rounded-full text-[10px] font-black font-headline uppercase tracking-[0.12em] text-white whitespace-nowrap"
@@ -250,8 +246,8 @@ export function FoundingCard({
       {editHref && (
         <a
           href={editHref}
-          className="absolute top-5 right-6 z-10 text-[11px] font-bold font-headline uppercase tracking-[0.14em] hover:opacity-100"
-          style={{ color: "rgba(15,34,41,0.45)" }}
+          className="absolute top-5 right-5 z-10 px-3 py-1 rounded-full text-[11px] font-bold font-headline uppercase tracking-[0.14em] hover:bg-white"
+          style={{ color: "rgba(15,34,41,0.62)", backgroundColor: "rgba(255,255,255,0.7)", border: "1px solid rgba(15,34,41,0.14)" }}
         >
           Edit
         </a>
@@ -307,7 +303,7 @@ export function FoundingCard({
             </p>
           )}
           {m.facts?.city && (
-            <p className="text-sm mt-1" style={{ color: FAINT }}>
+            <p className="text-sm mt-1" style={{ color: "#64748b" }}>
               {m.facts.city}
             </p>
           )}
@@ -321,8 +317,8 @@ export function FoundingCard({
           className={`relative ${pad} pt-5 pb-4 grid gap-3`}
           style={{ gridTemplateColumns: compact ? "1fr" : "repeat(auto-fit, minmax(300px, 1fr))" }}
         >
-          {m.brings && <Answer kind="brings" label={labels.brings} text={m.brings} accent={ORANGE} disc="#FFECE6" />}
-          {m.seeks && <Answer kind="seeks" label={labels.seeks} text={m.seeks} accent={CYAN} disc="#D2F8FF" />}
+          {m.brings && <Answer kind="brings" label={labels.brings} text={m.brings} accent={ORANGE} />}
+          {m.seeks && <Answer kind="seeks" label={labels.seeks} text={m.seeks} accent={CYAN} />}
         </div>
       )}
 
@@ -350,26 +346,26 @@ export function FoundingCard({
           {groups.map((g, gi) => (
             <div
               key={g.kind}
-              className={`grid items-start gap-x-4 py-3 ${compact ? "grid-cols-[36px_minmax(0,1fr)]" : "grid-cols-[36px_150px_minmax(0,1fr)]"}`}
+              className={`grid items-start gap-x-4 py-3 ${compact ? "grid-cols-[44px_minmax(0,1fr)]" : "grid-cols-[44px_160px_minmax(0,1fr)]"}`}
               style={gi > 0 ? { borderTop: `1px solid ${HAIR}` } : undefined}
             >
               <span
-                className="w-9 h-9 rounded-xl flex items-center justify-center"
-                style={{ backgroundColor: "rgba(255,255,255,0.8)", border: "1px solid rgba(255,97,48,0.28)", color: ORANGE }}
+                className="w-11 h-11 rounded-xl flex items-center justify-center"
+                style={{ backgroundColor: "rgba(255,255,255,0.8)", border: "1px solid rgba(255,97,48,0.3)", color: ORANGE }}
               >
-                <CredentialIcon kind={g.kind} size={17} studio={isStudio} strokeWidth={1.7} />
+                <CredentialIcon kind={g.kind} size={21} studio={isStudio} strokeWidth={1.7} />
               </span>
               {!compact && (
                 <span
-                  className="h-9 flex items-center text-[11px] font-bold font-headline uppercase tracking-[0.16em] pl-4"
-                  style={{ color: MUTED, borderLeft: `1px solid ${HAIR}` }}
+                  className="h-11 flex items-center text-[12px] font-black font-headline uppercase tracking-[0.16em] pl-4"
+                  style={{ color: "#334155", borderLeft: `1px solid ${HAIR}` }}
                 >
                   {g.label}
                 </span>
               )}
-              <div className={`flex flex-col gap-2.5 ${compact ? "" : "pl-4 pt-2"}`} style={compact ? undefined : { borderLeft: `1px solid ${HAIR}` }}>
+              <div className={`flex flex-col gap-2.5 ${compact ? "" : "pl-4 pt-3"}`} style={compact ? undefined : { borderLeft: `1px solid ${HAIR}` }}>
                 {compact && (
-                  <span className="h-9 flex items-center text-[10px] font-bold font-headline uppercase tracking-[0.16em]" style={{ color: FAINT }}>
+                  <span className="h-11 flex items-center text-[11px] font-black font-headline uppercase tracking-[0.16em]" style={{ color: "#334155" }}>
                     {g.label}
                   </span>
                 )}

@@ -9,7 +9,6 @@ export const metadata = {
   robots: { index: false },
 };
 
-const INK = "#0F2229";
 const ORANGE = "#FF6130";
 const CREAM = "#F2EFE8";
 const CYAN_BRIGHT = "#9CF0FF";
@@ -177,22 +176,22 @@ export default async function NetworkPage({
                 ))}
               </ol>
 
-              <p className="text-xs leading-relaxed pl-12" style={{ color: "rgba(242,239,232,0.55)" }}>
-                Yours to keep: the founding member badge, the top spot in discovery when INFITRA
-                opens publicly, your audience. Withdraw your card any time.
-              </p>
+              <div className="mt-2 pt-7" style={{ borderTop: "1px solid rgba(242,239,232,0.15)" }}>
+                <div className="mb-2">{label("Yours to keep", CYAN_BRIGHT)}</div>
+                <p className="text-sm leading-relaxed font-bold font-headline" style={{ color: CREAM }}>
+                  The founding member badge stays on your card when INFITRA opens publicly, and
+                  founding cards hold the top spot in discovery. Your audience stays yours.
+                </p>
+              </div>
 
               {/* Coming soon: the network. Visible now, reachable once the page is designed. */}
               <div
-                className="rounded-2xl p-5 relative overflow-hidden"
-                style={{
-                  background: "linear-gradient(135deg, rgba(156,240,255,0.14) 0%, rgba(255,97,48,0.10) 100%)",
-                  border: "1px solid rgba(156,240,255,0.35)",
-                }}
+                className="rounded-2xl p-5 relative overflow-hidden mt-2"
+                style={{ backgroundColor: "rgba(8,145,178,0.20)", border: "1px solid rgba(8,145,178,0.55)" }}
               >
                 <span
-                  className="inline-block px-2.5 py-1 rounded-full text-[10px] font-black font-headline uppercase tracking-[0.16em] mb-3"
-                  style={{ backgroundColor: CYAN_BRIGHT, color: INK }}
+                  className="inline-block px-2.5 py-1 rounded-full text-[10px] font-black font-headline uppercase tracking-[0.16em] mb-3 text-white"
+                  style={{ backgroundColor: "#0891b2" }}
                 >
                   Coming soon
                 </span>
