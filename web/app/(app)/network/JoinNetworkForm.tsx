@@ -14,7 +14,6 @@ export interface JoinNetworkValues {
   id: string;
   displayName: string;
   tagline: string;
-  bio: string;
   avatarUrl: string | null;
   city: string;
   entityType: "expert" | "studio" | null;
@@ -24,11 +23,11 @@ export interface JoinNetworkValues {
 }
 
 /**
- * The founding-network card, made in one go (8 Sep 2026, v3 after the
- * second test): the whole profile (photo, name, one line, city, a few lines,
- * background, disciplines) and the card (expert or studio, what you bring,
- * who you would want next to you) in one form with one button, and the card
- * itself rendered live next to the form as it takes shape.
+ * The founding-network card, made in one go (8 Sep 2026, v6 after the
+ * third test): the person (photo, name, one line, city), the card (expert
+ * or studio, what you bring, what would complement you) and the background,
+ * in one form with one button, and the card itself rendered live next to
+ * the form as it takes shape. Less, but everything on it counts.
  *
  * No visibility choice and no posts switch: showing the card on infitra.fit,
  * in the network and in INFITRA's posts is the deal, said in words at the
@@ -51,7 +50,6 @@ export function JoinNetworkForm({
   const [name, setName] = useState(initial.displayName);
   const [tagline, setTagline] = useState(initial.tagline);
   const [city, setCity] = useState(initial.city);
-  const [bio, setBio] = useState(initial.bio);
   const [entity, setEntity] = useState<"expert" | "studio">(initial.entityType ?? "expert");
   const [brings, setBrings] = useState(initial.brings);
   const [seeks, setSeeks] = useState(initial.seeks);
@@ -105,7 +103,6 @@ export function JoinNetworkForm({
     display_name: name.trim() || (isStudio ? "Your studio" : "Your name"),
     avatar_url: avatarPreview,
     tagline: tagline.trim() || null,
-    bio: bio.trim() || null,
     username: null,
     entity_type: entity,
     is_founding_expert: initial.isFoundingExpert,
@@ -263,35 +260,6 @@ export function JoinNetworkForm({
               </div>
             </div>
 
-          </section>
-
-          {/* ── About you ── */}
-          <section className={sectionCls} style={sectionStyle}>
-            <div>
-              <h2 className="text-lg font-black font-headline tracking-tight mb-1" style={{ color: INK }}>
-                About you
-              </h2>
-              <p className="text-xs" style={{ color: "#64748b" }}>
-                {isStudio
-                  ? "The story of the studio: how it started, who trains there, what it is known for."
-                  : "The person behind the card: how you got here, who you work with, what you care about."}
-              </p>
-            </div>
-            <textarea
-              id="bio"
-              name="bio"
-              rows={4}
-              maxLength={2000}
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              placeholder={
-                isStudio
-                  ? "e.g. Founded 2015. A community of 400 members, known for small groups and coaches who stay."
-                  : "e.g. Ten years in professional sport, now working with private clients who want the same standard."
-              }
-              className={`${inputCls} resize-none`}
-              style={field}
-            />
           </section>
 
           {/* ── Your card ── */}

@@ -112,7 +112,7 @@ export async function attestSigningIdentity(prevState: unknown, formData: FormDa
 
 /**
  * The founding-network card, written in one go (8 Sep 2026): the profile
- * (name, one line, city, a few lines, photo URL) and the card
+ * (name, one line, city, photo URL) and the card
  * (expert or studio, what you bring, who you would want next to you).
  * Joining flips the card live; the database stamps community_consent_at.
  * There is no visibility choice and no posts switch: on infitra.fit, in the
@@ -136,7 +136,6 @@ export async function joinFoundingNetwork(prevState: unknown, formData: FormData
   const displayName = text("display_name", 50);
   if (displayName.length < 2) return { error: "Please enter a name of at least 2 characters." };
   const tagline = text("tagline", 120);
-  const bio = text("bio", 2000);
   const city = text("city", 60);
   const brings = text("brings", 200);
   const seeks = text("seeks", 200);
@@ -172,7 +171,6 @@ export async function joinFoundingNetwork(prevState: unknown, formData: FormData
   const updates: Record<string, unknown> = {
     display_name: displayName,
     tagline: tagline || null,
-    bio: bio || null,
     profile_facts: facts,
     entity_type: entityRaw,
     brings,
