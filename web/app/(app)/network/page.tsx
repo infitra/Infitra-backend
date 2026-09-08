@@ -164,7 +164,7 @@ export default async function NetworkPage({
             </div>
           )}
 
-          <div className="grid gap-10 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] items-start">
+          <div className="grid gap-10 lg:grid-cols-[minmax(0,8fr)_minmax(0,4fr)] items-start">
             <div className="min-w-0">
               <div className="flex items-baseline justify-between gap-4 mb-4">
                 {label(justJoined ? "Your card" : "Your card, as the network sees it", CYAN_BRIGHT)}

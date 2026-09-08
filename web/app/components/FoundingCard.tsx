@@ -169,7 +169,7 @@ function Answer({
       style={{ backgroundColor: "rgba(255,255,255,0.82)", border: `1px solid ${accent}22`, boxShadow: "0 1px 2px rgba(15,34,41,0.03)" }}
     >
       <span
-        className="self-start px-2.5 py-1 rounded-full text-[10px] font-black font-headline uppercase tracking-[0.16em] text-white"
+        className="self-start px-2.5 py-1 rounded-full text-[10px] font-black font-headline uppercase tracking-[0.12em] text-white whitespace-nowrap"
         style={{ backgroundColor: accent }}
       >
         {label}
@@ -299,7 +299,10 @@ export function FoundingCard({
 
       {/* The two answers */}
       {(m.brings || m.seeks) && (
-        <div className={`relative ${pad} pt-6 pb-5 grid gap-3 ${compact ? "grid-cols-1" : "sm:grid-cols-2"}`}>
+        <div
+          className={`relative ${pad} pt-6 pb-5 grid gap-3`}
+          style={{ gridTemplateColumns: compact ? "1fr" : "repeat(auto-fit, minmax(300px, 1fr))" }}
+        >
           {m.brings && <Answer kind="brings" label={labels.brings} text={m.brings} accent={ORANGE} tint="rgba(255,97,48,0.12)" />}
           {m.seeks && <Answer kind="seeks" label={labels.seeks} text={m.seeks} accent={CYAN} tint="rgba(156,240,255,0.45)" />}
         </div>
@@ -323,35 +326,32 @@ export function FoundingCard({
         </div>
       )}
 
-      {/* Background: a light table */}
+      {/* Background: a light table, aligned on one baseline per row */}
       {groups.length > 0 && (
         <div className={`relative ${pad} pb-2 mt-auto`} style={{ borderTop: `1px solid ${HAIR}` }}>
           {groups.map((g, gi) => (
             <div
               key={g.kind}
-              className={`grid items-start gap-x-4 py-4 ${compact ? "grid-cols-[40px_minmax(0,1fr)]" : "grid-cols-[44px_150px_minmax(0,1fr)]"}`}
+              className={`grid items-start gap-x-4 py-4 ${compact ? "grid-cols-[36px_minmax(0,1fr)]" : "grid-cols-[36px_150px_minmax(0,1fr)]"}`}
               style={gi > 0 ? { borderTop: `1px solid ${HAIR}` } : undefined}
             >
               <span
-                className={`${compact ? "w-10 h-10" : "w-11 h-11"} rounded-xl flex items-center justify-center text-white`}
-                style={{
-                  background: "linear-gradient(135deg, #FF6130 0%, #FF8A5C 100%)",
-                  boxShadow: "0 6px 14px rgba(255,97,48,0.28)",
-                }}
+                className="w-9 h-9 rounded-xl flex items-center justify-center"
+                style={{ backgroundColor: "rgba(255,255,255,0.8)", border: "1px solid rgba(255,97,48,0.28)", color: ORANGE }}
               >
-                <CredentialIcon kind={g.kind} size={compact ? 17 : 19} studio={isStudio} strokeWidth={1.8} />
+                <CredentialIcon kind={g.kind} size={17} studio={isStudio} strokeWidth={1.7} />
               </span>
               {!compact && (
                 <span
-                  className="self-center text-[11px] font-bold font-headline uppercase tracking-[0.16em] pl-4 py-1"
+                  className="h-9 flex items-center text-[11px] font-bold font-headline uppercase tracking-[0.16em] pl-4"
                   style={{ color: MUTED, borderLeft: `1px solid ${HAIR}` }}
                 >
                   {g.label}
                 </span>
               )}
-              <div className={`flex flex-col gap-2.5 ${compact ? "" : "pl-4"}`} style={compact ? undefined : { borderLeft: `1px solid ${HAIR}` }}>
+              <div className={`flex flex-col gap-2.5 ${compact ? "" : "pl-4 pt-2"}`} style={compact ? undefined : { borderLeft: `1px solid ${HAIR}` }}>
                 {compact && (
-                  <span className="text-[10px] font-bold font-headline uppercase tracking-[0.16em]" style={{ color: FAINT }}>
+                  <span className="h-9 flex items-center text-[10px] font-bold font-headline uppercase tracking-[0.16em]" style={{ color: FAINT }}>
                     {g.label}
                   </span>
                 )}
@@ -359,7 +359,7 @@ export function FoundingCard({
                   const detail = [c.org, credentialPeriod(c.year, c.year_end)].filter(Boolean).join(" · ");
                   return (
                     <div key={i} className="leading-snug">
-                      <p className="text-[14px] font-bold font-headline" style={{ color: INK }}>
+                      <p className="text-[14px] font-bold font-headline leading-5" style={{ color: INK }}>
                         {c.title}
                       </p>
                       {detail && (
