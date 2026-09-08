@@ -6,8 +6,9 @@ import { FoundingExpertBadge } from "@/app/(app)/experiences/[id]/PublicChalleng
  * landing row, on /founding-network, in the network, live next to the join
  * form and on the arrival stage; the same shape everywhere.
  *
- * The photo carries the card: a large square portrait, the kind people
- * already have, with the name beside it and the founding badge under it.
+ * The photo anchors the card: a large square portrait, the kind people
+ * already have, hanging over the top-left corner with a paper ring, the
+ * name beside it and the founding badge under it.
  * Then the two answers as tagged blocks, one link to
  * where to find them (network only; the public reader omits it), and the
  * background as a tidy label column on cream. A studio fills the same three
@@ -94,11 +95,14 @@ export function FoundingCard({
     ? { brings: "What we bring", seeks: "What would complement our offer" }
     : { brings: "My expertise", seeks: "What would complement my work" };
   const pad = compact ? "px-5" : "px-5 lg:px-6";
-  const photo = compact ? "w-[104px] h-[104px]" : "w-[160px] h-[160px]";
+  // The portrait hangs over the top-left corner: the card's anchor. The
+  // outer box reserves the overhang so no container has to know.
+  const over = compact ? { top: 20, left: 8, size: 116 } : { top: 28, left: 12, size: 176 };
 
   return (
+    <div className="h-full" style={{ paddingTop: over.top, paddingLeft: over.left }}>
     <article
-      className="rounded-2xl flex flex-col h-full overflow-hidden relative"
+      className="rounded-2xl flex flex-col h-full relative"
       style={{
         backgroundColor: solid ? "#FFFFFF" : "rgba(255,255,255,0.78)",
         border: "1px solid rgba(15,34,41,0.08)",
@@ -113,27 +117,44 @@ export function FoundingCard({
         {isStudio ? "Studio" : "Expert"}
       </span>
 
-      {/* The person: a large portrait, the kind people already have */}
-      <div className={`${pad} pt-5 lg:pt-6 pr-20 flex items-center gap-5`}>
+      {/* The person: the portrait anchors the card, hanging over the corner */}
+      <div
+        className="absolute rounded-2xl overflow-hidden"
+        style={{
+          top: -over.top,
+          left: -over.left,
+          width: over.size,
+          height: over.size,
+          boxShadow: "0 0 0 4px #FFFFFF, 0 0 0 6px rgba(255,97,48,0.5), 0 18px 40px rgba(15,34,41,0.28)",
+        }}
+      >
         {m.avatar_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={m.avatar_url}
             alt=""
-            className={`${photo} rounded-2xl object-cover shrink-0`}
-            style={{ objectPosition: "50% 30%", boxShadow: "0 14px 30px rgba(15,34,41,0.22), 0 0 0 3px rgba(255,97,48,0.35)" }}
+            className="w-full h-full object-cover"
+            style={{ objectPosition: "50% 30%" }}
           />
         ) : (
           <div
-            className={`${photo} rounded-2xl flex items-center justify-center shrink-0`}
-            style={{ background: "linear-gradient(135deg, #0C262E 0%, #14424E 100%)", boxShadow: "0 0 0 3px rgba(8,145,178,0.25)" }}
+            className="w-full h-full flex items-center justify-center"
+            style={{ background: "linear-gradient(135deg, #0C262E 0%, #14424E 100%)" }}
           >
             <span className={`${compact ? "text-4xl" : "text-6xl"} font-black font-headline`} style={{ color: CYAN_BRIGHT }}>
               {initial}
             </span>
           </div>
         )}
-        <div className="min-w-0 flex-1">
+      </div>
+      <div
+        className="pr-20 pt-5 flex flex-col justify-center"
+        style={{
+          paddingLeft: over.size - over.left + (compact ? 16 : 22),
+          minHeight: over.size - over.top + (compact ? 12 : 16),
+        }}
+      >
+        <div className="min-w-0">
           <h3
             className={`${compact ? "text-xl" : "text-[28px] lg:text-[30px]"} font-black font-headline tracking-tight leading-[1.05]`}
             style={{ color: INK, letterSpacing: "-0.03em" }}
@@ -178,7 +199,7 @@ export function FoundingCard({
       {/* Background: a tidy label column on cream; the icons carry the weight */}
       {groups.length > 0 && (
         <div
-          className={`${pad} py-3 mt-auto`}
+          className={`${pad} py-3 mt-auto rounded-b-2xl`}
           style={{ backgroundColor: "rgba(242,239,232,0.9)", borderTop: "1px solid rgba(15,34,41,0.08)" }}
         >
           <dl className="flex flex-col">
@@ -222,5 +243,6 @@ export function FoundingCard({
         </div>
       )}
     </article>
+    </div>
   );
 }
