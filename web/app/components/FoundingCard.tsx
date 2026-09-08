@@ -165,26 +165,27 @@ function Answer({
 }) {
   return (
     <div
-      className="rounded-2xl p-4 flex flex-col gap-3"
+      className="rounded-2xl px-4 pt-3.5 pb-4 flex flex-col gap-3"
       style={{ backgroundColor: "rgba(255,255,255,0.82)", border: `1px solid ${accent}22`, boxShadow: "0 1px 2px rgba(15,34,41,0.03)" }}
     >
-      <span
-        className="self-start px-2.5 py-1 rounded-full text-[10px] font-black font-headline uppercase tracking-[0.12em] text-white whitespace-nowrap"
-        style={{ backgroundColor: accent }}
-      >
-        {label}
-      </span>
-      <div className="flex items-start gap-3">
+      {/* The icon, and the label coming out of it */}
+      <div className="flex items-center">
         <span
-          className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
-          style={{ backgroundColor: tint }}
+          className="relative z-10 w-11 h-11 rounded-full flex items-center justify-center shrink-0"
+          style={{ backgroundColor: tint, boxShadow: "0 0 0 3px rgba(255,255,255,0.9)" }}
         >
           <AnswerIcon kind={kind} color={accent} />
         </span>
-        <p className="text-[15px] leading-snug pt-2" style={{ color: INK }}>
-          {text}
-        </p>
+        <span
+          className="-ml-3 pl-5 pr-3 py-1 rounded-full text-[10px] font-black font-headline uppercase tracking-[0.12em] text-white whitespace-nowrap"
+          style={{ backgroundColor: accent }}
+        >
+          {label}
+        </span>
       </div>
+      <p className="text-[15px] leading-snug" style={{ color: INK }}>
+        {text}
+      </p>
     </div>
   );
 }
@@ -214,7 +215,7 @@ export function FoundingCard({
     ? { brings: "What we bring", seeks: "What would complement our offer" }
     : { brings: "My expertise", seeks: "What would complement my work" };
   const pad = compact ? "px-5" : "px-6";
-  const portrait = compact ? 116 : 168;
+  const portrait = compact ? 112 : 148;
   const accent = isStudio ? CYAN : ORANGE;
 
   return (
@@ -224,14 +225,18 @@ export function FoundingCard({
         backgroundColor: CREAM,
         border: "1px solid rgba(15,34,41,0.07)",
         boxShadow: "0 1px 2px rgba(15,34,41,0.03), 0 18px 48px rgba(15,34,41,0.10)",
+        // Safari lets blurred children escape a rounded overflow clip; a mask
+        // forces the clip onto its own layer. Chrome is unaffected.
+        WebkitMaskImage: "-webkit-radial-gradient(white, black)",
+        isolation: "isolate",
       }}
     >
       {/* The hero: the brand waves on top, fading into cream where the content sits */}
       <div
         aria-hidden
-        className="absolute inset-x-0 top-0 pointer-events-none overflow-hidden"
+        className="absolute inset-x-0 top-0 pointer-events-none overflow-hidden rounded-t-[28px]"
         style={{
-          height: compact ? 300 : 340,
+          height: compact ? 280 : 300,
           maskImage: "linear-gradient(180deg, #000 0%, #000 42%, rgba(0,0,0,0) 100%)",
           WebkitMaskImage: "linear-gradient(180deg, #000 0%, #000 42%, rgba(0,0,0,0) 100%)",
         }}
@@ -240,7 +245,7 @@ export function FoundingCard({
       </div>
 
       {/* The person */}
-      <div className={`relative ${pad} pt-6 flex ${compact ? "flex-col items-start gap-4" : "items-center gap-6"}`}>
+      <div className={`relative ${pad} pt-5 flex ${compact ? "flex-col items-start gap-4" : "items-center gap-6"}`}>
         <div
           className="rounded-full shrink-0"
           style={{
@@ -271,7 +276,7 @@ export function FoundingCard({
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-3 flex-wrap">
             <h3
-              className={`${compact ? "text-2xl" : "text-[30px] lg:text-[34px]"} font-black font-headline tracking-tight leading-[1.05]`}
+              className={`${compact ? "text-2xl" : "text-[30px]"} font-black font-headline tracking-tight leading-[1.05]`}
               style={{ color: INK, letterSpacing: "-0.03em" }}
             >
               {name}
@@ -293,14 +298,14 @@ export function FoundingCard({
               {m.facts.city}
             </p>
           )}
-          {m.is_founding_expert && <FoundingExpertBadge className="mt-3" />}
+          {m.is_founding_expert && <FoundingExpertBadge className="mt-3" large />}
         </div>
       </div>
 
       {/* The two answers */}
       {(m.brings || m.seeks) && (
         <div
-          className={`relative ${pad} pt-6 pb-5 grid gap-3`}
+          className={`relative ${pad} pt-5 pb-4 grid gap-3`}
           style={{ gridTemplateColumns: compact ? "1fr" : "repeat(auto-fit, minmax(300px, 1fr))" }}
         >
           {m.brings && <Answer kind="brings" label={labels.brings} text={m.brings} accent={ORANGE} tint="rgba(255,97,48,0.12)" />}
@@ -332,7 +337,7 @@ export function FoundingCard({
           {groups.map((g, gi) => (
             <div
               key={g.kind}
-              className={`grid items-start gap-x-4 py-4 ${compact ? "grid-cols-[36px_minmax(0,1fr)]" : "grid-cols-[36px_150px_minmax(0,1fr)]"}`}
+              className={`grid items-start gap-x-4 py-3 ${compact ? "grid-cols-[36px_minmax(0,1fr)]" : "grid-cols-[36px_150px_minmax(0,1fr)]"}`}
               style={gi > 0 ? { borderTop: `1px solid ${HAIR}` } : undefined}
             >
               <span

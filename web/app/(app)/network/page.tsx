@@ -11,7 +11,6 @@ export const metadata = {
 };
 
 const INK = "#0F2229";
-const CYAN = "#0891b2";
 const ORANGE = "#FF6130";
 const CREAM = "#F2EFE8";
 const CYAN_BRIGHT = "#9CF0FF";
@@ -81,7 +80,7 @@ export default async function NetworkPage({
       <div className="min-h-screen">
         {nav}
         <div className="pt-20 px-6 pb-16">
-          <div className="max-w-6xl mx-auto">
+          <div className="max-w-7xl mx-auto">
             <JoinNetworkForm
               mode="join"
               initial={{
@@ -134,26 +133,14 @@ export default async function NetworkPage({
     <div className="min-h-screen">
       {nav}
 
-      {/* The stage: full bleed, one screen, the personal moment */}
-      <section
-        className="relative overflow-hidden pt-24 pb-12"
-        style={{ background: "linear-gradient(135deg, #0C262E 0%, #103842 60%, #0C262E 100%)" }}
-      >
-        <div
-          className="absolute -top-32 right-[10%] w-[28rem] h-[28rem] rounded-full pointer-events-none"
-          style={{ background: "radial-gradient(circle, rgba(156,240,255,0.16) 0%, rgba(156,240,255,0) 70%)" }}
-        />
-        <div
-          className="absolute -bottom-48 -left-24 w-[28rem] h-[28rem] rounded-full pointer-events-none"
-          style={{ background: "radial-gradient(circle, rgba(255,97,48,0.22) 0%, rgba(255,97,48,0) 70%)" }}
-        />
-
-        <div className="relative max-w-6xl mx-auto px-6">
+      {/* The stage: full bleed, one screen, the personal moment. The same teal as the landing's dark sections. */}
+      <section className="relative pt-24 pb-10 lg:min-h-screen" style={{ backgroundColor: "#0C262E" }}>
+        <div className="relative max-w-7xl mx-auto px-6">
           {justJoined && (
-            <div className="mb-8 max-w-2xl">
+            <div className="mb-6 max-w-2xl">
               {label("Founding network", CYAN_BRIGHT)}
               <h2
-                className="text-3xl lg:text-4xl font-black font-headline tracking-tight mt-2 mb-2"
+                className="text-3xl font-black font-headline tracking-tight mt-2 mb-1"
                 style={{ color: CREAM, letterSpacing: "-0.03em" }}
               >
                 You&apos;re in.
@@ -166,23 +153,20 @@ export default async function NetworkPage({
 
           <div className="grid gap-10 lg:grid-cols-[minmax(0,8fr)_minmax(0,4fr)] items-start">
             <div className="min-w-0">
-              <div className="flex items-baseline justify-between gap-4 mb-4">
-                {label(justJoined ? "Your card" : "Your card, as the network sees it", CYAN_BRIGHT)}
+              <FoundingCard m={me} />
+            </div>
+
+            <div className="min-w-0 lg:sticky lg:top-24 flex flex-col gap-7">
+              <div className="flex items-center justify-between gap-4">
+                {label("What happens next", ORANGE)}
                 <Link
                   href="/network/edit"
-                  className="px-4 py-1.5 rounded-full text-[11px] font-bold font-headline uppercase tracking-[0.14em] whitespace-nowrap"
+                  className="px-4 py-1.5 rounded-full text-[11px] font-bold font-headline uppercase tracking-[0.14em] whitespace-nowrap hover:bg-white/10"
                   style={{ color: CREAM, border: "1px solid rgba(242,239,232,0.35)" }}
                 >
                   Edit your card
                 </Link>
               </div>
-              <div style={{ boxShadow: "0 24px 60px rgba(0,0,0,0.35)", borderRadius: 16 }}>
-                <FoundingCard m={me} solid />
-              </div>
-            </div>
-
-            <div className="min-w-0 lg:sticky lg:top-24">
-              <div className="mb-5">{label("What happens next", ORANGE)}</div>
               <ol className="flex flex-col gap-5">
                 {steps.map((step, i) => (
                   <li key={step.t} className="flex gap-4">
@@ -203,7 +187,8 @@ export default async function NetworkPage({
                   </li>
                 ))}
               </ol>
-              <div className="mt-7 pt-6" style={{ borderTop: "1px solid rgba(242,239,232,0.15)" }}>
+
+              <div className="pt-6" style={{ borderTop: "1px solid rgba(242,239,232,0.15)" }}>
                 <div className="mb-2">{label("Yours to keep", CYAN_BRIGHT)}</div>
                 <p className="text-sm leading-relaxed font-bold font-headline" style={{ color: CREAM }}>
                   The founding member badge stays on your card when INFITRA opens publicly, and
@@ -214,26 +199,28 @@ export default async function NetworkPage({
                 </p>
               </div>
 
-              {/* The door */}
-              <Link
-                href="/network/explore"
-                className="mt-8 flex items-center justify-between gap-4 rounded-2xl px-5 py-4 transition-colors hover:bg-white/10"
-                style={{ border: "1px solid rgba(156,240,255,0.35)", backgroundColor: "rgba(156,240,255,0.06)" }}
+              {/* Coming soon: the network. Visible now, reachable once the page is designed. */}
+              <div
+                className="rounded-2xl p-5 relative overflow-hidden"
+                style={{
+                  background: "linear-gradient(135deg, rgba(156,240,255,0.14) 0%, rgba(255,97,48,0.10) 100%)",
+                  border: "1px solid rgba(156,240,255,0.35)",
+                }}
               >
-                <span>
-                  <span className="block text-sm font-black font-headline" style={{ color: CREAM }}>
-                    Explore the network
-                  </span>
-                  <span className="block text-xs mt-0.5" style={{ color: "rgba(242,239,232,0.7)" }}>
-                    {others.length === 0
-                      ? "Forming now. Cards land there as experts and studios come in."
-                      : "Everyone who is in, with what they bring and what would complement them."}
-                  </span>
+                <span
+                  className="inline-block px-2.5 py-1 rounded-full text-[10px] font-black font-headline uppercase tracking-[0.16em] mb-3"
+                  style={{ backgroundColor: CYAN_BRIGHT, color: INK }}
+                >
+                  Coming soon
                 </span>
-                <span className="text-xl font-black" style={{ color: CYAN_BRIGHT }}>
-                  →
-                </span>
-              </Link>
+                <p className="text-lg font-black font-headline tracking-tight" style={{ color: CREAM }}>
+                  Explore the network
+                </p>
+                <p className="text-sm leading-relaxed mt-1" style={{ color: "rgba(242,239,232,0.75)" }}>
+                  Every card in the founding network in one place, with what each expert and studio
+                  brings and what would complement them. Forming now, one card at a time.
+                </p>
+              </div>
             </div>
           </div>
         </div>

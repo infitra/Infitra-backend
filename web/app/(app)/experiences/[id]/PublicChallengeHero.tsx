@@ -135,18 +135,18 @@ export function FoundingExpertStar({
  * cards ("Meet your Experts"): the gold INFITRA mark + label on a warm gold
  * pill. Everywhere else uses the compact FoundingExpertStar.
  */
-export function FoundingExpertBadge({ className = "" }: { className?: string }) {
+export function FoundingExpertBadge({ className = "", large = false }: { className?: string; large?: boolean }) {
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full align-middle ${className}`}
+      className={`inline-flex items-center gap-1.5 ${large ? "px-3 py-1.5" : "px-2.5 py-1"} rounded-full align-middle ${className}`}
       style={{
         backgroundColor: "rgba(184,134,11,0.10)",
         boxShadow: "inset 0 0 0 1px rgba(184,134,11,0.32)",
       }}
     >
-      <FoundingExpertMark size={15} />
+      <FoundingExpertMark size={large ? 18 : 15} />
       <span
-        className="text-[10px] font-black font-headline uppercase tracking-[0.1em]"
+        className={`${large ? "text-[11px]" : "text-[10px]"} font-black font-headline uppercase tracking-[0.1em]`}
         style={{ color: "#9a7414" }}
       >
         Founding member

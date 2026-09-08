@@ -44,7 +44,7 @@ export default async function NetworkEditPage() {
         isAdmin={profile.is_admin === true}
       />
       <div className="pt-20 px-6 pb-16">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           <Link
             href="/network"
             className="inline-block text-[11px] font-bold font-headline uppercase tracking-[0.25em] mb-6"

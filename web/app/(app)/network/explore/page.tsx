@@ -59,7 +59,7 @@ export default async function NetworkExplorePage() {
         isAdmin={profile.is_admin === true}
       />
       <div className="pt-20 px-6 pb-20">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           <div className="mb-6 flex items-baseline justify-between gap-4 flex-wrap">
             {label("Founding network")}
             <p className="text-sm" style={{ color: "#64748b" }}>
