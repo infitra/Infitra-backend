@@ -6,6 +6,19 @@ import { joinFoundingNetwork } from "@/app/actions/profile";
 import { FoundingCard, type FoundingMember } from "@/app/components/FoundingCard";
 import { CredentialsEditor, type EditableCredential } from "@/app/components/CredentialsEditor";
 
+/** The preview shows the link as the server will store it. */
+function previewLink(raw: string): string | null {
+  let v = raw.trim();
+  if (!v) return null;
+  if (/^@[\w.]+$/.test(v)) v = `https://instagram.com/${v.slice(1)}`;
+  if (!/^https?:\/\//i.test(v)) v = `https://${v}`;
+  try {
+    return new URL(v).toString();
+  } catch {
+    return null;
+  }
+}
+
 const INK = "#0F2229";
 const ORANGE = "#FF6130";
 const CYAN = "#0891b2";
@@ -16,6 +29,7 @@ export interface JoinNetworkValues {
   tagline: string;
   avatarUrl: string | null;
   city: string;
+  linkUrl: string;
   entityType: "expert" | "studio" | null;
   brings: string;
   seeks: string;
@@ -50,6 +64,7 @@ export function JoinNetworkForm({
   const [name, setName] = useState(initial.displayName);
   const [tagline, setTagline] = useState(initial.tagline);
   const [city, setCity] = useState(initial.city);
+  const [link, setLink] = useState(initial.linkUrl);
   const [entity, setEntity] = useState<"expert" | "studio">(initial.entityType ?? "expert");
   const [brings, setBrings] = useState(initial.brings);
   const [seeks, setSeeks] = useState(initial.seeks);
@@ -108,6 +123,7 @@ export function JoinNetworkForm({
     is_founding_expert: initial.isFoundingExpert,
     brings: brings.trim() || null,
     seeks: seeks.trim() || null,
+    link_url: previewLink(link),
     facts: { city: city.trim() || null },
     credentials: creds.map((c) => ({
       kind: c.kind,
@@ -194,7 +210,7 @@ export function JoinNetworkForm({
                   {avatarPreview ? "Change photo" : "Upload photo"}
                 </button>
                 <p className="text-[11px] mt-2" style={{ color: "#94a3b8" }}>
-                  Square works best. Max 5MB.
+                  Your face or your space. It fills the top of the card. Max 5MB.
                 </p>
               </div>
               <input
@@ -260,6 +276,25 @@ export function JoinNetworkForm({
               </div>
             </div>
 
+            <div>
+              <label htmlFor="link_url" className={labelCls} style={labelStyle}>
+                Where to find you <span className="normal-case tracking-normal font-normal">(optional)</span>
+              </label>
+              <input
+                id="link_url"
+                name="link_url"
+                type="text"
+                maxLength={200}
+                value={link}
+                onChange={(e) => setLink(e.target.value)}
+                placeholder="instagram.com/you, or your website"
+                className={inputCls}
+                style={field}
+              />
+              <p className="text-[11px] mt-1" style={{ color: "#94a3b8" }}>
+                Shown inside the network only, never on the public pages.
+              </p>
+            </div>
           </section>
 
           {/* ── Your card ── */}

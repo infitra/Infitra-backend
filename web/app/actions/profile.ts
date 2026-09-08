@@ -112,7 +112,7 @@ export async function attestSigningIdentity(prevState: unknown, formData: FormDa
 
 /**
  * The founding-network card, written in one go (8 Sep 2026): the profile
- * (name, one line, city, photo URL) and the card
+ * (name, one line, city, where to find them, photo URL) and the card
  * (expert or studio, what you bring, who you would want next to you).
  * Joining flips the card live; the database stamps community_consent_at.
  * There is no visibility choice and no posts switch: on infitra.fit, in the
@@ -122,6 +122,22 @@ export async function attestSigningIdentity(prevState: unknown, formData: FormDa
  * policies, the same path the profile editor uses. Pages that show cards
  * are revalidated so a new card appears without waiting for ISR.
  */
+/** "@handle" → Instagram, bare domains get https://, anything else must parse. */
+function normalizeLink(raw: string): string | null {
+  let v = raw.trim();
+  if (!v) return null;
+  if (/^@[\w.]+$/.test(v)) v = `https://instagram.com/${v.slice(1)}`;
+  if (!/^https?:\/\//i.test(v)) v = `https://${v}`;
+  try {
+    const u = new URL(v);
+    if (u.protocol !== "https:" && u.protocol !== "http:") return null;
+    if (!u.hostname.includes(".")) return null;
+    return u.toString().slice(0, 200);
+  } catch {
+    return null;
+  }
+}
+
 export async function joinFoundingNetwork(prevState: unknown, formData: FormData) {
   const supabase = await createClient();
   const {
@@ -144,6 +160,9 @@ export async function joinFoundingNetwork(prevState: unknown, formData: FormData
       error: "Please fill in both card fields: what you bring, and who you would want next to you.",
     };
   }
+  const linkRaw = text("link_url", 200);
+  const linkUrl = normalizeLink(linkRaw);
+  if (linkRaw && !linkUrl) return { error: "That link does not look right. A website or an Instagram page works." };
   const entityRaw = text("entity_type", 10);
   if (entityRaw !== "expert" && entityRaw !== "studio") {
     return { error: "Please choose expert or studio." };
@@ -175,6 +194,7 @@ export async function joinFoundingNetwork(prevState: unknown, formData: FormData
     entity_type: entityRaw,
     brings,
     seeks,
+    link_url: linkUrl,
     community_visibility: "public",
     updated_at: new Date().toISOString(),
   };

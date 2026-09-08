@@ -23,7 +23,7 @@ export default async function NetworkEditPage() {
   const { data: profile } = await supabase
     .from("app_profile")
     .select(
-      "role, display_name, tagline, avatar_url, profile_facts, entity_type, brings, seeks, is_founding_expert, community_visibility, workspace_enabled, is_admin",
+      "role, display_name, tagline, avatar_url, profile_facts, entity_type, brings, seeks, link_url, is_founding_expert, community_visibility, workspace_enabled, is_admin",
     )
     .eq("id", user.id)
     .single();
@@ -61,6 +61,7 @@ export default async function NetworkEditPage() {
               tagline: profile.tagline ?? "",
               avatarUrl: profile.avatar_url ?? null,
               city: facts.city ?? "",
+              linkUrl: profile.link_url ?? "",
               entityType: (profile.entity_type ?? null) as "expert" | "studio" | null,
               brings: profile.brings ?? "",
               seeks: profile.seeks ?? "",

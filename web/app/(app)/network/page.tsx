@@ -17,7 +17,7 @@ const CREAM = "#F2EFE8";
 const CYAN_BRIGHT = "#9CF0FF";
 
 const PROFILE_COLUMNS =
-  "role, display_name, tagline, avatar_url, profile_facts, entity_type, brings, seeks, is_founding_expert, community_visibility, workspace_enabled, is_admin";
+  "role, display_name, tagline, avatar_url, profile_facts, entity_type, brings, seeks, link_url, is_founding_expert, community_visibility, workspace_enabled, is_admin";
 
 /**
  * /network — the member's own card, two states (8 Sep 2026).
@@ -90,6 +90,7 @@ export default async function NetworkPage({
                 tagline: profile.tagline ?? "",
                 avatarUrl: profile.avatar_url ?? null,
                 city: facts.city ?? "",
+                linkUrl: profile.link_url ?? "",
                 entityType: (profile.entity_type ?? null) as "expert" | "studio" | null,
                 brings: profile.brings ?? "",
                 seeks: profile.seeks ?? "",
