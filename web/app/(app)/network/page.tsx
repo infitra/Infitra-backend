@@ -185,8 +185,9 @@ export default async function NetworkPage({
               </div>
 
               {/* Coming soon: the network. Visible now, reachable once the page is designed. */}
+              <div className="pt-7" style={{ borderTop: "1px solid rgba(242,239,232,0.15)" }}>
               <div
-                className="rounded-2xl p-5 relative overflow-hidden mt-2"
+                className="rounded-2xl p-5 relative overflow-hidden"
                 style={{ backgroundColor: "rgba(8,145,178,0.20)", border: "1px solid rgba(8,145,178,0.55)" }}
               >
                 <span
@@ -202,6 +203,7 @@ export default async function NetworkPage({
                   Every card in the founding network in one place, with what each expert and studio
                   brings and what would complement them. Forming now, one card at a time.
                 </p>
+              </div>
               </div>
             </div>
           </div>
