@@ -6,11 +6,10 @@ import { FoundingExpertBadge } from "@/app/(app)/experiences/[id]/PublicChalleng
  * landing row, on /founding-network, in the network, live next to the join
  * form and on the arrival stage; the same shape everywhere.
  *
- * A personal, professional card for collaborations in INFITRA's register:
- * white, bright, alive. The brand waves (the same diagonal stripes as the
- * app background, cyan-bright to orange, static) flow through the top-right
- * corner. A round portrait with a fine gradient ring and a soft glow anchors
- * the top-left; the name sits beside it. The two answers are pastel panels
+ * A personal, professional card for collaborations in INFITRA's register,
+ * built like the posts: cream paper, the real brand waves as the hero band
+ * on top, fading into cream where the content sits. A round portrait with a
+ * white ring lies on the waves; the name sits beside it. The two answers are pastel panels
  * with filled tags, side by side. The background is a light table: gradient
  * icon tiles, thin dividers, muted labels. A studio fills the same three
  * background slots with its own meanings: track record, team, recognition.
@@ -58,44 +57,66 @@ export function linkLabel(url: string): string {
   }
 }
 
-/** The brand waves, in the card: two static diagonal stripes, bottom-left to top-right. */
+const CREAM = "#F2EFE8";
+
+const WAVE_STOPS = (
+  <>
+    <stop offset="0%" stopColor={CYAN_BRIGHT} stopOpacity="0.92" />
+    <stop offset="35%" stopColor={CYAN_BRIGHT} stopOpacity="0.62" />
+    <stop offset="50%" stopColor="#FFFFFF" stopOpacity="0.40" />
+    <stop offset="65%" stopColor={ORANGE} stopOpacity="0.62" />
+    <stop offset="100%" stopColor={ORANGE} stopOpacity="0.92" />
+  </>
+);
+
+/**
+ * The INFITRA waves, verbatim from the post templates and the app background
+ * (WaveFlowingBackground.tsx): three diagonal bands, lower-left to upper-
+ * right, cyan-bright to orange, the back one blurred in CSS. Fitted with
+ * "xMidYMid slice" so the bands sweep through instead of ending in frame.
+ * Static: cards live in grids. The container masks them out towards the
+ * bottom so the hero fades into cream where the content sits.
+ */
 function CardWaves({ id }: { id: string }) {
+  const svg = "absolute inset-0 w-full h-full";
   return (
-    <svg
-      viewBox="0 0 800 500"
-      preserveAspectRatio="xMaxYMin slice"
-      className="absolute inset-0 w-full h-full"
-      aria-hidden
-    >
-      <defs>
-        <linearGradient id={`${id}-a`} x1="0%" y1="100%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor={CYAN_BRIGHT} stopOpacity="0.9" />
-          <stop offset="50%" stopColor="#FFFFFF" stopOpacity="0.5" />
-          <stop offset="100%" stopColor={ORANGE} stopOpacity="0.75" />
-        </linearGradient>
-        <linearGradient id={`${id}-b`} x1="0%" y1="100%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor={ORANGE} stopOpacity="0.55" />
-          <stop offset="55%" stopColor="#FFFFFF" stopOpacity="0.4" />
-          <stop offset="100%" stopColor={CYAN_BRIGHT} stopOpacity="0.9" />
-        </linearGradient>
-      </defs>
-      <path
-        d="M 380 560 C 520 360, 560 420, 700 220 C 780 110, 820 80, 900 -40"
-        stroke={`url(#${id}-a)`}
-        strokeWidth="92"
-        strokeLinecap="round"
-        fill="none"
-        opacity="0.42"
-      />
-      <path
-        d="M 560 600 C 700 380, 720 440, 860 240 C 920 160, 960 120, 1040 40"
-        stroke={`url(#${id}-b)`}
-        strokeWidth="56"
-        strokeLinecap="round"
-        fill="none"
-        opacity="0.5"
-      />
-    </svg>
+    <>
+      <svg viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice" className={svg} style={{ filter: "blur(20px)" }} aria-hidden>
+        <defs>
+          <linearGradient id={`${id}-1`} x1="0%" y1="100%" x2="100%" y2="0%">
+            {WAVE_STOPS}
+          </linearGradient>
+        </defs>
+        <path
+          d="M -400 1700 C 100 1300, 500 1500, 900 1100 C 1300 700, 1700 950, 2100 -400 L 2100 -1400 C 1700 -200, 1300 -500, 900 -100 C 500 300, 100 50, -400 600 Z"
+          fill={`url(#${id}-1)`}
+        />
+      </svg>
+      <svg viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice" className={svg} aria-hidden>
+        <defs>
+          <linearGradient id={`${id}-2`} x1="0%" y1="100%" x2="100%" y2="0%">
+            {WAVE_STOPS}
+          </linearGradient>
+        </defs>
+        <path
+          d="M -300 1500 C 150 1180, 500 1330, 850 980 C 1200 620, 1550 800, 1950 -300 L 1950 -1000 C 1550 -50, 1200 -250, 850 100 C 500 460, 150 250, -300 720 Z"
+          fill={`url(#${id}-2)`}
+        />
+      </svg>
+      <svg viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice" className={svg} aria-hidden>
+        <defs>
+          <linearGradient id={`${id}-3`} x1="0%" y1="100%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor={CYAN_BRIGHT} stopOpacity="1" />
+            <stop offset="50%" stopColor="#FFFFFF" stopOpacity="0.75" />
+            <stop offset="100%" stopColor={ORANGE} stopOpacity="1" />
+          </linearGradient>
+        </defs>
+        <path
+          d="M -200 1300 C 150 1020, 480 1180, 820 880 C 1160 580, 1480 740, 1800 -100 L 1800 -550 C 1480 250, 1160 80, 820 380 C 480 680, 150 520, -200 880 Z"
+          fill={`url(#${id}-3)`}
+        />
+      </svg>
+    </>
   );
 }
 
@@ -145,7 +166,7 @@ function Answer({
   return (
     <div
       className="rounded-2xl p-4 flex flex-col gap-3"
-      style={{ background: `linear-gradient(135deg, ${tint} 0%, rgba(255,255,255,0.35) 100%)`, border: `1px solid ${accent}1f` }}
+      style={{ backgroundColor: "rgba(255,255,255,0.82)", border: `1px solid ${accent}22`, boxShadow: "0 1px 2px rgba(15,34,41,0.03)" }}
     >
       <span
         className="self-start px-2.5 py-1 rounded-full text-[10px] font-black font-headline uppercase tracking-[0.16em] text-white"
@@ -156,7 +177,7 @@ function Answer({
       <div className="flex items-start gap-3">
         <span
           className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
-          style={{ backgroundColor: "#FFFFFF", boxShadow: "0 2px 8px rgba(15,34,41,0.08)" }}
+          style={{ backgroundColor: tint }}
         >
           <AnswerIcon kind={kind} color={accent} />
         </span>
@@ -175,9 +196,10 @@ export function FoundingCard({
 }: {
   m: FoundingMember;
   compact?: boolean;
-  /** Opaque paper for dark grounds (the arrival stage). */
+  /** Kept for callers; the card is cream paper everywhere. */
   solid?: boolean;
 }) {
+  void solid;
   const name = m.display_name ?? "Founding member";
   const initial = (name[0] ?? "?").toUpperCase();
   const isStudio = m.entity_type === "studio";
@@ -199,24 +221,22 @@ export function FoundingCard({
     <article
       className="rounded-[28px] flex flex-col h-full relative overflow-hidden"
       style={{
-        backgroundColor: solid ? "#FFFFFF" : "rgba(255,255,255,0.88)",
-        border: "1px solid rgba(15,34,41,0.06)",
-        boxShadow: "0 1px 2px rgba(15,34,41,0.03), 0 18px 48px rgba(15,34,41,0.08)",
+        backgroundColor: CREAM,
+        border: "1px solid rgba(15,34,41,0.07)",
+        boxShadow: "0 1px 2px rgba(15,34,41,0.03), 0 18px 48px rgba(15,34,41,0.10)",
       }}
     >
-      {/* The brand waves through the corner, and a glow behind the portrait */}
-      <div aria-hidden className="absolute inset-0 pointer-events-none">
+      {/* The hero: the brand waves on top, fading into cream where the content sits */}
+      <div
+        aria-hidden
+        className="absolute inset-x-0 top-0 pointer-events-none overflow-hidden"
+        style={{
+          height: compact ? 300 : 340,
+          maskImage: "linear-gradient(180deg, #000 0%, #000 42%, rgba(0,0,0,0) 100%)",
+          WebkitMaskImage: "linear-gradient(180deg, #000 0%, #000 42%, rgba(0,0,0,0) 100%)",
+        }}
+      >
         <CardWaves id={`fc-${m.id.slice(0, 8)}`} />
-        <div
-          className="absolute rounded-full"
-          style={{
-            top: -portrait * 0.35,
-            left: -portrait * 0.3,
-            width: portrait * 1.9,
-            height: portrait * 1.9,
-            background: `radial-gradient(circle, rgba(156,240,255,0.42) 0%, rgba(255,97,48,0.10) 45%, rgba(255,255,255,0) 70%)`,
-          }}
-        />
       </div>
 
       {/* The person */}
@@ -226,12 +246,12 @@ export function FoundingCard({
           style={{
             width: portrait,
             height: portrait,
-            padding: 4,
-            background: `linear-gradient(135deg, ${ORANGE} 0%, ${CYAN_BRIGHT} 100%)`,
-            boxShadow: "0 12px 30px rgba(15,34,41,0.14)",
+            padding: 5,
+            backgroundColor: "#FFFFFF",
+            boxShadow: "0 14px 34px rgba(15,34,41,0.16)",
           }}
         >
-          <div className="w-full h-full rounded-full overflow-hidden" style={{ border: "4px solid #FFFFFF", backgroundColor: "#FFFFFF" }}>
+          <div className="w-full h-full rounded-full overflow-hidden" style={{ backgroundColor: "#FFFFFF" }}>
             {m.avatar_url ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={m.avatar_url} alt="" className="w-full h-full object-cover" style={{ objectPosition: "50% 30%" }} />
@@ -280,8 +300,8 @@ export function FoundingCard({
       {/* The two answers */}
       {(m.brings || m.seeks) && (
         <div className={`relative ${pad} pt-6 pb-5 grid gap-3 ${compact ? "grid-cols-1" : "sm:grid-cols-2"}`}>
-          {m.brings && <Answer kind="brings" label={labels.brings} text={m.brings} accent={ORANGE} tint="rgba(255,97,48,0.10)" />}
-          {m.seeks && <Answer kind="seeks" label={labels.seeks} text={m.seeks} accent={CYAN} tint="rgba(156,240,255,0.32)" />}
+          {m.brings && <Answer kind="brings" label={labels.brings} text={m.brings} accent={ORANGE} tint="rgba(255,97,48,0.12)" />}
+          {m.seeks && <Answer kind="seeks" label={labels.seeks} text={m.seeks} accent={CYAN} tint="rgba(156,240,255,0.45)" />}
         </div>
       )}
 
