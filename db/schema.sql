@@ -1064,7 +1064,7 @@ begin
             p.id, p.display_name, p.username, p.role, p.is_admin, p.visibility,
             p.created_at, p.is_founding_expert,
             p.workspace_enabled, p.entity_type, p.community_visibility, p.announce_ok,
-            p.open_to, p.brings, p.seeks,
+            p.brings, p.seeks,
             u.email,
             u.banned_until,
             u.raw_user_meta_data ->> 'terms_version' as terms_version,
@@ -1457,6 +1457,28 @@ $$;
 
 
 ALTER FUNCTION "public"."admin_resend_receipt"("p_tx" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."admin_set_announce_ok"("p_user" "uuid", "p_ok" boolean, "p_note" "text" DEFAULT NULL::"text") RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+declare
+  v_admin uuid;
+begin
+  v_admin := app_admin_assert();
+  update app_profile
+     set announce_ok = p_ok, updated_at = now()
+   where id = p_user and role in ('creator', 'admin');
+  if not found then raise exception 'creator not found'; end if;
+  insert into app_admin_action_log (admin_id, action, target, detail)
+  values (v_admin, 'set_announce_ok', p_user::text,
+          jsonb_build_object('ok', p_ok, 'note', nullif(btrim(coalesce(p_note, '')), '')));
+end;
+$$;
+
+
+ALTER FUNCTION "public"."admin_set_announce_ok"("p_user" "uuid", "p_ok" boolean, "p_note" "text") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."admin_set_application_status"("p_id" "uuid", "p_status" "text") RETURNS "void"
@@ -4676,7 +4698,6 @@ begin
     new.entity_type := null;
     new.workspace_enabled := false;
     new.community_visibility := 'none';
-    new.open_to := '{}';
     new.brings := null;
     new.seeks := null;
     new.announce_ok := false;
@@ -6332,7 +6353,6 @@ begin
                'username', p.username,
                'entity_type', p.entity_type,
                'is_founding_expert', p.is_founding_expert,
-               'open_to', to_jsonb(p.open_to),
                'brings', p.brings,
                'seeks', p.seeks,
                'facts', jsonb_build_object(
@@ -10089,7 +10109,6 @@ CREATE TABLE IF NOT EXISTS "public"."app_profile" (
     "entity_type" "text",
     "community_visibility" "text" DEFAULT 'none'::"text" NOT NULL,
     "community_consent_at" timestamp with time zone,
-    "open_to" "text"[] DEFAULT '{}'::"text"[] NOT NULL,
     "brings" "text",
     "seeks" "text",
     "announce_ok" boolean DEFAULT true NOT NULL,
@@ -10097,8 +10116,7 @@ CREATE TABLE IF NOT EXISTS "public"."app_profile" (
     CONSTRAINT "app_profile_community_visibility_check" CHECK (("community_visibility" = ANY (ARRAY['none'::"text", 'public'::"text"]))),
     CONSTRAINT "app_profile_creator_visibility_check" CHECK ((("role" <> 'creator'::"text") OR ("visibility" = 'public'::"text"))),
     CONSTRAINT "app_profile_entity_type_check" CHECK (((("role" = 'participant'::"text") AND ("entity_type" IS NULL)) OR (("role" = ANY (ARRAY['creator'::"text", 'admin'::"text"])) AND ("entity_type" = ANY (ARRAY['expert'::"text", 'studio'::"text"]))))),
-    CONSTRAINT "app_profile_open_to_check" CHECK (("open_to" <@ ARRAY['experts'::"text", 'studios'::"text"])),
-    CONSTRAINT "app_profile_participant_no_supply_fields" CHECK ((("role" <> 'participant'::"text") OR (("workspace_enabled" = false) AND ("community_visibility" = 'none'::"text") AND ("open_to" = '{}'::"text"[]) AND ("brings" IS NULL) AND ("seeks" IS NULL) AND ("announce_ok" = false)))),
+    CONSTRAINT "app_profile_participant_no_supply_fields" CHECK ((("role" <> 'participant'::"text") OR (("workspace_enabled" = false) AND ("community_visibility" = 'none'::"text") AND ("brings" IS NULL) AND ("seeks" IS NULL) AND ("announce_ok" = false)))),
     CONSTRAINT "app_profile_role_check" CHECK (("role" = ANY (ARRAY['participant'::"text", 'creator'::"text", 'admin'::"text"]))),
     CONSTRAINT "app_profile_seeks_len" CHECK ((("seeks" IS NULL) OR ("char_length"("seeks") <= 200))),
     CONSTRAINT "app_profile_visibility_check" CHECK (("visibility" = ANY (ARRAY['public'::"text", 'private'::"text"])))
@@ -10128,7 +10146,11 @@ COMMENT ON COLUMN "public"."app_profile"."community_visibility" IS 'Founding net
 
 
 
-COMMENT ON COLUMN "public"."app_profile"."announce_ok" IS 'Founding network: INFITRA may mention this card in external posts (LinkedIn etc.), showing only what the member put in the profile. Default on, member can switch off.';
+COMMENT ON COLUMN "public"."app_profile"."seeks" IS 'Founding card: who they would want next to them, as a picture (200 chars).';
+
+
+
+COMMENT ON COLUMN "public"."app_profile"."announce_ok" IS 'Featuring in posts is part of the founding-network deal; false records a withdrawal, set from the admin board.';
 
 
 
@@ -14782,6 +14804,12 @@ GRANT ALL ON FUNCTION "public"."admin_regrant_tx"("p_tx" "uuid") TO "service_rol
 REVOKE ALL ON FUNCTION "public"."admin_resend_receipt"("p_tx" "uuid") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."admin_resend_receipt"("p_tx" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."admin_resend_receipt"("p_tx" "uuid") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."admin_set_announce_ok"("p_user" "uuid", "p_ok" boolean, "p_note" "text") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_set_announce_ok"("p_user" "uuid", "p_ok" boolean, "p_note" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."admin_set_announce_ok"("p_user" "uuid", "p_ok" boolean, "p_note" "text") TO "service_role";
 
 
 
