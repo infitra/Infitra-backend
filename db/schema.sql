@@ -6355,11 +6355,7 @@ begin
                'is_founding_expert', p.is_founding_expert,
                'brings', p.brings,
                'seeks', p.seeks,
-               'facts', jsonb_build_object(
-                 'city', p.profile_facts->>'city',
-                 'disciplines', coalesce(p.profile_facts->'disciplines', '[]'::jsonb),
-                 'focus', p.profile_facts->>'focus'
-               ),
+               'facts', jsonb_build_object('city', p.profile_facts->>'city'),
                'credentials', coalesce((
                  select jsonb_agg(jsonb_build_object(
                           'kind', c.kind, 'title', c.title, 'org', c.org,
