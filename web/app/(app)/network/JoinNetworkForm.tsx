@@ -37,18 +37,17 @@ export interface JoinNetworkValues {
 }
 
 /**
- * The founding-network card, made in one go (8 Sep 2026, v6 after the
- * third test): the person (photo, name, one line, city), the card (expert
- * or studio, what you bring, what would complement you) and the background,
- * in one form with one button, and the card itself rendered live next to
- * the form as it takes shape. Less, but everything on it counts.
+ * The card editor (8 Sep 2026, rebuilt around the finished card). Four
+ * numbered steps in the card's own order: who you are (expert or studio,
+ * which sets the words on the card), the face of the card, the two answers,
+ * the background. The card assembles live next to the form, exactly as the
+ * network will see it, with a checklist of what is on it. One button.
  *
  * No visibility choice and no posts switch: showing the card on infitra.fit,
- * in the network and in INFITRA's posts is the deal, said in words at the
- * point of joining, withdrawable any time. The photo uploads first (edge
- * function) and the resulting URL is kept in state, so an error round trip
- * never loses it. One server action writes everything and lands on the
- * finished card.
+ * in the network and once in a welcome post is the deal, said in words at
+ * the point of joining. The photo uploads first (edge function) and the
+ * resulting URL is kept in state, so an error round trip never loses it.
+ * One server action writes everything and lands on the finished card.
  */
 export function JoinNetworkForm({
   mode,
@@ -134,6 +133,19 @@ export function JoinNetworkForm({
     })),
   };
 
+  // What is on the card so far. The two answers are required; the rest
+  // makes the card complete.
+  const checklist: { label: string; done: boolean; optional?: boolean }[] = [
+    { label: "Photo", done: !!avatarPreview },
+    { label: "Name", done: name.trim().length >= 2 },
+    { label: "One line", done: tagline.trim().length > 0 },
+    { label: "City", done: city.trim().length > 0 },
+    { label: isStudio ? "What we bring" : "My expertise", done: brings.trim().length > 0 },
+    { label: isStudio ? "What would complement our offer" : "What would complement my work", done: seeks.trim().length > 0 },
+    { label: isStudio ? "Track record, team, recognition" : "Background", done: creds.length > 0, optional: true },
+    { label: "Where to find you", done: previewLink(link) !== null, optional: true },
+  ];
+
   const field = {
     backgroundColor: "rgba(255,255,255,0.78)",
     border: "1px solid rgba(15,34,41,0.15)",
@@ -142,7 +154,7 @@ export function JoinNetworkForm({
   const inputCls = "w-full px-4 py-3 rounded-xl focus:outline-none text-sm";
   const labelCls = "block text-xs font-bold uppercase tracking-wider mb-2 font-headline";
   const labelStyle = { color: "rgba(15,34,41,0.55)" } as const;
-  const sectionCls = "rounded-3xl p-6 lg:p-8 flex flex-col gap-5";
+  const sectionCls = "rounded-3xl p-6 lg:p-7 flex flex-col gap-5";
   const sectionStyle = {
     backgroundColor: "rgba(255,255,255,0.62)",
     border: "1px solid rgba(15,34,41,0.08)",
@@ -152,32 +164,99 @@ export function JoinNetworkForm({
       {200 - n}
     </p>
   );
+  const onCard = (text: string) => (
+    <span className="normal-case tracking-normal font-normal" style={{ color: "#94a3b8" }}>
+      {" "}· on the card: {text}
+    </span>
+  );
+
+  const Step = ({ n, title, lead }: { n: number; title: string; lead: string }) => (
+    <div className="flex items-start gap-3">
+      <span
+        className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-black font-headline mt-0.5"
+        style={{ backgroundColor: ORANGE, color: "#fff" }}
+      >
+        {n}
+      </span>
+      <div>
+        <h2 className="text-lg font-black font-headline tracking-tight" style={{ color: INK }}>
+          {title}
+        </h2>
+        <p className="text-xs mt-0.5" style={{ color: "#64748b" }}>
+          {lead}
+        </p>
+      </div>
+    </div>
+  );
 
   return (
     <form onSubmit={onSubmit}>
       <input type="hidden" name="mode" value={mode} />
       <input type="hidden" name="entity_type" value={entity} />
 
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] items-start">
-        <div className="flex flex-col gap-6 min-w-0">
-          {/* ── Who you are ── */}
+      <div className="mb-6 flex items-baseline justify-between gap-4 flex-wrap">
+        <p className="text-[11px] font-bold font-headline uppercase tracking-[0.25em]" style={{ color: CYAN }}>
+          {mode === "join" ? "Founding network · Your card" : "Edit your card"}
+        </p>
+        <p className="text-sm" style={{ color: "#64748b" }}>
+          {mode === "join"
+            ? "Four steps. Your card builds itself next to the form, exactly as the network will see it."
+            : "Changes go live on infitra.fit and in the network as soon as you save."}
+        </p>
+      </div>
+
+      <div className="grid gap-8 lg:grid-cols-2 items-start">
+        <div className="flex flex-col gap-5 min-w-0">
+          {/* ── 1 · You are ── */}
           <section className={sectionCls} style={sectionStyle}>
-            <div>
-              <p
-                className="text-[11px] font-bold font-headline uppercase tracking-[0.25em] mb-3"
-                style={{ color: CYAN }}
-              >
-                {mode === "join" ? "Founding network · Your card" : "Edit your card"}
-              </p>
-              <h2 className="text-lg font-black font-headline tracking-tight mb-1" style={{ color: INK }}>
-                Who you are
-              </h2>
-              <p className="text-xs" style={{ color: "#64748b" }}>
-                {mode === "join"
-                  ? "Your card is how the network sees you and how we find you the right fit. It takes shape on the right as you go. Real photo, real name, the one line people remember you by."
-                  : "Changes go live on infitra.fit and in the network as soon as you save."}
-              </p>
+            <Step
+              n={1}
+              title="You are"
+              lead="This sets the words on your card: an expert's card says “My expertise”, a studio's says “What we bring”."
+            />
+            <div
+              className="grid grid-cols-2 gap-1.5 p-1.5 rounded-2xl"
+              style={{ backgroundColor: "rgba(15,34,41,0.05)" }}
+            >
+              {(
+                [
+                  { value: "expert", label: "An expert" },
+                  { value: "studio", label: "A studio or gym" },
+                ] as const
+              ).map((opt) => {
+                const on = entity === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setEntity(opt.value)}
+                    aria-pressed={on}
+                    className="py-3 rounded-xl text-sm font-headline font-bold transition-all"
+                    style={{
+                      backgroundColor: on ? (opt.value === "studio" ? CYAN : ORANGE) : "transparent",
+                      color: on ? "#fff" : INK,
+                      opacity: on ? 1 : 0.55,
+                      boxShadow: on ? `0 4px 14px ${opt.value === "studio" ? "rgba(8,145,178,0.30)" : "rgba(255,97,48,0.30)"}` : "none",
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
             </div>
+          </section>
+
+          {/* ── 2 · The face of the card ── */}
+          <section className={sectionCls} style={sectionStyle}>
+            <Step
+              n={2}
+              title="The face of the card"
+              lead={
+                isStudio
+                  ? "The photo you already use, the studio's face or your space. The name, one line, where you are."
+                  : "The photo you already use. Your name, the one line people remember you by, where you are."
+              }
+            />
 
             <div className="flex items-center gap-5">
               <button type="button" onClick={() => fileInput.current?.click()} className="shrink-0">
@@ -187,14 +266,14 @@ export function JoinNetworkForm({
                     src={avatarPreview}
                     alt=""
                     className="w-24 h-24 rounded-full object-cover"
-                    style={{ border: "3px solid rgba(255,97,48,0.35)" }}
+                    style={{ border: "3px solid #FFFFFF", boxShadow: "0 6px 18px rgba(15,34,41,0.14)" }}
                   />
                 ) : (
                   <div
                     className="w-24 h-24 rounded-full flex items-center justify-center"
-                    style={{ backgroundColor: "rgba(255,97,48,0.12)", border: "3px solid rgba(255,97,48,0.35)" }}
+                    style={{ backgroundColor: "rgba(8,145,178,0.10)", border: "3px solid #FFFFFF", boxShadow: "0 6px 18px rgba(15,34,41,0.10)" }}
                   >
-                    <span className="text-3xl font-black font-headline" style={{ color: ORANGE }}>
+                    <span className="text-3xl font-black font-headline" style={{ color: CYAN }}>
                       {(name.trim() || "?")[0].toUpperCase()}
                     </span>
                   </div>
@@ -210,7 +289,7 @@ export function JoinNetworkForm({
                   {avatarPreview ? "Change photo" : "Upload photo"}
                 </button>
                 <p className="text-[11px] mt-2" style={{ color: "#94a3b8" }}>
-                  The photo you already use, your face or your space. Square works best. Max 5MB.
+                  Square works best. Max 5MB.
                 </p>
               </div>
               <input
@@ -224,7 +303,7 @@ export function JoinNetworkForm({
 
             <div>
               <label htmlFor="display_name" className={labelCls} style={labelStyle}>
-                Name
+                {isStudio ? "Studio name" : "Name"}
               </label>
               <input
                 id="display_name"
@@ -235,7 +314,7 @@ export function JoinNetworkForm({
                 maxLength={50}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder={isStudio ? "Your studio's name" : "Your name"}
+                placeholder={isStudio ? "e.g. Studio Kraftwerk" : "e.g. Roberta Burla"}
                 className={inputCls}
                 style={field}
               />
@@ -244,7 +323,7 @@ export function JoinNetworkForm({
             <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_170px]">
               <div>
                 <label htmlFor="tagline" className={labelCls} style={labelStyle}>
-                  One line about you
+                  One line about {isStudio ? "the studio" : "you"}
                 </label>
                 <input
                   id="tagline"
@@ -278,7 +357,7 @@ export function JoinNetworkForm({
 
             <div>
               <label htmlFor="link_url" className={labelCls} style={labelStyle}>
-                Where to find you <span className="normal-case tracking-normal font-normal">(optional)</span>
+                Where to find {isStudio ? "the studio" : "you"} <span className="normal-case tracking-normal font-normal">(optional)</span>
               </label>
               <input
                 id="link_url"
@@ -297,65 +376,28 @@ export function JoinNetworkForm({
             </div>
           </section>
 
-          {/* ── Your card ── */}
+          {/* ── 3 · Your two answers ── */}
           <section className={sectionCls} style={sectionStyle}>
-            <div>
-              <h2 className="text-lg font-black font-headline tracking-tight mb-1" style={{ color: INK }}>
-                Your card
-              </h2>
-              <p className="text-xs" style={{ color: "#64748b" }}>
-                Two answers. They sit at the top of your card, and they are what we match on.
-              </p>
-            </div>
-
-            <div>
-              <span className={labelCls} style={labelStyle}>
-                You are
-              </span>
-              <div
-                className="grid grid-cols-2 gap-1.5 p-1.5 rounded-2xl"
-                style={{ backgroundColor: "rgba(15,34,41,0.05)" }}
-              >
-                {(
-                  [
-                    { value: "expert", label: "An expert" },
-                    { value: "studio", label: "A studio or gym" },
-                  ] as const
-                ).map((opt) => {
-                  const on = entity === opt.value;
-                  return (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      onClick={() => setEntity(opt.value)}
-                      aria-pressed={on}
-                      className="py-3 rounded-xl text-sm font-headline font-bold transition-all"
-                      style={{
-                        backgroundColor: on ? ORANGE : "transparent",
-                        color: on ? "#fff" : INK,
-                        opacity: on ? 1 : 0.55,
-                        boxShadow: on ? "0 4px 14px rgba(255,97,48,0.30)" : "none",
-                      }}
-                    >
-                      {opt.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+            <Step
+              n={3}
+              title="Your two answers"
+              lead="They sit at the heart of your card, and they are what we match on."
+            />
 
             <div>
               <label htmlFor="brings" className={labelCls} style={labelStyle}>
-                What you bring
+                What you bring{onCard(isStudio ? "What we bring" : "My expertise")}
               </label>
               <p className="text-xs mb-2" style={{ color: "#64748b" }}>
-                Your craft, at full depth, and who you already work with.
+                {isStudio
+                  ? "The studio at full depth: members, team, what people come for."
+                  : "Your craft, at full depth, and who you already work with."}
               </p>
               <textarea
                 id="brings"
                 name="brings"
                 required
-                rows={2}
+                rows={3}
                 maxLength={200}
                 value={brings}
                 onChange={(e) => setBrings(e.target.value)}
@@ -373,6 +415,7 @@ export function JoinNetworkForm({
             <div>
               <label htmlFor="seeks" className={labelCls} style={labelStyle}>
                 What kind of collaboration partner would be valuable for you?
+                {onCard(isStudio ? "What would complement our offer" : "What would complement my work")}
               </label>
               <p className="text-xs mb-2" style={{ color: "#64748b" }}>
                 Who would let you go all in on your part and complement you?
@@ -381,7 +424,7 @@ export function JoinNetworkForm({
                 id="seeks"
                 name="seeks"
                 required
-                rows={2}
+                rows={3}
                 maxLength={200}
                 value={seeks}
                 onChange={(e) => setSeeks(e.target.value)}
@@ -397,19 +440,17 @@ export function JoinNetworkForm({
             </div>
           </section>
 
-          {/* ── Your background ── */}
+          {/* ── 4 · Your background ── */}
           <section className={sectionCls} style={sectionStyle}>
-            <div>
-              <h2 className="text-lg font-black font-headline tracking-tight mb-1" style={{ color: INK }}>
-                Your background
-              </h2>
-              <p className="text-xs" style={{ color: "#64748b" }}>
-                {isStudio
-                  ? "What makes the studio credible at a glance: track record, team, recognition. It shows on your card. Optional."
-                  : "What makes you credible at a glance. It shows on your card and, later, on your experience pages. Optional."}
-              </p>
-            </div>
-
+            <Step
+              n={4}
+              title={isStudio ? "Track record, team, recognition" : "Your background"}
+              lead={
+                isStudio
+                  ? "What makes the studio credible at a glance. It shows at the foot of your card. Optional."
+                  : "What makes you credible at a glance. It shows at the foot of your card and, later, on your experience pages. Optional."
+              }
+            />
             <CredentialsEditor
               intro={
                 isStudio
@@ -499,6 +540,24 @@ export function JoinNetworkForm({
             Your card, as it takes shape
           </p>
           <FoundingCard m={preview} />
+
+          <div className="mt-5 flex flex-wrap gap-2">
+            {checklist.map((item) => (
+              <span
+                key={item.label}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold font-headline"
+                style={{
+                  color: item.done ? CYAN : "rgba(15,34,41,0.45)",
+                  backgroundColor: item.done ? "rgba(8,145,178,0.10)" : "rgba(15,34,41,0.05)",
+                  border: `1px solid ${item.done ? "rgba(8,145,178,0.30)" : "rgba(15,34,41,0.08)"}`,
+                }}
+              >
+                <span aria-hidden>{item.done ? "✓" : "○"}</span>
+                {item.label}
+                {item.optional && !item.done ? " · optional" : ""}
+              </span>
+            ))}
+          </div>
           <p className="text-xs mt-3" style={{ color: "#64748b" }}>
             This is what the network and infitra.fit see. It updates as you type.
           </p>
