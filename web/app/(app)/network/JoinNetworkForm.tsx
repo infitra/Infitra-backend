@@ -432,8 +432,7 @@ export function JoinNetworkForm({
               INFITRA is private and invite-only right now. Nobody finds you here by searching, so
               we are the ones who put you in front of the right people. Your card shows on
               infitra.fit, to everyone in the network, and once on our social channels, in the post
-              that welcomes you to the founding network. We send you that post so you can share it
-              too.
+              that welcomes you to the founding network.
             </p>
             <p className="text-sm leading-relaxed" style={{ color: INK }}>
               Only what you put on your card is shown, nothing else. Your email and everything you

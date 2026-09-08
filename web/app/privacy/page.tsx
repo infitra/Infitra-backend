@@ -107,6 +107,18 @@ export default function PrivacyPage() {
           receipt is also a legal obligation (order confirmation).
         </p>
         <p>
+          <H>The founding network.</H> If you join the founding network, we
+          publish your card: display name, photo, one line, city, the few lines
+          you write about your work, your background entries and disciplines,
+          what you bring and who you would want next to you. It appears on
+          infitra.fit, to the other members of the network, and once in a post
+          on INFITRA&apos;s social channels that welcomes you. We show nothing
+          else about you, and never your email. Legal basis: your consent, given
+          when you join. You can withdraw it any time by writing to
+          hello@infitra.fit, and we take the card down and stop referring to
+          you.
+        </p>
+        <p>
           <H>Applications and the waitlist.</H> If you apply for the founding
           pilot or join the waitlist, we process the details you submit to review
           your application or notify you. Legal basis: taking steps before
@@ -290,7 +302,7 @@ export default function PrivacyPage() {
         </p>
       </LegalSection>
 
-      <LegalVersion>Version 1.0 · Effective 14 August 2026</LegalVersion>
+      <LegalVersion>Version 1.1 · Effective 8 September 2026</LegalVersion>
     </LegalPage>
   );
 }
