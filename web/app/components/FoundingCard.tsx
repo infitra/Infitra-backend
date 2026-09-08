@@ -7,7 +7,8 @@ import { FoundingExpertBadge } from "@/app/(app)/experiences/[id]/PublicChalleng
  * three places, so a member sees on the homepage exactly what they set up.
  *
  * Fed by load_founding_community(): explicit public-safe columns, never an
- * email. Open to, brings and seeks are the matching surface.
+ * email. Open to, brings and seeks are the matching surface. Every card in
+ * the feed is live on infitra.fit; there is no members-only tier (8 Sep 2026).
  */
 export interface FoundingMember {
   id: string;
@@ -18,7 +19,6 @@ export interface FoundingMember {
   username: string | null;
   entity_type: "expert" | "studio";
   is_founding_expert: boolean;
-  visibility: "members" | "public";
   open_to: ("experts" | "studios")[];
   brings: string | null;
   seeks: string | null;

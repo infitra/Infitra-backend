@@ -3,9 +3,9 @@ import { createClient } from "@/lib/supabase/server";
 import { JoinAsExpertForm } from "./JoinAsExpertForm";
 
 /**
- * /join-as-expert?code=… — the founding expert's door (pilot supply gate,
- * Option B). Each approved applicant gets a personal, single-use invite
- * link; this page pre-validates the code for friendly UX and renders the
+ * /join-as-expert?code=… — the founding network's door for experts and
+ * studios (pilot supply gate, Option B). Each invited member gets a
+ * personal, single-use invite link; this page pre-validates the code for friendly UX and renders the
  * creator signup. Real enforcement lives in the app_handle_new_user
  * trigger: without a valid code the account is never created, so the
  * public auth API cannot mint creators either.
@@ -16,7 +16,7 @@ import { JoinAsExpertForm } from "./JoinAsExpertForm";
  */
 
 export const metadata = {
-  title: "Founding expert invitation · INFITRA",
+  title: "Founding network invitation · INFITRA",
   robots: { index: false, follow: false },
 };
 
@@ -56,13 +56,13 @@ export default async function JoinAsExpertPage({
           </h1>
           <p className="text-sm leading-relaxed mb-6" style={{ color: "#475569" }}>
             It may have been used already, or it expired. Invites are personal
-            and single use. Reply to your acceptance email and we will send you
-            a fresh one.
+            and single use. Reply to the message that brought you here and we
+            will send you a fresh one.
           </p>
           <p className="text-sm" style={{ color: "#64748b" }}>
             Not invited yet?{" "}
             <Link href="/apply" className="hover:opacity-80" style={{ color: "#0891b2", fontWeight: 700 }}>
-              Apply for the founding pilot →
+              Join the founding network →
             </Link>
           </p>
         </div>

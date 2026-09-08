@@ -111,43 +111,87 @@ export async function attestSigningIdentity(prevState: unknown, formData: FormDa
 }
 
 /**
- * The founding-network card: the one sentence, the entity type and the
- * visibility choice (6 Sep 2026). The profile itself (name, photo, bio,
- * facts, credentials) is edited by ProfileEditForm; this saves only the
- * community-specific fields. Visibility is never pre-ticked: the member
- * chooses, and the DB stamps community_consent_at when it leaves 'none'.
+ * The founding-network card, written in one go (8 Sep 2026): the profile
+ * essentials (name, one line, city, a few lines, photo URL) and the card
+ * (expert or studio, open to, brings, seeks, posts switch). Joining flips
+ * the card live; the database stamps community_consent_at. There is no
+ * visibility choice: on infitra.fit and to the network is the deal.
+ *
+ * Client + RLS surface: profile-class writes under the caller's own row
+ * policies, the same path the profile editor uses. Landing pages that show
+ * cards are revalidated so a new card appears without waiting for ISR.
  */
-export async function saveCommunityCard(prevState: unknown, formData: FormData) {
+export async function joinFoundingNetwork(prevState: unknown, formData: FormData) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "Not authenticated." };
 
-  const brings = ((formData.get("brings") as string) ?? "").trim().slice(0, 200);
-  const seeks = ((formData.get("seeks") as string) ?? "").trim().slice(0, 200);
+  const mode = formData.get("mode") === "edit" ? "edit" : "join";
+  const text = (name: string, max: number) =>
+    ((formData.get(name) as string) ?? "").trim().slice(0, max);
+
+  const displayName = text("display_name", 50);
+  if (displayName.length < 2) return { error: "Your name needs at least 2 characters." };
+  const tagline = text("tagline", 120);
+  const bio = text("bio", 2000);
+  const city = text("city", 60);
+  const brings = text("brings", 200);
+  const seeks = text("seeks", 200);
+  if (!brings || !seeks) {
+    return { error: "What you bring and what would complement you are the card. Both, please." };
+  }
+  const entityRaw = text("entity_type", 10);
+  if (entityRaw !== "expert" && entityRaw !== "studio") {
+    return { error: "Tell us whether you are an expert or a studio." };
+  }
   const openTo = formData
     .getAll("open_to")
     .filter((v): v is string => v === "experts" || v === "studios");
-  const entityRaw = (formData.get("entity_type") as string)?.trim();
-  const visRaw = (formData.get("community_visibility") as string)?.trim();
+  if (openTo.length === 0) return { error: "Choose who you are open to creating with." };
+
+  const avatarUrl = text("avatar_url", 500);
+  if (avatarUrl && !avatarUrl.includes(`/storage/v1/object/public/profile-images/${user.id}/`)) {
+    return { error: "Invalid photo path." };
+  }
+
+  const { data: profile } = await supabase
+    .from("app_profile")
+    .select("role, profile_facts")
+    .eq("id", user.id)
+    .single();
+  const isCreator = profile?.role === "creator" || profile?.role === "admin";
+  if (!isCreator) return { error: "The founding network is for experts and studios." };
+
+  // City lives in profile_facts next to the other optional facts; keep them.
+  const facts = { ...((profile?.profile_facts as Record<string, unknown> | null) ?? {}) };
+  if (city) facts.city = city;
+  else delete facts.city;
 
   const updates: Record<string, unknown> = {
-    brings: brings || null,
-    seeks: seeks || null,
+    display_name: displayName,
+    tagline: tagline || null,
+    bio: bio || null,
+    profile_facts: facts,
+    entity_type: entityRaw,
     open_to: openTo,
+    brings,
+    seeks,
     // Posts permission: a checkbox, so absent means switched off.
     announce_ok: formData.get("announce_ok") === "yes",
+    community_visibility: "public",
     updated_at: new Date().toISOString(),
   };
-  if (entityRaw === "expert" || entityRaw === "studio") updates.entity_type = entityRaw;
-  if (visRaw === "none" || visRaw === "members" || visRaw === "public") {
-    updates.community_visibility = visRaw;
-  }
+  if (avatarUrl) updates.avatar_url = avatarUrl;
 
   const { error } = await supabase.from("app_profile").update(updates).eq("id", user.id);
   if (error) return { error: error.message };
-  return { success: true as const };
+
+  revalidatePath("/network");
+  revalidatePath("/founding-network");
+  revalidatePath("/");
+  redirect(mode === "join" ? "/network?joined=1" : "/network");
 }
 
 /**

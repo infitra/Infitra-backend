@@ -1,17 +1,16 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { CredentialIcon, credentialPeriod } from "@/app/components/CredentialIcon";
+import { CredentialsEditor } from "@/app/components/CredentialsEditor";
 
 /**
  * ProfileEditForm — the expert's profile editor (dashboard panel), P7.
  *
  * Three zones, mirroring the profile's three layers:
  *   IDENTITY    — photo, display name, tagline, bio (as before).
- *   BACKGROUND  — structured credentials (certification / education /
- *                 experience · title · org · year). Self-declared, rendered
- *                 on the buyer page trust strip and the space popover.
+ *   BACKGROUND  — structured credentials, see CredentialsEditor (shared
+ *                 with the founding-network card editor since 8 Sep 2026).
  *   SHARE MORE  — optional human facts (age, city, training since,
  *                 disciplines, focus). Invitation tone: every field optional,
  *                 fill = share, empty = invisible everywhere.
@@ -27,15 +26,6 @@ const INK = "#0F2229";
 const ORANGE = "#FF6130";
 const CYAN = "#0891b2";
 
-export interface EditableCredential {
-  id: string;
-  kind: "certification" | "education" | "experience";
-  title: string;
-  org: string | null;
-  year: number | null;
-  year_end: number | null;
-}
-
 export interface ProfileFacts {
   age?: number;
   city?: string;
@@ -44,12 +34,6 @@ export interface ProfileFacts {
   focus?: string;
 }
 
-const KIND_META: Record<EditableCredential["kind"], { label: string }> = {
-  certification: { label: "Certification" },
-  education: { label: "Education" },
-  experience: { label: "Experience" },
-};
-
 export function ProfileEditForm({
   displayName,
   tagline,
@@ -57,7 +41,6 @@ export function ProfileEditForm({
   avatarUrl,
   isCreator = true,
   initialFacts = {},
-  initialCredentials = [],
   onSaved,
 }: {
   displayName: string;
@@ -66,7 +49,6 @@ export function ProfileEditForm({
   avatarUrl: string | null;
   isCreator?: boolean;
   initialFacts?: ProfileFacts;
-  initialCredentials?: EditableCredential[];
   onSaved?: () => void;
 }) {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(avatarUrl);
@@ -76,105 +58,6 @@ export function ProfileEditForm({
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const avatarFileRef = useRef<File | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
-
-  // ── Credentials (creators): immediate CRUD, separate from Save. ──
-  // The list is fetched HERE. It used to arrive as a prop the parent filled
-  // asynchronously, but useState only reads its initial value once: the
-  // fetch always resolved after mount, so saved credentials looked like they
-  // had vanished when the editor was reopened.
-  const [creds, setCreds] = useState<EditableCredential[]>(initialCredentials);
-  useEffect(() => {
-    if (!isCreator) return;
-    let alive = true;
-    (async () => {
-      const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data } = await supabase
-        .from("app_expert_credential")
-        .select("id, kind, title, org, year, year_end")
-        // Scoped to the caller: the select policy exposes every creator's
-        // credentials (the buyer page is public), so an unscoped read would
-        // list other experts' background here.
-        .eq("profile_id", user.id)
-        .order("year", { ascending: false });
-      if (alive && data) setCreds(data as EditableCredential[]);
-    })();
-    return () => {
-      alive = false;
-    };
-  }, [isCreator]);
-  const [credKind, setCredKind] = useState<EditableCredential["kind"]>("certification");
-  const [credTitle, setCredTitle] = useState("");
-  const [credOrg, setCredOrg] = useState("");
-  const [credYear, setCredYear] = useState("");
-  const [credYearEnd, setCredYearEnd] = useState("");
-  const [credBusy, setCredBusy] = useState(false);
-
-  useEffect(() => setSuccess(false), [creds.length]);
-
-  async function addCredential() {
-    const title = credTitle.trim();
-    if (title.length < 2) {
-      setError("Give the credential a title (at least 2 characters).");
-      return;
-    }
-    setCredBusy(true);
-    setError(null);
-    try {
-      const supabase = createClient();
-      const year = credYear.trim() ? parseInt(credYear.trim(), 10) : null;
-      const yearEnd = credYearEnd.trim() ? parseInt(credYearEnd.trim(), 10) : null;
-      if (yearEnd !== null && year !== null && yearEnd < year) {
-        setError("The end year cannot be before the start year.");
-        setCredBusy(false);
-        return;
-      }
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated.");
-      const { data, error: insErr } = await supabase
-        .from("app_expert_credential")
-        .insert({
-          // Explicit even though the column defaults to auth.uid(): the RLS
-          // check compares profile_id to the caller, and a missing value
-          // reads as an RLS violation rather than a clear error.
-          profile_id: user.id,
-          kind: credKind,
-          title,
-          org: credOrg.trim() || null,
-          year: Number.isFinite(year as number) ? year : null,
-          year_end: Number.isFinite(yearEnd as number) ? yearEnd : null,
-        })
-        .select("id, kind, title, org, year, year_end")
-        .single();
-      if (insErr) throw new Error(insErr.message);
-      setCreds((prev) => [...prev, data as EditableCredential]);
-      setCredTitle("");
-      setCredOrg("");
-      setCredYear("");
-      setCredYearEnd("");
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not add the credential.");
-    }
-    setCredBusy(false);
-  }
-
-  async function removeCredential(id: string) {
-    setCredBusy(true);
-    try {
-      const supabase = createClient();
-      const { error: delErr } = await supabase.from("app_expert_credential").delete().eq("id", id);
-      if (delErr) throw new Error(delErr.message);
-      setCreds((prev) => prev.filter((c) => c.id !== id));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not remove the credential.");
-    }
-    setCredBusy(false);
-  }
 
   function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -399,117 +282,9 @@ export function ProfileEditForm({
         />
       </div>
 
-      {/* ── BACKGROUND — the legitimacy layer (creators only) ── */}
+      {/* Background: its own component, immediate CRUD, creators only. */}
       {isCreator && (
-        <div
-          className="rounded-2xl p-4"
-          style={{ backgroundColor: "rgba(255,97,48,0.04)", border: "1px solid rgba(255,97,48,0.18)" }}
-        >
-          <p className="text-xs font-bold uppercase tracking-wider font-headline mb-1" style={{ color: "#c2410c" }}>
-            Background
-          </p>
-          <p className="text-[11px] mb-3" style={{ color: "#64748b" }}>
-            Certifications, education and experience. This is what shows buyers
-            you are the right expert — it renders on your experience pages.
-          </p>
-
-          {creds.length > 0 && (
-            <ul className="space-y-1.5 mb-3">
-              {creds.map((c) => (
-                <li
-                  key={c.id}
-                  className="flex items-center gap-2 rounded-xl px-3 py-2 text-[13px]"
-                  style={{ backgroundColor: "#FFFFFF", border: "1px solid rgba(15,34,41,0.08)" }}
-                >
-                  <span className="shrink-0" style={{ color: ORANGE }}>
-                    <CredentialIcon kind={c.kind} size={14} />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="font-bold font-headline" style={{ color: INK }}>
-                      {c.title}
-                    </span>
-                    {[c.org, credentialPeriod(c.year, c.year_end)].filter(Boolean).length > 0 && (
-                      <span style={{ color: "#94a3b8" }}>
-                        {" · "}
-                        {[c.org, credentialPeriod(c.year, c.year_end)].filter(Boolean).join(" · ")}
-                      </span>
-                    )}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => removeCredential(c.id)}
-                    disabled={credBusy}
-                    className="ml-auto text-[10px] font-bold text-rose-500 hover:text-rose-700 shrink-0"
-                    aria-label={`Remove ${c.title}`}
-                  >
-                    Remove
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-
-          <div className="grid grid-cols-2 gap-2">
-            <select
-              value={credKind}
-              onChange={(e) => setCredKind(e.target.value as EditableCredential["kind"])}
-              className="h-9 rounded-lg px-2 text-xs col-span-1"
-              style={inputStyle}
-            >
-              {(Object.keys(KIND_META) as Array<EditableCredential["kind"]>).map((k) => (
-                <option key={k} value={k}>
-                  {KIND_META[k].label}
-                </option>
-              ))}
-            </select>
-            <div className="col-span-1 flex items-center gap-1.5">
-              <input
-                value={credYear}
-                onChange={(e) => setCredYear(e.target.value)}
-                placeholder="Year"
-                inputMode="numeric"
-                maxLength={4}
-                className="h-9 w-full rounded-lg px-2.5 text-xs"
-                style={inputStyle}
-              />
-              <span className="text-xs shrink-0" style={{ color: "#94a3b8" }}>–</span>
-              <input
-                value={credYearEnd}
-                onChange={(e) => setCredYearEnd(e.target.value)}
-                placeholder="To"
-                inputMode="numeric"
-                maxLength={4}
-                className="h-9 w-full rounded-lg px-2.5 text-xs"
-                style={inputStyle}
-              />
-            </div>
-            <input
-              value={credTitle}
-              onChange={(e) => setCredTitle(e.target.value)}
-              placeholder="Title, e.g. BSc Sport Science"
-              maxLength={120}
-              className="h-9 rounded-lg px-2.5 text-xs col-span-2"
-              style={inputStyle}
-            />
-            <input
-              value={credOrg}
-              onChange={(e) => setCredOrg(e.target.value)}
-              placeholder="Institution (optional)"
-              maxLength={120}
-              className="h-9 rounded-lg px-2.5 text-xs col-span-2"
-              style={inputStyle}
-            />
-            <button
-              type="button"
-              onClick={addCredential}
-              disabled={credBusy || credTitle.trim().length < 2}
-              className="col-span-2 h-9 rounded-full text-xs font-black font-headline text-white disabled:opacity-50"
-              style={{ backgroundColor: ORANGE }}
-            >
-              {credBusy ? "Saving…" : "+ Add to your background"}
-            </button>
-          </div>
-        </div>
+        <CredentialsEditor intro="Certifications, education and experience. This is what shows buyers you are the right expert: it renders on your experience pages." />
       )}
 
       {/* ── SHARE MORE — optional facts, invitation tone ── */}
@@ -521,7 +296,7 @@ export function ProfileEditForm({
           Share more with your tribe
         </p>
         <p className="text-[11px] mb-3" style={{ color: "#64748b" }}>
-          All optional. Only what you fill in is shown — leave anything blank
+          All optional. Only what you fill in is shown: leave anything blank
           and it simply stays private.
         </p>
         <div className="grid grid-cols-2 gap-2">

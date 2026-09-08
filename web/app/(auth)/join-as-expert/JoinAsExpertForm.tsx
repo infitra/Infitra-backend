@@ -5,7 +5,7 @@ import Link from "next/link";
 import { signUp } from "@/app/actions/auth";
 
 /**
- * Founding expert signup — reached only through a validated invite link.
+ * Founding network signup, reached only through a validated invite link.
  * Posts to the shared signUp action with role=creator and the invite code;
  * the DB trigger redeems the code atomically at account creation.
  */
@@ -44,7 +44,7 @@ export function JoinAsExpertForm({ code }: { code: string }) {
           className="text-[#FF6130] text-[10px] tracking-widest uppercase font-headline"
           style={{ fontWeight: 700 }}
         >
-          Founding pilot · Your invitation
+          Founding network · Your invitation
         </span>
       </div>
 
@@ -52,10 +52,11 @@ export function JoinAsExpertForm({ code }: { code: string }) {
         className="text-2xl font-headline tracking-tight mb-2"
         style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.02em" }}
       >
-        Welcome, founding expert.
+        Welcome to the founding network.
       </h1>
       <p className="text-sm mb-8" style={{ color: "#64748b" }}>
-        Set up your expert account. This invite is personal and single use.
+        Experts and studios, open to creating together. Set up your account here; your card
+        comes next. This invite is personal and single use.
       </p>
 
       {state?.error && (
@@ -87,12 +88,12 @@ export function JoinAsExpertForm({ code }: { code: string }) {
             required
             minLength={2}
             maxLength={50}
-            placeholder="Your name or studio name"
+            placeholder="Your name or your studio's name"
             className={inputClass}
             style={inputStyle}
           />
           <p className="mt-1.5 text-xs" style={{ color: "#94a3b8" }}>
-            Shown publicly on your experiences.
+            As it will show on your card.
           </p>
         </div>
         <div>
@@ -138,7 +139,7 @@ export function JoinAsExpertForm({ code }: { code: string }) {
               "0 4px 14px rgba(255,97,48,0.35), 0 2px 6px rgba(255,97,48,0.20)",
           }}
         >
-          {pending ? "..." : "Create your expert account"}
+          {pending ? "..." : "Create your account"}
         </button>
 
         <p className="text-[11px] text-center pt-1" style={{ color: "#94a3b8" }}>
