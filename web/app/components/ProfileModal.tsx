@@ -17,7 +17,7 @@ import { useOverlay } from "@/app/components/DashboardOverlay";
  * language instead of listing content —
  *   HEADER   — brand-gradient wash band (same grammar as the experience
  *              header), avatar overlapping the band edge, ONE identity badge
- *              (Founding Expert stands alone, gold; it outranks Expert).
+ *              (Founding member stands alone, gold; it outranks Expert).
  *   YOU & X  — the relational strip, first. On your OWN profile it becomes a
  *              placeholder explaining what others see here.
  *   FACTS    — structured chips: quiet icon + text, bordered, cream.
@@ -235,9 +235,9 @@ function ModalBody({
   const proof = payload.proof ?? {};
   const facts = payload.facts ?? {};
 
-  // ONE identity badge — Founding Expert outranks Expert.
+  // ONE identity badge — Founding member outranks Expert.
   const badge = payload.is_founding_expert
-    ? { label: "★ Founding Expert", color: "#92700c", bg: "rgba(234,179,8,0.13)", border: "rgba(234,179,8,0.4)" }
+    ? { label: "★ Founding member", color: "#92700c", bg: "rgba(234,179,8,0.13)", border: "rgba(234,179,8,0.4)" }
     : isExpert
       ? { label: "Expert", color: "#c2410c", bg: "rgba(255,97,48,0.10)", border: "rgba(255,97,48,0.22)" }
       : { label: "Tribe member", color: CYAN, bg: "rgba(8,145,178,0.08)", border: "rgba(8,145,178,0.20)" };

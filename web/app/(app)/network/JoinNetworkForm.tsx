@@ -263,61 +263,6 @@ export function JoinNetworkForm({
               </div>
             </div>
 
-            <div>
-              <label htmlFor="bio" className={labelCls} style={labelStyle}>
-                A few lines on your work
-              </label>
-              <textarea
-                id="bio"
-                name="bio"
-                rows={4}
-                maxLength={2000}
-                value={bio}
-                onChange={(e) => setBio(e.target.value)}
-                placeholder={
-                  isStudio
-                    ? "What the studio stands for, who trains there, what your members ask for."
-                    : "Who you work with, what you are known for, how long you have done it."
-                }
-                className={`${inputCls} resize-none`}
-                style={field}
-              />
-            </div>
-          </section>
-
-          {/* ── Your background ── */}
-          <section className={sectionCls} style={sectionStyle}>
-            <div>
-              <h2 className="text-lg font-black font-headline tracking-tight mb-1" style={{ color: INK }}>
-                Your background
-              </h2>
-              <p className="text-xs" style={{ color: "#64748b" }}>
-                What makes you credible at a glance. It shows on your card and, later, on your
-                experience pages.
-              </p>
-            </div>
-
-            <CredentialsEditor
-              intro="Certifications, education, experience. Each entry saves on its own."
-              onChange={setCreds}
-            />
-
-            <div>
-              <label htmlFor="disciplines" className={labelCls} style={labelStyle}>
-                Disciplines
-              </label>
-              <input
-                id="disciplines"
-                name="disciplines"
-                type="text"
-                maxLength={200}
-                value={disciplines}
-                onChange={(e) => setDisciplines(e.target.value)}
-                placeholder="Comma-separated, e.g. strength, mobility, sports nutrition"
-                className={inputCls}
-                style={field}
-              />
-            </div>
           </section>
 
           {/* ── Your card ── */}
@@ -327,7 +272,7 @@ export function JoinNetworkForm({
                 Your card
               </h2>
               <p className="text-xs" style={{ color: "#64748b" }}>
-                Two answers. This is what the network reads first, and what we match on.
+                Two answers. They sit at the top of your card, and they are what we match on.
               </p>
             </div>
 
@@ -372,7 +317,7 @@ export function JoinNetworkForm({
                 What you bring
               </label>
               <p className="text-xs mb-2" style={{ color: "#64748b" }}>
-                Your craft, at full depth, and the people you already work with.
+                Your craft, at full depth, and who you already work with.
               </p>
               <textarea
                 id="brings"
@@ -384,7 +329,7 @@ export function JoinNetworkForm({
                 onChange={(e) => setBrings(e.target.value)}
                 placeholder={
                   isStudio
-                    ? "e.g. 400 members who ask for more than classes, a strength and a Pilates team"
+                    ? "e.g. 400 members who ask for more than classes, a strength and Pilates team, 5 active weekly group classes"
                     : "e.g. sports nutrition for endurance athletes, a live group that has trained with me for six years"
                 }
                 className={`${inputCls} resize-none`}
@@ -395,10 +340,10 @@ export function JoinNetworkForm({
 
             <div>
               <label htmlFor="seeks" className={labelCls} style={labelStyle}>
-                Who you would want next to you
+                What kind of collaboration partner would be valuable for you?
               </label>
               <p className="text-xs mb-2" style={{ color: "#64748b" }}>
-                A person or a place, as a picture: who would let you go all in on your part.
+                Who would let you go all in on your part and complement you?
               </p>
               <textarea
                 id="seeks"
@@ -410,13 +355,77 @@ export function JoinNetworkForm({
                 onChange={(e) => setSeeks(e.target.value)}
                 placeholder={
                   isStudio
-                    ? "e.g. a sports nutritionist to take our members through six weeks, live"
-                    : "e.g. a strength coach whose group trains together every week, or a studio whose members already ask for nutrition"
+                    ? "e.g. access to experts as an add-on for our members, another studio or expert to build up our digital offer beyond our location"
+                    : "e.g. a strength coach whose groups train together every week, a fitness influencer with reach and distribution, a studio or gym looking to extend their offer to their members and audience"
                 }
                 className={`${inputCls} resize-none`}
                 style={field}
               />
               {counter(seeks.length)}
+            </div>
+          </section>
+
+          {/* ── About you ── */}
+          <section className={sectionCls} style={sectionStyle}>
+            <div>
+              <h2 className="text-lg font-black font-headline tracking-tight mb-1" style={{ color: INK }}>
+                About you
+              </h2>
+              <p className="text-xs" style={{ color: "#64748b" }}>
+                {isStudio
+                  ? "The story of the studio: how it started, who trains there, what it is known for."
+                  : "The person behind the card: how you got here, who you work with, what you care about."}
+              </p>
+            </div>
+            <textarea
+              id="bio"
+              name="bio"
+              rows={4}
+              maxLength={2000}
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              placeholder={
+                isStudio
+                  ? "e.g. Founded 2015. A community of 400 members, known for small groups and coaches who stay."
+                  : "e.g. Ten years in professional sport, now working with private clients who want the same standard."
+              }
+              className={`${inputCls} resize-none`}
+              style={field}
+            />
+          </section>
+
+          {/* ── Your background ── */}
+          <section className={sectionCls} style={sectionStyle}>
+            <div>
+              <h2 className="text-lg font-black font-headline tracking-tight mb-1" style={{ color: INK }}>
+                Your background
+              </h2>
+              <p className="text-xs" style={{ color: "#64748b" }}>
+                What makes you credible at a glance. It shows on your card and, later, on your
+                experience pages. All optional.
+              </p>
+            </div>
+
+            <CredentialsEditor
+              intro="Certifications, education, experience. Each entry saves on its own."
+              onChange={setCreds}
+            />
+
+            <div>
+              <label htmlFor="disciplines" className={labelCls} style={labelStyle}>
+                Disciplines <span className="normal-case tracking-normal font-normal">(optional)</span>
+              </label>
+              <input
+                id="disciplines"
+                name="disciplines"
+                type="text"
+                maxLength={200}
+                value={disciplines}
+                onChange={(e) => setDisciplines(e.target.value)}
+                placeholder="Comma-separated, e.g. strength, mobility, sports nutrition"
+                className={inputCls}
+                style={field}
+              />
             </div>
           </section>
 
@@ -442,6 +451,11 @@ export function JoinNetworkForm({
               </Link>
               . We introduce you the moment a card fits yours. Nothing binding, nothing to run.
               Being seen is the whole point of joining early.
+            </p>
+            <p className="text-sm leading-relaxed font-bold font-headline" style={{ color: INK }}>
+              You join as a founding member. The badge stays on your card when INFITRA opens
+              publicly, founding cards hold the top spot in discovery, and your audience stays
+              yours.
             </p>
           </section>
 

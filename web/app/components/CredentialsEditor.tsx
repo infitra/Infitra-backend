@@ -16,10 +16,11 @@ export interface EditableCredential {
   year_end: number | null;
 }
 
+// Experience first: it is the default and the most common entry.
 const KIND_META: Record<EditableCredential["kind"], { label: string }> = {
-  certification: { label: "Certification" },
-  education: { label: "Education" },
   experience: { label: "Experience" },
+  education: { label: "Education" },
+  certification: { label: "Certification" },
 };
 
 /**
@@ -42,7 +43,7 @@ export function CredentialsEditor({
 }) {
   const [creds, setCreds] = useState<EditableCredential[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [kind, setKind] = useState<EditableCredential["kind"]>("certification");
+  const [kind, setKind] = useState<EditableCredential["kind"]>("experience");
   const [title, setTitle] = useState("");
   const [org, setOrg] = useState("");
   const [year, setYear] = useState("");
@@ -244,7 +245,7 @@ export function CredentialsEditor({
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           onKeyDown={enterAdds}
-          placeholder="Title, e.g. BSc Sport Science"
+          placeholder="Title, e.g. Head coach, BSc Sport Science"
           maxLength={120}
           className="h-9 rounded-lg px-2.5 text-xs col-span-2"
           style={inputStyle}

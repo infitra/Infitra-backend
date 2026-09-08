@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ParticipantNav } from "@/app/components/ParticipantNav";
 import { FoundingCard, type FoundingMember } from "@/app/components/FoundingCard";
+import { FoundingExpertBadge } from "@/app/(app)/experiences/[id]/PublicChallengeHero";
 import { JoinNetworkForm } from "./JoinNetworkForm";
 
 export const metadata = {
@@ -152,7 +153,7 @@ export default async function NetworkPage({
             </h1>
             <p className="text-base lg:text-lg" style={{ color: "#475569" }}>
               {justJoined
-                ? "Your card is live on infitra.fit and in the network. We read every new card ourselves and reach out the moment we see a fit."
+                ? "Your card is live on infitra.fit and in the network. The founding network is building up around it, and when a card fits yours, you hear from us."
                 : "Live on infitra.fit and in the network. Keep it current: it is what we match on."}
             </p>
           </header>
@@ -192,57 +193,73 @@ export default async function NetworkPage({
                   </Link>
                 </div>
                 <div style={{ boxShadow: "0 24px 60px rgba(0,0,0,0.35)", borderRadius: 16 }}>
-                  <FoundingCard m={me} />
+                  <FoundingCard m={me} solid />
                 </div>
               </div>
 
-              <div className="min-w-0">
-                <p
-                  className="text-[11px] font-bold font-headline uppercase tracking-[0.25em] mb-5"
-                  style={{ color: ORANGE }}
+              <div className="min-w-0 flex flex-col gap-8">
+                <div
+                  className="rounded-2xl p-5"
+                  style={{
+                    backgroundColor: "rgba(156,240,255,0.08)",
+                    border: "1px solid rgba(156,240,255,0.25)",
+                  }}
                 >
-                  What happens next
-                </p>
-                <ol className="flex flex-col gap-5">
-                  {[
-                    {
-                      t: "We read your card.",
-                      d: "Every new card, ourselves, within a day. While INFITRA is invite-only, the matching is done by hand.",
-                    },
-                    {
-                      t: "We introduce you.",
-                      d: "The moment a card fits yours, you get a personal introduction. Nothing automated, nothing binding.",
-                    },
-                    {
-                      t: "When it clicks, we open the workspace.",
-                      d: "For you both: outline, page, live rooms and the revenue split, set up together. The first experiences on INFITRA come out of exactly these introductions.",
-                    },
-                  ].map((step, i) => (
-                    <li key={step.t} className="flex gap-4">
-                      <span
-                        className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-black font-headline"
-                        style={{ backgroundColor: ORANGE, color: "#fff" }}
-                      >
-                        {i + 1}
-                      </span>
-                      <div>
-                        <p className="text-base font-black font-headline tracking-tight" style={{ color: CREAM }}>
-                          {step.t}
-                        </p>
-                        <p className="text-sm leading-relaxed mt-1" style={{ color: "rgba(242,239,232,0.72)" }}>
-                          {step.d}
-                        </p>
-                      </div>
-                    </li>
-                  ))}
-                </ol>
-                <p
-                  className="text-xs leading-relaxed mt-6 pt-5"
-                  style={{ color: CYAN_BRIGHT, borderTop: "1px solid rgba(242,239,232,0.15)" }}
-                >
-                  Founding cards keep the top spot in discovery when INFITRA opens publicly. Your
-                  audience stays yours, and your card can be withdrawn any time.
-                </p>
+                  <p
+                    className="text-[11px] font-bold font-headline uppercase tracking-[0.25em] mb-3"
+                    style={{ color: CYAN_BRIGHT }}
+                  >
+                    Yours to keep
+                  </p>
+                  <FoundingExpertBadge className="mb-3" />
+                  <p className="text-sm leading-relaxed" style={{ color: CREAM }}>
+                    The founding member badge stays on your card when INFITRA opens publicly, and
+                    founding cards hold the top spot in discovery. Your audience stays yours, and
+                    your card can be withdrawn any time.
+                  </p>
+                </div>
+
+                <div>
+                  <p
+                    className="text-[11px] font-bold font-headline uppercase tracking-[0.25em] mb-5"
+                    style={{ color: ORANGE }}
+                  >
+                    What happens next
+                  </p>
+                  <ol className="flex flex-col gap-5">
+                    {[
+                      {
+                        t: "Your card is live.",
+                        d: "It shows on infitra.fit and to everyone in the network. There is nothing more to do for now.",
+                      },
+                      {
+                        t: "The founding network is building up.",
+                        d: "We are bringing in experts and studios one by one, by hand. Introductions start once the right counterparts are in: weeks, not days.",
+                      },
+                      {
+                        t: "We come to you.",
+                        d: "When a card fits yours, you hear from us personally, and if it clicks we open the workspace for you both. No need to check back.",
+                      },
+                    ].map((step, i) => (
+                      <li key={step.t} className="flex gap-4">
+                        <span
+                          className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-black font-headline"
+                          style={{ backgroundColor: ORANGE, color: "#fff" }}
+                        >
+                          {i + 1}
+                        </span>
+                        <div>
+                          <p className="text-base font-black font-headline tracking-tight" style={{ color: CREAM }}>
+                            {step.t}
+                          </p>
+                          <p className="text-sm leading-relaxed mt-1" style={{ color: "rgba(242,239,232,0.72)" }}>
+                            {step.d}
+                          </p>
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
               </div>
             </div>
           </section>

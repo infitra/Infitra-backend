@@ -187,7 +187,8 @@ revenue," never "we take 10%." The fee is disclosed second.
 - Audiences and clients stay entirely the experts'
 - Payout within 14 days of the experience ending
 - Pricing in CHF
-- **Founding perks (public since 1 Sep 2026):** the founding expert badge
+- **Founding perks (public since 1 Sep 2026):** the founding member badge
+  (renamed from "founding expert" on 8 Sep 2026 so it fits studios too)
   persists after the pilot; reviews earned in the pilot carry over when
   INFITRA opens publicly; founding experts hold the top spot in discovery at
   public launch. The top spot is a product commitment: build the ranking

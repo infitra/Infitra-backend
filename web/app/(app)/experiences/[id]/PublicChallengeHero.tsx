@@ -100,7 +100,7 @@ function FoundingExpertMark({ size = 18, className = "" }: { size?: number; clas
 /**
  * Compact founding marker for anywhere the expert appears OUTSIDE their
  * profile/detail block (hero identity, the live space). The gold INFITRA
- * mark by the name; hovering reveals "Founding expert" via a real tooltip
+ * mark by the name; hovering reveals "Founding member" via a real tooltip
  * element (the native title attribute was unreliable). The labelled pill
  * (FoundingExpertBadge) is reserved for the detailed "Meet your Experts".
  */
@@ -114,7 +114,7 @@ export function FoundingExpertStar({
   return (
     <span
       className={`relative inline-flex items-center align-middle group ${className}`}
-      aria-label="Founding expert"
+      aria-label="Founding member"
       style={{ cursor: "default" }}
     >
       <FoundingExpertMark size={size} />
@@ -123,14 +123,15 @@ export function FoundingExpertStar({
         className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-full mb-1.5 whitespace-nowrap rounded-md px-2 py-1 text-[10px] font-bold font-headline opacity-0 group-hover:opacity-100 transition-opacity duration-150"
         style={{ backgroundColor: "#0F2229", color: "#FFFFFF", zIndex: 30, letterSpacing: "0.01em" }}
       >
-        Founding expert
+        Founding member
       </span>
     </span>
   );
 }
 
 /**
- * Founding Expert chip — the labelled credential for the detailed expert
+ * Founding member chip (renamed from Founding Expert on 8 Sep 2026, so it
+ * reads right for studios too) — the labelled credential for the detailed expert
  * cards ("Meet your Experts"): the gold INFITRA mark + label on a warm gold
  * pill. Everywhere else uses the compact FoundingExpertStar.
  */
@@ -148,7 +149,7 @@ export function FoundingExpertBadge({ className = "" }: { className?: string }) 
         className="text-[10px] font-black font-headline uppercase tracking-[0.1em]"
         style={{ color: "#9a7414" }}
       >
-        Founding Expert
+        Founding member
       </span>
     </span>
   );
