@@ -33,7 +33,7 @@ export default async function NetworkEditPage() {
   if (!isCreator) redirect("/me");
   if (profile.community_visibility !== "public") redirect("/network");
 
-  const facts = (profile.profile_facts ?? {}) as { city?: string; disciplines?: string[] };
+  const facts = (profile.profile_facts ?? {}) as { city?: string };
 
   return (
     <div className="min-h-screen">
@@ -43,26 +43,15 @@ export default async function NetworkEditPage() {
         workspaceEnabled={profile.workspace_enabled}
         isAdmin={profile.is_admin === true}
       />
-      <div className="pt-24 px-6 pb-16">
+      <div className="pt-20 px-6 pb-16">
         <div className="max-w-6xl mx-auto">
-          <header className="mb-10 max-w-3xl">
-            <Link
-              href="/network"
-              className="inline-block text-[11px] font-bold font-headline uppercase tracking-[0.25em] mb-4"
-              style={{ color: "#0891b2" }}
-            >
-              ← Your card
-            </Link>
-            <h1
-              className="text-3xl lg:text-5xl font-black font-headline tracking-tight mb-3"
-              style={{ color: "#0F2229", letterSpacing: "-0.03em" }}
-            >
-              Edit your card.
-            </h1>
-            <p className="text-base lg:text-lg" style={{ color: "#475569" }}>
-              Changes go live on infitra.fit and in the network as soon as you save.
-            </p>
-          </header>
+          <Link
+            href="/network"
+            className="inline-block text-[11px] font-bold font-headline uppercase tracking-[0.25em] mb-6"
+            style={{ color: "#0891b2" }}
+          >
+            ← Back to your card
+          </Link>
 
           <JoinNetworkForm
             mode="edit"
@@ -73,7 +62,6 @@ export default async function NetworkEditPage() {
               bio: profile.bio ?? "",
               avatarUrl: profile.avatar_url ?? null,
               city: facts.city ?? "",
-              disciplines: facts.disciplines ?? [],
               entityType: (profile.entity_type ?? null) as "expert" | "studio" | null,
               brings: profile.brings ?? "",
               seeks: profile.seeks ?? "",

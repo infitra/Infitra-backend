@@ -112,7 +112,7 @@ export async function attestSigningIdentity(prevState: unknown, formData: FormDa
 
 /**
  * The founding-network card, written in one go (8 Sep 2026): the profile
- * (name, one line, city, a few lines, disciplines, photo URL) and the card
+ * (name, one line, city, a few lines, photo URL) and the card
  * (expert or studio, what you bring, who you would want next to you).
  * Joining flips the card live; the database stamps community_consent_at.
  * There is no visibility choice and no posts switch: on infitra.fit, in the
@@ -149,11 +149,6 @@ export async function joinFoundingNetwork(prevState: unknown, formData: FormData
   if (entityRaw !== "expert" && entityRaw !== "studio") {
     return { error: "Please choose expert or studio." };
   }
-  const disciplines = text("disciplines", 200)
-    .split(",")
-    .map((d) => d.trim().slice(0, 40))
-    .filter(Boolean)
-    .slice(0, 8);
 
   const avatarUrl = text("avatar_url", 500);
   if (avatarUrl && !avatarUrl.includes(`/storage/v1/object/public/profile-images/${user.id}/`)) {
@@ -168,13 +163,11 @@ export async function joinFoundingNetwork(prevState: unknown, formData: FormData
   const isCreator = profile?.role === "creator" || profile?.role === "admin";
   if (!isCreator) return { error: "The founding network is for experts and studios." };
 
-  // City and disciplines live in profile_facts next to the other optional
-  // facts (age, training since, focus), which the card does not ask for.
+  // City lives in profile_facts next to the other optional facts, which the
+  // card does not ask for and leaves untouched.
   const facts = { ...((profile?.profile_facts as Record<string, unknown> | null) ?? {}) };
   if (city) facts.city = city;
   else delete facts.city;
-  if (disciplines.length > 0) facts.disciplines = disciplines;
-  else delete facts.disciplines;
 
   const updates: Record<string, unknown> = {
     display_name: displayName,

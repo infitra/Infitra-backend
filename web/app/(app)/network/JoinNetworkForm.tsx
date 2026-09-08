@@ -17,7 +17,6 @@ export interface JoinNetworkValues {
   bio: string;
   avatarUrl: string | null;
   city: string;
-  disciplines: string[];
   entityType: "expert" | "studio" | null;
   brings: string;
   seeks: string;
@@ -53,7 +52,6 @@ export function JoinNetworkForm({
   const [tagline, setTagline] = useState(initial.tagline);
   const [city, setCity] = useState(initial.city);
   const [bio, setBio] = useState(initial.bio);
-  const [disciplines, setDisciplines] = useState(initial.disciplines.join(", "));
   const [entity, setEntity] = useState<"expert" | "studio">(initial.entityType ?? "expert");
   const [brings, setBrings] = useState(initial.brings);
   const [seeks, setSeeks] = useState(initial.seeks);
@@ -102,12 +100,6 @@ export function JoinNetworkForm({
   const busy = uploading || pending;
   const error = localError ?? (state && "error" in state ? state.error : null);
   const isStudio = entity === "studio";
-  const disciplineList = disciplines
-    .split(",")
-    .map((d) => d.trim())
-    .filter(Boolean)
-    .slice(0, 8);
-
   const preview: FoundingMember = {
     id: initial.id,
     display_name: name.trim() || (isStudio ? "Your studio" : "Your name"),
@@ -119,7 +111,7 @@ export function JoinNetworkForm({
     is_founding_expert: initial.isFoundingExpert,
     brings: brings.trim() || null,
     seeks: seeks.trim() || null,
-    facts: { city: city.trim() || null, disciplines: disciplineList, focus: null },
+    facts: { city: city.trim() || null },
     credentials: creds.map((c) => ({
       kind: c.kind,
       title: c.title,
@@ -158,11 +150,19 @@ export function JoinNetworkForm({
           {/* ── Who you are ── */}
           <section className={sectionCls} style={sectionStyle}>
             <div>
+              <p
+                className="text-[11px] font-bold font-headline uppercase tracking-[0.25em] mb-3"
+                style={{ color: CYAN }}
+              >
+                {mode === "join" ? "Founding network · Your card" : "Edit your card"}
+              </p>
               <h2 className="text-lg font-black font-headline tracking-tight mb-1" style={{ color: INK }}>
                 Who you are
               </h2>
               <p className="text-xs" style={{ color: "#64748b" }}>
-                The face of the card. Real photo, real name, the one line people remember you by.
+                {mode === "join"
+                  ? "Your card is how the network sees you and how we find you the right fit. It takes shape on the right as you go. Real photo, real name, the one line people remember you by."
+                  : "Changes go live on infitra.fit and in the network as soon as you save."}
               </p>
             </div>
 
@@ -265,6 +265,35 @@ export function JoinNetworkForm({
 
           </section>
 
+          {/* ── About you ── */}
+          <section className={sectionCls} style={sectionStyle}>
+            <div>
+              <h2 className="text-lg font-black font-headline tracking-tight mb-1" style={{ color: INK }}>
+                About you
+              </h2>
+              <p className="text-xs" style={{ color: "#64748b" }}>
+                {isStudio
+                  ? "The story of the studio: how it started, who trains there, what it is known for."
+                  : "The person behind the card: how you got here, who you work with, what you care about."}
+              </p>
+            </div>
+            <textarea
+              id="bio"
+              name="bio"
+              rows={4}
+              maxLength={2000}
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              placeholder={
+                isStudio
+                  ? "e.g. Founded 2015. A community of 400 members, known for small groups and coaches who stay."
+                  : "e.g. Ten years in professional sport, now working with private clients who want the same standard."
+              }
+              className={`${inputCls} resize-none`}
+              style={field}
+            />
+          </section>
+
           {/* ── Your card ── */}
           <section className={sectionCls} style={sectionStyle}>
             <div>
@@ -365,35 +394,6 @@ export function JoinNetworkForm({
             </div>
           </section>
 
-          {/* ── About you ── */}
-          <section className={sectionCls} style={sectionStyle}>
-            <div>
-              <h2 className="text-lg font-black font-headline tracking-tight mb-1" style={{ color: INK }}>
-                About you
-              </h2>
-              <p className="text-xs" style={{ color: "#64748b" }}>
-                {isStudio
-                  ? "The story of the studio: how it started, who trains there, what it is known for."
-                  : "The person behind the card: how you got here, who you work with, what you care about."}
-              </p>
-            </div>
-            <textarea
-              id="bio"
-              name="bio"
-              rows={4}
-              maxLength={2000}
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              placeholder={
-                isStudio
-                  ? "e.g. Founded 2015. A community of 400 members, known for small groups and coaches who stay."
-                  : "e.g. Ten years in professional sport, now working with private clients who want the same standard."
-              }
-              className={`${inputCls} resize-none`}
-              style={field}
-            />
-          </section>
-
           {/* ── Your background ── */}
           <section className={sectionCls} style={sectionStyle}>
             <div>
@@ -402,7 +402,7 @@ export function JoinNetworkForm({
               </h2>
               <p className="text-xs" style={{ color: "#64748b" }}>
                 What makes you credible at a glance. It shows on your card and, later, on your
-                experience pages. All optional.
+                experience pages. Optional.
               </p>
             </div>
 
@@ -410,23 +410,6 @@ export function JoinNetworkForm({
               intro="Certifications, education, experience. Each entry saves on its own."
               onChange={setCreds}
             />
-
-            <div>
-              <label htmlFor="disciplines" className={labelCls} style={labelStyle}>
-                Disciplines <span className="normal-case tracking-normal font-normal">(optional)</span>
-              </label>
-              <input
-                id="disciplines"
-                name="disciplines"
-                type="text"
-                maxLength={200}
-                value={disciplines}
-                onChange={(e) => setDisciplines(e.target.value)}
-                placeholder="Comma-separated, e.g. strength, mobility, sports nutrition"
-                className={inputCls}
-                style={field}
-              />
-            </div>
           </section>
 
           {/* ── How we put you forward ── */}

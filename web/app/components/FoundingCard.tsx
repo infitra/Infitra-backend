@@ -2,15 +2,14 @@ import { CredentialIcon, credentialPeriod } from "@/app/components/CredentialIco
 import { FoundingExpertBadge } from "@/app/(app)/experiences/[id]/PublicChallengeHero";
 
 /**
- * One founding-network card (6 Sep 2026, restructured 8 Sep). Rendered on
- * the landing row, on /founding-network, in the logged-in directory, live
- * next to the join form and on the arrival stage; the same shape everywhere,
- * so a member sees on the homepage exactly what they set up.
+ * One founding-network card (6 Sep 2026, v4 on 8 Sep). Rendered on the
+ * landing row, on /founding-network, in the logged-in directory, live next
+ * to the join form and on the arrival stage; the same shape everywhere.
  *
- * Reads as the member's own card, top to bottom: who they are; their
- * expertise and what would complement it (the matching surface); about;
- * background grouped by kind; disciplines. Fed by load_founding_community():
- * explicit public-safe columns, never an email.
+ * Weight, top to bottom: who (name, one line, city, badge); about, quiet;
+ * the two answers, loud (the matching surface); background, quietest, in a
+ * footer strip. Fed by load_founding_community(): explicit public-safe
+ * columns, never an email.
  */
 export interface FoundingMember {
   id: string;
@@ -23,7 +22,7 @@ export interface FoundingMember {
   is_founding_expert: boolean;
   brings: string | null;
   seeks: string | null;
-  facts: { city?: string | null; disciplines?: string[]; focus?: string | null };
+  facts: { city?: string | null };
   credentials: { kind: string; title: string; org: string | null; year: number | null; year_end: number | null }[];
 }
 
@@ -31,6 +30,7 @@ const INK = "#0F2229";
 const ORANGE = "#FF6130";
 const CYAN = "#0891b2";
 const MUTED = "#475569";
+const FAINT = "#94a3b8";
 
 const KIND_ORDER = ["experience", "education", "certification"] as const;
 const KIND_LABEL: Record<(typeof KIND_ORDER)[number], string> = {
@@ -39,23 +39,10 @@ const KIND_LABEL: Record<(typeof KIND_ORDER)[number], string> = {
   certification: "Certifications",
 };
 
-function Block({
-  label,
-  text,
-  accent,
-  tint,
-}: {
-  label: string;
-  text: string;
-  accent: string;
-  tint: string;
-}) {
+function Block({ label, text, accent, tint }: { label: string; text: string; accent: string; tint: string }) {
   return (
     <div className="rounded-xl px-4 py-3" style={{ backgroundColor: tint, borderLeft: `3px solid ${accent}` }}>
-      <p
-        className="text-[10px] font-black font-headline uppercase tracking-[0.16em] mb-1"
-        style={{ color: accent }}
-      >
+      <p className="text-[10px] font-black font-headline uppercase tracking-[0.16em] mb-1" style={{ color: accent }}>
         {label}
       </p>
       <p className="text-[14px] leading-snug" style={{ color: INK }}>
@@ -78,7 +65,6 @@ export function FoundingCard({
   const name = m.display_name ?? "Founding member";
   const initial = (name[0] ?? "?").toUpperCase();
   const isStudio = m.entity_type === "studio";
-  const disciplines = (m.facts?.disciplines ?? []).slice(0, compact ? 3 : 8);
   const creds = (m.credentials ?? []).slice(0, compact ? 3 : 8);
   const groups = KIND_ORDER.map((kind) => ({
     kind,
@@ -89,6 +75,7 @@ export function FoundingCard({
     ? { brings: "What we bring", seeks: "What would complement our offer" }
     : { brings: "My expertise", seeks: "What would complement my work" };
   const pad = compact ? "px-5" : "px-5 lg:px-6";
+  const avatar = compact ? "w-14 h-14" : "w-[72px] h-[72px]";
 
   return (
     <article
@@ -100,18 +87,18 @@ export function FoundingCard({
       }}
     >
       {/* Who */}
-      <div className={`${pad} pt-5 lg:pt-6 pb-4 flex items-start gap-4`}>
+      <div className={`${pad} pt-5 lg:pt-6 flex items-start gap-4`}>
         {m.avatar_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={m.avatar_url}
             alt=""
-            className={`${compact ? "w-14 h-14" : "w-[72px] h-[72px]"} rounded-full object-cover shrink-0`}
+            className={`${avatar} rounded-full object-cover shrink-0`}
             style={{ border: "2px solid rgba(255,97,48,0.25)" }}
           />
         ) : (
           <div
-            className={`${compact ? "w-14 h-14" : "w-[72px] h-[72px]"} rounded-full flex items-center justify-center shrink-0`}
+            className={`${avatar} rounded-full flex items-center justify-center shrink-0`}
             style={{ backgroundColor: "rgba(8,145,178,0.12)" }}
           >
             <span className="text-2xl font-black font-headline" style={{ color: CYAN }}>
@@ -122,7 +109,7 @@ export function FoundingCard({
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
             <h3
-              className="text-lg font-black font-headline tracking-tight leading-tight"
+              className={`${compact ? "text-lg" : "text-xl"} font-black font-headline tracking-tight leading-tight`}
               style={{ color: INK }}
             >
               {name}
@@ -143,7 +130,7 @@ export function FoundingCard({
             </p>
           )}
           {m.facts?.city && (
-            <p className="text-xs mt-1" style={{ color: "#64748b" }}>
+            <p className="text-xs mt-1" style={{ color: FAINT }}>
               {m.facts.city}
             </p>
           )}
@@ -151,51 +138,40 @@ export function FoundingCard({
         </div>
       </div>
 
-      {/* The matching surface */}
-      {(m.brings || m.seeks) && (
-        <div className={`${pad} pb-4 flex flex-col gap-2.5`}>
-          {m.brings && (
-            <Block label={labels.brings} text={m.brings} accent={ORANGE} tint="rgba(255,97,48,0.05)" />
-          )}
-          {m.seeks && (
-            <Block label={labels.seeks} text={m.seeks} accent={CYAN} tint="rgba(8,145,178,0.06)" />
-          )}
-        </div>
-      )}
-
-      {/* About */}
+      {/* About, quiet */}
       {!compact && m.bio && (
-        <div className={`${pad} pb-4`}>
-          <p
-            className="text-[10px] font-black font-headline uppercase tracking-[0.16em] mb-1"
-            style={{ color: "#94a3b8" }}
-          >
-            About
-          </p>
-          <p className="text-sm leading-relaxed" style={{ color: MUTED }}>
-            {m.bio}
-          </p>
+        <p className={`${pad} pt-4 text-sm leading-relaxed`} style={{ color: MUTED }}>
+          {m.bio}
+        </p>
+      )}
+
+      {/* The two answers, loud */}
+      {(m.brings || m.seeks) && (
+        <div className={`${pad} pt-4 pb-5 flex flex-col gap-2.5`}>
+          {m.brings && <Block label={labels.brings} text={m.brings} accent={ORANGE} tint="rgba(255,97,48,0.05)" />}
+          {m.seeks && <Block label={labels.seeks} text={m.seeks} accent={CYAN} tint="rgba(8,145,178,0.06)" />}
         </div>
       )}
 
-      {/* Background, grouped by kind; a subtitle only where there is an entry */}
+      {/* Background, quietest: a footer strip */}
       {groups.length > 0 && (
-        <div className={`${pad} pb-4 flex flex-col gap-3 mt-auto`}>
+        <div
+          className={`${pad} py-4 mt-auto flex flex-col gap-3`}
+          style={{ backgroundColor: "rgba(15,34,41,0.035)", borderTop: "1px solid rgba(15,34,41,0.06)" }}
+        >
           {groups.map((g) => (
             <div key={g.kind}>
               <p
-                className="flex items-center gap-1.5 text-[10px] font-black font-headline uppercase tracking-[0.16em] mb-1.5"
-                style={{ color: "#94a3b8" }}
+                className="flex items-center gap-1.5 text-[10px] font-bold font-headline uppercase tracking-[0.16em] mb-1"
+                style={{ color: FAINT }}
               >
-                <span style={{ color: ORANGE }}>
-                  <CredentialIcon kind={g.kind} size={13} />
-                </span>
+                <CredentialIcon kind={g.kind} size={12} />
                 {g.label}
               </p>
-              <ul className="flex flex-col gap-1">
+              <ul className="flex flex-col gap-0.5">
                 {g.items.map((c, i) => (
                   <li key={i} className="text-xs leading-snug" style={{ color: MUTED }}>
-                    <span className="font-bold font-headline" style={{ color: INK }}>
+                    <span className="font-semibold" style={{ color: INK }}>
                       {c.title}
                     </span>
                     {c.org ? ` · ${c.org}` : ""}
@@ -204,24 +180,6 @@ export function FoundingCard({
                 ))}
               </ul>
             </div>
-          ))}
-        </div>
-      )}
-
-      {/* Disciplines */}
-      {disciplines.length > 0 && (
-        <div
-          className={`${pad} py-3 flex flex-wrap gap-1.5`}
-          style={{ backgroundColor: "rgba(15,34,41,0.035)", borderTop: "1px solid rgba(15,34,41,0.06)" }}
-        >
-          {disciplines.map((d) => (
-            <span
-              key={d}
-              className="text-[11px] px-2.5 py-1 rounded-md font-bold font-headline"
-              style={{ backgroundColor: "rgba(255,255,255,0.8)", color: INK, border: "1px solid rgba(15,34,41,0.08)" }}
-            >
-              {d}
-            </span>
           ))}
         </div>
       )}
