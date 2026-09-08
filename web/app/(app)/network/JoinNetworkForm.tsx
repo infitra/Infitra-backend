@@ -314,7 +314,7 @@ export function JoinNetworkForm({
                 maxLength={50}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder={isStudio ? "e.g. Studio Kraftwerk" : "e.g. Roberta Burla"}
+                placeholder={isStudio ? "e.g. Studio Kraftwerk" : "e.g. Anna Keller"}
                 className={inputCls}
                 style={field}
               />
