@@ -155,7 +155,7 @@ function Answer({
   label,
   text,
   accent,
-  tint,
+  disc,
 }: {
   kind: "brings" | "seeks";
   label: string;
@@ -195,6 +195,7 @@ export function FoundingCard({
   m,
   compact = false,
   solid = false,
+  editHref,
 }: {
   m: FoundingMember;
   compact?: boolean;
