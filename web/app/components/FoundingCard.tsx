@@ -121,8 +121,8 @@ function CardWaves({ id }: { id: string }) {
 
 function AnswerIcon({ kind, color }: { kind: "brings" | "seeks"; color: string }) {
   const common = {
-    width: 24,
-    height: 24,
+    width: 20,
+    height: 20,
     viewBox: "0 0 24 24",
     fill: "none",
     stroke: color,
@@ -168,13 +168,13 @@ function Answer({
       {/* The icon, and the label coming out of it */}
       <div className="flex items-center">
         <span
-          className="relative z-10 w-12 h-12 rounded-full flex items-center justify-center shrink-0"
+          className="relative z-10 w-10 h-10 rounded-full flex items-center justify-center shrink-0"
           style={{ backgroundColor: accent, boxShadow: "0 0 0 3px #FFFFFF" }}
         >
           <AnswerIcon kind={kind} color="#FFFFFF" />
         </span>
         <span
-          className="-ml-3 pl-5 pr-3 py-1 rounded-full text-[10px] font-black font-headline uppercase tracking-[0.12em] text-white whitespace-nowrap"
+          className="-ml-3 pl-5 pr-3.5 py-1.5 rounded-full text-[11.5px] font-black font-headline uppercase tracking-[0.12em] text-white whitespace-nowrap"
           style={{ backgroundColor: accent }}
         >
           {label}
