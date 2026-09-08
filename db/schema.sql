@@ -1064,7 +1064,7 @@ begin
             p.id, p.display_name, p.username, p.role, p.is_admin, p.visibility,
             p.created_at, p.is_founding_expert,
             p.workspace_enabled, p.entity_type, p.community_visibility, p.announce_ok,
-            p.brings, p.seeks,
+            p.brings, p.seeks, p.link_url,
             u.email,
             u.banned_until,
             u.raw_user_meta_data ->> 'terms_version' as terms_version,
@@ -4700,6 +4700,7 @@ begin
     new.community_visibility := 'none';
     new.brings := null;
     new.seeks := null;
+    new.link_url := null;
     new.announce_ok := false;
   else
     if new.entity_type is null then
@@ -6354,6 +6355,7 @@ begin
                'is_founding_expert', p.is_founding_expert,
                'brings', p.brings,
                'seeks', p.seeks,
+               'link_url', case when p_public_only then null else p.link_url end,
                'facts', jsonb_build_object('city', p.profile_facts->>'city'),
                'credentials', coalesce((
                  select jsonb_agg(jsonb_build_object(
@@ -10107,11 +10109,13 @@ CREATE TABLE IF NOT EXISTS "public"."app_profile" (
     "brings" "text",
     "seeks" "text",
     "announce_ok" boolean DEFAULT true NOT NULL,
+    "link_url" "text",
     CONSTRAINT "app_profile_brings_len" CHECK ((("brings" IS NULL) OR ("char_length"("brings") <= 200))),
     CONSTRAINT "app_profile_community_visibility_check" CHECK (("community_visibility" = ANY (ARRAY['none'::"text", 'public'::"text"]))),
     CONSTRAINT "app_profile_creator_visibility_check" CHECK ((("role" <> 'creator'::"text") OR ("visibility" = 'public'::"text"))),
     CONSTRAINT "app_profile_entity_type_check" CHECK (((("role" = 'participant'::"text") AND ("entity_type" IS NULL)) OR (("role" = ANY (ARRAY['creator'::"text", 'admin'::"text"])) AND ("entity_type" = ANY (ARRAY['expert'::"text", 'studio'::"text"]))))),
-    CONSTRAINT "app_profile_participant_no_supply_fields" CHECK ((("role" <> 'participant'::"text") OR (("workspace_enabled" = false) AND ("community_visibility" = 'none'::"text") AND ("brings" IS NULL) AND ("seeks" IS NULL) AND ("announce_ok" = false)))),
+    CONSTRAINT "app_profile_link_url_check" CHECK ((("link_url" IS NULL) OR (("length"("link_url") <= 200) AND ("link_url" ~* '^https?://'::"text")))),
+    CONSTRAINT "app_profile_participant_no_supply_fields" CHECK ((("role" <> 'participant'::"text") OR (("workspace_enabled" = false) AND ("community_visibility" = 'none'::"text") AND ("brings" IS NULL) AND ("seeks" IS NULL) AND ("link_url" IS NULL) AND ("announce_ok" = false)))),
     CONSTRAINT "app_profile_role_check" CHECK (("role" = ANY (ARRAY['participant'::"text", 'creator'::"text", 'admin'::"text"]))),
     CONSTRAINT "app_profile_seeks_len" CHECK ((("seeks" IS NULL) OR ("char_length"("seeks") <= 200))),
     CONSTRAINT "app_profile_visibility_check" CHECK (("visibility" = ANY (ARRAY['public'::"text", 'private'::"text"])))
@@ -10146,6 +10150,10 @@ COMMENT ON COLUMN "public"."app_profile"."seeks" IS 'Founding card: who they wou
 
 
 COMMENT ON COLUMN "public"."app_profile"."announce_ok" IS 'Featuring in posts is part of the founding-network deal; false records a withdrawal, set from the admin board.';
+
+
+
+COMMENT ON COLUMN "public"."app_profile"."link_url" IS 'Founding card: where to find them (website or Instagram), normalised to a URL. Network-only; the public reader omits it.';
 
 
 
