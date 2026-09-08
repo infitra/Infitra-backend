@@ -6,8 +6,9 @@ import { FoundingExpertBadge } from "@/app/(app)/experiences/[id]/PublicChalleng
  * landing row, on /founding-network, in the network, live next to the join
  * form and on the arrival stage; the same shape everywhere.
  *
- * The photo is the card: a full-width portrait with the name set into it.
- * Then the founding badge, the two answers as tagged blocks, one link to
+ * The photo carries the card: a large square portrait, the kind people
+ * already have, with the name beside it and the founding badge under it.
+ * Then the two answers as tagged blocks, one link to
  * where to find them (network only; the public reader omits it), and the
  * background as a tidy label column on cream. A studio fills the same three
  * background slots with its own meanings: track record, team, recognition.
@@ -33,7 +34,6 @@ const INK = "#0F2229";
 const ORANGE = "#FF6130";
 const CYAN = "#0891b2";
 const CYAN_BRIGHT = "#9CF0FF";
-const CREAM = "#F2EFE8";
 const MUTED = "#475569";
 
 const KIND_ORDER = ["experience", "education", "certification"] as const;
@@ -94,73 +94,68 @@ export function FoundingCard({
     ? { brings: "What we bring", seeks: "What would complement our offer" }
     : { brings: "My expertise", seeks: "What would complement my work" };
   const pad = compact ? "px-5" : "px-5 lg:px-6";
+  const photo = compact ? "w-[104px] h-[104px]" : "w-[160px] h-[160px]";
 
   return (
     <article
-      className="rounded-2xl flex flex-col h-full overflow-hidden"
+      className="rounded-2xl flex flex-col h-full overflow-hidden relative"
       style={{
         backgroundColor: solid ? "#FFFFFF" : "rgba(255,255,255,0.78)",
         border: "1px solid rgba(15,34,41,0.08)",
         boxShadow: "0 1px 2px rgba(15,34,41,0.04), 0 10px 30px rgba(15,34,41,0.05)",
       }}
     >
-      {/* The photo is the card */}
-      <div className="relative w-full" style={{ aspectRatio: compact ? "4 / 3" : "16 / 9" }}>
+      {/* Expert or studio: a corner signal */}
+      <span
+        className="absolute top-4 right-4 text-[10px] font-black font-headline uppercase tracking-[0.16em] px-2.5 py-1 rounded-full"
+        style={{ color: "#fff", backgroundColor: isStudio ? CYAN : ORANGE }}
+      >
+        {isStudio ? "Studio" : "Expert"}
+      </span>
+
+      {/* The person: a large portrait, the kind people already have */}
+      <div className={`${pad} pt-5 lg:pt-6 pr-20 flex items-center gap-5`}>
         {m.avatar_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={m.avatar_url}
             alt=""
-            className="absolute inset-0 w-full h-full object-cover"
-            style={{ objectPosition: "50% 30%" }}
+            className={`${photo} rounded-2xl object-cover shrink-0`}
+            style={{ objectPosition: "50% 30%", boxShadow: "0 14px 30px rgba(15,34,41,0.22), 0 0 0 3px rgba(255,97,48,0.35)" }}
           />
         ) : (
           <div
-            className="absolute inset-0 flex items-center justify-center"
-            style={{ background: "linear-gradient(135deg, #0C262E 0%, #14424E 100%)" }}
+            className={`${photo} rounded-2xl flex items-center justify-center shrink-0`}
+            style={{ background: "linear-gradient(135deg, #0C262E 0%, #14424E 100%)", boxShadow: "0 0 0 3px rgba(8,145,178,0.25)" }}
           >
-            <span className={`${compact ? "text-6xl" : "text-8xl"} font-black font-headline`} style={{ color: "rgba(156,240,255,0.35)" }}>
+            <span className={`${compact ? "text-4xl" : "text-6xl"} font-black font-headline`} style={{ color: CYAN_BRIGHT }}>
               {initial}
             </span>
           </div>
         )}
-        <div
-          className="absolute inset-0"
-          style={{ background: "linear-gradient(180deg, rgba(12,38,46,0) 30%, rgba(12,38,46,0.45) 60%, rgba(12,38,46,0.92) 100%)" }}
-        />
-        <span
-          className="absolute top-4 right-4 text-[10px] font-black font-headline uppercase tracking-[0.16em] px-2.5 py-1 rounded-full"
-          style={{ color: "#fff", backgroundColor: isStudio ? CYAN : ORANGE, boxShadow: "0 2px 8px rgba(0,0,0,0.25)" }}
-        >
-          {isStudio ? "Studio" : "Expert"}
-        </span>
-        <div className={`absolute inset-x-0 bottom-0 ${pad} pb-5`}>
+        <div className="min-w-0 flex-1">
           <h3
-            className={`${compact ? "text-2xl" : "text-3xl lg:text-[34px]"} font-black font-headline tracking-tight leading-none`}
-            style={{ color: CREAM, letterSpacing: "-0.03em", textShadow: "0 1px 2px rgba(0,0,0,0.25)" }}
+            className={`${compact ? "text-xl" : "text-[28px] lg:text-[30px]"} font-black font-headline tracking-tight leading-[1.05]`}
+            style={{ color: INK, letterSpacing: "-0.03em" }}
           >
             {name}
           </h3>
           {m.tagline && (
-            <p className={`${compact ? "text-sm" : "text-base"} font-bold font-headline mt-2 leading-snug`} style={{ color: CYAN_BRIGHT }}>
+            <p className={`${compact ? "text-sm" : "text-[15px]"} font-bold font-headline mt-2 leading-snug`} style={{ color: CYAN }}>
               {m.tagline}
             </p>
           )}
           {m.facts?.city && (
-            <p className="text-xs mt-1" style={{ color: "rgba(242,239,232,0.75)" }}>
+            <p className="text-xs mt-1" style={{ color: "#94a3b8" }}>
               {m.facts.city}
             </p>
           )}
+          {m.is_founding_expert && <FoundingExpertBadge className="mt-3" />}
         </div>
       </div>
 
-      {/* Badge, then the two answers */}
-      <div className={`${pad} pt-4 pb-5 flex flex-col gap-3`}>
-        {m.is_founding_expert && (
-          <div>
-            <FoundingExpertBadge />
-          </div>
-        )}
+      {/* The two answers */}
+      <div className={`${pad} pt-5 pb-5 flex flex-col gap-3`}>
         {m.brings && <Block label={labels.brings} text={m.brings} accent={ORANGE} tint="rgba(255,97,48,0.06)" />}
         {m.seeks && <Block label={labels.seeks} text={m.seeks} accent={CYAN} tint="rgba(8,145,178,0.07)" />}
         {m.link_url && (

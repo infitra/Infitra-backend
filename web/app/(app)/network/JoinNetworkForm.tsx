@@ -210,7 +210,7 @@ export function JoinNetworkForm({
                   {avatarPreview ? "Change photo" : "Upload photo"}
                 </button>
                 <p className="text-[11px] mt-2" style={{ color: "#94a3b8" }}>
-                  Your face or your space. It fills the top of the card. Max 5MB.
+                  The photo you already use, your face or your space. Square works best. Max 5MB.
                 </p>
               </div>
               <input
