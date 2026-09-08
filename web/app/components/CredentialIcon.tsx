@@ -14,10 +14,14 @@ export function CredentialIcon({
   kind,
   size = 14,
   className,
+  studio = false,
 }: {
   kind: string;
   size?: number;
   className?: string;
+  /** A studio's background uses the same three kinds with other meanings
+   *  (track record, team, recognition), so two of the glyphs change. */
+  studio?: boolean;
 }) {
   const common = {
     width: size,
@@ -31,6 +35,29 @@ export function CredentialIcon({
     className,
     "aria-hidden": true,
   };
+
+  if (studio && kind === "experience") {
+    // Track record: the house
+    return (
+      <svg {...common}>
+        <path d="M3 10.5L12 4l9 6.5" />
+        <path d="M5 10v9h14v-9" />
+        <path d="M10 19v-5h4v5" />
+      </svg>
+    );
+  }
+
+  if (studio && kind === "education") {
+    // Team: two people
+    return (
+      <svg {...common}>
+        <circle cx="9" cy="8" r="3.2" />
+        <path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5" />
+        <circle cx="17" cy="9" r="2.6" />
+        <path d="M15.5 14.2c2.7.2 5 2.1 5 4.8" />
+      </svg>
+    );
+  }
 
   if (kind === "education") {
     // Graduation cap

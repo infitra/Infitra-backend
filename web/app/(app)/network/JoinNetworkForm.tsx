@@ -401,14 +401,20 @@ export function JoinNetworkForm({
                 Your background
               </h2>
               <p className="text-xs" style={{ color: "#64748b" }}>
-                What makes you credible at a glance. It shows on your card and, later, on your
-                experience pages. Optional.
+                {isStudio
+                  ? "What makes the studio credible at a glance: track record, team, recognition. It shows on your card. Optional."
+                  : "What makes you credible at a glance. It shows on your card and, later, on your experience pages. Optional."}
               </p>
             </div>
 
             <CredentialsEditor
-              intro="Certifications, education, experience. Each entry saves on its own."
+              intro={
+                isStudio
+                  ? "How long you have run, how many people train with you, who is on the team, what you are licensed or known for. Each entry saves on its own."
+                  : "Experience, education, certifications. Each entry saves on its own."
+              }
               onChange={setCreds}
+              entity={entity}
             />
           </section>
 

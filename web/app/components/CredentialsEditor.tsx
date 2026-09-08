@@ -16,11 +16,22 @@ export interface EditableCredential {
   year_end: number | null;
 }
 
-// Experience first: it is the default and the most common entry.
-const KIND_META: Record<EditableCredential["kind"], { label: string }> = {
-  experience: { label: "Experience" },
-  education: { label: "Education" },
-  certification: { label: "Certification" },
+// Experience first: it is the default and the most common entry. A studio
+// fills the same three slots with its own meanings.
+const KIND_META: Record<
+  "expert" | "studio",
+  Record<EditableCredential["kind"], { label: string; title: string; org: string }>
+> = {
+  expert: {
+    experience: { label: "Experience", title: "Title, e.g. Head coach", org: "Where (optional)" },
+    education: { label: "Education", title: "Title, e.g. BSc Sport Science", org: "Institution (optional)" },
+    certification: { label: "Certification", title: "Title, e.g. Precision Nutrition L1", org: "Issued by (optional)" },
+  },
+  studio: {
+    experience: { label: "Track record", title: "e.g. 400 members, two rooms", org: "Where (optional)" },
+    education: { label: "Team", title: "e.g. 5 certified coaches", org: "Detail (optional)" },
+    certification: { label: "Recognition", title: "e.g. Les Mills licensed", org: "Issued by (optional)" },
+  },
 };
 
 /**
@@ -36,11 +47,14 @@ const KIND_META: Record<EditableCredential["kind"], { label: string }> = {
 export function CredentialsEditor({
   intro,
   onChange,
+  entity = "expert",
 }: {
   intro: string;
   /** Fires with the current list whenever it changes (live card preview). */
   onChange?: (creds: EditableCredential[]) => void;
+  entity?: "expert" | "studio";
 }) {
+  const meta = KIND_META[entity];
   const [creds, setCreds] = useState<EditableCredential[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [kind, setKind] = useState<EditableCredential["kind"]>("experience");
@@ -155,7 +169,7 @@ export function CredentialsEditor({
       style={{ backgroundColor: "rgba(255,97,48,0.04)", border: "1px solid rgba(255,97,48,0.18)" }}
     >
       <p className="text-xs font-bold uppercase tracking-wider font-headline mb-1" style={{ color: "#c2410c" }}>
-        Background
+        {entity === "studio" ? "Track record, team, recognition" : "Background"}
       </p>
       <p className="text-[11px] mb-3" style={{ color: "#64748b" }}>
         {intro}
@@ -176,7 +190,7 @@ export function CredentialsEditor({
               style={{ backgroundColor: "#FFFFFF", border: "1px solid rgba(15,34,41,0.08)" }}
             >
               <span className="shrink-0" style={{ color: ORANGE }}>
-                <CredentialIcon kind={c.kind} size={14} />
+                <CredentialIcon kind={c.kind} size={14} studio={entity === "studio"} />
               </span>
               <span className="min-w-0 flex-1">
                 <span className="font-bold font-headline" style={{ color: INK }}>
@@ -210,9 +224,9 @@ export function CredentialsEditor({
           className="h-9 rounded-lg px-2 text-xs col-span-1"
           style={inputStyle}
         >
-          {(Object.keys(KIND_META) as Array<EditableCredential["kind"]>).map((k) => (
+          {(Object.keys(meta) as Array<EditableCredential["kind"]>).map((k) => (
             <option key={k} value={k}>
-              {KIND_META[k].label}
+              {meta[k].label}
             </option>
           ))}
         </select>
@@ -245,7 +259,7 @@ export function CredentialsEditor({
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           onKeyDown={enterAdds}
-          placeholder="Title, e.g. Head coach, BSc Sport Science"
+          placeholder={meta[kind].title}
           maxLength={120}
           className="h-9 rounded-lg px-2.5 text-xs col-span-2"
           style={inputStyle}
@@ -254,7 +268,7 @@ export function CredentialsEditor({
           value={org}
           onChange={(e) => setOrg(e.target.value)}
           onKeyDown={enterAdds}
-          placeholder="Institution (optional)"
+          placeholder={meta[kind].org}
           maxLength={120}
           className="h-9 rounded-lg px-2.5 text-xs col-span-2"
           style={inputStyle}
