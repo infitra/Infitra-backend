@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ParticipantNav } from "@/app/components/ParticipantNav";
@@ -153,20 +152,10 @@ export default async function NetworkPage({
 
           <div className="grid gap-10 lg:grid-cols-[minmax(0,8fr)_minmax(0,4fr)] items-start">
             <div className="min-w-0">
-              <FoundingCard m={me} />
+              <FoundingCard m={me} editHref="/network/edit" />
             </div>
 
-            <div className="min-w-0 lg:sticky lg:top-24 flex flex-col gap-7">
-              <div className="flex items-center justify-between gap-4">
-                {label("What happens next", ORANGE)}
-                <Link
-                  href="/network/edit"
-                  className="px-4 py-1.5 rounded-full text-[11px] font-bold font-headline uppercase tracking-[0.14em] whitespace-nowrap hover:bg-white/10"
-                  style={{ color: CREAM, border: "1px solid rgba(242,239,232,0.35)" }}
-                >
-                  Edit your card
-                </Link>
-              </div>
+            <div className="min-w-0 lg:sticky lg:top-24 flex flex-col gap-7 lg:pt-2">
               <ol className="flex flex-col gap-5">
                 {steps.map((step, i) => (
                   <li key={step.t} className="flex gap-4">
@@ -188,16 +177,10 @@ export default async function NetworkPage({
                 ))}
               </ol>
 
-              <div className="pt-6" style={{ borderTop: "1px solid rgba(242,239,232,0.15)" }}>
-                <div className="mb-2">{label("Yours to keep", CYAN_BRIGHT)}</div>
-                <p className="text-sm leading-relaxed font-bold font-headline" style={{ color: CREAM }}>
-                  The founding member badge stays on your card when INFITRA opens publicly, and
-                  founding cards hold the top spot in discovery.
-                </p>
-                <p className="text-sm leading-relaxed mt-1" style={{ color: "rgba(242,239,232,0.72)" }}>
-                  Your audience stays yours, and your card can be withdrawn any time.
-                </p>
-              </div>
+              <p className="text-xs leading-relaxed pl-12" style={{ color: "rgba(242,239,232,0.55)" }}>
+                Yours to keep: the founding member badge, the top spot in discovery when INFITRA
+                opens publicly, your audience. Withdraw your card any time.
+              </p>
 
               {/* Coming soon: the network. Visible now, reachable once the page is designed. */}
               <div

@@ -161,7 +161,8 @@ function Answer({
   label: string;
   text: string;
   accent: string;
-  tint: string;
+  /** Opaque, so nothing shows through from behind the disc. */
+  disc: string;
 }) {
   return (
     <div
@@ -172,7 +173,7 @@ function Answer({
       <div className="flex items-center">
         <span
           className="relative z-10 w-11 h-11 rounded-full flex items-center justify-center shrink-0"
-          style={{ backgroundColor: tint, boxShadow: "0 0 0 3px rgba(255,255,255,0.9)" }}
+          style={{ backgroundColor: disc, boxShadow: "0 0 0 3px #FFFFFF" }}
         >
           <AnswerIcon kind={kind} color={accent} />
         </span>
@@ -199,6 +200,8 @@ export function FoundingCard({
   compact?: boolean;
   /** Kept for callers; the card is cream paper everywhere. */
   solid?: boolean;
+  /** The owner's own card: a whisper of a link in the top-right corner. */
+  editHref?: string;
 }) {
   void solid;
   const name = m.display_name ?? "Founding member";
@@ -215,7 +218,7 @@ export function FoundingCard({
     ? { brings: "What we bring", seeks: "What would complement our offer" }
     : { brings: "My expertise", seeks: "What would complement my work" };
   const pad = compact ? "px-5" : "px-6";
-  const portrait = compact ? 112 : 148;
+  const portrait = compact ? 116 : 168;
   const accent = isStudio ? CYAN : ORANGE;
 
   return (
@@ -236,16 +239,25 @@ export function FoundingCard({
         aria-hidden
         className="absolute inset-x-0 top-0 pointer-events-none overflow-hidden rounded-t-[28px]"
         style={{
-          height: compact ? 280 : 300,
+          height: compact ? 300 : 340,
           maskImage: "linear-gradient(180deg, #000 0%, #000 42%, rgba(0,0,0,0) 100%)",
           WebkitMaskImage: "linear-gradient(180deg, #000 0%, #000 42%, rgba(0,0,0,0) 100%)",
         }}
       >
         <CardWaves id={`fc-${m.id.slice(0, 8)}`} />
       </div>
+      {editHref && (
+        <a
+          href={editHref}
+          className="absolute top-5 right-6 z-10 text-[11px] font-bold font-headline uppercase tracking-[0.14em] hover:opacity-100"
+          style={{ color: "rgba(15,34,41,0.45)" }}
+        >
+          Edit
+        </a>
+      )}
 
       {/* The person */}
-      <div className={`relative ${pad} pt-5 flex ${compact ? "flex-col items-start gap-4" : "items-center gap-6"}`}>
+      <div className={`relative ${pad} pt-6 flex ${compact ? "flex-col items-start gap-4" : "items-center gap-6"}`}>
         <div
           className="rounded-full shrink-0"
           style={{
@@ -308,8 +320,8 @@ export function FoundingCard({
           className={`relative ${pad} pt-5 pb-4 grid gap-3`}
           style={{ gridTemplateColumns: compact ? "1fr" : "repeat(auto-fit, minmax(300px, 1fr))" }}
         >
-          {m.brings && <Answer kind="brings" label={labels.brings} text={m.brings} accent={ORANGE} tint="rgba(255,97,48,0.12)" />}
-          {m.seeks && <Answer kind="seeks" label={labels.seeks} text={m.seeks} accent={CYAN} tint="rgba(156,240,255,0.45)" />}
+          {m.brings && <Answer kind="brings" label={labels.brings} text={m.brings} accent={ORANGE} disc="#FFECE6" />}
+          {m.seeks && <Answer kind="seeks" label={labels.seeks} text={m.seeks} accent={CYAN} disc="#D2F8FF" />}
         </div>
       )}
 
