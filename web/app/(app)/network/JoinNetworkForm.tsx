@@ -1,6 +1,7 @@
 "use client";
 
 import { startTransition, useActionState, useRef, useState } from "react";
+import Link from "next/link";
 import { joinFoundingNetwork } from "@/app/actions/profile";
 import { FoundingCard, type FoundingMember } from "@/app/components/FoundingCard";
 import { CredentialsEditor, type EditableCredential } from "@/app/components/CredentialsEditor";
@@ -429,10 +430,19 @@ export function JoinNetworkForm({
             </h2>
             <p className="text-sm leading-relaxed" style={{ color: INK }}>
               INFITRA is private and invite-only right now. Nobody finds you here by searching, so
-              we are the ones who put you in front of the right people: your card shows on
-              infitra.fit, to everyone in the network, and in our posts on LinkedIn and the like,
-              always only what is on the card. We introduce you the moment a card fits yours.
-              Nothing binding, nothing to run. Being seen is the whole point of joining early.
+              we are the ones who put you in front of the right people. Your card shows on
+              infitra.fit, to everyone in the network, and once on our social channels, in the post
+              that welcomes you to the founding network. We send you that post so you can share it
+              too.
+            </p>
+            <p className="text-sm leading-relaxed" style={{ color: INK }}>
+              Only what you put on your card is shown, nothing else. Your email and everything you
+              have not put on the card stay private, as set out in our{" "}
+              <Link href="/privacy" className="underline" style={{ color: CYAN }}>
+                privacy policy
+              </Link>
+              . We introduce you the moment a card fits yours. Nothing binding, nothing to run.
+              Being seen is the whole point of joining early.
             </p>
           </section>
 
