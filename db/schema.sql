@@ -6290,14 +6290,21 @@ CREATE OR REPLACE FUNCTION "public"."load_founding_community"("p_public_only" bo
     AS $$
 declare
   v_uid uuid := auth.uid();
-  v_min_vis text;
   v_count integer;
   v_self_vis text;
   v_self_admin boolean := false;
   v_members jsonb;
 begin
+  select count(*) into v_count
+    from app_profile p
+   where p.role in ('creator', 'admin')
+     and p.display_name is not null
+     and p.community_visibility = 'public';
+
   if p_public_only then
-    v_min_vis := 'public';
+    if v_count < 3 then
+      return jsonb_build_object('authorized', true, 'count', v_count, 'members', '[]'::jsonb);
+    end if;
   else
     if v_uid is null then
       return jsonb_build_object('authorized', false, 'reason', 'not_authenticated',
@@ -6306,24 +6313,10 @@ begin
     select community_visibility, coalesce(is_admin, false)
       into v_self_vis, v_self_admin
       from app_profile where id = v_uid;
-    if not v_self_admin and coalesce(v_self_vis, 'none') = 'none' then
-      select count(*) into v_count
-        from app_profile
-       where role in ('creator', 'admin') and community_visibility in ('members', 'public');
+    if not v_self_admin and coalesce(v_self_vis, 'none') <> 'public' then
       return jsonb_build_object('authorized', false, 'reason', 'card_not_visible',
                                 'count', v_count, 'members', '[]'::jsonb);
     end if;
-    v_min_vis := 'members';
-  end if;
-
-  select count(*) into v_count
-    from app_profile p
-   where p.role in ('creator', 'admin')
-     and (p.community_visibility = 'public'
-          or (v_min_vis = 'members' and p.community_visibility = 'members'));
-
-  if p_public_only and v_count < 3 then
-    return jsonb_build_object('authorized', true, 'count', v_count, 'members', '[]'::jsonb);
   end if;
 
   select coalesce(jsonb_agg(card order by consent_at asc nulls last), '[]'::jsonb)
@@ -6339,7 +6332,6 @@ begin
                'username', p.username,
                'entity_type', p.entity_type,
                'is_founding_expert', p.is_founding_expert,
-               'visibility', p.community_visibility,
                'open_to', to_jsonb(p.open_to),
                'brings', p.brings,
                'seeks', p.seeks,
@@ -6360,8 +6352,7 @@ begin
         from app_profile p
        where p.role in ('creator', 'admin')
          and p.display_name is not null
-         and (p.community_visibility = 'public'
-              or (v_min_vis = 'members' and p.community_visibility = 'members'))
+         and p.community_visibility = 'public'
     ) cards;
 
   return jsonb_build_object('authorized', true, 'count', v_count, 'members', v_members);
@@ -10103,7 +10094,7 @@ CREATE TABLE IF NOT EXISTS "public"."app_profile" (
     "seeks" "text",
     "announce_ok" boolean DEFAULT true NOT NULL,
     CONSTRAINT "app_profile_brings_len" CHECK ((("brings" IS NULL) OR ("char_length"("brings") <= 200))),
-    CONSTRAINT "app_profile_community_visibility_check" CHECK (("community_visibility" = ANY (ARRAY['none'::"text", 'members'::"text", 'public'::"text"]))),
+    CONSTRAINT "app_profile_community_visibility_check" CHECK (("community_visibility" = ANY (ARRAY['none'::"text", 'public'::"text"]))),
     CONSTRAINT "app_profile_creator_visibility_check" CHECK ((("role" <> 'creator'::"text") OR ("visibility" = 'public'::"text"))),
     CONSTRAINT "app_profile_entity_type_check" CHECK (((("role" = 'participant'::"text") AND ("entity_type" IS NULL)) OR (("role" = ANY (ARRAY['creator'::"text", 'admin'::"text"])) AND ("entity_type" = ANY (ARRAY['expert'::"text", 'studio'::"text"]))))),
     CONSTRAINT "app_profile_open_to_check" CHECK (("open_to" <@ ARRAY['experts'::"text", 'studios'::"text"])),
@@ -10133,7 +10124,7 @@ COMMENT ON COLUMN "public"."app_profile"."entity_type" IS 'Supply side only: exp
 
 
 
-COMMENT ON COLUMN "public"."app_profile"."community_visibility" IS 'Founding community card: none (default, nothing shown), members (directory only), public (directory + infitra.fit). Consent is stamped in community_consent_at.';
+COMMENT ON COLUMN "public"."app_profile"."community_visibility" IS 'Founding network card: none (not made yet), public (live in the network and on infitra.fit). Consent is stamped in community_consent_at.';
 
 
 
