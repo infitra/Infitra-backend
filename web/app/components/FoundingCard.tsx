@@ -14,8 +14,9 @@ import { FoundingExpertBadge } from "@/app/(app)/experiences/[id]/PublicChalleng
  * icon tiles, thin dividers, muted labels. A studio fills the same three
  * background slots with its own meanings: track record, team, recognition.
  * Fed by load_founding_community(): explicit public-safe columns, never an
- * email. Below sm (phones) the full card stacks like the compact one:
- * portrait above the name, one background column with the label on top.
+ * email. Below sm (phones) the full card shrinks rather than stacks: a
+ * 92px portrait with the name beside it, the badge under the row, one
+ * background column with the label on top. Safe down to 320px.
  */
 export interface FoundingMember {
   id: string;
@@ -120,10 +121,11 @@ function CardWaves({ id }: { id: string }) {
   );
 }
 
-function AnswerIcon({ kind, color }: { kind: "brings" | "seeks"; color: string }) {
+/** The two answer icons: the person, and two circles meeting. Shared with the editor's labels. */
+export function AnswerIcon({ kind, color, size = 20 }: { kind: "brings" | "seeks"; color: string; size?: number }) {
   const common = {
-    width: 20,
-    height: 20,
+    width: size,
+    height: size,
     viewBox: "0 0 24 24",
     fill: "none",
     stroke: color,
@@ -254,11 +256,10 @@ export function FoundingCard({
       )}
 
       {/* The person */}
-      <div
-        className={`relative ${pad} pt-6 flex ${compact ? "flex-col items-start gap-4" : "flex-col items-start gap-4 sm:flex-row sm:items-center sm:gap-6"}`}
-      >
+      <div className={`relative ${pad} pt-6`}>
+      <div className={`flex ${compact ? "flex-col items-start gap-4" : "items-center gap-4 sm:gap-6"}`}>
         <div
-          className={`rounded-full shrink-0 ${compact ? "w-[116px] h-[116px]" : "w-[120px] h-[120px] sm:w-[168px] sm:h-[168px]"}`}
+          className={`rounded-full shrink-0 ${compact ? "w-[116px] h-[116px]" : "w-[92px] h-[92px] sm:w-[168px] sm:h-[168px]"}`}
           style={{
             padding: 5,
             backgroundColor: "#FFFFFF",
@@ -274,7 +275,7 @@ export function FoundingCard({
                 className="w-full h-full flex items-center justify-center"
                 style={{ background: "linear-gradient(135deg, rgba(255,97,48,0.12) 0%, rgba(8,145,178,0.14) 100%)" }}
               >
-                <span className={`${compact ? "text-4xl" : "text-5xl sm:text-6xl"} font-black font-headline`} style={{ color: CYAN }}>
+                <span className={`${compact ? "text-4xl" : "text-4xl sm:text-6xl"} font-black font-headline`} style={{ color: CYAN }}>
                   {initial}
                 </span>
               </div>
@@ -285,7 +286,7 @@ export function FoundingCard({
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-3 flex-wrap">
             <h3
-              className={`${compact ? "text-2xl" : "text-[26px] sm:text-[30px]"} font-black font-headline tracking-tight leading-[1.05]`}
+              className={`${compact ? "text-2xl" : "text-[24px] sm:text-[30px]"} font-black font-headline tracking-tight leading-[1.05]`}
               style={{ color: INK, letterSpacing: "-0.03em" }}
             >
               {name}
@@ -298,7 +299,7 @@ export function FoundingCard({
             </span>
           </div>
           {m.tagline && (
-            <p className={`${compact ? "text-sm" : "text-base"} font-bold font-headline mt-2 leading-snug`} style={{ color: CYAN }}>
+            <p className={`${compact ? "text-sm" : "text-[15px] sm:text-base"} font-bold font-headline mt-2 leading-snug`} style={{ color: CYAN }}>
               {m.tagline}
             </p>
           )}
@@ -331,8 +332,22 @@ export function FoundingCard({
               )}
             </div>
           )}
-          {m.is_founding_expert && <FoundingExpertBadge className="mt-3" large />}
+          {m.is_founding_expert &&
+            (compact ? (
+              <FoundingExpertBadge className="mt-3" large />
+            ) : (
+              <div className="mt-3 hidden sm:block">
+                <FoundingExpertBadge large />
+              </div>
+            ))}
         </div>
+      </div>
+      {/* On phones the badge sits under the row: the name column is too narrow for it */}
+      {m.is_founding_expert && !compact && (
+        <div className="mt-4 sm:hidden">
+          <FoundingExpertBadge large />
+        </div>
+      )}
       </div>
 
       {/* The two answers */}

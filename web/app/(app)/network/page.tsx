@@ -128,14 +128,17 @@ export default async function NetworkPage() {
       {/* The stage: full bleed, one screen, the personal moment. The same teal as the landing's dark sections. */}
       <section className="relative pt-24 pb-10 lg:min-h-screen" style={{ backgroundColor: "#0C262E" }}>
         <div className="relative max-w-7xl mx-auto px-6">
-          <div className="grid gap-10 lg:grid-cols-[minmax(0,8fr)_minmax(0,4fr)] items-start">
-            <div className="min-w-0">
+          <div className="grid gap-8 lg:gap-10 lg:grid-cols-[minmax(0,8fr)_minmax(0,4fr)] items-start">
+            <div className="min-w-0 order-2 lg:order-none">
               <FoundingCard m={me} editHref="/network/edit" />
             </div>
 
             {/* Compact on purpose: the column, coming-soon block included, fits beside the card on one desktop screen.
-                The welcome is its title on every visit (not only on arrival), level with the card's top edge. */}
-            <div className="min-w-0 lg:sticky lg:top-24 flex flex-col gap-7">
+                The welcome is its title on every visit (not only on arrival), level with the card's top edge.
+                On phones the column splits around the card (display: contents): welcome and steps first,
+                then the card, then what is theirs to keep and what is coming. */}
+            <div className="contents lg:flex lg:flex-col lg:gap-7 lg:min-w-0 lg:sticky lg:top-24">
+              <div className="min-w-0 order-1 lg:order-none flex flex-col gap-7">
               <p
                 className="text-[14px] font-bold font-headline uppercase tracking-[0.25em] leading-none"
                 style={{ color: CYAN_BRIGHT }}
@@ -162,7 +165,9 @@ export default async function NetworkPage() {
                   </li>
                 ))}
               </ol>
+              </div>
 
+              <div className="min-w-0 order-3 lg:order-none flex flex-col gap-7">
               <div className="pt-7" style={{ borderTop: "1px solid rgba(242,239,232,0.15)" }}>
                 <div className="mb-1.5">{label("Yours to keep", CYAN_BRIGHT)}</div>
                 <p className="text-[13px] leading-relaxed font-bold font-headline" style={{ color: CREAM }}>
@@ -191,6 +196,7 @@ export default async function NetworkPage() {
                     brings and what would complement them. Forming now, one card at a time.
                   </p>
                 </div>
+              </div>
               </div>
             </div>
           </div>

@@ -3,7 +3,7 @@
 import { startTransition, useActionState, useRef, useState } from "react";
 import Link from "next/link";
 import { joinFoundingNetwork } from "@/app/actions/profile";
-import { FoundingCard, type FoundingMember } from "@/app/components/FoundingCard";
+import { AnswerIcon, FoundingCard, type FoundingMember } from "@/app/components/FoundingCard";
 import { CredentialsEditor, type EditableCredential } from "@/app/components/CredentialsEditor";
 
 /** The preview shows the link as the server will store it. */
@@ -168,7 +168,9 @@ export function JoinNetworkForm({
     border: "1px solid rgba(15,34,41,0.15)",
     color: INK,
   } as const;
-  const inputCls = "w-full px-4 py-3 rounded-xl focus:outline-none text-base sm:text-sm";
+  // Examples whisper: lighter than typed text, a touch smaller on phones.
+  const inputCls =
+    "w-full px-4 py-3 rounded-xl focus:outline-none text-base sm:text-sm placeholder:text-[#9aa4b2] placeholder:text-[15px] sm:placeholder:text-sm";
   const labelCls = "block text-xs font-bold uppercase tracking-wider mb-2 font-headline";
   const labelStyle = { color: "rgba(15,34,41,0.55)" } as const;
   const sectionCls = "rounded-3xl p-6 lg:p-7 flex flex-col gap-5";
@@ -181,6 +183,32 @@ export function JoinNetworkForm({
       {200 - n}
     </p>
   );
+  // The two answers carry their card colours here already: orange for what
+  // you bring, cyan for the complement, with the card's own icons.
+  const AnswerLabel = ({
+    htmlFor,
+    kind,
+    accent,
+    children,
+  }: {
+    htmlFor: string;
+    kind: "brings" | "seeks";
+    accent: string;
+    children: React.ReactNode;
+  }) => (
+    <label htmlFor={htmlFor} className="flex items-center gap-2.5 mb-2">
+      <span
+        className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
+        style={{ backgroundColor: accent, boxShadow: `0 4px 12px ${accent}44` }}
+      >
+        <AnswerIcon kind={kind} color="#FFFFFF" size={15} />
+      </span>
+      <span className="text-[13px] font-black font-headline uppercase tracking-[0.14em]" style={{ color: accent }}>
+        {children}
+      </span>
+    </label>
+  );
+
   // The numbered disc ticks off in cyan once the step is complete.
   const Step = ({ n, title, lead, done }: { n: number; title: string; lead?: string; done?: boolean }) => (
     <div className="flex items-start gap-3">
@@ -387,9 +415,9 @@ export function JoinNetworkForm({
             />
 
             <div>
-              <label htmlFor="brings" className={labelCls} style={labelStyle}>
+              <AnswerLabel htmlFor="brings" kind="brings" accent={ORANGE}>
                 {isStudio ? "What we bring" : "My expertise"}
-              </label>
+              </AnswerLabel>
               <p className="text-xs mb-2" style={{ color: "#64748b" }}>
                 {isStudio
                   ? "The studio at full depth: members, team, what people come for."
@@ -415,9 +443,9 @@ export function JoinNetworkForm({
             </div>
 
             <div>
-              <label htmlFor="seeks" className={labelCls} style={labelStyle}>
+              <AnswerLabel htmlFor="seeks" kind="seeks" accent={CYAN}>
                 {isStudio ? "What would complement our offer" : "What would complement my work"}
-              </label>
+              </AnswerLabel>
               <p className="text-xs mb-2" style={{ color: "#64748b" }}>
                 Who would let you go all in on your part and complement you?
               </p>
