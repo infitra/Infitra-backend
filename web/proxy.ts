@@ -22,6 +22,10 @@ const PUBLIC_ROUTES = [
   "/terms",
   "/refund-policy",
   "/beta-access",
+  // Members sign in from any device, cookie or not (9 Sep 2026): the login
+  // page is public. Participant self-signup is closed on the page itself
+  // while INFITRA is invite-only; expert accounts come through invites.
+  "/login",
   "/auth/callback",
   "/test-wave-light",
   "/sitemap.xml",

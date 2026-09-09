@@ -164,12 +164,6 @@ export function JoinNetworkForm({
       {200 - n}
     </p>
   );
-  const onCard = (text: string) => (
-    <span className="normal-case tracking-normal font-normal" style={{ color: "#94a3b8" }}>
-      {" "}· on the card: {text}
-    </span>
-  );
-
   const Step = ({ n, title, lead }: { n: number; title: string; lead: string }) => (
     <div className="flex items-start gap-3">
       <span
@@ -193,17 +187,6 @@ export function JoinNetworkForm({
     <form onSubmit={onSubmit}>
       <input type="hidden" name="mode" value={mode} />
       <input type="hidden" name="entity_type" value={entity} />
-
-      <div className="mb-6 flex items-baseline justify-between gap-4 flex-wrap">
-        <p className="text-[11px] font-bold font-headline uppercase tracking-[0.25em]" style={{ color: CYAN }}>
-          {mode === "join" ? "Founding network · Your card" : "Edit your card"}
-        </p>
-        <p className="text-sm" style={{ color: "#64748b" }}>
-          {mode === "join"
-            ? "Four steps. Your card builds itself next to the form, exactly as the network will see it."
-            : "Changes go live on infitra.fit and in the network as soon as you save."}
-        </p>
-      </div>
 
       <div className="grid gap-8 lg:grid-cols-2 items-start">
         <div className="flex flex-col gap-5 min-w-0">
@@ -386,7 +369,7 @@ export function JoinNetworkForm({
 
             <div>
               <label htmlFor="brings" className={labelCls} style={labelStyle}>
-                What you bring{onCard(isStudio ? "What we bring" : "My expertise")}
+                {isStudio ? "What we bring" : "My expertise"}
               </label>
               <p className="text-xs mb-2" style={{ color: "#64748b" }}>
                 {isStudio
@@ -414,8 +397,7 @@ export function JoinNetworkForm({
 
             <div>
               <label htmlFor="seeks" className={labelCls} style={labelStyle}>
-                What kind of collaboration partner would be valuable for you?
-                {onCard(isStudio ? "What would complement our offer" : "What would complement my work")}
+                {isStudio ? "What would complement our offer" : "What would complement my work"}
               </label>
               <p className="text-xs mb-2" style={{ color: "#64748b" }}>
                 Who would let you go all in on your part and complement you?
@@ -431,7 +413,7 @@ export function JoinNetworkForm({
                 placeholder={
                   isStudio
                     ? "e.g. access to experts as an add-on for our members, another studio or expert to build up our digital offer beyond our location"
-                    : "e.g. a strength coach whose groups train together every week, a fitness influencer with reach and distribution, a studio or gym looking to extend their offer to their members and audience"
+                    : "e.g. a complementary expert (strength, nutrition, sleep, recovery, mobility etc.), a fitness influencer with reach and distribution, a studio or gym looking to extend their offer to their members and audience"
                 }
                 className={`${inputCls} resize-none`}
                 style={field}
@@ -471,10 +453,9 @@ export function JoinNetworkForm({
               How we put you forward
             </h2>
             <p className="text-sm leading-relaxed" style={{ color: INK }}>
-              INFITRA is private and invite-only right now. Nobody finds you here by searching, so
-              we are the ones who put you in front of the right people. Your card shows on
-              infitra.fit, to everyone in the network, and once on our social channels, in the post
-              that welcomes you to the founding network.
+              INFITRA is private and invite-only right now, so we are the ones who put you in front
+              of the right people. Your card shows on infitra.fit, to everyone in the network, and
+              on our social channels, in the post that welcomes you to the founding network.
             </p>
             <p className="text-sm leading-relaxed" style={{ color: INK }}>
               Only what you put on your card is shown, nothing else. Your email and everything you
@@ -533,15 +514,17 @@ export function JoinNetworkForm({
 
         {/* ── The card, live ── */}
         <aside className="lg:sticky lg:top-24 min-w-0">
-          <p
-            className="text-[11px] font-bold font-headline uppercase tracking-[0.25em] mb-3"
-            style={{ color: CYAN }}
-          >
-            Your card, as it takes shape
-          </p>
           <FoundingCard m={preview} />
 
-          <div className="mt-5 flex flex-wrap gap-2">
+          <div className="mt-5 flex items-baseline justify-between gap-3 flex-wrap">
+            <p className="text-[11px] font-bold font-headline uppercase tracking-[0.2em]" style={{ color: INK }}>
+              Checklist
+            </p>
+            <p className="text-xs" style={{ color: "#64748b" }}>
+              Fill these in and the card is complete. The two answers are what we match on.
+            </p>
+          </div>
+          <div className="mt-2.5 flex flex-wrap gap-2">
             {checklist.map((item) => (
               <span
                 key={item.label}

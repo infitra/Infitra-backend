@@ -302,10 +302,33 @@ export function FoundingCard({
               {m.tagline}
             </p>
           )}
-          {m.facts?.city && (
-            <p className="text-sm mt-1" style={{ color: "#64748b" }}>
-              {m.facts.city}
-            </p>
+          {(m.facts?.city || m.link_url) && (
+            <div className="flex items-center gap-x-4 gap-y-1 flex-wrap mt-1.5">
+              {m.facts?.city && (
+                <span className="inline-flex items-center gap-1.5 text-sm" style={{ color: "#64748b" }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <path d="M12 21s-6-5.3-6-10.5a6 6 0 0 1 12 0C18 15.7 12 21 12 21z" />
+                    <circle cx="12" cy="10.5" r="2.3" />
+                  </svg>
+                  {m.facts.city}
+                </span>
+              )}
+              {m.link_url && (
+                <a
+                  href={m.link_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-sm font-bold font-headline hover:opacity-80"
+                  style={{ color: CYAN }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.5 1.5" />
+                    <path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.5-1.5" />
+                  </svg>
+                  {linkLabel(m.link_url)}
+                </a>
+              )}
+            </div>
           )}
           {m.is_founding_expert && <FoundingExpertBadge className="mt-3" large />}
         </div>
@@ -319,24 +342,6 @@ export function FoundingCard({
         >
           {m.brings && <Answer kind="brings" label={labels.brings} text={m.brings} accent={ORANGE} />}
           {m.seeks && <Answer kind="seeks" label={labels.seeks} text={m.seeks} accent={CYAN} />}
-        </div>
-      )}
-
-      {m.link_url && (
-        <div className={`relative ${pad} pb-5 -mt-1`}>
-          <a
-            href={m.link_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-xs font-bold font-headline hover:opacity-80"
-            style={{ color: CYAN }}
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-              <path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.5 1.5" />
-              <path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.5-1.5" />
-            </svg>
-            {linkLabel(m.link_url)}
-          </a>
         </div>
       )}
 

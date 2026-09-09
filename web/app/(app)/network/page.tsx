@@ -134,27 +134,20 @@ export default async function NetworkPage({
       {/* The stage: full bleed, one screen, the personal moment. The same teal as the landing's dark sections. */}
       <section className="relative pt-24 pb-10 lg:min-h-screen" style={{ backgroundColor: "#0C262E" }}>
         <div className="relative max-w-7xl mx-auto px-6">
-          {justJoined && (
-            <div className="mb-6 max-w-2xl">
-              {label("Founding network", CYAN_BRIGHT)}
-              <h2
-                className="text-3xl font-black font-headline tracking-tight mt-2 mb-1"
-                style={{ color: CREAM, letterSpacing: "-0.03em" }}
-              >
-                You&apos;re in.
-              </h2>
-              <p className="text-base" style={{ color: "rgba(242,239,232,0.72)" }}>
-                Welcome to the founding network. This is your card, as the network sees it.
-              </p>
-            </div>
-          )}
-
           <div className="grid gap-10 lg:grid-cols-[minmax(0,8fr)_minmax(0,4fr)] items-start">
             <div className="min-w-0">
               <FoundingCard m={me} editHref="/network/edit" />
             </div>
 
             <div className="min-w-0 lg:sticky lg:top-24 flex flex-col gap-7 lg:pt-2">
+              {justJoined && (
+                <div>
+                  {label("Welcome to the founding network", CYAN_BRIGHT)}
+                  <p className="text-sm mt-1.5" style={{ color: "rgba(242,239,232,0.72)" }}>
+                    You&apos;re in. This is your card, as the network sees it.
+                  </p>
+                </div>
+              )}
               <ol className="flex flex-col gap-5">
                 {steps.map((step, i) => (
                   <li key={step.t} className="flex gap-4">

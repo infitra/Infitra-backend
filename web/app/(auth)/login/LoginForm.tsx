@@ -112,6 +112,7 @@ export function LoginForm() {
         >
           Sign In
         </button>
+{isBuyFlow && (
         <button
           type="button"
           onClick={() => switchMode("signup")}
@@ -129,6 +130,7 @@ export function LoginForm() {
         >
           Sign Up
         </button>
+        )}
       </div>
 
       {/* ── SIGN IN ── */}
@@ -323,178 +325,31 @@ export function LoginForm() {
         </>
       )}
 
-      {/* ── SIGN UP — STANDARD (not buy flow): participant, one step ── */}
-      {mode === "signup" && !isBuyFlow && (
-        <>
-          <h1
-            className="text-2xl font-headline tracking-tight mb-2"
-            style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.02em" }}
+      {/* Participant self-signup is closed while INFITRA is invite-only
+          (9 Sep 2026). Participants get an account inside the buy flow
+          when the first experience goes on sale; experts and studios
+          arrive through personal invites. */}
+      {/* Switch mode link (buy flow), or the invite-only note */}
+      {isBuyFlow ? (
+        <p className="text-center text-xs mt-6" style={{ color: "#94a3b8" }}>
+          {mode === "signin" ? "Don't have an account? " : "Already have an account? "}
+          <button
+            type="button"
+            onClick={() => switchMode(mode === "signin" ? "signup" : "signin")}
+            className="transition-colors hover:opacity-80"
+            style={{ color: "#0891b2", fontWeight: 700 }}
           >
-            Join INFITRA.
-          </h1>
-          <p className="text-sm mb-8" style={{ color: "#64748b" }}>
-            Create your account to join live experiences.
-          </p>
-
-          {signUpState?.error && (
-            <div
-              className="mb-6 p-3 rounded-xl"
-              style={{
-                backgroundColor: "rgba(255,97,48,0.10)",
-                border: "1px solid rgba(255,97,48,0.30)",
-              }}
-            >
-              <p className="text-sm" style={{ color: "#FF6130" }}>
-                {signUpState.error}
-              </p>
-            </div>
-          )}
-
-          <form action={signUpAction} className="space-y-4">
-            {/* Public signup is participant-only; the action derives the
-                shown-to-others display name from the first name. Expert
-                accounts exist only via /join-as-expert invite links. */}
-            <input type="hidden" name="role" value="participant" />
-            {/* No intent in the non-buy-flow path, but pass returnTo
-                if it happens to be present (e.g. signing up to view a
-                draft someone shared). */}
-            {returnTo && <input type="hidden" name="returnTo" value={returnTo} />}
-
-            <div>
-              <label htmlFor="signup_full_name" className={labelClass} style={labelStyle}>
-                Full Name
-              </label>
-              <input
-                id="signup_full_name"
-                name="full_name"
-                type="text"
-                required
-                minLength={2}
-                maxLength={50}
-                autoComplete="name"
-                placeholder="Your full name"
-                className={inputClass}
-                style={inputStyle}
-              />
-            </div>
-            <div>
-              <label htmlFor="signup_email" className={labelClass} style={labelStyle}>
-                Email
-              </label>
-              <input
-                id="signup_email"
-                name="email"
-                type="email"
-                required
-                autoComplete="email"
-                placeholder="you@example.com"
-                className={inputClass}
-                style={inputStyle}
-              />
-            </div>
-            <div>
-              <label htmlFor="signup_password" className={labelClass} style={labelStyle}>
-                Password
-              </label>
-              <input
-                id="signup_password"
-                name="password"
-                type="password"
-                required
-                autoComplete="new-password"
-                placeholder="Min. 8 characters"
-                minLength={8}
-                className={inputClass}
-                style={inputStyle}
-              />
-            </div>
-
-            {/* Explicit consent for health-related data (FADP Art. 6(7) /
-                GDPR Art. 9): policy text alone is not valid consent; this
-                unticked box is, recorded with a timestamp in signup
-                metadata. It CANNOT be merged into the generic terms line
-                below — health-data consent must be specific and unbundled
-                from T&C acceptance (that bundling is exactly what Art. 9
-                forbids). Kept to one short sentence (founder call,
-                16 Aug); the withdrawal right is in the linked Privacy
-                Policy. */}
-            <label className="flex items-start gap-2.5 pt-1 cursor-pointer">
-              <input
-                type="checkbox"
-                name="health_consent"
-                value="yes"
-                required
-                className="mt-0.5 shrink-0 accent-[#FF6130]"
-              />
-              <span className="text-[11px] leading-relaxed" style={{ color: "#64748b" }}>
-                I agree that INFITRA processes the health details I share,
-                like reflections and check-ins, to run my experience.
-              </span>
-            </label>
-
-            <button
-              type="submit"
-              disabled={signUpPending}
-              className="w-full mt-2 py-3.5 rounded-full text-white text-sm font-headline transition-transform hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
-              style={{
-                backgroundColor: "#FF6130",
-                fontWeight: 700,
-                boxShadow:
-                  "0 4px 14px rgba(255,97,48,0.35), 0 2px 6px rgba(255,97,48,0.20)",
-              }}
-            >
-              {signUpPending ? "..." : "Create Account"}
-            </button>
-
-            <p className="text-[11px] text-center pt-1" style={{ color: "#94a3b8" }}>
-              By creating an account you agree to the{" "}
-              <Link href="/terms" className="underline hover:opacity-80">Terms</Link> and the{" "}
-              <Link href="/privacy" className="underline hover:opacity-80">Privacy Policy</Link>.
-            </p>
-          </form>
-
-          {/* The expert door, clearly separated: this form is for
-             participants; expert accounts are invite-only via /apply. */}
-          <div
-            className="mt-6 p-4 rounded-2xl text-center"
-            style={{
-              backgroundColor: "rgba(255,97,48,0.07)",
-              border: "1px solid rgba(255,97,48,0.22)",
-            }}
-          >
-            <p
-              className="text-[10px] font-bold font-headline uppercase tracking-[0.18em] mb-1"
-              style={{ color: "#c2410c" }}
-            >
-              For fitness and wellness experts
-            </p>
-            <p className="text-[13px] leading-relaxed" style={{ color: "#475569" }}>
-              This signup is for participants. Expert accounts are invite-only
-              during the pilot.{" "}
-              <a
-                href="/apply"
-                className="hover:opacity-80 whitespace-nowrap"
-                style={{ color: "#0891b2", fontWeight: 700 }}
-              >
-                Apply for the founding pilot →
-              </a>
-            </p>
-          </div>
-        </>
+            {mode === "signin" ? "Sign up" : "Sign in"}
+          </button>
+        </p>
+      ) : (
+        <p className="text-center text-xs mt-6 leading-relaxed" style={{ color: "#94a3b8" }}>
+          Accounts are invite-only right now. Experts and studios:{" "}
+          <Link href="/apply" className="hover:opacity-80" style={{ color: "#0891b2", fontWeight: 700 }}>
+            join the founding network →
+          </Link>
+        </p>
       )}
-
-      {/* Switch mode link */}
-      <p className="text-center text-xs mt-6" style={{ color: "#94a3b8" }}>
-        {mode === "signin" ? "Don't have an account? " : "Already have an account? "}
-        <button
-          type="button"
-          onClick={() => switchMode(mode === "signin" ? "signup" : "signin")}
-          className="transition-colors hover:opacity-80"
-          style={{ color: "#0891b2", fontWeight: 700 }}
-        >
-          {mode === "signin" ? "Sign up" : "Sign in"}
-        </button>
-      </p>
     </div>
   );
 }
