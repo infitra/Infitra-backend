@@ -140,9 +140,16 @@ export default async function NetworkPage({
             </div>
 
             {/* Compact on purpose: the column, coming-soon block included, fits beside the card on one desktop screen.
-                The steps start level with the card's top edge; the welcome sits in the band above, under the nav. */}
-            <div className="relative min-w-0 lg:sticky lg:top-24 flex flex-col gap-7">
-              {justJoined && <div className="lg:absolute lg:left-0 lg:-top-7">{label("Welcome to INFITRA", CYAN_BRIGHT)}</div>}
+                It starts level with the card's top edge; on arrival the welcome is its title. */}
+            <div className="min-w-0 lg:sticky lg:top-24 flex flex-col gap-7">
+              {justJoined && (
+                <h2
+                  className="text-[22px] font-black font-headline tracking-tight leading-7"
+                  style={{ color: CREAM, letterSpacing: "-0.02em" }}
+                >
+                  Welcome to INFITRA
+                </h2>
+              )}
               <ol className="flex flex-col gap-3.5">
                 {steps.map((step, i) => (
                   <li key={step.t} className="flex gap-3.5">
