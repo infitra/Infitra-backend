@@ -28,7 +28,7 @@ const KIND_META: Record<
     certification: { label: "Certification", title: "Title, e.g. Precision Nutrition L1", org: "Issued by (optional)" },
   },
   studio: {
-    experience: { label: "Track record", title: "e.g. 400 members, two rooms", org: "Where (optional)" },
+    experience: { label: "Track record", title: "e.g. 400 members, running since 2015", org: "Where (optional)" },
     education: { label: "Team", title: "e.g. 5 certified coaches", org: "Detail (optional)" },
     certification: { label: "Recognition", title: "e.g. Les Mills licensed", org: "Issued by (optional)" },
   },
