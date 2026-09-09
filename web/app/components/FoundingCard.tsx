@@ -14,9 +14,10 @@ import { FoundingExpertBadge } from "@/app/(app)/experiences/[id]/PublicChalleng
  * icon tiles, thin dividers, muted labels. A studio fills the same three
  * background slots with its own meanings: track record, team, recognition.
  * Fed by load_founding_community(): explicit public-safe columns, never an
- * email. Below sm (phones) the full card shrinks rather than stacks: a
- * 92px portrait with the name beside it, the badge under the row, one
- * background column with the label on top. Safe down to 320px.
+ * email. Below sm (phones) the full card shrinks rather than stacks: the
+ * type pill sits in the top-left corner (Edit top-right), a 100px portrait
+ * with the name beside it, the small founding badge right under the name,
+ * one background column with the label on top. Fits from 375px.
  */
 export interface FoundingMember {
   id: string;
@@ -245,6 +246,14 @@ export function FoundingCard({
       >
         <CardWaves id={`fc-${m.id.slice(0, 8)}`} />
       </div>
+      {!compact && (
+        <span
+          className="absolute top-5 left-5 z-10 sm:hidden text-[10px] font-bold font-headline uppercase tracking-[0.16em] px-2.5 py-1 rounded-full text-white"
+          style={{ backgroundColor: accent, boxShadow: `0 4px 12px ${accent}55` }}
+        >
+          {isStudio ? "Studio" : "Expert"}
+        </span>
+      )}
       {editHref && (
         <a
           href={editHref}
@@ -256,10 +265,10 @@ export function FoundingCard({
       )}
 
       {/* The person */}
-      <div className={`relative ${pad} ${editHref ? "pt-14 sm:pt-6" : "pt-6"}`}>
+      <div className={`relative ${pad} ${compact ? "pt-6" : "pt-14 sm:pt-6"}`}>
       <div className={`flex ${compact ? "flex-col items-start gap-4" : "items-center gap-4 sm:gap-6"}`}>
         <div
-          className={`rounded-full shrink-0 ${compact ? "w-[116px] h-[116px]" : "w-[92px] h-[92px] sm:w-[168px] sm:h-[168px]"}`}
+          className={`rounded-full shrink-0 ${compact ? "w-[116px] h-[116px]" : "w-[100px] h-[100px] sm:w-[168px] sm:h-[168px]"}`}
           style={{
             padding: 5,
             backgroundColor: "#FFFFFF",
@@ -292,12 +301,18 @@ export function FoundingCard({
               {name}
             </h3>
             <span
-              className="text-[10px] font-bold font-headline uppercase tracking-[0.16em] px-2.5 py-1 rounded-full text-white"
+              className={`${compact ? "" : "hidden sm:inline-block"} text-[10px] font-bold font-headline uppercase tracking-[0.16em] px-2.5 py-1 rounded-full text-white`}
               style={{ backgroundColor: accent, boxShadow: `0 4px 12px ${accent}55` }}
             >
               {isStudio ? "Studio" : "Expert"}
             </span>
           </div>
+          {/* Phones: the founding badge takes the pill's old place, right under the name */}
+          {m.is_founding_expert && !compact && (
+            <div className="mt-2 sm:hidden">
+              <FoundingExpertBadge />
+            </div>
+          )}
           {m.tagline && (
             <p className={`${compact ? "text-sm" : "text-[15px] sm:text-base"} font-bold font-headline mt-2 leading-snug`} style={{ color: CYAN }}>
               {m.tagline}
@@ -342,12 +357,6 @@ export function FoundingCard({
             ))}
         </div>
       </div>
-      {/* On phones the badge sits under the row: the name column is too narrow for it */}
-      {m.is_founding_expert && !compact && (
-        <div className="mt-4 sm:hidden">
-          <FoundingExpertBadge large />
-        </div>
-      )}
       </div>
 
       {/* The two answers */}

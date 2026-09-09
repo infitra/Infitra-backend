@@ -146,7 +146,7 @@ export function FoundingExpertBadge({ className = "", large = false }: { classNa
     >
       <FoundingExpertMark size={large ? 20 : 15} />
       <span
-        className={`${large ? "text-[12px]" : "text-[10px]"} font-black font-headline uppercase tracking-[0.1em]`}
+        className={`${large ? "text-[12px]" : "text-[10px]"} font-bold font-headline uppercase tracking-[0.1em]`}
         style={{ color: "#9a7414" }}
       >
         Founding member
