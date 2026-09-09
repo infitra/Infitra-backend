@@ -155,8 +155,8 @@ export async function joinFoundingNetwork(prevState: unknown, formData: FormData
   if (displayName.length < 2) return { error: "Please enter a name of at least 2 characters." };
   const tagline = text("tagline", 120);
   const city = text("city", 60);
-  const brings = text("brings", 200);
-  const seeks = text("seeks", 200);
+  const brings = text("brings", 400);
+  const seeks = text("seeks", 400);
   if (!brings || !seeks) {
     return {
       error: "Please fill in both card fields: what you bring, and who you would want next to you.",

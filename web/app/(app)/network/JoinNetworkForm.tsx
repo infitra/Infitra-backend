@@ -199,8 +199,8 @@ export function JoinNetworkForm({
     border: "1px solid rgba(15,34,41,0.08)",
   } as const;
   const counter = (n: number) => (
-    <p className="text-[11px] mt-1 text-right" style={{ color: 200 - n < 20 ? ORANGE : "#94a3b8" }}>
-      {200 - n}
+    <p className="text-[11px] mt-1 text-right" style={{ color: 400 - n < 40 ? ORANGE : "#94a3b8" }}>
+      {400 - n}
     </p>
   );
   // The two answers carry their card colours here already: orange for what
@@ -450,7 +450,7 @@ export function JoinNetworkForm({
                 name="brings"
                 required
                 rows={3}
-                maxLength={200}
+                maxLength={400}
                 value={brings}
                 onChange={(e) => setBrings(e.target.value)}
                 placeholder={
@@ -476,7 +476,7 @@ export function JoinNetworkForm({
                 name="seeks"
                 required
                 rows={3}
-                maxLength={200}
+                maxLength={400}
                 value={seeks}
                 onChange={(e) => setSeeks(e.target.value)}
                 placeholder={

@@ -10112,14 +10112,14 @@ CREATE TABLE IF NOT EXISTS "public"."app_profile" (
     "announce_ok" boolean DEFAULT true NOT NULL,
     "link_url" "text",
     "community_consent_version" "text",
-    CONSTRAINT "app_profile_brings_len" CHECK ((("brings" IS NULL) OR ("char_length"("brings") <= 200))),
+    CONSTRAINT "app_profile_brings_len" CHECK ((("brings" IS NULL) OR ("char_length"("brings") <= 400))),
     CONSTRAINT "app_profile_community_visibility_check" CHECK (("community_visibility" = ANY (ARRAY['none'::"text", 'public'::"text"]))),
     CONSTRAINT "app_profile_creator_visibility_check" CHECK ((("role" <> 'creator'::"text") OR ("visibility" = 'public'::"text"))),
     CONSTRAINT "app_profile_entity_type_check" CHECK (((("role" = 'participant'::"text") AND ("entity_type" IS NULL)) OR (("role" = ANY (ARRAY['creator'::"text", 'admin'::"text"])) AND ("entity_type" = ANY (ARRAY['expert'::"text", 'studio'::"text"]))))),
     CONSTRAINT "app_profile_link_url_check" CHECK ((("link_url" IS NULL) OR (("length"("link_url") <= 200) AND ("link_url" ~* '^https?://'::"text")))),
     CONSTRAINT "app_profile_participant_no_supply_fields" CHECK ((("role" <> 'participant'::"text") OR (("workspace_enabled" = false) AND ("community_visibility" = 'none'::"text") AND ("brings" IS NULL) AND ("seeks" IS NULL) AND ("link_url" IS NULL) AND ("announce_ok" = false)))),
     CONSTRAINT "app_profile_role_check" CHECK (("role" = ANY (ARRAY['participant'::"text", 'creator'::"text", 'admin'::"text"]))),
-    CONSTRAINT "app_profile_seeks_len" CHECK ((("seeks" IS NULL) OR ("char_length"("seeks") <= 200))),
+    CONSTRAINT "app_profile_seeks_len" CHECK ((("seeks" IS NULL) OR ("char_length"("seeks") <= 400))),
     CONSTRAINT "app_profile_visibility_check" CHECK (("visibility" = ANY (ARRAY['public'::"text", 'private'::"text"])))
 );
 
