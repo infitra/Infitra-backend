@@ -48,14 +48,22 @@ export function CredentialsEditor({
   intro,
   onChange,
   entity = "expert",
+  initial,
 }: {
   intro: string;
   /** Fires with the current list whenever it changes (live card preview). */
   onChange?: (creds: EditableCredential[]) => void;
   entity?: "expert" | "studio";
+  /**
+   * The caller's entries, read on the server and rendered with the page.
+   * Without it the editor fetches its own list after mount, which on a
+   * phone once came back empty and read as "my background is lost"
+   * (9 Sep 2026); the card pages pass it.
+   */
+  initial?: EditableCredential[];
 }) {
   const meta = KIND_META[entity];
-  const [creds, setCreds] = useState<EditableCredential[]>([]);
+  const [creds, setCreds] = useState<EditableCredential[]>(initial ?? []);
   const [error, setError] = useState<string | null>(null);
   const [kind, setKind] = useState<EditableCredential["kind"]>("experience");
   const [title, setTitle] = useState("");
@@ -70,23 +78,30 @@ export function CredentialsEditor({
   }, [creds]);
 
   useEffect(() => {
+    if (initial) return;
     let alive = true;
     (async () => {
       const supabase = createClient();
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data } = await supabase
+      if (!user) {
+        if (alive) setError("Your background could not be loaded. Reload the page; nothing is lost.");
+        return;
+      }
+      const { data, error: loadErr } = await supabase
         .from("app_expert_credential")
         .select("id, kind, title, org, year, year_end")
         .eq("profile_id", user.id)
         .order("year", { ascending: false });
-      if (alive && data) setCreds(data as EditableCredential[]);
+      if (!alive) return;
+      if (loadErr) setError("Your background could not be loaded. Reload the page; nothing is lost.");
+      else if (data) setCreds(data as EditableCredential[]);
     })();
     return () => {
       alive = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function add() {
