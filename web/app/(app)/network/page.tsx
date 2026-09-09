@@ -140,8 +140,8 @@ export default async function NetworkPage({
             </div>
 
             {/* Compact on purpose: the column, coming-soon block included, fits beside the card on one desktop screen */}
-            <div className="min-w-0 lg:sticky lg:top-24 flex flex-col gap-5">
-              {justJoined && label("Welcome to the founding network", CYAN_BRIGHT)}
+            <div className="min-w-0 lg:sticky lg:top-24 flex flex-col gap-7">
+              {justJoined && <div className="lg:-mt-3.5">{label("Welcome to INFITRA", CYAN_BRIGHT)}</div>}
               <ol className="flex flex-col gap-3.5">
                 {steps.map((step, i) => (
                   <li key={step.t} className="flex gap-3.5">
@@ -163,7 +163,7 @@ export default async function NetworkPage({
                 ))}
               </ol>
 
-              <div className="pt-5" style={{ borderTop: "1px solid rgba(242,239,232,0.15)" }}>
+              <div className="pt-7" style={{ borderTop: "1px solid rgba(242,239,232,0.15)" }}>
                 <div className="mb-1.5">{label("Yours to keep", CYAN_BRIGHT)}</div>
                 <p className="text-[13px] leading-relaxed font-bold font-headline" style={{ color: CREAM }}>
                   The founding member badge stays on your card when INFITRA opens publicly, and
@@ -172,7 +172,7 @@ export default async function NetworkPage({
               </div>
 
               {/* Coming soon: the network. Visible now, reachable once the page is designed. */}
-              <div className="pt-5" style={{ borderTop: "1px solid rgba(242,239,232,0.15)" }}>
+              <div className="pt-7" style={{ borderTop: "1px solid rgba(242,239,232,0.15)" }}>
                 <div
                   className="rounded-2xl p-4 relative overflow-hidden"
                   style={{ backgroundColor: "rgba(8,145,178,0.20)", border: "1px solid rgba(8,145,178,0.55)" }}
