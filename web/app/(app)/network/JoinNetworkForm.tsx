@@ -597,7 +597,7 @@ export function JoinNetworkForm({
         </div>
 
         {/* ── The card, live (desktop only: on a phone the columns stack and it would trail the button) ── */}
-        <aside className="hidden lg:block lg:sticky lg:top-24 min-w-0">
+        <aside className="hidden lg:block lg:sticky lg:top-20 min-w-0">
           <FoundingCard m={preview} />
 
           <p className="text-xs mt-4 text-center" style={{ color: "#64748b" }}>

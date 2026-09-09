@@ -136,8 +136,10 @@ export default async function NetworkPage() {
     <div className="min-h-screen">
       {nav}
 
-      {/* The stage: full bleed, one screen, the personal moment. The same teal as the landing's dark sections. */}
-      <section className="relative pt-24 pb-10 lg:min-h-screen" style={{ backgroundColor: "#0C262E" }}>
+      {/* The stage: full bleed, one screen, the personal moment. The same teal as the landing's dark sections.
+          It runs under the layout's footer band (-mb-20 against pt-10 + row + pb-6), so a taller card scrolls
+          over one dark ground and the legal row sits on teal instead of a light strip at the end. */}
+      <section className="relative pt-24 pb-[7.5rem] -mb-20 lg:min-h-screen" style={{ backgroundColor: "#0C262E" }}>
         <div className="relative max-w-7xl mx-auto px-6">
           <div className="grid gap-8 lg:gap-10 lg:grid-cols-[minmax(0,8fr)_minmax(0,4fr)] items-start">
             <div className="min-w-0 order-2 lg:order-none">
