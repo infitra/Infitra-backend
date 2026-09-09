@@ -515,7 +515,7 @@ export function JoinNetworkForm({
             />
           </section>
 
-          {/* ── How we put you forward ──
+          {/* ── What happens next ──
               The consent wording. The button below it is the consent act and the
               server stores CARD_CONSENT_VERSION (lib/cardConsent.ts) with the
               timestamp: bump that tag whenever this block's meaning changes. */}
@@ -524,12 +524,12 @@ export function JoinNetworkForm({
             style={{ backgroundColor: "rgba(8,145,178,0.06)", border: "1px solid rgba(8,145,178,0.18)" }}
           >
             <h2 className="text-lg font-bold font-headline" style={{ color: INK, letterSpacing: "-0.03em" }}>
-              How we put you forward
+              What happens next
             </h2>
             <p className="text-sm leading-relaxed" style={{ color: INK }}>
-              INFITRA is private and invite-only right now, so we are the ones who put you in front
-              of the right people. Your card shows on infitra.fit, to everyone in the network, and
-              on our social channels, in the post that welcomes you to the founding network.
+              INFITRA is private and invite-only right now. Your card shows on infitra.fit, to
+              everyone in the network, and on our social channels, in a post that welcomes you to
+              the founding network.
             </p>
             <p className="text-sm leading-relaxed" style={{ color: INK }}>
               Only what you put on your card is shown, nothing else. Your email and everything you
@@ -562,7 +562,10 @@ export function JoinNetworkForm({
 
           <div className="flex flex-col items-center gap-3">
             {mode === "join" && (
-              <p className="text-xl font-bold font-headline text-center mb-1" style={{ color: INK, letterSpacing: "-0.03em" }}>
+              <p
+                className="text-lg font-bold font-headline uppercase tracking-[0.12em] text-center mt-6"
+                style={{ color: ORANGE }}
+              >
                 Become a founding member
               </p>
             )}
