@@ -338,7 +338,7 @@ export function JoinNetworkForm({
                   {shrinking ? "Reading photo…" : avatarPreview ? "Change photo" : "Upload photo"}
                 </button>
                 <p className="text-[11px] mt-2" style={{ color: "#94a3b8" }}>
-                  Square works best. Any size is fine.
+                  Square works best.
                 </p>
                 {photoError && (
                   <p className="text-xs mt-2 leading-snug" style={{ color: ORANGE }}>
@@ -564,6 +564,11 @@ export function JoinNetworkForm({
           )}
 
           <div className="flex flex-col items-center gap-3">
+            {mode === "join" && (
+              <p className="text-xl font-black font-headline tracking-tight text-center mb-1" style={{ color: INK }}>
+                Become a founding member
+              </p>
+            )}
             <button
               type="submit"
               disabled={busy}
