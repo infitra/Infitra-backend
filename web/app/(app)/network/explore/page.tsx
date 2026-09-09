@@ -72,7 +72,7 @@ export default async function NetworkExplorePage() {
               className="rounded-3xl p-6 lg:p-8 max-w-2xl"
               style={{ backgroundColor: "rgba(8,145,178,0.06)", border: "1px solid rgba(8,145,178,0.18)" }}
             >
-              <p className="text-lg font-black font-headline tracking-tight mb-2" style={{ color: INK }}>
+              <p className="text-lg font-bold font-headline mb-2" style={{ color: INK, letterSpacing: "-0.03em" }}>
                 Your card opens the network.
               </p>
               <p className="text-sm leading-relaxed mb-4" style={{ color: "#475569" }}>
@@ -93,7 +93,7 @@ export default async function NetworkExplorePage() {
                 className="rounded-3xl p-6 lg:p-8"
                 style={{ backgroundColor: "rgba(8,145,178,0.06)", border: "1px solid rgba(8,145,178,0.18)" }}
               >
-                <p className="text-xl font-black font-headline tracking-tight mb-2" style={{ color: INK }}>
+                <p className="text-xl font-bold font-headline mb-2" style={{ color: INK, letterSpacing: "-0.03em" }}>
                   The founding network is forming.
                 </p>
                 <p className="text-sm leading-relaxed" style={{ color: "#475569" }}>

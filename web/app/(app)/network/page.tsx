@@ -160,13 +160,13 @@ export default async function NetworkPage() {
                 {steps.map((step, i) => (
                   <li key={step.t} className="flex gap-3.5">
                     <span
-                      className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-[13px] font-black font-headline"
+                      className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-[13px] font-bold font-headline"
                       style={{ backgroundColor: ORANGE, color: "#fff" }}
                     >
                       {i + 1}
                     </span>
                     <div>
-                      <p className="text-[15px] font-black font-headline tracking-tight leading-6" style={{ color: CREAM }}>
+                      <p className="text-[15px] font-bold font-headline leading-6" style={{ color: CREAM, letterSpacing: "-0.03em" }}>
                         {step.t}
                       </p>
                       <p className="text-[13px] leading-relaxed mt-0.5" style={{ color: "rgba(242,239,232,0.72)" }}>
@@ -181,7 +181,7 @@ export default async function NetworkPage() {
               <div className="min-w-0 order-3 lg:order-none flex flex-col gap-7">
               <div className="pt-7" style={{ borderTop: "1px solid rgba(242,239,232,0.15)" }}>
                 <div className="mb-1.5">{label("Yours to keep", CYAN_BRIGHT)}</div>
-                <p className="text-[13px] leading-relaxed font-bold font-headline" style={{ color: CREAM }}>
+                <p className="text-[13px] leading-relaxed font-semibold" style={{ color: CREAM }}>
                   The founding member badge stays on your card when INFITRA opens publicly, and
                   founding cards hold the top spot in discovery. Your audience stays yours.
                 </p>
@@ -194,12 +194,12 @@ export default async function NetworkPage() {
                   style={{ backgroundColor: "rgba(8,145,178,0.20)", border: "1px solid rgba(8,145,178,0.55)" }}
                 >
                   <span
-                    className="inline-block px-2.5 py-1 rounded-full text-[10px] font-black font-headline uppercase tracking-[0.16em] mb-2 text-white"
+                    className="inline-block px-2.5 py-1 rounded-full text-[10px] font-bold font-headline uppercase tracking-[0.16em] mb-2 text-white"
                     style={{ backgroundColor: "#0891b2" }}
                   >
                     Coming soon
                   </span>
-                  <p className="text-base font-black font-headline tracking-tight" style={{ color: CREAM }}>
+                  <p className="text-base font-bold font-headline" style={{ color: CREAM, letterSpacing: "-0.03em" }}>
                     Explore the network
                   </p>
                   <p className="text-[13px] leading-relaxed mt-1" style={{ color: "rgba(242,239,232,0.75)" }}>

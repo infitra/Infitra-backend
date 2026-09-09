@@ -223,7 +223,7 @@ export function JoinNetworkForm({
       >
         <AnswerIcon kind={kind} color="#FFFFFF" size={15} />
       </span>
-      <span className="text-[13px] font-black font-headline uppercase tracking-[0.14em]" style={{ color: accent }}>
+      <span className="text-[13px] font-bold font-headline uppercase tracking-[0.14em]" style={{ color: accent }}>
         {children}
       </span>
     </label>
@@ -233,14 +233,14 @@ export function JoinNetworkForm({
   const Step = ({ n, title, lead, done }: { n: number; title: string; lead?: string; done?: boolean }) => (
     <div className="flex items-start gap-3">
       <span
-        className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-black font-headline mt-0.5"
+        className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-bold font-headline mt-0.5"
         style={{ backgroundColor: done ? CYAN : ORANGE, color: "#fff" }}
         aria-label={done ? `Step ${n}, complete` : `Step ${n}`}
       >
         {done ? "✓" : n}
       </span>
       <div>
-        <h2 className="text-lg font-black font-headline tracking-tight" style={{ color: INK }}>
+        <h2 className="text-lg font-bold font-headline" style={{ color: INK, letterSpacing: "-0.03em" }}>
           {title}
         </h2>
         {lead && (
@@ -299,7 +299,7 @@ export function JoinNetworkForm({
             <Step
               n={2}
               done={faceDone}
-              title="Your profile"
+              title="Create your profile"
               lead={
                 isStudio
                   ? "Add the photo your members already recognise."
@@ -322,7 +322,7 @@ export function JoinNetworkForm({
                     className="w-24 h-24 rounded-full flex items-center justify-center"
                     style={{ backgroundColor: "rgba(8,145,178,0.10)", border: "3px solid #FFFFFF", boxShadow: "0 6px 18px rgba(15,34,41,0.10)" }}
                   >
-                    <span className="text-3xl font-black font-headline" style={{ color: CYAN }}>
+                    <span className="text-3xl font-bold font-headline" style={{ color: CYAN }}>
                       {(name.trim() || "?")[0].toUpperCase()}
                     </span>
                   </div>
@@ -337,9 +337,6 @@ export function JoinNetworkForm({
                 >
                   {shrinking ? "Reading photo…" : avatarPreview ? "Change photo" : "Upload photo"}
                 </button>
-                <p className="text-[11px] mt-2" style={{ color: "#94a3b8" }}>
-                  Square works best.
-                </p>
                 {photoError && (
                   <p className="text-xs mt-2 leading-snug" style={{ color: ORANGE }}>
                     {photoError}
@@ -509,8 +506,8 @@ export function JoinNetworkForm({
             <CredentialsEditor
               intro={
                 isStudio
-                  ? "How long you have run, how many people train with you, who is on the team, what you are licensed or known for. Each entry saves on its own."
-                  : "Experience, education, certifications. Each entry saves on its own."
+                  ? "How long you have run, how many people train with you, who is on the team, what you are licensed or known for."
+                  : "Experience, education, certifications."
               }
               onChange={setCreds}
               entity={entity}
@@ -526,7 +523,7 @@ export function JoinNetworkForm({
             className={sectionCls}
             style={{ backgroundColor: "rgba(8,145,178,0.06)", border: "1px solid rgba(8,145,178,0.18)" }}
           >
-            <h2 className="text-lg font-black font-headline tracking-tight" style={{ color: INK }}>
+            <h2 className="text-lg font-bold font-headline" style={{ color: INK, letterSpacing: "-0.03em" }}>
               How we put you forward
             </h2>
             <p className="text-sm leading-relaxed" style={{ color: INK }}>
@@ -543,7 +540,7 @@ export function JoinNetworkForm({
               . We introduce you the moment a card fits yours. Nothing binding, nothing to run.
               Being seen is the whole point of joining early.
             </p>
-            <p className="text-sm leading-relaxed font-bold font-headline" style={{ color: INK }}>
+            <p className="text-sm leading-relaxed font-semibold" style={{ color: INK }}>
               You join as a founding member. The badge stays on your card when INFITRA opens
               publicly, founding cards hold the top spot in discovery, and your audience stays
               yours.
@@ -565,14 +562,14 @@ export function JoinNetworkForm({
 
           <div className="flex flex-col items-center gap-3">
             {mode === "join" && (
-              <p className="text-xl font-black font-headline tracking-tight text-center mb-1" style={{ color: INK }}>
+              <p className="text-xl font-bold font-headline text-center mb-1" style={{ color: INK, letterSpacing: "-0.03em" }}>
                 Become a founding member
               </p>
             )}
             <button
               type="submit"
               disabled={busy}
-              className="w-full py-4 rounded-full font-black text-base hover:scale-[1.01] transition-transform font-headline disabled:opacity-50 text-white"
+              className="w-full py-4 rounded-full font-bold text-base hover:scale-[1.01] transition-transform font-headline disabled:opacity-50 text-white"
               style={{ backgroundColor: ORANGE, boxShadow: "0 6px 18px rgba(255,97,48,0.32)" }}
             >
               {uploading

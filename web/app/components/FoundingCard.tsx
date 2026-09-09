@@ -177,7 +177,7 @@ function Answer({
           <AnswerIcon kind={kind} color="#FFFFFF" />
         </span>
         <span
-          className="-ml-3 pl-5 pr-3.5 py-1.5 rounded-full text-[10px] sm:text-[11.5px] font-black font-headline uppercase tracking-[0.08em] sm:tracking-[0.12em] text-white leading-tight sm:whitespace-nowrap"
+          className="-ml-3 pl-5 pr-3.5 py-1.5 rounded-full text-[10px] sm:text-[11.5px] font-bold font-headline uppercase tracking-[0.08em] sm:tracking-[0.12em] text-white leading-tight sm:whitespace-nowrap"
           style={{ backgroundColor: accent }}
         >
           {label}
@@ -275,7 +275,7 @@ export function FoundingCard({
                 className="w-full h-full flex items-center justify-center"
                 style={{ background: "linear-gradient(135deg, rgba(255,97,48,0.12) 0%, rgba(8,145,178,0.14) 100%)" }}
               >
-                <span className={`${compact ? "text-4xl" : "text-4xl sm:text-6xl"} font-black font-headline`} style={{ color: CYAN }}>
+                <span className={`${compact ? "text-4xl" : "text-4xl sm:text-6xl"} font-bold font-headline`} style={{ color: CYAN }}>
                   {initial}
                 </span>
               </div>
@@ -286,13 +286,13 @@ export function FoundingCard({
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-3 flex-wrap">
             <h3
-              className={`${compact ? "text-2xl" : "text-[24px] sm:text-[30px]"} font-black font-headline tracking-tight leading-[1.05]`}
+              className={`${compact ? "text-2xl" : "text-[24px] sm:text-[30px]"} font-bold font-headline tracking-tight leading-[1.05]`}
               style={{ color: INK, letterSpacing: "-0.03em" }}
             >
               {name}
             </h3>
             <span
-              className="text-[10px] font-black font-headline uppercase tracking-[0.16em] px-2.5 py-1 rounded-full text-white"
+              className="text-[10px] font-bold font-headline uppercase tracking-[0.16em] px-2.5 py-1 rounded-full text-white"
               style={{ backgroundColor: accent, boxShadow: `0 4px 12px ${accent}55` }}
             >
               {isStudio ? "Studio" : "Expert"}
@@ -378,7 +378,7 @@ export function FoundingCard({
               </span>
               {!compact && (
                 <span
-                  className="hidden sm:flex h-11 items-center text-[12px] font-black font-headline uppercase tracking-[0.16em] pl-4"
+                  className="hidden sm:flex h-11 items-center text-[12px] font-bold font-headline uppercase tracking-[0.16em] pl-4"
                   style={{ color: "#334155", borderLeft: `1px solid ${HAIR}` }}
                 >
                   {g.label}
@@ -386,7 +386,7 @@ export function FoundingCard({
               )}
               <div className={`flex flex-col gap-2.5 ${compact ? "" : "sm:pl-4 sm:pt-3 sm:border-l sm:border-[rgba(15,34,41,0.08)]"}`}>
                 <span
-                  className={`h-11 flex items-center text-[11px] font-black font-headline uppercase tracking-[0.16em] ${compact ? "" : "sm:hidden"}`}
+                  className={`h-11 flex items-center text-[11px] font-bold font-headline uppercase tracking-[0.16em] ${compact ? "" : "sm:hidden"}`}
                   style={{ color: "#334155" }}
                 >
                   {g.label}

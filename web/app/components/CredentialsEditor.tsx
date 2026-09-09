@@ -292,7 +292,7 @@ export function CredentialsEditor({
           type="button"
           onClick={add}
           disabled={busy || title.trim().length < 2}
-          className="col-span-2 h-9 rounded-full text-xs font-black font-headline text-white disabled:opacity-50"
+          className="col-span-2 h-9 rounded-full text-xs font-bold font-headline text-white disabled:opacity-50"
           style={{ backgroundColor: ORANGE }}
         >
           {busy ? "Saving…" : "+ Add to your background"}

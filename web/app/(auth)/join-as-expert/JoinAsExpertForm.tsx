@@ -55,8 +55,8 @@ export function JoinAsExpertForm({ code }: { code: string }) {
         Welcome to the founding network.
       </h1>
       <p className="text-sm mb-8" style={{ color: "#64748b" }}>
-        Experts and studios, open to creating together. Set up your account here; your card
-        comes next. This invite is personal and single use.
+        Experts and studios, open to creating together. Set up your account here and your
+        profile card comes next. This invite is personal and single use.
       </p>
 
       {state?.error && (
