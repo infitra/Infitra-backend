@@ -221,7 +221,7 @@ export function CredentialsEditor({
         <select
           value={kind}
           onChange={(e) => setKind(e.target.value as EditableCredential["kind"])}
-          className="h-9 rounded-lg px-2 text-xs col-span-1"
+          className="h-9 rounded-lg px-2 text-base sm:text-xs col-span-1"
           style={inputStyle}
         >
           {(Object.keys(meta) as Array<EditableCredential["kind"]>).map((k) => (
@@ -238,7 +238,7 @@ export function CredentialsEditor({
             placeholder="Year"
             inputMode="numeric"
             maxLength={4}
-            className="h-9 w-full rounded-lg px-2.5 text-xs"
+            className="h-9 w-full rounded-lg px-2.5 text-base sm:text-xs"
             style={inputStyle}
           />
           <span className="text-xs shrink-0" style={{ color: "#94a3b8" }}>
@@ -251,7 +251,7 @@ export function CredentialsEditor({
             placeholder="To"
             inputMode="numeric"
             maxLength={4}
-            className="h-9 w-full rounded-lg px-2.5 text-xs"
+            className="h-9 w-full rounded-lg px-2.5 text-base sm:text-xs"
             style={inputStyle}
           />
         </div>
@@ -261,7 +261,7 @@ export function CredentialsEditor({
           onKeyDown={enterAdds}
           placeholder={meta[kind].title}
           maxLength={120}
-          className="h-9 rounded-lg px-2.5 text-xs col-span-2"
+          className="h-9 rounded-lg px-2.5 text-base sm:text-xs col-span-2"
           style={inputStyle}
         />
         <input
@@ -270,7 +270,7 @@ export function CredentialsEditor({
           onKeyDown={enterAdds}
           placeholder={meta[kind].org}
           maxLength={120}
-          className="h-9 rounded-lg px-2.5 text-xs col-span-2"
+          className="h-9 rounded-lg px-2.5 text-base sm:text-xs col-span-2"
           style={inputStyle}
         />
         <button

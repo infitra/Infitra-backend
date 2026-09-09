@@ -49,6 +49,11 @@ export interface JoinNetworkValues {
  * the point of joining. The photo uploads first (edge function) and the
  * resulting URL is kept in state, so an error round trip never loses it.
  * One server action writes everything and lands on the finished card.
+ *
+ * On phones (9 Sep 2026): the columns stack, so the live preview is hidden
+ * below lg (the finished card is the stage right after joining); inputs are
+ * 16px so iOS does not zoom on focus; the answer boxes are tall enough for
+ * the examples to read in full.
  */
 export function JoinNetworkForm({
   mode,
@@ -149,7 +154,7 @@ export function JoinNetworkForm({
   if (!avatarPreview) missing.push("photo");
   if (name.trim().length < 2) missing.push(isStudio ? "studio name" : "name");
   if (!tagline.trim()) missing.push("one line");
-  if (!city.trim()) missing.push("location");
+  if (!city.trim()) missing.push(isStudio ? "location" : "city");
   if (!brings.trim() && !seeks.trim()) missing.push("both answers");
   else if (!brings.trim()) missing.push(isStudio ? "what we bring" : "my expertise");
   else if (!seeks.trim()) missing.push(isStudio ? "what would complement our offer" : "what would complement my work");
@@ -163,7 +168,7 @@ export function JoinNetworkForm({
     border: "1px solid rgba(15,34,41,0.15)",
     color: INK,
   } as const;
-  const inputCls = "w-full px-4 py-3 rounded-xl focus:outline-none text-sm";
+  const inputCls = "w-full px-4 py-3 rounded-xl focus:outline-none text-base sm:text-sm";
   const labelCls = "block text-xs font-bold uppercase tracking-wider mb-2 font-headline";
   const labelStyle = { color: "rgba(15,34,41,0.55)" } as const;
   const sectionCls = "rounded-3xl p-6 lg:p-7 flex flex-col gap-5";
@@ -177,7 +182,7 @@ export function JoinNetworkForm({
     </p>
   );
   // The numbered disc ticks off in cyan once the step is complete.
-  const Step = ({ n, title, lead, done }: { n: number; title: string; lead: string; done?: boolean }) => (
+  const Step = ({ n, title, lead, done }: { n: number; title: string; lead?: string; done?: boolean }) => (
     <div className="flex items-start gap-3">
       <span
         className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-black font-headline mt-0.5"
@@ -190,9 +195,11 @@ export function JoinNetworkForm({
         <h2 className="text-lg font-black font-headline tracking-tight" style={{ color: INK }}>
           {title}
         </h2>
-        <p className="text-xs mt-0.5" style={{ color: "#64748b" }}>
-          {lead}
-        </p>
+        {lead && (
+          <p className="text-xs mt-0.5" style={{ color: "#64748b" }}>
+            {lead}
+          </p>
+        )}
       </div>
     </div>
   );
@@ -206,11 +213,7 @@ export function JoinNetworkForm({
         <div className="flex flex-col gap-5 min-w-0">
           {/* ── 1 · You are ── */}
           <section className={sectionCls} style={sectionStyle}>
-            <Step
-              n={1}
-              title="You are"
-              lead="This sets the words on your card: an expert's card says “My expertise”, a studio's says “What we bring”."
-            />
+            <Step n={1} title="You are" />
             <div
               className="grid grid-cols-2 gap-1.5 p-1.5 rounded-2xl"
               style={{ backgroundColor: "rgba(15,34,41,0.05)" }}
@@ -337,7 +340,7 @@ export function JoinNetworkForm({
               </div>
               <div>
                 <label htmlFor="city" className={labelCls} style={labelStyle}>
-                  Location(s)
+                  {isStudio ? "Location(s)" : "City"}
                 </label>
                 <input
                   id="city"
@@ -405,7 +408,7 @@ export function JoinNetworkForm({
                     ? "e.g. 400 members who ask for more than classes, a strength and Pilates team, 5 active weekly group classes, 3000 newsletter subscribers, 8000 followers on socials"
                     : "e.g. sports nutrition for endurance athletes, a live group that has trained with me for six years, 4000 followers on Instagram, a newsletter with 1200 subscribers"
                 }
-                className={`${inputCls} resize-none`}
+                className={`${inputCls} resize-none min-h-[11rem] sm:min-h-0`}
                 style={field}
               />
               {counter(brings.length)}
@@ -431,7 +434,7 @@ export function JoinNetworkForm({
                     ? "e.g. access to experts as an add-on for our members, another studio or expert to build up our digital offer beyond our location"
                     : "e.g. a complementary expert (strength, nutrition, sleep, recovery, mobility etc.), a fitness influencer with reach and distribution, a studio or gym looking to extend their offer to their members and audience"
                 }
-                className={`${inputCls} resize-none`}
+                className={`${inputCls} resize-none min-h-[11rem] sm:min-h-0`}
                 style={field}
               />
               {counter(seeks.length)}
@@ -534,8 +537,8 @@ export function JoinNetworkForm({
           </div>
         </div>
 
-        {/* ── The card, live ── */}
-        <aside className="lg:sticky lg:top-24 min-w-0">
+        {/* ── The card, live (desktop only: on a phone the columns stack and it would trail the button) ── */}
+        <aside className="hidden lg:block lg:sticky lg:top-24 min-w-0">
           <FoundingCard m={preview} />
 
           <p className="text-xs mt-4 text-center" style={{ color: "#64748b" }}>

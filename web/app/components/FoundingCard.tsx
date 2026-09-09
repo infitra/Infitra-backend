@@ -14,7 +14,8 @@ import { FoundingExpertBadge } from "@/app/(app)/experiences/[id]/PublicChalleng
  * icon tiles, thin dividers, muted labels. A studio fills the same three
  * background slots with its own meanings: track record, team, recognition.
  * Fed by load_founding_community(): explicit public-safe columns, never an
- * email.
+ * email. Below sm (phones) the full card stacks like the compact one:
+ * portrait above the name, one background column with the label on top.
  */
 export interface FoundingMember {
   id: string;
@@ -174,7 +175,7 @@ function Answer({
           <AnswerIcon kind={kind} color="#FFFFFF" />
         </span>
         <span
-          className="-ml-3 pl-5 pr-3.5 py-1.5 rounded-full text-[11.5px] font-black font-headline uppercase tracking-[0.12em] text-white whitespace-nowrap"
+          className="-ml-3 pl-5 pr-3.5 py-1.5 rounded-full text-[10px] sm:text-[11.5px] font-black font-headline uppercase tracking-[0.08em] sm:tracking-[0.12em] text-white leading-tight sm:whitespace-nowrap"
           style={{ backgroundColor: accent }}
         >
           {label}
@@ -215,7 +216,6 @@ export function FoundingCard({
     ? { brings: "What we bring", seeks: "What would complement our offer" }
     : { brings: "My expertise", seeks: "What would complement my work" };
   const pad = compact ? "px-5" : "px-6";
-  const portrait = compact ? 116 : 168;
   const accent = isStudio ? CYAN : ORANGE;
 
   return (
@@ -254,12 +254,12 @@ export function FoundingCard({
       )}
 
       {/* The person */}
-      <div className={`relative ${pad} pt-6 flex ${compact ? "flex-col items-start gap-4" : "items-center gap-6"}`}>
+      <div
+        className={`relative ${pad} pt-6 flex ${compact ? "flex-col items-start gap-4" : "flex-col items-start gap-4 sm:flex-row sm:items-center sm:gap-6"}`}
+      >
         <div
-          className="rounded-full shrink-0"
+          className={`rounded-full shrink-0 ${compact ? "w-[116px] h-[116px]" : "w-[120px] h-[120px] sm:w-[168px] sm:h-[168px]"}`}
           style={{
-            width: portrait,
-            height: portrait,
             padding: 5,
             backgroundColor: "#FFFFFF",
             boxShadow: "0 14px 34px rgba(15,34,41,0.16)",
@@ -274,7 +274,7 @@ export function FoundingCard({
                 className="w-full h-full flex items-center justify-center"
                 style={{ background: "linear-gradient(135deg, rgba(255,97,48,0.12) 0%, rgba(8,145,178,0.14) 100%)" }}
               >
-                <span className={`${compact ? "text-4xl" : "text-6xl"} font-black font-headline`} style={{ color: CYAN }}>
+                <span className={`${compact ? "text-4xl" : "text-5xl sm:text-6xl"} font-black font-headline`} style={{ color: CYAN }}>
                   {initial}
                 </span>
               </div>
@@ -285,7 +285,7 @@ export function FoundingCard({
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-3 flex-wrap">
             <h3
-              className={`${compact ? "text-2xl" : "text-[30px]"} font-black font-headline tracking-tight leading-[1.05]`}
+              className={`${compact ? "text-2xl" : "text-[26px] sm:text-[30px]"} font-black font-headline tracking-tight leading-[1.05]`}
               style={{ color: INK, letterSpacing: "-0.03em" }}
             >
               {name}
@@ -339,7 +339,7 @@ export function FoundingCard({
       {(m.brings || m.seeks) && (
         <div
           className={`relative ${pad} pt-5 pb-4 grid gap-3`}
-          style={{ gridTemplateColumns: compact ? "1fr" : "repeat(auto-fit, minmax(300px, 1fr))" }}
+          style={{ gridTemplateColumns: compact ? "1fr" : "repeat(auto-fit, minmax(min(300px, 100%), 1fr))" }}
         >
           {m.brings && <Answer kind="brings" label={labels.brings} text={m.brings} accent={ORANGE} />}
           {m.seeks && <Answer kind="seeks" label={labels.seeks} text={m.seeks} accent={CYAN} />}
@@ -352,7 +352,7 @@ export function FoundingCard({
           {groups.map((g, gi) => (
             <div
               key={g.kind}
-              className={`grid items-start gap-x-4 py-3 ${compact ? "grid-cols-[44px_minmax(0,1fr)]" : "grid-cols-[44px_160px_minmax(0,1fr)]"}`}
+              className={`grid items-start gap-x-4 py-3 ${compact ? "grid-cols-[44px_minmax(0,1fr)]" : "grid-cols-[44px_minmax(0,1fr)] sm:grid-cols-[44px_160px_minmax(0,1fr)]"}`}
               style={gi > 0 ? { borderTop: `1px solid ${HAIR}` } : undefined}
             >
               <span
@@ -363,18 +363,19 @@ export function FoundingCard({
               </span>
               {!compact && (
                 <span
-                  className="h-11 flex items-center text-[12px] font-black font-headline uppercase tracking-[0.16em] pl-4"
+                  className="hidden sm:flex h-11 items-center text-[12px] font-black font-headline uppercase tracking-[0.16em] pl-4"
                   style={{ color: "#334155", borderLeft: `1px solid ${HAIR}` }}
                 >
                   {g.label}
                 </span>
               )}
-              <div className={`flex flex-col gap-2.5 ${compact ? "" : "pl-4 pt-3"}`} style={compact ? undefined : { borderLeft: `1px solid ${HAIR}` }}>
-                {compact && (
-                  <span className="h-11 flex items-center text-[11px] font-black font-headline uppercase tracking-[0.16em]" style={{ color: "#334155" }}>
-                    {g.label}
-                  </span>
-                )}
+              <div className={`flex flex-col gap-2.5 ${compact ? "" : "sm:pl-4 sm:pt-3 sm:border-l sm:border-[rgba(15,34,41,0.08)]"}`}>
+                <span
+                  className={`h-11 flex items-center text-[11px] font-black font-headline uppercase tracking-[0.16em] ${compact ? "" : "sm:hidden"}`}
+                  style={{ color: "#334155" }}
+                >
+                  {g.label}
+                </span>
                 {g.items.map((c, i) => {
                   const detail = [c.org, credentialPeriod(c.year, c.year_end)].filter(Boolean).join(" · ");
                   return (
