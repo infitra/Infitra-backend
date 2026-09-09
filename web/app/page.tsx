@@ -8,7 +8,6 @@ import { Summary } from "./landing/Summary";
 import { Finale } from "./landing/Finale";
 import { FoundingRow } from "./landing/FoundingRow";
 import { Footer } from "./landing/Footer";
-import { JoinWaitlistLink } from "./landing/JoinWaitlistLink";
 
 /**
  * THE LANDING — the product-showcase story (formerly polished at /new,
@@ -67,17 +66,16 @@ export default function LandingPage() {
                 INFITRA
               </span>
             </Link>
-            <div className="flex items-center gap-2 sm:gap-2.5">
-              <JoinWaitlistLink />
-              <Link
-                href="/apply"
-                className="px-3.5 sm:px-5 py-2 rounded-full text-xs font-headline font-bold text-white uppercase tracking-widest whitespace-nowrap"
-                style={{ backgroundColor: "#FF6130", boxShadow: "0 2px 8px rgba(255,97,48,0.3)" }}
-              >
-                <span className="sm:hidden">Apply</span>
-                <span className="hidden sm:inline">Apply as expert</span>
-              </Link>
-            </div>
+            {/* One door (9 Sep 2026): members who joined by invite link sign in here.
+                The waitlist and apply pills went with the founding-network model;
+                the landing itself is rewritten next. */}
+            <Link
+              href="/login"
+              className="px-4 sm:px-5 py-2 rounded-full text-xs font-headline font-bold text-white uppercase tracking-widest whitespace-nowrap"
+              style={{ backgroundColor: "#FF6130", boxShadow: "0 2px 8px rgba(255,97,48,0.3)" }}
+            >
+              Sign in
+            </Link>
           </div>
         </nav>
 
