@@ -6324,9 +6324,8 @@ begin
      and p.community_visibility = 'public';
 
   if p_public_only then
-    if v_count < 3 then
-      return jsonb_build_object('authorized', true, 'count', v_count, 'members', '[]'::jsonb);
-    end if;
+    -- Not launched publicly yet: nothing leaves the network.
+    return jsonb_build_object('authorized', true, 'count', 0, 'members', '[]'::jsonb);
   else
     if v_uid is null then
       return jsonb_build_object('authorized', false, 'reason', 'not_authenticated',
