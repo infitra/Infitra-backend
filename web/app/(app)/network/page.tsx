@@ -139,9 +139,10 @@ export default async function NetworkPage({
               <FoundingCard m={me} editHref="/network/edit" />
             </div>
 
-            {/* Compact on purpose: the column, coming-soon block included, fits beside the card on one desktop screen */}
-            <div className="min-w-0 lg:sticky lg:top-24 flex flex-col gap-7">
-              {justJoined && <div className="lg:-mt-3.5">{label("Welcome to INFITRA", CYAN_BRIGHT)}</div>}
+            {/* Compact on purpose: the column, coming-soon block included, fits beside the card on one desktop screen.
+                The steps start level with the card's top edge; the welcome sits in the band above, under the nav. */}
+            <div className="relative min-w-0 lg:sticky lg:top-24 flex flex-col gap-7">
+              {justJoined && <div className="lg:absolute lg:left-0 lg:-top-7">{label("Welcome to INFITRA", CYAN_BRIGHT)}</div>}
               <ol className="flex flex-col gap-3.5">
                 {steps.map((step, i) => (
                   <li key={step.t} className="flex gap-3.5">
