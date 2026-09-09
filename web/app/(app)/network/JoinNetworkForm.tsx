@@ -261,15 +261,15 @@ export function JoinNetworkForm({
         <div className="flex flex-col gap-5 min-w-0">
           {/* ── 1 · You are ── */}
           <section className={sectionCls} style={sectionStyle}>
-            <Step n={1} title="You are" />
+            <Step n={1} title="Choose your profile type" />
             <div
               className="grid grid-cols-2 gap-1.5 p-1.5 rounded-2xl"
               style={{ backgroundColor: "rgba(15,34,41,0.05)" }}
             >
               {(
                 [
-                  { value: "expert", label: "An expert" },
-                  { value: "studio", label: "A studio or gym" },
+                  { value: "expert", label: "Expert" },
+                  { value: "studio", label: "Studio or Gym" },
                 ] as const
               ).map((opt) => {
                 const on = entity === opt.value;
