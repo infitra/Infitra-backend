@@ -139,29 +139,23 @@ export default async function NetworkPage({
               <FoundingCard m={me} editHref="/network/edit" />
             </div>
 
-            <div className="min-w-0 lg:sticky lg:top-24 flex flex-col gap-7 lg:pt-2">
-              {justJoined && (
-                <div>
-                  {label("Welcome to the founding network", CYAN_BRIGHT)}
-                  <p className="text-sm mt-1.5" style={{ color: "rgba(242,239,232,0.72)" }}>
-                    You&apos;re in. This is your card, as the network sees it.
-                  </p>
-                </div>
-              )}
-              <ol className="flex flex-col gap-5">
+            {/* Compact on purpose: the column, coming-soon block included, fits beside the card on one desktop screen */}
+            <div className="min-w-0 lg:sticky lg:top-24 flex flex-col gap-5">
+              {justJoined && label("Welcome to the founding network", CYAN_BRIGHT)}
+              <ol className="flex flex-col gap-3.5">
                 {steps.map((step, i) => (
-                  <li key={step.t} className="flex gap-4">
+                  <li key={step.t} className="flex gap-3.5">
                     <span
-                      className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-black font-headline"
+                      className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-[13px] font-black font-headline"
                       style={{ backgroundColor: ORANGE, color: "#fff" }}
                     >
                       {i + 1}
                     </span>
                     <div>
-                      <p className="text-base font-black font-headline tracking-tight" style={{ color: CREAM }}>
+                      <p className="text-[15px] font-black font-headline tracking-tight leading-6" style={{ color: CREAM }}>
                         {step.t}
                       </p>
-                      <p className="text-sm leading-relaxed mt-1" style={{ color: "rgba(242,239,232,0.72)" }}>
+                      <p className="text-[13px] leading-relaxed mt-0.5" style={{ color: "rgba(242,239,232,0.72)" }}>
                         {step.d}
                       </p>
                     </div>
@@ -169,34 +163,34 @@ export default async function NetworkPage({
                 ))}
               </ol>
 
-              <div className="mt-2 pt-7" style={{ borderTop: "1px solid rgba(242,239,232,0.15)" }}>
-                <div className="mb-2">{label("Yours to keep", CYAN_BRIGHT)}</div>
-                <p className="text-sm leading-relaxed font-bold font-headline" style={{ color: CREAM }}>
+              <div className="pt-5" style={{ borderTop: "1px solid rgba(242,239,232,0.15)" }}>
+                <div className="mb-1.5">{label("Yours to keep", CYAN_BRIGHT)}</div>
+                <p className="text-[13px] leading-relaxed font-bold font-headline" style={{ color: CREAM }}>
                   The founding member badge stays on your card when INFITRA opens publicly, and
                   founding cards hold the top spot in discovery. Your audience stays yours.
                 </p>
               </div>
 
               {/* Coming soon: the network. Visible now, reachable once the page is designed. */}
-              <div className="pt-7" style={{ borderTop: "1px solid rgba(242,239,232,0.15)" }}>
-              <div
-                className="rounded-2xl p-5 relative overflow-hidden"
-                style={{ backgroundColor: "rgba(8,145,178,0.20)", border: "1px solid rgba(8,145,178,0.55)" }}
-              >
-                <span
-                  className="inline-block px-2.5 py-1 rounded-full text-[10px] font-black font-headline uppercase tracking-[0.16em] mb-3 text-white"
-                  style={{ backgroundColor: "#0891b2" }}
+              <div className="pt-5" style={{ borderTop: "1px solid rgba(242,239,232,0.15)" }}>
+                <div
+                  className="rounded-2xl p-4 relative overflow-hidden"
+                  style={{ backgroundColor: "rgba(8,145,178,0.20)", border: "1px solid rgba(8,145,178,0.55)" }}
                 >
-                  Coming soon
-                </span>
-                <p className="text-lg font-black font-headline tracking-tight" style={{ color: CREAM }}>
-                  Explore the network
-                </p>
-                <p className="text-sm leading-relaxed mt-1" style={{ color: "rgba(242,239,232,0.75)" }}>
-                  Every card in the founding network in one place, with what each expert and studio
-                  brings and what would complement them. Forming now, one card at a time.
-                </p>
-              </div>
+                  <span
+                    className="inline-block px-2.5 py-1 rounded-full text-[10px] font-black font-headline uppercase tracking-[0.16em] mb-2 text-white"
+                    style={{ backgroundColor: "#0891b2" }}
+                  >
+                    Coming soon
+                  </span>
+                  <p className="text-base font-black font-headline tracking-tight" style={{ color: CREAM }}>
+                    Explore the network
+                  </p>
+                  <p className="text-[13px] leading-relaxed mt-1" style={{ color: "rgba(242,239,232,0.75)" }}>
+                    Every card in the founding network in one place, with what each expert and studio
+                    brings and what would complement them. Forming now, one card at a time.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
