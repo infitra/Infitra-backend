@@ -256,7 +256,7 @@ export function FoundingCard({
       )}
 
       {/* The person */}
-      <div className={`relative ${pad} pt-6`}>
+      <div className={`relative ${pad} ${editHref ? "pt-14 sm:pt-6" : "pt-6"}`}>
       <div className={`flex ${compact ? "flex-col items-start gap-4" : "items-center gap-4 sm:gap-6"}`}>
         <div
           className={`rounded-full shrink-0 ${compact ? "w-[116px] h-[116px]" : "w-[92px] h-[92px] sm:w-[168px] sm:h-[168px]"}`}

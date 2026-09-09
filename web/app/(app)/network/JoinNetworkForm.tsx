@@ -5,6 +5,7 @@ import Link from "next/link";
 import { joinFoundingNetwork } from "@/app/actions/profile";
 import { AnswerIcon, FoundingCard, type FoundingMember } from "@/app/components/FoundingCard";
 import { CredentialsEditor, type EditableCredential } from "@/app/components/CredentialsEditor";
+import { shrinkPhoto } from "@/lib/shrinkPhoto";
 
 /** The preview shows the link as the server will store it. */
 function previewLink(raw: string): string | null {
@@ -58,9 +59,12 @@ export interface JoinNetworkValues {
 export function JoinNetworkForm({
   mode,
   initial,
+  initialCredentials,
 }: {
   mode: "join" | "edit";
   initial: JoinNetworkValues;
+  /** The member's background, read on the server so the editor never opens empty. */
+  initialCredentials: EditableCredential[];
 }) {
   const [state, formAction, pending] = useActionState(joinFoundingNetwork, null);
   const [uploading, setUploading] = useState(false);
@@ -73,7 +77,9 @@ export function JoinNetworkForm({
   const [entity, setEntity] = useState<"expert" | "studio">(initial.entityType ?? "expert");
   const [brings, setBrings] = useState(initial.brings);
   const [seeks, setSeeks] = useState(initial.seeks);
-  const [creds, setCreds] = useState<EditableCredential[]>([]);
+  const [creds, setCreds] = useState<EditableCredential[]>(initialCredentials);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const [shrinking, setShrinking] = useState(false);
 
   // The persisted photo URL (initial or freshly uploaded) and what to show.
   const [avatarUrl, setAvatarUrl] = useState<string | null>(initial.avatarUrl);
@@ -81,16 +87,28 @@ export function JoinNetworkForm({
   const fileInput = useRef<HTMLInputElement>(null);
   const avatarFile = useRef<File | null>(null);
 
-  function onPickAvatar(e: React.ChangeEvent<HTMLInputElement>) {
+  // The photo is shrunk in the browser first, so there is no size to get
+  // wrong and the upload is quick. Anything the browser cannot read gets a
+  // gentle message right here, next to the picker, not at the foot of the form.
+  async function onPickAvatar(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      setLocalError("The photo must be under 5MB.");
+    setPhotoError(null);
+    if (file.size > 40 * 1024 * 1024) {
+      setPhotoError("That photo is very large. Please choose one under 40MB.");
       return;
     }
-    avatarFile.current = file;
-    setAvatarPreview(URL.createObjectURL(file));
-    setLocalError(null);
+    setShrinking(true);
+    try {
+      const small = await shrinkPhoto(file);
+      avatarFile.current = small;
+      setAvatarPreview(URL.createObjectURL(small));
+    } catch {
+      setPhotoError("We could not read that photo. A JPG or PNG straight from your phone or computer works best. Please try another one.");
+    } finally {
+      setShrinking(false);
+    }
   }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -112,7 +130,9 @@ export function JoinNetworkForm({
       const up = await uploadImage(avatarFile.current, "avatar");
       setUploading(false);
       if (up.error || !up.url) {
-        setLocalError(`Photo upload failed: ${up.error ?? "no URL returned"}`);
+        const msg = `The photo could not be uploaded (${up.error ?? "no URL returned"}). Please try again.`;
+        setPhotoError(msg);
+        setLocalError(msg);
         return;
       }
       url = up.url;
@@ -123,7 +143,7 @@ export function JoinNetworkForm({
     startTransition(() => formAction(fd));
   }
 
-  const busy = uploading || pending;
+  const busy = uploading || pending || shrinking;
   const error = localError ?? (state && "error" in state ? state.error : null);
   const isStudio = entity === "studio";
   const preview: FoundingMember = {
@@ -279,11 +299,11 @@ export function JoinNetworkForm({
             <Step
               n={2}
               done={faceDone}
-              title="The face of the card"
+              title="Your profile"
               lead={
                 isStudio
-                  ? "The photo you already use, the studio's face or your space. The name, one line, where you are."
-                  : "The photo you already use. Your name, the one line people remember you by, where you are."
+                  ? "Add the photo your members already recognise."
+                  : "Add the photo your clients already recognise."
               }
             />
 
@@ -315,11 +335,16 @@ export function JoinNetworkForm({
                   className="px-4 py-2 rounded-full text-xs font-bold font-headline"
                   style={{ color: ORANGE, border: "1px solid rgba(255,97,48,0.4)", backgroundColor: "rgba(255,255,255,0.6)" }}
                 >
-                  {avatarPreview ? "Change photo" : "Upload photo"}
+                  {shrinking ? "Reading photo…" : avatarPreview ? "Change photo" : "Upload photo"}
                 </button>
                 <p className="text-[11px] mt-2" style={{ color: "#94a3b8" }}>
-                  Square works best. Max 5MB.
+                  Square works best. Any size is fine.
                 </p>
+                {photoError && (
+                  <p className="text-xs mt-2 leading-snug" style={{ color: ORANGE }}>
+                    {photoError}
+                  </p>
+                )}
               </div>
               <input
                 ref={fileInput}
@@ -411,7 +436,7 @@ export function JoinNetworkForm({
               n={3}
               done={answersDone}
               title="Your two answers"
-              lead="They sit at the heart of your card, and they are what we match on."
+              lead="These answers shape your profile and help us find the right professional matches."
             />
 
             <div>
@@ -489,6 +514,7 @@ export function JoinNetworkForm({
               }
               onChange={setCreds}
               entity={entity}
+              initial={initialCredentials}
             />
           </section>
 
@@ -549,7 +575,7 @@ export function JoinNetworkForm({
                 : pending
                   ? "Saving…"
                   : mode === "join"
-                    ? "Join the founding network"
+                    ? "Join INFITRA"
                     : "Save your card"}
             </button>
             <p className="text-xs text-center" style={{ color: "#64748b" }}>

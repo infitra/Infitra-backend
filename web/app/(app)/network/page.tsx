@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ParticipantNav } from "@/app/components/ParticipantNav";
 import { FoundingCard, type FoundingMember } from "@/app/components/FoundingCard";
+import type { EditableCredential } from "@/app/components/CredentialsEditor";
 import { JoinNetworkForm } from "./JoinNetworkForm";
 
 export const metadata = {
@@ -46,6 +47,15 @@ export default async function NetworkPage() {
   const live = profile.community_visibility === "public";
   const facts = (profile.profile_facts ?? {}) as { city?: string };
 
+  // The member's background, rendered with the page so the editor never
+  // opens empty (a client-side load once did, on a phone).
+  const { data: credentialRows } = await supabase
+    .from("app_expert_credential")
+    .select("id, kind, title, org, year, year_end")
+    .eq("profile_id", user.id)
+    .order("year", { ascending: false });
+  const credentials = (credentialRows ?? []) as EditableCredential[];
+
   const { data: directory } = await supabase.rpc("load_founding_community", {
     p_public_only: false,
   });
@@ -76,6 +86,7 @@ export default async function NetworkPage() {
           <div className="max-w-7xl mx-auto">
             <JoinNetworkForm
               mode="join"
+              initialCredentials={credentials}
               initial={{
                 id: user.id,
                 displayName: profile.display_name,

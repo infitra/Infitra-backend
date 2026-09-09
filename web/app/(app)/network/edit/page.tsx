@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ParticipantNav } from "@/app/components/ParticipantNav";
+import type { EditableCredential } from "@/app/components/CredentialsEditor";
 import { JoinNetworkForm } from "../JoinNetworkForm";
 
 export const metadata = {
@@ -34,6 +35,12 @@ export default async function NetworkEditPage() {
   if (profile.community_visibility !== "public") redirect("/network");
 
   const facts = (profile.profile_facts ?? {}) as { city?: string };
+  const { data: credentialRows } = await supabase
+    .from("app_expert_credential")
+    .select("id, kind, title, org, year, year_end")
+    .eq("profile_id", user.id)
+    .order("year", { ascending: false });
+  const credentials = (credentialRows ?? []) as EditableCredential[];
 
   return (
     <div className="min-h-screen">
@@ -55,6 +62,7 @@ export default async function NetworkEditPage() {
 
           <JoinNetworkForm
             mode="edit"
+            initialCredentials={credentials}
             initial={{
               id: user.id,
               displayName: profile.display_name ?? "",
