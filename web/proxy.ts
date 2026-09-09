@@ -183,6 +183,9 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    // Static assets never meet the wall. Fonts were missing here, so every
+    // anonymous visitor (the landing, the invite door) got the fallback
+    // face: the woff2 request was redirected to /beta-access (found 9 Sep).
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|woff2|woff|ttf|ico)$).*)",
   ],
 };
