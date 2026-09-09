@@ -25,11 +25,7 @@ const PROFILE_COLUMNS =
  * next, and one door at its foot to /network/explore, where everyone's
  * cards live. No page titles, like the rest of the app.
  */
-export default async function NetworkPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ joined?: string }>;
-}) {
+export default async function NetworkPage() {
   const supabase = await createClient();
   const {
     data: { user },
@@ -47,7 +43,6 @@ export default async function NetworkPage({
   if (!isCreator) redirect("/me");
   if (!profile.display_name) redirect("/onboarding");
 
-  const { joined } = await searchParams;
   const live = profile.community_visibility === "public";
   const facts = (profile.profile_facts ?? {}) as { city?: string };
 
@@ -111,7 +106,6 @@ export default async function NetworkPage({
     );
   }
 
-  const justJoined = joined === "1";
   const steps = [
     {
       t: "Your card is live.",
@@ -140,16 +134,14 @@ export default async function NetworkPage({
             </div>
 
             {/* Compact on purpose: the column, coming-soon block included, fits beside the card on one desktop screen.
-                It starts level with the card's top edge; on arrival the welcome is its title. */}
+                The welcome is its title on every visit (not only on arrival), level with the card's top edge. */}
             <div className="min-w-0 lg:sticky lg:top-24 flex flex-col gap-7">
-              {justJoined && (
-                <h2
-                  className="text-[22px] font-black font-headline tracking-tight leading-7"
-                  style={{ color: CREAM, letterSpacing: "-0.02em" }}
-                >
-                  Welcome to INFITRA
-                </h2>
-              )}
+              <p
+                className="text-[14px] font-bold font-headline uppercase tracking-[0.25em] leading-none"
+                style={{ color: CYAN_BRIGHT }}
+              >
+                Welcome to INFITRA
+              </p>
               <ol className="flex flex-col gap-3.5">
                 {steps.map((step, i) => (
                   <li key={step.t} className="flex gap-3.5">
