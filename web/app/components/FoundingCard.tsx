@@ -313,13 +313,14 @@ export function FoundingCard({
                   {m.facts.city}
                 </span>
               )}
+              {/* The link is a fact under the one line, set like the location, never a second headline */}
               {m.link_url && (
                 <a
                   href={m.link_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-sm font-bold font-headline hover:opacity-80"
-                  style={{ color: CYAN }}
+                  className="inline-flex items-center gap-1.5 text-sm hover:underline"
+                  style={{ color: "#64748b" }}
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                     <path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.5 1.5" />

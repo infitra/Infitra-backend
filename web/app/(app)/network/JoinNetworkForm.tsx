@@ -41,7 +41,8 @@ export interface JoinNetworkValues {
  * numbered steps in the card's own order: who you are (expert or studio,
  * which sets the words on the card), the face of the card, the two answers,
  * the background. The card assembles live next to the form, exactly as the
- * network will see it, with a checklist of what is on it. One button.
+ * network will see it. Each step ticks off as it is complete and the line
+ * under the button names what is still missing. One button.
  *
  * No visibility choice and no posts switch: showing the card on infitra.fit,
  * in the network and once in a welcome post is the deal, said in words at
@@ -90,6 +91,14 @@ export function JoinNetworkForm({
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLocalError(null);
+    if (creds.length === 0) {
+      setLocalError(
+        entity === "studio"
+          ? "Please add at least one entry to your track record, team or recognition."
+          : "Please add at least one entry to your background: an experience, education or a certification.",
+      );
+      return;
+    }
     const fd = new FormData(e.currentTarget);
     let url = avatarUrl;
     if (avatarFile.current) {
@@ -133,18 +142,21 @@ export function JoinNetworkForm({
     })),
   };
 
-  // What is on the card so far. The two answers are required; the rest
-  // makes the card complete.
-  const checklist: { label: string; done: boolean; optional?: boolean }[] = [
-    { label: "Photo", done: !!avatarPreview },
-    { label: "Name", done: name.trim().length >= 2 },
-    { label: "One line", done: tagline.trim().length > 0 },
-    { label: "City", done: city.trim().length > 0 },
-    { label: isStudio ? "What we bring" : "My expertise", done: brings.trim().length > 0 },
-    { label: isStudio ? "What would complement our offer" : "What would complement my work", done: seeks.trim().length > 0 },
-    { label: isStudio ? "Track record, team, recognition" : "Background", done: creds.length > 0, optional: true },
-    { label: "Where to find you", done: previewLink(link) !== null, optional: true },
-  ];
+  // What is still missing. The two answers and one background entry are
+  // required (the server checks them too); the photo and the rest complete
+  // the card. Named in the line under the button, where the decision is.
+  const missing: string[] = [];
+  if (!avatarPreview) missing.push("photo");
+  if (name.trim().length < 2) missing.push(isStudio ? "studio name" : "name");
+  if (!tagline.trim()) missing.push("one line");
+  if (!city.trim()) missing.push("location");
+  if (!brings.trim() && !seeks.trim()) missing.push("both answers");
+  else if (!brings.trim()) missing.push(isStudio ? "what we bring" : "my expertise");
+  else if (!seeks.trim()) missing.push(isStudio ? "what would complement our offer" : "what would complement my work");
+  if (creds.length === 0) missing.push(isStudio ? "track record, team or recognition" : "your background");
+  const faceDone = !!avatarPreview && name.trim().length >= 2 && tagline.trim().length > 0 && city.trim().length > 0;
+  const answersDone = brings.trim().length > 0 && seeks.trim().length > 0;
+  const backgroundDone = creds.length > 0;
 
   const field = {
     backgroundColor: "rgba(255,255,255,0.78)",
@@ -164,13 +176,15 @@ export function JoinNetworkForm({
       {200 - n}
     </p>
   );
-  const Step = ({ n, title, lead }: { n: number; title: string; lead: string }) => (
+  // The numbered disc ticks off in cyan once the step is complete.
+  const Step = ({ n, title, lead, done }: { n: number; title: string; lead: string; done?: boolean }) => (
     <div className="flex items-start gap-3">
       <span
         className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-black font-headline mt-0.5"
-        style={{ backgroundColor: ORANGE, color: "#fff" }}
+        style={{ backgroundColor: done ? CYAN : ORANGE, color: "#fff" }}
+        aria-label={done ? `Step ${n}, complete` : `Step ${n}`}
       >
-        {n}
+        {done ? "✓" : n}
       </span>
       <div>
         <h2 className="text-lg font-black font-headline tracking-tight" style={{ color: INK }}>
@@ -233,6 +247,7 @@ export function JoinNetworkForm({
           <section className={sectionCls} style={sectionStyle}>
             <Step
               n={2}
+              done={faceDone}
               title="The face of the card"
               lead={
                 isStudio
@@ -315,14 +330,14 @@ export function JoinNetworkForm({
                   maxLength={120}
                   value={tagline}
                   onChange={(e) => setTagline(e.target.value)}
-                  placeholder={isStudio ? "e.g. Strength and mobility studio" : "e.g. Sports nutrition for endurance athletes"}
+                  placeholder={isStudio ? "e.g. CrossFit gym, commercial gym with PT, Pilates studio" : "e.g. Sports nutrition for endurance athletes"}
                   className={inputCls}
                   style={field}
                 />
               </div>
               <div>
                 <label htmlFor="city" className={labelCls} style={labelStyle}>
-                  City
+                  Location(s)
                 </label>
                 <input
                   id="city"
@@ -349,7 +364,7 @@ export function JoinNetworkForm({
                 maxLength={200}
                 value={link}
                 onChange={(e) => setLink(e.target.value)}
-                placeholder="instagram.com/you, or your website"
+                placeholder="Your website or social media link"
                 className={inputCls}
                 style={field}
               />
@@ -363,6 +378,7 @@ export function JoinNetworkForm({
           <section className={sectionCls} style={sectionStyle}>
             <Step
               n={3}
+              done={answersDone}
               title="Your two answers"
               lead="They sit at the heart of your card, and they are what we match on."
             />
@@ -386,8 +402,8 @@ export function JoinNetworkForm({
                 onChange={(e) => setBrings(e.target.value)}
                 placeholder={
                   isStudio
-                    ? "e.g. 400 members who ask for more than classes, a strength and Pilates team, 5 active weekly group classes"
-                    : "e.g. sports nutrition for endurance athletes, a live group that has trained with me for six years"
+                    ? "e.g. 400 members who ask for more than classes, a strength and Pilates team, 5 active weekly group classes, 3000 newsletter subscribers, 8000 followers on socials"
+                    : "e.g. sports nutrition for endurance athletes, a live group that has trained with me for six years, 4000 followers on Instagram, a newsletter with 1200 subscribers"
                 }
                 className={`${inputCls} resize-none`}
                 style={field}
@@ -426,11 +442,12 @@ export function JoinNetworkForm({
           <section className={sectionCls} style={sectionStyle}>
             <Step
               n={4}
+              done={backgroundDone}
               title={isStudio ? "Track record, team, recognition" : "Your background"}
               lead={
                 isStudio
-                  ? "What makes the studio credible at a glance. It shows at the foot of your card. Optional."
-                  : "What makes you credible at a glance. It shows at the foot of your card and, later, on your experience pages. Optional."
+                  ? "What makes the studio credible at a glance. It shows at the foot of your card. At least one entry."
+                  : "What makes you credible at a glance. It shows at the foot of your card and, later, on your experience pages. At least one entry."
               }
             />
             <CredentialsEditor
@@ -502,9 +519,11 @@ export function JoinNetworkForm({
                     : "Save your card"}
             </button>
             <p className="text-xs text-center" style={{ color: "#64748b" }}>
-              {mode === "join"
-                ? "Your card goes live the moment you join. Edit it any time."
-                : "Changes show on infitra.fit and in the network right away."}
+              {missing.length > 0
+                ? `Still to fill in: ${missing.join(", ")}.`
+                : mode === "join"
+                  ? "Your card is complete. It goes live the moment you join, and you can edit it any time."
+                  : "Changes show on infitra.fit and in the network right away."}
             </p>
             <p className="text-[11px] text-center" style={{ color: CYAN }}>
               Every card is shown with its owner&apos;s consent and can be withdrawn any time.
@@ -516,32 +535,7 @@ export function JoinNetworkForm({
         <aside className="lg:sticky lg:top-24 min-w-0">
           <FoundingCard m={preview} />
 
-          <div className="mt-5 flex items-baseline justify-between gap-3 flex-wrap">
-            <p className="text-[11px] font-bold font-headline uppercase tracking-[0.2em]" style={{ color: INK }}>
-              Checklist
-            </p>
-            <p className="text-xs" style={{ color: "#64748b" }}>
-              Fill these in and the card is complete. The two answers are what we match on.
-            </p>
-          </div>
-          <div className="mt-2.5 flex flex-wrap gap-2">
-            {checklist.map((item) => (
-              <span
-                key={item.label}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold font-headline"
-                style={{
-                  color: item.done ? CYAN : "rgba(15,34,41,0.45)",
-                  backgroundColor: item.done ? "rgba(8,145,178,0.10)" : "rgba(15,34,41,0.05)",
-                  border: `1px solid ${item.done ? "rgba(8,145,178,0.30)" : "rgba(15,34,41,0.08)"}`,
-                }}
-              >
-                <span aria-hidden>{item.done ? "✓" : "○"}</span>
-                {item.label}
-                {item.optional && !item.done ? " · optional" : ""}
-              </span>
-            ))}
-          </div>
-          <p className="text-xs mt-3" style={{ color: "#64748b" }}>
+          <p className="text-xs mt-4 text-center" style={{ color: "#64748b" }}>
             This is what the network and infitra.fit see. It updates as you type.
           </p>
         </aside>

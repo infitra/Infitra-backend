@@ -181,6 +181,22 @@ export async function joinFoundingNetwork(prevState: unknown, formData: FormData
   const isCreator = profile?.role === "creator" || profile?.role === "admin";
   if (!isCreator) return { error: "The founding network is for experts and studios." };
 
+  // One background entry is part of the card: everyone has at least an
+  // experience, a studio at least a track record. The entries save on
+  // their own, so the check is a count, here as well as on the client.
+  const { count: credCount } = await supabase
+    .from("app_expert_credential")
+    .select("id", { count: "exact", head: true })
+    .eq("profile_id", user.id);
+  if (!credCount) {
+    return {
+      error:
+        entityRaw === "studio"
+          ? "Please add at least one entry to your track record, team or recognition."
+          : "Please add at least one entry to your background: an experience, education or a certification.",
+    };
+  }
+
   // City lives in profile_facts next to the other optional facts, which the
   // card does not ask for and leaves untouched.
   const facts = { ...((profile?.profile_facts as Record<string, unknown> | null) ?? {}) };
