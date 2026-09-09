@@ -109,32 +109,45 @@ export default async function NetworkExplorePage() {
                 </div>
               )}
             </div>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {others.map((m) => (
-                <div key={m.id} className="flex flex-col gap-2">
+          ) : null}
+        </div>
+      </div>
+
+      {/* Every card on the stage, one under another, in exactly the frame its owner
+          sees at /network (same teal, same container, same 8/12 column, no Edit pill),
+          so a card here reads identically to the moment it went live. The browsing
+          layout for this page is still to be designed; until then, fidelity over grid. */}
+      {authorized && others.length > 0 && (
+        <section className="relative -mt-20 pt-6 pb-[7.5rem] -mb-20" style={{ backgroundColor: "#0C262E" }}>
+          <div className="relative max-w-7xl mx-auto px-6 flex flex-col gap-12">
+            {others.map((m) => (
+              <div key={m.id} className="grid gap-8 lg:gap-10 lg:grid-cols-[minmax(0,8fr)_minmax(0,4fr)] items-start">
+                <div className="min-w-0">
                   <FoundingCard m={m} />
+                </div>
+                <div className="min-w-0 lg:pt-1 flex flex-col gap-3">
+                  {label("In the network", "#9CF0FF")}
                   <a
                     href={`mailto:hello@infitra.fit?subject=${encodeURIComponent(`Intro request: ${m.display_name ?? "a founding member"}`)}`}
-                    className="self-end text-[11px] font-bold font-headline uppercase tracking-[0.14em]"
-                    style={{ color: CYAN }}
+                    className="self-start text-[11px] font-bold font-headline uppercase tracking-[0.14em]"
+                    style={{ color: "#9CF0FF" }}
                   >
                     Ask for an intro
                   </a>
                 </div>
-              ))}
-              {me && (
-                <div className="flex flex-col gap-2 opacity-80">
+              </div>
+            ))}
+            {me && (
+              <div className="grid gap-8 lg:gap-10 lg:grid-cols-[minmax(0,8fr)_minmax(0,4fr)] items-start opacity-80">
+                <div className="min-w-0">
                   <FoundingCard m={me} />
-                  <span className="self-end text-[11px] font-bold font-headline uppercase tracking-[0.14em]" style={{ color: "#94a3b8" }}>
-                    You
-                  </span>
                 </div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
+                <div className="min-w-0 lg:pt-1">{label("You", "#94a3b8")}</div>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
