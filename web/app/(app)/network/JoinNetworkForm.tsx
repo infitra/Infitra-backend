@@ -461,7 +461,10 @@ export function JoinNetworkForm({
             />
           </section>
 
-          {/* ── How we put you forward ── */}
+          {/* ── How we put you forward ──
+              The consent wording. The button below it is the consent act and the
+              server stores CARD_CONSENT_VERSION (lib/cardConsent.ts) with the
+              timestamp: bump that tag whenever this block's meaning changes. */}
           <section
             className={sectionCls}
             style={{ backgroundColor: "rgba(8,145,178,0.06)", border: "1px solid rgba(8,145,178,0.18)" }}

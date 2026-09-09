@@ -8922,9 +8922,11 @@ CREATE OR REPLACE FUNCTION "public"."trg_profile_community_consent"() RETURNS "t
 begin
   if new.community_visibility = 'none' then
     new.community_consent_at := null;
+    new.community_consent_version := null;
   elsif tg_op = 'INSERT'
      or old.community_visibility = 'none'
-     or new.community_consent_at is null then
+     or new.community_consent_at is null
+     or new.community_consent_version is distinct from old.community_consent_version then
     new.community_consent_at := now();
   end if;
   return new;
@@ -10110,6 +10112,7 @@ CREATE TABLE IF NOT EXISTS "public"."app_profile" (
     "seeks" "text",
     "announce_ok" boolean DEFAULT true NOT NULL,
     "link_url" "text",
+    "community_consent_version" "text",
     CONSTRAINT "app_profile_brings_len" CHECK ((("brings" IS NULL) OR ("char_length"("brings") <= 200))),
     CONSTRAINT "app_profile_community_visibility_check" CHECK (("community_visibility" = ANY (ARRAY['none'::"text", 'public'::"text"]))),
     CONSTRAINT "app_profile_creator_visibility_check" CHECK ((("role" <> 'creator'::"text") OR ("visibility" = 'public'::"text"))),
@@ -10154,6 +10157,10 @@ COMMENT ON COLUMN "public"."app_profile"."announce_ok" IS 'Featuring in posts is
 
 
 COMMENT ON COLUMN "public"."app_profile"."link_url" IS 'Founding card: where to find them (website or Instagram), normalised to a URL. Network-only; the public reader omits it.';
+
+
+
+COMMENT ON COLUMN "public"."app_profile"."community_consent_version" IS 'Founding network card: the version of the "How we put you forward" wording the member agreed to when the card went public. Paired with community_consent_at.';
 
 
 
@@ -12703,7 +12710,7 @@ CREATE OR REPLACE TRIGGER "trg_app_pilot_application_emails" AFTER INSERT ON "pu
 
 
 
-CREATE OR REPLACE TRIGGER "trg_app_profile_community_consent" BEFORE INSERT OR UPDATE OF "community_visibility" ON "public"."app_profile" FOR EACH ROW EXECUTE FUNCTION "public"."trg_profile_community_consent"();
+CREATE OR REPLACE TRIGGER "trg_app_profile_community_consent" BEFORE INSERT OR UPDATE OF "community_visibility", "community_consent_version" ON "public"."app_profile" FOR EACH ROW EXECUTE FUNCTION "public"."trg_profile_community_consent"();
 
 
 

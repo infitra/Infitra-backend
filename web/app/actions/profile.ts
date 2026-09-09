@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { CARD_CONSENT_VERSION } from "@/lib/cardConsent";
 
 export async function completeOnboarding(prevState: unknown, formData: FormData) {
   const supabase = await createClient();
@@ -114,7 +115,8 @@ export async function attestSigningIdentity(prevState: unknown, formData: FormDa
  * The founding-network card, written in one go (8 Sep 2026): the profile
  * (name, one line, city, where to find them, photo URL) and the card
  * (expert or studio, what you bring, who you would want next to you).
- * Joining flips the card live; the database stamps community_consent_at.
+ * Joining flips the card live; the database stamps community_consent_at,
+ * and the version of the wording agreed to travels with it.
  * There is no visibility choice and no posts switch: on infitra.fit, in the
  * network and in INFITRA's posts is the deal, stated on the form.
  *
@@ -212,6 +214,7 @@ export async function joinFoundingNetwork(prevState: unknown, formData: FormData
     seeks,
     link_url: linkUrl,
     community_visibility: "public",
+    community_consent_version: CARD_CONSENT_VERSION,
     updated_at: new Date().toISOString(),
   };
   if (avatarUrl) updates.avatar_url = avatarUrl;
