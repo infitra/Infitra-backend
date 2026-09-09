@@ -47,17 +47,11 @@ export default async function NetworkEditPage() {
         <div className="max-w-7xl mx-auto">
           <Link
             href="/network"
-            className="inline-block text-[11px] font-bold font-headline uppercase tracking-[0.25em] mb-6"
+            className="inline-block text-[11px] font-bold font-headline uppercase tracking-[0.25em] mb-8"
             style={{ color: "#0891b2" }}
           >
             ← Back to your card
           </Link>
-          <p className="text-sm leading-relaxed mb-8 max-w-2xl" style={{ color: "#475569" }}>
-            <span className="font-bold font-headline" style={{ color: "#0F2229" }}>Yours to keep:</span> the
-            founding member badge stays on your card when INFITRA opens publicly, and founding cards
-            hold the top spot in discovery. Your audience stays yours, and your card can be withdrawn
-            any time with one message to hello@infitra.fit.
-          </p>
 
           <JoinNetworkForm
             mode="edit"
