@@ -1,12 +1,11 @@
-import Link from "next/link";
 import { WaveFlowingBackground } from "@/app/components/WaveFlowingBackground";
 import type { FoundingMember } from "@/app/components/FoundingCard";
 import { createAnonClient } from "@/lib/supabase/anon";
 import { createClient } from "@/lib/supabase/server";
+import { StageNav } from "@/app/landing/v3/StageNav";
 import { Hero } from "@/app/landing/v3/Hero";
 import { ThreeWinners } from "@/app/landing/v3/ThreeWinners";
-import { Bridge } from "@/app/landing/v3/Bridge";
-import { NetworkStripe } from "@/app/landing/v3/NetworkStripe";
+import { WhatItIs } from "@/app/landing/v3/WhatItIs";
 import { FoundingNetwork } from "@/app/landing/v3/FoundingNetwork";
 import { Finale } from "@/app/landing/v3/Finale";
 import { WhatYouCanBuild } from "@/app/landing/WhatYouCanBuild";
@@ -23,18 +22,18 @@ import { Footer } from "@/app/landing/Footer";
  * sections replace the live page on the founder's word and /new goes back to
  * being a redirect, the same path the current landing took.
  *
- * The story: the tension and the definition (Hero), the opportunity named
- * per side with the independence line (ThreeWinners), one line into the
- * proof (Bridge), the shared showcase, the founding network as a dark stripe
- * once it holds cards (NetworkStripe), how joining works with the terms
- * (FoundingNetwork), one closing ask (Finale).
+ * The story: the dark stage with the opportunity, what INFITRA provides and
+ * the network itself (Hero), the opportunity per side with the two shapes
+ * that produce it (ThreeWinners), what an experience is and what it costs to
+ * try (WhatItIs), the shared showcase as the example, how joining works with
+ * the terms (FoundingNetwork), one closing ask (Finale).
  *
  * The showcase in the middle is shared with the live page, never forked.
  *
- * Preview: the public reader is closed until launch, so `?preview=cards`
- * lets a signed-in admin see the stripe with the cards the network holds
- * today. Reading the query makes this route dynamic, which is fine for a
- * noindex staging page; the promotion drops the preview and restores ISR.
+ * Preview: the public reader is closed until launch, so `?preview=cards` lets
+ * a signed-in admin see the hero as it will stand with the cards the network
+ * holds today. Reading the query makes this route dynamic, which is fine for
+ * a noindex staging page; the promotion drops the preview and restores ISR.
  */
 export const metadata = {
   title: "INFITRA · Live, co-created fitness experiences",
@@ -55,7 +54,7 @@ export default async function LandingStagingPage({
   let members = (pub?.members ?? []) as FoundingMember[];
   let previewMode = false;
 
-  if (members.length < 3 && preview === "cards") {
+  if (members.length === 0 && preview === "cards") {
     // The member/admin branch of the same reader: the database decides who
     // may see the cards, the page only passes them on.
     const supabase = await createClient();
@@ -66,55 +65,22 @@ export default async function LandingStagingPage({
     }
   }
 
-  const showStripe = members.length >= 3 || previewMode;
-
   return (
     <div className="min-h-screen relative overflow-x-clip" style={{ backgroundColor: "#F2EFE8" }}>
       <WaveFlowingBackground />
 
       <div className="relative z-10">
-        <nav className="fixed top-0 w-full z-40">
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              background: "rgba(242, 239, 232, 0.55)",
-              backdropFilter: "blur(20px) saturate(1.2)",
-              WebkitBackdropFilter: "blur(20px) saturate(1.2)",
-              borderBottom: "1px solid rgba(255, 255, 255, 0.25)",
-            }}
-          />
-          <div className="relative max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
-            <Link href="/new" className="flex items-center gap-2.5">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logo-mark.png" alt="INFITRA" width={34} height={34} className="block rounded-lg" />
-              <span
-                className="text-[22px] tracking-tight font-headline leading-none"
-                style={{ color: "#FF6130", fontWeight: 700, letterSpacing: "-0.03em" }}
-              >
-                INFITRA
-              </span>
-            </Link>
-            <Link
-              href="/login"
-              className="px-4 sm:px-5 py-2 rounded-full text-xs font-headline font-bold text-white uppercase tracking-widest whitespace-nowrap"
-              style={{ backgroundColor: "#FF6130", boxShadow: "0 2px 8px rgba(255,97,48,0.3)" }}
-            >
-              Sign in
-            </Link>
-          </div>
-        </nav>
+        <StageNav />
 
         <main>
-          <Hero />
+          <Hero members={members} preview={previewMode} />
           <ThreeWinners />
-          <Bridge />
+          <WhatItIs />
           <WhatYouCanBuild />
           <HowItWorks />
           <LiveWeek />
           <Summary />
-          <NetworkStripe members={showStripe ? members : []} preview={previewMode} />
-          <FoundingNetwork forming={!showStripe} />
+          <FoundingNetwork />
           <Finale />
         </main>
 

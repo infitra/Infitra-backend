@@ -6,10 +6,9 @@ import { Reveal } from "../Reveal";
  * of it. Everything above proves what a collaboration becomes; this says
  * what is asked for today, a profile and nothing else, and what comes back.
  *
- * Sits AFTER the shared FoundingRow on purpose: proof, then mechanism, then
- * the closing ask. The dark stripe above keeps the eyebrow "The founding
- * network", so this section's eyebrow differs. Until the stripe has cards,
- * `forming` puts the forming line here; the two never render together.
+ * Sits after the proof on purpose: proof, then mechanism, then the closing
+ * ask. The state of the network itself is shown in the hero now, where the
+ * profiles are, so this section only ever explains the mechanism.
  *
  * No counts and no dates anywhere.
  */
@@ -31,7 +30,7 @@ const STEPS = [
   },
 ];
 
-export function FoundingNetwork({ forming }: { forming: boolean }) {
+export function FoundingNetwork() {
   return (
     <section id="network" className="px-6 py-20 md:py-28">
       <div className="max-w-5xl mx-auto">
@@ -40,12 +39,6 @@ export function FoundingNetwork({ forming }: { forming: boolean }) {
           title={<>Joining costs a profile, <span style={{ color: CYAN }}>and nothing else.</span></>}
           sub="Accounts are invite-only. You apply, we read it personally, and if it fits, your invitation follows. From there nothing is binding."
         />
-
-        {forming && (
-          <p data-forming className="text-sm text-center -mt-8 mb-12 md:-mt-12 md:mb-16" style={{ color: MUTED }}>
-            The founding network is forming. Profiles appear here as their owners join.
-          </p>
-        )}
 
         <Reveal>
           <div className="grid md:grid-cols-3 gap-5">

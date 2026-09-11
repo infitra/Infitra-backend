@@ -1,4 +1,4 @@
-import { INK, ORANGE, CYAN, MUTED, SectionHead } from "../ui";
+import { INK, ORANGE, CYAN, MUTED, FAINT, SectionHead } from "../ui";
 import { Reveal } from "../Reveal";
 import { AnswerIcon } from "@/app/components/FoundingCard";
 
@@ -6,21 +6,40 @@ import { AnswerIcon } from "@/app/components/FoundingCard";
  * M1b · THREE WINNERS (11 Sep 2026): the opportunity, named per side.
  *
  * Network value is combinatorial, and a list of possibilities reads as
- * vagueness. So the section states one unit and exactly two ways to build
- * it, then names the three sides that come out ahead, each in its own
- * economics: one promise and three proof lines. The third side, the people
- * who join, is written as the RESULT of the first two, so a studio owner
- * reads it as "great for our members" and an expert as "beyond what I could
- * offer alone". It has no button. Under the cards, the line both suppliers
- * asked for: you stay independent and still work together professionally.
+ * vagueness. So the section SHOWS the two shapes first, as an equation you
+ * can take in without reading, then names the three sides that come out
+ * ahead, each in its own economics: one promise and three proof lines. The
+ * third side, the people who join, is written as the RESULT of the first two,
+ * so a studio owner reads it as "great for our members" and an expert as
+ * "beyond what I could offer alone". It has no button.
  *
  * Colours follow the member card: cyan and the two circles meeting for the
  * studio (the complement brought in), orange and the person for the expert
  * (what they bring). The people who join get both colours at once, orange
- * into cyan, because their result is made of both halves. No black, no
- * badge gold.
+ * into cyan, because their result is made of both halves. Each card wears its
+ * colour as a tinted band, so the three promises read as three offers instead
+ * of three paragraphs. No black, no badge gold.
  */
 const BOTH = "linear-gradient(135deg, #FF6130 0%, #0891b2 100%)";
+
+const SHAPES = [
+  {
+    key: "expert-expert",
+    discs: [
+      { color: ORANGE, glyph: "brings" as const },
+      { color: ORANGE, glyph: "brings" as const },
+    ],
+    caption: "Two experts whose crafts complete each other.",
+  },
+  {
+    key: "studio-expert",
+    discs: [
+      { color: CYAN, glyph: "seeks" as const },
+      { color: ORANGE, glyph: "brings" as const },
+    ],
+    caption: "A studio and an outside expert.",
+  },
+];
 
 const WINNERS = [
   {
@@ -28,6 +47,7 @@ const WINNERS = [
     label: "Studios and gyms",
     labelColor: CYAN,
     disc: CYAN,
+    tint: "rgba(8,145,178,0.09)",
     ring: "rgba(8,145,178,0.30)",
     glow: "rgba(8,145,178,0.10)",
     dot: CYAN,
@@ -44,6 +64,7 @@ const WINNERS = [
     label: "Experts",
     labelColor: ORANGE,
     disc: ORANGE,
+    tint: "rgba(255,97,48,0.09)",
     ring: "rgba(255,97,48,0.30)",
     glow: "rgba(255,97,48,0.10)",
     dot: ORANGE,
@@ -60,6 +81,7 @@ const WINNERS = [
     label: "The people who join",
     labelColor: CYAN,
     disc: BOTH,
+    tint: "linear-gradient(135deg, rgba(255,97,48,0.08) 0%, rgba(8,145,178,0.08) 100%)",
     ring: "rgba(15,34,41,0.10)",
     glow: "rgba(8,145,178,0.08)",
     dot: ORANGE,
@@ -87,6 +109,17 @@ function GroupIcon({ color, size = 20 }: { color: string; size?: number }) {
   );
 }
 
+function Disc({ color, glyph, size = 36 }: { color: string; glyph: "brings" | "seeks"; size?: number }) {
+  return (
+    <span
+      className="rounded-full flex items-center justify-center shrink-0"
+      style={{ background: color, width: size, height: size }}
+    >
+      <AnswerIcon kind={glyph} color="#FFFFFF" size={Math.round(size * 0.5)} />
+    </span>
+  );
+}
+
 export function ThreeWinners() {
   return (
     <section id="winners" className="px-6 pt-20 md:pt-24 pb-6 md:pb-8">
@@ -94,8 +127,38 @@ export function ThreeWinners() {
         <SectionHead
           eyebrow="Who it is for"
           title={<>One experience, <span style={{ color: ORANGE }}>three winners.</span></>}
-          sub="Two ways to build one: two experts whose crafts complete each other, or a studio and an outside expert. Either way, three sides come out ahead."
+          sub="Either way, three sides come out ahead."
         />
+
+        {/* The two shapes, as an equation: readable before a word is read. */}
+        <Reveal>
+          <div className="grid md:grid-cols-2 gap-4 mb-8 md:mb-10">
+            {SHAPES.map((s) => (
+              <div
+                key={s.key}
+                data-shape={s.key}
+                className="rounded-2xl px-5 py-4"
+                style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.10)" }}
+              >
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <Disc color={s.discs[0].color} glyph={s.discs[0].glyph} />
+                  <span className="text-lg leading-none" style={{ color: FAINT }} aria-hidden>+</span>
+                  <Disc color={s.discs[1].color} glyph={s.discs[1].glyph} />
+                  <span className="text-lg leading-none mx-0.5" style={{ color: FAINT }} aria-hidden>=</span>
+                  <span
+                    className="rounded-full px-3 py-1 text-[11px] font-bold font-headline uppercase tracking-[0.14em]"
+                    style={{ backgroundColor: INK, color: "#F2EFE8" }}
+                  >
+                    one live experience
+                  </span>
+                </div>
+                <p className="mt-3 text-[13px]" style={{ color: MUTED }}>
+                  {s.caption}
+                </p>
+              </div>
+            ))}
+          </div>
+        </Reveal>
 
         <Reveal>
           <div className="grid md:grid-cols-3 gap-5 items-stretch">
@@ -103,10 +166,10 @@ export function ThreeWinners() {
               <div
                 key={w.key}
                 data-winner={w.key}
-                className="rounded-3xl p-6 md:p-7 flex flex-col text-left"
+                className="rounded-3xl flex flex-col text-left overflow-hidden"
                 style={{ backgroundColor: "#FFFFFF", boxShadow: `0 0 0 1.5px ${w.ring}, 0 20px 50px ${w.glow}` }}
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 px-6 md:px-7 py-4" style={{ background: w.tint }}>
                   <span className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ background: w.disc }}>
                     {w.glyph === "group" ? <GroupIcon color="#FFFFFF" /> : <AnswerIcon kind={w.glyph} color="#FFFFFF" />}
                   </span>
@@ -114,34 +177,27 @@ export function ThreeWinners() {
                     {w.label}
                   </p>
                 </div>
-                <h3
-                  className="text-xl md:text-[1.4rem] font-headline tracking-tight mt-4 leading-tight"
-                  style={{ color: INK, fontWeight: 700, letterSpacing: "-0.02em" }}
-                >
-                  {w.promise}
-                </h3>
-                <ul className="mt-4 space-y-2">
-                  {w.proof.map((line) => (
-                    <li key={line} className="flex gap-2.5">
-                      <span className="mt-[8px] w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: w.dot }} />
-                      <span className="text-[14.5px] leading-snug" style={{ color: MUTED }}>
-                        {line}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
+                <div className="px-6 md:px-7 pt-5 pb-6 flex flex-col">
+                  <h3
+                    className="text-[1.35rem] md:text-2xl font-headline tracking-tight leading-tight"
+                    style={{ color: INK, fontWeight: 700, letterSpacing: "-0.02em" }}
+                  >
+                    {w.promise}
+                  </h3>
+                  <ul className="mt-4 space-y-2">
+                    {w.proof.map((line) => (
+                      <li key={line} className="flex gap-2.5">
+                        <span className="mt-[8px] w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: w.dot }} />
+                        <span className="text-[14.5px] leading-snug" style={{ color: MUTED }}>
+                          {line}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
             ))}
           </div>
-        </Reveal>
-
-        {/* The line both suppliers keep asking about, in one breath. */}
-        <Reveal>
-          <p data-independence className="mt-10 md:mt-12 text-center text-base md:text-lg leading-relaxed max-w-3xl mx-auto" style={{ color: INK, fontWeight: 600 }}>
-            You stay independent and still work together professionally: with
-            whom you choose, when it fits, no exclusivity, no subscription, and
-            free to leave at any time.
-          </p>
         </Reveal>
       </div>
     </section>

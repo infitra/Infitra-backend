@@ -1,4 +1,5 @@
 import { CredentialIcon, credentialPeriod } from "@/app/components/CredentialIcon";
+import { CardWaves } from "@/app/components/BrandWaves";
 import { FoundingExpertBadge } from "@/app/(app)/experiences/[id]/PublicChallengeHero";
 
 /**
@@ -37,7 +38,6 @@ export interface FoundingMember {
 const INK = "#0F2229";
 const ORANGE = "#FF6130";
 const CYAN = "#0891b2";
-const CYAN_BRIGHT = "#9CF0FF";
 const MUTED = "#475569";
 const HAIR = "rgba(15,34,41,0.08)";
 
@@ -60,67 +60,6 @@ export function linkLabel(url: string): string {
 }
 
 const CREAM = "#F2EFE8";
-
-const WAVE_STOPS = (
-  <>
-    <stop offset="0%" stopColor={CYAN_BRIGHT} stopOpacity="0.92" />
-    <stop offset="35%" stopColor={CYAN_BRIGHT} stopOpacity="0.62" />
-    <stop offset="50%" stopColor="#FFFFFF" stopOpacity="0.40" />
-    <stop offset="65%" stopColor={ORANGE} stopOpacity="0.62" />
-    <stop offset="100%" stopColor={ORANGE} stopOpacity="0.92" />
-  </>
-);
-
-/**
- * The INFITRA waves, verbatim from the post templates and the app background
- * (WaveFlowingBackground.tsx): three diagonal bands, lower-left to upper-
- * right, cyan-bright to orange, the back one blurred in CSS. Fitted with
- * "xMidYMid slice" so the bands sweep through instead of ending in frame.
- * Static: cards live in grids. The container masks them out towards the
- * bottom so the hero fades into cream where the content sits.
- */
-function CardWaves({ id }: { id: string }) {
-  const svg = "absolute inset-0 w-full h-full";
-  return (
-    <>
-      <svg viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice" className={svg} style={{ filter: "blur(20px)" }} aria-hidden>
-        <defs>
-          <linearGradient id={`${id}-1`} x1="0%" y1="100%" x2="100%" y2="0%">
-            {WAVE_STOPS}
-          </linearGradient>
-        </defs>
-        <path
-          d="M -400 1700 C 100 1300, 500 1500, 900 1100 C 1300 700, 1700 950, 2100 -400 L 2100 -1400 C 1700 -200, 1300 -500, 900 -100 C 500 300, 100 50, -400 600 Z"
-          fill={`url(#${id}-1)`}
-        />
-      </svg>
-      <svg viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice" className={svg} aria-hidden>
-        <defs>
-          <linearGradient id={`${id}-2`} x1="0%" y1="100%" x2="100%" y2="0%">
-            {WAVE_STOPS}
-          </linearGradient>
-        </defs>
-        <path
-          d="M -300 1500 C 150 1180, 500 1330, 850 980 C 1200 620, 1550 800, 1950 -300 L 1950 -1000 C 1550 -50, 1200 -250, 850 100 C 500 460, 150 250, -300 720 Z"
-          fill={`url(#${id}-2)`}
-        />
-      </svg>
-      <svg viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice" className={svg} aria-hidden>
-        <defs>
-          <linearGradient id={`${id}-3`} x1="0%" y1="100%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor={CYAN_BRIGHT} stopOpacity="1" />
-            <stop offset="50%" stopColor="#FFFFFF" stopOpacity="0.75" />
-            <stop offset="100%" stopColor={ORANGE} stopOpacity="1" />
-          </linearGradient>
-        </defs>
-        <path
-          d="M -200 1300 C 150 1020, 480 1180, 820 880 C 1160 580, 1480 740, 1800 -100 L 1800 -550 C 1480 250, 1160 80, 820 380 C 480 680, 150 520, -200 880 Z"
-          fill={`url(#${id}-3)`}
-        />
-      </svg>
-    </>
-  );
-}
 
 /** The two answer icons: the person, and two circles meeting. Shared with the editor's labels. */
 export function AnswerIcon({ kind, color, size = 20 }: { kind: "brings" | "seeks"; color: string; size?: number }) {

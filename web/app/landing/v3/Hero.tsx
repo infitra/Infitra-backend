@@ -1,73 +1,133 @@
-import { INK, ORANGE, CYAN, MUTED, FAINT, ApplyCTA } from "../ui";
+import type { FoundingMember } from "@/app/components/FoundingCard";
+import { FoundingCard } from "@/app/components/FoundingCard";
+import { StageWaves } from "@/app/components/BrandWaves";
+import { ApplyCTA } from "../ui";
+import { HeroCards } from "./HeroCards";
 
 /**
- * M1 · HERO for the staging landing (11 Sep 2026): the tension, the
- * definition, the unit, then the ask.
+ * M1 · THE STAGE (11 Sep 2026): the dark hero, and the network inside it.
  *
- * The live hero opens on the product and the terms. This one opens on the
- * tension every expert and every studio owner feels (beat one), says in one
- * line what INFITRA is, with the noun "collaboration" in the definition slot
- * where a category word belongs and never in the promise, states the unit by
- * beat three because the brand requires it there, and then asks.
+ * The hero answers two questions and no others: what is the opportunity, and
+ * what does INFITRA provide. One sentence carries both, in two typographic
+ * beats. What an experience looks like from the inside (the weeks, the live
+ * video, the tribe space) is the next section's job, not the opening's.
  *
- * The ask sits directly under the unit, and the how sits BELOW the ask: the
- * infrastructure is the objection killer, never the hook, so it comes after
- * the opportunity, not before it (BRAND.md, beat four). The micro carries the
- * truth that makes this a position rather than a signup: accounts are
- * invite-only, you apply, and the invitation is personal.
+ * Dark, because the cream cards with the brand waves have to pop off it, and
+ * because the page then breathes dark, light, dark, light. The waves are the
+ * original paths with the stops pulled down, never redrawn.
  *
- * Terms live in the founding-network section. No per-side sentences here:
- * the three winners follow one viewport down.
+ * Two layouts, one copy deck. While no card is public the hero is centred and
+ * holds nothing else: an empty column reserved for cards that do not exist
+ * yet is dead space. The moment the first profile is public, the layout
+ * switches: the copy moves left and the network stands beside it, compact
+ * tiles that open the full card. That is momentum you can see, in the first
+ * viewport, before a single argument is made.
  */
-export function Hero() {
-  // svh on mobile so the centered content fits the VISIBLE viewport (the area
-  // above the URL bar), not the taller vh box.
+const CREAM = "#F2EFE8";
+const CREAM_MUTED = "rgba(242,239,232,0.78)";
+const CREAM_FAINT = "rgba(242,239,232,0.5)";
+const CYAN_BRIGHT = "#9CF0FF";
+const ORANGE = "#FF6130";
+const TEAL = "#0C262E";
+
+function Copy({ centered }: { centered: boolean }) {
   return (
-    <section className="relative min-h-svh lg:min-h-[92vh] flex flex-col items-center justify-center px-6 pt-28 pb-16 text-center">
-      <div className="max-w-5xl mx-auto w-full flex flex-col items-center">
-        <div
-          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-7"
-          style={{ backgroundColor: "rgba(8,145,178,0.10)", border: "1px solid rgba(8,145,178,0.25)" }}
-        >
-          <span className="w-1.5 h-1.5 rounded-full bg-[#0891b2] animate-pulse" />
-          <span className="text-[#0891b2] text-[10px] tracking-widest uppercase font-headline" style={{ fontWeight: 700 }}>
-            The founding network is forming
-          </span>
-        </div>
+    <div className={centered ? "flex flex-col items-center text-center" : "text-left"}>
+      <div
+        className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-7"
+        style={{ backgroundColor: "rgba(156,240,255,0.10)", border: "1px solid rgba(156,240,255,0.25)" }}
+      >
+        <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: CYAN_BRIGHT }} />
+        <span className="text-[10px] tracking-widest uppercase font-headline" style={{ color: CYAN_BRIGHT, fontWeight: 700 }}>
+          The founding network is forming
+        </span>
+      </div>
 
-        {/* The tension, in the brand's own words: one whole line per colour,
-           the same break on every viewport. */}
-        <h1
-          className="font-headline tracking-tight leading-[1.12] mb-8 max-w-4xl"
-          style={{ color: INK, fontWeight: 600, letterSpacing: "-0.025em", fontSize: "clamp(2rem, 4.6vw, 3.5rem)" }}
-        >
-          <span className="block" style={{ color: ORANGE, fontWeight: 700 }}>Offer more</span>
-          <span className="block" style={{ color: CYAN, fontWeight: 700 }}>without becoming everything.</span>
-        </h1>
+      {/* The tension, one whole line per colour. Cyan-bright, not the light
+         page's cyan: #0891b2 goes muddy on teal. */}
+      <h1
+        className="font-headline tracking-tight leading-[1.12] mb-7"
+        style={{
+          color: CREAM,
+          fontWeight: 600,
+          letterSpacing: "-0.025em",
+          fontSize: centered ? "clamp(2rem, 4.6vw, 3.5rem)" : "clamp(2rem, 4.2vw, 3.25rem)",
+        }}
+      >
+        <span className="block" style={{ color: ORANGE, fontWeight: 700 }}>Offer more</span>
+        <span className="block" style={{ color: CYAN_BRIGHT, fontWeight: 700 }}>without becoming everything.</span>
+      </h1>
 
-        {/* The definition: the category word in the one place it belongs. */}
-        <p data-definition className="text-base md:text-xl max-w-2xl mx-auto leading-relaxed mb-4" style={{ color: MUTED }}>
-          INFITRA makes professional collaboration in fitness and health easy:
-          experts, studios and gyms create live experiences together that none
-          of them could run alone.
-        </p>
+      {/* What and why in one sentence: the opportunity, then what INFITRA
+         puts under it. The second half carries the weight typographically so
+         one sentence still reads as two beats. */}
+      <p
+        data-definition
+        className={`text-lg md:text-xl lg:text-[22px] leading-relaxed mb-9 ${centered ? "max-w-2xl" : "max-w-[46ch]"}`}
+        style={{ color: CREAM_MUTED }}
+      >
+        INFITRA makes professional collaboration in fitness and health easy:
+        experts, studios and gyms create live experiences together that none
+        could run alone,{" "}
+        <span style={{ color: CREAM, fontWeight: 600 }}>
+          with the infrastructure and the revenue split provided on a
+          transparent agreement.
+        </span>
+      </p>
 
-        {/* The unit, by beat three. */}
-        <p className="text-[15px] md:text-lg max-w-2xl mx-auto leading-relaxed mb-8" style={{ color: INK, fontWeight: 600 }}>
-          Each one runs online over several weeks. The people who join buy
-          once, meet you live on video every week, and stay connected in their
-          tribe space in between.
-        </p>
+      {/* ApplyCTA centres its own contents, so in the two-column layout it
+         sits in an inline-block that shrinks to the button. Its micro is
+         slate for cream grounds, so the stage writes its own. */}
+      <div className={centered ? "" : "inline-block"}>
+        <ApplyCTA xl label="Join the founding network" />
+      </div>
+      <p className="text-xs tracking-wide mt-4" style={{ color: CREAM_MUTED }}>
+        Invite only. Apply, and if it fits, your personal invitation follows.
+      </p>
+    </div>
+  );
+}
 
-        <ApplyCTA xl label="Join the founding network" micro="Invite only. Apply, and if it fits, your personal invitation follows." />
+export function Hero({ members, preview }: { members: FoundingMember[]; preview: boolean }) {
+  const shown = members.slice(0, 3);
+  const showCards = shown.length > 0;
 
-        {/* Beat four, deliberately after the ask. */}
-        <p data-how className="text-[13px] md:text-sm max-w-xl mx-auto leading-relaxed mt-8" style={{ color: MUTED }}>
-          INFITRA provides the infrastructure and the revenue split, recorded in
-          a transparent agreement before anything sells.
-        </p>
+  return (
+    // svh so the centred content fits the VISIBLE viewport on phones, not the
+    // taller vh box hidden behind the URL bar.
+    <section
+      id="stage"
+      className="relative overflow-hidden min-h-svh lg:min-h-[92vh] flex flex-col justify-center px-6 pt-28 pb-16"
+      style={{ backgroundColor: TEAL }}
+    >
+      <div className="absolute inset-0 pointer-events-none" aria-hidden>
+        <StageWaves id="stage" />
+      </div>
 
-        <div className="mt-12 flex flex-col items-center gap-1.5" style={{ color: FAINT }} aria-hidden>
+      <div className="relative z-10 w-full">
+        {showCards ? (
+          <div className="max-w-7xl mx-auto grid lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] gap-10 lg:gap-14 items-center">
+            <div className="min-w-0">
+              <Copy centered={false} />
+            </div>
+            <div className="min-w-0 w-full lg:max-w-[380px] lg:ml-auto">
+              <HeroCards
+                members={shown}
+                preview={preview}
+                more={members.length > shown.length}
+                cards={shown.map((m) => (
+                  <FoundingCard key={m.id} m={m} />
+                ))}
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="max-w-3xl mx-auto w-full">
+            <Copy centered />
+          </div>
+        )}
+
+        <div className="mt-12 flex flex-col items-center gap-1.5" style={{ color: CREAM_FAINT }} aria-hidden>
           <span className="text-[11px] uppercase tracking-[0.22em] font-headline" style={{ fontWeight: 700 }}>
             See who it is for
           </span>
