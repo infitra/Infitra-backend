@@ -1,6 +1,5 @@
 import { INK, ORANGE, CYAN, MUTED, SectionHead } from "../ui";
 import { Reveal } from "../Reveal";
-import { FormingLine } from "./FormingLine";
 
 /**
  * M7b · HOW JOINING WORKS (11 Sep 2026): the ask, and the smallest version
@@ -8,10 +7,9 @@ import { FormingLine } from "./FormingLine";
  * what is asked for today, a profile and nothing else, and what comes back.
  *
  * Sits AFTER the shared FoundingRow on purpose: proof, then mechanism, then
- * the closing ask. The row keeps the eyebrow "The founding network", so this
- * section's eyebrow differs and nothing duplicates once cards appear. Until
- * the public reader opens, FormingLine says the network is forming; the two
- * never render together.
+ * the closing ask. The dark stripe above keeps the eyebrow "The founding
+ * network", so this section's eyebrow differs. Until the stripe has cards,
+ * `forming` puts the forming line here; the two never render together.
  *
  * No counts and no dates anywhere.
  */
@@ -33,7 +31,7 @@ const STEPS = [
   },
 ];
 
-export function FoundingNetwork() {
+export function FoundingNetwork({ forming }: { forming: boolean }) {
   return (
     <section id="network" className="px-6 py-20 md:py-28">
       <div className="max-w-5xl mx-auto">
@@ -43,7 +41,11 @@ export function FoundingNetwork() {
           sub="Experts, studios and gyms, open to creating together. Nothing is binding, and when a profile fits yours, you hear from us personally."
         />
 
-        <FormingLine />
+        {forming && (
+          <p data-forming className="text-sm text-center -mt-8 mb-12 md:-mt-12 md:mb-16" style={{ color: MUTED }}>
+            The founding network is forming. Profiles appear here as their owners join.
+          </p>
+        )}
 
         <Reveal>
           <div className="grid md:grid-cols-3 gap-5">

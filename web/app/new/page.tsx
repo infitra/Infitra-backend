@@ -1,15 +1,18 @@
 import Link from "next/link";
 import { WaveFlowingBackground } from "@/app/components/WaveFlowingBackground";
+import type { FoundingMember } from "@/app/components/FoundingCard";
+import { createAnonClient } from "@/lib/supabase/anon";
+import { createClient } from "@/lib/supabase/server";
 import { Hero } from "@/app/landing/v3/Hero";
 import { ThreeWinners } from "@/app/landing/v3/ThreeWinners";
 import { Bridge } from "@/app/landing/v3/Bridge";
+import { NetworkStripe } from "@/app/landing/v3/NetworkStripe";
 import { FoundingNetwork } from "@/app/landing/v3/FoundingNetwork";
 import { Finale } from "@/app/landing/v3/Finale";
 import { WhatYouCanBuild } from "@/app/landing/WhatYouCanBuild";
 import { HowItWorks } from "@/app/landing/HowItWorks";
 import { LiveWeek } from "@/app/landing/LiveWeek";
 import { Summary } from "@/app/landing/Summary";
-import { FoundingRow } from "@/app/landing/FoundingRow";
 import { Footer } from "@/app/landing/Footer";
 
 /**
@@ -21,16 +24,18 @@ import { Footer } from "@/app/landing/Footer";
  * being a redirect, the same path the current landing took.
  *
  * The story: the tension and the definition (Hero), the opportunity named
- * per side (ThreeWinners), one line into the proof (Bridge), the shared
- * showcase, the live cards once the public reader opens (FoundingRow), how
- * joining works with the terms (FoundingNetwork), one closing ask (Finale).
+ * per side with the independence line (ThreeWinners), one line into the
+ * proof (Bridge), the shared showcase, the founding network as a dark stripe
+ * once it holds cards (NetworkStripe), how joining works with the terms
+ * (FoundingNetwork), one closing ask (Finale).
  *
- * The showcase in the middle is shared with the live page, never forked:
- * it is the proof that makes a small ask worth a yes, and LiveWeek carries
- * a closed mobile-scroll tuning. noindex while it is a draft.
+ * The showcase in the middle is shared with the live page, never forked.
+ *
+ * Preview: the public reader is closed until launch, so `?preview=cards`
+ * lets a signed-in admin see the stripe with the cards the network holds
+ * today. Reading the query makes this route dynamic, which is fine for a
+ * noindex staging page; the promotion drops the preview and restores ISR.
  */
-export const revalidate = 300;
-
 export const metadata = {
   title: "INFITRA · Live, co-created fitness experiences",
   description:
@@ -38,7 +43,31 @@ export const metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function LandingStagingPage() {
+export default async function LandingStagingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ preview?: string }>;
+}) {
+  const { preview } = await searchParams;
+
+  const anon = createAnonClient();
+  const { data: pub } = await anon.rpc("load_founding_community", { p_public_only: true });
+  let members = (pub?.members ?? []) as FoundingMember[];
+  let previewMode = false;
+
+  if (members.length < 3 && preview === "cards") {
+    // The member/admin branch of the same reader: the database decides who
+    // may see the cards, the page only passes them on.
+    const supabase = await createClient();
+    const { data: full } = await supabase.rpc("load_founding_community", { p_public_only: false });
+    if (full?.authorized === true) {
+      members = (full.members ?? []) as FoundingMember[];
+      previewMode = members.length > 0;
+    }
+  }
+
+  const showStripe = members.length >= 3 || previewMode;
+
   return (
     <div className="min-h-screen relative overflow-x-clip" style={{ backgroundColor: "#F2EFE8" }}>
       <WaveFlowingBackground />
@@ -84,8 +113,8 @@ export default function LandingStagingPage() {
           <HowItWorks />
           <LiveWeek />
           <Summary />
-          <FoundingRow />
-          <FoundingNetwork />
+          <NetworkStripe members={showStripe ? members : []} preview={previewMode} />
+          <FoundingNetwork forming={!showStripe} />
           <Finale />
         </main>
 

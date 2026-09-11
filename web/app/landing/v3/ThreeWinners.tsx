@@ -8,56 +8,67 @@ import { AnswerIcon } from "@/app/components/FoundingCard";
  * Network value is combinatorial, and a list of possibilities reads as
  * vagueness. So the section states one unit and exactly two ways to build
  * it, then names the three sides that come out ahead, each in its own
- * economics, one promise and three proof lines. The third side, the people
- * who join, has no button: they are not the page's audience, but naming
- * their win is what keeps the revenue talk honest.
+ * economics: one promise and three proof lines. The third side, the people
+ * who join, is written as the RESULT of the first two, so a studio owner
+ * reads it as "great for our members" and an expert as "beyond what I could
+ * offer alone". It has no button. Under the cards, the line both suppliers
+ * asked for: you stay independent and still work together professionally.
  *
  * Colours follow the member card: cyan and the two circles meeting for the
  * studio (the complement brought in), orange and the person for the expert
- * (what they bring). Ink for the people who join, the brand's third token,
- * never the founding-badge gold.
+ * (what they bring). The people who join get both colours at once, orange
+ * into cyan, because their result is made of both halves. No black, no
+ * badge gold.
  */
+const BOTH = "linear-gradient(135deg, #FF6130 0%, #0891b2 100%)";
+
 const WINNERS = [
   {
     key: "studios",
     label: "Studios and gyms",
-    accent: CYAN,
+    labelColor: CYAN,
+    disc: CYAN,
     ring: "rgba(8,145,178,0.30)",
     glow: "rgba(8,145,178,0.10)",
+    dot: CYAN,
     glyph: "seeks" as const,
-    promise: "A digital offer you do not build, staff or carry.",
+    promise: "A digital revenue stream you do not build, staff or carry.",
     proof: [
-      "Revenue on top of the membership, with no hire, no fixed wage and nothing on the floor.",
-      "Bring in a new expert, or a guest, whenever the offer needs fresh air.",
+      "More for your members on top of the membership, with no hire, no fixed wage and nothing on the floor.",
+      "Bring in a new expert, or a guest, whenever it needs fresh air.",
       "Your members stay yours, and the timetable does not move.",
     ],
   },
   {
     key: "experts",
     label: "Experts",
-    accent: ORANGE,
+    labelColor: ORANGE,
+    disc: ORANGE,
     ring: "rgba(255,97,48,0.30)",
     glow: "rgba(255,97,48,0.10)",
+    dot: ORANGE,
     glyph: "brings" as const,
-    promise: "New clients and a fuller offer, while you only teach your part.",
+    promise: "New clients and a fuller offer, while you focus on your craft.",
     proof: [
       "A studio's members, without building that audience yourself.",
-      "Or an expert who leads the other half, so together you sell what neither of you could alone.",
+      "Or an expert who leads the other half, so together you offer what neither of you could alone.",
       "Your clients and your audience stay yours.",
     ],
   },
   {
     key: "participants",
     label: "The people who join",
-    accent: INK,
-    ring: "rgba(15,34,41,0.18)",
-    glow: "rgba(15,34,41,0.08)",
+    labelColor: CYAN,
+    disc: BOTH,
+    ring: "rgba(15,34,41,0.10)",
+    glow: "rgba(8,145,178,0.08)",
+    dot: ORANGE,
     glyph: "group" as const,
-    promise: "Complete guidance, with each part led by an expert in it.",
+    promise: "Complete guidance in one place, each part led by an expert in it.",
     proof: [
-      "Bought once, for the whole experience.",
-      "Live on video across the weeks, with the experts in the room.",
-      "A group that stays connected in between.",
+      "One experience, bought once, in one place: no more switching between apps and coaches.",
+      "More from a membership they already have, with every part at full depth.",
+      "A group with purpose and momentum in between the live sessions.",
     ],
   },
 ];
@@ -78,7 +89,7 @@ function GroupIcon({ color, size = 20 }: { color: string; size?: number }) {
 
 export function ThreeWinners() {
   return (
-    <section id="winners" className="px-6 pt-20 md:pt-24 pb-10 md:pb-12">
+    <section id="winners" className="px-6 pt-20 md:pt-24 pb-6 md:pb-8">
       <div className="max-w-5xl mx-auto">
         <SectionHead
           eyebrow="Who it is for"
@@ -96,10 +107,10 @@ export function ThreeWinners() {
                 style={{ backgroundColor: "#FFFFFF", boxShadow: `0 0 0 1.5px ${w.ring}, 0 20px 50px ${w.glow}` }}
               >
                 <div className="flex items-center gap-3">
-                  <span className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: w.accent }}>
+                  <span className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ background: w.disc }}>
                     {w.glyph === "group" ? <GroupIcon color="#FFFFFF" /> : <AnswerIcon kind={w.glyph} color="#FFFFFF" />}
                   </span>
-                  <p className="text-[11px] uppercase tracking-[0.2em] font-headline" style={{ color: w.accent, fontWeight: 800 }}>
+                  <p className="text-[11px] uppercase tracking-[0.2em] font-headline" style={{ color: w.labelColor, fontWeight: 800 }}>
                     {w.label}
                   </p>
                 </div>
@@ -112,7 +123,7 @@ export function ThreeWinners() {
                 <ul className="mt-4 space-y-2">
                   {w.proof.map((line) => (
                     <li key={line} className="flex gap-2.5">
-                      <span className="mt-[8px] w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: w.accent }} />
+                      <span className="mt-[8px] w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: w.dot }} />
                       <span className="text-[14.5px] leading-snug" style={{ color: MUTED }}>
                         {line}
                       </span>
@@ -122,6 +133,15 @@ export function ThreeWinners() {
               </div>
             ))}
           </div>
+        </Reveal>
+
+        {/* The line both suppliers keep asking about, in one breath. */}
+        <Reveal>
+          <p data-independence className="mt-10 md:mt-12 text-center text-base md:text-lg leading-relaxed max-w-3xl mx-auto" style={{ color: INK, fontWeight: 600 }}>
+            You stay independent and still work together professionally: with
+            whom you choose, when it fits, no exclusivity, no subscription, and
+            free to leave at any time.
+          </p>
         </Reveal>
       </div>
     </section>
