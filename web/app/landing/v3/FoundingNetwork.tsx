@@ -1,25 +1,25 @@
 import { INK, ORANGE, CYAN, MUTED, SectionHead } from "../ui";
 import { Reveal } from "../Reveal";
+import { FormingLine } from "./FormingLine";
 
 /**
- * M7b · THE FOUNDING NETWORK (new, 11 Sep 2026) — the actual offer, and the
- * smallest version of it.
+ * M7b · HOW JOINING WORKS (11 Sep 2026): the ask, and the smallest version
+ * of it. Everything above proves what a collaboration becomes; this says
+ * what is asked for today, a profile and nothing else, and what comes back.
  *
- * Everything above this proves what a collaboration becomes. This section
- * says what is being asked for today, which is a profile and nothing else,
- * and what comes back: a personal introduction when a fit appears, the
- * founding badge, and terms that stay. The terms live here rather than in
- * the hero, because the architecture is tension, opportunity, the thing,
- * the mechanism, and only then the deal.
+ * Sits AFTER the shared FoundingRow on purpose: proof, then mechanism, then
+ * the closing ask. The row keeps the eyebrow "The founding network", so this
+ * section's eyebrow differs and nothing duplicates once cards appear. Until
+ * the public reader opens, FormingLine says the network is forming; the two
+ * never render together.
  *
- * No counts and no dates anywhere: a public number is a countable failure
- * state before there is traction.
+ * No counts and no dates anywhere.
  */
 const STEPS = [
   {
     n: "01",
     t: "Your profile.",
-    d: "About fifteen minutes. What you bring, and what would complement it. It is live in the network the moment you save it, and you can change it any time.",
+    d: "About fifteen minutes. What you bring, and who you would want next to you. It is live in the network the moment you save it, and you can change it any time.",
   },
   {
     n: "02",
@@ -35,13 +35,15 @@ const STEPS = [
 
 export function FoundingNetwork() {
   return (
-    <section className="px-6 py-20 md:py-28">
+    <section id="network" className="px-6 py-20 md:py-28">
       <div className="max-w-5xl mx-auto">
         <SectionHead
-          eyebrow="The founding network"
-          title={<>Be in the picture <span style={{ color: CYAN }}>before anything starts.</span></>}
-          sub="The network is where the right pairing is found. Experts, studios and gyms, open to creating together. Joining costs a profile and nothing else."
+          eyebrow="How joining works"
+          title={<>Joining costs a profile, <span style={{ color: CYAN }}>and nothing else.</span></>}
+          sub="Experts, studios and gyms, open to creating together. Nothing is binding, and when a profile fits yours, you hear from us personally."
         />
+
+        <FormingLine />
 
         <Reveal>
           <div className="grid md:grid-cols-3 gap-5">
@@ -65,18 +67,20 @@ export function FoundingNetwork() {
           </div>
         </Reveal>
 
-        {/* The deal, last and plain, led by what experts keep. */}
+        {/* The deal, last and plain, led by what is kept. "You" rather than
+           "experts": on this page a studio is a party to the split too. */}
         <Reveal>
           <div
             className="mt-5 rounded-3xl px-6 py-7 md:px-9 md:py-8 text-center"
             style={{ backgroundColor: "rgba(8,145,178,0.06)", boxShadow: "0 0 0 1px rgba(8,145,178,0.20)" }}
           >
             <p className="text-xl md:text-2xl font-headline" style={{ color: INK, fontWeight: 700, letterSpacing: "-0.01em" }}>
-              Experts keep <span style={{ color: ORANGE }}>90%</span> of every sale, split as you agree.
+              You keep <span style={{ color: ORANGE }}>90%</span> of every sale, split as you agree.
             </p>
             <p className="text-sm mt-3 leading-relaxed" style={{ color: MUTED }}>
-              No upfront cost, no subscription, no lock-in. Your audience and
-              your clients stay entirely yours.
+              INFITRA&apos;s founding fee is the remaining 10%. No upfront cost, no
+              subscription, no lock-in. Your audience and your clients stay
+              entirely yours.
             </p>
           </div>
         </Reveal>

@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { WaveFlowingBackground } from "@/app/components/WaveFlowingBackground";
 import { Hero } from "@/app/landing/v3/Hero";
-import { TwoDoors } from "@/app/landing/v3/TwoDoors";
+import { ThreeWinners } from "@/app/landing/v3/ThreeWinners";
+import { Bridge } from "@/app/landing/v3/Bridge";
 import { FoundingNetwork } from "@/app/landing/v3/FoundingNetwork";
 import { Finale } from "@/app/landing/v3/Finale";
 import { WhatYouCanBuild } from "@/app/landing/WhatYouCanBuild";
@@ -12,31 +13,28 @@ import { FoundingRow } from "@/app/landing/FoundingRow";
 import { Footer } from "@/app/landing/Footer";
 
 /**
- * /new — THE LANDING STAGING SURFACE (11 Sep 2026).
+ * /new: THE LANDING STAGING SURFACE (11 Sep 2026).
  *
  * The next landing is built and polished here while the live page at / keeps
  * selling the current story untouched. When this one is finished, its
- * sections replace the live page and /new goes back to being a redirect.
- * That is the same path the current landing took.
+ * sections replace the live page on the founder's word and /new goes back to
+ * being a redirect, the same path the current landing took.
  *
- * What is being reframed: the live page opens on the product and the terms
- * and closes by asking a stranger to found an experience with someone they
- * have not met. The offer is now a profile in a forming network, so this
- * version opens on the tension, gives studios and gyms a door of their own
- * directly under the hero, and closes on the small ask.
+ * The story: the tension and the definition (Hero), the opportunity named
+ * per side (ThreeWinners), one line into the proof (Bridge), the shared
+ * showcase, the live cards once the public reader opens (FoundingRow), how
+ * joining works with the terms (FoundingNetwork), one closing ask (Finale).
  *
- * The showcase in the middle is deliberately shared with the live page, not
- * copied: it is the proof that makes a small ask worth a yes, and LiveWeek
- * carries a closed mobile-scroll tuning that must not be forked.
- *
- * noindex while it is a draft.
+ * The showcase in the middle is shared with the live page, never forked:
+ * it is the proof that makes a small ask worth a yes, and LiveWeek carries
+ * a closed mobile-scroll tuning. noindex while it is a draft.
  */
 export const revalidate = 300;
 
 export const metadata = {
   title: "INFITRA · Live, co-created fitness experiences",
   description:
-    "Offer more without becoming everything. Experts, studios and gyms create one live experience together, online.",
+    "Offer more without becoming everything. INFITRA makes professional collaboration in fitness and health easy: experts, studios and gyms create one live experience together, online.",
   robots: { index: false, follow: false },
 };
 
@@ -80,13 +78,14 @@ export default function LandingStagingPage() {
 
         <main>
           <Hero />
-          <TwoDoors />
+          <ThreeWinners />
+          <Bridge />
           <WhatYouCanBuild />
           <HowItWorks />
           <LiveWeek />
           <Summary />
-          <FoundingNetwork />
           <FoundingRow />
+          <FoundingNetwork />
           <Finale />
         </main>
 

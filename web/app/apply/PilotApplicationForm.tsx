@@ -6,14 +6,14 @@ import { submitPilotApplication } from "@/app/actions/pilot-application";
 import { trackEvent } from "@/lib/analytics";
 
 /**
- * Pilot application form — single page, conditional partner sections.
+ * Founding-network application form: single page, conditional complement sections.
  * Uses `useActionState` so the server action can return either { error }
  * (re-render with error banner) or { success } (swap to confirmation
  * card). No redirect on success: the applicant might want to read the
  * confirmation before moving on.
  *
  * Visual language: cream card with rgba white background, orange CTA,
- * cyan accents — matches the landing + auth pages.
+ * cyan accents, matching the landing and auth pages.
  */
 
 const AUDIENCE_OPTIONS: { value: string; label: string }[] = [
@@ -40,7 +40,7 @@ export function PilotApplicationForm() {
     }
   }, [state, applicantType]);
 
-  // Success state — replace the form entirely.
+  // Success state: replace the form entirely.
   if (state && "success" in state && state.success) {
     return <SuccessCard />;
   }
@@ -202,14 +202,14 @@ export function PilotApplicationForm() {
           </Field>
         </Section>
 
-        {/* ── Section: Your partner ───────────────────────── */}
-        <Section label="Your partner">
+        {/* ── Section: Your complement ───────────────────────── */}
+        <Section label="Your complement">
           <fieldset className="space-y-3">
             <legend
               className="text-xs uppercase tracking-[0.18em] font-headline mb-2"
               style={{ color: "#475569", fontWeight: 700 }}
             >
-              Do you already have an expert partner in mind?
+              Do you already have someone in mind?
             </legend>
             <div className="flex gap-3">
               <RadioPill
@@ -233,7 +233,7 @@ export function PilotApplicationForm() {
             <Field
               label="Tell us about them"
               name="partner_info"
-              hint="Their name, what they do, how complementary their expertise is."
+              hint="Their name, what they do, and how their part completes yours."
             >
               <textarea
                 id="partner_info"
@@ -246,9 +246,9 @@ export function PilotApplicationForm() {
             </Field>
           ) : (
             <Field
-              label="What kind of partner would complement you?"
+              label="Who would you want next to you?"
               name="complement_interest"
-              hint="The expertise gap you'd want to fill."
+              hint="The half you do not teach, led by an expert in it."
             >
               <textarea
                 id="complement_interest"
@@ -256,7 +256,7 @@ export function PilotApplicationForm() {
                 maxLength={1000}
                 rows={3}
                 className={textareaCls} style={FIELD_STYLE}
-                placeholder="e.g. a nutritionist or recovery specialist. I cover the training side but want someone to handle the food + sleep half."
+                placeholder="e.g. a nutritionist or a recovery expert. I go all in on the training; they lead the food and sleep half."
               />
             </Field>
           )}
@@ -316,7 +316,7 @@ export function PilotApplicationForm() {
 }
 
 // ─────────────────────────────────────────────────────────────────
-// Local presentational helpers — kept inline because the form is
+// Local presentational helpers, kept inline because the form is
 // the only place these styles apply.
 // ─────────────────────────────────────────────────────────────────
 
@@ -421,7 +421,7 @@ function RadioPill({
 }
 
 // ─────────────────────────────────────────────────────────────────
-// Success state — single confirmation card. No redirect.
+// Success state: single confirmation card. No redirect.
 // ─────────────────────────────────────────────────────────────────
 
 function SuccessCard() {
@@ -464,9 +464,7 @@ function SuccessCard() {
         className="mt-4 text-base leading-relaxed max-w-md mx-auto"
         style={{ color: "#475569" }}
       >
-        We read every application personally and reply within a week. If your work
-        fits the pilot, we&apos;ll arrange a short call to talk through the partner fit
-        and the experience shape.
+        We read every application personally and reply within a week. If it fits, you get a personal invitation to create your profile, and when a profile fits yours, we introduce you personally. Nothing is binding along the way.
       </p>
       <Link
         href="/"

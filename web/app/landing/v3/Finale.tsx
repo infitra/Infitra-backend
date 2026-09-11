@@ -3,13 +3,10 @@ import { Reveal } from "../Reveal";
 import { WaitlistForm } from "../WaitlistForm";
 
 /**
- * M8 · THE FINALE — one ask (rewritten 11 Sep 2026).
- *
- * The page used to close on two doors of equal weight, experts and
- * participants. Participants have nothing to buy until experiences exist,
- * so building that demand first was the wrong order. The close is now the
- * single supply-side ask, with the participant line kept quiet underneath
- * so a curious visitor still has somewhere to go.
+ * M8 · THE FINALE (11 Sep 2026): one ask. The kicker bookends the hero's
+ * line. Participants have nothing to buy until experiences exist, so they
+ * keep one quiet line under the ask instead of a door of their own.
+ * The id "join" stays: LiveWeek's mobile Join button scrolls to it.
  */
 export function Finale() {
   return (
@@ -19,7 +16,7 @@ export function Finale() {
           className="text-xl md:text-2xl font-headline tracking-tight mb-3"
           style={{ color: INK, fontWeight: 700, letterSpacing: "-0.02em" }}
         >
-          One live experience, <span style={{ color: ORANGE }}>built by two.</span>
+          Offer more <span style={{ color: ORANGE }}>without becoming everything.</span>
         </p>
         <h2
           className="text-4xl md:text-6xl font-headline tracking-tight leading-[1.12] md:leading-[1.02] mb-5"
@@ -29,19 +26,18 @@ export function Finale() {
         </h2>
         <p className="text-base md:text-lg leading-relaxed max-w-2xl mx-auto mb-10" style={{ color: MUTED }}>
           Experts, studios and gyms, open to creating together. A profile takes
-          about fifteen minutes, nothing is binding, and you hear from us the
-          moment a profile fits yours.
+          about fifteen minutes, nothing is binding, and when a profile fits
+          yours, you hear from us personally.
         </p>
 
         <Reveal>
           <ApplyCTA label="Join the founding network" xl micro="Every profile is reviewed personally." />
         </Reveal>
 
-        {/* The quiet participant line: no door of its own, but not a dead end. */}
         <div className="mt-16 pt-8 max-w-md mx-auto" style={{ borderTop: "1px solid rgba(15,34,41,0.10)" }}>
           <p className="text-sm mb-4" style={{ color: FAINT }}>
-            Not an expert or a studio? Leave your email and you are first in
-            when the experiences open.
+            Here to join one, not to build one? Leave your email and you are
+            first in when the experiences open.
           </p>
           <WaitlistForm />
         </div>

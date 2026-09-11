@@ -3,7 +3,7 @@ import { WaveFlowingBackground } from "@/app/components/WaveFlowingBackground";
 import { PilotApplicationForm } from "./PilotApplicationForm";
 
 /**
- * /apply — pilot application form. Standalone surface (not under (auth)
+ * /apply: the founding-network application form. Standalone surface (not under (auth)
  * or (app)) because applicants are cold visitors arriving from the
  * landing page CTA. Uses the same cream + wave shell as the landing
  * so the conversion arc reads as one continuous brand.
@@ -12,7 +12,7 @@ import { PilotApplicationForm } from "./PilotApplicationForm";
 export const metadata = {
   title: "Join the founding network · INFITRA",
   description:
-    "Join INFITRA’s founding network: experts and studios open to creating live experiences together.",
+    "Join INFITRA’s founding network: experts, studios and gyms open to creating one live experience together, online.",
 };
 
 export default function ApplyPage() {
@@ -24,7 +24,7 @@ export default function ApplyPage() {
       <WaveFlowingBackground />
 
       <div className="relative z-10">
-        {/* Slim brand bar — no full nav, this is a focused conversion page.
+        {/* Slim brand bar, no full nav: this is a focused conversion page.
            The logo links home; an explicit "back" gives a clear escape hatch
            without scrolling past the whole form (mirrors /pilot-terms). */}
         <div className="px-6 pt-6 pb-2">
@@ -71,7 +71,7 @@ export default function ApplyPage() {
                   className="text-[#0891b2] text-[10px] tracking-widest uppercase font-headline"
                   style={{ fontWeight: 700 }}
                 >
-                  Founding network
+                  The founding network is forming
                 </span>
               </div>
               <h1
@@ -86,10 +86,11 @@ export default function ApplyPage() {
                 className="mt-5 text-base md:text-lg leading-relaxed"
                 style={{ color: "#475569" }}
               >
-                The founding network is forming: experts and studios open to creating
-                live experiences together. Joining asks for nothing binding. You get a
-                card, one sentence on what you would love to run, and when another card
-                fits yours, Yves introduces you. Apply as an expert or as a studio.
+                The founding network is forming: experts, studios and gyms open to
+                creating one live experience together, online. Nothing here is binding.
+                Your profile says what you bring and who you would want next to you, and
+                when a profile fits yours, Yves introduces you personally. Join as an
+                expert, or as a studio or gym.
               </p>
             </div>
 
@@ -98,7 +99,7 @@ export default function ApplyPage() {
               className="text-[17px] md:text-lg font-headline mb-7"
               style={{ color: "#0F2229", fontWeight: 700 }}
             >
-              No upfront costs, no subscriptions.
+              You keep 90%, and nothing is binding.
             </p>
 
             {/* ── The deal, in short ─────────────────────────── */}
@@ -122,7 +123,7 @@ export default function ApplyPage() {
               <Link href="/privacy" className="underline hover:text-[#0891b2]">
                 Privacy Policy
               </Link>
-              . We&apos;ll respond within a week.
+              . We reply within a week.
             </p>
           </div>
         </main>
@@ -132,17 +133,16 @@ export default function ApplyPage() {
 }
 
 /**
- * The pilot deal in five lines, led by the money and the no-lock-in — the
+ * The founding-network deal in five lines, led by the money and the no-lock-in, the
  * transparency the founder wanted, right where an applicant decides, with the
  * full terms one tap away.
  */
 const DEAL: string[] = [
-  "You and your partner keep 90% of revenue, split as you agree. INFITRA’s founding platform fee is 10%.",
-  "A founding network of experts and studios. When a fit appears, one 4 to 6 week live experience, co-created.",
-  "You host live and bring your audience. We run the platform, priced in CHF.",
-  "No lock-in. Keep your experiences, archive them, or leave anytime after the pilot.",
-  "Early positioning: you keep your pilot reviews and early access. Once we go live, you’re in pole position.",
-  "No partner yet? We’ll help you pair up.",
+  "You keep 90% of every sale, split as you agree. INFITRA’s founding fee is the remaining 10%.",
+  "Joining costs a profile, and nothing else. No upfront cost, no subscription, nothing binding.",
+  "When a profile fits yours, we introduce you personally. Nothing happens publicly about you without your word.",
+  "The founding member badge stays on your profile at public launch, and founding profiles hold the top spot in discovery.",
+  "No lock-in. Your audience and your clients stay entirely yours, and you can leave any time.",
 ];
 
 function PilotSummary() {
@@ -155,7 +155,7 @@ function PilotSummary() {
         className="text-[11px] uppercase tracking-[0.22em] font-headline mb-4"
         style={{ color: "#0891b2", fontWeight: 800 }}
       >
-        The pilot, in short
+        The founding network, in short
       </p>
       <ul className="space-y-2.5">
         {DEAL.map((line) => (
