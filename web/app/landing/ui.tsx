@@ -81,7 +81,7 @@ export function ApplyCTA({
           boxShadow: "0 8px 28px rgba(255,97,48,0.35), 0 2px 10px rgba(255,97,48,0.20)",
         }}
       >
-        Create your experience
+        Join the founding network
       </Link>
       {micro && (
         <p className="text-xs mt-4 tracking-wide" style={{ color: FAINT }}>

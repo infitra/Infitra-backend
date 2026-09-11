@@ -1,86 +1,50 @@
-import { INK, ORANGE, CYAN, MUTED, ApplyCTA } from "./ui";
+import { INK, ORANGE, MUTED, FAINT, ApplyCTA } from "./ui";
 import { Reveal } from "./Reveal";
 import { WaitlistForm } from "./WaitlistForm";
 
 /**
- * M8 · THE FINALE — "The room is open." The page's single climax. Act 2 ends
- * on "Ready to join the movement?" — this section answers it: this is how
- * you can be part. Two doors, nothing else: experts found the pilot,
- * participants join the waitlist. Straightforward and converting.
+ * M8 · THE FINALE — one ask (rewritten 11 Sep 2026).
+ *
+ * The page used to close on two doors of equal weight, experts and
+ * participants. Participants have nothing to buy until experiences exist,
+ * so building that demand first was the wrong order. The close is now the
+ * single supply-side ask, with the participant line kept quiet underneath
+ * so a curious visitor still has somewhere to go.
  */
-
 export function Finale() {
   return (
     <section id="join" className="px-6 pt-20 pb-24" style={{ background: "linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.45) 16%, rgba(255,255,255,0.45) 100%)" }}>
-      <div className="max-w-5xl mx-auto">
-        {/* Question → answer → doors, one viewport. Act 2 releases into this. */}
-        <div className="text-center max-w-3xl mx-auto mb-10">
-          {/* the couplet reunion lives in the Summary right above — here only
-             the invitation. Looser mobile leading: 1.02 clipped descenders. */}
-          <p
-            className="text-xl md:text-2xl font-headline tracking-tight mb-3"
-            style={{ color: INK, fontWeight: 700, letterSpacing: "-0.02em" }}
-          >
-            Ready to join <span style={{ color: ORANGE }}>the movement?</span>
-          </p>
-          <h2
-            className="text-4xl md:text-6xl font-headline tracking-tight leading-[1.12] md:leading-[1.02] mb-5"
-            style={{ color: INK, fontWeight: 700, letterSpacing: "-0.025em" }}
-          >
-            The room <span style={{ color: ORANGE }}>is open.</span>
-          </h2>
-          <p className="text-base md:text-lg leading-relaxed max-w-2xl mx-auto" style={{ color: MUTED }}>
-            Digital fitness is shifting: from paying for access to content, to
-            participating in live experiences built together. Shape what INFITRA
-            becomes and position yourself early. Two ways in.
-          </p>
-        </div>
+      <div className="max-w-3xl mx-auto text-center">
+        <p
+          className="text-xl md:text-2xl font-headline tracking-tight mb-3"
+          style={{ color: INK, fontWeight: 700, letterSpacing: "-0.02em" }}
+        >
+          One live experience, <span style={{ color: ORANGE }}>built by two.</span>
+        </p>
+        <h2
+          className="text-4xl md:text-6xl font-headline tracking-tight leading-[1.12] md:leading-[1.02] mb-5"
+          style={{ color: INK, fontWeight: 700, letterSpacing: "-0.025em" }}
+        >
+          Join the <span style={{ color: ORANGE }}>founding network.</span>
+        </h2>
+        <p className="text-base md:text-lg leading-relaxed max-w-2xl mx-auto mb-10" style={{ color: MUTED }}>
+          Experts, studios and gyms, open to creating together. A profile takes
+          about fifteen minutes, nothing is binding, and you hear from us the
+          moment a profile fits yours.
+        </p>
 
         <Reveal>
-          <div className="grid lg:grid-cols-5 gap-6 items-stretch">
-            {/* Door 1 — creators (primary) */}
-            <div
-              className="lg:col-span-3 rounded-3xl p-6 md:p-8 flex flex-col text-left"
-              style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1.5px rgba(255,97,48,0.35), 0 24px 60px rgba(255,97,48,0.12)" }}
-            >
-              <p className="text-[11px] uppercase tracking-[0.2em] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>
-                For fitness and wellness experts
-              </p>
-              <h3 className="text-2xl md:text-[2rem] font-headline tracking-tight mt-3 leading-tight" style={{ color: INK, fontWeight: 800, letterSpacing: "-0.02em" }}>
-                Build one of the first.
-              </h3>
-              <p className="text-[15px] md:text-base mt-3 leading-relaxed" style={{ color: MUTED }}>
-                Pair with a complementary expert, or let us help you find one, and
-                found a real experience with direct, hands-on support. Everything you
-                just scrolled through, running for your audience.
-              </p>
-
-              <div className="mt-auto pt-8 flex justify-center">
-                <ApplyCTA xl micro="Founding network · reviewed individually · forming now" />
-              </div>
-            </div>
-
-            {/* Door 2 — participants (quiet) */}
-            <div
-              className="lg:col-span-2 rounded-3xl p-6 md:p-8 flex flex-col text-left"
-              style={{ backgroundColor: "rgba(8,145,178,0.06)", boxShadow: "0 0 0 1px rgba(8,145,178,0.22)" }}
-            >
-              <p className="text-[11px] uppercase tracking-[0.2em] font-headline" style={{ color: CYAN, fontWeight: 800 }}>
-                For participants
-              </p>
-              <h3 className="text-2xl md:text-[2rem] font-headline tracking-tight mt-3 leading-tight" style={{ color: INK, fontWeight: 800, letterSpacing: "-0.02em" }}>
-                Be in the first rooms.
-              </h3>
-              <p className="text-[15px] md:text-base mt-3 leading-relaxed" style={{ color: MUTED }}>
-                The first experiences open with the pilot. Leave your email and
-                you&apos;re first in when the doors open.
-              </p>
-              <div className="mt-auto pt-8">
-                <WaitlistForm />
-              </div>
-            </div>
-          </div>
+          <ApplyCTA xl micro="Every profile is reviewed personally." />
         </Reveal>
+
+        {/* The quiet participant line: no door of its own, but not a dead end. */}
+        <div className="mt-16 pt-8 max-w-md mx-auto" style={{ borderTop: "1px solid rgba(15,34,41,0.10)" }}>
+          <p className="text-sm mb-4" style={{ color: FAINT }}>
+            Not an expert or a studio? Leave your email and you are first in
+            when the experiences open.
+          </p>
+          <WaitlistForm />
+        </div>
       </div>
     </section>
   );

@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { WaveFlowingBackground } from "@/app/components/WaveFlowingBackground";
 import { Hero } from "./landing/Hero";
+import { TwoDoors } from "./landing/TwoDoors";
 import { WhatYouCanBuild } from "./landing/WhatYouCanBuild";
 import { HowItWorks } from "./landing/HowItWorks";
 import { LiveWeek } from "./landing/LiveWeek";
 import { Summary } from "./landing/Summary";
+import { FoundingNetwork } from "./landing/FoundingNetwork";
 import { Finale } from "./landing/Finale";
 import { FoundingRow } from "./landing/FoundingRow";
 import { Footer } from "./landing/Footer";
@@ -13,13 +15,20 @@ import { Footer } from "./landing/Footer";
  * THE LANDING — the product-showcase story (formerly polished at /new,
  * promoted here; /new now redirects home). Components live in ./landing.
  *
- * One story in two acts, one runway to Apply:
- *   Hero (headline only) → What you can build (the marketing-page example
- *   with the real browsable carousel) → ACT 1 · How it works (4-page swipe
- *   flow ending at publish) → bridge ("Now it comes alive.") →
- *   ACT 2 · One live week (the pinned time-thread chapter: the space, the
- *   pulse, LIVE, the loop, the directed Q&A, the week turning) →
- *   the summary reunion → The founding pilot doors.
+ * Reframed 11 Sep 2026 for the founding-network strategy. The showcase in
+ * the middle is untouched and still carries the page: it is the proof that
+ * makes a small ask worth saying yes to. What changed is the frame around
+ * it, because the offer is no longer "found an experience with a stranger"
+ * but "be in the network where the pairing is found".
+ *
+ *   Hero (the tension, then the ask) → Two doors (experts | studios and
+ *   gyms, where the institutional track finally enters the page) →
+ *   What you can build (the marketing-page example with the real browsable
+ *   carousel) → ACT 1 · How it works (4-page swipe flow ending at publish)
+ *   → bridge ("Now it comes alive.") → ACT 2 · One live week (the pinned
+ *   time-thread chapter) → the summary reunion → The founding network (the
+ *   offer, the three steps, the terms) → the live cards, once the founder
+ *   opens the public reader → one closing ask.
  *
  * ONE experience threads it all: the real flagship "6-Week Sustainable
  * Fitness Reset" (./landing/content.ts). Every visual is a PORT of a real
@@ -34,7 +43,7 @@ export const revalidate = 300;
 export const metadata = {
   title: "INFITRA · Live, co-created fitness experiences",
   description:
-    "Build an experience beyond what you can offer alone. Complementary experts, one live experience: page, checkout, contract, revenue split, live rooms and tribe, handled.",
+    "Offer more without becoming everything. Experts, studios and gyms create one live experience together, online. INFITRA handles the page, the checkout, the agreement, the split, the live rooms and the group space.",
 };
 
 export default function LandingPage() {
@@ -81,10 +90,12 @@ export default function LandingPage() {
 
         <main>
           <Hero />
+          <TwoDoors />
           <WhatYouCanBuild />
           <HowItWorks />
           <LiveWeek />
           <Summary />
+          <FoundingNetwork />
           <FoundingRow />
           <Finale />
         </main>
