@@ -8,9 +8,16 @@ import { INK, ORANGE, CYAN, MUTED, FAINT, ApplyCTA } from "../ui";
  * tension every expert and every studio owner feels (beat one), says in one
  * line what INFITRA is, with the noun "collaboration" in the definition slot
  * where a category word belongs and never in the promise, states the unit by
- * beat three because the brand requires it there, and asks for the small
- * thing. Terms live in the founding-network section. No per-side sentences
- * here: the three winners follow one viewport down.
+ * beat three because the brand requires it there, and then asks.
+ *
+ * The ask sits directly under the unit, and the how sits BELOW the ask: the
+ * infrastructure is the objection killer, never the hook, so it comes after
+ * the opportunity, not before it (BRAND.md, beat four). The micro carries the
+ * truth that makes this a position rather than a signup: accounts are
+ * invite-only, you apply, and the invitation is personal.
+ *
+ * Terms live in the founding-network section. No per-side sentences here:
+ * the three winners follow one viewport down.
  */
 export function Hero() {
   // svh on mobile so the centered content fits the VISIBLE viewport (the area
@@ -41,16 +48,24 @@ export function Hero() {
         {/* The definition: the category word in the one place it belongs. */}
         <p data-definition className="text-base md:text-xl max-w-2xl mx-auto leading-relaxed mb-4" style={{ color: MUTED }}>
           INFITRA makes professional collaboration in fitness and health easy:
-          experts, studios and gyms create one live experience together, online.
+          experts, studios and gyms create live experiences together that none
+          of them could run alone.
         </p>
 
         {/* The unit, by beat three. */}
-        <p className="text-[15px] md:text-lg max-w-2xl mx-auto leading-relaxed mb-9" style={{ color: INK, fontWeight: 600 }}>
-          One experience runs over several weeks: the people who join buy once,
-          meet you live on video, and stay connected in a group in between.
+        <p className="text-[15px] md:text-lg max-w-2xl mx-auto leading-relaxed mb-8" style={{ color: INK, fontWeight: 600 }}>
+          Each one runs online over several weeks. The people who join buy
+          once, meet you live on video every week, and stay connected in their
+          tribe space in between.
         </p>
 
-        <ApplyCTA label="Join the founding network" micro="Experts, studios and gyms. A profile takes fifteen minutes, and nothing is binding." />
+        <ApplyCTA xl label="Join the founding network" micro="Invite only. Apply, and if it fits, your personal invitation follows." />
+
+        {/* Beat four, deliberately after the ask. */}
+        <p data-how className="text-[13px] md:text-sm max-w-xl mx-auto leading-relaxed mt-8" style={{ color: MUTED }}>
+          INFITRA provides the infrastructure and the revenue split, recorded in
+          a transparent agreement before anything sells.
+        </p>
 
         <div className="mt-12 flex flex-col items-center gap-1.5" style={{ color: FAINT }} aria-hidden>
           <span className="text-[11px] uppercase tracking-[0.22em] font-headline" style={{ fontWeight: 700 }}>

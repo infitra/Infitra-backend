@@ -16,8 +16,8 @@ import { Reveal } from "../Reveal";
 const STEPS = [
   {
     n: "01",
-    t: "Your profile.",
-    d: "About fifteen minutes. What you bring, and who you would want next to you. It is live in the network the moment you save it, and you can change it any time.",
+    t: "You apply.",
+    d: "Every application is read personally, and you hear back within a week. If it fits, your personal invitation follows, and the profile itself takes about fifteen minutes: what you bring, and who you would want next to you.",
   },
   {
     n: "02",
@@ -38,7 +38,7 @@ export function FoundingNetwork({ forming }: { forming: boolean }) {
         <SectionHead
           eyebrow="How joining works"
           title={<>Joining costs a profile, <span style={{ color: CYAN }}>and nothing else.</span></>}
-          sub="Experts, studios and gyms, open to creating together. Nothing is binding, and when a profile fits yours, you hear from us personally."
+          sub="Accounts are invite-only. You apply, we read it personally, and if it fits, your invitation follows. From there nothing is binding."
         />
 
         {forming && (

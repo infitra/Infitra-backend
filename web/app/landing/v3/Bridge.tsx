@@ -10,8 +10,9 @@ export function Bridge() {
   return (
     <div id="bridge" className="px-6 pt-20 md:pt-28 pb-0">
       <p className="max-w-2xl mx-auto text-center text-base md:text-lg leading-relaxed" style={{ color: MUTED }}>
-        One of the two shapes, shown start to finish: two experts. A studio and
-        an outside expert run the same way, for the studio&apos;s members.
+        One of the two shapes, shown start to finish: two experts, six weeks,
+        one tribe. A studio and an outside expert run the same way, for the
+        studio&apos;s members.
       </p>
     </div>
   );

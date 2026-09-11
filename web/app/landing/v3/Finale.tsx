@@ -25,13 +25,13 @@ export function Finale() {
           Join the <span style={{ color: ORANGE }}>founding network.</span>
         </h2>
         <p className="text-base md:text-lg leading-relaxed max-w-2xl mx-auto mb-10" style={{ color: MUTED }}>
-          Experts, studios and gyms, open to creating together. A profile takes
-          about fifteen minutes, nothing is binding, and when a profile fits
-          yours, you hear from us personally.
+          Experts, studios and gyms, open to creating together. Accounts are
+          invite-only: you apply, we read it personally, and if it fits, your
+          invitation follows. Nothing is binding from there on.
         </p>
 
         <Reveal>
-          <ApplyCTA label="Join the founding network" xl micro="Every profile is reviewed personally." />
+          <ApplyCTA label="Join the founding network" xl micro="Invite only. Every application is read personally, and you hear back within a week." />
         </Reveal>
 
         <div className="mt-16 pt-8 max-w-md mx-auto" style={{ borderTop: "1px solid rgba(15,34,41,0.10)" }}>

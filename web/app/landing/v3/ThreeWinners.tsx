@@ -68,7 +68,7 @@ const WINNERS = [
     proof: [
       "One experience, bought once, in one place: no more switching between apps and coaches.",
       "More from a membership they already have, with every part at full depth.",
-      "A group with purpose and momentum in between the live sessions.",
+      "A tribe that keeps its purpose and its momentum between the live sessions.",
     ],
   },
 ];
