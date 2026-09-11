@@ -9,7 +9,11 @@ import { useEffect, useState } from "react";
  * The cream blur bar is right for the light page and wrong across the top of
  * the dark hero, where it reads as a pale stripe cutting the stage. So the
  * bar is transparent while the stage is on screen and fades its cream layer
- * in once the hero has scrolled past. Same observer pattern as Reveal.
+ * in once the hero has scrolled past.
+ *
+ * A scroll threshold rather than an observer: it is deterministic, it can be
+ * verified without a paint, and it degrades to the cream bar on any page that
+ * has no stage.
  */
 export function StageNav() {
   const [solid, setSolid] = useState(false);
@@ -20,12 +24,22 @@ export function StageNav() {
       setSolid(true);
       return;
     }
-    const io = new IntersectionObserver(([entry]) => setSolid(!entry.isIntersecting), {
-      rootMargin: "-56px 0px 0px 0px",
-      threshold: 0,
-    });
-    io.observe(stage);
-    return () => io.disconnect();
+    // The bar turns cream once the stage's bottom edge passes under it: the
+    // edge in document space, less the height of the bar itself.
+    const measure = () => stage.getBoundingClientRect().bottom + window.scrollY - 56;
+    let past = measure();
+    const onScroll = () => setSolid(window.scrollY > past);
+    const onResize = () => {
+      past = measure();
+      onScroll();
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onResize);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onResize);
+    };
   }, []);
 
   return (
