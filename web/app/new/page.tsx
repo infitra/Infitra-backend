@@ -1,49 +1,51 @@
 import Link from "next/link";
 import { WaveFlowingBackground } from "@/app/components/WaveFlowingBackground";
-import { Hero } from "./landing/Hero";
-import { WhatYouCanBuild } from "./landing/WhatYouCanBuild";
-import { HowItWorks } from "./landing/HowItWorks";
-import { LiveWeek } from "./landing/LiveWeek";
-import { Summary } from "./landing/Summary";
-import { Finale } from "./landing/Finale";
-import { FoundingRow } from "./landing/FoundingRow";
-import { Footer } from "./landing/Footer";
+import { Hero } from "@/app/landing/v3/Hero";
+import { TwoDoors } from "@/app/landing/v3/TwoDoors";
+import { FoundingNetwork } from "@/app/landing/v3/FoundingNetwork";
+import { Finale } from "@/app/landing/v3/Finale";
+import { WhatYouCanBuild } from "@/app/landing/WhatYouCanBuild";
+import { HowItWorks } from "@/app/landing/HowItWorks";
+import { LiveWeek } from "@/app/landing/LiveWeek";
+import { Summary } from "@/app/landing/Summary";
+import { FoundingRow } from "@/app/landing/FoundingRow";
+import { Footer } from "@/app/landing/Footer";
 
 /**
- * THE LANDING — the product-showcase story (formerly polished at /new,
- * promoted here; /new now redirects home). Components live in ./landing.
+ * /new — THE LANDING STAGING SURFACE (11 Sep 2026).
  *
- * One story in two acts, one runway to Apply:
- *   Hero (headline only) → What you can build (the marketing-page example
- *   with the real browsable carousel) → ACT 1 · How it works (4-page swipe
- *   flow ending at publish) → bridge ("Now it comes alive.") →
- *   ACT 2 · One live week (the pinned time-thread chapter: the space, the
- *   pulse, LIVE, the loop, the directed Q&A, the week turning) →
- *   the summary reunion → The founding pilot doors.
+ * The next landing is built and polished here while the live page at / keeps
+ * selling the current story untouched. When this one is finished, its
+ * sections replace the live page and /new goes back to being a redirect.
+ * That is the same path the current landing took.
  *
- * ONE experience threads it all: the real flagship "6-Week Sustainable
- * Fitness Reset" (./landing/content.ts). Every visual is a PORT of a real
- * INFITRA surface. Vocabulary: experiences, never "program"; the public
- * page is the marketing page.
+ * What is being reframed: the live page opens on the product and the terms
+ * and closes by asking a stranger to found an experience with someone they
+ * have not met. The offer is now a profile in a forming network, so this
+ * version opens on the tension, gives studios and gyms a door of their own
+ * directly under the hero, and closes on the small ask.
+ *
+ * The showcase in the middle is deliberately shared with the live page, not
+ * copied: it is the proof that makes a small ask worth a yes, and LiveWeek
+ * carries a closed mobile-scroll tuning that must not be forked.
+ *
+ * noindex while it is a draft.
  */
-
-/** The founding row reads public cards; the page stays static and refreshes
- *  every five minutes instead of rendering per request (6 Sep 2026). */
 export const revalidate = 300;
 
 export const metadata = {
   title: "INFITRA · Live, co-created fitness experiences",
   description:
-    "Build an experience beyond what you can offer alone. Complementary experts, one live experience: page, checkout, contract, revenue split, live rooms and tribe, handled.",
+    "Offer more without becoming everything. Experts, studios and gyms create one live experience together, online.",
+  robots: { index: false, follow: false },
 };
 
-export default function LandingPage() {
+export default function LandingStagingPage() {
   return (
     <div className="min-h-screen relative overflow-x-clip" style={{ backgroundColor: "#F2EFE8" }}>
       <WaveFlowingBackground />
 
       <div className="relative z-10">
-        {/* ── NAV ── */}
         <nav className="fixed top-0 w-full z-40">
           <div
             style={{
@@ -56,7 +58,7 @@ export default function LandingPage() {
             }}
           />
           <div className="relative max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2.5">
+            <Link href="/new" className="flex items-center gap-2.5">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/logo-mark.png" alt="INFITRA" width={34} height={34} className="block rounded-lg" />
               <span
@@ -66,9 +68,6 @@ export default function LandingPage() {
                 INFITRA
               </span>
             </Link>
-            {/* One door (9 Sep 2026): members who joined by invite link sign in here.
-                The waitlist and apply pills went with the founding-network model;
-                the landing itself is rewritten next. */}
             <Link
               href="/login"
               className="px-4 sm:px-5 py-2 rounded-full text-xs font-headline font-bold text-white uppercase tracking-widest whitespace-nowrap"
@@ -81,10 +80,12 @@ export default function LandingPage() {
 
         <main>
           <Hero />
+          <TwoDoors />
           <WhatYouCanBuild />
           <HowItWorks />
           <LiveWeek />
           <Summary />
+          <FoundingNetwork />
           <FoundingRow />
           <Finale />
         </main>

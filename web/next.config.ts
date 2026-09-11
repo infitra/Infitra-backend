@@ -3,9 +3,10 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   async redirects() {
     return [
-      // The landing was polished at /new, then promoted to /. Links from the
-      // polishing phase (and anyone's open tabs) land home permanently.
-      { source: "/new", destination: "/", permanent: true },
+      // /new is the landing staging surface again (11 Sep 2026): the next
+      // landing is built and polished there before it replaces /. The old
+      // "/new → /" permanent redirect is gone, but browsers cache 308s, so a
+      // stale client may still bounce to the homepage until it is cleared.
       // Founding network routes were renamed on 6 Sep 2026 before any link went out.
       { source: "/community", destination: "/network", permanent: true },
       { source: "/founding-group", destination: "/founding-network", permanent: true },
