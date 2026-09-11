@@ -51,7 +51,7 @@ function Copy({ centered }: { centered: boolean }) {
           color: CREAM,
           fontWeight: 600,
           letterSpacing: "-0.025em",
-          fontSize: centered ? "clamp(2rem, 4.6vw, 3.5rem)" : "clamp(2rem, 4.2vw, 3.25rem)",
+          fontSize: centered ? "clamp(2rem, 4.6vw, 3.5rem)" : "clamp(2rem, 3.6vw, 2.875rem)",
         }}
       >
         <span className="block" style={{ color: ORANGE, fontWeight: 700 }}>Offer more</span>
@@ -63,7 +63,7 @@ function Copy({ centered }: { centered: boolean }) {
          one sentence still reads as two beats. */}
       <p
         data-definition
-        className={`text-lg md:text-xl lg:text-[22px] leading-relaxed mb-9 ${centered ? "max-w-2xl" : "max-w-[46ch]"}`}
+        className={`text-base md:text-xl lg:text-[22px] leading-relaxed mb-9 ${centered ? "max-w-2xl" : "max-w-[46ch]"}`}
         style={{ color: CREAM_MUTED }}
       >
         INFITRA makes professional collaboration in fitness and health easy:
@@ -122,7 +122,7 @@ export function Hero({ members, preview }: { members: FoundingMember[]; preview:
             </div>
           </div>
         ) : (
-          <div className="max-w-3xl mx-auto w-full">
+          <div className="max-w-4xl mx-auto w-full">
             <Copy centered />
           </div>
         )}
