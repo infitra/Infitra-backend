@@ -8,14 +8,22 @@ import { CardOverlay } from "./CardOverlay";
 import { trackEvent } from "@/lib/analytics";
 
 /**
- * The network, inside the hero. The full card is the wrong object here: it
- * carries both answers, the background table and a 116px portrait, which at
- * hero size reads as a directory entry. So the tile keeps only what makes a
- * person recognisable (the wave band, the portrait, the name, what they do,
- * where they are) and the full card opens on click.
+ * The network, inside the hero, as a band that keeps moving (12 Sep 2026).
  *
- * The cards arrive as ready-rendered nodes from the server so the card
- * module, and everything it imports, never enters this bundle.
+ * A column of cards beside the copy read as a sidebar. This runs the full
+ * width of the stage instead and drifts from right to left without stopping,
+ * fading into the teal at both edges, so the network reads as something in
+ * motion rather than a list. It pauses under the pointer and under keyboard
+ * focus, and it stands still for anyone who asks for reduced motion.
+ *
+ * The drift only runs once there are enough profiles to fill the band. Below
+ * that the tiles simply sit in the middle: a loop of one repeated face would
+ * claim a network that is not there yet.
+ *
+ * The full card is the wrong object at this size, so the tile keeps only what
+ * makes a person recognisable and the card itself opens on click. The cards
+ * arrive as ready-rendered nodes from the server, so the card module and
+ * everything it imports never enter this bundle.
  */
 const CREAM = "#F2EFE8";
 const CYAN_BRIGHT = "#9CF0FF";
@@ -24,15 +32,34 @@ const CYAN = "#0891b2";
 const ORANGE = "#FF6130";
 
 const BAND_MASK = "linear-gradient(180deg, #000 0%, #000 55%, rgba(0,0,0,0) 100%)";
+const EDGE_MASK = "linear-gradient(90deg, rgba(0,0,0,0) 0%, #000 7%, #000 93%, rgba(0,0,0,0) 100%)";
+
+/** One tile is about this wide with its gap; the track is filled to cover
+ *  the widest screen we care about before it is doubled for the loop. */
+const TILE_SPAN = 316;
+const FILL_TO = 2600;
+
+const DRIFT_CSS = `
+@keyframes stage-drift {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-50%, 0, 0); }
+}
+.stage-track { animation: stage-drift var(--drift) linear infinite; will-change: transform; }
+.stage-stripe:hover .stage-track,
+.stage-stripe:focus-within .stage-track { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) { .stage-track { animation: none; } }
+`;
 
 function ProfileTile({
   m,
   onOpen,
   innerRef,
+  echo,
 }: {
   m: FoundingMember;
   onOpen: () => void;
-  innerRef: (el: HTMLButtonElement | null) => void;
+  innerRef?: (el: HTMLButtonElement | null) => void;
+  echo?: boolean;
 }) {
   const isStudio = m.entity_type === "studio";
   const accent = isStudio ? CYAN : ORANGE;
@@ -45,7 +72,9 @@ function ProfileTile({
       ref={innerRef}
       onClick={onOpen}
       aria-label={`Open ${name}'s profile`}
-      className="relative shrink-0 snap-start w-[76vw] max-w-[300px] lg:w-full lg:max-w-none rounded-2xl overflow-hidden text-left shadow-[0_14px_40px_rgba(0,0,0,0.32)] hover:shadow-[0_22px_60px_rgba(0,0,0,0.42)] hover:-translate-y-[2px] transition-[transform,box-shadow] duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[#9CF0FF]"
+      aria-hidden={echo || undefined}
+      tabIndex={echo ? -1 : undefined}
+      className="relative shrink-0 w-[280px] sm:w-[300px] rounded-2xl overflow-hidden text-left shadow-[0_14px_40px_rgba(0,0,0,0.32)] hover:shadow-[0_22px_60px_rgba(0,0,0,0.42)] hover:-translate-y-[2px] transition-[transform,box-shadow] duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[#9CF0FF]"
       style={{ backgroundColor: CREAM, border: "1px solid rgba(15,34,41,0.07)" }}
     >
       <div
@@ -141,40 +170,62 @@ export function HeroCards({
 
   const name = open !== null ? members[open]?.display_name ?? "Founding member" : "";
 
+  const drift = members.length >= 3;
+  const copies = drift ? Math.max(1, Math.ceil(FILL_TO / (members.length * TILE_SPAN))) : 1;
+  const base = Array.from({ length: members.length * copies }, (_, i) => i % members.length);
+  const track = drift ? [...base, ...base] : base;
+  const seconds = base.length * 6;
+
   return (
     <div>
-      <p className="text-[11px] font-bold font-headline uppercase tracking-[0.25em] mb-4" style={{ color: CYAN_BRIGHT }}>
+      <p className="text-[11px] font-bold font-headline uppercase tracking-[0.25em] text-center mb-5" style={{ color: CYAN_BRIGHT }}>
         In the network
       </p>
 
-      {/* Phones: one swipe row that bleeds to both edges. From lg: a column. */}
-      <div className="-mx-6 px-6 flex gap-3 overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:mx-0 lg:px-0 lg:flex-col lg:overflow-visible">
-        {members.map((m, i) => (
-          <ProfileTile
-            key={m.id}
-            m={m}
-            onOpen={() => openCard(i, m.id)}
-            innerRef={(el) => {
-              tiles.current[i] = el;
-            }}
-          />
-        ))}
+      <div
+        className="stage-stripe relative overflow-hidden"
+        style={{ maskImage: EDGE_MASK, WebkitMaskImage: EDGE_MASK }}
+      >
+        <style>{DRIFT_CSS}</style>
+        <div
+          className={`flex gap-4 ${drift ? "stage-track w-max" : "justify-center px-6 flex-wrap"}`}
+          style={drift ? ({ "--drift": `${seconds}s` } as React.CSSProperties) : undefined}
+        >
+          {track.map((memberIndex, i) => (
+            <ProfileTile
+              key={i}
+              m={members[memberIndex]}
+              echo={i >= members.length}
+              onOpen={() => openCard(memberIndex, members[memberIndex].id)}
+              innerRef={
+                i < members.length
+                  ? (el) => {
+                      tiles.current[i] = el;
+                    }
+                  : undefined
+              }
+            />
+          ))}
+        </div>
       </div>
 
-      {more && (
-        <Link
-          href="/founding-network"
-          className="inline-block mt-4 text-[11px] font-bold font-headline uppercase tracking-[0.2em]"
-          style={{ color: CYAN_BRIGHT }}
-        >
-          All profiles
-        </Link>
-      )}
-
-      {preview && (
-        <p className="mt-4 text-[11px] font-bold font-headline uppercase tracking-[0.2em]" style={{ color: "rgba(156,240,255,0.7)" }}>
-          Preview: what visitors see once the public reader opens.
-        </p>
+      {(more || preview) && (
+        <div className="text-center mt-5">
+          {more && (
+            <Link
+              href="/founding-network"
+              className="inline-block text-[11px] font-bold font-headline uppercase tracking-[0.2em]"
+              style={{ color: CYAN_BRIGHT }}
+            >
+              All profiles
+            </Link>
+          )}
+          {preview && (
+            <p className="mt-2 text-[11px] font-bold font-headline uppercase tracking-[0.2em]" style={{ color: "rgba(156,240,255,0.7)" }}>
+              Preview: what visitors see once the public reader opens.
+            </p>
+          )}
+        </div>
       )}
 
       <CardOverlay open={open !== null} label={`${name}'s profile`} onClose={close}>

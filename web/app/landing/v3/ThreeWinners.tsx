@@ -1,14 +1,16 @@
-import { INK, ORANGE, CYAN, MUTED, FAINT, SectionHead } from "../ui";
+import { INK, ORANGE, CYAN, MUTED, SectionHead } from "../ui";
 import { Reveal } from "../Reveal";
 import { AnswerIcon } from "@/app/components/FoundingCard";
+import { TwoShapes } from "./TwoShapes";
 
 /**
  * M1b · THREE WINNERS (11 Sep 2026): the opportunity, named per side.
  *
  * Network value is combinatorial, and a list of possibilities reads as
- * vagueness. So the section SHOWS the two shapes first, as an equation you
- * can take in without reading, then names the three sides that come out
- * ahead, each in its own economics: one promise and three proof lines. The
+ * vagueness. So the section SHOWS the two ways to build one first, with the
+ * real faces and the real page they produce, then names the three sides that
+ * come out ahead, each in its own economics: one promise and three proof
+ * lines. The
  * third side, the people who join, is written as the RESULT of the first two,
  * so a studio owner reads it as "great for our members" and an expert as
  * "beyond what I could offer alone". It has no button.
@@ -21,25 +23,6 @@ import { AnswerIcon } from "@/app/components/FoundingCard";
  * of three paragraphs. No black, no badge gold.
  */
 const BOTH = "linear-gradient(135deg, #FF6130 0%, #0891b2 100%)";
-
-const SHAPES = [
-  {
-    key: "expert-expert",
-    discs: [
-      { color: ORANGE, glyph: "brings" as const },
-      { color: ORANGE, glyph: "brings" as const },
-    ],
-    caption: "Two experts whose crafts complete each other.",
-  },
-  {
-    key: "studio-expert",
-    discs: [
-      { color: CYAN, glyph: "seeks" as const },
-      { color: ORANGE, glyph: "brings" as const },
-    ],
-    caption: "A studio and an outside expert.",
-  },
-];
 
 const WINNERS = [
   {
@@ -109,17 +92,6 @@ function GroupIcon({ color, size = 20 }: { color: string; size?: number }) {
   );
 }
 
-function Disc({ color, glyph, size = 36 }: { color: string; glyph: "brings" | "seeks"; size?: number }) {
-  return (
-    <span
-      className="rounded-full flex items-center justify-center shrink-0"
-      style={{ background: color, width: size, height: size }}
-    >
-      <AnswerIcon kind={glyph} color="#FFFFFF" size={Math.round(size * 0.5)} />
-    </span>
-  );
-}
-
 export function ThreeWinners() {
   return (
     <section id="winners" className="px-6 pt-20 md:pt-24 pb-6 md:pb-8">
@@ -130,33 +102,10 @@ export function ThreeWinners() {
           sub="Either way, three sides come out ahead."
         />
 
-        {/* The two shapes, as an equation: readable before a word is read. */}
+        {/* What the two ways produce, shown as the thing itself. */}
         <Reveal>
-          <div className="grid md:grid-cols-2 gap-4 mb-8 md:mb-10">
-            {SHAPES.map((s) => (
-              <div
-                key={s.key}
-                data-shape={s.key}
-                className="rounded-2xl px-5 py-4"
-                style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.10)" }}
-              >
-                <div className="flex items-center gap-2.5 flex-wrap">
-                  <Disc color={s.discs[0].color} glyph={s.discs[0].glyph} />
-                  <span className="text-lg leading-none" style={{ color: FAINT }} aria-hidden>+</span>
-                  <Disc color={s.discs[1].color} glyph={s.discs[1].glyph} />
-                  <span className="text-lg leading-none mx-0.5" style={{ color: FAINT }} aria-hidden>=</span>
-                  <span
-                    className="rounded-full px-3 py-1 text-[11px] font-bold font-headline uppercase tracking-[0.14em]"
-                    style={{ backgroundColor: INK, color: "#F2EFE8" }}
-                  >
-                    one live experience
-                  </span>
-                </div>
-                <p className="mt-3 text-[13px]" style={{ color: MUTED }}>
-                  {s.caption}
-                </p>
-              </div>
-            ))}
+          <div className="mb-10 md:mb-12">
+            <TwoShapes />
           </div>
         </Reveal>
 

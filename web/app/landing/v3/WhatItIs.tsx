@@ -1,39 +1,31 @@
 import { INK, ORANGE, CYAN, MUTED, SectionHead } from "../ui";
 import { Reveal } from "../Reveal";
+import { ExperienceChips } from "./ExperienceChips";
 
 /**
- * M2 · WHAT AN INFITRA EXPERIENCE IS (11 Sep 2026).
+ * M2 · WHAT AN INFITRA EXPERIENCE IS (12 Sep 2026).
  *
  * The hero says what the opportunity is and what INFITRA provides. This is
- * the beat right after: what the thing actually looks like, which the brand
- * requires no later than the third beat, and what it costs you to try, which
- * is the objection every supplier raises second. The independence line closes
- * it: the reader has just been told what they get, so the sentence that says
- * they give up nothing lands as legitimacy rather than as a disclaimer.
+ * the beat right after: what the thing actually is, which the brand requires
+ * no later than the third beat. It shows it rather than describing it: the
+ * live room, the tribe space and the weekly arc, ported small from the
+ * surfaces the showcase opens in full further down.
  *
- * It ends on the lead-in to the example, so the showcase below opens as an
- * invited deep dive rather than a new chapter.
+ * Then the two facts a supplier weighs: everything around it is provided,
+ * and what they keep. The independence line closes the section, where it
+ * lands as legitimacy under the benefits rather than as a disclaimer, and
+ * the lead-in hands over to the example.
  */
-const FACTS = [
-  {
-    accent: ORANGE,
-    label: "You lead your half.",
-    body: "Your complement leads theirs, and both parts stay at full depth.",
-  },
+const TERMS = [
   {
     accent: CYAN,
     label: "Everything around it, provided.",
-    body: "The page with checkout, the live rooms and the tribe space.",
+    body: "The page with checkout, the live rooms and the tribe space. You bring the craft.",
   },
   {
     accent: ORANGE,
     label: "You keep 90% of every sale.",
-    body: "Split as you agree. INFITRA's founding fee is the remaining 10%.",
-  },
-  {
-    accent: CYAN,
-    label: "Recorded before anything sells.",
-    body: "The revenue split is written into a transparent agreement both sides accept.",
+    body: "Split as you agree. INFITRA's founding fee is the remaining 10%, recorded in a transparent agreement before anything sells.",
   },
 ];
 
@@ -48,15 +40,19 @@ export function WhatItIs() {
         />
 
         <Reveal>
-          <div className="grid md:grid-cols-2 gap-x-10 gap-y-7 max-w-4xl mx-auto">
-            {FACTS.map((f) => (
-              <div key={f.label}>
-                <span className="block w-9 h-[2px] rounded-full mb-3" style={{ backgroundColor: f.accent }} />
+          <ExperienceChips />
+        </Reveal>
+
+        <Reveal>
+          <div className="grid md:grid-cols-2 gap-x-10 gap-y-7 mt-10 md:mt-12 max-w-4xl mx-auto">
+            {TERMS.map((t) => (
+              <div key={t.label}>
+                <span className="block w-9 h-[2px] rounded-full mb-3" style={{ backgroundColor: t.accent }} />
                 <p className="text-[15px] font-headline" style={{ color: INK, fontWeight: 700, letterSpacing: "-0.01em" }}>
-                  {f.label}
+                  {t.label}
                 </p>
                 <p className="text-[14.5px] leading-relaxed mt-1.5" style={{ color: MUTED }}>
-                  {f.body}
+                  {t.body}
                 </p>
               </div>
             ))}

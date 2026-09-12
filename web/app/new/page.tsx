@@ -63,6 +63,20 @@ export default async function LandingStagingPage({
       members = (full.members ?? []) as FoundingMember[];
       previewMode = members.length > 0;
     }
+
+    // PREVIEW SCAFFOLD (12 Sep 2026): the band only drifts once three
+    // profiles can fill it, and the network holds fewer. Repeating what is
+    // there lets the motion be judged before launch. Admin only: previewMode
+    // is set from the RPC's authorised branch and never from the public
+    // read, so nothing here can reach a visitor. Delete this block once the
+    // network holds three profiles of its own.
+    if (previewMode && members.length < 3) {
+      const real = members;
+      members = Array.from({ length: 3 }, (_, i) => ({
+        ...real[i % real.length],
+        id: `${real[i % real.length].id}#preview${i}`,
+      }));
+    }
   }
 
   return (

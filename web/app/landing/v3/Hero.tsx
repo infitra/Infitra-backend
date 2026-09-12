@@ -16,12 +16,11 @@ import { HeroCards } from "./HeroCards";
  * because the page then breathes dark, light, dark, light. The waves are the
  * original paths with the stops pulled down, never redrawn.
  *
- * Two layouts, one copy deck. While no card is public the hero is centred and
- * holds nothing else: an empty column reserved for cards that do not exist
- * yet is dead space. The moment the first profile is public, the layout
- * switches: the copy moves left and the network stands beside it, compact
- * tiles that open the full card. That is momentum you can see, in the first
- * viewport, before a single argument is made.
+ * The copy stays centred and the network runs underneath it as a band across
+ * the whole stage, drifting, so the first viewport carries momentum you can
+ * see before a single argument is made. While no profile is public the band
+ * is simply absent: an empty rail reserved for cards that do not exist yet is
+ * dead space.
  */
 const CREAM = "#F2EFE8";
 const CREAM_MUTED = "rgba(242,239,232,0.78)";
@@ -30,9 +29,9 @@ const CYAN_BRIGHT = "#9CF0FF";
 const ORANGE = "#FF6130";
 const TEAL = "#0C262E";
 
-function Copy({ centered }: { centered: boolean }) {
+function Copy() {
   return (
-    <div className={centered ? "flex flex-col items-center text-center" : "text-left"}>
+    <div className="flex flex-col items-center text-center">
       <div
         className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-7"
         style={{ backgroundColor: "rgba(156,240,255,0.10)", border: "1px solid rgba(156,240,255,0.25)" }}
@@ -51,7 +50,7 @@ function Copy({ centered }: { centered: boolean }) {
           color: CREAM,
           fontWeight: 600,
           letterSpacing: "-0.025em",
-          fontSize: centered ? "clamp(2rem, 4.6vw, 3.5rem)" : "clamp(2rem, 3.6vw, 2.875rem)",
+          fontSize: "clamp(2rem, 4.6vw, 3.5rem)",
         }}
       >
         <span className="block" style={{ color: ORANGE, fontWeight: 700 }}>Offer more</span>
@@ -63,7 +62,7 @@ function Copy({ centered }: { centered: boolean }) {
          one sentence still reads as two beats. */}
       <p
         data-definition
-        className={`text-base md:text-xl lg:text-[22px] leading-relaxed mb-9 ${centered ? "max-w-2xl" : "max-w-[46ch]"}`}
+        className="text-base md:text-xl lg:text-[22px] leading-relaxed mb-9 max-w-2xl"
         style={{ color: CREAM_MUTED }}
       >
         INFITRA makes professional collaboration in fitness and health easy:
@@ -78,9 +77,7 @@ function Copy({ centered }: { centered: boolean }) {
       {/* ApplyCTA centres its own contents, so in the two-column layout it
          sits in an inline-block that shrinks to the button. Its micro is
          slate for cream grounds, so the stage writes its own. */}
-      <div className={centered ? "" : "inline-block"}>
-        <ApplyCTA xl label="Join the founding network" />
-      </div>
+      <ApplyCTA xl label="Join the founding network" />
       <p className="text-xs tracking-wide mt-4" style={{ color: CREAM_MUTED }}>
         Invite only. Apply, and if it fits, your personal invitation follows.
       </p>
@@ -89,7 +86,7 @@ function Copy({ centered }: { centered: boolean }) {
 }
 
 export function Hero({ members, preview }: { members: FoundingMember[]; preview: boolean }) {
-  const shown = members.slice(0, 3);
+  const shown = members.slice(0, 6);
   const showCards = shown.length > 0;
 
   return (
@@ -97,7 +94,7 @@ export function Hero({ members, preview }: { members: FoundingMember[]; preview:
     // taller vh box hidden behind the URL bar.
     <section
       id="stage"
-      className="relative overflow-hidden min-h-svh lg:min-h-[92vh] flex flex-col justify-center px-6 pt-28 pb-16"
+      className="relative overflow-hidden min-h-svh flex flex-col justify-center pt-28 pb-16"
       style={{ backgroundColor: TEAL }}
     >
       <div className="absolute inset-0 pointer-events-none" aria-hidden>
@@ -105,37 +102,35 @@ export function Hero({ members, preview }: { members: FoundingMember[]; preview:
       </div>
 
       <div className="relative z-10 w-full">
-        {showCards ? (
-          <div className="max-w-7xl mx-auto grid lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] gap-10 lg:gap-14 items-center">
-            <div className="min-w-0">
-              <Copy centered={false} />
-            </div>
-            <div className="min-w-0 w-full lg:max-w-[380px] lg:ml-auto">
-              <HeroCards
-                members={shown}
-                preview={preview}
-                more={members.length > shown.length}
-                cards={shown.map((m) => (
-                  <FoundingCard key={m.id} m={m} />
-                ))}
-              />
-            </div>
-          </div>
-        ) : (
-          <div className="max-w-4xl mx-auto w-full">
-            <Copy centered />
+        <div className="max-w-4xl mx-auto w-full px-6">
+          <Copy />
+        </div>
+
+        {showCards && (
+          <div className="mt-12 md:mt-14">
+            <HeroCards
+              members={shown}
+              preview={preview}
+              more={members.length > shown.length}
+              cards={shown.map((m) => (
+                <FoundingCard key={m.id} m={m} />
+              ))}
+            />
           </div>
         )}
 
-        <div className="mt-12 flex flex-col items-center gap-1.5" style={{ color: CREAM_FAINT }} aria-hidden>
-          <span className="text-[11px] uppercase tracking-[0.22em] font-headline" style={{ fontWeight: 700 }}>
-            See who it is for
-          </span>
-          <svg className="animate-bounce" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M6 9l6 6 6-6" />
-          </svg>
-        </div>
+        {!showCards && (
+          <div className="mt-12 flex flex-col items-center gap-1.5" style={{ color: CREAM_FAINT }} aria-hidden>
+            <span className="text-[11px] uppercase tracking-[0.22em] font-headline" style={{ fontWeight: 700 }}>
+              See who it is for
+            </span>
+            <svg className="animate-bounce" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+          </div>
+        )}
       </div>
+
     </section>
   );
 }
