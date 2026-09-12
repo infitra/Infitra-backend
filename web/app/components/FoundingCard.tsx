@@ -1,6 +1,6 @@
 import { CredentialIcon, credentialPeriod } from "@/app/components/CredentialIcon";
 import { CardWaves } from "@/app/components/BrandWaves";
-import { FoundingExpertBadge } from "@/app/(app)/experiences/[id]/PublicChallengeHero";
+import { FoundingExpertBadge } from "@/app/components/FoundingBadge";
 
 /**
  * One founding-network card (6 Sep 2026, v9 on 8 Sep). Rendered on the

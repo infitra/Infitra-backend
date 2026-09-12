@@ -20,7 +20,7 @@ import { programStatus } from "@/lib/experienceSpace/weekJourney";
 import { usePresence } from "./usePresence";
 import { Avatar } from "./Avatar";
 import { ProfileTrigger } from "@/app/components/ProfileModal";
-import { FoundingExpertStar, FoundingExpertBadge } from "../PublicChallengeHero";
+import { FoundingExpertStar, FoundingExpertBadge } from "@/app/components/FoundingBadge";
 
 const ORANGE = "#FF6130";
 const CYAN = "#0891b2";

@@ -90,7 +90,7 @@ function Invite() {
         className="text-[17px] md:text-xl leading-snug font-headline mt-1"
         style={{ color: CYAN_BRIGHT, fontWeight: 700, letterSpacing: "-0.02em" }}
       >
-        Ready to create with them?
+        Ready to collaborate?
       </p>
     </div>
   );

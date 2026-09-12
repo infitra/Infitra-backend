@@ -17,7 +17,7 @@
 
 import Image from "next/image";
 import { CredentialIcon, credentialPeriod } from "@/app/components/CredentialIcon";
-import { FoundingExpertBadge } from "./PublicChallengeHero";
+import { FoundingExpertBadge } from "@/app/components/FoundingBadge";
 
 interface Creator {
   id: string;

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { formatMoney } from "@/lib/money";
 import { CalendarButton } from "@/app/components/CalendarButton";
-import { FoundingExpertBadge } from "@/app/(app)/experiences/[id]/PublicChallengeHero";
+import { FoundingExpertBadge } from "@/app/components/FoundingBadge";
 import { ProfileTrigger } from "@/app/components/ProfileModal";
 import { useOverlay, railActionStyle } from "@/app/components/DashboardOverlay";
 import {
