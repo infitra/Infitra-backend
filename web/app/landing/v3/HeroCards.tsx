@@ -13,16 +13,20 @@ import { trackEvent } from "@/lib/analytics";
  *
  * The tile is the founding card, compressed: the same cream paper, the same
  * brand waves as the band, the same round portrait on its white ring, the
- * same type pill and founding mark. Editorial comes from proportion, not from
- * throwing parts away: the portrait takes a third of the card's width, which
- * is proportionally larger than on the full card, and the name sits under it
- * at headline size. The answers and the background stay in the full card,
- * which opens on click.
+ * same type pill and founding mark. The portrait is the hero of it, close to
+ * half the card's width, because the one thing this band has to say is that
+ * these are real people who joined. A footer says "See details", so the card
+ * reads as something you open rather than something you look at.
  *
- * The band is a real scroll container, so it can be dragged, swiped, wheeled
- * and stepped with the arrows. It also advances on its own, and any touch of
- * it hands control back for a while. When the profiles fit in the band it
- * simply holds still: there is nothing behind the edge to reach.
+ * The band never ends. The set is laid out three times and the scroll
+ * position is folded back by one set width whenever it crosses a boundary, so
+ * the first card simply comes round again instead of the band snapping back.
+ * It drifts by itself a frame at a time, which is also what makes the fold
+ * invisible, and it is a real scroll container: drag, swipe, wheel and the
+ * arrows all work, and any of them hands control back for a while.
+ *
+ * Below four profiles there is nothing to come round, so the band holds still
+ * and centres instead.
  *
  * The cards arrive as ready-rendered nodes from the server, so the card
  * module and everything it imports never enter this bundle.
@@ -35,20 +39,24 @@ const ORANGE = "#FF6130";
 
 const BAND_MASK = "linear-gradient(180deg, #000 0%, #000 52%, rgba(0,0,0,0) 100%)";
 const FADE_BOTH = "linear-gradient(90deg, rgba(0,0,0,0) 0%, #000 6%, #000 94%, rgba(0,0,0,0) 100%)";
-const FADE_END = "linear-gradient(90deg, #000 0%, #000 94%, rgba(0,0,0,0) 100%)";
-const FADE_START = "linear-gradient(90deg, rgba(0,0,0,0) 0%, #000 6%, #000 100%)";
 
-const STEP_MS = 5500;
+/** Pixels per second the band drifts when nobody is touching it. */
+const DRIFT = 22;
+/** How long the reader keeps control after touching the band. */
 const HOLD_MS = 8000;
+/** Below this the set cannot come round: there is nothing behind the edge. */
+const LOOP_FROM = 4;
 
 function ProfileTile({
   m,
   onOpen,
   innerRef,
+  echo,
 }: {
   m: FoundingMember;
   onOpen: () => void;
-  innerRef: (el: HTMLButtonElement | null) => void;
+  innerRef?: (el: HTMLButtonElement | null) => void;
+  echo?: boolean;
 }) {
   const isStudio = m.entity_type === "studio";
   const accent = isStudio ? CYAN : ORANGE;
@@ -61,12 +69,14 @@ function ProfileTile({
       ref={innerRef}
       onClick={onOpen}
       aria-label={`Open ${name}'s profile`}
-      className="relative snap-start shrink-0 w-[280px] sm:w-[330px] rounded-2xl overflow-hidden text-left shadow-[0_14px_40px_rgba(0,0,0,0.32)] hover:shadow-[0_22px_60px_rgba(0,0,0,0.42)] hover:-translate-y-[2px] transition-[transform,box-shadow] duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[#9CF0FF]"
+      aria-hidden={echo || undefined}
+      tabIndex={echo ? -1 : undefined}
+      className="group relative shrink-0 w-[290px] sm:w-[330px] rounded-2xl overflow-hidden text-left flex flex-col shadow-[0_14px_40px_rgba(0,0,0,0.32)] hover:shadow-[0_22px_60px_rgba(0,0,0,0.42)] hover:-translate-y-[2px] transition-[transform,box-shadow] duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[#9CF0FF]"
       style={{ backgroundColor: CREAM, border: "1px solid rgba(15,34,41,0.07)" }}
     >
       <div
         aria-hidden
-        className="relative h-[118px] overflow-hidden"
+        className="relative h-[132px] shrink-0 overflow-hidden"
         style={{ maskImage: BAND_MASK, WebkitMaskImage: BAND_MASK }}
       >
         <CardWaves id={`tile-${m.id.slice(0, 8)}`} />
@@ -78,21 +88,21 @@ function ProfileTile({
         {isStudio ? "Studio" : "Expert"}
       </span>
 
-      <div className="px-5 pb-5 -mt-14 relative">
+      <div className="px-5 pb-5 -mt-[86px] relative flex flex-col items-center text-center">
         <div
-          className="rounded-full w-[104px] h-[104px] sm:w-[112px] sm:h-[112px]"
-          style={{ padding: 5, backgroundColor: "#FFFFFF", boxShadow: "0 14px 34px rgba(15,34,41,0.16)" }}
+          className="rounded-full w-[148px] h-[148px] sm:w-[156px] sm:h-[156px]"
+          style={{ padding: 6, backgroundColor: "#FFFFFF", boxShadow: "0 18px 42px rgba(15,34,41,0.20)" }}
         >
           <div className="w-full h-full rounded-full overflow-hidden" style={{ backgroundColor: "#FFFFFF" }}>
             {m.avatar_url ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={m.avatar_url} alt="" className="w-full h-full object-cover" style={{ objectPosition: "50% 30%" }} />
+              <img src={m.avatar_url} alt="" className="w-full h-full object-cover" style={{ objectPosition: "50% 28%" }} />
             ) : (
               <div
                 className="w-full h-full flex items-center justify-center"
                 style={{ background: "linear-gradient(135deg, rgba(255,97,48,0.12) 0%, rgba(8,145,178,0.14) 100%)" }}
               >
-                <span className="text-4xl font-bold font-headline" style={{ color: CYAN }}>
+                <span className="text-6xl font-bold font-headline" style={{ color: CYAN }}>
                   {initial}
                 </span>
               </div>
@@ -101,7 +111,7 @@ function ProfileTile({
         </div>
 
         <p
-          className="mt-3.5 truncate text-[21px] font-bold font-headline leading-tight"
+          className="mt-4 max-w-full truncate text-[22px] font-bold font-headline leading-tight"
           style={{ color: INK, letterSpacing: "-0.03em" }}
         >
           {name}
@@ -114,7 +124,7 @@ function ProfileTile({
             {m.tagline}
           </p>
         )}
-        <div className="mt-2.5 flex items-center gap-x-3 gap-y-1.5 flex-wrap">
+        <div className="mt-3 flex items-center justify-center gap-x-3 gap-y-1.5 flex-wrap">
           {m.facts?.city && (
             <span className="inline-flex items-center gap-1.5 text-[12px]" style={{ color: "#64748b" }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -127,6 +137,29 @@ function ProfileTile({
           {m.is_founding_expert && <FoundingExpertBadge />}
         </div>
       </div>
+
+      <div
+        className="mt-auto px-5 py-3 flex items-center justify-center gap-1.5"
+        style={{ borderTop: "1px solid rgba(15,34,41,0.08)" }}
+      >
+        <span className="text-[11px] font-bold font-headline uppercase tracking-[0.18em]" style={{ color: CYAN }}>
+          See details
+        </span>
+        <svg
+          className="transition-transform duration-200 group-hover:translate-x-0.5"
+          width="13"
+          height="13"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke={CYAN}
+          strokeWidth="2.4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden
+        >
+          <path d="M9 6l6 6-6 6" />
+        </svg>
+      </div>
     </button>
   );
 }
@@ -137,7 +170,7 @@ function Arrow({ dir, onClick }: { dir: "prev" | "next"; onClick: () => void }) 
       type="button"
       onClick={onClick}
       aria-label={dir === "prev" ? "Previous profiles" : "Next profiles"}
-      className={`hidden md:flex absolute top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full items-center justify-center transition-colors ${dir === "prev" ? "left-0" : "right-0"}`}
+      className={`hidden md:flex absolute top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full items-center justify-center ${dir === "prev" ? "left-0" : "right-0"}`}
       style={{
         backgroundColor: "rgba(12,38,46,0.72)",
         border: "1px solid rgba(242,239,232,0.28)",
@@ -165,53 +198,81 @@ export function HeroCards({
   cards: React.ReactNode[];
 }) {
   const [open, setOpen] = useState<number | null>(null);
-  const [canScroll, setCanScroll] = useState(false);
   const [paused, setPaused] = useState(false);
-  const [edge, setEdge] = useState<"start" | "middle" | "end">("start");
   const tiles = useRef<Array<HTMLButtonElement | null>>([]);
   const scroller = useRef<HTMLDivElement>(null);
   const holdUntil = useRef(0);
 
-  // Does anything sit behind the edge? Only then does the band move, and only
-  // then do the arrows mean anything.
+  // Three copies, so a full set of runway sits on each side of what you see.
+  const loop = members.length >= LOOP_FROM;
+  const track = loop ? [...members, ...members, ...members] : members;
+
+  /** The width of one set: the distance from the first tile to its echo. */
+  const setWidth = useCallback(() => {
+    const el = scroller.current;
+    if (!el || !loop) return 0;
+    const kids = el.children;
+    const first = kids[0] as HTMLElement | undefined;
+    const second = kids[members.length] as HTMLElement | undefined;
+    if (!first || !second) return 0;
+    return second.offsetLeft - first.offsetLeft;
+  }, [loop, members.length]);
+
+  /** Fold the scroll position back into the middle set. Invisible, because
+   *  every set is identical. */
+  const normalize = useCallback(() => {
+    const el = scroller.current;
+    if (!el || !loop) return;
+    const w = setWidth();
+    if (w <= 0) return;
+    if (el.scrollLeft >= 2 * w) el.scrollLeft -= w;
+    else if (el.scrollLeft <= 0) el.scrollLeft += w;
+  }, [loop, setWidth]);
+
+  // Start in the middle set, so the band can be pulled either way at once.
+  // The fold also runs when a scroll finishes, so dragging to the far end
+  // comes round instead of stopping, whether or not the drift is running.
   useEffect(() => {
     const el = scroller.current;
-    if (!el) return;
-    const check = () => setCanScroll(el.scrollWidth > el.clientWidth + 8);
-    check();
-    const ro = new ResizeObserver(check);
-    ro.observe(el);
-    window.addEventListener("resize", check);
-    return () => {
-      ro.disconnect();
-      window.removeEventListener("resize", check);
-    };
-  }, [members.length]);
+    if (!el || !loop) return;
+    const w = setWidth();
+    if (w > 0) el.scrollLeft = w;
+    el.addEventListener("scrollend", normalize);
+    return () => el.removeEventListener("scrollend", normalize);
+  }, [loop, setWidth, normalize]);
 
-  const step = useCallback((dir: 1 | -1) => {
-    const el = scroller.current;
-    if (!el) return;
-    const first = el.firstElementChild as HTMLElement | null;
-    const by = (first?.offsetWidth ?? 300) + 16;
-    const max = el.scrollWidth - el.clientWidth;
-    let next = el.scrollLeft + dir * by;
-    if (next > max - 4) next = 0;
-    if (next < 0) next = max;
-    const calm = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    el.scrollTo({ left: next, behavior: calm ? "auto" : "smooth" });
-  }, []);
-
-  // It advances on its own, and hands control straight back the moment the
-  // reader touches it.
+  // The drift: a frame at a time, which is what lets the fold pass unseen.
   useEffect(() => {
-    if (!canScroll || paused) return;
+    if (!loop || paused) return;
     if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const id = setInterval(() => {
-      if (Date.now() < holdUntil.current) return;
-      step(1);
-    }, STEP_MS);
-    return () => clearInterval(id);
-  }, [canScroll, paused, step]);
+    let frame = 0;
+    let last = performance.now();
+    const tick = (now: number) => {
+      const dt = Math.min(now - last, 100);
+      last = now;
+      const el = scroller.current;
+      if (el && Date.now() >= holdUntil.current) {
+        el.scrollLeft += (DRIFT * dt) / 1000;
+        normalize();
+      }
+      frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [loop, paused, normalize]);
+
+  const step = useCallback(
+    (dir: 1 | -1) => {
+      const el = scroller.current;
+      if (!el) return;
+      const first = el.firstElementChild as HTMLElement | null;
+      const by = (first?.offsetWidth ?? 300) + 16;
+      const calm = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      el.scrollBy({ left: dir * by, behavior: calm ? "auto" : "smooth" });
+      if (calm) normalize();
+    },
+    [normalize],
+  );
 
   const hold = () => {
     holdUntil.current = Date.now() + HOLD_MS;
@@ -232,48 +293,37 @@ export function HeroCards({
 
   return (
     <div>
-      <div className="relative max-w-[1110px] mx-auto">
+      <div className="relative max-w-[1150px] mx-auto">
         <div
           ref={scroller}
           onPointerDown={hold}
           onTouchStart={hold}
           onWheel={hold}
-          onScroll={(e) => {
-            const el = e.currentTarget;
-            const max = el.scrollWidth - el.clientWidth;
-            setEdge(el.scrollLeft <= 4 ? "start" : el.scrollLeft >= max - 4 ? "end" : "middle");
-          }}
           onMouseEnter={() => setPaused(true)}
           onMouseLeave={() => setPaused(false)}
           onFocusCapture={() => setPaused(true)}
           onBlurCapture={() => setPaused(false)}
-          className={`flex gap-4 px-6 py-2 overflow-x-auto snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${canScroll ? "" : "justify-center"}`}
-          style={{
-            scrollPaddingLeft: 24,
-            scrollPaddingRight: 24,
-            // Only the side that still has profiles behind it is faded, so a
-            // band at rest shows its first card whole.
-            ...(canScroll
-              ? (() => {
-                  const fade = edge === "start" ? FADE_END : edge === "end" ? FADE_START : FADE_BOTH;
-                  return { maskImage: fade, WebkitMaskImage: fade };
-                })()
-              : {}),
-          }}
+          className={`flex gap-4 px-6 py-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${loop ? "" : "justify-center"}`}
+          style={loop ? { maskImage: FADE_BOTH, WebkitMaskImage: FADE_BOTH } : undefined}
         >
-          {members.map((m, i) => (
+          {track.map((m, i) => (
             <ProfileTile
-              key={m.id}
+              key={`${m.id}-${i}`}
               m={m}
-              onOpen={() => openCard(i, m.id)}
-              innerRef={(el) => {
-                tiles.current[i] = el;
-              }}
+              echo={i >= members.length}
+              onOpen={() => openCard(i % members.length, m.id)}
+              innerRef={
+                i < members.length
+                  ? (el) => {
+                      tiles.current[i] = el;
+                    }
+                  : undefined
+              }
             />
           ))}
         </div>
 
-        {canScroll && (
+        {loop && (
           <>
             <Arrow
               dir="prev"

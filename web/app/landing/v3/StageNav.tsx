@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+const INK = "#0F2229";
+const CREAM = "#F2EFE8";
+
 /**
  * The landing's nav, taught about the dark stage.
  *
@@ -14,8 +17,9 @@ import { useEffect, useState } from "react";
  * At the same moment it picks up the ask. The stage puts its button after the
  * faces, which is the right story order and costs the button its place above
  * the fold, so from the moment the stage is behind the reader the bar carries
- * it instead: the ask is never off screen again. Sign in stays a quiet text
- * link, because the orange belongs to the one action that matters.
+ * it instead: the ask is never off screen again. Sign in is an outlined pill
+ * that reads on either ground, present but not competing: the orange belongs
+ * to the one action that matters.
  *
  * A scroll threshold rather than an observer: it is deterministic, it can be
  * verified without a paint, and it degrades to the cream bar on any page that
@@ -78,8 +82,12 @@ export function StageNav() {
         <div className="flex items-center gap-4 sm:gap-6">
           <Link
             href="/login"
-            className="text-[11px] sm:text-xs font-headline font-bold uppercase tracking-widest whitespace-nowrap transition-colors duration-300"
-            style={{ color: solid ? "rgba(15,34,41,0.70)" : "rgba(242,239,232,0.82)" }}
+            className="px-4 py-2 rounded-full text-[11px] sm:text-xs font-headline font-bold uppercase tracking-widest whitespace-nowrap transition-colors duration-300"
+            style={
+              solid
+                ? { color: INK, border: "1px solid rgba(15,34,41,0.28)", backgroundColor: "rgba(255,255,255,0.55)" }
+                : { color: CREAM, border: "1px solid rgba(242,239,232,0.45)", backgroundColor: "rgba(242,239,232,0.08)" }
+            }
           >
             Sign in
           </Link>
