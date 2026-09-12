@@ -4,19 +4,22 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { FoundingMember } from "@/app/components/FoundingCard";
 import { CardWaves } from "@/app/components/BrandWaves";
-import { FoundingExpertBadge } from "@/app/components/FoundingBadge";
+import { FoundingExpertStar } from "@/app/components/FoundingBadge";
 import { CardOverlay } from "./CardOverlay";
 import { trackEvent } from "@/lib/analytics";
 
 /**
  * The network, inside the hero (12 Sep 2026).
  *
- * The tile is the founding card, compressed: the same cream paper, the same
- * brand waves as the band, the same round portrait on its white ring, the
- * same type pill and founding mark. The portrait is the hero of it, close to
- * half the card's width, because the one thing this band has to say is that
- * these are real people who joined. A footer says "See details", so the card
- * reads as something you open rather than something you look at.
+ * The tile is the founding card reduced to what a passing reader can take in:
+ * the same cream paper, the same brand waves, the same round portrait on its
+ * white ring, the same type pill. The portrait is most of the card, because
+ * the one thing this band has to say is that these are real people who
+ * joined, and the tagline runs in full, because that is the sentence that
+ * says whether they are worth opening. Everything else, the city, the link,
+ * the two answers, the background, belongs to the card itself, which the
+ * footer invites you to open. The founding mark rides beside the name, where
+ * it costs no height.
  *
  * The band never ends. The set is laid out three times and the scroll
  * position is folded back by one set width whenever it crosses a boundary, so
@@ -71,12 +74,12 @@ function ProfileTile({
       aria-label={`Open ${name}'s profile`}
       aria-hidden={echo || undefined}
       tabIndex={echo ? -1 : undefined}
-      className="group relative shrink-0 w-[290px] sm:w-[330px] rounded-2xl overflow-hidden text-left flex flex-col shadow-[0_14px_40px_rgba(0,0,0,0.32)] hover:shadow-[0_22px_60px_rgba(0,0,0,0.42)] hover:-translate-y-[2px] transition-[transform,box-shadow] duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[#9CF0FF]"
+      className="group relative shrink-0 w-[300px] sm:w-[340px] rounded-2xl overflow-hidden text-left flex flex-col shadow-[0_14px_40px_rgba(0,0,0,0.32)] hover:shadow-[0_22px_60px_rgba(0,0,0,0.42)] hover:-translate-y-[2px] transition-[transform,box-shadow] duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[#9CF0FF]"
       style={{ backgroundColor: CREAM, border: "1px solid rgba(15,34,41,0.07)" }}
     >
       <div
         aria-hidden
-        className="relative h-[132px] shrink-0 overflow-hidden"
+        className="relative h-[108px] shrink-0 overflow-hidden"
         style={{ maskImage: BAND_MASK, WebkitMaskImage: BAND_MASK }}
       >
         <CardWaves id={`tile-${m.id.slice(0, 8)}`} />
@@ -88,9 +91,9 @@ function ProfileTile({
         {isStudio ? "Studio" : "Expert"}
       </span>
 
-      <div className="px-5 pb-5 -mt-[86px] relative flex flex-col items-center text-center">
+      <div className="px-5 pb-3.5 -mt-[78px] relative flex flex-col items-center text-center">
         <div
-          className="rounded-full w-[148px] h-[148px] sm:w-[156px] sm:h-[156px]"
+          className="rounded-full w-[168px] h-[168px] sm:w-[190px] sm:h-[190px]"
           style={{ padding: 6, backgroundColor: "#FFFFFF", boxShadow: "0 18px 42px rgba(15,34,41,0.20)" }}
         >
           <div className="w-full h-full rounded-full overflow-hidden" style={{ backgroundColor: "#FFFFFF" }}>
@@ -111,35 +114,24 @@ function ProfileTile({
         </div>
 
         <p
-          className="mt-4 max-w-full truncate text-[22px] font-bold font-headline leading-tight"
+          className="mt-3 max-w-full text-[21px] font-bold font-headline leading-tight inline-flex items-center gap-2"
           style={{ color: INK, letterSpacing: "-0.03em" }}
         >
-          {name}
+          <span className="truncate">{name}</span>
+          {m.is_founding_expert && <FoundingExpertStar size={16} />}
         </p>
         {m.tagline && (
           <p
             className="mt-1.5 text-[13px] font-bold font-headline leading-snug"
-            style={{ color: CYAN, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" } as React.CSSProperties}
+            style={{ color: CYAN, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" } as React.CSSProperties}
           >
             {m.tagline}
           </p>
         )}
-        <div className="mt-3 flex items-center justify-center gap-x-3 gap-y-1.5 flex-wrap">
-          {m.facts?.city && (
-            <span className="inline-flex items-center gap-1.5 text-[12px]" style={{ color: "#64748b" }}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <path d="M12 21s-6-5.3-6-10.5a6 6 0 0 1 12 0C18 15.7 12 21 12 21z" />
-                <circle cx="12" cy="10.5" r="2.3" />
-              </svg>
-              {m.facts.city}
-            </span>
-          )}
-          {m.is_founding_expert && <FoundingExpertBadge />}
-        </div>
       </div>
 
       <div
-        className="mt-auto px-5 py-3 flex items-center justify-center gap-1.5"
+        className="mt-auto px-5 py-2.5 flex items-center justify-center gap-1.5"
         style={{ borderTop: "1px solid rgba(15,34,41,0.08)" }}
       >
         <span className="text-[11px] font-bold font-headline uppercase tracking-[0.18em]" style={{ color: CYAN }}>
