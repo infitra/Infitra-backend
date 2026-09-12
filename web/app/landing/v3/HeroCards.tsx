@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useRef, useState } from "react";
 import type { FoundingMember } from "@/app/components/FoundingCard";
-import { CardWaves } from "@/app/components/BrandWaves";
 import { CardOverlay } from "./CardOverlay";
 import { trackEvent } from "@/lib/analytics";
 
@@ -27,17 +26,18 @@ import { trackEvent } from "@/lib/analytics";
  */
 const CREAM = "#F2EFE8";
 const CYAN_BRIGHT = "#9CF0FF";
-const INK = "#0F2229";
 const CYAN = "#0891b2";
 const ORANGE = "#FF6130";
 
-const BAND_MASK = "linear-gradient(180deg, #000 0%, #000 55%, rgba(0,0,0,0) 100%)";
 const EDGE_MASK = "linear-gradient(90deg, rgba(0,0,0,0) 0%, #000 7%, #000 93%, rgba(0,0,0,0) 100%)";
 
 /** One tile is about this wide with its gap; the track is filled to cover
- *  the widest screen we care about before it is doubled for the loop. */
-const TILE_SPAN = 316;
-const FILL_TO = 2600;
+ *  the band before it is doubled for the loop. The band is held to roughly
+ *  three cards: a wider one reads as a carousel of many things rather than
+ *  as the people who joined. */
+const TILE_SPAN = 350;
+const FILL_TO = 1200;
+const SECONDS_PER_TILE = 13;
 
 const DRIFT_CSS = `
 @keyframes stage-drift {
@@ -74,56 +74,48 @@ function ProfileTile({
       aria-label={`Open ${name}'s profile`}
       aria-hidden={echo || undefined}
       tabIndex={echo ? -1 : undefined}
-      className="relative shrink-0 w-[280px] sm:w-[300px] rounded-2xl overflow-hidden text-left shadow-[0_14px_40px_rgba(0,0,0,0.32)] hover:shadow-[0_22px_60px_rgba(0,0,0,0.42)] hover:-translate-y-[2px] transition-[transform,box-shadow] duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[#9CF0FF]"
+      className="relative shrink-0 w-[280px] sm:w-[330px] rounded-2xl overflow-hidden text-left shadow-[0_14px_40px_rgba(0,0,0,0.32)] hover:shadow-[0_22px_60px_rgba(0,0,0,0.42)] hover:-translate-y-[2px] transition-[transform,box-shadow] duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[#9CF0FF]"
       style={{ backgroundColor: CREAM, border: "1px solid rgba(15,34,41,0.07)" }}
     >
-      <div
-        aria-hidden
-        className="relative h-16 overflow-hidden"
-        style={{ maskImage: BAND_MASK, WebkitMaskImage: BAND_MASK }}
-      >
-        <CardWaves id={`tile-${m.id.slice(0, 8)}`} />
-      </div>
-      <span
-        className="absolute top-3 left-3 z-10 text-[9.5px] font-bold font-headline uppercase tracking-[0.14em] px-2 py-[3px] rounded-full text-white"
-        style={{ backgroundColor: accent, boxShadow: `0 4px 12px ${accent}55` }}
-      >
-        {isStudio ? "Studio" : "Expert"}
-      </span>
-
-      <div className="px-4 pb-4 -mt-7 relative">
-        <div className="flex items-end gap-3">
+      {/* The face, at the size a face deserves: this is a person who joined,
+          not a row in a directory. The name sits on the photo, magazine
+          style, which also keeps the card short enough for the stage. */}
+      <div className="relative w-full" style={{ aspectRatio: "4 / 3" }}>
+        {m.avatar_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={m.avatar_url} alt="" className="absolute inset-0 w-full h-full object-cover" style={{ objectPosition: "50% 22%" }} />
+        ) : (
           <div
-            className="rounded-full shrink-0 w-14 h-14"
-            style={{ padding: 3, backgroundColor: "#FFFFFF", boxShadow: "0 8px 20px rgba(15,34,41,0.18)" }}
+            className="absolute inset-0 flex items-center justify-center"
+            style={{ background: "linear-gradient(135deg, rgba(255,97,48,0.14) 0%, rgba(8,145,178,0.16) 100%)" }}
           >
-            <div className="w-full h-full rounded-full overflow-hidden" style={{ backgroundColor: "#FFFFFF" }}>
-              {m.avatar_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={m.avatar_url} alt="" className="w-full h-full object-cover" style={{ objectPosition: "50% 30%" }} />
-              ) : (
-                <div
-                  className="w-full h-full flex items-center justify-center"
-                  style={{ background: "linear-gradient(135deg, rgba(255,97,48,0.12) 0%, rgba(8,145,178,0.14) 100%)" }}
-                >
-                  <span className="text-lg font-bold font-headline" style={{ color: CYAN }}>
-                    {initial}
-                  </span>
-                </div>
-              )}
-            </div>
+            <span className="text-5xl font-bold font-headline" style={{ color: CYAN }}>
+              {initial}
+            </span>
           </div>
-          <p
-            className="min-w-0 flex-1 truncate text-[16px] font-bold font-headline leading-tight pb-1"
-            style={{ color: INK, letterSpacing: "-0.03em" }}
-          >
-            {name}
-          </p>
-        </div>
+        )}
+        <div
+          className="absolute inset-x-0 bottom-0 h-1/2 pointer-events-none"
+          style={{ background: "linear-gradient(to top, rgba(12,38,46,0.78) 0%, rgba(12,38,46,0) 100%)" }}
+        />
+        <span
+          className="absolute top-3 left-3 text-[9.5px] font-bold font-headline uppercase tracking-[0.14em] px-2 py-[3px] rounded-full text-white"
+          style={{ backgroundColor: accent, boxShadow: `0 4px 12px ${accent}55` }}
+        >
+          {isStudio ? "Studio" : "Expert"}
+        </span>
+        <p
+          className="absolute left-4 right-4 bottom-3 truncate text-[19px] font-bold font-headline leading-tight"
+          style={{ color: "#FFFFFF", letterSpacing: "-0.03em", textShadow: "0 2px 12px rgba(12,38,46,0.5)" }}
+        >
+          {name}
+        </p>
+      </div>
 
+      <div className="px-4 py-3">
         {m.tagline && (
           <p
-            className="mt-2.5 text-[13px] font-bold font-headline leading-snug"
+            className="text-[13px] font-bold font-headline leading-snug"
             style={{ color: CYAN, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" } as React.CSSProperties}
           >
             {m.tagline}
@@ -174,16 +166,12 @@ export function HeroCards({
   const copies = drift ? Math.max(1, Math.ceil(FILL_TO / (members.length * TILE_SPAN))) : 1;
   const base = Array.from({ length: members.length * copies }, (_, i) => i % members.length);
   const track = drift ? [...base, ...base] : base;
-  const seconds = base.length * 6;
+  const seconds = base.length * SECONDS_PER_TILE;
 
   return (
     <div>
-      <p className="text-[11px] font-bold font-headline uppercase tracking-[0.25em] text-center mb-5" style={{ color: CYAN_BRIGHT }}>
-        In the network
-      </p>
-
       <div
-        className="stage-stripe relative overflow-hidden"
+        className="stage-stripe relative overflow-hidden max-w-[1120px] mx-auto"
         style={{ maskImage: EDGE_MASK, WebkitMaskImage: EDGE_MASK }}
       >
         <style>{DRIFT_CSS}</style>
