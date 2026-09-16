@@ -73,7 +73,7 @@ function ProfileTile({
       aria-label={`Open ${name}'s profile`}
       aria-hidden={echo || undefined}
       tabIndex={echo ? -1 : undefined}
-      className="group relative shrink-0 w-[300px] sm:w-[340px] rounded-2xl overflow-hidden text-left flex flex-col shadow-[0_14px_40px_rgba(0,0,0,0.32)] hover:shadow-[0_22px_60px_rgba(0,0,0,0.42)] hover:-translate-y-[2px] transition-[transform,box-shadow] duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[#9CF0FF]"
+      className="group/tile relative shrink-0 w-[300px] sm:w-[340px] rounded-2xl overflow-hidden text-left flex flex-col shadow-[0_14px_40px_rgba(0,0,0,0.32)] hover:shadow-[0_22px_60px_rgba(0,0,0,0.42)] hover:-translate-y-[2px] transition-[transform,box-shadow] duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[#9CF0FF]"
       style={{ backgroundColor: CREAM, border: "1px solid rgba(15,34,41,0.07)" }}
     >
       {/* The waves are the ground, not a band: they carry the portrait, the
@@ -86,9 +86,9 @@ function ProfileTile({
         <CardWaves id={`tile-${m.id.slice(0, 8)}`} />
       </div>
 
-      <div className="relative px-5 pt-4 flex flex-col items-center text-center">
+      <div className="relative px-5 pt-[60px] flex flex-col items-center text-center">
         <span
-          className="absolute top-0 left-5 text-[10px] font-bold font-headline uppercase tracking-[0.16em] px-2.5 py-1 rounded-full text-white"
+          className="absolute top-4 left-5 text-[10px] font-bold font-headline uppercase tracking-[0.16em] px-2.5 py-1 rounded-full text-white"
           style={{ backgroundColor: accent, boxShadow: `0 4px 12px ${accent}55` }}
         >
           {isStudio ? "Studio" : "Expert"}
@@ -127,7 +127,7 @@ function ProfileTile({
       <div className="relative mt-auto px-5 pt-2.5 pb-3.5 text-center">
         {m.tagline && (
           <p
-            className="text-[12.5px] font-bold font-headline leading-[1.3]"
+            className="text-[13.5px] font-bold font-headline leading-[1.3]"
             style={{ color: CYAN, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" } as React.CSSProperties}
           >
             {m.tagline}
@@ -136,7 +136,7 @@ function ProfileTile({
         <span className="mt-2 inline-flex items-center gap-1 text-[10px] font-bold font-headline uppercase tracking-[0.18em]" style={{ color: FAINT_INK }}>
           See details
           <svg
-            className="transition-transform duration-200 group-hover:translate-x-0.5"
+            className="transition-transform duration-200 group-hover/tile:translate-x-0.5"
             width="11"
             height="11"
             viewBox="0 0 24 24"

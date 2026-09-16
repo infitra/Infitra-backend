@@ -23,22 +23,35 @@ import { CardWaves } from "@/app/components/BrandWaves";
  * studio with an expert, which undersells a network.
  */
 const CREAM = "#F2EFE8";
-const GROUND_MASK = "linear-gradient(180deg, #000 0%, #000 52%, rgba(0,0,0,0) 100%)";
+const GROUND_MASK = "linear-gradient(180deg, #000 0%, #000 84%, rgba(0,0,0,0) 100%)";
+
+/** A barbell, in the same 2.1 stroke language as the card's answer icons. */
+function Barbell() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth={2.1} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M3 9.5v5" />
+      <path d="M6.75 6.5v11" />
+      <path d="M17.25 6.5v11" />
+      <path d="M21 9.5v5" />
+      <path d="M6.75 12h10.5" />
+    </svg>
+  );
+}
 
 const DOORS = [
   {
     key: "experts",
     accent: ORANGE,
-    glyph: "brings" as const,
-    label: "For experts",
+    glyph: "brings" as "brings" | "barbell",
+    label: "Experts",
     promise: "New clients and a fuller offer, while you focus on your craft.",
     how: "Team up with a complementary expert, a studio with the members, or both.",
   },
   {
     key: "studios",
     accent: CYAN,
-    glyph: "seeks" as const,
-    label: "For studios and gyms",
+    glyph: "barbell" as "brings" | "barbell",
+    label: "Studios and gyms",
     promise: "A digital revenue stream you do not build, staff or carry.",
     how: "Bring in the experts your members would pay for. No hire, no fixed wage.",
   },
@@ -60,7 +73,7 @@ export function TwoDoors() {
         >
           <div
             aria-hidden
-            className="absolute inset-x-0 top-0 h-[180px] pointer-events-none"
+            className="absolute inset-x-0 top-0 h-[78%] pointer-events-none"
             style={{ maskImage: GROUND_MASK, WebkitMaskImage: GROUND_MASK }}
           >
             <CardWaves id={`door-${d.key}`} />
@@ -69,12 +82,12 @@ export function TwoDoors() {
           <div className="relative px-6 py-5 sm:px-7 sm:py-6">
             <div className="flex items-center gap-3">
               <span
-                className="w-11 h-11 rounded-full flex items-center justify-center shrink-0"
+                className="w-[52px] h-[52px] rounded-full flex items-center justify-center shrink-0"
                 style={{ backgroundColor: d.accent, boxShadow: `0 6px 18px ${d.accent}4d` }}
               >
-                <AnswerIcon kind={d.glyph} color="#FFFFFF" size={22} />
+                {d.glyph === "barbell" ? <Barbell /> : <AnswerIcon kind={d.glyph} color="#FFFFFF" size={24} />}
               </span>
-              <p className="text-[12px] uppercase tracking-[0.22em] font-headline" style={{ color: d.accent, fontWeight: 800 }}>
+              <p className="text-[15px] uppercase tracking-[0.16em] font-headline" style={{ color: d.accent, fontWeight: 800 }}>
                 {d.label}
               </p>
             </div>
