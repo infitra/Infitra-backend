@@ -87,9 +87,6 @@ function Whole() {
       <p className="text-[15px] sm:text-[19px] font-headline leading-tight mt-4" style={{ color: CREAM, fontWeight: 700, letterSpacing: "-0.02em" }}>
         One live experience
       </p>
-      <p className="text-[11px] sm:text-[12.5px] leading-snug mt-1" style={{ color: CREAM_MUTED }}>
-        for the people who join
-      </p>
     </div>
   );
 }
@@ -129,8 +126,9 @@ export function MarkEquation() {
         ))}
       </div>
 
+      {/* Both rows land on the same whole, so the result is described once. */}
       <p className="text-[13.5px] sm:text-[15px] font-headline text-center mt-8" style={{ color: CREAM, fontWeight: 600 }}>
-        Online, over several weeks, bought once.
+        For the people who join: online, over several weeks, bought once.
       </p>
     </div>
   );

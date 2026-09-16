@@ -17,9 +17,12 @@ import { SplitVisual } from "./SplitVisual";
  * recruit, so they get one wide, quieter card underneath rather than a third
  * column. Everything here stands on the stage's dark ground: no white cards,
  * no tinted bars.
+ *
+ * One line of proof each, not three. The page said its five facts between
+ * four and five times over; each one is now stated once, where it does the
+ * most work, and the demo underneath answers the rest.
  */
 const CREAM = "#F2EFE8";
-const CREAM_MUTED = "rgba(242,239,232,0.78)";
 const CREAM_SOFT = "rgba(242,239,232,0.70)";
 const CYAN_BRIGHT = "#9CF0FF";
 
@@ -35,11 +38,7 @@ const SIDES = [
     glyph: "brings" as const,
     label: "For experts",
     promise: "New clients and a fuller offer, while you focus on your craft.",
-    proof: [
-      "A studio's members, without building that audience yourself.",
-      "Or an expert who leads the other half, so together you offer what neither of you could alone.",
-      "Your clients and your audience stay yours.",
-    ],
+    proof: "A studio's members, or an expert who leads the other half.",
   },
   {
     key: "studios",
@@ -47,21 +46,13 @@ const SIDES = [
     glyph: "seeks" as const,
     label: "For studios and gyms",
     promise: "A digital revenue stream you do not build, staff or carry.",
-    proof: [
-      "More for your members on top of the membership, with no hire, no fixed wage and nothing on the floor.",
-      "Bring in a new expert, or a guest, whenever it needs fresh air.",
-      "Your members stay yours, and the timetable does not move.",
-    ],
+    proof: "No hire, no fixed wage, and nothing on the floor.",
   },
 ];
 
 const JOINERS = {
   promise: "Complete guidance in one place, each part led by an expert in it.",
-  proof: [
-    "One experience, bought once, in one place: no more switching between apps and coaches.",
-    "More from a membership they already have, with every part at full depth.",
-    "A tribe that keeps its purpose and its momentum between the live sessions.",
-  ],
+  proof: "Bought once, in one place, with every part at full depth.",
 };
 
 /** Three people, in the same 2.1 stroke language as the card's answer icons. */
@@ -92,10 +83,6 @@ export function ThreeWinners() {
           >
             One experience, <span style={{ color: ORANGE }}>three winners.</span>
           </h2>
-          <p className="text-base md:text-lg mt-5 leading-relaxed max-w-2xl mx-auto" style={{ color: CREAM_MUTED }}>
-            Experts, studios and gyms, and the people who join. Either way,
-            three sides come out ahead.
-          </p>
         </div>
 
         {/* The model first, in one picture: each side brings a part, and what
@@ -121,16 +108,9 @@ export function ThreeWinners() {
                 >
                   {s.promise}
                 </h3>
-                <ul className="mt-6 rounded-2xl p-5 space-y-3" style={PANEL}>
-                  {s.proof.map((line) => (
-                    <li key={line} className="flex gap-2.5">
-                      <span className="mt-[7px] w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: s.accent }} />
-                      <span className="text-[13.5px] leading-snug" style={{ color: CREAM_SOFT }}>
-                        {line}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
+                <p className="text-[15px] leading-snug mt-4" style={{ color: CREAM_SOFT }}>
+                  {s.proof}
+                </p>
               </div>
             ))}
           </div>
@@ -148,16 +128,9 @@ export function ThreeWinners() {
             <p className="text-[1.1rem] md:text-[1.25rem] font-headline leading-snug mt-3" style={{ color: CREAM, fontWeight: 600, letterSpacing: "-0.02em" }}>
               {JOINERS.promise}
             </p>
-            <ul className="mt-4 grid sm:grid-cols-3 gap-x-7 gap-y-2.5">
-              {JOINERS.proof.map((line) => (
-                <li key={line} className="flex gap-2.5">
-                  <span className="mt-[7px] w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: "rgba(242,239,232,0.45)" }} />
-                  <span className="text-[13px] leading-snug" style={{ color: CREAM_SOFT }}>
-                    {line}
-                  </span>
-                </li>
-              ))}
-            </ul>
+            <p className="text-[14px] leading-snug mt-2.5" style={{ color: CREAM_SOFT }}>
+              {JOINERS.proof}
+            </p>
           </div>
         </Reveal>
 

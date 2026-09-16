@@ -7,8 +7,9 @@ import { Reveal } from "../Reveal";
  * what is asked for today, a profile and nothing else, and what comes back.
  *
  * Sits after the proof on purpose: proof, then mechanism, then the closing
- * ask. The state of the network itself is shown in the hero now, where the
- * profiles are, so this section only ever explains the mechanism.
+ * ask. The state of the network is shown in the hero, where the profiles are,
+ * and the split is shown once, up in the model section, so this section only
+ * ever explains the mechanism.
  *
  * No counts and no dates anywhere.
  */
@@ -37,7 +38,7 @@ export function FoundingNetwork() {
         <SectionHead
           eyebrow="How joining works"
           title={<>Joining costs a profile, <span style={{ color: CYAN }}>and nothing else.</span></>}
-          sub="Accounts are invite-only. You apply, we read it personally, and if it fits, your invitation follows. From there nothing is binding."
+          sub="No upfront cost, no subscription, no lock-in. Your audience and your clients stay entirely yours."
         />
 
         <Reveal>
@@ -62,23 +63,6 @@ export function FoundingNetwork() {
           </div>
         </Reveal>
 
-        {/* The deal, last and plain, led by what is kept. "You" rather than
-           "experts": on this page a studio is a party to the split too. */}
-        <Reveal>
-          <div
-            className="mt-5 rounded-3xl px-6 py-7 md:px-9 md:py-8 text-center"
-            style={{ backgroundColor: "rgba(8,145,178,0.06)", boxShadow: "0 0 0 1px rgba(8,145,178,0.20)" }}
-          >
-            <p className="text-xl md:text-2xl font-headline" style={{ color: INK, fontWeight: 700, letterSpacing: "-0.01em" }}>
-              You keep <span style={{ color: ORANGE }}>90%</span> of every sale, split as you agree.
-            </p>
-            <p className="text-sm mt-3 leading-relaxed" style={{ color: MUTED }}>
-              INFITRA&apos;s founding fee is the remaining 10%. No upfront cost, no
-              subscription, no lock-in. Your audience and your clients stay
-              entirely yours.
-            </p>
-          </div>
-        </Reveal>
       </div>
     </section>
   );

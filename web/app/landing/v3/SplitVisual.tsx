@@ -87,7 +87,7 @@ export function SplitVisual() {
 
       <p className="text-[14px] leading-relaxed mt-4" style={{ color: CREAM_MUTED }}>
         Written into a transparent agreement both sides accept, before anything
-        sells. No upfront cost, no subscription.
+        sells.
       </p>
 
       <div className="mt-6 pt-6" style={{ borderTop: "1px solid rgba(242,239,232,0.22)" }}>

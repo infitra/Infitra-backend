@@ -66,12 +66,10 @@ function Punch({ tight }: { tight?: boolean }) {
       className={`text-base md:text-lg lg:text-xl leading-relaxed max-w-2xl ${tight ? "mb-5" : "mb-9"}`}
       style={{ color: CREAM_MUTED }}
     >
-      INFITRA makes professional collaboration in fitness and health easy:
-      experts, studios and gyms create live experiences together that none
-      could run alone,{" "}
+      INFITRA makes professional collaboration in fitness and health easy:{" "}
       <span style={{ color: CREAM, fontWeight: 600 }}>
-        with the infrastructure and the revenue split provided on a
-        transparent agreement.
+        experts, studios and gyms create one live experience together that
+        none of them could run alone.
       </span>
     </p>
   );

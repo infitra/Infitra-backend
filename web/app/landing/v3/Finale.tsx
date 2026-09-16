@@ -25,9 +25,7 @@ export function Finale() {
           Join the <span style={{ color: ORANGE }}>founding network.</span>
         </h2>
         <p className="text-base md:text-lg leading-relaxed max-w-2xl mx-auto mb-10" style={{ color: MUTED }}>
-          Experts, studios and gyms, open to creating together. Accounts are
-          invite-only: you apply, we read it personally, and if it fits, your
-          invitation follows. Nothing is binding from there on.
+          Experts, studios and gyms, open to creating together.
         </p>
 
         <Reveal>
