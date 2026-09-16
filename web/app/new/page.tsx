@@ -5,7 +5,6 @@ import { createAnonClient } from "@/lib/supabase/anon";
 import { createClient } from "@/lib/supabase/server";
 import { StageNav } from "@/app/landing/v3/StageNav";
 import { Hero } from "@/app/landing/v3/Hero";
-import { TwoDoors } from "@/app/landing/v3/TwoDoors";
 import { Invitation } from "@/app/landing/v3/Invitation";
 import { FoundingNetwork } from "@/app/landing/v3/FoundingNetwork";
 import { Finale } from "@/app/landing/v3/Finale";
@@ -23,11 +22,10 @@ import { Footer } from "@/app/landing/Footer";
  * sections replace the live page on the founder's word and /new goes back to
  * being a redirect, the same path the current landing took.
  *
- * The story: the dark stage with the opportunity and the network itself
- * (Hero), then two doors, one per side that can start something, and the one
- * term that belongs to a pitch (TwoDoors). Then the door into the showcase
- * (Invitation), the example itself, how joining works with what one sale is
- * worth (FoundingNetwork), one closing ask (Finale).
+ * The story: one dark stage carrying the whole pitch, what it is, who it is
+ * for, what they keep, the network and the ask (Hero). Then the door into the
+ * showcase (Invitation), the example itself, how joining works with what one
+ * sale is worth (FoundingNetwork), one closing ask (Finale).
  *
  * The showcase in the middle is shared with the live page, never forked.
  *
@@ -98,7 +96,6 @@ export default async function LandingStagingPage({
             </div>
             <div className="relative z-10">
               <Hero members={members} preview={previewMode} />
-              <TwoDoors />
             </div>
           </div>
           <Invitation />
