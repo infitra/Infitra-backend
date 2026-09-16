@@ -1,53 +1,39 @@
-import { INK, ORANGE, CYAN, MUTED } from "../ui";
+import { ORANGE } from "../ui";
 import { Reveal } from "../Reveal";
 import { AnswerIcon } from "@/app/components/FoundingCard";
 import { MarkEquation } from "./MarkEquation";
 import { SplitVisual } from "./SplitVisual";
 
 /**
- * M1b · THREE WINNERS (11 Sep 2026): the opportunity, named per side.
+ * M1b · WHO IT IS FOR (16 Sep 2026): the model, then the opportunity per side.
  *
- * Network value is combinatorial, and a list of possibilities reads as
- * vagueness. So the section SHOWS the two ways to build one first, with the
- * real faces and the real page they produce, then names the three sides that
- * come out ahead, each in its own economics: one promise and three proof
- * lines. The
- * third side, the people who join, is written as the RESULT of the first two,
- * so a studio owner reads it as "great for our members" and an expert as
- * "beyond what I could offer alone". It has no button.
+ * The page has to say whose page this is before it says how anything works,
+ * so the two sides that can start something stand next to each other with
+ * their role and their promise carrying all the weight, in their own colour:
+ * experts orange, studios and gyms cyan. The detail sits under each in a
+ * quiet container, where it is available without competing.
  *
- * The stage runs on: this section keeps the hero's dark ground, so the whole
- * model, the mark, the three sides and the terms, reads as one act before the
- * page turns light for the example. The three cards stay light, because they
- * are cards, and they carry their audience in white on a solid bar in their
- * own colour: cyan for a studio, orange for an expert, both for the people
- * who join. Everything drawn directly on the teal uses the bright cyan.
+ * The people who join are the RESULT of those two, not a third party to
+ * recruit, so they get one wide, quieter card underneath rather than a third
+ * column. Everything here stands on the stage's dark ground: no white cards,
+ * no tinted bars.
  */
-const BOTH = "linear-gradient(135deg, #FF6130 0%, #0891b2 100%)";
 const CREAM = "#F2EFE8";
 const CREAM_MUTED = "rgba(242,239,232,0.78)";
+const CREAM_SOFT = "rgba(242,239,232,0.70)";
 const CYAN_BRIGHT = "#9CF0FF";
 
-const WINNERS = [
-  {
-    key: "studios",
-    label: "For studios and gyms",
-    bar: CYAN,
-    dot: CYAN,
-    glyph: "seeks" as const,
-    promise: "A digital revenue stream you do not build, staff or carry.",
-    proof: [
-      "More for your members on top of the membership, with no hire, no fixed wage and nothing on the floor.",
-      "Bring in a new expert, or a guest, whenever it needs fresh air.",
-      "Your members stay yours, and the timetable does not move.",
-    ],
-  },
+const PANEL = {
+  backgroundColor: "rgba(242,239,232,0.05)",
+  border: "1px solid rgba(242,239,232,0.16)",
+};
+
+const SIDES = [
   {
     key: "experts",
-    label: "For experts",
-    bar: ORANGE,
-    dot: ORANGE,
+    accent: ORANGE,
     glyph: "brings" as const,
+    label: "For experts",
     promise: "New clients and a fuller offer, while you focus on your craft.",
     proof: [
       "A studio's members, without building that audience yourself.",
@@ -56,19 +42,27 @@ const WINNERS = [
     ],
   },
   {
-    key: "participants",
-    label: "For the people who join",
-    bar: BOTH,
-    dot: ORANGE,
-    glyph: "group" as const,
-    promise: "Complete guidance in one place, each part led by an expert in it.",
+    key: "studios",
+    accent: CYAN_BRIGHT,
+    glyph: "seeks" as const,
+    label: "For studios and gyms",
+    promise: "A digital revenue stream you do not build, staff or carry.",
     proof: [
-      "One experience, bought once, in one place: no more switching between apps and coaches.",
-      "More from a membership they already have, with every part at full depth.",
-      "A tribe that keeps its purpose and its momentum between the live sessions.",
+      "More for your members on top of the membership, with no hire, no fixed wage and nothing on the floor.",
+      "Bring in a new expert, or a guest, whenever it needs fresh air.",
+      "Your members stay yours, and the timetable does not move.",
     ],
   },
 ];
+
+const JOINERS = {
+  promise: "Complete guidance in one place, each part led by an expert in it.",
+  proof: [
+    "One experience, bought once, in one place: no more switching between apps and coaches.",
+    "More from a membership they already have, with every part at full depth.",
+    "A tribe that keeps its purpose and its momentum between the live sessions.",
+  ],
+};
 
 /** Three people, in the same 2.1 stroke language as the card's answer icons. */
 function GroupIcon({ color, size = 20 }: { color: string; size?: number }) {
@@ -107,52 +101,69 @@ export function ThreeWinners() {
         {/* The model first, in one picture: each side brings a part, and what
            they make together is the whole thing. */}
         <Reveal>
-          <div className="mb-10 md:mb-12">
-            <MarkEquation />
-          </div>
+          <MarkEquation />
         </Reveal>
 
+        {/* The two sides who can start one, side by side. */}
         <Reveal>
-          <div className="grid md:grid-cols-3 gap-5 items-stretch">
-            {WINNERS.map((w) => (
-              <div
-                key={w.key}
-                data-winner={w.key}
-                className="rounded-3xl flex flex-col text-left overflow-hidden"
-                style={{ backgroundColor: "#FFFFFF", boxShadow: "0 18px 50px rgba(0,0,0,0.34)" }}
-              >
-                <div className="flex items-center gap-3 px-6 md:px-7 py-5" style={{ background: w.bar }}>
-                  {w.glyph === "group" ? <GroupIcon color="#FFFFFF" size={24} /> : <AnswerIcon kind={w.glyph} color="#FFFFFF" size={24} />}
-                  <p className="text-[18px] font-headline leading-none" style={{ color: "#FFFFFF", fontWeight: 700, letterSpacing: "-0.02em" }}>
-                    {w.label}
+          <div className="grid md:grid-cols-2 gap-10 md:gap-12 mt-14 md:mt-16">
+            {SIDES.map((s) => (
+              <div key={s.key} data-winner={s.key}>
+                <div className="flex items-center gap-2.5">
+                  <AnswerIcon kind={s.glyph} color={s.accent} size={20} />
+                  <p className="text-[12px] uppercase tracking-[0.2em] font-headline" style={{ color: s.accent, fontWeight: 800 }}>
+                    {s.label}
                   </p>
                 </div>
-                <div className="px-6 md:px-7 pt-6 pb-6 flex flex-col">
-                  <h3
-                    className="text-[1.5rem] md:text-[1.7rem] font-headline tracking-tight leading-[1.15]"
-                    style={{ color: INK, fontWeight: 700, letterSpacing: "-0.025em" }}
-                  >
-                    {w.promise}
-                  </h3>
-                  <ul className="mt-6 pt-5 space-y-2.5" style={{ borderTop: "1px solid rgba(15,34,41,0.10)" }}>
-                    {w.proof.map((line) => (
-                      <li key={line} className="flex gap-2.5">
-                        <span className="mt-[7px] w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: w.dot }} />
-                        <span className="text-[13.5px] leading-snug" style={{ color: MUTED }}>
-                          {line}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                <h3
+                  className="text-[1.6rem] md:text-[1.85rem] font-headline leading-[1.12] mt-4"
+                  style={{ color: s.accent, fontWeight: 700, letterSpacing: "-0.025em" }}
+                >
+                  {s.promise}
+                </h3>
+                <ul className="mt-6 rounded-2xl p-5 space-y-3" style={PANEL}>
+                  {s.proof.map((line) => (
+                    <li key={line} className="flex gap-2.5">
+                      <span className="mt-[7px] w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: s.accent }} />
+                      <span className="text-[13.5px] leading-snug" style={{ color: CREAM_SOFT }}>
+                        {line}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
               </div>
             ))}
           </div>
         </Reveal>
 
+        {/* And what that produces for the people it is all for. */}
+        <Reveal>
+          <div data-winner="participants" className="mt-8 md:mt-10 rounded-2xl p-5 sm:p-6" style={PANEL}>
+            <div className="flex items-center gap-2.5">
+              <GroupIcon color={CREAM} size={18} />
+              <p className="text-[12px] uppercase tracking-[0.2em] font-headline" style={{ color: CREAM, fontWeight: 800 }}>
+                For the people who join
+              </p>
+            </div>
+            <p className="text-[1.1rem] md:text-[1.25rem] font-headline leading-snug mt-3" style={{ color: CREAM, fontWeight: 600, letterSpacing: "-0.02em" }}>
+              {JOINERS.promise}
+            </p>
+            <ul className="mt-4 grid sm:grid-cols-3 gap-x-7 gap-y-2.5">
+              {JOINERS.proof.map((line) => (
+                <li key={line} className="flex gap-2.5">
+                  <span className="mt-[7px] w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: "rgba(242,239,232,0.45)" }} />
+                  <span className="text-[13px] leading-snug" style={{ color: CREAM_SOFT }}>
+                    {line}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </Reveal>
+
         {/* What one sale is worth to them, and what they give up: nothing. */}
         <Reveal>
-          <div className="mt-10 md:mt-12">
+          <div className="mt-12 md:mt-14">
             <SplitVisual />
           </div>
         </Reveal>

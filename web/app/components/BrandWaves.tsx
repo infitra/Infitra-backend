@@ -110,26 +110,3 @@ export function StageWaves({ id, fit = "none" }: { id: string; fit?: "none" | "s
     </svg>
   );
 }
-
-/**
- * The waves as LIGHT AND SHADOW, for shapes the size of a logo mark. Two of
- * the same paths, one lifting the surface and one dropping it, so the brand's
- * bands sweep visibly across a mark while the colour under them stays exactly
- * the brand gradient. Squeezed rather than cropped ("none"), because a mark
- * is small and the point is to see the band edges cross it. Filling the shape
- * with the wave field itself only greys it: that field's middle is white, and
- * at this size the middle is all there is.
- */
-export function MarkWaves() {
-  const svg = "absolute inset-0 w-full h-full";
-  return (
-    <>
-      <svg viewBox="0 0 1600 1000" preserveAspectRatio="none" className={svg} aria-hidden>
-        <path d={PATH_2} fill="#0C262E" fillOpacity="0.16" />
-      </svg>
-      <svg viewBox="0 0 1600 1000" preserveAspectRatio="none" className={svg} aria-hidden>
-        <path d={PATH_1} fill="#FFFFFF" fillOpacity="0.20" />
-      </svg>
-    </>
-  );
-}

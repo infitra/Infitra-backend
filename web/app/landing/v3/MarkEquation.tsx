@@ -1,26 +1,25 @@
 import { ORANGE } from "../ui";
-import { MarkWaves } from "@/app/components/BrandWaves";
 
 /**
  * THE MARK, TAKEN APART (16 Sep 2026): the model in one picture.
  *
- * Two people bring one part each, and what they make together is the whole
+ * Two sides bring one part each, and what they make together is the whole
  * thing. The brand's own mark says that better than any diagram: each side is
- * literally a piece of it, and the two pieces are the INFITRA mark. Two rows,
- * two different cuts of the same mark, one result: whichever way in you take,
- * you end up at the same whole.
+ * literally a piece of it. Two rows, two different cuts of the same mark, one
+ * result: whichever way in you take, you end up at the same whole.
  *
- * The pieces are drawn by masking a brand colour through each part's alpha,
- * the way the founding mark is drawn. The whole is masked the same way, but
- * what shows through it is the brand waves themselves: the thing they make
- * wears the brand, the parts only carry its colours.
+ * The parts are OUTLINED and the whole is filled, so the weight of each row
+ * sits on the role and on the result rather than on the shapes. The outline
+ * is the mark drawn in the ground colour with the accent pushed out around it
+ * from four sides, which gives an even rim on a shape we only have as an
+ * image.
  *
- * On the dark stage, cyan is the bright one. Colour here means the two halves
- * of a collaboration; a studio keeps the cyan it wears everywhere else.
+ * Colour is the page's role code: experts orange, studios and gyms cyan.
  */
-const CREAM_MUTED = "rgba(242,239,232,0.72)";
 const CREAM = "#F2EFE8";
+const CREAM_MUTED = "rgba(242,239,232,0.72)";
 const CYAN_BRIGHT = "#9CF0FF";
+const TEAL = "#0C262E";
 
 const MASK = (src: string) => ({
   WebkitMaskImage: `url(${src})`,
@@ -33,14 +32,23 @@ const MASK = (src: string) => ({
   maskPosition: "center",
 });
 
+const rim = (color: string, w: number) =>
+  [
+    `drop-shadow(${w}px 0 0 ${color})`,
+    `drop-shadow(-${w}px 0 0 ${color})`,
+    `drop-shadow(0 ${w}px 0 ${color})`,
+    `drop-shadow(0 -${w}px 0 ${color})`,
+  ].join(" ");
+
 function Piece({ src, color, label }: { src: string; color: string; label: string }) {
   return (
     <div className="w-[82px] sm:w-[150px] flex flex-col items-center text-center">
-      <span
-        aria-hidden
-        className="block w-[54px] h-[54px] sm:w-[94px] sm:h-[94px]"
-        style={{ backgroundColor: color, ...MASK(src) }}
-      />
+      <span aria-hidden className="block" style={{ filter: rim(color, 2) }}>
+        <span
+          className="block w-[54px] h-[54px] sm:w-[94px] sm:h-[94px]"
+          style={{ backgroundColor: TEAL, ...MASK(src) }}
+        />
+      </span>
       <p
         className="text-[15px] sm:text-[19px] font-headline leading-tight mt-4"
         style={{ color, fontWeight: 700, letterSpacing: "-0.02em" }}
@@ -63,26 +71,19 @@ function Op({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** The whole mark, with the brand's own waves running through it. */
+/** The whole, filled: one thing, in the brand's two colours. The handover is
+ *  fast because cyan and orange meet in mud if you let them interpolate. */
 function Whole() {
   return (
     <div className="w-[108px] sm:w-[186px] flex flex-col items-center text-center">
       <span
         aria-hidden
-        className="relative block w-[76px] h-[54px] sm:w-[133px] sm:h-[94px] overflow-hidden"
-        style={MASK("/founding-mark.png")}
-      >
-        {/* The brand gradient, with the brand's own wave paths crossing it as
-           light. Two things turn a mark like this grey: filling it with the
-           wave field, whose middle is white, and letting cyan interpolate
-           into orange, which meets in mud. Hence the fast handover. The experience is one thing, so the whole sweeps rather
-           than showing its two parts. */}
-        <span
-          className="absolute inset-0"
-          style={{ background: `linear-gradient(45deg, ${CYAN_BRIGHT} 0%, ${CYAN_BRIGHT} 44%, ${ORANGE} 56%, ${ORANGE} 100%)` }}
-        />
-        <MarkWaves />
-      </span>
+        className="block w-[76px] h-[54px] sm:w-[133px] sm:h-[94px]"
+        style={{
+          background: `linear-gradient(45deg, ${CYAN_BRIGHT} 0%, ${CYAN_BRIGHT} 44%, ${ORANGE} 56%, ${ORANGE} 100%)`,
+          ...MASK("/founding-mark.png"),
+        }}
+      />
       <p className="text-[15px] sm:text-[19px] font-headline leading-tight mt-4" style={{ color: CREAM, fontWeight: 700, letterSpacing: "-0.02em" }}>
         One live experience
       </p>
@@ -97,7 +98,7 @@ const ROWS = [
   {
     key: "expert-expert",
     a: { src: "/mark/mark-first.png", color: ORANGE, label: "Expert" },
-    b: { src: "/mark/mark-second.png", color: CYAN_BRIGHT, label: "Complementary expert" },
+    b: { src: "/mark/mark-second.png", color: ORANGE, label: "Complementary expert" },
   },
   {
     key: "studio-expert",
@@ -109,14 +110,14 @@ const ROWS = [
 export function MarkEquation() {
   return (
     <div>
-      <p className="text-[10px] uppercase tracking-[0.25em] font-headline text-center" style={{ color: CYAN_BRIGHT, fontWeight: 700 }}>
+      <p className="text-[10px] uppercase tracking-[0.25em] font-headline text-center" style={{ color: CREAM_MUTED, fontWeight: 700 }}>
         Two ways in
       </p>
 
       <div className="mt-7 flex flex-col gap-7 sm:gap-8">
         {ROWS.map((r, i) => (
           <div key={r.key} data-shape={r.key}>
-            {i > 0 && <div className="mb-7 sm:mb-8 max-w-2xl mx-auto" style={{ borderTop: "1px solid rgba(242,239,232,0.14)" }} />}
+            {i > 0 && <div className="mb-7 sm:mb-8 max-w-2xl mx-auto" style={{ borderTop: "1px solid rgba(242,239,232,0.16)" }} />}
             <div className="flex items-start justify-center gap-1.5 sm:gap-6">
               <Piece {...r.a} />
               <Op>&times;</Op>
