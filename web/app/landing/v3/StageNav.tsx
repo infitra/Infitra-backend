@@ -86,7 +86,17 @@ export function StageNav() {
             style={
               solid
                 ? { color: INK, border: "1px solid rgba(15,34,41,0.28)", backgroundColor: "rgba(255,255,255,0.55)" }
-                : { color: CREAM, border: "1px solid rgba(242,239,232,0.45)", backgroundColor: "rgba(242,239,232,0.08)" }
+                : {
+                    // The stage is not all dark: the card band scrolls under
+                    // this bar. A teal fill, the same one the band's arrows
+                    // wear, keeps cream type legible over a cream card and
+                    // still reads as almost nothing over the stage itself.
+                    color: CREAM,
+                    border: "1px solid rgba(242,239,232,0.45)",
+                    backgroundColor: "rgba(12,38,46,0.55)",
+                    backdropFilter: "blur(6px)",
+                    WebkitBackdropFilter: "blur(6px)",
+                  }
             }
           >
             Sign in
