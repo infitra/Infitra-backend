@@ -1,7 +1,8 @@
 import { INK, ORANGE, CYAN, MUTED, SectionHead } from "../ui";
 import { Reveal } from "../Reveal";
 import { AnswerIcon } from "@/app/components/FoundingCard";
-import { Circuit } from "./Circuit";
+import { MarkEquation } from "./MarkEquation";
+import { SplitVisual } from "./SplitVisual";
 
 /**
  * M1b · THREE WINNERS (11 Sep 2026): the opportunity, named per side.
@@ -27,10 +28,8 @@ const BOTH = "linear-gradient(135deg, #FF6130 0%, #0891b2 100%)";
 const WINNERS = [
   {
     key: "studios",
-    label: "Studios and gyms",
-    labelColor: CYAN,
-    disc: CYAN,
-    tint: "rgba(8,145,178,0.09)",
+    label: "For studios and gyms",
+    bar: CYAN,
     ring: "rgba(8,145,178,0.30)",
     glow: "rgba(8,145,178,0.10)",
     dot: CYAN,
@@ -44,10 +43,8 @@ const WINNERS = [
   },
   {
     key: "experts",
-    label: "Experts",
-    labelColor: ORANGE,
-    disc: ORANGE,
-    tint: "rgba(255,97,48,0.09)",
+    label: "For experts",
+    bar: ORANGE,
     ring: "rgba(255,97,48,0.30)",
     glow: "rgba(255,97,48,0.10)",
     dot: ORANGE,
@@ -61,10 +58,8 @@ const WINNERS = [
   },
   {
     key: "participants",
-    label: "The people who join",
-    labelColor: CYAN,
-    disc: BOTH,
-    tint: "linear-gradient(135deg, rgba(255,97,48,0.08) 0%, rgba(8,145,178,0.08) 100%)",
+    label: "For the people who join",
+    bar: BOTH,
     ring: "rgba(15,34,41,0.10)",
     glow: "rgba(8,145,178,0.08)",
     dot: ORANGE,
@@ -102,11 +97,11 @@ export function ThreeWinners() {
           sub="Either way, three sides come out ahead."
         />
 
-        {/* The dynamic first: who joins whom, what they make, who it reaches,
-           and what comes back. The cards below say what each side gets. */}
+        {/* The model first, in one picture: each side brings a part, and what
+           they make together is the whole thing. */}
         <Reveal>
           <div className="mb-10 md:mb-12">
-            <Circuit />
+            <MarkEquation />
           </div>
         </Reveal>
 
@@ -119,11 +114,9 @@ export function ThreeWinners() {
                 className="rounded-3xl flex flex-col text-left overflow-hidden"
                 style={{ backgroundColor: "#FFFFFF", boxShadow: `0 0 0 1.5px ${w.ring}, 0 20px 50px ${w.glow}` }}
               >
-                <div className="flex items-center gap-3 px-6 md:px-7 py-4" style={{ background: w.tint }}>
-                  <span className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ background: w.disc }}>
-                    {w.glyph === "group" ? <GroupIcon color="#FFFFFF" /> : <AnswerIcon kind={w.glyph} color="#FFFFFF" />}
-                  </span>
-                  <p className="text-[11px] uppercase tracking-[0.2em] font-headline" style={{ color: w.labelColor, fontWeight: 800 }}>
+                <div className="flex items-center gap-3 px-6 md:px-7 py-4" style={{ background: w.bar }}>
+                  {w.glyph === "group" ? <GroupIcon color="#FFFFFF" size={22} /> : <AnswerIcon kind={w.glyph} color="#FFFFFF" size={22} />}
+                  <p className="text-[15px] font-headline leading-none" style={{ color: "#FFFFFF", fontWeight: 700, letterSpacing: "-0.01em" }}>
                     {w.label}
                   </p>
                 </div>
@@ -147,6 +140,13 @@ export function ThreeWinners() {
                 </div>
               </div>
             ))}
+          </div>
+        </Reveal>
+
+        {/* What one sale is worth to them, and what they give up: nothing. */}
+        <Reveal>
+          <div className="mt-10 md:mt-12">
+            <SplitVisual />
           </div>
         </Reveal>
       </div>

@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { StageNav } from "@/app/landing/v3/StageNav";
 import { Hero } from "@/app/landing/v3/Hero";
 import { ThreeWinners } from "@/app/landing/v3/ThreeWinners";
-import { WhatItIs } from "@/app/landing/v3/WhatItIs";
+import { Invitation } from "@/app/landing/v3/Invitation";
 import { FoundingNetwork } from "@/app/landing/v3/FoundingNetwork";
 import { Finale } from "@/app/landing/v3/Finale";
 import { WhatYouCanBuild } from "@/app/landing/WhatYouCanBuild";
@@ -23,10 +23,11 @@ import { Footer } from "@/app/landing/Footer";
  * being a redirect, the same path the current landing took.
  *
  * The story: the dark stage with the opportunity, what INFITRA provides and
- * the network itself (Hero), the opportunity per side with the two shapes
- * that produce it (ThreeWinners), what an experience is and what it costs to
- * try (WhatItIs), the shared showcase as the example, how joining works with
- * the terms (FoundingNetwork), one closing ask (Finale).
+ * the network itself (Hero), then the whole model in one section: each side
+ * brings a part of the mark and together they make the whole, what each side
+ * gets, and what one sale is worth to them (ThreeWinners). Then the door into
+ * the showcase (Invitation), the example itself, how joining works with the
+ * terms (FoundingNetwork), one closing ask (Finale).
  *
  * The showcase in the middle is shared with the live page, never forked.
  *
@@ -89,7 +90,7 @@ export default async function LandingStagingPage({
         <main>
           <Hero members={members} preview={previewMode} />
           <ThreeWinners />
-          <WhatItIs />
+          <Invitation />
           <WhatYouCanBuild />
           <HowItWorks />
           <LiveWeek />
