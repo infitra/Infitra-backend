@@ -3,61 +3,61 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+/**
+ * The landing's nav.
+ *
+ * The bar takes its tone from whatever is actually behind it, sampled under
+ * its own bottom edge on every scroll. A cream bar is right over the cream
+ * page and turns into a grey slab the moment a dark chapter passes beneath
+ * it, and this page alternates dark and light several times, including inside
+ * the shared showcase, which this file cannot annotate. Sampling is the only
+ * version that stays right everywhere.
+ *
+ * The ask appears once the stage's own button has scrolled away, and it sits
+ * directly beside Sign in at the outer edge, so the bar reads as one group
+ * rather than three things spread across the width.
+ */
 const INK = "#0F2229";
 const CREAM = "#F2EFE8";
 
-/**
- * The landing's nav, taught about the dark stage.
- *
- * The cream blur bar is right for the light page and wrong across the top of
- * the dark hero, where it reads as a pale stripe cutting the stage. So the
- * bar is transparent while the stage is on screen and fades its cream layer
- * in once the hero has scrolled past.
- *
- * At the same moment it picks up the ask. The stage puts its button after the
- * faces, which is the right story order and costs the button its place above
- * the fold, so from the moment the stage is behind the reader the bar carries
- * it instead: the ask is never off screen again. Sign in sits at the outer
- * edge and the ask appears inside it, so the bar looks settled both before
- * and after. Sign in is an outlined pill that reads on either ground,
- * present but not competing: the orange belongs to the one action that
- * matters.
- *
- * Scroll thresholds rather than an observer: deterministic, verifiable
- * without a paint, and degrading to the cream bar on any page with no stage.
- * Sections that carry the dark ground mark themselves [data-dark], so the bar
- * knows where the dark actually ends rather than assuming it ends with the
- * hero.
- */
 export function StageNav() {
-  const [solid, setSolid] = useState(false);
+  const [dark, setDark] = useState(true);
   const [asking, setAsking] = useState(false);
 
   useEffect(() => {
     const stage = document.getElementById("stage");
-    if (!stage) {
-      setSolid(true);
-      setAsking(true);
-      return;
-    }
-    // Two edges, because the dark run is longer than the stage. The bar stays
-    // transparent while any dark section is under it, and the ask appears as
-    // soon as the stage's own button has scrolled away.
-    const darks = document.querySelectorAll("[data-dark]");
-    const lastDark = (darks[darks.length - 1] as HTMLElement | undefined) ?? stage;
-    const edge = (el: HTMLElement) => el.getBoundingClientRect().bottom + window.scrollY - 56;
-    let darkEnds = edge(lastDark);
-    let stageEnds = edge(stage);
+
+    /** What is under the bar right now: walk up from the point just below it
+     *  to the first element that actually paints a background. */
+    const tone = () => {
+      const el = document.elementFromPoint(Math.round(window.innerWidth / 2), 72);
+      let node: Element | null = el;
+      while (node) {
+        const parts = getComputedStyle(node).backgroundColor.match(/[\d.]+/g);
+        if (parts && parts.length >= 3) {
+          const [r, g, b] = parts.map(Number);
+          const a = parts.length > 3 ? Number(parts[3]) : 1;
+          if (a > 0.5) {
+            setDark((0.299 * r + 0.587 * g + 0.114 * b) / 255 < 0.5);
+            return;
+          }
+        }
+        node = node.parentElement;
+      }
+    };
+
+    const edge = () => (stage ? stage.getBoundingClientRect().bottom + window.scrollY - 56 : 0);
+    let stageEnds = edge();
+
     const onScroll = () => {
-      const y = window.scrollY;
-      setSolid(y > darkEnds);
-      setAsking(y > stageEnds);
+      setAsking(!stage || window.scrollY > stageEnds);
+      tone();
     };
     const onResize = () => {
-      darkEnds = edge(lastDark);
-      stageEnds = edge(stage);
+      stageEnds = edge();
       onScroll();
     };
+
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onResize);
@@ -74,12 +74,11 @@ export function StageNav() {
         style={{
           position: "absolute",
           inset: 0,
-          background: "rgba(242, 239, 232, 0.55)",
+          background: dark ? "rgba(12, 38, 46, 0.72)" : "rgba(242, 239, 232, 0.62)",
           backdropFilter: "blur(20px) saturate(1.2)",
           WebkitBackdropFilter: "blur(20px) saturate(1.2)",
-          borderBottom: "1px solid rgba(255, 255, 255, 0.25)",
-          opacity: solid ? 1 : 0,
-          transition: "opacity 260ms ease",
+          borderBottom: dark ? "1px solid rgba(242,239,232,0.10)" : "1px solid rgba(255, 255, 255, 0.25)",
+          transition: "background 260ms ease, border-color 260ms ease",
           pointerEvents: "none",
         }}
       />
@@ -94,7 +93,8 @@ export function StageNav() {
             INFITRA
           </span>
         </Link>
-        <div className="flex items-center gap-4 sm:gap-6">
+
+        <div className="flex items-center gap-3 sm:gap-4">
           <Link
             href="/apply"
             aria-hidden={!asking}
@@ -105,28 +105,18 @@ export function StageNav() {
             <span className="sm:hidden">Join</span>
             <span className="hidden sm:inline">Join the founding network</span>
           </Link>
-        </div>
           <Link
             href="/login"
             className="px-4 py-2 rounded-full text-[11px] sm:text-xs font-headline font-bold uppercase tracking-widest whitespace-nowrap transition-colors duration-300"
             style={
-              solid
-                ? { color: INK, border: "1px solid rgba(15,34,41,0.28)", backgroundColor: "rgba(255,255,255,0.55)" }
-                : {
-                    // The stage is not all dark: the card band scrolls under
-                    // this bar. A teal fill, the same one the band's arrows
-                    // wear, keeps cream type legible over a cream card and
-                    // still reads as almost nothing over the stage itself.
-                    color: CREAM,
-                    border: "1px solid rgba(242,239,232,0.45)",
-                    backgroundColor: "rgba(12,38,46,0.55)",
-                    backdropFilter: "blur(6px)",
-                    WebkitBackdropFilter: "blur(6px)",
-                  }
+              dark
+                ? { color: CREAM, border: "1px solid rgba(242,239,232,0.45)" }
+                : { color: INK, border: "1px solid rgba(15,34,41,0.28)" }
             }
           >
             Sign in
           </Link>
+        </div>
       </div>
     </nav>
   );
