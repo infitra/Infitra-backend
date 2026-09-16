@@ -170,7 +170,11 @@ export function ExperienceChips() {
           className="rounded-2xl p-3.5 flex flex-col"
           style={{ backgroundColor: PAPER, boxShadow: `0 0 0 1px ${HAIR}, 0 12px 32px rgba(15,34,41,0.07)` }}
         >
-          <div className="mb-3.5">{c.media}</div>
+          {/* One height for all three, so the labels start on the same line
+             whatever shape the surface underneath is. */}
+          <div className="mb-3.5 h-[188px] flex items-center">
+            <div className="w-full">{c.media}</div>
+          </div>
           <p className="text-[14px] font-headline" style={{ color: INK, fontWeight: 700, letterSpacing: "-0.01em" }}>
             {c.label}
           </p>
