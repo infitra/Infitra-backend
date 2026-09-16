@@ -1,6 +1,5 @@
 import type { FoundingMember } from "@/app/components/FoundingCard";
 import { FoundingCard } from "@/app/components/FoundingCard";
-import { StageWaves } from "@/app/components/BrandWaves";
 import { ApplyCTA } from "../ui";
 import { HeroCards } from "./HeroCards";
 
@@ -28,7 +27,6 @@ const CREAM_MUTED = "rgba(242,239,232,0.78)";
 const CREAM_FAINT = "rgba(242,239,232,0.5)";
 const CYAN_BRIGHT = "#9CF0FF";
 const ORANGE = "#FF6130";
-const TEAL = "#0C262E";
 
 function Pill() {
   return (
@@ -118,14 +116,8 @@ export function Hero({ members, preview }: { members: FoundingMember[]; preview:
     // taller vh box hidden behind the URL bar.
     <section
       id="stage"
-      data-dark
-      className={`relative overflow-hidden min-h-svh flex flex-col justify-center ${showCards ? "pt-20 pb-14" : "pt-28 pb-16"}`}
-      style={{ backgroundColor: TEAL }}
+      className={`relative min-h-svh flex flex-col justify-center ${showCards ? "pt-20 pb-14" : "pt-28 pb-16"}`}
     >
-      <div className="absolute inset-0 pointer-events-none" aria-hidden>
-        <StageWaves id="stage" />
-      </div>
-
       <div className="relative z-10 w-full">
         {showCards ? (
           <>

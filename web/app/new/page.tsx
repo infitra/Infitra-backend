@@ -1,4 +1,5 @@
 import { WaveFlowingBackground } from "@/app/components/WaveFlowingBackground";
+import { StageWaves } from "@/app/components/BrandWaves";
 import type { FoundingMember } from "@/app/components/FoundingCard";
 import { createAnonClient } from "@/lib/supabase/anon";
 import { createClient } from "@/lib/supabase/server";
@@ -88,8 +89,19 @@ export default async function LandingStagingPage({
         <StageNav />
 
         <main>
-          <Hero members={members} preview={previewMode} />
-          <ThreeWinners />
+          {/* One sky over the opening and the model: the stage and the
+             section that explains it share a single dark ground and a single
+             wave field, so there is no seam between them. The bar watches
+             [data-dark] to know where the run ends. */}
+          <div data-dark className="relative overflow-hidden" style={{ backgroundColor: "#0C262E" }}>
+            <div className="absolute inset-0 pointer-events-none" aria-hidden>
+              <StageWaves id="stage" fit="slice" />
+            </div>
+            <div className="relative z-10">
+              <Hero members={members} preview={previewMode} />
+              <ThreeWinners />
+            </div>
+          </div>
           <Invitation />
           <WhatYouCanBuild />
           <HowItWorks />

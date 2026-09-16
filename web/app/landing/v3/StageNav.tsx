@@ -17,9 +17,11 @@ const CREAM = "#F2EFE8";
  * At the same moment it picks up the ask. The stage puts its button after the
  * faces, which is the right story order and costs the button its place above
  * the fold, so from the moment the stage is behind the reader the bar carries
- * it instead: the ask is never off screen again. Sign in is an outlined pill
- * that reads on either ground, present but not competing: the orange belongs
- * to the one action that matters.
+ * it instead: the ask is never off screen again. Sign in sits at the outer
+ * edge and the ask appears inside it, so the bar looks settled both before
+ * and after. Sign in is an outlined pill that reads on either ground,
+ * present but not competing: the orange belongs to the one action that
+ * matters.
  *
  * Scroll thresholds rather than an observer: deterministic, verifiable
  * without a paint, and degrading to the cream bar on any page with no stage.
@@ -94,6 +96,17 @@ export function StageNav() {
         </Link>
         <div className="flex items-center gap-4 sm:gap-6">
           <Link
+            href="/apply"
+            aria-hidden={!asking}
+            tabIndex={asking ? undefined : -1}
+            className={`px-4 sm:px-5 py-2 rounded-full text-xs font-headline font-bold text-white uppercase tracking-widest whitespace-nowrap transition-opacity duration-300 ${asking ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+            style={{ backgroundColor: "#FF6130", boxShadow: "0 2px 8px rgba(255,97,48,0.3)" }}
+          >
+            <span className="sm:hidden">Join</span>
+            <span className="hidden sm:inline">Join the founding network</span>
+          </Link>
+        </div>
+          <Link
             href="/login"
             className="px-4 py-2 rounded-full text-[11px] sm:text-xs font-headline font-bold uppercase tracking-widest whitespace-nowrap transition-colors duration-300"
             style={
@@ -114,17 +127,6 @@ export function StageNav() {
           >
             Sign in
           </Link>
-          <Link
-            href="/apply"
-            aria-hidden={!asking}
-            tabIndex={asking ? undefined : -1}
-            className={`px-4 sm:px-5 py-2 rounded-full text-xs font-headline font-bold text-white uppercase tracking-widest whitespace-nowrap transition-opacity duration-300 ${asking ? "opacity-100" : "opacity-0 pointer-events-none"}`}
-            style={{ backgroundColor: "#FF6130", boxShadow: "0 2px 8px rgba(255,97,48,0.3)" }}
-          >
-            <span className="sm:hidden">Join</span>
-            <span className="hidden sm:inline">Join the founding network</span>
-          </Link>
-        </div>
       </div>
     </nav>
   );

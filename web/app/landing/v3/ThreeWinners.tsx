@@ -1,5 +1,4 @@
 import { INK, ORANGE, CYAN, MUTED } from "../ui";
-import { StageWaves } from "@/app/components/BrandWaves";
 import { Reveal } from "../Reveal";
 import { AnswerIcon } from "@/app/components/FoundingCard";
 import { MarkEquation } from "./MarkEquation";
@@ -25,7 +24,6 @@ import { SplitVisual } from "./SplitVisual";
  * who join. Everything drawn directly on the teal uses the bright cyan.
  */
 const BOTH = "linear-gradient(135deg, #FF6130 0%, #0891b2 100%)";
-const TEAL = "#0C262E";
 const CREAM = "#F2EFE8";
 const CREAM_MUTED = "rgba(242,239,232,0.78)";
 const CYAN_BRIGHT = "#9CF0FF";
@@ -88,16 +86,8 @@ function GroupIcon({ color, size = 20 }: { color: string; size?: number }) {
 
 export function ThreeWinners() {
   return (
-    <section
-      id="winners"
-      data-dark
-      className="relative overflow-hidden px-6 pt-20 md:pt-24 pb-20 md:pb-24"
-      style={{ backgroundColor: TEAL }}
-    >
-      <div className="absolute inset-0 pointer-events-none" aria-hidden>
-        <StageWaves id="winners" />
-      </div>
-      <div className="relative z-10 max-w-5xl mx-auto">
+    <section id="winners" className="relative px-6 pt-10 md:pt-14 pb-20 md:pb-24">
+      <div className="max-w-5xl mx-auto">
         <div className="text-center max-w-3xl mx-auto mb-12 md:mb-16">
           <p className="text-[10px] uppercase tracking-[0.25em] font-headline mb-3" style={{ color: CYAN_BRIGHT, fontWeight: 700 }}>
             Who it is for
@@ -109,7 +99,8 @@ export function ThreeWinners() {
             One experience, <span style={{ color: ORANGE }}>three winners.</span>
           </h2>
           <p className="text-base md:text-lg mt-5 leading-relaxed max-w-2xl mx-auto" style={{ color: CREAM_MUTED }}>
-            Either way, three sides come out ahead.
+            Experts, studios and gyms, and the people who join. Either way,
+            three sides come out ahead.
           </p>
         </div>
 
@@ -130,24 +121,24 @@ export function ThreeWinners() {
                 className="rounded-3xl flex flex-col text-left overflow-hidden"
                 style={{ backgroundColor: "#FFFFFF", boxShadow: "0 18px 50px rgba(0,0,0,0.34)" }}
               >
-                <div className="flex items-center gap-3 px-6 md:px-7 py-4" style={{ background: w.bar }}>
-                  {w.glyph === "group" ? <GroupIcon color="#FFFFFF" size={22} /> : <AnswerIcon kind={w.glyph} color="#FFFFFF" size={22} />}
-                  <p className="text-[15px] font-headline leading-none" style={{ color: "#FFFFFF", fontWeight: 700, letterSpacing: "-0.01em" }}>
+                <div className="flex items-center gap-3 px-6 md:px-7 py-5" style={{ background: w.bar }}>
+                  {w.glyph === "group" ? <GroupIcon color="#FFFFFF" size={24} /> : <AnswerIcon kind={w.glyph} color="#FFFFFF" size={24} />}
+                  <p className="text-[18px] font-headline leading-none" style={{ color: "#FFFFFF", fontWeight: 700, letterSpacing: "-0.02em" }}>
                     {w.label}
                   </p>
                 </div>
-                <div className="px-6 md:px-7 pt-5 pb-6 flex flex-col">
+                <div className="px-6 md:px-7 pt-6 pb-6 flex flex-col">
                   <h3
-                    className="text-[1.35rem] md:text-2xl font-headline tracking-tight leading-tight"
-                    style={{ color: INK, fontWeight: 700, letterSpacing: "-0.02em" }}
+                    className="text-[1.5rem] md:text-[1.7rem] font-headline tracking-tight leading-[1.15]"
+                    style={{ color: INK, fontWeight: 700, letterSpacing: "-0.025em" }}
                   >
                     {w.promise}
                   </h3>
-                  <ul className="mt-4 space-y-2">
+                  <ul className="mt-6 pt-5 space-y-2.5" style={{ borderTop: "1px solid rgba(15,34,41,0.10)" }}>
                     {w.proof.map((line) => (
                       <li key={line} className="flex gap-2.5">
-                        <span className="mt-[8px] w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: w.dot }} />
-                        <span className="text-[14.5px] leading-snug" style={{ color: MUTED }}>
+                        <span className="mt-[7px] w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: w.dot }} />
+                        <span className="text-[13.5px] leading-snug" style={{ color: MUTED }}>
                           {line}
                         </span>
                       </li>

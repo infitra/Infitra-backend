@@ -79,11 +79,18 @@ export function CardWaves({ id }: { id: string }) {
 /**
  * The dark stage: two of the same bands, gradients pulled right down so the
  * teal ground stays dominant. Stretched ("none") because a stage is wide and
- * shallow and the bands should sweep across it, not crop to a corner.
+ * shallow and the bands should sweep across it; "slice" keeps the bands at
+ * their own angle where the ground runs tall, which is what a run of sections
+ * under one sky needs.
  */
-export function StageWaves({ id }: { id: string }) {
+export function StageWaves({ id, fit = "none" }: { id: string; fit?: "none" | "slice" }) {
   return (
-    <svg viewBox="0 0 1600 1000" preserveAspectRatio="none" className="absolute inset-0 w-full h-full" aria-hidden>
+    <svg
+      viewBox="0 0 1600 1000"
+      preserveAspectRatio={fit === "slice" ? "xMidYMid slice" : "none"}
+      className="absolute inset-0 w-full h-full"
+      aria-hidden
+    >
       <defs>
         <linearGradient id={`${id}-d1`} x1="0%" y1="100%" x2="100%" y2="0%">
           <stop offset="0%" stopColor={CYAN_BRIGHT} stopOpacity="0.10" />
@@ -101,5 +108,28 @@ export function StageWaves({ id }: { id: string }) {
       <path d={PATH_1} fill={`url(#${id}-d1)`} />
       <path d={PATH_3} fill={`url(#${id}-d2)`} />
     </svg>
+  );
+}
+
+/**
+ * The waves as LIGHT AND SHADOW, for shapes the size of a logo mark. Two of
+ * the same paths, one lifting the surface and one dropping it, so the brand's
+ * bands sweep visibly across a mark while the colour under them stays exactly
+ * the brand gradient. Squeezed rather than cropped ("none"), because a mark
+ * is small and the point is to see the band edges cross it. Filling the shape
+ * with the wave field itself only greys it: that field's middle is white, and
+ * at this size the middle is all there is.
+ */
+export function MarkWaves() {
+  const svg = "absolute inset-0 w-full h-full";
+  return (
+    <>
+      <svg viewBox="0 0 1600 1000" preserveAspectRatio="none" className={svg} aria-hidden>
+        <path d={PATH_2} fill="#0C262E" fillOpacity="0.16" />
+      </svg>
+      <svg viewBox="0 0 1600 1000" preserveAspectRatio="none" className={svg} aria-hidden>
+        <path d={PATH_1} fill="#FFFFFF" fillOpacity="0.20" />
+      </svg>
+    </>
   );
 }

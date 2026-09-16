@@ -1,5 +1,5 @@
 import { ORANGE } from "../ui";
-import { CardWaves } from "@/app/components/BrandWaves";
+import { MarkWaves } from "@/app/components/BrandWaves";
 
 /**
  * THE MARK, TAKEN APART (16 Sep 2026): the model in one picture.
@@ -41,7 +41,10 @@ function Piece({ src, color, label }: { src: string; color: string; label: strin
         className="block w-[54px] h-[54px] sm:w-[94px] sm:h-[94px]"
         style={{ backgroundColor: color, ...MASK(src) }}
       />
-      <p className="text-[11px] sm:text-[13px] leading-snug mt-3.5" style={{ color: CREAM_MUTED }}>
+      <p
+        className="text-[15px] sm:text-[19px] font-headline leading-tight mt-4"
+        style={{ color, fontWeight: 700, letterSpacing: "-0.02em" }}
+      >
         {label}
       </p>
     </div>
@@ -61,7 +64,7 @@ function Op({ children }: { children: React.ReactNode }) {
 }
 
 /** The whole mark, with the brand's own waves running through it. */
-function Whole({ id }: { id: string }) {
+function Whole() {
   return (
     <div className="w-[108px] sm:w-[186px] flex flex-col items-center text-center">
       <span
@@ -69,21 +72,21 @@ function Whole({ id }: { id: string }) {
         className="relative block w-[76px] h-[54px] sm:w-[133px] sm:h-[94px] overflow-hidden"
         style={MASK("/founding-mark.png")}
       >
-        {/* The brand colours carry it, the real waves run across them: the
-           wave field's own middle is a pale band, which at this size would
-           wash the mark out on its own. */}
+        {/* The brand gradient, with the brand's own wave paths crossing it as
+           light. Two things turn a mark like this grey: filling it with the
+           wave field, whose middle is white, and letting cyan interpolate
+           into orange, which meets in mud. Hence the fast handover. The experience is one thing, so the whole sweeps rather
+           than showing its two parts. */}
         <span
           className="absolute inset-0"
-          style={{ background: `linear-gradient(115deg, ${ORANGE} 0%, ${ORANGE} 46%, ${CYAN_BRIGHT} 54%, ${CYAN_BRIGHT} 100%)` }}
+          style={{ background: `linear-gradient(45deg, ${CYAN_BRIGHT} 0%, ${CYAN_BRIGHT} 44%, ${ORANGE} 56%, ${ORANGE} 100%)` }}
         />
-        <span className="absolute inset-0" style={{ opacity: 0.38 }}>
-          <CardWaves id={id} />
-        </span>
+        <MarkWaves />
       </span>
-      <p className="text-[12.5px] sm:text-[15px] font-headline leading-snug mt-3.5" style={{ color: CREAM, fontWeight: 700, letterSpacing: "-0.02em" }}>
+      <p className="text-[15px] sm:text-[19px] font-headline leading-tight mt-4" style={{ color: CREAM, fontWeight: 700, letterSpacing: "-0.02em" }}>
         One live experience
       </p>
-      <p className="text-[10.5px] sm:text-[11.5px] leading-snug mt-0.5" style={{ color: CREAM_MUTED }}>
+      <p className="text-[11px] sm:text-[12.5px] leading-snug mt-1" style={{ color: CREAM_MUTED }}>
         for the people who join
       </p>
     </div>
@@ -93,15 +96,13 @@ function Whole({ id }: { id: string }) {
 const ROWS = [
   {
     key: "expert-expert",
-    id: "whole-a",
-    a: { src: "/mark/mark-first.png", color: ORANGE, label: "An expert" },
-    b: { src: "/mark/mark-second.png", color: CYAN_BRIGHT, label: "A complementary expert" },
+    a: { src: "/mark/mark-first.png", color: ORANGE, label: "Expert" },
+    b: { src: "/mark/mark-second.png", color: CYAN_BRIGHT, label: "Complementary expert" },
   },
   {
     key: "studio-expert",
-    id: "whole-b",
-    a: { src: "/mark/mark-ends.png", color: CYAN_BRIGHT, label: "A studio or gym" },
-    b: { src: "/mark/mark-middle.png", color: ORANGE, label: "An outside expert" },
+    a: { src: "/mark/mark-ends.png", color: CYAN_BRIGHT, label: "Studio or gym" },
+    b: { src: "/mark/mark-middle.png", color: ORANGE, label: "Outside expert" },
   },
 ];
 
@@ -121,7 +122,7 @@ export function MarkEquation() {
               <Op>&times;</Op>
               <Piece {...r.b} />
               <Op>=</Op>
-              <Whole id={r.id} />
+              <Whole />
             </div>
           </div>
         ))}
