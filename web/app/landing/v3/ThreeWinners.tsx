@@ -1,7 +1,7 @@
 import { INK, ORANGE, CYAN, MUTED, SectionHead } from "../ui";
 import { Reveal } from "../Reveal";
 import { AnswerIcon } from "@/app/components/FoundingCard";
-import { TwoShapes } from "./TwoShapes";
+import { Circuit } from "./Circuit";
 
 /**
  * M1b · THREE WINNERS (11 Sep 2026): the opportunity, named per side.
@@ -102,10 +102,11 @@ export function ThreeWinners() {
           sub="Either way, three sides come out ahead."
         />
 
-        {/* What the two ways produce, shown as the thing itself. */}
+        {/* The dynamic first: who joins whom, what they make, who it reaches,
+           and what comes back. The cards below say what each side gets. */}
         <Reveal>
           <div className="mb-10 md:mb-12">
-            <TwoShapes />
+            <Circuit />
           </div>
         </Reveal>
 

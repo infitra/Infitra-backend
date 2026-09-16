@@ -162,20 +162,20 @@ const CHIPS = [
 
 export function ExperienceChips() {
   return (
-    <div className="grid md:grid-cols-3 gap-4 md:gap-5">
+    <div className="grid md:grid-cols-3 gap-4 md:gap-6">
       {CHIPS.map((c) => (
         <div
           key={c.key}
           data-chip={c.key}
-          className="rounded-2xl p-3.5 flex flex-col"
+          className="rounded-2xl p-4 flex flex-col"
           style={{ backgroundColor: PAPER, boxShadow: `0 0 0 1px ${HAIR}, 0 12px 32px rgba(15,34,41,0.07)` }}
         >
           {/* One height for all three, so the labels start on the same line
              whatever shape the surface underneath is. */}
-          <div className="mb-3.5 h-[188px] flex items-center">
+          <div className="mb-4 h-[224px] flex items-center">
             <div className="w-full">{c.media}</div>
           </div>
-          <p className="text-[14px] font-headline" style={{ color: INK, fontWeight: 700, letterSpacing: "-0.01em" }}>
+          <p className="text-[15px] font-headline" style={{ color: INK, fontWeight: 700, letterSpacing: "-0.01em" }}>
             {c.label}
           </p>
           <p className="text-[13.5px] leading-relaxed mt-1.5" style={{ color: MUTED }}>

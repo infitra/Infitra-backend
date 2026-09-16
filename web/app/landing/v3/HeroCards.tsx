@@ -11,15 +11,13 @@ import { trackEvent } from "@/lib/analytics";
 /**
  * The network, inside the hero (12 Sep 2026).
  *
- * The tile is the founding card reduced to what a passing reader can take in:
- * the same cream paper, the same brand waves, the same round portrait on its
- * white ring, the same type pill. The portrait is most of the card, because
- * the one thing this band has to say is that these are real people who
- * joined, and the tagline runs in full, because that is the sentence that
- * says whether they are worth opening. Everything else, the city, the link,
- * the two answers, the background, belongs to the card itself, which the
- * footer invites you to open. The founding mark rides beside the name, where
- * it costs no height.
+ * The tile is signal; the card behind it is content. So the waves are not a
+ * band here, they are the ground the whole card is printed on, the way a post
+ * is mostly artwork: the portrait, the type pill and the name sit on them,
+ * and a small cream end at the bottom carries the tagline and the way in.
+ * Everything else, the city, the link, the two answers, the background,
+ * belongs to the card itself, which opens on click. The founding mark rides
+ * beside the name, where it costs no height.
  *
  * The band never ends. The set is laid out three times and the scroll
  * position is folded back by one set width whenever it crosses a boundary, so
@@ -39,8 +37,9 @@ const CYAN_BRIGHT = "#9CF0FF";
 const INK = "#0F2229";
 const CYAN = "#0891b2";
 const ORANGE = "#FF6130";
+const FAINT_INK = "rgba(15,34,41,0.45)";
 
-const BAND_MASK = "linear-gradient(180deg, #000 0%, #000 52%, rgba(0,0,0,0) 100%)";
+const GROUND_MASK = "linear-gradient(180deg, #000 0%, #000 84%, rgba(0,0,0,0) 100%)";
 const FADE_BOTH = "linear-gradient(90deg, rgba(0,0,0,0) 0%, #000 6%, #000 94%, rgba(0,0,0,0) 100%)";
 
 /** Pixels per second the band drifts when nobody is touching it. */
@@ -77,21 +76,23 @@ function ProfileTile({
       className="group relative shrink-0 w-[300px] sm:w-[340px] rounded-2xl overflow-hidden text-left flex flex-col shadow-[0_14px_40px_rgba(0,0,0,0.32)] hover:shadow-[0_22px_60px_rgba(0,0,0,0.42)] hover:-translate-y-[2px] transition-[transform,box-shadow] duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[#9CF0FF]"
       style={{ backgroundColor: CREAM, border: "1px solid rgba(15,34,41,0.07)" }}
     >
+      {/* The waves are the ground, not a band: they carry the portrait, the
+         type and the name, and fade out where the cream end begins. */}
       <div
         aria-hidden
-        className="relative h-[108px] shrink-0 overflow-hidden"
-        style={{ maskImage: BAND_MASK, WebkitMaskImage: BAND_MASK }}
+        className="absolute inset-x-0 top-0 h-[256px] pointer-events-none"
+        style={{ maskImage: GROUND_MASK, WebkitMaskImage: GROUND_MASK }}
       >
         <CardWaves id={`tile-${m.id.slice(0, 8)}`} />
       </div>
-      <span
-        className="absolute top-4 left-5 z-10 text-[10px] font-bold font-headline uppercase tracking-[0.16em] px-2.5 py-1 rounded-full text-white"
-        style={{ backgroundColor: accent, boxShadow: `0 4px 12px ${accent}55` }}
-      >
-        {isStudio ? "Studio" : "Expert"}
-      </span>
 
-      <div className="px-5 pb-3.5 -mt-[78px] relative flex flex-col items-center text-center">
+      <div className="relative px-5 pt-4 flex flex-col items-center text-center">
+        <span
+          className="absolute top-0 left-5 text-[10px] font-bold font-headline uppercase tracking-[0.16em] px-2.5 py-1 rounded-full text-white"
+          style={{ backgroundColor: accent, boxShadow: `0 4px 12px ${accent}55` }}
+        >
+          {isStudio ? "Studio" : "Expert"}
+        </span>
         <div
           className="rounded-full w-[168px] h-[168px] sm:w-[190px] sm:h-[190px]"
           style={{ padding: 6, backgroundColor: "#FFFFFF", boxShadow: "0 18px 42px rgba(15,34,41,0.20)" }}
@@ -114,43 +115,41 @@ function ProfileTile({
         </div>
 
         <p
-          className="mt-3 max-w-full text-[21px] font-bold font-headline leading-tight inline-flex items-center gap-2"
+          className="mt-2.5 max-w-full text-[21px] font-bold font-headline leading-tight inline-flex items-center gap-2"
           style={{ color: INK, letterSpacing: "-0.03em" }}
         >
           <span className="truncate">{name}</span>
           {m.is_founding_expert && <FoundingExpertStar size={16} />}
         </p>
+      </div>
+
+      {/* The cream end: what they do, and the way in. */}
+      <div className="relative mt-auto px-5 pt-2.5 pb-3.5 text-center">
         {m.tagline && (
           <p
-            className="mt-1.5 text-[13px] font-bold font-headline leading-snug"
+            className="text-[12.5px] font-bold font-headline leading-[1.3]"
             style={{ color: CYAN, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" } as React.CSSProperties}
           >
             {m.tagline}
           </p>
         )}
-      </div>
-
-      <div
-        className="mt-auto px-5 py-2.5 flex items-center justify-center gap-1.5"
-        style={{ borderTop: "1px solid rgba(15,34,41,0.08)" }}
-      >
-        <span className="text-[11px] font-bold font-headline uppercase tracking-[0.18em]" style={{ color: CYAN }}>
+        <span className="mt-2 inline-flex items-center gap-1 text-[10px] font-bold font-headline uppercase tracking-[0.18em]" style={{ color: FAINT_INK }}>
           See details
+          <svg
+            className="transition-transform duration-200 group-hover:translate-x-0.5"
+            width="11"
+            height="11"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden
+          >
+            <path d="M9 6l6 6-6 6" />
+          </svg>
         </span>
-        <svg
-          className="transition-transform duration-200 group-hover:translate-x-0.5"
-          width="13"
-          height="13"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke={CYAN}
-          strokeWidth="2.4"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden
-        >
-          <path d="M9 6l6 6-6 6" />
-        </svg>
       </div>
     </button>
   );
