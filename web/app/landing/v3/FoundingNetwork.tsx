@@ -1,5 +1,6 @@
 import { INK, ORANGE, CYAN, MUTED, SectionHead } from "../ui";
 import { Reveal } from "../Reveal";
+import { SplitVisual } from "./SplitVisual";
 
 /**
  * M7b · HOW JOINING WORKS (11 Sep 2026): the ask, and the smallest version
@@ -7,9 +8,9 @@ import { Reveal } from "../Reveal";
  * what is asked for today, a profile and nothing else, and what comes back.
  *
  * Sits after the proof on purpose: proof, then mechanism, then the closing
- * ask. The state of the network is shown in the hero, where the profiles are,
- * and the split is shown once, up in the model section, so this section only
- * ever explains the mechanism.
+ * ask. The state of the network is shown in the hero, where the profiles are.
+ * The split lives here rather than in the pitch: it is what a decider looks
+ * for, and a question nobody has asked yet is load.
  *
  * No counts and no dates anywhere.
  */
@@ -38,7 +39,6 @@ export function FoundingNetwork() {
         <SectionHead
           eyebrow="How joining works"
           title={<>Joining costs a profile, <span style={{ color: CYAN }}>and nothing else.</span></>}
-          sub="No upfront cost, no subscription, no lock-in. Your audience and your clients stay entirely yours."
         />
 
         <Reveal>
@@ -63,6 +63,13 @@ export function FoundingNetwork() {
           </div>
         </Reveal>
 
+
+        {/* What one sale is worth, where a decider looks for it. */}
+        <Reveal>
+          <div className="mt-5">
+            <SplitVisual />
+          </div>
+        </Reveal>
       </div>
     </section>
   );

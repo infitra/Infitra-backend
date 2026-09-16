@@ -14,7 +14,7 @@ export function Invitation() {
         <SectionHead
           eyebrow="How it works"
           title={<>Explore one <span style={{ color: ORANGE }}>in full.</span></>}
-          sub="One of the two shapes, shown start to finish: two experts, six weeks, one tribe. A studio and an outside expert run the same way, for the studio's members."
+          sub="Two experts, six weeks, one tribe, shown start to finish. A studio and an outside expert run the same way, for the studio's members."
         />
       </div>
     </section>
