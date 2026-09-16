@@ -40,21 +40,23 @@ function Headline() {
   );
 }
 
-/** What the thing is, then what INFITRA does about it. Who "together" means
- *  is answered two lines down by the doors, so the roles are named once. */
-function Punch({ tight }: { tight?: boolean }) {
+/** The claim, then one short clarifier under it. Two sizes, so the eye takes
+ *  the first in one beat and the second as the footnote it is. */
+function Punch() {
   return (
-    <p
-      data-definition
-      className={`text-base md:text-lg lg:text-xl leading-relaxed max-w-2xl ${tight ? "mb-5" : "mb-9"}`}
-      style={{ color: CREAM_MUTED }}
-    >
-      One live experience, created together and run online over several
-      weeks.{" "}
-      <span style={{ color: CREAM, fontWeight: 600 }}>
-        INFITRA handles everything around it.
-      </span>
-    </p>
+    <>
+      <p
+        data-definition
+        className="text-lg md:text-xl lg:text-[22px] leading-relaxed max-w-3xl"
+        style={{ color: CREAM, fontWeight: 600 }}
+      >
+        INFITRA makes professional collaboration in fitness and health easy.
+      </p>
+      <p className="text-[15px] md:text-base leading-relaxed max-w-xl mt-3.5" style={{ color: CREAM_MUTED }}>
+        Experts, studios and gyms create live experiences together that none
+        could run alone.
+      </p>
+    </>
   );
 }
 
@@ -63,7 +65,7 @@ function Invite() {
   return (
     <div data-invite className="mb-6">
       <p className="text-[17px] md:text-xl leading-snug font-headline" style={{ color: CREAM, fontWeight: 600 }}>
-        The founding network is building up.
+        The founding network is taking shape.
       </p>
       <p
         className="text-[17px] md:text-xl leading-snug font-headline mt-1"
@@ -97,19 +99,19 @@ export function Hero({ members, preview }: { members: FoundingMember[]; preview:
     // taller vh box hidden behind the URL bar.
     <section
       id="stage"
-      className="relative min-h-svh flex flex-col justify-center pt-24 pb-16"
+      className="relative min-h-svh flex flex-col justify-center pt-20 pb-14"
     >
       <div className="relative z-10 w-full">
         <div className="max-w-4xl mx-auto w-full px-6 flex flex-col items-center text-center">
           <Headline />
-          <Punch tight />
+          <Punch />
         </div>
 
-        <div className="px-6 mt-2 md:mt-4">
+        <div className="px-6 mt-8 md:mt-10">
           <TwoDoors />
         </div>
 
-        <div className="max-w-4xl mx-auto w-full px-6 mt-12 md:mt-14 flex flex-col items-center text-center">
+        <div className="max-w-4xl mx-auto w-full px-6 mt-10 md:mt-12 flex flex-col items-center text-center">
           <Invite />
         </div>
 

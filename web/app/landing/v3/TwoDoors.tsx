@@ -1,31 +1,29 @@
-import { ORANGE } from "../ui";
+import { INK, ORANGE, CYAN, MUTED } from "../ui";
 import { AnswerIcon } from "@/app/components/FoundingCard";
+import { CardWaves } from "@/app/components/BrandWaves";
 
 /**
  * TWO DOORS (16 Sep 2026): who it is for, inside the stage.
  *
  * One door per side that can start something, each addressed to that reader
- * in their own colour, each carrying the promise and the one way in that
- * belongs to them. The people who join are the customer of the thing being
- * sold, not the audience of this page, so they are named inside the doors
- * rather than given a third.
+ * and carrying the promise and the one way in that belongs to them. The
+ * people who join are the customer of the thing being sold, not the audience
+ * of this page, so they are named inside the doors rather than given a third.
  *
- * The nouns do the work the old diagram tried to do. Side by side, two
- * columns get read as one sentence, so the expert door ends on "or both",
- * where it is the last thing read rather than a clause in the middle, and the
- * studio door says EXPERTS, plural: one named partner would imply the only
- * pairing is a studio with an expert, which undersells a network.
+ * Cream cards on the brand's own waves, the same paper as the member cards.
+ * Set as type on the dark ground they fought the headline for attention; as
+ * cards they lift off it instead, and the softer surface lets the copy sit
+ * quietly in ink where it belongs. On cream the studio's cyan is the deep one:
+ * the bright cyan only works on teal.
  *
- * Colour anchors, it does not shout. The disc and the label carry the side's
- * colour and the promise is set in cream: with the headline already running
- * orange into cyan, a coloured promise under it made four coloured blocks
- * compete and none of them won. The rule on this stage: one colour moment per
- * block, and the accent belongs to the mark that identifies the reader.
+ * The nouns do the work the old diagram tried to do. Side by side, two columns
+ * get read as one sentence, so the expert door ends on "or both", where it is
+ * the last thing read rather than a clause in the middle, and the studio door
+ * says EXPERTS, plural: one named partner would imply the only pairing is a
+ * studio with an expert, which undersells a network.
  */
 const CREAM = "#F2EFE8";
-const CREAM_SOFT = "rgba(242,239,232,0.76)";
-const CYAN_BRIGHT = "#9CF0FF";
-
+const GROUND_MASK = "linear-gradient(180deg, #000 0%, #000 52%, rgba(0,0,0,0) 100%)";
 
 const DOORS = [
   {
@@ -38,7 +36,7 @@ const DOORS = [
   },
   {
     key: "studios",
-    accent: CYAN_BRIGHT,
+    accent: CYAN,
     glyph: "seeks" as const,
     label: "For studios and gyms",
     promise: "A digital revenue stream you do not build, staff or carry.",
@@ -48,44 +46,51 @@ const DOORS = [
 
 export function TwoDoors() {
   return (
-    <div className="w-full max-w-5xl mx-auto">
-      <div className="grid md:grid-cols-2 gap-10 md:gap-0 text-left">
-        {DOORS.map((d) => (
-          <div key={d.key} data-door={d.key} className="md:first:pr-10 md:last:pl-10 md:last:border-l" style={{ borderColor: "rgba(242,239,232,0.14)" }}>
+    <div className="w-full max-w-5xl mx-auto grid md:grid-cols-2 gap-5 md:gap-6 text-left">
+      {DOORS.map((d) => (
+        <div
+          key={d.key}
+          data-door={d.key}
+          className="relative rounded-3xl overflow-hidden"
+          style={{
+            backgroundColor: CREAM,
+            border: "1px solid rgba(15,34,41,0.07)",
+            boxShadow: "0 18px 50px rgba(0,0,0,0.34)",
+          }}
+        >
+          <div
+            aria-hidden
+            className="absolute inset-x-0 top-0 h-[180px] pointer-events-none"
+            style={{ maskImage: GROUND_MASK, WebkitMaskImage: GROUND_MASK }}
+          >
+            <CardWaves id={`door-${d.key}`} />
+          </div>
+
+          <div className="relative px-6 py-5 sm:px-7 sm:py-6">
             <div className="flex items-center gap-3">
               <span
                 className="w-11 h-11 rounded-full flex items-center justify-center shrink-0"
-                style={{ backgroundColor: d.accent, boxShadow: `0 8px 22px ${d.accent}40` }}
+                style={{ backgroundColor: d.accent, boxShadow: `0 6px 18px ${d.accent}4d` }}
               >
-                <AnswerIcon kind={d.glyph} color={d.key === "studios" ? "#0C262E" : "#FFFFFF"} size={22} />
+                <AnswerIcon kind={d.glyph} color="#FFFFFF" size={22} />
               </span>
               <p className="text-[12px] uppercase tracking-[0.22em] font-headline" style={{ color: d.accent, fontWeight: 800 }}>
                 {d.label}
               </p>
             </div>
+
             <p
-              className="text-[1.3rem] md:text-[1.45rem] font-headline leading-[1.2] mt-5"
-              style={{ color: CREAM, fontWeight: 700, letterSpacing: "-0.025em" }}
+              className="text-[1.3rem] md:text-[1.45rem] font-headline leading-[1.2] mt-4"
+              style={{ color: INK, fontWeight: 700, letterSpacing: "-0.025em" }}
             >
               {d.promise}
             </p>
-            <p className="text-[14.5px] md:text-[15px] leading-relaxed mt-3" style={{ color: CREAM_SOFT }}>
+            <p className="text-[14.5px] md:text-[15px] leading-relaxed mt-3" style={{ color: MUTED }}>
               {d.how}
             </p>
           </div>
-        ))}
-      </div>
-
-      {/* The one term that belongs to a pitch. Not "both sides": the network
-         is not limited to a pair. */}
-      <p
-        data-keep
-        className="text-center text-base md:text-lg font-headline mt-10 md:mt-12"
-        style={{ color: CREAM, fontWeight: 600, letterSpacing: "-0.01em" }}
-      >
-        Keep <span style={{ color: ORANGE }}>90%</span> of every sale, split as
-        you agree.
-      </p>
+        </div>
+      ))}
     </div>
   );
 }
