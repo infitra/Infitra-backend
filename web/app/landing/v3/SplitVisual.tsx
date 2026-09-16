@@ -77,8 +77,8 @@ export function SplitVisual() {
       </div>
 
       <p className="text-[14px] leading-relaxed mt-4" style={{ color: MUTED }}>
-        Written into a transparent agreement both sides accept, before anything
-        sells. No upfront cost.
+        Written into a transparent agreement, accepted before anything sells.
+        No upfront cost.
       </p>
 
       <div className="mt-6 pt-6" style={{ borderTop: "1px solid rgba(15,34,41,0.10)" }}>
