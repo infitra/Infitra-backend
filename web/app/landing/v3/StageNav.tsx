@@ -21,26 +21,39 @@ const CREAM = "#F2EFE8";
  * that reads on either ground, present but not competing: the orange belongs
  * to the one action that matters.
  *
- * A scroll threshold rather than an observer: it is deterministic, it can be
- * verified without a paint, and it degrades to the cream bar on any page that
- * has no stage.
+ * Scroll thresholds rather than an observer: deterministic, verifiable
+ * without a paint, and degrading to the cream bar on any page with no stage.
+ * Sections that carry the dark ground mark themselves [data-dark], so the bar
+ * knows where the dark actually ends rather than assuming it ends with the
+ * hero.
  */
 export function StageNav() {
   const [solid, setSolid] = useState(false);
+  const [asking, setAsking] = useState(false);
 
   useEffect(() => {
     const stage = document.getElementById("stage");
     if (!stage) {
       setSolid(true);
+      setAsking(true);
       return;
     }
-    // The bar turns cream once the stage's bottom edge passes under it: the
-    // edge in document space, less the height of the bar itself.
-    const measure = () => stage.getBoundingClientRect().bottom + window.scrollY - 56;
-    let past = measure();
-    const onScroll = () => setSolid(window.scrollY > past);
+    // Two edges, because the dark run is longer than the stage. The bar stays
+    // transparent while any dark section is under it, and the ask appears as
+    // soon as the stage's own button has scrolled away.
+    const darks = document.querySelectorAll("[data-dark]");
+    const lastDark = (darks[darks.length - 1] as HTMLElement | undefined) ?? stage;
+    const edge = (el: HTMLElement) => el.getBoundingClientRect().bottom + window.scrollY - 56;
+    let darkEnds = edge(lastDark);
+    let stageEnds = edge(stage);
+    const onScroll = () => {
+      const y = window.scrollY;
+      setSolid(y > darkEnds);
+      setAsking(y > stageEnds);
+    };
     const onResize = () => {
-      past = measure();
+      darkEnds = edge(lastDark);
+      stageEnds = edge(stage);
       onScroll();
     };
     onScroll();
@@ -103,9 +116,9 @@ export function StageNav() {
           </Link>
           <Link
             href="/apply"
-            aria-hidden={!solid}
-            tabIndex={solid ? undefined : -1}
-            className={`px-4 sm:px-5 py-2 rounded-full text-xs font-headline font-bold text-white uppercase tracking-widest whitespace-nowrap transition-opacity duration-300 ${solid ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+            aria-hidden={!asking}
+            tabIndex={asking ? undefined : -1}
+            className={`px-4 sm:px-5 py-2 rounded-full text-xs font-headline font-bold text-white uppercase tracking-widest whitespace-nowrap transition-opacity duration-300 ${asking ? "opacity-100" : "opacity-0 pointer-events-none"}`}
             style={{ backgroundColor: "#FF6130", boxShadow: "0 2px 8px rgba(255,97,48,0.3)" }}
           >
             <span className="sm:hidden">Join</span>

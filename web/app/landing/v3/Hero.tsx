@@ -118,6 +118,7 @@ export function Hero({ members, preview }: { members: FoundingMember[]; preview:
     // taller vh box hidden behind the URL bar.
     <section
       id="stage"
+      data-dark
       className={`relative overflow-hidden min-h-svh flex flex-col justify-center ${showCards ? "pt-20 pb-14" : "pt-28 pb-16"}`}
       style={{ backgroundColor: TEAL }}
     >

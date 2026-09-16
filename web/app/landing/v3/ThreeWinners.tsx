@@ -1,4 +1,5 @@
-import { INK, ORANGE, CYAN, MUTED, SectionHead } from "../ui";
+import { INK, ORANGE, CYAN, MUTED } from "../ui";
+import { StageWaves } from "@/app/components/BrandWaves";
 import { Reveal } from "../Reveal";
 import { AnswerIcon } from "@/app/components/FoundingCard";
 import { MarkEquation } from "./MarkEquation";
@@ -16,22 +17,24 @@ import { SplitVisual } from "./SplitVisual";
  * so a studio owner reads it as "great for our members" and an expert as
  * "beyond what I could offer alone". It has no button.
  *
- * Colours follow the member card: cyan and the two circles meeting for the
- * studio (the complement brought in), orange and the person for the expert
- * (what they bring). The people who join get both colours at once, orange
- * into cyan, because their result is made of both halves. Each card wears its
- * colour as a tinted band, so the three promises read as three offers instead
- * of three paragraphs. No black, no badge gold.
+ * The stage runs on: this section keeps the hero's dark ground, so the whole
+ * model, the mark, the three sides and the terms, reads as one act before the
+ * page turns light for the example. The three cards stay light, because they
+ * are cards, and they carry their audience in white on a solid bar in their
+ * own colour: cyan for a studio, orange for an expert, both for the people
+ * who join. Everything drawn directly on the teal uses the bright cyan.
  */
 const BOTH = "linear-gradient(135deg, #FF6130 0%, #0891b2 100%)";
+const TEAL = "#0C262E";
+const CREAM = "#F2EFE8";
+const CREAM_MUTED = "rgba(242,239,232,0.78)";
+const CYAN_BRIGHT = "#9CF0FF";
 
 const WINNERS = [
   {
     key: "studios",
     label: "For studios and gyms",
     bar: CYAN,
-    ring: "rgba(8,145,178,0.30)",
-    glow: "rgba(8,145,178,0.10)",
     dot: CYAN,
     glyph: "seeks" as const,
     promise: "A digital revenue stream you do not build, staff or carry.",
@@ -45,8 +48,6 @@ const WINNERS = [
     key: "experts",
     label: "For experts",
     bar: ORANGE,
-    ring: "rgba(255,97,48,0.30)",
-    glow: "rgba(255,97,48,0.10)",
     dot: ORANGE,
     glyph: "brings" as const,
     promise: "New clients and a fuller offer, while you focus on your craft.",
@@ -60,8 +61,6 @@ const WINNERS = [
     key: "participants",
     label: "For the people who join",
     bar: BOTH,
-    ring: "rgba(15,34,41,0.10)",
-    glow: "rgba(8,145,178,0.08)",
     dot: ORANGE,
     glyph: "group" as const,
     promise: "Complete guidance in one place, each part led by an expert in it.",
@@ -89,13 +88,30 @@ function GroupIcon({ color, size = 20 }: { color: string; size?: number }) {
 
 export function ThreeWinners() {
   return (
-    <section id="winners" className="px-6 pt-20 md:pt-24 pb-6 md:pb-8">
-      <div className="max-w-5xl mx-auto">
-        <SectionHead
-          eyebrow="Who it is for"
-          title={<>One experience, <span style={{ color: ORANGE }}>three winners.</span></>}
-          sub="Either way, three sides come out ahead."
-        />
+    <section
+      id="winners"
+      data-dark
+      className="relative overflow-hidden px-6 pt-20 md:pt-24 pb-20 md:pb-24"
+      style={{ backgroundColor: TEAL }}
+    >
+      <div className="absolute inset-0 pointer-events-none" aria-hidden>
+        <StageWaves id="winners" />
+      </div>
+      <div className="relative z-10 max-w-5xl mx-auto">
+        <div className="text-center max-w-3xl mx-auto mb-12 md:mb-16">
+          <p className="text-[10px] uppercase tracking-[0.25em] font-headline mb-3" style={{ color: CYAN_BRIGHT, fontWeight: 700 }}>
+            Who it is for
+          </p>
+          <h2
+            className="text-3xl md:text-4xl lg:text-5xl font-headline tracking-tight"
+            style={{ color: CREAM, fontWeight: 700, letterSpacing: "-0.02em" }}
+          >
+            One experience, <span style={{ color: ORANGE }}>three winners.</span>
+          </h2>
+          <p className="text-base md:text-lg mt-5 leading-relaxed max-w-2xl mx-auto" style={{ color: CREAM_MUTED }}>
+            Either way, three sides come out ahead.
+          </p>
+        </div>
 
         {/* The model first, in one picture: each side brings a part, and what
            they make together is the whole thing. */}
@@ -112,7 +128,7 @@ export function ThreeWinners() {
                 key={w.key}
                 data-winner={w.key}
                 className="rounded-3xl flex flex-col text-left overflow-hidden"
-                style={{ backgroundColor: "#FFFFFF", boxShadow: `0 0 0 1.5px ${w.ring}, 0 20px 50px ${w.glow}` }}
+                style={{ backgroundColor: "#FFFFFF", boxShadow: "0 18px 50px rgba(0,0,0,0.34)" }}
               >
                 <div className="flex items-center gap-3 px-6 md:px-7 py-4" style={{ background: w.bar }}>
                   {w.glyph === "group" ? <GroupIcon color="#FFFFFF" size={22} /> : <AnswerIcon kind={w.glyph} color="#FFFFFF" size={22} />}

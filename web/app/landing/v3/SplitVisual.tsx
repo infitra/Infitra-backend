@@ -1,24 +1,27 @@
-import { INK, ORANGE, CYAN, MUTED, CARD_SHADOW } from "../ui";
+import { ORANGE } from "../ui";
 
 /**
- * THE SPLIT (16 Sep 2026): the terms, shown rather than stated.
+ * THE SPLIT (16 Sep 2026): the terms, shown rather than stated, on the stage.
  *
- * Independence and the revenue split are the two things every supplier asks
- * about, and they were sitting at the bottom of the section as quiet text.
- * One sale is now drawn whole: the overwhelming part of it belongs to the two
- * people who made the experience, and the remainder is INFITRA's founding
- * fee. The dashed divider between them is the point: where it falls is theirs
- * to set, not ours, and the agreement records it before anything sells. The
- * two sides wear the same colours they wear in the mark above.
+ * One sale drawn whole: the overwhelming part of it belongs to the two people
+ * who made the experience, and the remainder is INFITRA's founding fee. The
+ * dashed divider between them is the point: where it falls is theirs to set,
+ * not ours, and the agreement records it before anything sells. The two sides
+ * wear the same colours they wear in the mark above.
  *
  * Money framing follows the brand: what they KEEP is the visual, the fee is
- * disclosed second. No count of anything else, no dates.
+ * disclosed second. On the dark ground cyan is the bright one.
  */
+const CREAM = "#F2EFE8";
+const CREAM_MUTED = "rgba(242,239,232,0.72)";
+const CREAM_FAINT = "rgba(242,239,232,0.55)";
+const CYAN_BRIGHT = "#9CF0FF";
+
 const KEEPS = [
   { label: "With whom you choose", accent: ORANGE },
-  { label: "When it fits", accent: CYAN },
+  { label: "When it fits", accent: CYAN_BRIGHT },
   { label: "No exclusivity, no subscription", accent: ORANGE },
-  { label: "Free to leave at any time", accent: CYAN },
+  { label: "Free to leave at any time", accent: CYAN_BRIGHT },
 ];
 
 function Check({ color }: { color: string }) {
@@ -31,64 +34,67 @@ function Check({ color }: { color: string }) {
 
 export function SplitVisual() {
   return (
-    <div className="rounded-3xl p-5 sm:p-7" style={{ backgroundColor: "#FFFFFF", boxShadow: CARD_SHADOW }}>
-      <p className="text-[10px] uppercase tracking-[0.25em] font-headline" style={{ color: CYAN, fontWeight: 700 }}>
+    <div
+      className="rounded-3xl p-5 sm:p-7"
+      style={{ backgroundColor: "rgba(242,239,232,0.04)", border: "1px solid rgba(242,239,232,0.14)" }}
+    >
+      <p className="text-[10px] uppercase tracking-[0.25em] font-headline" style={{ color: CYAN_BRIGHT, fontWeight: 700 }}>
         One sale
       </p>
 
-      {/* Side by side from sm up, where the widths carry the proportion.
-         On a phone the fee strip sits under the block instead: a tenth of a
-         narrow bar is too thin to read. */}
-      <div className="mt-4 flex flex-col sm:flex-row rounded-2xl overflow-hidden" style={{ border: "1px solid rgba(15,34,41,0.08)" }}>
+      {/* Side by side from sm up, where the widths carry the proportion. On a
+         phone the fee strip sits under the block instead: a tenth of a narrow
+         bar is too thin to read. */}
+      <div className="mt-4 flex flex-col sm:flex-row rounded-2xl overflow-hidden" style={{ border: "1px solid rgba(242,239,232,0.16)" }}>
         <div
           className="w-full sm:w-[90%] shrink-0 flex items-stretch"
-          style={{ background: "linear-gradient(120deg, rgba(255,97,48,0.14) 0%, rgba(8,145,178,0.14) 100%)" }}
+          style={{ background: "linear-gradient(120deg, rgba(255,97,48,0.22) 0%, rgba(156,240,255,0.18) 100%), rgba(242,239,232,0.07)" }}
         >
           <div className="flex-1 px-4 py-4 sm:py-5 text-left flex flex-col justify-center">
             <p className="text-[11px] uppercase tracking-[0.16em] font-headline" style={{ color: ORANGE, fontWeight: 800 }}>
               You
             </p>
           </div>
-          <div className="self-stretch my-3 shrink-0" style={{ borderLeft: "2px dashed rgba(15,34,41,0.22)" }} />
+          <div className="self-stretch my-3 shrink-0" style={{ borderLeft: "2px dashed rgba(242,239,232,0.45)" }} />
           <div className="flex-1 px-4 py-4 sm:py-5 text-left flex flex-col justify-center">
-            <p className="text-[11px] uppercase tracking-[0.16em] font-headline" style={{ color: CYAN, fontWeight: 800 }}>
+            <p className="text-[11px] uppercase tracking-[0.16em] font-headline" style={{ color: CYAN_BRIGHT, fontWeight: 800 }}>
               Your complement
             </p>
           </div>
           <div className="px-4 py-4 sm:py-5 text-right flex flex-col justify-center shrink-0">
-            <p className="font-headline leading-none" style={{ color: INK, fontWeight: 700, letterSpacing: "-0.03em", fontSize: "clamp(1.85rem, 3.6vw, 2.5rem)" }}>
+            <p className="font-headline leading-none" style={{ color: CREAM, fontWeight: 700, letterSpacing: "-0.03em", fontSize: "clamp(1.85rem, 3.6vw, 2.5rem)" }}>
               90%
             </p>
-            <p className="text-[12px] font-bold font-headline mt-1.5" style={{ color: MUTED }}>
+            <p className="text-[12px] font-bold font-headline mt-1.5" style={{ color: CREAM_MUTED }}>
               split as you agree
             </p>
           </div>
         </div>
         <div
           className="w-full sm:w-[10%] shrink-0 min-w-0 px-3 py-2.5 sm:py-5 flex flex-row sm:flex-col items-center justify-center gap-1.5 sm:gap-0 text-center"
-          style={{ backgroundColor: "rgba(15,34,41,0.06)" }}
+          style={{ backgroundColor: "rgba(242,239,232,0.07)" }}
         >
-          <p className="text-[18px] font-headline leading-none" style={{ color: INK, fontWeight: 700, letterSpacing: "-0.02em" }}>
+          <p className="text-[18px] font-headline leading-none" style={{ color: CREAM, fontWeight: 700, letterSpacing: "-0.02em" }}>
             10%
           </p>
-          <p className="text-[10px] leading-tight sm:mt-1.5" style={{ color: MUTED }}>
+          <p className="text-[10px] leading-tight sm:mt-1.5" style={{ color: CREAM_FAINT }}>
             founding fee
           </p>
         </div>
       </div>
 
-      <p className="text-[13.5px] leading-relaxed mt-3.5" style={{ color: MUTED }}>
+      <p className="text-[13.5px] leading-relaxed mt-3.5" style={{ color: CREAM_MUTED }}>
         Written into a transparent agreement both sides accept, before anything
         sells. No upfront cost, no subscription.
       </p>
 
-      <div className="mt-5 pt-5" style={{ borderTop: "1px solid rgba(15,34,41,0.10)" }}>
-        <p data-independence className="text-base md:text-lg leading-relaxed" style={{ color: INK, fontWeight: 600 }}>
+      <div className="mt-5 pt-5" style={{ borderTop: "1px solid rgba(242,239,232,0.14)" }}>
+        <p data-independence className="text-base md:text-lg leading-relaxed" style={{ color: CREAM, fontWeight: 600 }}>
           You stay independent and still work together professionally.
         </p>
         <div className="mt-3.5 grid sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-2.5">
           {KEEPS.map((k) => (
-            <span key={k.label} className="inline-flex items-start gap-2 text-[13.5px] leading-snug" style={{ color: MUTED }}>
+            <span key={k.label} className="inline-flex items-start gap-2 text-[13.5px] leading-snug" style={{ color: CREAM_MUTED }}>
               <span className="mt-[2px]">
                 <Check color={k.accent} />
               </span>
