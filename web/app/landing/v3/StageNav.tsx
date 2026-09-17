@@ -83,7 +83,7 @@ export function StageNav() {
         }}
       />
       <div className="relative max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
-        <Link href="/new" className="flex items-center gap-2.5">
+        <Link href="/" className="flex items-center gap-2.5">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo-mark.png" alt="INFITRA" width={34} height={34} className="block rounded-lg" />
           <span

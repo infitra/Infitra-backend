@@ -3,10 +3,11 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   async redirects() {
     return [
-      // /new is the landing staging surface again (11 Sep 2026): the next
-      // landing is built and polished there before it replaces /. The old
-      // "/new → /" permanent redirect is gone, but browsers cache 308s, so a
-      // stale client may still bounce to the homepage until it is cleared.
+      // /new was the landing staging surface until 17 Sep 2026, when it
+      // replaced /. TEMPORARY on purpose: a 308 is cached by browsers
+      // forever, which is what made the last staging round bounce people off
+      // /new for days. 307 lets the next staging round just work.
+      { source: "/new", destination: "/", permanent: false },
       // Founding network routes were renamed on 6 Sep 2026 before any link went out.
       { source: "/community", destination: "/network", permanent: true },
       { source: "/founding-group", destination: "/founding-network", permanent: true },
