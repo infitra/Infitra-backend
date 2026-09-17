@@ -26,6 +26,32 @@ import { trackEvent } from "@/lib/analytics";
  * No redirect on success: the applicant might want to read it first.
  */
 
+/**
+ * The complement question in each voice. An expert protects their craft and
+ * brings in the half they do not teach; a studio brings in the expertise its
+ * members already ask for, or teams up with another studio.
+ */
+const COMPLEMENT = {
+  expert: {
+    partnerHint: "Their name, what they do, and how their part completes yours.",
+    partnerPlaceholder:
+      "e.g. Mia Aebi, a registered nutritionist focused on cycle-aware eating. We've talked about a joint experience for a while.",
+    wantLabel: "Who would you want next to you?",
+    wantHint: "The half you do not teach, led by an expert in it.",
+    wantPlaceholder:
+      "e.g. a nutritionist or a recovery expert. I go all in on the training; they lead the food and sleep half.",
+  },
+  studio: {
+    partnerHint: "Who they are, what they do, and why your members would want them.",
+    partnerPlaceholder:
+      "e.g. Mia Aebi, a nutritionist several of our members already see. Or another studio we have run events with.",
+    wantLabel: "Who would you want to create with?",
+    wantHint: "The expertise your members keep asking for, or another studio you would team up with.",
+    wantPlaceholder:
+      "e.g. a nutritionist for our strength members, or a physio for return-to-sport. Our members ask for both and we do not want to hire.",
+  },
+} as const;
+
 const AUDIENCE_OPTIONS: { value: string; label: string }[] = [
   { value: "under_500", label: "Under 500" },
   { value: "500_to_2k", label: "500 to 2,000" },
@@ -56,6 +82,7 @@ export function PilotApplicationForm() {
   }
 
   const studio = applicantType === "studio";
+  const copy = COMPLEMENT[studio ? "studio" : "expert"];
 
   return (
     <div
@@ -201,9 +228,13 @@ export function PilotApplicationForm() {
         </Field>
 
         {/* The matching question. Two pills swap one textarea for another,
-           so the jump from "you" to "who you want" costs no extra typing. */}
+           so the jump from "you" to "who you want" costs no extra typing.
+           The copy splits by type: an expert is looking for the half they do
+           not teach, a studio for the expertise its members keep asking for
+           (or another studio), and the examples have to match or they read
+           as written for somebody else. */}
         <div className="pt-1">
-          <Choice legend="Do you already have someone in mind?">
+          <Choice legend="Do you already have someone in mind to collaborate with?">
             <RadioPill
               name="has_partner"
               value="yes"
@@ -222,11 +253,7 @@ export function PilotApplicationForm() {
         </div>
 
         {hasPartner === "yes" ? (
-          <Field
-            label="Tell me about them"
-            name="partner_info"
-            hint="Their name, what they do, and how their part completes yours."
-          >
+          <Field label="Tell us about them" name="partner_info" hint={copy.partnerHint}>
             <textarea
               id="partner_info"
               name="partner_info"
@@ -234,15 +261,11 @@ export function PilotApplicationForm() {
               rows={3}
               className={textareaCls}
               style={FIELD_STYLE}
-              placeholder="e.g. Mia Aebi, a registered nutritionist focused on cycle-aware eating. We've talked about a joint experience for a while."
+              placeholder={copy.partnerPlaceholder}
             />
           </Field>
         ) : (
-          <Field
-            label="Who would you want next to you?"
-            name="complement_interest"
-            hint="The half you do not teach, led by an expert in it."
-          >
+          <Field label={copy.wantLabel} name="complement_interest" hint={copy.wantHint}>
             <textarea
               id="complement_interest"
               name="complement_interest"
@@ -250,7 +273,7 @@ export function PilotApplicationForm() {
               rows={3}
               className={textareaCls}
               style={FIELD_STYLE}
-              placeholder="e.g. a nutritionist or a recovery expert. I go all in on the training; they lead the food and sleep half."
+              placeholder={copy.wantPlaceholder}
             />
           </Field>
         )}
@@ -436,9 +459,9 @@ function SuccessCard() {
         className="mt-4 text-base leading-relaxed max-w-md mx-auto"
         style={{ color: "#475569" }}
       >
-        I read every one myself and reply personally, usually within a few days.
-        If it fits, you get a personal invitation to create your profile, and
-        when a profile fits yours, I introduce you. Nothing is binding along the
+        We read every one and reply personally, usually within a few days. If
+        it fits, you get a personal invitation to create your profile, and when
+        a profile fits yours, we introduce you. Nothing is binding along the
         way.
       </p>
       <Link

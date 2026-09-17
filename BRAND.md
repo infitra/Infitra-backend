@@ -22,6 +22,26 @@ the group space, and the revenue split based on a recorded agreement.
 
 ---
 
+## The line (17 Sep 2026)
+
+**Professional collaboration made easy.** The brand slogan, and the one
+sentence the landing, the emails and any deck should agree on. Where the
+reader might be cold, name the field: *professional collaboration in
+fitness and health, made easy*. The email footer carries the long form.
+
+It replaced "Live experiences by complementary experts", which was true
+when the network was pairs of experts and read as a closed door once
+studios and gyms were in it.
+
+Note this moves the old rule that "collaborate" may not be the headline
+verb. The landing now opens with "INFITRA makes professional collaboration
+in fitness and health easy", so collaboration IS the claim. What stays true
+is the reason behind the old rule: never lead with the infrastructure, and
+never make the word do the emotional work on its own. The tension and the
+opportunity still come first.
+
+---
+
 ## Messaging architecture (1 Sep 2026)
 
 The system is valuable, but the system is not what people emotionally want.
@@ -117,6 +137,15 @@ buy. Don't build participant-facing demand before there is supply.
 - **Not pushy.** People explore before they commit. Never write as though
   someone has agreed to more than they have.
 - **Warm, not corporate.** Write like a founder talking to a peer.
+- **Always INFITRA, never the founder alone.** Public surfaces, product
+  copy and automated emails say **we**: "we read every application", "we
+  introduce you", "you hear from us". Never "I read every one", never
+  "Yves will contact you". The one exception is a message that genuinely
+  IS a personal note from Yves, such as the first welcome to a participant
+  who just signed up. Everywhere else the company speaks, and a signature
+  ("Yves · Founder, INFITRA") under company-voice copy is fine. A one
+  person operation that writes in the first person reads as a one person
+  operation.
 - **Avoid AI-generic constructions:** "And the thing is...", "Bring A and B
   together and you get C", "That changes everything", one-sentence-per-line
   LinkedIn-guru cadence, twin parallel sentences ("I don't see X. I see Y.").
@@ -154,7 +183,8 @@ led with the model and the terms and never said what a participant buys.
 | tribe space | community feed, forum |
 | marketing page | sales page, landing page (for the buyer page) |
 | complementary experts | partners, co-hosts (in marketing copy) |
-| create together, combine expertise, offer more | "collaborate" as the headline verb |
+| create together, combine expertise, offer more | leading with the infrastructure |
+| we, us, INFITRA (all public and automated copy) | I, me, "Yves will…" outside a genuinely personal note |
 | go all in on your craft, both sides at full depth | focus on what you're good at, fill the gap |
 | founding pilot, pilot experts | beta testers |
 | the founding pilot is open | five founding pairs, N spots (public counts) |

@@ -82,8 +82,8 @@ export default function ApplyPage() {
                 className="mt-4 text-base md:text-lg leading-relaxed"
                 style={{ color: "#475569" }}
               >
-                Tell me what you do and who you would want next to you. I read
-                every one and reply personally.
+                Tell us what you do and who you would want next to you. We
+                read every one and reply personally.
               </p>
             </div>
 
