@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { INK, ORANGE, CYAN, MUTED, CARD_SHADOW } from "../ui";
 
 /**
@@ -76,9 +77,20 @@ export function SplitVisual() {
         </div>
       </div>
 
+      {/* The way to check the claim, at the sentence where the doubt forms.
+         Inline and quiet on purpose: a sceptic scanning for the catch finds
+         it, and a reader who is not looking is not sent away from the page
+         to read about fees. The terms stay last in the arc. */}
       <p className="text-[14px] leading-relaxed mt-4" style={{ color: MUTED }}>
         Written into a transparent agreement, accepted before anything sells.
-        No upfront cost.
+        No upfront cost.{" "}
+        <Link
+          href="/pilot-terms"
+          className="underline underline-offset-2 hover:opacity-70 whitespace-nowrap"
+          style={{ color: CYAN, fontWeight: 600 }}
+        >
+          The deal, in plain language →
+        </Link>
       </p>
 
       <div className="mt-6 pt-6" style={{ borderTop: "1px solid rgba(15,34,41,0.10)" }}>

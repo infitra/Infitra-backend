@@ -14,7 +14,10 @@ export function Footer() {
           </span>
         </div>
         <div className="flex flex-wrap justify-center gap-x-6 gap-y-1 text-xs" style={{ color: "#94a3b8" }}>
-          <Link href="/pilot-terms" className="hover:opacity-80">Pilot Terms</Link>
+          {/* Named for what it is, not what it is filed as: next to Terms,
+             Privacy and Legal Notice, "Pilot Terms" read as boilerplate and
+             nobody opened the one page here written to be read. */}
+          <Link href="/pilot-terms" className="hover:opacity-80">The deal, in plain language</Link>
           <Link href="/terms" className="hover:opacity-80">Terms</Link>
           <Link href="/privacy" className="hover:opacity-80">Privacy</Link>
           <Link href="/imprint" className="hover:opacity-80">Legal Notice</Link>
