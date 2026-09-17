@@ -31,8 +31,17 @@ const UMAMI_WEBSITE_ID = (process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID ?? "")
   .match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i)?.[0];
 const UMAMI_SRC =
   process.env.NEXT_PUBLIC_UMAMI_SRC ?? "https://cloud.umami.is/script.js";
+// The line social scrapers quote under the share card. It deliberately says
+// something the card does NOT: the card carries the claim, the og:title
+// carries the slogan, and this says what the thing actually is, which is the
+// beat a cold reader needs and the old line never had. The old one led with
+// the infrastructure, which the brand forbids, and named the tribe space to
+// people who have never heard the term.
 const DESCRIPTION =
-  "Complementary experts, one live fitness experience. INFITRA provides the live rooms, the tribe space, the marketing page with checkout, the collaboration contract and the revenue splitting.";
+  "Experts, studios and gyms create one live experience together: online, over a few weeks, live on video, with a group that stays connected in between.";
+// Search results quote the page's own description instead (app/page.tsx),
+// which opens with the claim. Both are correct for where they land.
+const SOCIAL_TITLE = "INFITRA · Professional collaboration made easy";
 
 export const metadata: Metadata = {
   // Resolves relative OG/Twitter image URLs (incl. the generated
@@ -47,12 +56,12 @@ export const metadata: Metadata = {
     type: "website",
     url: "/",
     siteName: "INFITRA",
-    title: "INFITRA · Live, co-created fitness experiences",
+    title: SOCIAL_TITLE,
     description: DESCRIPTION,
   },
   twitter: {
     card: "summary_large_image",
-    title: "INFITRA · Live, co-created fitness experiences",
+    title: SOCIAL_TITLE,
     description: DESCRIPTION,
   },
 };
