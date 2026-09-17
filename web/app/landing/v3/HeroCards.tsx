@@ -179,12 +179,10 @@ function Arrow({ dir, onClick }: { dir: "prev" | "next"; onClick: () => void }) 
 
 export function HeroCards({
   members,
-  preview,
   more,
   cards,
 }: {
   members: FoundingMember[];
-  preview: boolean;
   more: boolean;
   cards: React.ReactNode[];
 }) {
@@ -334,22 +332,15 @@ export function HeroCards({
         )}
       </div>
 
-      {(more || preview) && (
+      {more && (
         <div className="text-center mt-5">
-          {more && (
-            <Link
-              href="/founding-network"
-              className="inline-block text-[11px] font-bold font-headline uppercase tracking-[0.2em]"
-              style={{ color: CYAN_BRIGHT }}
-            >
-              All profiles
-            </Link>
-          )}
-          {preview && (
-            <p className="mt-2 text-[11px] font-bold font-headline uppercase tracking-[0.2em]" style={{ color: "rgba(156,240,255,0.7)" }}>
-              Preview: what visitors see once the public reader opens.
-            </p>
-          )}
+          <Link
+            href="/founding-network"
+            className="inline-block text-[11px] font-bold font-headline uppercase tracking-[0.2em]"
+            style={{ color: CYAN_BRIGHT }}
+          >
+            All profiles
+          </Link>
         </div>
       )}
 

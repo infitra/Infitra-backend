@@ -2,7 +2,6 @@ import { WaveFlowingBackground } from "@/app/components/WaveFlowingBackground";
 import { StageWaves } from "@/app/components/BrandWaves";
 import type { FoundingMember } from "@/app/components/FoundingCard";
 import { createAnonClient } from "@/lib/supabase/anon";
-import { createClient } from "@/lib/supabase/server";
 import { StageNav } from "@/app/landing/v3/StageNav";
 import { Hero } from "@/app/landing/v3/Hero";
 import { Invitation } from "@/app/landing/v3/Invitation";
@@ -29,10 +28,15 @@ import { Footer } from "@/app/landing/Footer";
  *
  * The showcase in the middle is shared with the live page, never forked.
  *
- * Preview: the public reader is closed until launch, so `?preview=cards` lets
- * a signed-in admin see the hero as it will stand with the cards the network
- * holds today. Reading the query makes this route dynamic, which is fine for
- * a noindex staging page; the promotion drops the preview and restores ISR.
+ * The preview scaffold is gone (17 Sep 2026). `?preview=cards` let a
+ * signed-in admin see the hero with the network's real cards, padded by
+ * repeating one profile so the band had something behind its edge. It had
+ * done its job, and a duplicated member is not a thing to keep standing near
+ * a page about to go public. The route is static again.
+ *
+ * The cards on this page come from the public reader alone, which returns an
+ * empty list until the launch switch opens: load_founding_community's
+ * p_public_only branch returns [] before it reads anything.
  */
 export const metadata = {
   title: "INFITRA · Live, co-created fitness experiences",
@@ -41,42 +45,12 @@ export const metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function LandingStagingPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ preview?: string }>;
-}) {
-  const { preview } = await searchParams;
+export const revalidate = 300;
 
+export default async function LandingStagingPage() {
   const anon = createAnonClient();
   const { data: pub } = await anon.rpc("load_founding_community", { p_public_only: true });
-  let members = (pub?.members ?? []) as FoundingMember[];
-  let previewMode = false;
-
-  if (members.length === 0 && preview === "cards") {
-    // The member/admin branch of the same reader: the database decides who
-    // may see the cards, the page only passes them on.
-    const supabase = await createClient();
-    const { data: full } = await supabase.rpc("load_founding_community", { p_public_only: false });
-    if (full?.authorized === true) {
-      members = (full.members ?? []) as FoundingMember[];
-      previewMode = members.length > 0;
-    }
-
-    // PREVIEW SCAFFOLD (12 Sep 2026): three profiles fill the band, and the
-    // network holds fewer, so nothing would sit behind the edge and the
-    // band's behaviour could not be judged. Repeating what is there to five
-    // puts two out of reach. Admin only: previewMode is set from the RPC's
-    // authorised branch and never from the public read, so nothing here can
-    // reach a visitor. Delete this block once the network holds its own.
-    if (previewMode && members.length < 5) {
-      const real = members;
-      members = Array.from({ length: 5 }, (_, i) => ({
-        ...real[i % real.length],
-        id: `${real[i % real.length].id}#preview${i}`,
-      }));
-    }
-  }
+  const members = (pub?.members ?? []) as FoundingMember[];
 
   return (
     <div className="min-h-screen relative overflow-x-clip" style={{ backgroundColor: "#F2EFE8" }}>
@@ -95,7 +69,7 @@ export default async function LandingStagingPage({
               <StageWaves id="stage" fit="slice" />
             </div>
             <div className="relative z-10">
-              <Hero members={members} preview={previewMode} />
+              <Hero members={members} />
             </div>
           </div>
           <Invitation />

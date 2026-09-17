@@ -90,7 +90,7 @@ function Ask() {
   );
 }
 
-export function Hero({ members, preview }: { members: FoundingMember[]; preview: boolean }) {
+export function Hero({ members }: { members: FoundingMember[] }) {
   const shown = members.slice(0, 6);
   const showCards = shown.length > 0;
 
@@ -118,7 +118,6 @@ export function Hero({ members, preview }: { members: FoundingMember[]; preview:
         {showCards && (
           <HeroCards
             members={shown}
-            preview={preview}
             more={members.length > shown.length}
             cards={shown.map((m) => (
               <FoundingCard key={m.id} m={m} />
