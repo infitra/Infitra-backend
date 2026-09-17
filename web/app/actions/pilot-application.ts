@@ -18,11 +18,9 @@ export type PilotApplicationInput = {
   expertise: string;
   channel_url?: string;
   audience_size_range?: string;
-  location?: string;
   has_partner?: boolean;
   partner_info?: string;
   complement_interest?: string;
-  success_description?: string;
 };
 
 const ALLOWED_AUDIENCE_RANGES = new Set([
@@ -72,11 +70,9 @@ export async function submitPilotApplication(
   const expertise = (formData.get("expertise") as string | null)?.trim() ?? "";
   const channel_url = normalizeChannelUrl(normalizeOptional(formData.get("channel_url") as string | null));
   const audience_size_range = normalizeOptional(formData.get("audience_size_range") as string | null);
-  const location = normalizeOptional(formData.get("location") as string | null);
   const has_partner = formData.get("has_partner") === "yes";
   const partner_info = normalizeOptional(formData.get("partner_info") as string | null);
   const complement_interest = normalizeOptional(formData.get("complement_interest") as string | null);
-  const success_description = normalizeOptional(formData.get("success_description") as string | null);
 
   if (name.length < 2) return { error: "Please enter your name." };
   if (name.length > 200) return { error: "Name is too long." };
@@ -102,9 +98,6 @@ export async function submitPilotApplication(
   if (!has_partner && complement_interest && complement_interest.length > 1000) {
     return { error: "Complement interest description is too long." };
   }
-  if (success_description && success_description.length > 2000) {
-    return { error: "Success description is too long." };
-  }
   const supabase = await createClient();
 
   const { error } = await supabase.from("app_pilot_application").insert({
@@ -113,11 +106,9 @@ export async function submitPilotApplication(
     expertise,
     channel_url,
     audience_size_range,
-    location,
     has_partner,
     partner_info: has_partner ? partner_info : null,
     complement_interest: has_partner ? null : complement_interest,
-    success_description,
     applicant_type,
     announce_consent,
   });

@@ -1,11 +1,18 @@
-import { ORANGE, SectionHead } from "../ui";
+import { MUTED, ORANGE, SectionHead } from "../ui";
 
 /**
- * THE INVITATION (16 Sep 2026): the door into the showcase.
+ * THE INVITATION (17 Sep 2026): the door into the showcase, and the one
+ * place that says the pair below is an arrangement, not the definition.
  *
- * Everything above is the model. Below it the whole thing runs, start to
- * finish. This says so in one line, so the deep dive reads as invited rather
- * than as another chapter starting unannounced.
+ * The demo runs a single shape: two independent experts over six weeks. A
+ * reader who takes that as the rule quietly rules themselves out, so the
+ * door names the other shapes in one line and promises they run identically.
+ * The section below already carries the word "example"; this one says what
+ * the example is an example OF, which is the stronger half of the same move.
+ *
+ * The opening line rides inside the sub as a smaller block rather than its
+ * own paragraph: a <p> cannot nest a <p>, and the hierarchy should come from
+ * size, not from a second margin fighting the head's own spacing.
  */
 export function Invitation() {
   return (
@@ -13,8 +20,18 @@ export function Invitation() {
       <div className="max-w-5xl mx-auto">
         <SectionHead
           eyebrow="How it works"
-          title={<>Explore one <span style={{ color: ORANGE }}>in full.</span></>}
-          sub="Two experts, six weeks, one tribe, shown start to finish. A studio and an outside expert run the same way, for the studio's members."
+          title={<>Explore one, <span style={{ color: ORANGE }}>in full.</span></>}
+          sub={
+            <>
+              Two independent experts, six weeks, shown start to finish.
+              <span className="block mt-4 text-[15px] md:text-[15.5px]" style={{ color: MUTED }}>
+                One shape out of many. A studio brings in an outside expert for
+                its members, two studios create one together, a third expert
+                joins for the part neither of you teaches. All of it runs the
+                way you are about to see.
+              </span>
+            </>
+          }
         />
       </div>
     </section>

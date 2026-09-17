@@ -608,16 +608,15 @@ function Applications({ data, run }: { data: J; run: (l: string, fn: () => Promi
     <>
       <Card title={`Pilot applications (${apps.length})`}>
         <Table
-          head={["When", "Name", "Type", "Email", "Expertise", "Feature", "Audience", "Location", "Partner", "Status", "Set status"]}
+          head={["When", "Name", "Type", "Email", "Expertise", "Feature", "Audience", "Partner", "Status", "Set status"]}
           rows={apps.map((a) => [
             dt(a.created_at),
             a.name,
             a.applicant_type ?? "expert",
             a.email,
-            <span key="x" className="max-w-[14rem] truncate inline-block" title={`${a.expertise ?? ""}${a.success_description ? `\n\nSuccessful collaboration: ${a.success_description}` : ""}`}>{a.expertise}</span>,
+            <span key="x" className="max-w-[14rem] truncate inline-block" title={a.expertise ?? ""}>{a.expertise}</span>,
             a.announce_consent ? <span key="c" style={{ color: OK }}>yes</span> : <span key="c" style={{ color: BAD }}>off</span>,
             a.audience_size_range ?? "–",
-            a.location ?? "–",
             a.has_partner ? "yes" : "no",
             <strong key="s">{a.status ?? "new"}</strong>,
             <span key="set" className="flex gap-1">

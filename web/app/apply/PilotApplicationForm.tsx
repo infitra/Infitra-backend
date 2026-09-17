@@ -6,14 +6,24 @@ import { submitPilotApplication } from "@/app/actions/pilot-application";
 import { trackEvent } from "@/lib/analytics";
 
 /**
- * Founding-network application form: single page, conditional complement sections.
- * Uses `useActionState` so the server action can return either { error }
- * (re-render with error banner) or { success } (swap to confirmation
- * card). No redirect on success: the applicant might want to read the
- * confirmation before moving on.
+ * Founding-network application form: one flat card, no section headers.
  *
- * Visual language: cream card with rgba white background, orange CTA,
- * cyan accents, matching the landing and auth pages.
+ * CUT (17 Sep 2026). The four labelled sections ("About you", "Your work",
+ * "Your complement", "Your ambition") were most of what made a contact form
+ * read as onboarding, and the last field before submit was an essay question
+ * sitting exactly where people leave. Gone with them: "Where you're based"
+ * (the channel link usually says it, and the reply can ask) and "What would
+ * a successful collaboration look like for you?" (that answer arrives in the
+ * first reply anyway). Both columns dropped in the same migration.
+ *
+ * What stays is what decides fit: who you are, what you do, where people
+ * find you, how big your audience is, and who you would want next to you.
+ * The link moved up, because one link answers niche, size, credibility and
+ * city at once.
+ *
+ * Uses `useActionState` so the server action can return either { error }
+ * (re-render with error banner) or { success } (swap to confirmation card).
+ * No redirect on success: the applicant might want to read it first.
  */
 
 const AUDIENCE_OPTIONS: { value: string; label: string }[] = [
@@ -45,9 +55,11 @@ export function PilotApplicationForm() {
     return <SuccessCard />;
   }
 
+  const studio = applicantType === "studio";
+
   return (
     <div
-      className="rounded-3xl p-6 md:p-10"
+      className="rounded-3xl p-6 md:p-8"
       style={{
         backgroundColor: "rgba(255,255,255,0.85)",
         border: "1px solid rgba(15,34,41,0.08)",
@@ -68,7 +80,7 @@ export function PilotApplicationForm() {
         </div>
       )}
 
-      <form action={action} className="space-y-7">
+      <form action={action} className="space-y-5">
         {/* Honeypot: real people never see or fill this. */}
         <input
           type="text"
@@ -79,33 +91,27 @@ export function PilotApplicationForm() {
           className="hidden"
         />
 
-        {/* ── Section: About you ──────────────────────────── */}
-        <Section label="About you">
-          <fieldset className="space-y-3">
-            <legend
-              className="text-xs uppercase tracking-[0.18em] font-headline mb-2"
-              style={{ color: "#475569", fontWeight: 700 }}
-            >
-              You are
-            </legend>
-            <div className="flex gap-3">
-              <RadioPill
-                name="applicant_type"
-                value="expert"
-                checked={applicantType === "expert"}
-                onChange={() => setApplicantType("expert")}
-                label="An expert"
-              />
-              <RadioPill
-                name="applicant_type"
-                value="studio"
-                checked={applicantType === "studio"}
-                onChange={() => setApplicantType("studio")}
-                label="A studio or gym"
-              />
-            </div>
-          </fieldset>
-          <Field label="Your name" name="name" required>
+        <Choice legend="You are">
+          <RadioPill
+            name="applicant_type"
+            value="expert"
+            checked={!studio}
+            onChange={() => setApplicantType("expert")}
+            label="An expert"
+          />
+          <RadioPill
+            name="applicant_type"
+            value="studio"
+            checked={studio}
+            onChange={() => setApplicantType("studio")}
+            label="A studio or gym"
+          />
+        </Choice>
+
+        {/* Name and email share a row on desktop: two short inputs stacked
+           make the column look twice as long as the work it asks for. */}
+        <div className="grid sm:grid-cols-2 gap-4">
+          <Field label="Name" name="name" required>
             <input
               id="name"
               name="name"
@@ -113,7 +119,8 @@ export function PilotApplicationForm() {
               required
               maxLength={200}
               autoComplete="name"
-              className={inputCls} style={FIELD_STYLE}
+              className={inputCls}
+              style={FIELD_STYLE}
               placeholder="Lara Frey"
             />
           </Field>
@@ -125,163 +132,131 @@ export function PilotApplicationForm() {
               required
               maxLength={320}
               autoComplete="email"
-              className={inputCls} style={FIELD_STYLE}
+              className={inputCls}
+              style={FIELD_STYLE}
               placeholder="lara@example.com"
             />
           </Field>
-          <Field label="Where you're based" name="location">
-            <input
-              id="location"
-              name="location"
-              type="text"
-              maxLength={200}
-              autoComplete="address-level2"
-              className={inputCls} style={FIELD_STYLE}
-              placeholder="Zurich, Switzerland"
-            />
-          </Field>
-        </Section>
+        </div>
 
-        {/* ── Section: Your work ──────────────────────────── */}
-        <Section label={applicantType === "studio" ? "Your studio" : "Your work"}>
-          <Field
-            label={applicantType === "studio" ? "What your studio teaches" : "Your area of expertise"}
+        <Field
+          label={studio ? "What your studio teaches" : "What you do"}
+          name="expertise"
+          required
+        >
+          <textarea
+            id="expertise"
             name="expertise"
             required
-          >
-            <textarea
-              id="expertise"
-              name="expertise"
-              required
-              maxLength={500}
-              rows={3}
-              className={textareaCls} style={FIELD_STYLE}
-              placeholder={
-                applicantType === "studio"
-                  ? "e.g. reformer Pilates and barre, two locations in Zurich, about 400 active members"
-                  : "e.g. strength training for women over 40, with a focus on mobility and injury prevention"
-              }
-            />
-          </Field>
-          <Field
-            label="Where people find you"
+            maxLength={500}
+            rows={2}
+            className={textareaCls}
+            style={FIELD_STYLE}
+            placeholder={
+              studio
+                ? "e.g. reformer Pilates and barre, two locations in Zurich, about 400 active members"
+                : "e.g. strength training for women over 40, with a focus on mobility and injury prevention"
+            }
+          />
+        </Field>
+
+        <Field
+          label="Where people find you"
+          name="channel_url"
+          hint="Instagram, YouTube, or your site. A link says more than a paragraph."
+        >
+          {/* type="text" (not "url") so a bare domain like petersmith.com
+             doesn't trip the browser's scheme requirement and block the
+             whole form. inputMode keeps the URL keyboard on mobile; the
+             server fills in https:// for bare domains. */}
+          <input
+            id="channel_url"
             name="channel_url"
-            hint="Instagram, YouTube, TikTok, or your site. A link or handle is fine."
+            type="text"
+            inputMode="url"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            maxLength={500}
+            className={inputCls}
+            style={FIELD_STYLE}
+            placeholder="instagram.com/yourhandle"
+          />
+        </Field>
+
+        <Field label={studio ? "Members you reach" : "Audience size"} name="audience_size_range">
+          <select
+            id="audience_size_range"
+            name="audience_size_range"
+            className={selectCls}
+            style={FIELD_STYLE}
           >
-            {/* type="text" (not "url") so a bare domain like petersmith.com
-               doesn't trip the browser's scheme requirement and block the
-               whole form. inputMode keeps the URL keyboard on mobile; the
-               server fills in https:// for bare domains. */}
-            <input
-              id="channel_url"
-              name="channel_url"
-              type="text"
-              inputMode="url"
-              autoCapitalize="none"
-              autoCorrect="off"
-              spellCheck={false}
-              maxLength={500}
-              className={inputCls} style={FIELD_STYLE}
-              placeholder="instagram.com/yourhandle"
+            <option value="">Prefer not to say</option>
+            {AUDIENCE_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </Field>
+
+        {/* The matching question. Two pills swap one textarea for another,
+           so the jump from "you" to "who you want" costs no extra typing. */}
+        <div className="pt-1">
+          <Choice legend="Do you already have someone in mind?">
+            <RadioPill
+              name="has_partner"
+              value="yes"
+              checked={hasPartner === "yes"}
+              onChange={() => setHasPartner("yes")}
+              label="Yes"
             />
-          </Field>
-          <Field label="Audience size" name="audience_size_range">
-            <select
-              id="audience_size_range"
-              name="audience_size_range"
-              className={selectCls}
-              style={FIELD_STYLE}
-            >
-              <option value="">Prefer not to say</option>
-              {AUDIENCE_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </Field>
-        </Section>
+            <RadioPill
+              name="has_partner"
+              value="no"
+              checked={hasPartner === "no"}
+              onChange={() => setHasPartner("no")}
+              label="Not yet"
+            />
+          </Choice>
+        </div>
 
-        {/* ── Section: Your complement ───────────────────────── */}
-        <Section label="Your complement">
-          <fieldset className="space-y-3">
-            <legend
-              className="text-xs uppercase tracking-[0.18em] font-headline mb-2"
-              style={{ color: "#475569", fontWeight: 700 }}
-            >
-              Do you already have someone in mind?
-            </legend>
-            <div className="flex gap-3">
-              <RadioPill
-                name="has_partner"
-                value="yes"
-                checked={hasPartner === "yes"}
-                onChange={() => setHasPartner("yes")}
-                label="Yes"
-              />
-              <RadioPill
-                name="has_partner"
-                value="no"
-                checked={hasPartner === "no"}
-                onChange={() => setHasPartner("no")}
-                label="Not yet"
-              />
-            </div>
-          </fieldset>
-
-          {hasPartner === "yes" ? (
-            <Field
-              label="Tell us about them"
-              name="partner_info"
-              hint="Their name, what they do, and how their part completes yours."
-            >
-              <textarea
-                id="partner_info"
-                name="partner_info"
-                maxLength={1000}
-                rows={3}
-                className={textareaCls} style={FIELD_STYLE}
-                placeholder="e.g. Mia Aebi, a registered nutritionist focused on cycle-aware eating. We've talked about a joint experience for a while."
-              />
-            </Field>
-          ) : (
-            <Field
-              label="Who would you want next to you?"
-              name="complement_interest"
-              hint="The half you do not teach, led by an expert in it."
-            >
-              <textarea
-                id="complement_interest"
-                name="complement_interest"
-                maxLength={1000}
-                rows={3}
-                className={textareaCls} style={FIELD_STYLE}
-                placeholder="e.g. a nutritionist or a recovery expert. I go all in on the training; they lead the food and sleep half."
-              />
-            </Field>
-          )}
-        </Section>
-
-        {/* ── Section: Your ambition ──────────────────────── */}
-        <Section label="Your ambition">
+        {hasPartner === "yes" ? (
           <Field
-            label="What would a successful collaboration look like for you?"
-            name="success_description"
-            hint="One paragraph is plenty. We read every word."
+            label="Tell me about them"
+            name="partner_info"
+            hint="Their name, what they do, and how their part completes yours."
           >
             <textarea
-              id="success_description"
-              name="success_description"
-              maxLength={2000}
-              rows={4}
-              className={textareaCls} style={FIELD_STYLE}
-              placeholder="e.g. 30 of my followers go through a four-week experience with a nutritionist, finish stronger and more confident, and want a second run."
+              id="partner_info"
+              name="partner_info"
+              maxLength={1000}
+              rows={3}
+              className={textareaCls}
+              style={FIELD_STYLE}
+              placeholder="e.g. Mia Aebi, a registered nutritionist focused on cycle-aware eating. We've talked about a joint experience for a while."
             />
           </Field>
-        </Section>
+        ) : (
+          <Field
+            label="Who would you want next to you?"
+            name="complement_interest"
+            hint="The half you do not teach, led by an expert in it."
+          >
+            <textarea
+              id="complement_interest"
+              name="complement_interest"
+              maxLength={1000}
+              rows={3}
+              className={textareaCls}
+              style={FIELD_STYLE}
+              placeholder="e.g. a nutritionist or a recovery expert. I go all in on the training; they lead the food and sleep half."
+            />
+          </Field>
+        )}
 
-        {/* ── Featuring: the deal, on by default, one click to switch off ── */}
-        <label className="flex items-start gap-3 cursor-pointer select-none">
+        {/* Featuring: the deal, on by default, one click to switch off. */}
+        <label className="flex items-start gap-3 cursor-pointer select-none pt-1">
           <input
             type="checkbox"
             name="announce_consent"
@@ -296,7 +271,6 @@ export function PilotApplicationForm() {
           </span>
         </label>
 
-        {/* ── Submit ──────────────────────────────────────── */}
         <button
           type="submit"
           disabled={pending}
@@ -322,7 +296,7 @@ export function PilotApplicationForm() {
 
 const inputCls =
   "w-full px-4 py-3 rounded-xl text-sm focus:outline-none transition-colors";
-const textareaCls = inputCls + " resize-y min-h-[90px]";
+const textareaCls = inputCls + " resize-y min-h-[76px]";
 const selectCls = inputCls + " appearance-none";
 
 const FIELD_STYLE: React.CSSProperties = {
@@ -331,21 +305,19 @@ const FIELD_STYLE: React.CSSProperties = {
   color: "#0F2229",
 };
 
-function Section({ label, children }: { label: string; children: React.ReactNode }) {
+/** A labelled row of radio pills. The legend carries the same weight as a
+ *  field label, so the flat form still reads as a sequence of questions. */
+function Choice({ legend, children }: { legend: string; children: React.ReactNode }) {
   return (
-    <div>
-      <h2
-        className="text-[11px] uppercase tracking-[0.22em] font-headline mb-4 pb-2"
-        style={{
-          color: "#0F2229",
-          fontWeight: 700,
-          borderBottom: "1px solid rgba(8,145,178,0.20)",
-        }}
+    <fieldset>
+      <legend
+        className="block text-sm mb-1.5 font-headline"
+        style={{ color: "#0F2229", fontWeight: 600 }}
       >
-        {label}
-      </h2>
-      <div className="space-y-4">{children}</div>
-    </div>
+        {legend}
+      </legend>
+      <div className="flex gap-3">{children}</div>
+    </fieldset>
   );
 }
 
@@ -397,7 +369,7 @@ function RadioPill({
 }) {
   return (
     <label
-      className="flex-1 cursor-pointer rounded-xl px-4 py-3 text-sm text-center transition-colors font-headline"
+      className="flex-1 cursor-pointer rounded-xl px-3 sm:px-4 py-3 text-[13.5px] sm:text-sm text-center whitespace-nowrap transition-colors font-headline"
       style={{
         backgroundColor: checked ? "rgba(8,145,178,0.10)" : "rgba(255,255,255,0.78)",
         border: checked
@@ -464,7 +436,10 @@ function SuccessCard() {
         className="mt-4 text-base leading-relaxed max-w-md mx-auto"
         style={{ color: "#475569" }}
       >
-        We read every application personally and reply within a week. If it fits, you get a personal invitation to create your profile, and when a profile fits yours, we introduce you personally. Nothing is binding along the way.
+        I read every one myself and reply personally, usually within a few days.
+        If it fits, you get a personal invitation to create your profile, and
+        when a profile fits yours, I introduce you. Nothing is binding along the
+        way.
       </p>
       <Link
         href="/"
