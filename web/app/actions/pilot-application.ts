@@ -63,10 +63,8 @@ export async function submitPilotApplication(
 
   const name = (formData.get("name") as string | null)?.trim() ?? "";
   const email = (formData.get("email") as string | null)?.trim().toLowerCase() ?? "";
-  // Founding network (6 Sep 2026): expert or studio, and the featuring
-  // switch (on by default on the form; absent here means switched off).
+  // Founding network (6 Sep 2026): expert or studio decides the questions.
   const applicant_type = formData.get("applicant_type") === "studio" ? "studio" : "expert";
-  const announce_consent = formData.get("announce_consent") === "yes";
   const expertise = (formData.get("expertise") as string | null)?.trim() ?? "";
   const channel_url = normalizeChannelUrl(normalizeOptional(formData.get("channel_url") as string | null));
   const audience_size_range = normalizeOptional(formData.get("audience_size_range") as string | null);
@@ -110,7 +108,6 @@ export async function submitPilotApplication(
     partner_info: has_partner ? partner_info : null,
     complement_interest: has_partner ? null : complement_interest,
     applicant_type,
-    announce_consent,
   });
 
   if (error) {

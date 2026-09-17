@@ -69,8 +69,10 @@ export default function ApplyPage() {
 
         <main className="px-6 py-10 md:py-14">
           <div className="max-w-2xl mx-auto">
-            {/* ── Header: the ask, in two lines ──────────────── */}
-            <div className="mb-6">
+            {/* ── Header: the ask, and nothing under it ──────── */}
+            {/* The sub line explained the form to someone already looking at
+               the form. The fields ask the questions themselves. */}
+            <div className="mb-7">
               <h1
                 className="text-3xl md:text-4xl font-headline tracking-tight leading-[1.1]"
                 style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.025em" }}
@@ -78,13 +80,6 @@ export default function ApplyPage() {
                 Join the{" "}
                 <span style={{ color: "#FF6130" }}>founding network.</span>
               </h1>
-              <p
-                className="mt-4 text-base md:text-lg leading-relaxed"
-                style={{ color: "#475569" }}
-              >
-                Tell us what you do and who you would want next to you. We
-                read every one and reply personally.
-              </p>
             </div>
 
             {/* ── The deal, in one line ──────────────────────── */}

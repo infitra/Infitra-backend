@@ -21,6 +21,13 @@ import { trackEvent } from "@/lib/analytics";
  * The link moved up, because one link answers niche, size, credibility and
  * city at once.
  *
+ * The "Feature me" consent went too (17 Sep). It asked for permission to
+ * show a card that does not exist yet, and the real consent is the
+ * versioned one captured at /network from the invite link
+ * (app_profile.community_consent_version, lib/cardConsent.ts). Nothing ever
+ * carried the application's copy forward, so it was a second, earlier,
+ * unversioned consent for the same thing.
+ *
  * Uses `useActionState` so the server action can return either { error }
  * (re-render with error banner) or { success } (swap to confirmation card).
  * No redirect on success: the applicant might want to read it first.
@@ -277,22 +284,6 @@ export function PilotApplicationForm() {
             />
           </Field>
         )}
-
-        {/* Featuring: the deal, on by default, one click to switch off. */}
-        <label className="flex items-start gap-3 cursor-pointer select-none pt-1">
-          <input
-            type="checkbox"
-            name="announce_consent"
-            value="yes"
-            defaultChecked
-            className="mt-0.5 w-4 h-4 shrink-0 cursor-pointer accent-[#FF6130]"
-          />
-          <span className="text-xs leading-relaxed" style={{ color: "#0F2229" }}>
-            <span className="font-headline font-bold">Feature me.</span> Once I am in, INFITRA may show my
-            card on infitra.fit and mention it in posts. A post shows only what I put in my profile,
-            nothing more. I can switch this off any time.
-          </span>
-        </label>
 
         <button
           type="submit"
