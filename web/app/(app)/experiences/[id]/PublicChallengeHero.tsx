@@ -5,7 +5,7 @@
  *   1. Page-level header (INFITRA Experience eyebrow + H1 promise)
  *   2. Cover image (4:5 mobile / 3:2 desktop, with LIVE · N WEEKS pill)
  *   3. Program name kicker + expandable description
- *   4. Experts portraits (role-color taglines)
+ *   4. Host portraits (role-color taglines; person or studio)
  *   5. Stats line + always-on subtitle + date range
  *   6. WeeklyJourneyCarousel — W1..WN navigation + per-week sessions
  *      list (resurrected from 4.2.13, agenda-style cards from 4.2.39)
@@ -67,6 +67,10 @@ interface Creator {
   role: "owner" | "cohost";
   /** Founding pilot expert (app_profile.is_founding_expert). Renders a chip. */
   is_founding_expert?: boolean | null;
+  /** A host can be a studio or gym, not only a person (17 Sep 2026 studio
+   *  track). Only the wording changes: the role colour still carries
+   *  owner vs cohost, which must not be overloaded with entity. */
+  entity_type?: "expert" | "studio" | null;
 }
 
 /** One public review row (vw_experience_reviews_public) — safe fields only. */
@@ -361,7 +365,7 @@ export function PublicChallengeHero({
               The portraits alone now carry the "who" beat. */}
           <div className="flex items-start justify-center gap-5 lg:gap-8 flex-wrap">
             {creators.map((c) => (
-              <ExpertPortrait key={c.id} creator={c} />
+              <HostPortrait key={c.id} creator={c} />
             ))}
           </div>
 
@@ -577,10 +581,19 @@ function formatReviewDate(iso: string): string {
 }
 
 /**
- * Expert portrait — 96px on mobile, 112px on desktop.
+ * Host portrait — 96px on mobile, 112px on desktop.
+ *
+ * A host is a person OR a studio/gym (ported from FoundingCard's isStudio
+ * branch, 23 Sep 2026). FoundingCard keeps the round frame for both and
+ * differentiates by wording, so this does the same: the only thing that
+ * changes is the word used when there is no name, and the alt text. The
+ * accent stays ROLE-derived (owner orange, cohost cyan) because on this
+ * page that colour already means owner vs cohost and cannot also mean
+ * person vs studio.
  */
-function ExpertPortrait({ creator }: { creator: Creator }) {
+function HostPortrait({ creator }: { creator: Creator }) {
   const roleColor = creator.role === "owner" ? "#FF6130" : "#0891b2";
+  const fallbackNoun = creator.entity_type === "studio" ? "Studio" : "Expert";
 
   return (
     <div
@@ -590,7 +603,7 @@ function ExpertPortrait({ creator }: { creator: Creator }) {
       {creator.avatar_url ? (
         <Image
           src={creator.avatar_url}
-          alt={creator.display_name ?? "Expert"}
+          alt={creator.display_name ?? fallbackNoun}
           width={112}
           height={112}
           decoding="async"
@@ -627,7 +640,7 @@ function ExpertPortrait({ creator }: { creator: Creator }) {
         className="mt-3 lg:mt-4 text-sm lg:text-base font-black font-headline tracking-tight leading-tight text-center"
         style={{ color: "#0F2229", letterSpacing: "-0.01em" }}
       >
-        {creator.display_name ?? "Expert"}
+        {creator.display_name ?? fallbackNoun}
         {/* Hero identity is not the profile detail block — compact star, not
            the labelled pill (that stays in "Meet your Experts"). */}
         {creator.is_founding_expert && <FoundingExpertStar size={18} className="ml-1.5" />}
@@ -708,7 +721,7 @@ function PriceCTA({
           Preview
         </p>
         <p className="text-sm" style={{ color: "#7c2d12" }}>
-          You&apos;re an Expert on this program
+          You&apos;re hosting this experience
         </p>
       </div>
     );
