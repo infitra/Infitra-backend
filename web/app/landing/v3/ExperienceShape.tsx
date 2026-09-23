@@ -19,9 +19,14 @@ import { INK, ORANGE, CYAN, MUTED, FAINT, CARD_SHADOW } from "../ui";
  * Every other rendering on this page shows the sessions and leaves the
  * in-between invisible, which is exactly the half that was missing.
  *
- * Built from content.ts, never from dummy data: the real 4·3·3·3·3·4 = 20
- * across six weeks, and each week's real arc theme. Drawn with invented
- * dots it would be a slide; drawn from the records it is a port.
+ * IT IS THE SHAPE, NOT AN INSTANCE (23 Sep, second pass). The first build
+ * labelled this with the flagship's names, arc themes and session count,
+ * which put the example on the page before the example was introduced and,
+ * worse, made one run look like the definition of the product. BRAND bans
+ * exactly that move in its other form: a duo is the example, never the
+ * definition. So the cadence still comes from content.ts, because a real
+ * run's rhythm is not something to invent, but nothing here is labelled
+ * with that run: the weeks are numbers, and the colours are roles.
  *
  * MARKS ARE COLOURED BY ROLE, not by person: orange is whoever owns the
  * experience, cyan is the complement they brought in, and the two sessions
@@ -45,7 +50,6 @@ function leadOf(host: string): Lead {
 
 const WEEKS = EX.agenda.map((sessions, i) => ({
   n: i + 1,
-  theme: EX.arc[i],
   leads: sessions.map((s) => leadOf(s.host)),
 }));
 
@@ -58,7 +62,7 @@ function Mark({ lead }: { lead: Lead }) {
         : CYAN;
   return (
     <span
-      className="block w-[6px] sm:w-[9px] h-6 sm:h-7 rounded-full shrink-0"
+      className="block w-[6px] sm:w-[9px] h-7 sm:h-9 rounded-full shrink-0"
       style={{ background }}
       aria-hidden
     />
@@ -89,16 +93,22 @@ export function ExperienceShape() {
             className="text-[11px] sm:text-xs uppercase tracking-[0.16em] font-headline"
             style={{ color: INK, fontWeight: 700 }}
           >
-            {EX.weeks} weeks · {EX.sessions} live moments
+            Typically four to six weeks
           </p>
+          {/* Roles, not names. The moment the marks are labelled this way the
+             picture states the thing that is actually new about INFITRA,
+             which the first build only hinted at: the live moments are led
+             by two independent businesses, alternating, opening and closing
+             it together. Same two words the split visual uses further down,
+             so the page teaches one mental model twice. */}
           <p className="text-[11px] sm:text-xs" style={{ color: MUTED }}>
             <Dot color={ORANGE} />
-            {ALEX.name}
+            You
             <span className="mx-2" style={{ color: FAINT }}>
               ·
             </span>
             <Dot color={CYAN} />
-            {MIRA.name}
+            Your complement
           </p>
         </div>
 
@@ -113,18 +123,7 @@ export function ExperienceShape() {
               >
                 W{w.n}
               </p>
-              {/* The arc is the momentum, in the product's own words. It is
-                 the first thing to go when the column is too narrow. Fixed
-                 height because the themes wrap to one or two lines and any
-                 raggedness here puts the marks on six different baselines,
-                 which reads as noise instead of rhythm. */}
-              <p
-                className="hidden sm:block mt-1.5 text-[11.5px] leading-snug h-[34px] overflow-hidden"
-                style={{ color: MUTED }}
-              >
-                {w.theme}
-              </p>
-              <div className="mt-2.5 sm:mt-3 flex items-end gap-1 sm:gap-1.5 h-6 sm:h-7">
+              <div className="mt-3 sm:mt-4 flex items-end gap-1 sm:gap-1.5 h-7 sm:h-9">
                 {w.leads.map((lead, i) => (
                   <Mark key={i} lead={lead} />
                 ))}
@@ -137,7 +136,7 @@ export function ExperienceShape() {
       {/* The part that never stops. Full bleed on purpose: it has to keep
          going where the weeks stop, and the marks overlap into it so they
          read as rising out of it rather than sitting above it. */}
-      <div className="relative -mt-1.5 h-[92px] sm:h-[104px] overflow-hidden">
+      <div className="relative -mt-1.5 h-[80px] sm:h-[88px] overflow-hidden">
         {/* CardWaves is drawn for card-shaped areas; in a band this wide it
            would crop to one flat diagonal. Giving it a taller box and taking
            a slice through the middle keeps the field's shape, and the veil

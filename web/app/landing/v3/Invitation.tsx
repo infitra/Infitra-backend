@@ -12,10 +12,10 @@ import { ExperienceShape } from "./ExperienceShape";
  * and only then hands over to the example.
  *
  * The sentence is BRAND's own ratified answer to the first two cold-reader
- * questions, unchanged. "Explore one, in full" drops from heading to
- * lead-in, because it is a door into what follows rather than this
- * section's subject, and the openness line reads better after the shape
- * than before it.
+ * questions, unchanged. Under the picture the section answers the second
+ * question a reader has, what is it FOR ME, with the two intents. Order
+ * matters and is not negotiable: a reader who cannot picture the thing
+ * learns nothing from a taxonomy of it.
  *
  * It replaces rather than joins: the mock marketing page gave up its
  * caption strip in the same change, so the page did not get longer.
@@ -45,17 +45,37 @@ export function Invitation() {
 
         <ExperienceShape />
 
-        <p
-          className="mt-8 md:mt-9 text-center text-[15px] md:text-base leading-relaxed max-w-2xl mx-auto"
-          style={{ color: MUTED }}
-        >
-          <span className="font-headline" style={{ color: INK, fontWeight: 700 }}>
-            Explore one, in full.
-          </span>{" "}
-          One shape out of many: a studio brings in an outside expert for its
-          members, two studios create one together, a third expert joins for
-          the part neither of you teaches.
-        </p>
+        {/* THE TWO INTENTS (23 Sep). This replaced a list of configurations
+           (a studio with an expert, two studios, a third expert), which was
+           the weakest possible cut: it told a reader who may pair with whom,
+           which nobody asked, and implied a menu.
+           Intent is the useful cut because it CROSSES THE ROLES. Both lines
+           are true for an expert and for a studio, which the old identity
+           list could never be. They are said rather than drawn on purpose:
+           the picture above shows a mechanism, and an intent is a choice.
+           The only way to draw a choice is two labelled panels, which is the
+           invented-diagram slide this page does not do.
+           They are also a ladder, not a fork: the second is the low-risk
+           entry because the audience already exists, the first is the growth.
+           The old "Explore one, in full" lead-in went with them: the section
+           immediately below introduces itself as "An example experience", and
+           that was the same fact twice, 100px apart. */}
+        <div className="mt-8 md:mt-10 grid sm:grid-cols-2 gap-6 sm:gap-10 max-w-3xl mx-auto">
+          <p className="text-[15px] md:text-base leading-relaxed" style={{ color: MUTED }}>
+            <span className="font-headline" style={{ color: INK, fontWeight: 700 }}>
+              A new experience, standing on its own.
+            </span>{" "}
+            You and a complement build it outside what either of you already
+            sells, and open it to both your audiences.
+          </p>
+          <p className="text-[15px] md:text-base leading-relaxed" style={{ color: MUTED }}>
+            <span className="font-headline" style={{ color: INK, fontWeight: 700 }}>
+              Or more for the people you already have.
+            </span>{" "}
+            You bring in expertise you do not offer, and the audience is
+            already there.
+          </p>
+        </div>
       </div>
     </section>
   );
