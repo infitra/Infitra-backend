@@ -92,14 +92,6 @@ export function WhatYouCanBuild() {
           </div>
         </Drift>
 
-        {/* ── stats chip ── */}
-        <Drift depth={10}>
-          <p className="text-[13px] font-bold font-headline mt-6 text-center" style={{ color: "#5b7886" }}>
-            {EX.weeks} weeks · {EX.sessions} live sessions
-            <span style={{ color: FAINT, fontWeight: 600 }}> · Always on: Tribe Space + Expert access</span>
-          </p>
-        </Drift>
-
         {/* ── the weekly journey — the browsable strip ── */}
         <Drift depth={8} className="mt-7">
           <div className="rounded-3xl p-5 sm:p-6" style={{ backgroundColor: "#FFFFFF", boxShadow: "0 0 0 1px rgba(15,34,41,0.05), 0 26px 64px rgba(15,34,41,0.13)" }}>
