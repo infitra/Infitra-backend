@@ -60,23 +60,39 @@ export function Invitation() {
            The old "Explore one, in full" lead-in went with them: the section
            immediately below introduces itself as "An example experience", and
            that was the same fact twice, 100px apart. */}
-        <div className="mt-8 md:mt-10 grid sm:grid-cols-2 gap-6 sm:gap-10 max-w-3xl mx-auto">
-          <p className="text-[15px] md:text-base leading-relaxed" style={{ color: MUTED }}>
-            <span className="font-headline" style={{ color: INK, fontWeight: 700 }}>
-              A new experience, standing on its own.
-            </span>{" "}
+        <div className="mt-9 md:mt-11 grid sm:grid-cols-2 gap-8 sm:gap-10 max-w-3xl mx-auto">
+          <Intent title="A new experience, standing on its own.">
             You and a complement build it outside what either of you already
             sells, and open it to both your audiences.
-          </p>
-          <p className="text-[15px] md:text-base leading-relaxed" style={{ color: MUTED }}>
-            <span className="font-headline" style={{ color: INK, fontWeight: 700 }}>
-              Or more for the people you already have.
-            </span>{" "}
+          </Intent>
+          <Intent title="Or more for the people you already have.">
             You bring in expertise you do not offer, and the audience is
             already there.
-          </p>
+          </Intent>
         </div>
       </div>
     </section>
+  );
+}
+
+/** An intent reads as its own statement, not as a bolded run-in: the title
+ *  carries the weight and the line under it explains, which is the only way
+ *  two of these get scanned instead of read. */
+function Intent({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <h3
+        className="text-[19px] md:text-xl font-headline leading-snug"
+        style={{ color: INK, fontWeight: 700, letterSpacing: "-0.015em" }}
+      >
+        {title}
+      </h3>
+      <p
+        className="mt-2 text-[15px] md:text-base leading-relaxed"
+        style={{ color: MUTED }}
+      >
+        {children}
+      </p>
+    </div>
   );
 }

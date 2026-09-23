@@ -1,6 +1,15 @@
-import { CardWaves } from "@/app/components/BrandWaves";
+import { StageWaves } from "@/app/components/BrandWaves";
 import { EX, ALEX, MIRA } from "../content";
-import { INK, ORANGE, CYAN, MUTED, FAINT, CARD_SHADOW } from "../ui";
+import { ORANGE } from "../ui";
+
+/** The card runs the dark theme: it sits on the cream page and has to read
+ *  as one object, not as a lighter patch of it. Same teal as the stage, and
+ *  therefore the BRIGHT cyan, which is the only one that works on teal. */
+const TEAL = "#0C262E";
+const CREAM = "#F2EFE8";
+const CREAM_MUTED = "rgba(242,239,232,0.78)";
+const CREAM_FAINT = "rgba(242,239,232,0.45)";
+const CYAN_BRIGHT = "#9CF0FF";
 
 /**
  * THE SHAPE (23 Sep 2026): what a live experience actually is, in one still
@@ -56,10 +65,10 @@ const WEEKS = EX.agenda.map((sessions, i) => ({
 function Mark({ lead }: { lead: Lead }) {
   const background =
     lead === "both"
-      ? `linear-gradient(180deg, ${ORANGE} 0%, ${ORANGE} 50%, ${CYAN} 50%, ${CYAN} 100%)`
+      ? `linear-gradient(180deg, ${ORANGE} 0%, ${ORANGE} 50%, ${CYAN_BRIGHT} 50%, ${CYAN_BRIGHT} 100%)`
       : lead === "owner"
         ? ORANGE
-        : CYAN;
+        : CYAN_BRIGHT;
   return (
     <span
       className="block w-[6px] sm:w-[9px] h-7 sm:h-9 rounded-full shrink-0"
@@ -83,7 +92,10 @@ export function ExperienceShape() {
   return (
     <div
       className="rounded-3xl overflow-hidden"
-      style={{ backgroundColor: "#FFFFFF", boxShadow: CARD_SHADOW }}
+      style={{
+        backgroundColor: TEAL,
+        boxShadow: "0 18px 48px rgba(12,38,46,0.22), 0 2px 8px rgba(12,38,46,0.10)",
+      }}
     >
       <div className="px-4 sm:px-6 pt-5 sm:pt-6">
         {/* The facts the mock marketing page used to caption itself with,
@@ -91,7 +103,7 @@ export function ExperienceShape() {
         <div className="flex items-center justify-between gap-4 flex-wrap mb-5">
           <p
             className="text-[11px] sm:text-xs uppercase tracking-[0.16em] font-headline"
-            style={{ color: INK, fontWeight: 700 }}
+            style={{ color: CREAM, fontWeight: 700 }}
           >
             Typically four to six weeks
           </p>
@@ -101,13 +113,13 @@ export function ExperienceShape() {
              by two independent businesses, alternating, opening and closing
              it together. Same two words the split visual uses further down,
              so the page teaches one mental model twice. */}
-          <p className="text-[11px] sm:text-xs" style={{ color: MUTED }}>
+          <p className="text-[11px] sm:text-xs" style={{ color: CREAM_MUTED }}>
             <Dot color={ORANGE} />
             You
-            <span className="mx-2" style={{ color: FAINT }}>
+            <span className="mx-2" style={{ color: CREAM_FAINT }}>
               ·
             </span>
-            <Dot color={CYAN} />
+            <Dot color={CYAN_BRIGHT} />
             Your complement
           </p>
         </div>
@@ -119,7 +131,7 @@ export function ExperienceShape() {
             <div key={w.n} className="min-w-0">
               <p
                 className="text-[10px] uppercase tracking-[0.18em] font-headline"
-                style={{ color: FAINT, fontWeight: 700 }}
+                style={{ color: CREAM_FAINT, fontWeight: 700 }}
               >
                 W{w.n}
               </p>
@@ -136,29 +148,29 @@ export function ExperienceShape() {
       {/* The part that never stops. Full bleed on purpose: it has to keep
          going where the weeks stop, and the marks overlap into it so they
          read as rising out of it rather than sitting above it. */}
-      <div className="relative -mt-1.5 h-[80px] sm:h-[88px] overflow-hidden">
-        {/* CardWaves is drawn for card-shaped areas; in a band this wide it
-           would crop to one flat diagonal. Giving it a taller box and taking
-           a slice through the middle keeps the field's shape, and the veil
-           puts it back behind the words. */}
-        <div className="absolute inset-x-0 -top-[70px] h-[240px]" aria-hidden>
-          <CardWaves id="shape-band" />
+      <div
+        className="relative -mt-1.5 h-[80px] sm:h-[88px] overflow-hidden"
+        style={{
+          backgroundColor: "rgba(156,240,255,0.06)",
+          borderTop: "1px solid rgba(156,240,255,0.14)",
+        }}
+      >
+        {/* The dark field, the same one the stage runs. It is the only thing
+           on the card with movement in it, which is the point: the band is
+           the part that does not stop. */}
+        <div className="absolute inset-0" aria-hidden>
+          <StageWaves id="shape-band" fit="slice" />
         </div>
-        <div
-          className="absolute inset-0"
-          style={{ backgroundColor: "rgba(255,255,255,0.32)" }}
-          aria-hidden
-        />
         <div className="relative h-full flex flex-col justify-center px-4 sm:px-6">
           <p
             className="text-[10px] uppercase tracking-[0.2em] font-headline"
-            style={{ color: CYAN, fontWeight: 800 }}
+            style={{ color: CYAN_BRIGHT, fontWeight: 800 }}
           >
             The tribe space
           </p>
           <p
             className="mt-1 text-[12.5px] sm:text-[13.5px] leading-snug"
-            style={{ color: INK }}
+            style={{ color: CREAM }}
           >
             One room, open the whole way through. Ask, share, reflect.
           </p>

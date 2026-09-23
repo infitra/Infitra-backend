@@ -26,18 +26,17 @@ export function WhatYouCanBuild() {
     >
       <div className="max-w-3xl mx-auto">
         {/* the section's title moment — weighty, two-tone, and still the honesty label */}
-        <div className="flex items-center gap-4 sm:gap-5 mb-10">
-          <div className="hidden sm:block flex-1 h-px" style={{ backgroundColor: "rgba(8,145,178,0.30)" }} />
-          <h2
-            className="mx-auto text-center text-2xl md:text-[2rem] font-headline tracking-tight leading-snug"
-            style={{ color: INK, fontWeight: 700, letterSpacing: "-0.02em" }}
-          >
-            An example experience,
-            <br className="sm:hidden" />
-            <span style={{ color: ORANGE }}> built on INFITRA.</span>
-          </h2>
-          <div className="hidden sm:block flex-1 h-px" style={{ backgroundColor: "rgba(8,145,178,0.30)" }} />
-        </div>
+        {/* The twin of the beat's heading above it. They are the two halves
+           of one answer (what it is, then one of them in full), so they are
+           set identically: same scale, same weight, same two-tone. The old
+           flanking rules made this look like a different kind of moment. */}
+        <h2
+          className="text-center text-3xl md:text-4xl lg:text-5xl font-headline tracking-tight mb-10"
+          style={{ color: INK, fontWeight: 700, letterSpacing: "-0.02em" }}
+        >
+          An example experience,{" "}
+          <span style={{ color: ORANGE }}>built on INFITRA.</span>
+        </h2>
 
         {/* ── the cover as backdrop plate ── */}
         <Drift depth={6}>
