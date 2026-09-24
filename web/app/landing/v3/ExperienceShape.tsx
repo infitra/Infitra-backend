@@ -81,7 +81,7 @@ function Mark({ lead }: { lead: Lead }) {
 function Dot({ color }: { color: string }) {
   return (
     <span
-      className="inline-block w-2 h-2 rounded-full mr-1.5 align-middle"
+      className="inline-block w-2.5 h-2.5 rounded-full mr-2 align-middle"
       style={{ backgroundColor: color }}
       aria-hidden
     />
@@ -98,42 +98,39 @@ export function ExperienceShape() {
       }}
     >
       <div className="px-4 sm:px-6 pt-5 sm:pt-6">
-        {/* The facts the mock marketing page used to caption itself with,
-           said here in the page's own voice instead. */}
-        <div className="flex items-center justify-between gap-4 flex-wrap mb-5">
-          <p
-            className="text-[11px] sm:text-xs uppercase tracking-[0.16em] font-headline"
-            style={{ color: CREAM, fontWeight: 700 }}
-          >
-            Typically four to six weeks
-          </p>
-          {/* Roles, not names. The moment the marks are labelled this way the
-             picture states the thing that is actually new about INFITRA,
-             which the first build only hinted at: the live moments are led
-             by two independent businesses, alternating, opening and closing
-             it together. Same two words the split visual uses further down,
-             so the page teaches one mental model twice. */}
-          <p className="text-[11px] sm:text-xs" style={{ color: CREAM_MUTED }}>
-            <Dot color={ORANGE} />
-            You
-            <span className="mx-2" style={{ color: CREAM_FAINT }}>
-              ·
-            </span>
-            <Dot color={CYAN_BRIGHT} />
-            Your complement
-          </p>
-        </div>
+        {/* Roles, not names, and it carries the header alone now. The moment
+           the marks are labelled this way the picture states the thing that
+           is actually new about INFITRA, which the first build only hinted
+           at: the live moments are led by two independent businesses,
+           alternating, opening and closing it together. Same two words the
+           split visual uses further down, so the page teaches one mental
+           model twice. It is the key to the whole card, so it is set at the
+           weight of a label rather than a footnote. */}
+        <p
+          className="text-[13px] sm:text-sm font-headline mb-5"
+          style={{ color: CREAM, fontWeight: 600 }}
+        >
+          <Dot color={ORANGE} />
+          You
+          <span className="mx-2.5" style={{ color: CREAM_FAINT }}>
+            ·
+          </span>
+          <Dot color={CYAN_BRIGHT} />
+          Your complement
+        </p>
 
         {/* The rhythm. Column gap stays wider than the gap between marks, so
            six clusters read before twenty marks do. */}
-        <div className="grid grid-cols-6 gap-2 sm:gap-3 relative z-10">
+        <div className="grid grid-cols-6 gap-1.5 sm:gap-3 relative z-10">
           {WEEKS.map((w) => (
             <div key={w.n} className="min-w-0">
+              {/* Spelled out, and neither uppercase nor letter-spaced: six
+                 columns of "WEEK 1" at that tracking do not fit a phone. */}
               <p
-                className="text-[10px] uppercase tracking-[0.18em] font-headline"
+                className="text-[10px] sm:text-[11px] font-headline whitespace-nowrap"
                 style={{ color: CREAM_FAINT, fontWeight: 700 }}
               >
-                W{w.n}
+                Week {w.n}
               </p>
               <div className="mt-3 sm:mt-4 flex items-end gap-1 sm:gap-1.5 h-7 sm:h-9">
                 {w.leads.map((lead, i) => (
@@ -153,6 +150,7 @@ export function ExperienceShape() {
         style={{
           backgroundColor: "rgba(156,240,255,0.06)",
           borderTop: "1px solid rgba(156,240,255,0.14)",
+          borderBottom: "1px solid rgba(156,240,255,0.14)",
         }}
       >
         {/* The dark field, the same one the stage runs. It is the only thing
@@ -176,6 +174,46 @@ export function ExperienceShape() {
           </p>
         </div>
       </div>
+
+      {/* The two intents live inside the card now, under the band, so the
+         stripe divides one object into what it is and what it is for
+         instead of separating two. Intent is the useful cut because it
+         crosses the roles: both lines are true for an expert and for a
+         studio, which a list of who-pairs-with-whom could never be. They
+         are a ladder, not a fork, the second being the low-risk entry
+         because the audience already exists. */}
+      <div className="px-4 sm:px-6 py-6 sm:py-7 grid sm:grid-cols-2 gap-6 sm:gap-10">
+        <Intent title="A new experience, standing on its own.">
+          You and a complement build it outside what either of you already
+          sells, and open it to both your audiences.
+        </Intent>
+        <Intent title="Or more for the people you already have.">
+          You bring in expertise you do not offer, and the audience is already
+          there.
+        </Intent>
+      </div>
+    </div>
+  );
+}
+
+/** An intent reads as its own statement, not as a bolded run-in: the title
+ *  carries the weight and the line under it explains, which is the only way
+ *  two of these get scanned instead of read. */
+function Intent({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <h3
+        className="text-[17px] sm:text-[19px] font-headline leading-snug"
+        style={{ color: CREAM, fontWeight: 700, letterSpacing: "-0.015em" }}
+      >
+        {title}
+      </h3>
+      <p
+        className="mt-2 text-[14.5px] sm:text-[15px] leading-relaxed"
+        style={{ color: CREAM_MUTED }}
+      >
+        {children}
+      </p>
     </div>
   );
 }
