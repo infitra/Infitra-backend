@@ -40,13 +40,17 @@ export default async function AdminPage() {
       supabase.rpc("admin_creator_invites"),
     ]);
 
-  const firstError =
-    pulse.error || money.error || payouts.error || people.error ||
-    applications.error || experiences.error || log.error || invites.error;
-  if (firstError) {
+  // Name every load, so a failure says WHICH one rather than throwing a
+  // digest (24 Sep 2026: a generic boundary cost a debugging session).
+  const loads = { pulse, money, payouts, people, applications, experiences, log, invites };
+  const failed = Object.entries(loads)
+    .filter(([, r]) => r.error)
+    .map(([rpc, r]) => ({ rpc, message: r.error!.message, code: (r.error as { code?: string }).code }));
+
+  if (failed.length > 0) {
     // The RPCs raise not_admin (42501) if the flag was pulled mid-session.
-    if (String(firstError.message || "").includes("not_admin")) notFound();
-    throw new Error(`Admin board load failed: ${firstError.message}`);
+    if (failed.some((f) => String(f.message || "").includes("not_admin"))) notFound();
+    return <LoadFailure failed={failed} />;
   }
 
   return (
@@ -60,5 +64,37 @@ export default async function AdminPage() {
       log={log.data}
       invites={invites.data}
     />
+  );
+}
+
+/** Founder-only page: say exactly which load failed and why. */
+function LoadFailure({ failed }: { failed: Array<{ rpc: string; message: string; code?: string }> }) {
+  return (
+    <div className="min-h-screen px-4 py-10 md:px-8" style={{ backgroundColor: "#F2EFE8", color: "#0F2229" }}>
+      <div className="max-w-3xl mx-auto">
+        <h1 className="text-2xl font-headline mb-2" style={{ fontWeight: 700 }}>
+          Admin board load failed
+        </h1>
+        <p className="text-sm mb-5" style={{ color: "#475569" }}>
+          {failed.length} of 8 loads returned an error. Everything else is fine.
+        </p>
+        {failed.map((f) => (
+          <pre
+            key={f.rpc}
+            className="text-xs whitespace-pre-wrap break-all rounded-xl p-4 mb-3"
+            style={{ backgroundColor: "rgba(180,35,24,0.06)", border: "1px solid rgba(180,35,24,0.20)", color: "#b42318" }}
+          >
+            {f.rpc}{f.code ? ` · ${f.code}` : ""}\n{f.message}
+          </pre>
+        ))}
+        <a
+          href="/dashboard"
+          className="inline-block px-4 py-2 rounded-full text-sm font-headline"
+          style={{ border: "1px solid rgba(15,34,41,0.15)", fontWeight: 600 }}
+        >
+          Back to workspace
+        </a>
+      </div>
+    </div>
   );
 }
