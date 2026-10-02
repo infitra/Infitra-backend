@@ -511,7 +511,8 @@ function People({ people, invites, run }: { people: J; invites: J; run: (l: stri
   };
 
   const doMint = () => {
-    const note = prompt("Who is this invite for? (goes to the log; the code is single-use, 60 days)");
+    // An expert's welcome email greets them by the first word of this note.
+    const note = prompt("Who is this invite for? Full name first, an expert's welcome email greets them by it. (Goes to the log; the code is single-use, 60 days.)");
     if (note === null) return;
     run("Mint invite", () => mintCreatorInvite(note));
   };
