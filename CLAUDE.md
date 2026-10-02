@@ -24,7 +24,7 @@ Full architecture reference: `~/Desktop/Architecture & Security Model + Business
 
 | Surface | Who | What |
 |---|---|---|
-| **Client + RLS** | Authenticated user | Profile, posts, reviews, templates, creator-owned objects |
+| **Client + RLS** | Authenticated user | Profile, posts, reviews, creator-owned objects |
 | **RPC Functions** | Client via Supabase | Atomic structured ops (publish flows, collaboration state) |
 | **Edge Functions** | Service role (privileged) | Payments, webhook processing, token issuance, community side effects |
 | **DB Triggers** | Database engine | Invariant enforcement, split validation, acceptance resets |
@@ -33,7 +33,7 @@ Full architecture reference: `~/Desktop/Architecture & Security Model + Business
 
 ---
 
-## 15 Canonical Domains
+## Canonical Domains
 
 | Domain | Tables (prefix: `app_`) | Notes |
 |---|---|---|
@@ -42,7 +42,6 @@ Full architecture reference: `~/Desktop/Architecture & Security Model + Business
 | **Challenge** | `app_challenge`, `app_challenge_session`, `app_challenge_member`, `app_challenge_cohost` | Multi-session programs |
 | **Session** | `app_session`, `app_session_cohost` | Live event unit |
 | **Community** | Creator + challenge community containers, posts, comments | Always container-bound, never global |
-| **Templates** | `app_template`, template items | Structural blueprints only — not runtime objects |
 | **Review / Badge** | Reviews, badges | Reputation + discovery |
 | **Subscription** | Creator plans + user subscriptions | Recurring access |
 | **Direct Messaging** | DM relationships + messages | Private, isolated |
@@ -66,11 +65,8 @@ Full architecture reference: `~/Desktop/Architecture & Security Model + Business
 | `live_webhook` | Receives live provider events (Daily.co webhooks) |
 | `precreate_rooms` | Pre-creates rooms ahead of session start time |
 | `end_session` | Ends live session, updates state |
-| `follow_user` | Follow relationship (creator community) |
-| `unfollow_user` | Unfollow relationship |
-| `email_send_receipt` | Sends payment receipt email |
-| `monthly_badges` | Badge issuance cron job |
-| `create_from_template` | Instantiates challenge/session from template |
+| `email_outbox_drain` | Sends every pending `app_email_outbox` row via Resend. Cron, every minute. Never composes email. |
+| `upload_image` | Uploads an image to the caller's own folder in the profile-images bucket (service role) |
 
 ---
 
@@ -130,7 +126,7 @@ Client → issue_join_token (Edge) → validates attendance → Daily.co token +
 
 ## Current Implementation State
 - Backend: Fully architected (schema + RLS + triggers + RPC)
-- Edge Functions: All core flows implemented (payments, live, badges, templates)
+- Edge Functions: All core flows implemented (payments, live, email, image upload)
 - Frontend: **Not yet built**
 - Stripe Connect (creator payouts): Schema-ready, not yet activated
 - Staff/governance: Architecturally defined, not yet operationally active

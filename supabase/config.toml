@@ -47,28 +47,6 @@ entrypoint = "./functions/end_session/index.ts"
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/end_session/*.html" ]
 
-[functions.follow_user]
-enabled = true
-verify_jwt = true
-import_map = "./functions/follow_user/deno.json"
-# Uncomment to specify a custom file path to the entrypoint.
-# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
-entrypoint = "./functions/follow_user/index.ts"
-# Specifies static files to be bundled with the function. Supports glob patterns.
-# For example, if you want to serve static HTML pages in your function:
-# static_files = [ "./functions/follow_user/*.html" ]
-
-[functions.unfollow_user]
-enabled = true
-verify_jwt = true
-import_map = "./functions/unfollow_user/deno.json"
-# Uncomment to specify a custom file path to the entrypoint.
-# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
-entrypoint = "./functions/unfollow_user/index.ts"
-# Specifies static files to be bundled with the function. Supports glob patterns.
-# For example, if you want to serve static HTML pages in your function:
-# static_files = [ "./functions/unfollow_user/*.html" ]
-
 [functions.stripe_webhook]
 enabled = true
 # verify_jwt MUST stay false: Stripe calls this endpoint unauthenticated and
@@ -136,25 +114,3 @@ enabled = true
 verify_jwt = true
 import_map = "./functions/email_outbox_drain/deno.json"
 entrypoint = "./functions/email_outbox_drain/index.ts"
-
-[functions.monthly_badges]
-enabled = true
-verify_jwt = true
-import_map = "./functions/monthly_badges/deno.json"
-# Uncomment to specify a custom file path to the entrypoint.
-# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
-entrypoint = "./functions/monthly_badges/index.ts"
-# Specifies static files to be bundled with the function. Supports glob patterns.
-# For example, if you want to serve static HTML pages in your function:
-# static_files = [ "./functions/monthly_badges/*.html" ]
-
-[functions.create_from_template]
-enabled = true
-verify_jwt = true
-import_map = "./functions/create_from_template/deno.json"
-# Uncomment to specify a custom file path to the entrypoint.
-# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
-entrypoint = "./functions/create_from_template/index.ts"
-# Specifies static files to be bundled with the function. Supports glob patterns.
-# For example, if you want to serve static HTML pages in your function:
-# static_files = [ "./functions/create_from_template/*.html" ]

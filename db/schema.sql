@@ -500,7 +500,7 @@ begin
 
       </td></tr>
     </table>
-    <p style="margin:20px 0 0;font-family:Inter,-apple-system,'Segoe UI',Arial,sans-serif;font-size:12px;line-height:1.7;color:#475569;">INFITRA · Live experiences by complementary experts<br>Yves Oliver Imhasly · Flühstrasse 40 · 4114 Hofstetten SO · Switzerland<br>
+    <p style="margin:20px 0 0;font-family:Inter,-apple-system,'Segoe UI',Arial,sans-serif;font-size:12px;line-height:1.7;color:#475569;">INFITRA · Professional collaboration in fitness and health, made easy<br>Yves Oliver Imhasly · Flühstrasse 40 · 4114 Hofstetten SO · Switzerland<br>
     <a href="https://www.infitra.fit" style="color:#0891b2;text-decoration:none;">www.infitra.fit</a> · <a href="https://www.infitra.fit/imprint" style="color:#0891b2;text-decoration:none;">Legal Notice</a></p>
   </td></tr></table>
 </div>$html$;
@@ -536,7 +536,7 @@ Log in: https://www.infitra.fit/login
 
 Questions? Just reply to this email.
 
-INFITRA · Live experiences by complementary experts
+INFITRA · Professional collaboration in fitness and health, made easy
 Yves Oliver Imhasly · Flühstrasse 40 · 4114 Hofstetten SO · Switzerland
 www.infitra.fit · Legal notice: www.infitra.fit/imprint$txt$;
 
@@ -1127,10 +1127,7 @@ begin
                 else 1440
             end as period
         from cron.job j
-        left join lateral (
-            select status, end_time from cron.job_run_details
-            where jobid = j.jobid order by start_time desc limit 1
-        ) d on true
+        left join public.app_cron_health d on d.jobid = j.jobid
     ) c;
 
     select jsonb_build_object(
@@ -1559,7 +1556,7 @@ CREATE TABLE IF NOT EXISTS "public"."app_email_outbox" (
     "created_at" timestamp with time zone DEFAULT "now"(),
     "user_id" "uuid",
     "target_id" "uuid",
-    CONSTRAINT "app_email_outbox_kind_check" CHECK (("kind" = ANY (ARRAY['receipt'::"text", 'session_reminder'::"text", 'session_reschedule'::"text", 'welcome'::"text", 'pilot_application_founder'::"text", 'pilot_application_confirm'::"text"])))
+    CONSTRAINT "app_email_outbox_kind_check" CHECK (("kind" = ANY (ARRAY['receipt'::"text", 'session_reminder'::"text", 'session_reschedule'::"text", 'welcome'::"text", 'pilot_application_founder'::"text", 'pilot_application_confirm'::"text", 'network_card_founder'::"text", 'network_welcome'::"text"])))
 );
 
 
@@ -1594,6 +1591,182 @@ ALTER FUNCTION "public"."app_claim_email"("p_kind" "text") OWNER TO "postgres";
 
 
 COMMENT ON FUNCTION "public"."app_claim_email"("p_kind" "text") IS 'Claims one pending app_email_outbox row (of the given kind, or any kind when null), bumping attempt_count. Race-safe via FOR UPDATE SKIP LOCKED. Skips rows past 5 attempts; zero rows when nothing claimable. service_role only.';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."app_enqueue_network_card_emails"("p_profile_id" "uuid") RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $_$
+declare
+  p           record;
+  v_type      text;
+  v_first     text;
+  v_rows_html text;
+  v_rows_text text;
+  v_html      text;
+  v_text      text;
+  lbl constant text := '<tr><td style="padding:6px 16px 6px 0;color:#475569;font-size:13px;white-space:nowrap;vertical-align:top;">';
+  val constant text := '</td><td style="padding:6px 0;font-size:14px;color:#0F2229;">';
+  shell_open constant text :=
+       '<div style="background:#F2EFE8;padding:32px 12px;">'
+    || '<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">'
+    || '<table role="presentation" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#FFFFFF;border-radius:14px;">'
+    || '<tr><td style="padding:36px 32px;font-family:Inter,-apple-system,''Segoe UI'',Arial,sans-serif;color:#0F2229;">'
+    || '<img src="https://www.infitra.fit/email-logo.png" width="150" alt="INFITRA" style="display:block;height:auto;border:0;margin-bottom:28px;">';
+begin
+  select ap.display_name, ap.full_name, ap.username, ap.entity_type, ap.tagline,
+         ap.brings, ap.seeks, ap.profile_facts ->> 'city' as city, ap.link_url, au.email
+    into p
+    from app_profile ap
+    join auth.users au on au.id = ap.id
+   where ap.id = p_profile_id;
+
+  if not found then
+    return;
+  end if;
+
+  v_type := case p.entity_type when 'studio' then 'Studio' when 'expert' then 'Expert' else 'Member' end;
+
+  -- ── Founder notification: once per member, ever ─────────────────────
+  if not exists (select 1 from app_email_outbox
+                  where kind = 'network_card_founder' and target_id = p_profile_id) then
+    v_rows_html := lbl || 'Name' || val || app_html_escape(p.display_name) || '</td></tr>'
+                || lbl || 'Type' || val || v_type || '</td></tr>';
+    v_rows_text := 'Name:        ' || coalesce(p.display_name, '') || E'\n'
+                || 'Type:        ' || v_type || E'\n';
+
+    if nullif(p.email, '') is not null then
+      v_rows_html := v_rows_html || lbl || 'Email' || val
+        || '<a href="mailto:' || app_html_escape(p.email) || '" style="color:#0891b2;text-decoration:none;">'
+        || app_html_escape(p.email) || '</a></td></tr>';
+      v_rows_text := v_rows_text || 'Email:       ' || p.email || E'\n';
+    end if;
+    if nullif(p.tagline, '') is not null then
+      v_rows_html := v_rows_html || lbl || 'One line' || val || app_html_escape(p.tagline) || '</td></tr>';
+      v_rows_text := v_rows_text || 'One line:    ' || p.tagline || E'\n';
+    end if;
+    if nullif(p.brings, '') is not null then
+      v_rows_html := v_rows_html || lbl || 'Brings' || val || app_html_escape(p.brings) || '</td></tr>';
+      v_rows_text := v_rows_text || 'Brings:      ' || p.brings || E'\n';
+    end if;
+    if nullif(p.seeks, '') is not null then
+      v_rows_html := v_rows_html || lbl || 'Wants next' || val || app_html_escape(p.seeks) || '</td></tr>';
+      v_rows_text := v_rows_text || 'Wants next:  ' || p.seeks || E'\n';
+    end if;
+    if nullif(p.city, '') is not null then
+      v_rows_html := v_rows_html || lbl || 'City' || val || app_html_escape(p.city) || '</td></tr>';
+      v_rows_text := v_rows_text || 'City:        ' || p.city || E'\n';
+    end if;
+    if nullif(p.link_url, '') is not null then
+      v_rows_html := v_rows_html || lbl || 'Link' || val
+        || case when p.link_url ~* '^https?://'
+                then '<a href="' || app_html_escape(p.link_url) || '" style="color:#0891b2;text-decoration:none;">' || app_html_escape(p.link_url) || '</a>'
+                else app_html_escape(p.link_url)
+           end || '</td></tr>';
+      v_rows_text := v_rows_text || 'Link:        ' || p.link_url || E'\n';
+    end if;
+
+    v_html := shell_open
+      || '<p style="margin:0 0 20px;font-size:16px;font-weight:700;">New member in the founding network</p>'
+      || '<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;">' || v_rows_html || '</table>'
+      || '<p style="margin:24px 0 0;font-size:14px;"><a href="https://www.infitra.fit/network/explore" style="color:#0891b2;text-decoration:none;">See every card in the network</a></p>'
+      || '</td></tr></table></td></tr></table></div>';
+    v_text := 'New member in the founding network' || E'\n\n' || v_rows_text
+           || E'\nSee every card: https://www.infitra.fit/network/explore\n';
+
+    insert into public.app_email_outbox (kind, to_email, subject, html_body, text_body, target_id)
+    values ('network_card_founder', 'yves@infitra.fit',
+            coalesce(nullif(p.display_name, ''), 'A new member') || ' joined the founding network · ' || v_type,
+            v_html, v_text, p_profile_id);
+  end if;
+
+  -- ── Member welcome: once per member, ever ───────────────────────────
+  if nullif(p.email, '') is null then
+    return;
+  end if;
+
+  -- Studio: the card name. Expert: first name from the invite note the
+  -- founder wrote; a card name can be a brand. Else the old rule.
+  if p.entity_type = 'studio' and nullif(trim(p.display_name), '') is not null then
+    v_first := trim(p.display_name);
+  else
+    select regexp_replace(split_part(trim(i.note), ' ', 1), '[,;:·]+$', '')
+      into v_first
+      from app_creator_invite i
+     where i.redeemed_by = p_profile_id
+       and nullif(trim(i.note), '') is not null
+     order by i.redeemed_at desc nulls last
+     limit 1;
+    if v_first is null or v_first !~ '^[[:alpha:]][[:alpha:]''’-]*$' then
+      v_first := app_receipt_greeting(null, p.display_name, p.full_name, p.username, p.email);
+    else
+      v_first := upper(left(v_first, 1)) || substr(v_first, 2);
+    end if;
+  end if;
+
+  v_html := shell_open || $html$
+        <p style="margin:0 0 16px;font-size:15px;line-height:1.7;">Hi {FIRST},</p>
+        <p style="margin:0 0 16px;font-size:15px;line-height:1.7;">Welcome to INFITRA's founding network. Your card is live.</p>
+        <p style="margin:0 0 16px;font-size:15px;line-height:1.7;">The network is young and taking shape right now, one member at a time: experts and studios who want to create together. What gets built here, the matches and the experiences, grows out of the people in it, and you are one of them. Your card carries the founding member badge, and it stays with you.</p>
+        <p style="margin:0 0 16px;font-size:15px;line-height:1.7;">The next member might be someone you already know: a colleague you admire, a studio you believe in, someone you would love to create something with. Just reply and tell us.</p>
+        <p style="margin:0 0 16px;font-size:15px;line-height:1.7;">We are already looking for matches for you. And once the group has grown, the network opens to discovery, where every member sees the others and can show interest in working together.</p>
+        <p style="margin:0 0 16px;font-size:15px;line-height:1.7;">You can change your card any time: <a href="https://www.infitra.fit/network/edit" style="color:#0891b2;text-decoration:none;">infitra.fit/network/edit</a></p>
+        <p style="margin:24px 0 0;font-size:15px;line-height:1.6;">See you inside,</p>
+        <p style="margin:12px 0 0;font-size:15px;line-height:1.6;">Yves<br>
+        <span style="color:#475569;font-size:13px;">Founder, INFITRA</span></p>
+
+      </td></tr>
+    </table>
+    <p style="margin:20px 0 0;font-family:Inter,-apple-system,'Segoe UI',Arial,sans-serif;font-size:12px;line-height:1.7;color:#475569;">INFITRA · Professional collaboration in fitness and health, made easy<br>Yves Oliver Imhasly · Flühstrasse 40 · 4114 Hofstetten SO · Switzerland<br>
+    <a href="https://www.infitra.fit" style="color:#0891b2;text-decoration:none;">www.infitra.fit</a> · <a href="https://www.infitra.fit/imprint" style="color:#0891b2;text-decoration:none;">Legal Notice</a></p>
+  </td></tr></table>
+</div>$html$;
+  v_html := replace(v_html, '{FIRST}', app_html_escape(v_first));
+
+  v_text := $txt$Hi {FIRST},
+
+Welcome to INFITRA's founding network. Your card is live.
+
+The network is young and taking shape right now, one member at a time:
+experts and studios who want to create together. What gets built here,
+the matches and the experiences, grows out of the people in it, and you
+are one of them. Your card carries the founding member badge, and it
+stays with you.
+
+The next member might be someone you already know: a colleague you
+admire, a studio you believe in, someone you would love to create
+something with. Just reply and tell us.
+
+We are already looking for matches for you. And once the group has
+grown, the network opens to discovery, where every member sees the
+others and can show interest in working together.
+
+You can change your card any time: https://www.infitra.fit/network/edit
+
+See you inside,
+
+Yves
+Founder, INFITRA
+
+INFITRA · Professional collaboration in fitness and health, made easy
+Yves Oliver Imhasly · Flühstrasse 40 · 4114 Hofstetten SO · Switzerland
+www.infitra.fit · Legal notice: www.infitra.fit/imprint$txt$;
+  v_text := replace(v_text, '{FIRST}', v_first);
+
+  insert into public.app_email_outbox (kind, to_email, subject, html_body, text_body, user_id, target_id)
+  values ('network_welcome', p.email, 'Welcome to INFITRA''s founding network', v_html, v_text, p_profile_id, p_profile_id)
+  on conflict (user_id, kind, target_id)
+    where user_id is not null and target_id is not null
+    do nothing;
+end;
+$_$;
+
+
+ALTER FUNCTION "public"."app_enqueue_network_card_emails"("p_profile_id" "uuid") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."app_enqueue_network_card_emails"("p_profile_id" "uuid") IS 'Enqueues the founder notification + member welcome when a founding-network card first goes live. Once per member ever. Trigger/service_role only; content rides the outbox drain.';
 
 
 
@@ -1660,13 +1833,6 @@ begin
     v_rows_text := v_rows_text || 'Audience:  ' || v_audience || E'\n';
   end if;
 
-  if a.location is not null then
-    v_rows_html := v_rows_html
-      || '<tr><td style="padding:6px 16px 6px 0;color:#475569;font-size:13px;vertical-align:top;">Location</td>'
-      || '<td style="padding:6px 0;font-size:14px;color:#0F2229;">' || app_html_escape(a.location) || '</td></tr>';
-    v_rows_text := v_rows_text || 'Location:  ' || a.location || E'\n';
-  end if;
-
   v_rows_html := v_rows_html
     || '<tr><td style="padding:6px 16px 6px 0;color:#475569;font-size:13px;vertical-align:top;">Partner</td>'
     || '<td style="padding:6px 0;font-size:14px;color:#0F2229;">'
@@ -1681,21 +1847,6 @@ begin
             then 'has someone in mind' || coalesce(': ' || a.partner_info, '')
             else 'looking for a complement' || coalesce(': ' || a.complement_interest, '')
        end || E'\n';
-
-  if a.success_description is not null then
-    v_rows_html := v_rows_html
-      || '<tr><td style="padding:6px 16px 6px 0;color:#475569;font-size:13px;vertical-align:top;">Successful collaboration</td>'
-      || '<td style="padding:6px 0;font-size:14px;color:#0F2229;">' || app_html_escape(a.success_description) || '</td></tr>';
-    v_rows_text := v_rows_text || 'Successful collaboration: ' || a.success_description || E'\n';
-  end if;
-
-  v_rows_html := v_rows_html
-    || '<tr><td style="padding:6px 16px 6px 0;color:#475569;font-size:13px;vertical-align:top;">Featuring</td>'
-    || '<td style="padding:6px 0;font-size:14px;color:#0F2229;">'
-    || case when a.announce_consent then 'Yes: card on infitra.fit and in posts' else 'Switched off' end
-    || '</td></tr>';
-  v_rows_text := v_rows_text || 'Featuring: '
-    || case when a.announce_consent then 'yes' else 'switched off' end || E'\n';
 
   v_html := '<div style="background:#F2EFE8;padding:32px 12px;">'
     || '<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">'
@@ -1731,7 +1882,7 @@ begin
     || '<p style="margin:12px 0 0;font-size:15px;line-height:1.6;">Yves<br>'
     || '<span style="color:#475569;font-size:13px;">Founder, INFITRA</span></p>'
     || '</td></tr></table>'
-    || '<p style="margin:20px 0 0;font-family:Inter,-apple-system,''Segoe UI'',Arial,sans-serif;font-size:12px;line-height:1.7;color:#475569;">INFITRA · Live experiences by complementary experts<br>Yves Oliver Imhasly · Flühstrasse 40 · 4114 Hofstetten SO · Switzerland<br>'
+    || '<p style="margin:20px 0 0;font-family:Inter,-apple-system,''Segoe UI'',Arial,sans-serif;font-size:12px;line-height:1.7;color:#475569;">INFITRA · Professional collaboration in fitness and health, made easy<br>Yves Oliver Imhasly · Flühstrasse 40 · 4114 Hofstetten SO · Switzerland<br>'
     || '<a href="https://www.infitra.fit" style="color:#0891b2;text-decoration:none;">www.infitra.fit</a> · <a href="https://www.infitra.fit/imprint" style="color:#0891b2;text-decoration:none;">Legal Notice</a></p>'
     || '</td></tr></table></div>';
 
@@ -1745,7 +1896,7 @@ begin
     || 'Speak soon,' || E'\n\n'
     || 'Yves' || E'\n'
     || 'Founder, INFITRA' || E'\n\n'
-    || 'INFITRA · Live experiences by complementary experts' || E'\n'
+    || 'INFITRA · Professional collaboration in fitness and health, made easy' || E'\n'
     || 'Yves Oliver Imhasly · Flühstrasse 40 · 4114 Hofstetten SO · Switzerland' || E'\n'
     || 'www.infitra.fit · Legal notice: www.infitra.fit/imprint';
 
@@ -1759,7 +1910,7 @@ $$;
 ALTER FUNCTION "public"."app_enqueue_pilot_application_emails"("p_application_id" "uuid") OWNER TO "postgres";
 
 
-COMMENT ON FUNCTION "public"."app_enqueue_pilot_application_emails"("p_application_id" "uuid") IS 'Enqueues the founder notification + applicant confirmation for one pilot application. Trigger/service_role only; content rides the outbox drain.';
+COMMENT ON FUNCTION "public"."app_enqueue_pilot_application_emails"("p_application_id" "uuid") IS 'Enqueues the founder notification + applicant confirmation for one founding network application. Trigger/service_role only; content rides the outbox drain.';
 
 
 
@@ -1844,7 +1995,7 @@ begin
 
       </td></tr>
     </table>
-    <p style="margin:20px 0 0;font-family:Inter,-apple-system,'Segoe UI',Arial,sans-serif;font-size:12px;line-height:1.7;color:#475569;">INFITRA · Live experiences by complementary experts<br>Yves Oliver Imhasly · Flühstrasse 40 · 4114 Hofstetten SO · Switzerland<br>
+    <p style="margin:20px 0 0;font-family:Inter,-apple-system,'Segoe UI',Arial,sans-serif;font-size:12px;line-height:1.7;color:#475569;">INFITRA · Professional collaboration in fitness and health, made easy<br>Yves Oliver Imhasly · Flühstrasse 40 · 4114 Hofstetten SO · Switzerland<br>
     <a href="https://www.infitra.fit" style="color:#0891b2;text-decoration:none;">www.infitra.fit</a> · <a href="https://www.infitra.fit/imprint" style="color:#0891b2;text-decoration:none;">Legal Notice</a></p>
   </td></tr></table>
 </div>$html$;
@@ -1865,7 +2016,7 @@ Go to your session: {URL}
 
 Questions? Just reply to this email.
 
-INFITRA · Live experiences by complementary experts
+INFITRA · Professional collaboration in fitness and health, made easy
 Yves Oliver Imhasly · Flühstrasse 40 · 4114 Hofstetten SO · Switzerland
 www.infitra.fit · Legal notice: www.infitra.fit/imprint$txt$;
 
@@ -1997,7 +2148,7 @@ begin
 
       </td></tr>
     </table>
-    <p style="margin:20px 0 0;font-family:Inter,-apple-system,'Segoe UI',Arial,sans-serif;font-size:12px;line-height:1.7;color:#475569;">INFITRA · Live experiences by complementary experts<br>Yves Oliver Imhasly · Flühstrasse 40 · 4114 Hofstetten SO · Switzerland<br>
+    <p style="margin:20px 0 0;font-family:Inter,-apple-system,'Segoe UI',Arial,sans-serif;font-size:12px;line-height:1.7;color:#475569;">INFITRA · Professional collaboration in fitness and health, made easy<br>Yves Oliver Imhasly · Flühstrasse 40 · 4114 Hofstetten SO · Switzerland<br>
     <a href="https://www.infitra.fit" style="color:#0891b2;text-decoration:none;">www.infitra.fit</a> · <a href="https://www.infitra.fit/imprint" style="color:#0891b2;text-decoration:none;">Legal Notice</a></p>
   </td></tr></table>
 </div>$html$;
@@ -2018,7 +2169,7 @@ The new time is in your space, shown in your timezone:
 
 Questions? Just reply to this email.
 
-INFITRA · Live experiences by complementary experts
+INFITRA · Professional collaboration in fitness and health, made easy
 Yves Oliver Imhasly · Flühstrasse 40 · 4114 Hofstetten SO · Switzerland
 www.infitra.fit · Legal notice: www.infitra.fit/imprint$txt$;
 
@@ -2084,16 +2235,16 @@ begin
 
         <p style="margin:0 0 16px;font-size:15px;line-height:1.7;">Hi {FIRST},</p>
         <p style="margin:0 0 16px;font-size:15px;line-height:1.7;">I'm Yves, founder of INFITRA. Welcome, and thank you for being one of our Pioneers.</p>
-        <p style="margin:0 0 16px;font-size:15px;line-height:1.7;">Here is what you'll find. Experts team up instead of trying to do everything alone, so each session is led by people who truly know their craft. Live sessions you show up to rather than watch. And between sessions, your tribe and your experts stay in one space with you, where you can share how it's going and ask them anything.</p>
-        <p style="margin:0 0 16px;font-size:15px;line-height:1.7;">If you've already joined an experience, everything is waiting in your experience space. If you're still deciding, take your time. The next ones are being built right now.</p>
-        <p style="margin:0 0 16px;font-size:15px;line-height:1.7;">One thing I'd genuinely like to know: what brought you here? Just reply, I read every answer myself.</p>
+        <p style="margin:0 0 16px;font-size:15px;line-height:1.7;">On INFITRA, studios, gyms and experts join forces to offer you more complete and immersive experiences. Whether you add one to the training you already do at your gym or join one on its own, it runs live and online over several weeks. What you get is experts who go all in on their craft, direct access to them for your questions, and a group that moves with you.</p>
+        <p style="margin:0 0 16px;font-size:15px;line-height:1.7;">If you've already joined an experience, everything is waiting in your experience space. If you're still looking, take your time. The next ones are being built right now.</p>
+        <p style="margin:0 0 16px;font-size:15px;line-height:1.7;">What brought you here? Just reply, I read every answer myself.</p>
         <p style="margin:24px 0 0;font-size:15px;line-height:1.6;">See you inside,</p>
         <p style="margin:12px 0 0;font-size:15px;line-height:1.6;">Yves<br>
         <span style="color:#475569;font-size:13px;">Founder, INFITRA</span></p>
 
       </td></tr>
     </table>
-    <p style="margin:20px 0 0;font-family:Inter,-apple-system,'Segoe UI',Arial,sans-serif;font-size:12px;line-height:1.7;color:#475569;">INFITRA · Live experiences by complementary experts<br>Yves Oliver Imhasly · Flühstrasse 40 · 4114 Hofstetten SO · Switzerland<br>
+    <p style="margin:20px 0 0;font-family:Inter,-apple-system,'Segoe UI',Arial,sans-serif;font-size:12px;line-height:1.7;color:#475569;">INFITRA · Professional collaboration in fitness and health, made easy<br>Yves Oliver Imhasly · Flühstrasse 40 · 4114 Hofstetten SO · Switzerland<br>
     <a href="https://www.infitra.fit" style="color:#0891b2;text-decoration:none;">www.infitra.fit</a> · <a href="https://www.infitra.fit/imprint" style="color:#0891b2;text-decoration:none;">Legal Notice</a></p>
   </td></tr></table>
 </div>$html$;
@@ -2105,25 +2256,25 @@ begin
 I'm Yves, founder of INFITRA. Welcome, and thank you for being one of
 our Pioneers.
 
-Here is what you'll find. Experts team up instead of trying to do
-everything alone, so each session is led by people who truly know
-their craft. Live sessions you show up to rather than watch. And
-between sessions, your tribe and your experts stay in one space with
-you, where you can share how it's going and ask them anything.
+On INFITRA, studios, gyms and experts join forces to offer you more
+complete and immersive experiences. Whether you add one to the training
+you already do at your gym or join one on its own, it runs live and
+online over several weeks. What you get is experts who go all in on
+their craft, direct access to them for your questions, and a group that
+moves with you.
 
 If you've already joined an experience, everything is waiting in your
-experience space. If you're still deciding, take your time. The next
+experience space. If you're still looking, take your time. The next
 ones are being built right now.
 
-One thing I'd genuinely like to know: what brought you here? Just
-reply, I read every answer myself.
+What brought you here? Just reply, I read every answer myself.
 
 See you inside,
 
 Yves
 Founder, INFITRA
 
-INFITRA · Live experiences by complementary experts
+INFITRA · Professional collaboration in fitness and health, made easy
 Yves Oliver Imhasly · Flühstrasse 40 · 4114 Hofstetten SO · Switzerland
 www.infitra.fit · Legal notice: www.infitra.fit/imprint$txt$;
 
@@ -2309,6 +2460,39 @@ $$;
 
 
 ALTER FUNCTION "public"."app_receipt_greeting"("p_buyer_name" "text", "p_display_name" "text", "p_full_name" "text", "p_username" "text", "p_email" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."app_refresh_cron_health"() RETURNS integer
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+declare
+  v_from bigint;
+  v_n    integer;
+begin
+  select greatest(coalesce(max(last_runid), 0) - 100, 0) into v_from
+    from public.app_cron_health;
+
+  insert into public.app_cron_health as h (jobid, status, end_time, last_runid, updated_at)
+  select distinct on (d.jobid) d.jobid, d.status, d.end_time, d.runid, now()
+    from cron.job_run_details d
+   where d.runid > v_from
+     and d.end_time is not null
+   order by d.jobid, d.runid desc
+      on conflict (jobid) do update
+         set status     = excluded.status,
+             end_time   = excluded.end_time,
+             last_runid = excluded.last_runid,
+             updated_at = now()
+       where excluded.last_runid >= h.last_runid;
+
+  get diagnostics v_n = row_count;
+  return v_n;
+end;
+$$;
+
+
+ALTER FUNCTION "public"."app_refresh_cron_health"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."app_reschedule_session"("p_session" "uuid", "p_new_start" timestamp with time zone, "p_reason" "text") RETURNS "jsonb"
@@ -8874,26 +9058,6 @@ $$;
 ALTER FUNCTION "public"."trg_material_session_in_challenge"() OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."trg_pilot_application_consent_stamp"() RETURNS "trigger"
-    LANGUAGE "plpgsql"
-    SET "search_path" TO 'public'
-    AS $$
-begin
-  if new.announce_consent then
-    if tg_op = 'INSERT' or not coalesce(old.announce_consent, false) or new.announce_consent_at is null then
-      new.announce_consent_at := now();
-    end if;
-  else
-    new.announce_consent_at := null;
-  end if;
-  return new;
-end;
-$$;
-
-
-ALTER FUNCTION "public"."trg_pilot_application_consent_stamp"() OWNER TO "postgres";
-
-
 CREATE OR REPLACE FUNCTION "public"."trg_pilot_application_enqueue_emails"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -8954,6 +9118,26 @@ $$;
 
 
 ALTER FUNCTION "public"."trg_profile_enqueue_welcome"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."trg_profile_network_card_emails"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+begin
+  -- Contained: this runs inside the member's join transaction. If
+  -- enqueueing fails for any reason, the card still goes live.
+  begin
+    perform public.app_enqueue_network_card_emails(NEW.id);
+  exception when others then
+    raise warning 'network card email enqueue failed for %: %', NEW.id, sqlerrm;
+  end;
+  return NEW;
+end;
+$$;
+
+
+ALTER FUNCTION "public"."trg_profile_network_card_emails"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."trg_tx_auto_join_creator_space"() RETURNS "trigger"
@@ -9876,6 +10060,22 @@ CREATE TABLE IF NOT EXISTS "public"."app_creator_subscription_plan" (
 ALTER TABLE "public"."app_creator_subscription_plan" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."app_cron_health" (
+    "jobid" bigint NOT NULL,
+    "status" "text",
+    "end_time" timestamp with time zone,
+    "last_runid" bigint NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."app_cron_health" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."app_cron_health" IS 'One row per pg_cron job: its latest run. Refreshed every minute from cron.job_run_details by an incremental runid read, because that table is 155MB with no usable index and scanning it blew the admin board''s 8s statement timeout (24 Sep 2026).';
+
+
+
 CREATE TABLE IF NOT EXISTS "public"."app_dm_conversation" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "created_by" "uuid" NOT NULL,
@@ -10067,16 +10267,12 @@ CREATE TABLE IF NOT EXISTS "public"."app_pilot_application" (
     "channel_url" "text",
     "expertise" "text" NOT NULL,
     "audience_size_range" "text",
-    "location" "text",
     "has_partner" boolean DEFAULT false NOT NULL,
     "partner_info" "text",
     "complement_interest" "text",
-    "success_description" "text",
     "status" "text" DEFAULT 'new'::"text" NOT NULL,
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "applicant_type" "text" DEFAULT 'expert'::"text" NOT NULL,
-    "announce_consent" boolean DEFAULT false NOT NULL,
-    "announce_consent_at" timestamp with time zone,
     CONSTRAINT "app_pilot_application_status_check" CHECK (("status" = ANY (ARRAY['new'::"text", 'contacted'::"text", 'accepted'::"text", 'declined'::"text"]))),
     CONSTRAINT "app_pilot_application_type_check" CHECK (("applicant_type" = ANY (ARRAY['expert'::"text", 'studio'::"text"])))
 );
@@ -10387,38 +10583,6 @@ CREATE TABLE IF NOT EXISTS "public"."app_subscription_inclusion" (
 
 
 ALTER TABLE "public"."app_subscription_inclusion" OWNER TO "postgres";
-
-
-CREATE TABLE IF NOT EXISTS "public"."app_template" (
-    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "kind" "text" NOT NULL,
-    "title" "text" NOT NULL,
-    "description" "text",
-    "price_cents" integer NOT NULL,
-    "currency" "text" DEFAULT 'CHF'::"text" NOT NULL,
-    "capacity" integer,
-    "config" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
-    "creator_id" "uuid" NOT NULL,
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    CONSTRAINT "app_template_kind_check" CHECK (("kind" = ANY (ARRAY['session'::"text", 'challenge'::"text"])))
-);
-
-
-ALTER TABLE "public"."app_template" OWNER TO "postgres";
-
-
-CREATE TABLE IF NOT EXISTS "public"."app_template_item" (
-    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "template_id" "uuid" NOT NULL,
-    "item_type" "text" NOT NULL,
-    "position" integer NOT NULL,
-    "config" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    CONSTRAINT "app_template_item_item_type_check" CHECK (("item_type" = 'session'::"text"))
-);
-
-
-ALTER TABLE "public"."app_template_item" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."app_transaction_audit" (
@@ -11969,6 +12133,11 @@ ALTER TABLE ONLY "public"."app_creator_subscription_plan"
 
 
 
+ALTER TABLE ONLY "public"."app_cron_health"
+    ADD CONSTRAINT "app_cron_health_pkey" PRIMARY KEY ("jobid");
+
+
+
 ALTER TABLE ONLY "public"."app_dm_conversation"
     ADD CONSTRAINT "app_dm_conversation_pkey" PRIMARY KEY ("id");
 
@@ -12091,16 +12260,6 @@ ALTER TABLE ONLY "public"."app_stream_token"
 
 ALTER TABLE ONLY "public"."app_subscription_inclusion"
     ADD CONSTRAINT "app_subscription_inclusion_pkey" PRIMARY KEY ("id");
-
-
-
-ALTER TABLE ONLY "public"."app_template_item"
-    ADD CONSTRAINT "app_template_item_pkey" PRIMARY KEY ("id");
-
-
-
-ALTER TABLE ONLY "public"."app_template"
-    ADD CONSTRAINT "app_template_pkey" PRIMARY KEY ("id");
 
 
 
@@ -12484,22 +12643,6 @@ CREATE INDEX "idx_subplan_creator" ON "public"."app_creator_subscription_plan" U
 
 
 
-CREATE INDEX "idx_template_creator" ON "public"."app_template" USING "btree" ("creator_id");
-
-
-
-CREATE INDEX "idx_template_item_position" ON "public"."app_template_item" USING "btree" ("template_id", "position");
-
-
-
-CREATE INDEX "idx_template_item_template" ON "public"."app_template_item" USING "btree" ("template_id");
-
-
-
-CREATE INDEX "idx_template_kind" ON "public"."app_template" USING "btree" ("kind");
-
-
-
 CREATE INDEX "idx_token_session" ON "public"."app_stream_token" USING "btree" ("session_id");
 
 
@@ -12672,10 +12815,6 @@ CREATE UNIQUE INDEX "uq_notification_dm_new" ON "public"."app_notification" USIN
 
 
 
-CREATE UNIQUE INDEX "uq_template_item_template_position" ON "public"."app_template_item" USING "btree" ("template_id", "position");
-
-
-
 CREATE UNIQUE INDEX "uq_tx_provider_payment" ON "public"."app_transaction" USING "btree" ("provider", "provider_payment_id") WHERE ("provider_payment_id" IS NOT NULL);
 
 
@@ -12701,10 +12840,6 @@ CREATE OR REPLACE TRIGGER "app_session_assert_within_challenge_window" BEFORE IN
 
 
 
-CREATE OR REPLACE TRIGGER "trg_app_pilot_application_consent" BEFORE INSERT OR UPDATE OF "announce_consent" ON "public"."app_pilot_application" FOR EACH ROW EXECUTE FUNCTION "public"."trg_pilot_application_consent_stamp"();
-
-
-
 CREATE OR REPLACE TRIGGER "trg_app_pilot_application_emails" AFTER INSERT ON "public"."app_pilot_application" FOR EACH ROW EXECUTE FUNCTION "public"."trg_pilot_application_enqueue_emails"();
 
 
@@ -12714,6 +12849,10 @@ CREATE OR REPLACE TRIGGER "trg_app_profile_community_consent" BEFORE INSERT OR U
 
 
 CREATE OR REPLACE TRIGGER "trg_app_profile_enqueue_welcome" AFTER INSERT ON "public"."app_profile" FOR EACH ROW EXECUTE FUNCTION "public"."trg_profile_enqueue_welcome"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_app_profile_network_card_emails" AFTER UPDATE ON "public"."app_profile" FOR EACH ROW WHEN ((("old"."community_consent_at" IS NULL) AND ("new"."community_consent_at" IS NOT NULL))) EXECUTE FUNCTION "public"."trg_profile_network_card_emails"();
 
 
 
@@ -13264,16 +13403,6 @@ ALTER TABLE ONLY "public"."app_subscription_inclusion"
 
 
 
-ALTER TABLE ONLY "public"."app_template"
-    ADD CONSTRAINT "app_template_creator_id_fkey" FOREIGN KEY ("creator_id") REFERENCES "public"."app_profile"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."app_template_item"
-    ADD CONSTRAINT "app_template_item_template_id_fkey" FOREIGN KEY ("template_id") REFERENCES "public"."app_template"("id") ON DELETE CASCADE;
-
-
-
 ALTER TABLE ONLY "public"."app_transaction"
     ADD CONSTRAINT "app_transaction_buyer_id_fkey" FOREIGN KEY ("buyer_id") REFERENCES "public"."app_profile"("id") ON DELETE RESTRICT;
 
@@ -13526,6 +13655,9 @@ ALTER TABLE "public"."app_creator_space_member" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."app_creator_subscription_plan" ENABLE ROW LEVEL SECURITY;
 
 
+ALTER TABLE "public"."app_cron_health" ENABLE ROW LEVEL SECURITY;
+
+
 ALTER TABLE "public"."app_dm_conversation" ENABLE ROW LEVEL SECURITY;
 
 
@@ -13679,12 +13811,6 @@ ALTER TABLE "public"."app_subscription_inclusion" ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "app_subscription_inclusion_service_only" ON "public"."app_subscription_inclusion" TO "service_role" USING (true) WITH CHECK (true);
 
-
-
-ALTER TABLE "public"."app_template" ENABLE ROW LEVEL SECURITY;
-
-
-ALTER TABLE "public"."app_template_item" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."app_transaction" ENABLE ROW LEVEL SECURITY;
@@ -14231,26 +14357,6 @@ CREATE POLICY "stream_token_read_own" ON "public"."app_stream_token" FOR SELECT 
 
 
 CREATE POLICY "stream_token_update_service" ON "public"."app_stream_token" FOR UPDATE TO "service_role" USING (true) WITH CHECK (true);
-
-
-
-CREATE POLICY "template_item_owner_all" ON "public"."app_template_item" USING ((EXISTS ( SELECT 1
-   FROM "public"."app_template" "t"
-  WHERE (("t"."id" = "app_template_item"."template_id") AND ("t"."creator_id" = ( SELECT "auth"."uid"() AS "uid"))))));
-
-
-
-CREATE POLICY "template_item_read_creators" ON "public"."app_template_item" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
-   FROM "public"."app_template" "t"
-  WHERE (("t"."id" = "app_template_item"."template_id") AND "public"."is_creator"(( SELECT "auth"."uid"() AS "uid"))))));
-
-
-
-CREATE POLICY "template_owner_all" ON "public"."app_template" USING (("creator_id" = ( SELECT "auth"."uid"() AS "uid")));
-
-
-
-CREATE POLICY "template_read_creators" ON "public"."app_template" FOR SELECT TO "authenticated" USING ("public"."is_creator"(( SELECT "auth"."uid"() AS "uid")));
 
 
 
@@ -14850,6 +14956,11 @@ GRANT ALL ON FUNCTION "public"."app_claim_email"("p_kind" "text") TO "service_ro
 
 
 
+REVOKE ALL ON FUNCTION "public"."app_enqueue_network_card_emails"("p_profile_id" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."app_enqueue_network_card_emails"("p_profile_id" "uuid") TO "service_role";
+
+
+
 REVOKE ALL ON FUNCTION "public"."app_enqueue_pilot_application_emails"("p_application_id" "uuid") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."app_enqueue_pilot_application_emails"("p_application_id" "uuid") TO "service_role";
 
@@ -14890,6 +15001,11 @@ GRANT ALL ON FUNCTION "public"."app_purge_technical_logs"() TO "service_role";
 GRANT ALL ON FUNCTION "public"."app_receipt_greeting"("p_buyer_name" "text", "p_display_name" "text", "p_full_name" "text", "p_username" "text", "p_email" "text") TO "anon";
 GRANT ALL ON FUNCTION "public"."app_receipt_greeting"("p_buyer_name" "text", "p_display_name" "text", "p_full_name" "text", "p_username" "text", "p_email" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."app_receipt_greeting"("p_buyer_name" "text", "p_display_name" "text", "p_full_name" "text", "p_username" "text", "p_email" "text") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."app_refresh_cron_health"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."app_refresh_cron_health"() TO "service_role";
 
 
 
@@ -15675,12 +15791,6 @@ GRANT ALL ON FUNCTION "public"."trg_material_session_in_challenge"() TO "service
 
 
 
-GRANT ALL ON FUNCTION "public"."trg_pilot_application_consent_stamp"() TO "anon";
-GRANT ALL ON FUNCTION "public"."trg_pilot_application_consent_stamp"() TO "authenticated";
-GRANT ALL ON FUNCTION "public"."trg_pilot_application_consent_stamp"() TO "service_role";
-
-
-
 REVOKE ALL ON FUNCTION "public"."trg_pilot_application_enqueue_emails"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."trg_pilot_application_enqueue_emails"() TO "service_role";
 
@@ -15694,6 +15804,12 @@ GRANT ALL ON FUNCTION "public"."trg_profile_community_consent"() TO "service_rol
 
 REVOKE ALL ON FUNCTION "public"."trg_profile_enqueue_welcome"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."trg_profile_enqueue_welcome"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."trg_profile_network_card_emails"() TO "anon";
+GRANT ALL ON FUNCTION "public"."trg_profile_network_card_emails"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."trg_profile_network_card_emails"() TO "service_role";
 
 
 
@@ -15922,6 +16038,10 @@ GRANT ALL ON TABLE "public"."app_creator_subscription_plan" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."app_cron_health" TO "service_role";
+
+
+
 GRANT MAINTAIN ON TABLE "public"."app_dm_conversation" TO "anon";
 GRANT SELECT,INSERT,DELETE,MAINTAIN,UPDATE ON TABLE "public"."app_dm_conversation" TO "authenticated";
 GRANT ALL ON TABLE "public"."app_dm_conversation" TO "service_role";
@@ -16061,18 +16181,6 @@ GRANT ALL ON TABLE "public"."app_stream_token" TO "service_role";
 
 GRANT MAINTAIN ON TABLE "public"."app_subscription_inclusion" TO "authenticated";
 GRANT ALL ON TABLE "public"."app_subscription_inclusion" TO "service_role";
-
-
-
-GRANT SELECT,MAINTAIN ON TABLE "public"."app_template" TO "anon";
-GRANT ALL ON TABLE "public"."app_template" TO "authenticated";
-GRANT ALL ON TABLE "public"."app_template" TO "service_role";
-
-
-
-GRANT SELECT,MAINTAIN ON TABLE "public"."app_template_item" TO "anon";
-GRANT ALL ON TABLE "public"."app_template_item" TO "authenticated";
-GRANT ALL ON TABLE "public"."app_template_item" TO "service_role";
 
 
 
