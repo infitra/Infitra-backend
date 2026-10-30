@@ -27,6 +27,7 @@ const INK = "#0F2229";
 const MUT = "#475569";
 const OK = "#0a7a4b";
 const BAD = "#b42318";
+const WARN = "#b45309";
 
 const chf = (cents: number | null | undefined) =>
   cents == null ? "–" : formatMoney(Number(cents));
@@ -518,8 +519,23 @@ function People({ people, invites, run }: { people: J; invites: J; run: (l: stri
   };
 
   const isCreator = (p: J) => p.role === "creator" || p.role === "admin";
-  const vis = (p: J) =>
-    p.community_visibility === "public" ? "public" : p.community_visibility === "members" ? "members" : "–";
+  // Signing up is not joining: the card is live only once they publish it.
+  // card_was_live (the once-ever member welcome) tells withdrawn from never published.
+  const cardState = (p: J): [string, string] =>
+    p.community_visibility === "public" || p.community_visibility === "members"
+      ? [p.community_visibility, OK]
+      : p.card_was_live ? ["withdrawn", MUT] : ["pending", WARN];
+  const card = (p: J) => {
+    if (p.is_admin && p.community_visibility === "none") return "–";
+    const [label, color] = cardState(p);
+    return <span key="c" style={{ color }}>{label}</span>;
+  };
+  const redeemerCard = (id: string) => {
+    const p = (people ?? []).find((x: J) => x.id === id);
+    if (!p) return null;
+    const [label, color] = cardState(p);
+    return <span style={{ color }}> · card {label === "public" || label === "members" ? "live" : label}</span>;
+  };
 
   return (
     <Card title={`People (${list.length})`}>
@@ -551,7 +567,7 @@ function People({ people, invites, run }: { people: J; invites: J; run: (l: stri
           ) : (
             "–"
           ),
-          isCreator(p) ? vis(p) : "–",
+          isCreator(p) ? card(p) : "–",
           p.purchases,
           p.memberships,
           p.terms_version ? `v${p.terms_version}` : "–",
@@ -583,7 +599,7 @@ function People({ people, invites, run }: { people: J; invites: J; run: (l: stri
               <code key="u" style={{ fontSize: 11 }}>{`https://www.infitra.fit/join-as-expert?code=${i.code}`}</code>
             ),
             i.redeemed_at ? (
-              <span key="r" style={{ color: OK }}>{i.redeemed_name ?? "yes"} · {dt(i.redeemed_at)}</span>
+              <span key="r"><span style={{ color: OK }}>{i.redeemed_name ?? "yes"} · {dt(i.redeemed_at)}</span>{redeemerCard(i.redeemed_by)}</span>
             ) : i.revoked ? (
               <span key="r" style={{ color: BAD }}>revoked</span>
             ) : (
