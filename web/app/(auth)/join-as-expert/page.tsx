@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { JoinAsExpertForm } from "./JoinAsExpertForm";
 
@@ -27,10 +28,10 @@ export default async function JoinAsExpertPage({
 }) {
   const { code } = await searchParams;
   const trimmed = code?.trim() ?? "";
+  const supabase = await createClient();
 
   let valid = false;
   if (trimmed) {
-    const supabase = await createClient();
     const { data } = await supabase.rpc("app_validate_creator_invite", {
       p_code: trimmed,
     });
@@ -38,6 +39,15 @@ export default async function JoinAsExpertPage({
   }
 
   if (!valid) {
+    // Members reopen their invite link to get back in (Jutta, 31 Oct 2026):
+    // the link is spent, the account is not. A signed-in member goes straight
+    // home (the dashboard layout routes a card-only member on to /network);
+    // everyone else gets the sign-in door first.
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user) redirect("/dashboard");
+
     return (
       <div className="w-full max-w-md">
         <div
@@ -52,11 +62,25 @@ export default async function JoinAsExpertPage({
             className="text-2xl font-headline tracking-tight mb-3"
             style={{ color: "#0F2229", fontWeight: 700, letterSpacing: "-0.02em" }}
           >
-            This invite link is not active.
+            This invite link is not active anymore.
           </h1>
           <p className="text-sm leading-relaxed mb-6" style={{ color: "#475569" }}>
-            It may have been used already, or it expired. Invites are personal
-            and single use. Reply to the message that brought you here and we
+            Invites are personal and work once. If you already created your
+            account with it, sign in with your email and password.
+          </p>
+          <Link
+            href="/login"
+            className="block w-full py-3.5 rounded-full text-white text-sm font-headline transition-transform hover:scale-[1.02] mb-6"
+            style={{
+              backgroundColor: "#FF6130",
+              fontWeight: 700,
+              boxShadow: "0 4px 14px rgba(255,97,48,0.35), 0 2px 6px rgba(255,97,48,0.20)",
+            }}
+          >
+            Sign in
+          </Link>
+          <p className="text-sm leading-relaxed mb-4" style={{ color: "#475569" }}>
+            Never used it? Reply to the message that brought you here and we
             will send you a fresh one.
           </p>
           <p className="text-sm" style={{ color: "#64748b" }}>
