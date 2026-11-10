@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { FoundingMember } from "@/app/components/FoundingCard";
 import { CardWaves } from "@/app/components/BrandWaves";
@@ -33,7 +32,6 @@ import { trackEvent } from "@/lib/analytics";
  * module and everything it imports never enter this bundle.
  */
 const CREAM = "#F2EFE8";
-const CYAN_BRIGHT = "#9CF0FF";
 const INK = "#0F2229";
 const CYAN = "#0891b2";
 const ORANGE = "#FF6130";
@@ -179,11 +177,9 @@ function Arrow({ dir, onClick }: { dir: "prev" | "next"; onClick: () => void }) 
 
 export function HeroCards({
   members,
-  more,
   cards,
 }: {
   members: FoundingMember[];
-  more: boolean;
   cards: React.ReactNode[];
 }) {
   const [open, setOpen] = useState<number | null>(null);
@@ -331,18 +327,6 @@ export function HeroCards({
           </>
         )}
       </div>
-
-      {more && (
-        <div className="text-center mt-5">
-          <Link
-            href="/founding-network"
-            className="inline-block text-[11px] font-bold font-headline uppercase tracking-[0.2em]"
-            style={{ color: CYAN_BRIGHT }}
-          >
-            All profiles
-          </Link>
-        </div>
-      )}
 
       <CardOverlay open={open !== null} label={`${name}'s profile`} onClose={close}>
         {open !== null ? cards[open] : null}

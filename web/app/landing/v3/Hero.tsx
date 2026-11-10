@@ -118,7 +118,6 @@ export function Hero({ members }: { members: FoundingMember[] }) {
         {showCards && (
           <HeroCards
             members={shown}
-            more={members.length > shown.length}
             cards={shown.map((m) => (
               <FoundingCard key={m.id} m={m} />
             ))}
