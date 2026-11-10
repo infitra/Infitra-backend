@@ -62,6 +62,9 @@ function ProfileTile({
   const accent = isStudio ? CYAN : ORANGE;
   const name = m.display_name ?? "Founding member";
   const initial = (name[0] ?? "?").toUpperCase();
+  const cut = name.lastIndexOf(" ");
+  const lead = cut > 0 ? name.slice(0, cut) : "";
+  const last = cut > 0 ? name.slice(cut + 1) : name;
 
   return (
     <button
@@ -112,12 +115,22 @@ function ProfileTile({
           </div>
         </div>
 
+        {/* Members name themselves after their brand ("Jacqueline Moser / Get
+           Me Fit GmbH"), so the name wraps, balanced, instead of being cut.
+           The badge rides on the last word so it never sits alone on a line. */}
         <p
-          className="mt-2.5 max-w-full text-[21px] font-bold font-headline leading-tight inline-flex items-center gap-2"
-          style={{ color: INK, letterSpacing: "-0.03em" }}
+          className="mt-2.5 max-w-full text-[21px] font-bold font-headline leading-tight"
+          style={{ color: INK, letterSpacing: "-0.03em", textWrap: "balance" }}
         >
-          <span className="truncate">{name}</span>
-          {m.is_founding_expert && <FoundingExpertStar size={16} />}
+          {lead && `${lead} `}
+          <span className="whitespace-nowrap">
+            {last}
+            {m.is_founding_expert && (
+              <span className="inline-block align-[-2px] ml-2">
+                <FoundingExpertStar size={16} />
+              </span>
+            )}
+          </span>
         </p>
       </div>
 
