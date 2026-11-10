@@ -117,16 +117,18 @@ function ProfileTile({
 
         {/* Members name themselves after their brand ("Jacqueline Moser / Get
            Me Fit GmbH"), so the name wraps, balanced, instead of being cut.
-           The badge rides on the last word so it never sits alone on a line. */}
+           The badge rides on the last word so it never sits alone on a line.
+           The name always holds two lines of room, so every tagline in the
+           row starts at the same height. */}
         <p
           className="mt-2.5 max-w-full text-[21px] font-bold font-headline leading-tight"
-          style={{ color: INK, letterSpacing: "-0.03em", textWrap: "balance" }}
+          style={{ color: INK, letterSpacing: "-0.03em", textWrap: "balance", minHeight: "2.5em" }}
         >
           {lead && `${lead} `}
           <span className="whitespace-nowrap">
             {last}
             {m.is_founding_expert && (
-              <span className="inline-block align-[-2px] ml-2">
+              <span className="inline-block align-[-2px] ml-2 leading-none">
                 <FoundingExpertStar size={16} />
               </span>
             )}
@@ -134,17 +136,18 @@ function ProfileTile({
         </p>
       </div>
 
-      {/* The cream end: what they do, and the way in. */}
-      <div className="relative mt-auto px-5 pt-2.5 pb-3.5 text-center">
+      {/* The cream end: what they do right under the name, and the way in
+         pinned to the bottom. */}
+      <div className="relative flex-1 flex flex-col items-center px-5 pt-2.5 pb-3.5 text-center">
         {m.tagline && (
           <p
-            className="text-[13.5px] font-bold font-headline leading-[1.3]"
+            className="w-full text-[13.5px] font-bold font-headline leading-[1.3]"
             style={{ color: CYAN, display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical", overflow: "hidden" } as React.CSSProperties}
           >
             {m.tagline}
           </p>
         )}
-        <span className="mt-2 inline-flex items-center gap-1 text-[10px] font-bold font-headline uppercase tracking-[0.18em]" style={{ color: FAINT_INK }}>
+        <span className="mt-auto pt-2 inline-flex items-center gap-1 text-[10px] font-bold font-headline uppercase tracking-[0.18em]" style={{ color: FAINT_INK }}>
           See details
           <svg
             className="transition-transform duration-200 group-hover/tile:translate-x-0.5"
