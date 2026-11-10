@@ -248,12 +248,19 @@ export function HeroCards({
     if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     let frame = 0;
     let last = performance.now();
+    // The exact position lives here, not in scrollLeft: WebKit (every iPhone
+    // browser) keeps scroll positions in whole pixels, so a step of a third
+    // of a pixel was rounded away each frame and the band never moved. When
+    // the reader or the fold moves the band, the position is taken over anew.
+    let pos = -1;
     const tick = (now: number) => {
       const dt = Math.min(now - last, 100);
       last = now;
       const el = scroller.current;
       if (el && Date.now() >= holdUntil.current) {
-        el.scrollLeft += (DRIFT * dt) / 1000;
+        if (Math.abs(pos - el.scrollLeft) > 1) pos = el.scrollLeft;
+        pos += (DRIFT * dt) / 1000;
+        el.scrollLeft = pos;
         normalize();
       }
       frame = requestAnimationFrame(tick);
@@ -300,9 +307,11 @@ export function HeroCards({
           onPointerDown={hold}
           onTouchStart={hold}
           onWheel={hold}
-          onMouseEnter={() => setPaused(true)}
-          onMouseLeave={() => setPaused(false)}
-          onFocusCapture={() => setPaused(true)}
+          // Hover pauses for a mouse only: a tap on a phone also "enters",
+          // and nothing ever leaves, so the band would stay stopped.
+          onPointerEnter={(e) => e.pointerType === "mouse" && setPaused(true)}
+          onPointerLeave={(e) => e.pointerType === "mouse" && setPaused(false)}
+          onFocusCapture={(e) => e.target.matches(":focus-visible") && setPaused(true)}
           onBlurCapture={() => setPaused(false)}
           className={`flex gap-4 px-6 py-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${loop ? "" : "justify-center"}`}
           style={loop ? { maskImage: FADE_BOTH, WebkitMaskImage: FADE_BOTH } : undefined}
