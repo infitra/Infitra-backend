@@ -101,8 +101,7 @@ function PublicCard({ m }: { m: FoundingMember }) {
         style={{ backgroundColor: CREAM, border: "1px solid rgba(15,34,41,0.07)" }}
       >
         <p className="text-[15px] leading-relaxed mb-4" style={{ color: "#475569" }}>
-          Inside the founding network, members see each other&apos;s full cards: what they bring,
-          and who they would want next to them.
+          Inside the founding network, members see each other&apos;s full profiles: their expertise in detail, background and certifications, and who they would want next to them.
         </p>
         <ApplyCTA small label="Join the founding network" />
       </div>

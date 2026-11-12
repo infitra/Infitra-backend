@@ -155,6 +155,9 @@ export function FoundingCard({
     label: KIND_LABEL[entity][kind],
     items: creds.filter((c) => c.kind === kind),
   })).filter((g) => g.items.length > 0);
+  // The public view carries the face only (no answers, no background): then
+  // nothing below the person gives the card its bottom edge, so it gets its own.
+  const faceOnly = !m.brings && !m.seeks && groups.length === 0;
   const labels = isStudio
     ? { brings: "What we bring", seeks: "What would complement our offer" }
     : { brings: "My expertise", seeks: "What would complement my work" };
@@ -205,7 +208,7 @@ export function FoundingCard({
       )}
 
       {/* The person */}
-      <div className={`relative ${pad} ${compact ? "pt-6" : "pt-14 sm:pt-6"}`}>
+      <div className={`relative ${pad} ${compact ? "pt-6" : "pt-14 sm:pt-6"} ${faceOnly ? "pb-6" : ""}`}>
       <div className={`flex ${compact ? "flex-col items-start gap-4" : "items-center gap-4 sm:gap-6"}`}>
         <div
           className={`rounded-full shrink-0 ${compact ? "w-[116px] h-[116px]" : "w-[100px] h-[100px] sm:w-[168px] sm:h-[168px]"}`}

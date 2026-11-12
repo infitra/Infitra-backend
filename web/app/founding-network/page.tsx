@@ -70,8 +70,7 @@ export default async function FoundingGroupPage() {
               <p className="text-base md:text-lg" style={{ color: "#475569" }}>
                 Live experiences on INFITRA run online over several weeks: participants buy once,
                 meet the experts live on video, and stay connected in a group space in between.
-                Inside the network, members see each other&apos;s full cards: what they bring,
-                and who they would want next to them.
+                Inside the founding network, members see each other&apos;s full profiles: their expertise in detail, background and certifications, and who they would want next to them.
               </p>
             </header>
 
