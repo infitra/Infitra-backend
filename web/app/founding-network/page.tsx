@@ -5,16 +5,17 @@ import { FoundingCard, type FoundingMember } from "@/app/components/FoundingCard
 
 /**
  * /founding-network — the public list of the founding network (6 Sep 2026).
- * Standalone marketing surface like /apply (no beta gate, in the sitemap).
- * Reads load_founding_community(true): explicit public-safe columns, and an
- * empty list until three public cards exist, enforced in the database so an
- * anonymous caller can never enumerate below the threshold.
+ * Standalone marketing surface like /apply (no beta gate; out of the sitemap).
+ * Reads load_founding_community(true): the face of each card with a photo
+ * (photo, name, one line, city, type, badge) and nothing else; the answers
+ * and the background are for members (12 Nov 2026). Not linked from anywhere
+ * until we decide to open it.
  */
 
 export const metadata = {
   title: "The founding network · INFITRA",
   description:
-    "Experts and studios open to creating live experiences together. Each card is one sentence: what they would love to run, and who they would want next to them.",
+    "Experts and studios open to creating live experiences together, in INFITRA's founding network.",
 };
 
 export const revalidate = 300;
@@ -69,8 +70,8 @@ export default async function FoundingGroupPage() {
               <p className="text-base md:text-lg" style={{ color: "#475569" }}>
                 Live experiences on INFITRA run online over several weeks: participants buy once,
                 meet the experts live on video, and stay connected in a group space in between.
-                Each card here is one sentence: what its owner would love to run, and who they
-                would want next to them.
+                Inside the network, members see each other&apos;s full cards: what they bring,
+                and who they would want next to them.
               </p>
             </header>
 

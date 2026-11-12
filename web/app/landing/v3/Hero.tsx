@@ -90,6 +90,26 @@ function Ask() {
   );
 }
 
+/** An opened card, as the public sees it: the face only (the public reader
+ *  returns nothing else), and the way in to the full cards (12 Nov 2026). */
+function PublicCard({ m }: { m: FoundingMember }) {
+  return (
+    <div className="flex flex-col gap-3">
+      <FoundingCard m={m} />
+      <div
+        className="rounded-[24px] px-6 py-5 text-center"
+        style={{ backgroundColor: CREAM, border: "1px solid rgba(15,34,41,0.07)" }}
+      >
+        <p className="text-[15px] leading-relaxed mb-4" style={{ color: "#475569" }}>
+          Inside the founding network, members see each other&apos;s full cards: what they bring,
+          and who they would want next to them.
+        </p>
+        <ApplyCTA small label="Join the founding network" />
+      </div>
+    </div>
+  );
+}
+
 export function Hero({ members }: { members: FoundingMember[] }) {
   const shown = members.slice(0, 6);
   const showCards = shown.length > 0;
@@ -119,7 +139,7 @@ export function Hero({ members }: { members: FoundingMember[] }) {
           <HeroCards
             members={shown}
             cards={shown.map((m) => (
-              <FoundingCard key={m.id} m={m} />
+              <PublicCard key={m.id} m={m} />
             ))}
           />
         )}

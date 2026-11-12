@@ -167,9 +167,9 @@ export function JoinNetworkForm({
     })),
   };
 
-  // What is still missing. The two answers and one background entry are
-  // required (the server checks them too); the photo and the rest complete
-  // the card. Named in the line under the button, where the decision is.
+  // What is still missing. The photo, the two answers and one background
+  // entry are required (the server checks them too); the rest completes the
+  // card. Named in the line under the button, where the decision is.
   const missing: string[] = [];
   if (!avatarPreview) missing.push("photo");
   if (name.trim().length < 2) missing.push(isStudio ? "studio name" : "name");

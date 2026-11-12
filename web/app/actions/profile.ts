@@ -177,11 +177,23 @@ export async function joinFoundingNetwork(prevState: unknown, formData: FormData
 
   const { data: profile } = await supabase
     .from("app_profile")
-    .select("role, profile_facts")
+    .select("role, profile_facts, avatar_url")
     .eq("id", user.id)
     .single();
   const isCreator = profile?.role === "creator" || profile?.role === "admin";
   if (!isCreator) return { error: "The founding network is for experts and studios." };
+
+  // The card is built around the portrait, and only cards with one appear on
+  // infitra.fit (12 Nov 2026, after a card went live as an initial): no card
+  // without a photo, a new one or the one already on the profile.
+  if (!avatarUrl && !profile?.avatar_url) {
+    return {
+      error:
+        entityRaw === "studio"
+          ? "Please add a photo or your logo. The card is built around it."
+          : "Please add a photo of yourself. The card is built around it.",
+    };
+  }
 
   // One background entry is part of the card: everyone has at least an
   // experience, a studio at least a track record. The entries save on

@@ -15,7 +15,8 @@ import { FoundingExpertBadge } from "@/app/components/FoundingBadge";
  * icon tiles, thin dividers, muted labels. A studio fills the same three
  * background slots with its own meanings: track record, team, recognition.
  * Fed by load_founding_community(): explicit public-safe columns, never an
- * email. Below sm (phones) the full card shrinks rather than stacks: the
+ * email. Its public branch carries the face only, so on public pages the
+ * answers and the background are simply absent. Below sm (phones) the full card shrinks rather than stacks: the
  * type pill sits in the top-left corner (Edit top-right), a 100px portrait
  * with the name beside it, the small founding badge right under the name,
  * one background column with the label on top. Fits from 375px.

@@ -148,7 +148,7 @@ function ProfileTile({
           </p>
         )}
         <span className="mt-auto pt-2 inline-flex items-center gap-1 text-[10px] font-bold font-headline uppercase tracking-[0.18em]" style={{ color: FAINT_INK }}>
-          See details
+          See card
           <svg
             className="transition-transform duration-200 group-hover/tile:translate-x-0.5"
             width="11"
