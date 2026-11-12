@@ -127,8 +127,14 @@ Client → issue_join_token (Edge) → validates attendance → Daily.co token +
 ## Current Implementation State
 - Backend: Fully architected (schema + RLS + triggers + RPC)
 - Edge Functions: All core flows implemented (payments, live, email, image upload)
-- Frontend: **Not yet built**
-- Stripe Connect (creator payouts): Schema-ready, not yet activated
+- Frontend: Built and live (Next.js in `web/`, deployed on Vercel)
+- Stripe Connect (creator payouts): **Not built.** INFITRA is merchant of
+  record; payouts are manual (`app_payout.provider` defaults to `manual`).
+  What exists: owner + co-host `split_percent`, co-host math in
+  `vw_my_earnings_lines`, `admin_payouts`. Missing: expert Stripe accounts,
+  `on_behalf_of`, transfers, API payouts, EUR (currency check is CHF only),
+  and refund/dispute handling (`stripe_webhook` handles only
+  `checkout.session.completed`; nothing writes status `refunded`)
 - Staff/governance: Architecturally defined, not yet operationally active
 - Private beta mode: Creator onboarding is invite/manual approval
 
